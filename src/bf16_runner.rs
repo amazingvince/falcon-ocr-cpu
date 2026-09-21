@@ -442,8 +442,10 @@ mod tests {
     use super::*;
     #[test]
     fn unsupported_modes_fail_before_loading_weights() {
+        // The BF16 graph only supports expanded caches; the FP32 default is compact.
         let base = RunnerConfig {
             backend: Backend::Scalar,
+            cache_layout: CacheLayout::Expanded,
             ..Default::default()
         };
         assert_eq!(

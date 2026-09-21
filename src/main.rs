@@ -21,8 +21,9 @@ struct Cli {
     backend: Backend,
     #[arg(long, default_value_t = 1, global = true)]
     batch_size: usize,
-    #[arg(long, value_enum, default_value = "expanded", global = true)]
-    cache_layout: CacheLayout,
+    /// FP32 defaults to `compact`; the experimental BF16 graph defaults to `expanded`.
+    #[arg(long, value_enum, global = true)]
+    cache_layout: Option<CacheLayout>,
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
     #[arg(long, value_enum, default_value = "unpacked", global = true)]
     weight_layout: WeightLayout,
@@ -97,7 +98,7 @@ fn main() -> Result<()> {
             threads: cli.threads,
             backend: cli.backend,
             batch_size: cli.batch_size,
-            cache_layout: cli.cache_layout,
+            cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
             weight_layout: cli.weight_layout,
         },
     )?;
@@ -149,7 +150,7 @@ fn execute_bf16(cli: Cli) -> Result<()> {
         threads: cli.threads,
         backend: cli.backend,
         batch_size: cli.batch_size,
-        cache_layout: cli.cache_layout,
+        cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Expanded),
         weight_layout: cli.weight_layout,
     };
     Bf16Runner::validate_config(&config)?;

@@ -29,7 +29,7 @@ struct Args {
     threads: usize,
     #[arg(long, value_enum, default_value = "auto")]
     backend: Backend,
-    #[arg(long, value_enum, default_value = "expanded")]
+    #[arg(long, value_enum, default_value = "compact")]
     cache_layout: CacheLayout,
     #[arg(long, value_enum, default_value = "unpacked")]
     weight_layout: WeightLayout,

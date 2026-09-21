@@ -46,7 +46,8 @@ pub struct OcrResult {
     pub output_tokens: usize,
     pub precision: String,
     pub backend: String,
-    #[serde(default)]
+    /// Records written before compact caches existed were expanded.
+    #[serde(default = "legacy_cache_layout")]
     pub cache_layout: CacheLayout,
     #[serde(default)]
     pub weight_layout: WeightLayout,
@@ -57,6 +58,10 @@ pub struct OcrResult {
     pub weight_packing_ms: f64,
     pub teacher_forced: bool,
     pub timings: Timings,
+}
+
+fn legacy_cache_layout() -> CacheLayout {
+    CacheLayout::Expanded
 }
 
 pub struct Runner {

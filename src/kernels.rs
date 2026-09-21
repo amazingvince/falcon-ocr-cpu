@@ -7,6 +7,9 @@
 
 use rayon::prelude::*;
 
+#[cfg(target_arch = "x86_64")]
+mod attention64;
+
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.
 ///
 /// Explicit unavailable variants return an error from [`Simd::validate`] and
@@ -359,6 +362,59 @@ pub fn attention_with_simd(
         );
         return;
     }
+    #[cfg(target_arch = "x86_64")]
+    if query_len == 1 && head_dim == 64 && selected == Simd::Avx2 {
+        // SAFETY: AVX2/FMA availability and every slice shape were checked above.
+        unsafe {
+            attention64::attention(
+                q,
+                k,
+                v,
+                n_heads,
+                query_offset,
+                image_start,
+                image_end,
+                sinks,
+                output,
+            );
+        }
+        return;
+    }
+    attention_online_softmax(
+        q,
+        k,
+        v,
+        n_heads,
+        head_dim,
+        query_offset,
+        image_start,
+        image_end,
+        sinks,
+        output,
+        selected,
+    );
+}
+
+/// The generic per-head online-softmax loop with function-pointer kernels.
+///
+/// It serves every shape or backend the fixed-width kernel does not cover and
+/// is the bit-exact oracle for [`attention64`]'s tests. `selected` must already
+/// be resolved and validated by the public entry point.
+#[allow(clippy::too_many_arguments)]
+fn attention_online_softmax(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    n_heads: usize,
+    head_dim: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    output: &mut [f32],
+    selected: Simd,
+) {
+    let token_width = elements(n_heads, head_dim);
     let dot = dot_kernel(selected);
     let axpy = axpy_kernel(selected);
     let scale = (head_dim as f32).sqrt().recip();
@@ -704,6 +760,65 @@ pub fn attention_compact_with_simd(
         );
         return;
     }
+    #[cfg(target_arch = "x86_64")]
+    if query_len == 1 && head_dim == 64 && selected == Simd::Avx2 {
+        // SAFETY: AVX2/FMA availability and every slice shape were checked above.
+        unsafe {
+            attention64::compact(
+                q,
+                prefix_k,
+                generated_k,
+                v,
+                prefix_len,
+                n_heads,
+                n_kv_heads,
+                query_offset,
+                image_start,
+                image_end,
+                sinks,
+                output,
+            );
+        }
+        return;
+    }
+    attention_compact_online_softmax(
+        q,
+        prefix_k,
+        generated_k,
+        v,
+        prefix_len,
+        n_heads,
+        n_kv_heads,
+        head_dim,
+        query_offset,
+        image_start,
+        image_end,
+        sinks,
+        output,
+        selected,
+    );
+}
+
+/// The generic compact-cache online-softmax loop; see [`attention_online_softmax`].
+#[allow(clippy::too_many_arguments)]
+fn attention_compact_online_softmax(
+    q: &[f32],
+    prefix_k: &[f32],
+    generated_k: &[f32],
+    v: &[f32],
+    prefix_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    head_dim: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    output: &mut [f32],
+    selected: Simd,
+) {
+    let query_width = elements(n_heads, head_dim);
+    let kv_width = elements(n_kv_heads, head_dim);
     let dot = dot_kernel(selected);
     let axpy = axpy_kernel(selected);
     let scale = (head_dim as f32).sqrt().recip();

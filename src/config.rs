@@ -27,8 +27,8 @@ pub enum Backend {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum CacheLayout {
-    #[default]
     Expanded,
+    #[default]
     Compact,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
@@ -173,7 +173,8 @@ pub struct RunnerConfig {
     /// Controls GEMV and attention vectors. Large GEMMs dispatch independently.
     #[serde(default)]
     pub backend: Backend,
-    /// Compact keeps sixteen prefix K heads and eight generated K/all V heads.
+    /// Compact (the default) keeps sixteen prefix K heads and eight generated
+    /// K/all V heads; expanded duplicates every KV head and remains selectable.
     #[serde(default)]
     pub cache_layout: CacheLayout,
     /// Extra immutable packed weights; single rows and prefill stay unpacked.
@@ -186,7 +187,7 @@ impl Default for RunnerConfig {
             threads: 16,
             batch_size: 1,
             backend: Backend::Auto,
-            cache_layout: CacheLayout::Expanded,
+            cache_layout: CacheLayout::Compact,
             weight_layout: WeightLayout::Unpacked,
         }
     }
