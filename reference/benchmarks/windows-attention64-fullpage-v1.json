@@ -1,0 +1,117 @@
+{
+  "kind": "attention64-single-page-performance-result-v1",
+  "status": "target_met_in_one_page_bracket",
+  "qualification": "Isolated experimental candidate; no default promotion or broader model/platform qualification.",
+  "comparison": {
+    "status": "complete",
+    "finished_utc": "2026-09-20T15:52:42.049811+00:00",
+    "plan_sha256": "38d1fa812e0cf2d78a05355593f6d236fafdc018d5398754e8c9bb0674e63c28",
+    "reports": [
+      {
+        "name": "control-before",
+        "report_sha256": "35cd696004ed95783e1ccc1c296a03aefd819fd5f499803c731bfbd06df605d8",
+        "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+        "all_measured_outputs_exact": true,
+        "median_ms": 75570.4038,
+        "samples_ms": [
+          75494.9575,
+          75726.6889,
+          75570.4038
+        ],
+        "stage_medians_ms": {
+          "preprocessing_ms": 54.546499999999995,
+          "prefill_ms": 10697.6131,
+          "decode_ms": 64754.48009999999,
+          "total_ms": 75570.3953
+        }
+      },
+      {
+        "name": "candidate",
+        "report_sha256": "1162c7c02b6408d9a403e0fe885d589af84e4e09fbedb7d0d702332dabdb22b4",
+        "binary_sha256": "bcfa0134f33ff8fa75459a16c8f00f62618d6e069ed57e6f533da8cc12d4c1f1",
+        "all_measured_outputs_exact": true,
+        "median_ms": 68444.3414,
+        "samples_ms": [
+          68544.8441,
+          68334.44110000001,
+          68444.3414
+        ],
+        "stage_medians_ms": {
+          "preprocessing_ms": 54.5674,
+          "prefill_ms": 12707.2777,
+          "decode_ms": 55617.4894,
+          "total_ms": 68444.3367
+        }
+      },
+      {
+        "name": "control-after",
+        "report_sha256": "0ff10ea03001ffa575d0eefc8471a7740e0dbd6d38db934416374f0596f12f7b",
+        "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+        "all_measured_outputs_exact": true,
+        "median_ms": 72931.0142,
+        "samples_ms": [
+          72931.0142,
+          73017.58510000001,
+          72724.7132
+        ],
+        "stage_medians_ms": {
+          "preprocessing_ms": 56.7886,
+          "prefill_ms": 12564.226200000001,
+          "decode_ms": 60276.5088,
+          "total_ms": 72931.0051
+        }
+      }
+    ],
+    "control_drift_percent": -3.4926233912752958,
+    "control_stability_pass": true,
+    "candidate_latency_reduction_percent": {
+      "control_before": 9.429700043497713,
+      "control_after": 6.151940774738329
+    },
+    "target_met_in_this_page": true,
+    "default_promotion": false,
+    "historical_median_ms": 74023.7403
+  },
+  "evidence": {
+    "artifacts/benchmarks/attention64-fullpage-window-v1/plan.json": {
+      "sha256": "38d1fa812e0cf2d78a05355593f6d236fafdc018d5398754e8c9bb0674e63c28"
+    },
+    "artifacts/benchmarks/attention64-fullpage-window-v1/comparison.json": {
+      "sha256": "213984ecbc284b9c8d907a46ca724e138b1695afc0feab52f1077356acd8a742"
+    },
+    "artifacts/benchmarks/attention64-fullpage-window-v1/execution-start.json": {
+      "sha256": "ab6db4d510937ad26502a5b9c604dee75da3d8e60c397021235cb9c636a771c8"
+    },
+    "artifacts/diagnostics/attention64-v2/benchmark-build/build.json": {
+      "sha256": "cde63eeebb2eebad095425a5b7a1c3a94eef7b20ac7bef540366b84e4f030d6c"
+    },
+    "artifacts/diagnostics/attention64-v2/smoke/report.json": {
+      "sha256": "1a6a305ebdb6ef9825add095aa95e6fcbeded4138006596486bb491d3010e8a1"
+    },
+    "reference/isolated-candidate-benchmark-source-review-v1.json": {
+      "sha256": "3ffa615bce56c85a12ba5c735bb3b90049ef6d6acaeebadcdf970e0b9d7d63ed"
+    }
+  },
+  "output_scope": {
+    "measured_pages": 9,
+    "unique_pages": 1,
+    "ids_per_page": 1140,
+    "all_measured_ids_text_stops_dimensions_counts_exact": true,
+    "warmup_outputs_exported": false
+  },
+  "stage_limits": {
+    "control_prefill_drift_percent": 17.44887464662561,
+    "control_decode_drift_percent": -6.915307316319552,
+    "candidate_decode_reduction_percent_range": [
+      7.729411495046645,
+      14.110206252740799
+    ],
+    "stage_medians_not_independently_stable": true
+  },
+  "limitations": [
+    "Whole-page controls passed the preset 5% drift criterion; stage-specific timing variation remains.",
+    "One page and one bracket; full candidate corpus, mixed batches, compact layout and Linux measurements pending.",
+    "Ten existing GPU intermediate numerical mismatches remain open; no tolerance change.",
+    "Does not establish additive gains with compact cache or a hardware bandwidth bottleneck."
+  ]
+}

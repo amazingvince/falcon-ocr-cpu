@@ -1,0 +1,51 @@
+{
+  "kind": "temporal-b1-protocol-readiness-v1",
+  "status": "source_and_offline_tests_ready_no_plan_or_execution",
+  "source_sha256": {
+    "experiments/profiling/benchmark_temporal_candidate.py": "6b8ec9382e674d913a8684f5942f9f0533d12c5c08c7b1e3e3fa4cf24787de06",
+    "experiments/profiling/test_benchmark_temporal_candidate.py": "3bde111ae72b4dcbab86a16dac473a0f055f1480bc7b21893314a6e4eb471715",
+    "experiments/profiling/TEMPORAL-B1-PLAN-V1.md": "bbe41954c731f09666a9d408d59152090a491e6d5462c4dd8ea24425fc40dfd4"
+  },
+  "allowlist_source": "Explicit confirmation from the temporal integration author, coordinated with root before freezing this wrapper.",
+  "changed_sources": ["src/config.rs", "src/lib.rs", "src/model.rs", "src/kernels.rs"],
+  "added_sources": ["src/temporal_candidate.rs", "src/temporal_model_tests.rs"],
+  "layout_contract": {
+    "control": {"cli": "compact", "report": "compact"},
+    "candidate": {"cli": "temporal-candidate", "report": "temporal_candidate"}
+  },
+  "tests": {
+    "command": "C:/Users/amazi/mambaforge/python.exe -m unittest discover -s experiments/profiling -p test_benchmark_temporal_candidate.py -v",
+    "exit_code": 0,
+    "passed": 11,
+    "result_source": "Observed native tool stdout; a separate test log artifact was not claimed.",
+    "subprocesses": "All process calls mocked; no benchmark/model/build executed.",
+    "input_scope": "Small frozen workload, baseline and build JSON only; no checkpoint or image decoding."
+  },
+  "bracket": {
+    "order": ["control-before", "candidate", "control-after"],
+    "warmups_each": 2,
+    "measured_repetitions_each": 3,
+    "threads": 16,
+    "precision": "fp32",
+    "backend": "avx2",
+    "batch_size": 1,
+    "weight_layout": "unpacked",
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "timeout_seconds_each": 900,
+    "control_drift_limit_percent": 5,
+    "target_latency_reduction_against_each_control_percent": 5
+  },
+  "benchmark_plan_prepared": false,
+  "candidate_build_executed": false,
+  "model_executed": false,
+  "benchmark_executed": false,
+  "default_promotion": false,
+  "limitations": [
+    "Candidate functional equivalence and actual build provenance must be accepted separately before a timing plan is run.",
+    "No change to any prior wrapper, accepted report, shared realistic_benchmark.py helper or live production source.",
+    "B1 uses the single-page fallback; a result will not establish sustained batching or broad platform/workload promotion.",
+    "Memory high-water marks, reserved cache capacity and timing intervals remain separate measurements."
+  ]
+}

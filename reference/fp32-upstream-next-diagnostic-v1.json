@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "kind": "fp32-upstream-boundary-next-diagnostic-v1",
+  "status": "saved_tensor_analysis_only",
+  "evidence": {
+    "decomposition": {
+      "path": "reference/fp32-crossover-decomposition-v1.json",
+      "sha256": "b3e262ecc47713c356d3c8926fe1a642a610337eb077372705ff30510e067735"
+    },
+    "gpu_trace": {
+      "path": "artifacts/reference/smoke-fp32/trace.safetensors",
+      "historically_verified_sha256": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4"
+    },
+    "cpu_trace": {
+      "path": "artifacts/cpu/smoke-trace-sinks-pairwise.safetensors",
+      "historically_verified_sha256": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309"
+    },
+    "whole_trace_hashes_recomputed": false,
+    "method": "Read safetensors headers and selected tensors with NumPy read-only memory maps; differences/norm summaries computed in FP64. No Torch import or model execution."
+  },
+  "target": {
+    "original_failed_stage": "prefill.layer.9.v",
+    "coordinate": [
+      112,
+      14,
+      2
+    ],
+    "previous_signed_incoming_fraction_percent": 99.424,
+    "previous_signed_engine_fraction_percent": 0.576,
+    "row": 112,
+    "token": 227,
+    "pos_t": 0,
+    "pos_hw": [
+      0.5050762891769409,
+      0.6599662899971008
+    ]
+  },
+  "row112_hidden_progression": [
+    {
+      "stage": "embedding",
+      "max_abs_difference": 0.0000026226043701171875,
+      "rms_difference": 7.187585926807901e-7,
+      "reference_rms": 1.341518500575152,
+      "worst_channel": 127
+    },
+    {
+      "stage": "layer.0.hidden",
+      "max_abs_difference": 0.00002384185791015625,
+      "rms_difference": 0.000005611035413371403,
+      "reference_rms": 4.659491285549564,
+      "worst_channel": 225
+    },
+    {
+      "stage": "layer.1.hidden",
+      "max_abs_difference": 0.0000400543212890625,
+      "rms_difference": 0.000011430343423146363,
+      "reference_rms": 10.313339669042636,
+      "worst_channel": 562
+    },
+    {
+      "stage": "layer.2.hidden",
+      "max_abs_difference": 0.000047206878662109375,
+      "rms_difference": 0.00001456782543129897,
+      "reference_rms": 13.030749399240472,
+      "worst_channel": 45
+    },
+    {
+      "stage": "layer.3.hidden",
+      "max_abs_difference": 0.00006103515625,
+      "rms_difference": 0.000020858649329083756,
+      "reference_rms": 10.745231338271104,
+      "worst_channel": 372
+    },
+    {
+      "stage": "layer.4.hidden",
+      "max_abs_difference": 0.00028228759765625,
+      "rms_difference": 0.00005957898420583712,
+      "reference_rms": 11.050836939808281,
+      "worst_channel": 249
+    },
+    {
+      "stage": "layer.5.hidden",
+      "max_abs_difference": 0.00054931640625,
+      "rms_difference": 0.00014418884512701395,
+      "reference_rms": 14.895310662138423,
+      "worst_channel": 249
+    },
+    {
+      "stage": "layer.6.hidden",
+      "max_abs_difference": 0.000736236572265625,
+      "rms_difference": 0.00021449930377763696,
+      "reference_rms": 10.527039985157367,
+      "worst_channel": 371
+    },
+    {
+      "stage": "layer.7.hidden",
+      "max_abs_difference": 0.00229644775390625,
+      "rms_difference": 0.0006720608628494382,
+      "reference_rms": 12.77513917237834,
+      "worst_channel": 249
+    }
+  ],
+  "row112_selected_native_trace_stages": [
+    {
+      "stage": "layer.4.attention",
+      "max_abs_difference": 0.000010013580322265625,
+      "rms_difference": 0.0000017411992239861354
+    },
+    {
+      "stage": "layer.5.attention",
+      "max_abs_difference": 0.00012540817260742188,
+      "rms_difference": 0.00001685823973786585
+    },
+    {
+      "stage": "layer.6.attention",
+      "max_abs_difference": 0.00008463859558105469,
+      "rms_difference": 0.000015095675722144982
+    },
+    {
+      "stage": "layer.7.q",
+      "max_abs_difference": 0.0001537799835205078,
+      "rms_difference": 0.00003263073837629718
+    },
+    {
+      "stage": "layer.7.k",
+      "max_abs_difference": 0.00011014938354492188,
+      "rms_difference": 0.00002577971711693808
+    },
+    {
+      "stage": "layer.7.v",
+      "max_abs_difference": 0.00029158592224121094,
+      "rms_difference": 0.0000846645087859653
+    },
+    {
+      "stage": "layer.7.attention",
+      "max_abs_difference": 0.000102996826171875,
+      "rms_difference": 0.000024654567596401654
+    }
+  ],
+  "interpretation": [
+    "Differences already exist at image embedding and progressively grow; row112 has an earlier noticeable increase through layer4, then a3.13-fold hidden-RMS increase from layer6 to7.",
+    "These are unequal-input whole-trajectory differences. Comparing attention and hidden scales cannot isolate FFN, W2, RMS or residual arithmetic.",
+    "Other rows have larger incoming differences, so attention may transfer differences across rows. A cropped row112 experiment would change the operation and omit relevant inputs.",
+    "The prior successful crossover causally localized most of the target layer9V discrepancy to the layer7 boundary; it did not establish which earlier operator created that state."
+  ],
+  "proposed_one_crossover": {
+    "entry_gpu": "artifacts/reference/smoke-fp32/trace.safetensors:layer.6.hidden",
+    "entry_cpu": "artifacts/cpu/smoke-trace-sinks-pairwise.safetensors:prefill.layer.6.hidden",
+    "entry_shape": [
+      144,
+      768
+    ],
+    "native_segment": "Full layer7 only; stop at layer7.hidden",
+    "branches": [
+      "GPU on original GPU layer6 state (control)",
+      "Rust on original CPU layer6 state (control)",
+      "GPU on original CPU layer6 state (crossover, only after controls)"
+    ],
+    "saved_bit_exact_control_stages": [
+      "layer.7.q",
+      "layer.7.k",
+      "layer.7.v",
+      "layer.7.attention",
+      "layer.7.hidden"
+    ],
+    "pass_through_capture_stages": [
+      "input",
+      "layer.7.attention_norm",
+      "layer.7.qkv",
+      "layer.7.q",
+      "layer.7.k",
+      "layer.7.v",
+      "layer.7.attention",
+      "layer.7.wo",
+      "layer.7.attention_residual",
+      "layer.7.ffn_norm",
+      "layer.7.w13",
+      "layer.7.gate",
+      "layer.7.w2",
+      "layer.7.hidden"
+    ],
+    "primary_analysis": "Decompose CPU(C)-GPU(G) = [CPU(C)-GPU(C)] + [GPU(C)-GPU(G)] at the established layer7 boundary, including full tensor and predeclared row112/channel249; report cancellation and FP64 bookkeeping residual.",
+    "setup": "Preserve complete144 rows, original tokens/pos_t/pos_hw, native mask and operation order, FP32 TF32/reduction flags disabled, Flex IEEE, uncompiled GPU blocks, original GPU cache256 and Rust expanded cache161/four AVX2 threads.",
+    "minimality": "One native block per original-state arm and one cross-state GPU block. No layer8, layer9, embedding rerun, cropped tensors, replacement arithmetic, intervention sweep or changed tolerance is needed to partition the existing layer7 boundary difference.",
+    "stop_condition": "Any original-state control mismatch rejects the capture. A successful single decomposition ends this diagnostic; further localization requires a new evidence-based proposal.",
+    "acceptance_or_execution_authorized": false
+  },
+  "limits": [
+    "This is a proposed diagnostic, not a model qualification or production change; all frozen numerical gates remain unchanged.",
+    "Historical trace startup/build provenance gaps remain. Existing exact controls and pinned payloads must be preserved in any future capture.",
+    "The inspected region is bounded to embedding/layers0–7 at row112 plus three144-row hidden error summaries. This was not a full-model sweep.",
+    "No GPU/CPU model inference, builds, tests, tensor modification or tolerance calibration occurred."
+  ]
+}

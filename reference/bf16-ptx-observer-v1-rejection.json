@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "status": "rejected_stores_only_ptx_observer",
+  "accepted": false,
+  "native_intermediates_accepted": false,
+  "report_path": "artifacts/reference/bf16-ptx-observer-v1/report.json",
+  "report_sha256": "c0f06b09d76daa5e34bcda6a5c0d5a6811873d79440ab0eb4a719fad9b35a501",
+  "phase": "single_assembly",
+  "assembler_invocations": 1,
+  "observer_kernel_launches": 0,
+  "case_count": 0,
+  "reason": "RuntimeError('Machine arithmetic inventory changed; stop before launch')",
+  "machine_arithmetic_delta": {
+    "added": [
+      {
+        "opcode": "FADD",
+        "immediates": [],
+        "count": 1
+      }
+    ],
+    "removed": []
+  },
+  "checks": {
+    "machine_arithmetic_inventory_exact": false
+  },
+  "source_window_unchanged": true,
+  "input_window_unchanged": true,
+  "candidate_sha256": "46fa0c3e0586e71d7a26f3dede80da363adceeddd4875101bfd114972f7317c2",
+  "spec_sha256": "a4cd0b35cd14e689bae3160261a0d8a7b383f2bc2b67137c79dd8c0b012445c8",
+  "roundtrip_report_sha256": "461afe06cdec2d84e8d3c509be9b36edb0f9c8017677d6dd7dc191b0908e4c6d",
+  "review_receipt": {
+    "path": "reference/bf16-ptx-observer-independent-review-v1.json",
+    "sha256": "239e02f66c6e0d491f4a37db3b82133ae795b6842574c97a166204092557c94b"
+  },
+  "artifacts": {
+    "mapping.json": {
+      "sha256": "f73894756d9e69623b23a768de937ef38d933552db062d12bd9cb7afb3b299fd",
+      "bytes": 47610
+    },
+    "observer.cubin": {
+      "sha256": "326749cdd1983ad2e389f8350fbb83081c6868261ccf1003f1564d4f53e7a40a",
+      "bytes": 879664
+    },
+    "observer.ptx": {
+      "sha256": "46fa0c3e0586e71d7a26f3dede80da363adceeddd4875101bfd114972f7317c2",
+      "bytes": 745682
+    },
+    "observer.sass": {
+      "sha256": "4b8211636e01795a316ec33514351c659d97c1f9818b0c8dd914787b037f58dc",
+      "bytes": 6020264
+    },
+    "original.sass": {
+      "sha256": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d",
+      "bytes": 4204422
+    },
+    "ptxas.stderr.txt": {
+      "sha256": "5d9bb4619de927b5d5fa05ae2b1faab8c715cf8d307f3a023de56463392fb102",
+      "bytes": 434
+    },
+    "restored-original.ptx": {
+      "sha256": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+      "bytes": 582922
+    }
+  },
+  "qualification": "Fail-closed pre-launch rejection under unchanged prospective machine-inventory gate. No observer kernel ran, no intermediate tensors were accepted, and no retry/variant/assembler-flag sweep occurred. Full output equality was not evaluated for this rejected candidate. The accepted unmodified PTX control remains valid; no BF16 model parity or production change is claimed."
+}

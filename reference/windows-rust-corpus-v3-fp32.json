@@ -1,0 +1,3780 @@
+{
+  "schema_version": 1,
+  "status": "partial",
+  "manifest": "reference/corpus-v3-evaluation-lock.json",
+  "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+  "gpu_run": "artifacts/reference/corpus-v3-fp32-4096/run.json",
+  "gpu_run_sha256": "3adceaec8d1268d2ecb7a26fda523471763e867aeab725023fa31cf6e75e24c9",
+  "cpu_run": "artifacts/cpu/corpus-v3-fp32-4096/run.json",
+  "cpu_run_sha256": "d00e1d4ee70d693caedc82b4951da924cc1370f85b99e5032ed3dae24a46d210",
+  "cpu_contract": {
+    "backend": "avx2",
+    "cpu_label": "Ryzen 9 7950X",
+    "environment_label": "native Windows functional corpus run; concurrent GPU/reference development; not performance measurement",
+    "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "options": {
+      "max_dimension": 1536,
+      "max_new_tokens": 4096,
+      "min_dimension": 64
+    },
+    "precision": "fp32",
+    "source_sha256": {
+      "bf16_attention": "abfd6a5292fb9926efa22170914e70a5176b9531c2acd02c13bc8b02b33ebcdb",
+      "bf16_kernels": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "bf16_model": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+      "bf16_ops": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+      "bf16_runner": "431b101f6705c108225d64aa58875fcdd49ae51196544bc230c09f65fdc2bc31",
+      "config": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+      "harness": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+      "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+      "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "model": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+      "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "runner": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+      "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+    },
+    "threads": 16,
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "gpu_configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+    "max_new_tokens": 4096,
+    "max_dimension": 1536,
+    "min_dimension": 64,
+    "precision": "fp32",
+    "tf32": false,
+    "flex_float32_precision": "ieee",
+    "compiled_blocks": false
+  },
+  "expected_pages": 200,
+  "compared_pages": 27,
+  "exact_pages": 25,
+  "compared_gpu_tokens": 26462,
+  "missing_cpu": [
+    "025952623c446940",
+    "b1a0b17b614a7414",
+    "4859de1c4651176f",
+    "2d30fe54ae8362d0",
+    "f0799a7759e76f5a",
+    "da622e58807d169b",
+    "fe584448a68feccc",
+    "c66d7d45b4fc6afa",
+    "77d1a631de42a374",
+    "b09cd3812412dc2f",
+    "fcca8bb5eba42773",
+    "f7e14bb7e5347e5a",
+    "54ce52c8440e5b07",
+    "7f9ac78fb67206c5",
+    "c3f6a9d3aabf90b3",
+    "844ccd0487b3e263",
+    "23af6bf2d434c78e",
+    "187f6d6ca98ed0e3",
+    "ad8f35d9a6c3b450",
+    "e156da7301d3ffcc",
+    "89178113a93d758c",
+    "93c5005040ffbf60",
+    "5be492d9c02d126f",
+    "39c58e05be54f821",
+    "f499a8b49a4d5cff",
+    "d1cb79bd8e2b9c80",
+    "7bd0396eed5dea38",
+    "68888cd655330728",
+    "d6f54ecdea2b1471",
+    "294d86aed8321d0e",
+    "403302040c077bea",
+    "151a0cfa48cf1769",
+    "5a457532f781410c",
+    "4a4c5601bd018c71",
+    "e8b834cd8934c2b9",
+    "50d08763f1046e55",
+    "f5e104b6ac2f1334",
+    "d1c3b57fcf3b34d0",
+    "e144f6bd595875fa",
+    "d87d7d4a2a9e9f91",
+    "0a7e47b5da583f44",
+    "c436f01d5ffc71a8",
+    "55279fb67c75c5c0",
+    "40795db0909fbe95",
+    "ce7c508feb05c17b",
+    "2fb1bc11117c0816",
+    "cac43a14386ee924",
+    "c6be986ca246e599",
+    "e2ab9c3c2275567e",
+    "5eb8d19c325ca930",
+    "36935a3c6ec7da45",
+    "52fbcffaa999f1bc",
+    "1a23dec12a8adf67",
+    "5c454b69231235c0",
+    "6371dbc6fcd684ed",
+    "8681339c81bb8b9f",
+    "828337ae83fda500",
+    "bb595678ba18ca3a",
+    "4f020f0e235a1652",
+    "7f5fe0454161473c",
+    "2c243b31d36eb729",
+    "e9518d9692e6dbf1",
+    "68a0f0e94a55d7ae",
+    "9d7921ca42b8db94",
+    "dfe46af27564c617",
+    "a869099a87672885",
+    "40a7072062fa3ecc",
+    "8c88857097905bb5",
+    "a5c0f5f013640adf",
+    "3157eeee5065f560",
+    "86d2c14d68209bc2",
+    "1af66c109c58d9bb",
+    "fd3b798c27aebe5d",
+    "1c5ee6eba8e8afc8",
+    "fb61c4e771de0d63",
+    "92a8e5b8c7d1af2d",
+    "8b341e5bf9448bb8",
+    "dbed8bd8b600dbce",
+    "9aead3a40a262f8d",
+    "50d2711a3bd0781f",
+    "bf6996c5652b4f13",
+    "6e58e3b7f7103dd3",
+    "21c2ec8b23b930b9",
+    "cf3ef52a9a29af38",
+    "2dfbb190440a94e1",
+    "8df9071369c89401",
+    "12650a5d74e68f89",
+    "9a210881900b3a74",
+    "91c0874a5b40b3fe",
+    "7f021ac68ad9d8c2",
+    "bb5fce54d1b5bdd6",
+    "4f1ef5c5cd44a264",
+    "1efc3b48d492e8a7",
+    "03307afa4238d7b6",
+    "8655f1fcf0c30772",
+    "dd3fea2922b9b8f1",
+    "7e622597f347e27b",
+    "d65269622822b19c",
+    "641427237afb89b0",
+    "d4f0b9ee4f7e19c1",
+    "5e0d7be91a9e94a2",
+    "c5252697867efc37",
+    "ef4091ffa4070c64",
+    "7b96a37d19df16d4",
+    "1e54f8012083d7ba",
+    "1a726164d4edd20f",
+    "3c43e8203abbdd4e",
+    "bc59f7d5748699aa",
+    "3463b9514056e178",
+    "4e4fe6800b7a8b6a",
+    "ebac2ad1cac11a99",
+    "771a7b411be45f59",
+    "e97a2c6b30962d09",
+    "321890dd7a46dd14",
+    "3f0a67c0a2253442",
+    "da878ac1f111bfdf",
+    "042828877885d53b",
+    "4c873a8216831e39",
+    "f75c4a0b98e45ab3",
+    "a892dd3ad80315cf",
+    "95928a9b09ccac9e",
+    "f63cadd85b7b8464",
+    "7d3079c435c924f5",
+    "8d507cb948a3f483",
+    "9907b1bad30d9587",
+    "ea3f532396472d10",
+    "d3e80f7a9b5303f4",
+    "f075dee2a220b965",
+    "f025d54e23709cb4",
+    "f1f669a9c1d1c1c4",
+    "eb6454ce20b1956d",
+    "3b4c4723ddc644c1",
+    "a547a4b65af3f8ad",
+    "81cfaed4bcada79c",
+    "02bb22f952601ecb",
+    "51778c5c892fb856",
+    "8afb5d6beedaa991",
+    "1536cbd02949ee7f",
+    "af3f8d9ecd163300",
+    "a66e863691d6d5fc",
+    "8fc5bb006140d7ad",
+    "e337239a8e3a5ea1",
+    "1d00c09d2adfdd57",
+    "55110fa868430820",
+    "e586b78149575805",
+    "4a0eb5b881f60e69",
+    "9da78ba72f6bac61",
+    "92668f319a6e3175",
+    "ad95b47493ebac3e",
+    "b395b62bb76e1774",
+    "56e1282a2268c956",
+    "a103832f91374404",
+    "d72e3ffd8d669bc3",
+    "3f56ca596131970c",
+    "ec5aee1120c8a435",
+    "244cf71a36533eca",
+    "65bd357612c8a36e",
+    "be9236501d5c765b",
+    "ee79e56940cb7c55",
+    "c5d589e4338bce41",
+    "843cd8994378b31b",
+    "caa02ee83b64c5f8",
+    "abb3c52d22c042fe",
+    "f66ef24218a58f8c",
+    "377da6bb6c35ac09",
+    "d4bcf338719dc18f",
+    "3f294b5e60a0c2d4",
+    "b840b847d2aef111",
+    "62c224ec520a4477",
+    "282f669b2272cca9",
+    "f82398d5aeb5792c",
+    "7946549063bb5784",
+    "41f6249b4e96cee1"
+  ],
+  "missing_gpu": [
+    "7bd0396eed5dea38",
+    "68888cd655330728",
+    "d6f54ecdea2b1471",
+    "294d86aed8321d0e",
+    "403302040c077bea",
+    "151a0cfa48cf1769",
+    "5a457532f781410c",
+    "4a4c5601bd018c71",
+    "e8b834cd8934c2b9",
+    "50d08763f1046e55",
+    "f5e104b6ac2f1334",
+    "d1c3b57fcf3b34d0",
+    "e144f6bd595875fa",
+    "d87d7d4a2a9e9f91",
+    "0a7e47b5da583f44",
+    "c436f01d5ffc71a8",
+    "55279fb67c75c5c0",
+    "40795db0909fbe95",
+    "ce7c508feb05c17b",
+    "2fb1bc11117c0816",
+    "cac43a14386ee924",
+    "c6be986ca246e599",
+    "e2ab9c3c2275567e",
+    "5eb8d19c325ca930",
+    "36935a3c6ec7da45",
+    "52fbcffaa999f1bc",
+    "1a23dec12a8adf67",
+    "5c454b69231235c0",
+    "6371dbc6fcd684ed",
+    "8681339c81bb8b9f",
+    "828337ae83fda500",
+    "bb595678ba18ca3a",
+    "4f020f0e235a1652",
+    "7f5fe0454161473c",
+    "2c243b31d36eb729",
+    "e9518d9692e6dbf1",
+    "68a0f0e94a55d7ae",
+    "9d7921ca42b8db94",
+    "dfe46af27564c617",
+    "a869099a87672885",
+    "40a7072062fa3ecc",
+    "8c88857097905bb5",
+    "a5c0f5f013640adf",
+    "3157eeee5065f560",
+    "86d2c14d68209bc2",
+    "1af66c109c58d9bb",
+    "fd3b798c27aebe5d",
+    "1c5ee6eba8e8afc8",
+    "fb61c4e771de0d63",
+    "92a8e5b8c7d1af2d",
+    "8b341e5bf9448bb8",
+    "dbed8bd8b600dbce",
+    "9aead3a40a262f8d",
+    "50d2711a3bd0781f",
+    "bf6996c5652b4f13",
+    "6e58e3b7f7103dd3",
+    "21c2ec8b23b930b9",
+    "cf3ef52a9a29af38",
+    "2dfbb190440a94e1",
+    "8df9071369c89401",
+    "12650a5d74e68f89",
+    "9a210881900b3a74",
+    "91c0874a5b40b3fe",
+    "7f021ac68ad9d8c2",
+    "bb5fce54d1b5bdd6",
+    "4f1ef5c5cd44a264",
+    "1efc3b48d492e8a7",
+    "03307afa4238d7b6",
+    "8655f1fcf0c30772",
+    "dd3fea2922b9b8f1",
+    "7e622597f347e27b",
+    "d65269622822b19c",
+    "641427237afb89b0",
+    "d4f0b9ee4f7e19c1",
+    "5e0d7be91a9e94a2",
+    "c5252697867efc37",
+    "ef4091ffa4070c64",
+    "7b96a37d19df16d4",
+    "1e54f8012083d7ba",
+    "1a726164d4edd20f",
+    "3c43e8203abbdd4e",
+    "bc59f7d5748699aa",
+    "3463b9514056e178",
+    "4e4fe6800b7a8b6a",
+    "ebac2ad1cac11a99",
+    "771a7b411be45f59",
+    "e97a2c6b30962d09",
+    "321890dd7a46dd14",
+    "3f0a67c0a2253442",
+    "da878ac1f111bfdf",
+    "042828877885d53b",
+    "4c873a8216831e39",
+    "f75c4a0b98e45ab3",
+    "a892dd3ad80315cf",
+    "95928a9b09ccac9e",
+    "f63cadd85b7b8464",
+    "7d3079c435c924f5",
+    "8d507cb948a3f483",
+    "9907b1bad30d9587",
+    "ea3f532396472d10",
+    "d3e80f7a9b5303f4",
+    "f075dee2a220b965",
+    "f025d54e23709cb4",
+    "f1f669a9c1d1c1c4",
+    "eb6454ce20b1956d",
+    "3b4c4723ddc644c1",
+    "a547a4b65af3f8ad",
+    "81cfaed4bcada79c",
+    "02bb22f952601ecb",
+    "51778c5c892fb856",
+    "8afb5d6beedaa991",
+    "1536cbd02949ee7f",
+    "af3f8d9ecd163300",
+    "a66e863691d6d5fc",
+    "8fc5bb006140d7ad",
+    "e337239a8e3a5ea1",
+    "1d00c09d2adfdd57",
+    "55110fa868430820",
+    "e586b78149575805",
+    "4a0eb5b881f60e69",
+    "9da78ba72f6bac61",
+    "92668f319a6e3175",
+    "ad95b47493ebac3e",
+    "b395b62bb76e1774",
+    "56e1282a2268c956",
+    "a103832f91374404",
+    "d72e3ffd8d669bc3",
+    "3f56ca596131970c",
+    "ec5aee1120c8a435",
+    "244cf71a36533eca",
+    "65bd357612c8a36e",
+    "be9236501d5c765b",
+    "ee79e56940cb7c55",
+    "c5d589e4338bce41",
+    "843cd8994378b31b",
+    "caa02ee83b64c5f8",
+    "abb3c52d22c042fe",
+    "f66ef24218a58f8c",
+    "377da6bb6c35ac09",
+    "d4bcf338719dc18f",
+    "3f294b5e60a0c2d4",
+    "b840b847d2aef111",
+    "62c224ec520a4477",
+    "282f669b2272cca9",
+    "f82398d5aeb5792c",
+    "7946549063bb5784",
+    "41f6249b4e96cee1"
+  ],
+  "missing_cpu_count": 173,
+  "missing_gpu_count": 147,
+  "failed_cpu_pages": [],
+  "failed_gpu_pages": [],
+  "failed_cpu_count": 0,
+  "failed_gpu_count": 0,
+  "provenance_passed": true,
+  "completed_smoke_parity_passed": false,
+  "checks": [
+    {
+      "name": "gpu.model_revision",
+      "passed": true,
+      "actual": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "expected": "fe757d59ecd79d4d68760162306a70a015761ad9"
+    },
+    {
+      "name": "cpu.model_revision",
+      "passed": true,
+      "actual": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "expected": "fe757d59ecd79d4d68760162306a70a015761ad9"
+    },
+    {
+      "name": "gpu.weights_sha256",
+      "passed": true,
+      "actual": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "expected": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    {
+      "name": "cpu.weights_sha256",
+      "passed": true,
+      "actual": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "expected": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    {
+      "name": "gpu.manifest_sha256",
+      "passed": true,
+      "actual": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "expected": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f"
+    },
+    {
+      "name": "cpu.manifest_sha256",
+      "passed": true,
+      "actual": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "expected": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f"
+    },
+    {
+      "name": "gpu.precision",
+      "passed": true,
+      "actual": "fp32",
+      "expected": "fp32"
+    },
+    {
+      "name": "cpu.precision",
+      "passed": true,
+      "actual": "fp32",
+      "expected": "fp32"
+    },
+    {
+      "name": "options.max_dimension",
+      "passed": true,
+      "actual": 1536,
+      "expected": 1536
+    },
+    {
+      "name": "options.min_dimension",
+      "passed": true,
+      "actual": 64,
+      "expected": 64
+    },
+    {
+      "name": "options.max_new_tokens",
+      "passed": true,
+      "actual": 4096,
+      "expected": 4096
+    },
+    {
+      "name": "gpu.tf32",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "gpu.flex_float32_precision",
+      "passed": true,
+      "actual": "ieee",
+      "expected": "ieee"
+    },
+    {
+      "name": "cpu.teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "cpu.contract_sha256",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "465b09aa350ba9b8.canonical_png",
+      "passed": true,
+      "actual": "f9ea3e671e8c797cd50adb258a476251281812432835c74d7245e52f7af15a26",
+      "expected": "f9ea3e671e8c797cd50adb258a476251281812432835c74d7245e52f7af15a26"
+    },
+    {
+      "name": "465b09aa350ba9b8.canonical_rgb",
+      "passed": true,
+      "actual": "5c5d08706b9d04d304ba658a10d1de32f5798261f3e0c39569a1cee0cc1a30b1",
+      "expected": "5c5d08706b9d04d304ba658a10d1de32f5798261f3e0c39569a1cee0cc1a30b1"
+    },
+    {
+      "name": "465b09aa350ba9b8.ground_truth",
+      "passed": true,
+      "actual": "2c4785922d1b865a1db76709a86fec292ea61a118003a9eeb7b3bbd2b764a2de",
+      "expected": "2c4785922d1b865a1db76709a86fec292ea61a118003a9eeb7b3bbd2b764a2de"
+    },
+    {
+      "name": "465b09aa350ba9b8.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "465b09aa350ba9b8.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "465b09aa350ba9b8.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+      "expected": "omnidocbench:page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png"
+    },
+    {
+      "name": "465b09aa350ba9b8.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+      "expected": "omnidocbench:page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png"
+    },
+    {
+      "name": "465b09aa350ba9b8.gpu_input",
+      "passed": true,
+      "actual": "5c5d08706b9d04d304ba658a10d1de32f5798261f3e0c39569a1cee0cc1a30b1",
+      "expected": "5c5d08706b9d04d304ba658a10d1de32f5798261f3e0c39569a1cee0cc1a30b1"
+    },
+    {
+      "name": "465b09aa350ba9b8.cpu_input",
+      "passed": true,
+      "actual": "f9ea3e671e8c797cd50adb258a476251281812432835c74d7245e52f7af15a26",
+      "expected": "f9ea3e671e8c797cd50adb258a476251281812432835c74d7245e52f7af15a26"
+    },
+    {
+      "name": "465b09aa350ba9b8.cpu_ground_truth",
+      "passed": true,
+      "actual": "2c4785922d1b865a1db76709a86fec292ea61a118003a9eeb7b3bbd2b764a2de",
+      "expected": "2c4785922d1b865a1db76709a86fec292ea61a118003a9eeb7b3bbd2b764a2de"
+    },
+    {
+      "name": "465b09aa350ba9b8.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "465b09aa350ba9b8.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "465b09aa350ba9b8.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 244,
+      "expected": 244
+    },
+    {
+      "name": "982038e172a15db6.canonical_png",
+      "passed": true,
+      "actual": "8de82882bab67331ab537ece2c3c16e2661b5308c27753b9772a3343349542b3",
+      "expected": "8de82882bab67331ab537ece2c3c16e2661b5308c27753b9772a3343349542b3"
+    },
+    {
+      "name": "982038e172a15db6.canonical_rgb",
+      "passed": true,
+      "actual": "560a9244e382e65830c2eadfd9d684891ad1ab428e5e9678510468099d2a5de7",
+      "expected": "560a9244e382e65830c2eadfd9d684891ad1ab428e5e9678510468099d2a5de7"
+    },
+    {
+      "name": "982038e172a15db6.ground_truth",
+      "passed": true,
+      "actual": "6ac4251920f9f58a6de291698a674d2973f0b07a100629b73ae402655aa287a9",
+      "expected": "6ac4251920f9f58a6de291698a674d2973f0b07a100629b73ae402655aa287a9"
+    },
+    {
+      "name": "982038e172a15db6.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "982038e172a15db6.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "982038e172a15db6.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+      "expected": "omnidocbench:page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png"
+    },
+    {
+      "name": "982038e172a15db6.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+      "expected": "omnidocbench:page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png"
+    },
+    {
+      "name": "982038e172a15db6.gpu_input",
+      "passed": true,
+      "actual": "560a9244e382e65830c2eadfd9d684891ad1ab428e5e9678510468099d2a5de7",
+      "expected": "560a9244e382e65830c2eadfd9d684891ad1ab428e5e9678510468099d2a5de7"
+    },
+    {
+      "name": "982038e172a15db6.cpu_input",
+      "passed": true,
+      "actual": "8de82882bab67331ab537ece2c3c16e2661b5308c27753b9772a3343349542b3",
+      "expected": "8de82882bab67331ab537ece2c3c16e2661b5308c27753b9772a3343349542b3"
+    },
+    {
+      "name": "982038e172a15db6.cpu_ground_truth",
+      "passed": true,
+      "actual": "6ac4251920f9f58a6de291698a674d2973f0b07a100629b73ae402655aa287a9",
+      "expected": "6ac4251920f9f58a6de291698a674d2973f0b07a100629b73ae402655aa287a9"
+    },
+    {
+      "name": "982038e172a15db6.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "982038e172a15db6.prefix_tokens",
+      "passed": true,
+      "actual": 3495,
+      "expected": 3495
+    },
+    {
+      "name": "982038e172a15db6.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 2665,
+      "expected": 2665
+    },
+    {
+      "name": "95232a60600389ca.canonical_png",
+      "passed": true,
+      "actual": "378526bfc79b1db1e3c6cd77a2a4b828fb20bf4d8a8d85b40227dd0395523aa8",
+      "expected": "378526bfc79b1db1e3c6cd77a2a4b828fb20bf4d8a8d85b40227dd0395523aa8"
+    },
+    {
+      "name": "95232a60600389ca.canonical_rgb",
+      "passed": true,
+      "actual": "085d98b916253ccecce71bb33b6b51bfa2cef83296dee4e7ca837af878337c19",
+      "expected": "085d98b916253ccecce71bb33b6b51bfa2cef83296dee4e7ca837af878337c19"
+    },
+    {
+      "name": "95232a60600389ca.ground_truth",
+      "passed": true,
+      "actual": "9f874378c25537ee3a14980ff9b672ce9e0a6de9adf4ad75c421a65c6234268f",
+      "expected": "9f874378c25537ee3a14980ff9b672ce9e0a6de9adf4ad75c421a65c6234268f"
+    },
+    {
+      "name": "95232a60600389ca.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "95232a60600389ca.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "95232a60600389ca.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+      "expected": "omnidocbench:page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png"
+    },
+    {
+      "name": "95232a60600389ca.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+      "expected": "omnidocbench:page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png"
+    },
+    {
+      "name": "95232a60600389ca.gpu_input",
+      "passed": true,
+      "actual": "085d98b916253ccecce71bb33b6b51bfa2cef83296dee4e7ca837af878337c19",
+      "expected": "085d98b916253ccecce71bb33b6b51bfa2cef83296dee4e7ca837af878337c19"
+    },
+    {
+      "name": "95232a60600389ca.cpu_input",
+      "passed": true,
+      "actual": "378526bfc79b1db1e3c6cd77a2a4b828fb20bf4d8a8d85b40227dd0395523aa8",
+      "expected": "378526bfc79b1db1e3c6cd77a2a4b828fb20bf4d8a8d85b40227dd0395523aa8"
+    },
+    {
+      "name": "95232a60600389ca.cpu_ground_truth",
+      "passed": true,
+      "actual": "9f874378c25537ee3a14980ff9b672ce9e0a6de9adf4ad75c421a65c6234268f",
+      "expected": "9f874378c25537ee3a14980ff9b672ce9e0a6de9adf4ad75c421a65c6234268f"
+    },
+    {
+      "name": "95232a60600389ca.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "95232a60600389ca.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "95232a60600389ca.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 416,
+      "expected": 416
+    },
+    {
+      "name": "e4fb4f3b184b6770.canonical_png",
+      "passed": true,
+      "actual": "5ac7897fca4a4957cb27275458f2984c0e2dbf65364e2e9053cbc8b99c0e260c",
+      "expected": "5ac7897fca4a4957cb27275458f2984c0e2dbf65364e2e9053cbc8b99c0e260c"
+    },
+    {
+      "name": "e4fb4f3b184b6770.canonical_rgb",
+      "passed": true,
+      "actual": "4e6c32bef19c36335f44479caca0dc52f0957ff76e8f92c418952b1be458bb5c",
+      "expected": "4e6c32bef19c36335f44479caca0dc52f0957ff76e8f92c418952b1be458bb5c"
+    },
+    {
+      "name": "e4fb4f3b184b6770.ground_truth",
+      "passed": true,
+      "actual": "520aae784ba12da7181cf15b301dd8355d4048c8c5d169a91c68a197ac3a741c",
+      "expected": "520aae784ba12da7181cf15b301dd8355d4048c8c5d169a91c68a197ac3a741c"
+    },
+    {
+      "name": "e4fb4f3b184b6770.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "e4fb4f3b184b6770.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "e4fb4f3b184b6770.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2211.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2211.jpg"
+    },
+    {
+      "name": "e4fb4f3b184b6770.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2211.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2211.jpg"
+    },
+    {
+      "name": "e4fb4f3b184b6770.gpu_input",
+      "passed": true,
+      "actual": "4e6c32bef19c36335f44479caca0dc52f0957ff76e8f92c418952b1be458bb5c",
+      "expected": "4e6c32bef19c36335f44479caca0dc52f0957ff76e8f92c418952b1be458bb5c"
+    },
+    {
+      "name": "e4fb4f3b184b6770.cpu_input",
+      "passed": true,
+      "actual": "5ac7897fca4a4957cb27275458f2984c0e2dbf65364e2e9053cbc8b99c0e260c",
+      "expected": "5ac7897fca4a4957cb27275458f2984c0e2dbf65364e2e9053cbc8b99c0e260c"
+    },
+    {
+      "name": "e4fb4f3b184b6770.cpu_ground_truth",
+      "passed": true,
+      "actual": "520aae784ba12da7181cf15b301dd8355d4048c8c5d169a91c68a197ac3a741c",
+      "expected": "520aae784ba12da7181cf15b301dd8355d4048c8c5d169a91c68a197ac3a741c"
+    },
+    {
+      "name": "e4fb4f3b184b6770.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "e4fb4f3b184b6770.prefix_tokens",
+      "passed": true,
+      "actual": 5079,
+      "expected": 5079
+    },
+    {
+      "name": "e4fb4f3b184b6770.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 963,
+      "expected": 963
+    },
+    {
+      "name": "a9534e9adda14a97.canonical_png",
+      "passed": true,
+      "actual": "c6fd49c7c566d058d46dd6e858d36714e958a8e07c64c201830960192cc603f7",
+      "expected": "c6fd49c7c566d058d46dd6e858d36714e958a8e07c64c201830960192cc603f7"
+    },
+    {
+      "name": "a9534e9adda14a97.canonical_rgb",
+      "passed": true,
+      "actual": "59ca5a517923132c5f1c5a250a1413adcfffc8122fc84793cab4e355a11b3bd9",
+      "expected": "59ca5a517923132c5f1c5a250a1413adcfffc8122fc84793cab4e355a11b3bd9"
+    },
+    {
+      "name": "a9534e9adda14a97.ground_truth",
+      "passed": true,
+      "actual": "01ff52a3c704f6103c342e9014fd89420c526083e08bc82f2f60d3dae9855a07",
+      "expected": "01ff52a3c704f6103c342e9014fd89420c526083e08bc82f2f60d3dae9855a07"
+    },
+    {
+      "name": "a9534e9adda14a97.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "a9534e9adda14a97.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "a9534e9adda14a97.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_85.jpg"
+    },
+    {
+      "name": "a9534e9adda14a97.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_85.jpg"
+    },
+    {
+      "name": "a9534e9adda14a97.gpu_input",
+      "passed": true,
+      "actual": "59ca5a517923132c5f1c5a250a1413adcfffc8122fc84793cab4e355a11b3bd9",
+      "expected": "59ca5a517923132c5f1c5a250a1413adcfffc8122fc84793cab4e355a11b3bd9"
+    },
+    {
+      "name": "a9534e9adda14a97.cpu_input",
+      "passed": true,
+      "actual": "c6fd49c7c566d058d46dd6e858d36714e958a8e07c64c201830960192cc603f7",
+      "expected": "c6fd49c7c566d058d46dd6e858d36714e958a8e07c64c201830960192cc603f7"
+    },
+    {
+      "name": "a9534e9adda14a97.cpu_ground_truth",
+      "passed": true,
+      "actual": "01ff52a3c704f6103c342e9014fd89420c526083e08bc82f2f60d3dae9855a07",
+      "expected": "01ff52a3c704f6103c342e9014fd89420c526083e08bc82f2f60d3dae9855a07"
+    },
+    {
+      "name": "a9534e9adda14a97.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "a9534e9adda14a97.prefix_tokens",
+      "passed": true,
+      "actual": 6928,
+      "expected": 6928
+    },
+    {
+      "name": "a9534e9adda14a97.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 33,
+      "expected": 33
+    },
+    {
+      "name": "f49121f28edbfb30.canonical_png",
+      "passed": true,
+      "actual": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91",
+      "expected": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91"
+    },
+    {
+      "name": "f49121f28edbfb30.canonical_rgb",
+      "passed": true,
+      "actual": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328",
+      "expected": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328"
+    },
+    {
+      "name": "f49121f28edbfb30.ground_truth",
+      "passed": true,
+      "actual": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e",
+      "expected": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e"
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg"
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_input",
+      "passed": true,
+      "actual": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328",
+      "expected": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_input",
+      "passed": true,
+      "actual": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91",
+      "expected": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_ground_truth",
+      "passed": true,
+      "actual": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e",
+      "expected": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "f49121f28edbfb30.prefix_tokens",
+      "passed": true,
+      "actual": 4913,
+      "expected": 4913
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 383,
+      "expected": 383
+    },
+    {
+      "name": "7c29550143111265.canonical_png",
+      "passed": true,
+      "actual": "092be04274820b93d806d7b5ad91c2b5d0819f0b3ad86c085b545346cb2a08f7",
+      "expected": "092be04274820b93d806d7b5ad91c2b5d0819f0b3ad86c085b545346cb2a08f7"
+    },
+    {
+      "name": "7c29550143111265.canonical_rgb",
+      "passed": true,
+      "actual": "646ca786e3fb8d4a7b474a84ef79b6005671c07fa76bf0d161cfbdc6b7b30c11",
+      "expected": "646ca786e3fb8d4a7b474a84ef79b6005671c07fa76bf0d161cfbdc6b7b30c11"
+    },
+    {
+      "name": "7c29550143111265.ground_truth",
+      "passed": true,
+      "actual": "2bc5b9b8bfdc16469853e70da61a1346760e4706577ff7cdee7d5c866907b2bd",
+      "expected": "2bc5b9b8bfdc16469853e70da61a1346760e4706577ff7cdee7d5c866907b2bd"
+    },
+    {
+      "name": "7c29550143111265.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "7c29550143111265.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "7c29550143111265.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_2005_QP.pdf_5.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_2005_QP.pdf_5.jpg"
+    },
+    {
+      "name": "7c29550143111265.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_2005_QP.pdf_5.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_2005_QP.pdf_5.jpg"
+    },
+    {
+      "name": "7c29550143111265.gpu_input",
+      "passed": true,
+      "actual": "646ca786e3fb8d4a7b474a84ef79b6005671c07fa76bf0d161cfbdc6b7b30c11",
+      "expected": "646ca786e3fb8d4a7b474a84ef79b6005671c07fa76bf0d161cfbdc6b7b30c11"
+    },
+    {
+      "name": "7c29550143111265.cpu_input",
+      "passed": true,
+      "actual": "092be04274820b93d806d7b5ad91c2b5d0819f0b3ad86c085b545346cb2a08f7",
+      "expected": "092be04274820b93d806d7b5ad91c2b5d0819f0b3ad86c085b545346cb2a08f7"
+    },
+    {
+      "name": "7c29550143111265.cpu_ground_truth",
+      "passed": true,
+      "actual": "2bc5b9b8bfdc16469853e70da61a1346760e4706577ff7cdee7d5c866907b2bd",
+      "expected": "2bc5b9b8bfdc16469853e70da61a1346760e4706577ff7cdee7d5c866907b2bd"
+    },
+    {
+      "name": "7c29550143111265.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "7c29550143111265.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "7c29550143111265.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 80,
+      "expected": 80
+    },
+    {
+      "name": "59eb719b39164f3e.canonical_png",
+      "passed": true,
+      "actual": "a91b11a84cc32ff17c5ede5f2f6e93c6b1008724cc1ebfa4d9b5718dd7f9f3ce",
+      "expected": "a91b11a84cc32ff17c5ede5f2f6e93c6b1008724cc1ebfa4d9b5718dd7f9f3ce"
+    },
+    {
+      "name": "59eb719b39164f3e.canonical_rgb",
+      "passed": true,
+      "actual": "e68ecad037a183e5cbfcf0038047f9736422f681837ab0a2add50d4218bf54e8",
+      "expected": "e68ecad037a183e5cbfcf0038047f9736422f681837ab0a2add50d4218bf54e8"
+    },
+    {
+      "name": "59eb719b39164f3e.ground_truth",
+      "passed": true,
+      "actual": "af0951d3c6aafdba99d7c0f4902db46a578aa773b3d239e0d944ba23a4eb4000",
+      "expected": "af0951d3c6aafdba99d7c0f4902db46a578aa773b3d239e0d944ba23a4eb4000"
+    },
+    {
+      "name": "59eb719b39164f3e.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "59eb719b39164f3e.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "59eb719b39164f3e.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_601.jpg"
+    },
+    {
+      "name": "59eb719b39164f3e.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_601.jpg"
+    },
+    {
+      "name": "59eb719b39164f3e.gpu_input",
+      "passed": true,
+      "actual": "e68ecad037a183e5cbfcf0038047f9736422f681837ab0a2add50d4218bf54e8",
+      "expected": "e68ecad037a183e5cbfcf0038047f9736422f681837ab0a2add50d4218bf54e8"
+    },
+    {
+      "name": "59eb719b39164f3e.cpu_input",
+      "passed": true,
+      "actual": "a91b11a84cc32ff17c5ede5f2f6e93c6b1008724cc1ebfa4d9b5718dd7f9f3ce",
+      "expected": "a91b11a84cc32ff17c5ede5f2f6e93c6b1008724cc1ebfa4d9b5718dd7f9f3ce"
+    },
+    {
+      "name": "59eb719b39164f3e.cpu_ground_truth",
+      "passed": true,
+      "actual": "af0951d3c6aafdba99d7c0f4902db46a578aa773b3d239e0d944ba23a4eb4000",
+      "expected": "af0951d3c6aafdba99d7c0f4902db46a578aa773b3d239e0d944ba23a4eb4000"
+    },
+    {
+      "name": "59eb719b39164f3e.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "59eb719b39164f3e.prefix_tokens",
+      "passed": true,
+      "actual": 6640,
+      "expected": 6640
+    },
+    {
+      "name": "59eb719b39164f3e.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 103,
+      "expected": 103
+    },
+    {
+      "name": "4d3e077b20d3029c.canonical_png",
+      "passed": true,
+      "actual": "96ee91e133371a49f9e853d1ba4b1d847ecb548b69403ac3a54598a854d0ff1d",
+      "expected": "96ee91e133371a49f9e853d1ba4b1d847ecb548b69403ac3a54598a854d0ff1d"
+    },
+    {
+      "name": "4d3e077b20d3029c.canonical_rgb",
+      "passed": true,
+      "actual": "e1d005a8f4e249e1d85c36c021dce50d68c1ff249756b606310d101768bab7f3",
+      "expected": "e1d005a8f4e249e1d85c36c021dce50d68c1ff249756b606310d101768bab7f3"
+    },
+    {
+      "name": "4d3e077b20d3029c.ground_truth",
+      "passed": true,
+      "actual": "cf6c17429fe94c8d3bc22caf0d51da624ee279d8b573eb5adc0be532df949b93",
+      "expected": "cf6c17429fe94c8d3bc22caf0d51da624ee279d8b573eb5adc0be532df949b93"
+    },
+    {
+      "name": "4d3e077b20d3029c.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "4d3e077b20d3029c.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "4d3e077b20d3029c.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_467.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_467.jpg"
+    },
+    {
+      "name": "4d3e077b20d3029c.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_467.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_467.jpg"
+    },
+    {
+      "name": "4d3e077b20d3029c.gpu_input",
+      "passed": true,
+      "actual": "e1d005a8f4e249e1d85c36c021dce50d68c1ff249756b606310d101768bab7f3",
+      "expected": "e1d005a8f4e249e1d85c36c021dce50d68c1ff249756b606310d101768bab7f3"
+    },
+    {
+      "name": "4d3e077b20d3029c.cpu_input",
+      "passed": true,
+      "actual": "96ee91e133371a49f9e853d1ba4b1d847ecb548b69403ac3a54598a854d0ff1d",
+      "expected": "96ee91e133371a49f9e853d1ba4b1d847ecb548b69403ac3a54598a854d0ff1d"
+    },
+    {
+      "name": "4d3e077b20d3029c.cpu_ground_truth",
+      "passed": true,
+      "actual": "cf6c17429fe94c8d3bc22caf0d51da624ee279d8b573eb5adc0be532df949b93",
+      "expected": "cf6c17429fe94c8d3bc22caf0d51da624ee279d8b573eb5adc0be532df949b93"
+    },
+    {
+      "name": "4d3e077b20d3029c.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "4d3e077b20d3029c.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "4d3e077b20d3029c.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 269,
+      "expected": 269
+    },
+    {
+      "name": "034663d51f01ee0b.canonical_png",
+      "passed": true,
+      "actual": "83ef2e1c47c0478db6a37ca6ac859a73a1f3ea4d5c7175f43bf601da6b72c339",
+      "expected": "83ef2e1c47c0478db6a37ca6ac859a73a1f3ea4d5c7175f43bf601da6b72c339"
+    },
+    {
+      "name": "034663d51f01ee0b.canonical_rgb",
+      "passed": true,
+      "actual": "3f565af02d3562ee0977b5d81a5cbe8361df227085c81b550a359d766494e006",
+      "expected": "3f565af02d3562ee0977b5d81a5cbe8361df227085c81b550a359d766494e006"
+    },
+    {
+      "name": "034663d51f01ee0b.ground_truth",
+      "passed": true,
+      "actual": "18c59b5d6961be976c077cf790e9031c91c68df0e52f30bb92e6ba977d33c72d",
+      "expected": "18c59b5d6961be976c077cf790e9031c91c68df0e52f30bb92e6ba977d33c72d"
+    },
+    {
+      "name": "034663d51f01ee0b.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "034663d51f01ee0b.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "034663d51f01ee0b.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2825.jpg"
+    },
+    {
+      "name": "034663d51f01ee0b.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2825.jpg"
+    },
+    {
+      "name": "034663d51f01ee0b.gpu_input",
+      "passed": true,
+      "actual": "3f565af02d3562ee0977b5d81a5cbe8361df227085c81b550a359d766494e006",
+      "expected": "3f565af02d3562ee0977b5d81a5cbe8361df227085c81b550a359d766494e006"
+    },
+    {
+      "name": "034663d51f01ee0b.cpu_input",
+      "passed": true,
+      "actual": "83ef2e1c47c0478db6a37ca6ac859a73a1f3ea4d5c7175f43bf601da6b72c339",
+      "expected": "83ef2e1c47c0478db6a37ca6ac859a73a1f3ea4d5c7175f43bf601da6b72c339"
+    },
+    {
+      "name": "034663d51f01ee0b.cpu_ground_truth",
+      "passed": true,
+      "actual": "18c59b5d6961be976c077cf790e9031c91c68df0e52f30bb92e6ba977d33c72d",
+      "expected": "18c59b5d6961be976c077cf790e9031c91c68df0e52f30bb92e6ba977d33c72d"
+    },
+    {
+      "name": "034663d51f01ee0b.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "034663d51f01ee0b.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "034663d51f01ee0b.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 367,
+      "expected": 367
+    },
+    {
+      "name": "1798b29cb5373418.canonical_png",
+      "passed": true,
+      "actual": "e41b6374a31ee68ffcfde608af92ea78b37b45aaec0591fdedb5996eccf13153",
+      "expected": "e41b6374a31ee68ffcfde608af92ea78b37b45aaec0591fdedb5996eccf13153"
+    },
+    {
+      "name": "1798b29cb5373418.canonical_rgb",
+      "passed": true,
+      "actual": "5e132c0cc9e4f15026abf5f0409ed89e09b73715f84f7d5565be57665f199ddf",
+      "expected": "5e132c0cc9e4f15026abf5f0409ed89e09b73715f84f7d5565be57665f199ddf"
+    },
+    {
+      "name": "1798b29cb5373418.ground_truth",
+      "passed": true,
+      "actual": "eb5aab282a0afb0c09d4e06ff7290529cb68f79cdb1c36c341ab46db2f459076",
+      "expected": "eb5aab282a0afb0c09d4e06ff7290529cb68f79cdb1c36c341ab46db2f459076"
+    },
+    {
+      "name": "1798b29cb5373418.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "1798b29cb5373418.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "1798b29cb5373418.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3751.jpg"
+    },
+    {
+      "name": "1798b29cb5373418.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3751.jpg"
+    },
+    {
+      "name": "1798b29cb5373418.gpu_input",
+      "passed": true,
+      "actual": "5e132c0cc9e4f15026abf5f0409ed89e09b73715f84f7d5565be57665f199ddf",
+      "expected": "5e132c0cc9e4f15026abf5f0409ed89e09b73715f84f7d5565be57665f199ddf"
+    },
+    {
+      "name": "1798b29cb5373418.cpu_input",
+      "passed": true,
+      "actual": "e41b6374a31ee68ffcfde608af92ea78b37b45aaec0591fdedb5996eccf13153",
+      "expected": "e41b6374a31ee68ffcfde608af92ea78b37b45aaec0591fdedb5996eccf13153"
+    },
+    {
+      "name": "1798b29cb5373418.cpu_ground_truth",
+      "passed": true,
+      "actual": "eb5aab282a0afb0c09d4e06ff7290529cb68f79cdb1c36c341ab46db2f459076",
+      "expected": "eb5aab282a0afb0c09d4e06ff7290529cb68f79cdb1c36c341ab46db2f459076"
+    },
+    {
+      "name": "1798b29cb5373418.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "1798b29cb5373418.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "1798b29cb5373418.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 122,
+      "expected": 122
+    },
+    {
+      "name": "8b12f8b2f5f2304b.canonical_png",
+      "passed": true,
+      "actual": "5f921070456e8785d59e1c5bb3c2c086bb2a8f157e0cc8976f7bb2cb9ea635ce",
+      "expected": "5f921070456e8785d59e1c5bb3c2c086bb2a8f157e0cc8976f7bb2cb9ea635ce"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.canonical_rgb",
+      "passed": true,
+      "actual": "e73e6df2c12bd2a764a4f5688dae40ec454cc4f92e3b254a52cefd2d2564e6fe",
+      "expected": "e73e6df2c12bd2a764a4f5688dae40ec454cc4f92e3b254a52cefd2d2564e6fe"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.ground_truth",
+      "passed": true,
+      "actual": "83ddf8e068ba69815497acdeadf64a9fbc54adf3d83a110ae96db540aa897f6d",
+      "expected": "83ddf8e068ba69815497acdeadf64a9fbc54adf3d83a110ae96db540aa897f6d"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "8b12f8b2f5f2304b.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.gpu_input",
+      "passed": true,
+      "actual": "e73e6df2c12bd2a764a4f5688dae40ec454cc4f92e3b254a52cefd2d2564e6fe",
+      "expected": "e73e6df2c12bd2a764a4f5688dae40ec454cc4f92e3b254a52cefd2d2564e6fe"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.cpu_input",
+      "passed": true,
+      "actual": "5f921070456e8785d59e1c5bb3c2c086bb2a8f157e0cc8976f7bb2cb9ea635ce",
+      "expected": "5f921070456e8785d59e1c5bb3c2c086bb2a8f157e0cc8976f7bb2cb9ea635ce"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.cpu_ground_truth",
+      "passed": true,
+      "actual": "83ddf8e068ba69815497acdeadf64a9fbc54adf3d83a110ae96db540aa897f6d",
+      "expected": "83ddf8e068ba69815497acdeadf64a9fbc54adf3d83a110ae96db540aa897f6d"
+    },
+    {
+      "name": "8b12f8b2f5f2304b.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "8b12f8b2f5f2304b.prefix_tokens",
+      "passed": true,
+      "actual": 6448,
+      "expected": 6448
+    },
+    {
+      "name": "8b12f8b2f5f2304b.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 299,
+      "expected": 299
+    },
+    {
+      "name": "acb9530787d464d6.canonical_png",
+      "passed": true,
+      "actual": "c448ef0a72d30767c9e7e7f5f2d34d5a3a07a4989ea05f25bd2b0bb74671a843",
+      "expected": "c448ef0a72d30767c9e7e7f5f2d34d5a3a07a4989ea05f25bd2b0bb74671a843"
+    },
+    {
+      "name": "acb9530787d464d6.canonical_rgb",
+      "passed": true,
+      "actual": "2a91b0c028e0e39c967ee5c6d3c1db05984423f0f216b606841ce83de28c1f6a",
+      "expected": "2a91b0c028e0e39c967ee5c6d3c1db05984423f0f216b606841ce83de28c1f6a"
+    },
+    {
+      "name": "acb9530787d464d6.ground_truth",
+      "passed": true,
+      "actual": "62e60f421547bb24dd4d569345640f43e3c94bd95765f2264d32406d0ececff0",
+      "expected": "62e60f421547bb24dd4d569345640f43e3c94bd95765f2264d32406d0ececff0"
+    },
+    {
+      "name": "acb9530787d464d6.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "acb9530787d464d6.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "acb9530787d464d6.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+      "expected": "omnidocbench:page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png"
+    },
+    {
+      "name": "acb9530787d464d6.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+      "expected": "omnidocbench:page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png"
+    },
+    {
+      "name": "acb9530787d464d6.gpu_input",
+      "passed": true,
+      "actual": "2a91b0c028e0e39c967ee5c6d3c1db05984423f0f216b606841ce83de28c1f6a",
+      "expected": "2a91b0c028e0e39c967ee5c6d3c1db05984423f0f216b606841ce83de28c1f6a"
+    },
+    {
+      "name": "acb9530787d464d6.cpu_input",
+      "passed": true,
+      "actual": "c448ef0a72d30767c9e7e7f5f2d34d5a3a07a4989ea05f25bd2b0bb74671a843",
+      "expected": "c448ef0a72d30767c9e7e7f5f2d34d5a3a07a4989ea05f25bd2b0bb74671a843"
+    },
+    {
+      "name": "acb9530787d464d6.cpu_ground_truth",
+      "passed": true,
+      "actual": "62e60f421547bb24dd4d569345640f43e3c94bd95765f2264d32406d0ececff0",
+      "expected": "62e60f421547bb24dd4d569345640f43e3c94bd95765f2264d32406d0ececff0"
+    },
+    {
+      "name": "acb9530787d464d6.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "acb9530787d464d6.prefix_tokens",
+      "passed": true,
+      "actual": 2558,
+      "expected": 2558
+    },
+    {
+      "name": "acb9530787d464d6.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 4093,
+      "expected": 4093
+    },
+    {
+      "name": "4d9c4914bab5d42c.canonical_png",
+      "passed": true,
+      "actual": "85b4c4038e5df09f842c7e998223bfe0e95d3e596d32b8a258ea2960aa9165b4",
+      "expected": "85b4c4038e5df09f842c7e998223bfe0e95d3e596d32b8a258ea2960aa9165b4"
+    },
+    {
+      "name": "4d9c4914bab5d42c.canonical_rgb",
+      "passed": true,
+      "actual": "d099471766ca48e9a94d99740acfa677ade119c0116a516215b3ebd11b600027",
+      "expected": "d099471766ca48e9a94d99740acfa677ade119c0116a516215b3ebd11b600027"
+    },
+    {
+      "name": "4d9c4914bab5d42c.ground_truth",
+      "passed": true,
+      "actual": "d864d6d9ae22bd7ef67f3c88350713e3d84d6bec1c83ed4904facd41eee37371",
+      "expected": "d864d6d9ae22bd7ef67f3c88350713e3d84d6bec1c83ed4904facd41eee37371"
+    },
+    {
+      "name": "4d9c4914bab5d42c.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "4d9c4914bab5d42c.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "4d9c4914bab5d42c.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+      "expected": "omnidocbench:page-50209df6-f404-4e67-a646-bc9697f2e214.png"
+    },
+    {
+      "name": "4d9c4914bab5d42c.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+      "expected": "omnidocbench:page-50209df6-f404-4e67-a646-bc9697f2e214.png"
+    },
+    {
+      "name": "4d9c4914bab5d42c.gpu_input",
+      "passed": true,
+      "actual": "d099471766ca48e9a94d99740acfa677ade119c0116a516215b3ebd11b600027",
+      "expected": "d099471766ca48e9a94d99740acfa677ade119c0116a516215b3ebd11b600027"
+    },
+    {
+      "name": "4d9c4914bab5d42c.cpu_input",
+      "passed": true,
+      "actual": "85b4c4038e5df09f842c7e998223bfe0e95d3e596d32b8a258ea2960aa9165b4",
+      "expected": "85b4c4038e5df09f842c7e998223bfe0e95d3e596d32b8a258ea2960aa9165b4"
+    },
+    {
+      "name": "4d9c4914bab5d42c.cpu_ground_truth",
+      "passed": true,
+      "actual": "d864d6d9ae22bd7ef67f3c88350713e3d84d6bec1c83ed4904facd41eee37371",
+      "expected": "d864d6d9ae22bd7ef67f3c88350713e3d84d6bec1c83ed4904facd41eee37371"
+    },
+    {
+      "name": "4d9c4914bab5d42c.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "4d9c4914bab5d42c.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "4d9c4914bab5d42c.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 126,
+      "expected": 126
+    },
+    {
+      "name": "02efc5e800fa8102.canonical_png",
+      "passed": true,
+      "actual": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489",
+      "expected": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489"
+    },
+    {
+      "name": "02efc5e800fa8102.canonical_rgb",
+      "passed": true,
+      "actual": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920",
+      "expected": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920"
+    },
+    {
+      "name": "02efc5e800fa8102.ground_truth",
+      "passed": true,
+      "actual": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c",
+      "expected": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c"
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg"
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_input",
+      "passed": true,
+      "actual": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920",
+      "expected": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_input",
+      "passed": true,
+      "actual": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489",
+      "expected": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_ground_truth",
+      "passed": true,
+      "actual": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c",
+      "expected": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "02efc5e800fa8102.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 131,
+      "expected": 131
+    },
+    {
+      "name": "fbc152be4bd73507.canonical_png",
+      "passed": true,
+      "actual": "cb4e2815acb66c451930af5a44b68eadef4d8cc9e4ce7f54081a032dff0e56d1",
+      "expected": "cb4e2815acb66c451930af5a44b68eadef4d8cc9e4ce7f54081a032dff0e56d1"
+    },
+    {
+      "name": "fbc152be4bd73507.canonical_rgb",
+      "passed": true,
+      "actual": "3c9158cf5583234ceea8cebe7b183b4fc85ff8d5dc09729137633c0de3d0b0fa",
+      "expected": "3c9158cf5583234ceea8cebe7b183b4fc85ff8d5dc09729137633c0de3d0b0fa"
+    },
+    {
+      "name": "fbc152be4bd73507.ground_truth",
+      "passed": true,
+      "actual": "0a5abb941ef0c5be42550fc436e9c22473baa86373bcbdf5636b90ff5f626cb8",
+      "expected": "0a5abb941ef0c5be42550fc436e9c22473baa86373bcbdf5636b90ff5f626cb8"
+    },
+    {
+      "name": "fbc152be4bd73507.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "fbc152be4bd73507.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "fbc152be4bd73507.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1349.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1349.jpg"
+    },
+    {
+      "name": "fbc152be4bd73507.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1349.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1349.jpg"
+    },
+    {
+      "name": "fbc152be4bd73507.gpu_input",
+      "passed": true,
+      "actual": "3c9158cf5583234ceea8cebe7b183b4fc85ff8d5dc09729137633c0de3d0b0fa",
+      "expected": "3c9158cf5583234ceea8cebe7b183b4fc85ff8d5dc09729137633c0de3d0b0fa"
+    },
+    {
+      "name": "fbc152be4bd73507.cpu_input",
+      "passed": true,
+      "actual": "cb4e2815acb66c451930af5a44b68eadef4d8cc9e4ce7f54081a032dff0e56d1",
+      "expected": "cb4e2815acb66c451930af5a44b68eadef4d8cc9e4ce7f54081a032dff0e56d1"
+    },
+    {
+      "name": "fbc152be4bd73507.cpu_ground_truth",
+      "passed": true,
+      "actual": "0a5abb941ef0c5be42550fc436e9c22473baa86373bcbdf5636b90ff5f626cb8",
+      "expected": "0a5abb941ef0c5be42550fc436e9c22473baa86373bcbdf5636b90ff5f626cb8"
+    },
+    {
+      "name": "fbc152be4bd73507.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fbc152be4bd73507.prefix_tokens",
+      "passed": true,
+      "actual": 5079,
+      "expected": 5079
+    },
+    {
+      "name": "fbc152be4bd73507.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 581,
+      "expected": 581
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.canonical_png",
+      "passed": true,
+      "actual": "ad8352659cf357191350f041df52a3cc42418e6fcb280f782a87eb2b2a78d309",
+      "expected": "ad8352659cf357191350f041df52a3cc42418e6fcb280f782a87eb2b2a78d309"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.canonical_rgb",
+      "passed": true,
+      "actual": "c1a6caff64084684b75372989759b1b21a60ddce05f8c280e193cc852da9935e",
+      "expected": "c1a6caff64084684b75372989759b1b21a60ddce05f8c280e193cc852da9935e"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.ground_truth",
+      "passed": true,
+      "actual": "bfb6cb9f5b4eca3d64aa94439df4bd0aab90729af77b02c82d036ed8993913c9",
+      "expected": "bfb6cb9f5b4eca3d64aa94439df4bd0aab90729af77b02c82d036ed8993913c9"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+      "expected": "omnidocbench:page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+      "expected": "omnidocbench:page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.gpu_input",
+      "passed": true,
+      "actual": "c1a6caff64084684b75372989759b1b21a60ddce05f8c280e193cc852da9935e",
+      "expected": "c1a6caff64084684b75372989759b1b21a60ddce05f8c280e193cc852da9935e"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.cpu_input",
+      "passed": true,
+      "actual": "ad8352659cf357191350f041df52a3cc42418e6fcb280f782a87eb2b2a78d309",
+      "expected": "ad8352659cf357191350f041df52a3cc42418e6fcb280f782a87eb2b2a78d309"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.cpu_ground_truth",
+      "passed": true,
+      "actual": "bfb6cb9f5b4eca3d64aa94439df4bd0aab90729af77b02c82d036ed8993913c9",
+      "expected": "bfb6cb9f5b4eca3d64aa94439df4bd0aab90729af77b02c82d036ed8993913c9"
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "4ef7fc10e6e1e8b9.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 86,
+      "expected": 86
+    },
+    {
+      "name": "d57c80b4e4d5a634.canonical_png",
+      "passed": true,
+      "actual": "069b763820db4be392e626bcb24dc2568c8479e3505242628c0e824b129087d9",
+      "expected": "069b763820db4be392e626bcb24dc2568c8479e3505242628c0e824b129087d9"
+    },
+    {
+      "name": "d57c80b4e4d5a634.canonical_rgb",
+      "passed": true,
+      "actual": "912594c858ce8c7b929209e707bbc5e26ed21c9ae2f38432e3b6cbf7fcfa01b0",
+      "expected": "912594c858ce8c7b929209e707bbc5e26ed21c9ae2f38432e3b6cbf7fcfa01b0"
+    },
+    {
+      "name": "d57c80b4e4d5a634.ground_truth",
+      "passed": true,
+      "actual": "8ea62f61d515f33d3cbe94f79f46da1f54245f66f06918e81159e156655493a7",
+      "expected": "8ea62f61d515f33d3cbe94f79f46da1f54245f66f06918e81159e156655493a7"
+    },
+    {
+      "name": "d57c80b4e4d5a634.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "d57c80b4e4d5a634.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "d57c80b4e4d5a634.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+      "expected": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png"
+    },
+    {
+      "name": "d57c80b4e4d5a634.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+      "expected": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png"
+    },
+    {
+      "name": "d57c80b4e4d5a634.gpu_input",
+      "passed": true,
+      "actual": "912594c858ce8c7b929209e707bbc5e26ed21c9ae2f38432e3b6cbf7fcfa01b0",
+      "expected": "912594c858ce8c7b929209e707bbc5e26ed21c9ae2f38432e3b6cbf7fcfa01b0"
+    },
+    {
+      "name": "d57c80b4e4d5a634.cpu_input",
+      "passed": true,
+      "actual": "069b763820db4be392e626bcb24dc2568c8479e3505242628c0e824b129087d9",
+      "expected": "069b763820db4be392e626bcb24dc2568c8479e3505242628c0e824b129087d9"
+    },
+    {
+      "name": "d57c80b4e4d5a634.cpu_ground_truth",
+      "passed": true,
+      "actual": "8ea62f61d515f33d3cbe94f79f46da1f54245f66f06918e81159e156655493a7",
+      "expected": "8ea62f61d515f33d3cbe94f79f46da1f54245f66f06918e81159e156655493a7"
+    },
+    {
+      "name": "d57c80b4e4d5a634.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "d57c80b4e4d5a634.prefix_tokens",
+      "passed": true,
+      "actual": 6928,
+      "expected": 6928
+    },
+    {
+      "name": "d57c80b4e4d5a634.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 96,
+      "expected": 96
+    },
+    {
+      "name": "c7558286258574a2.canonical_png",
+      "passed": true,
+      "actual": "d390030bb82a5848626327450da96863598b8ed5d73a20cd631169157ca2b9a7",
+      "expected": "d390030bb82a5848626327450da96863598b8ed5d73a20cd631169157ca2b9a7"
+    },
+    {
+      "name": "c7558286258574a2.canonical_rgb",
+      "passed": true,
+      "actual": "5749e8beb2ae08033b173d9ed3995df944e5b76726db2160178a3552775c5917",
+      "expected": "5749e8beb2ae08033b173d9ed3995df944e5b76726db2160178a3552775c5917"
+    },
+    {
+      "name": "c7558286258574a2.ground_truth",
+      "passed": true,
+      "actual": "7bc92a983603c50c07b3eb488d5e2ac08e2eca02a6498ff99409eb72db966e14",
+      "expected": "7bc92a983603c50c07b3eb488d5e2ac08e2eca02a6498ff99409eb72db966e14"
+    },
+    {
+      "name": "c7558286258574a2.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "c7558286258574a2.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "c7558286258574a2.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+      "expected": "omnidocbench:page-205e4273-5b94-43e5-bfaf-dc882416b067.png"
+    },
+    {
+      "name": "c7558286258574a2.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+      "expected": "omnidocbench:page-205e4273-5b94-43e5-bfaf-dc882416b067.png"
+    },
+    {
+      "name": "c7558286258574a2.gpu_input",
+      "passed": true,
+      "actual": "5749e8beb2ae08033b173d9ed3995df944e5b76726db2160178a3552775c5917",
+      "expected": "5749e8beb2ae08033b173d9ed3995df944e5b76726db2160178a3552775c5917"
+    },
+    {
+      "name": "c7558286258574a2.cpu_input",
+      "passed": true,
+      "actual": "d390030bb82a5848626327450da96863598b8ed5d73a20cd631169157ca2b9a7",
+      "expected": "d390030bb82a5848626327450da96863598b8ed5d73a20cd631169157ca2b9a7"
+    },
+    {
+      "name": "c7558286258574a2.cpu_ground_truth",
+      "passed": true,
+      "actual": "7bc92a983603c50c07b3eb488d5e2ac08e2eca02a6498ff99409eb72db966e14",
+      "expected": "7bc92a983603c50c07b3eb488d5e2ac08e2eca02a6498ff99409eb72db966e14"
+    },
+    {
+      "name": "c7558286258574a2.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "c7558286258574a2.prefix_tokens",
+      "passed": true,
+      "actual": 2558,
+      "expected": 2558
+    },
+    {
+      "name": "c7558286258574a2.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 104,
+      "expected": 104
+    },
+    {
+      "name": "76b4d329ba700cfa.canonical_png",
+      "passed": true,
+      "actual": "26f2ea88ff3b12f33b1165a0d55c271d1324f299410966d555f012cde290988b",
+      "expected": "26f2ea88ff3b12f33b1165a0d55c271d1324f299410966d555f012cde290988b"
+    },
+    {
+      "name": "76b4d329ba700cfa.canonical_rgb",
+      "passed": true,
+      "actual": "a28c9d039a8e6ed5b8d38670f5e7f8fcc0a19a8a2c540b4a4684638424234cf9",
+      "expected": "a28c9d039a8e6ed5b8d38670f5e7f8fcc0a19a8a2c540b4a4684638424234cf9"
+    },
+    {
+      "name": "76b4d329ba700cfa.ground_truth",
+      "passed": true,
+      "actual": "47334fee885db1a72d2d6efe0a16e313f1caaab5d0c3fbeba5de7b1f60198e37",
+      "expected": "47334fee885db1a72d2d6efe0a16e313f1caaab5d0c3fbeba5de7b1f60198e37"
+    },
+    {
+      "name": "76b4d329ba700cfa.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "76b4d329ba700cfa.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "76b4d329ba700cfa.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+      "expected": "omnidocbench:page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png"
+    },
+    {
+      "name": "76b4d329ba700cfa.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+      "expected": "omnidocbench:page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png"
+    },
+    {
+      "name": "76b4d329ba700cfa.gpu_input",
+      "passed": true,
+      "actual": "a28c9d039a8e6ed5b8d38670f5e7f8fcc0a19a8a2c540b4a4684638424234cf9",
+      "expected": "a28c9d039a8e6ed5b8d38670f5e7f8fcc0a19a8a2c540b4a4684638424234cf9"
+    },
+    {
+      "name": "76b4d329ba700cfa.cpu_input",
+      "passed": true,
+      "actual": "26f2ea88ff3b12f33b1165a0d55c271d1324f299410966d555f012cde290988b",
+      "expected": "26f2ea88ff3b12f33b1165a0d55c271d1324f299410966d555f012cde290988b"
+    },
+    {
+      "name": "76b4d329ba700cfa.cpu_ground_truth",
+      "passed": true,
+      "actual": "47334fee885db1a72d2d6efe0a16e313f1caaab5d0c3fbeba5de7b1f60198e37",
+      "expected": "47334fee885db1a72d2d6efe0a16e313f1caaab5d0c3fbeba5de7b1f60198e37"
+    },
+    {
+      "name": "76b4d329ba700cfa.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "76b4d329ba700cfa.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "76b4d329ba700cfa.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 9282,
+      "expected": 9282
+    },
+    {
+      "name": "f1edfb4131ada00a.canonical_png",
+      "passed": true,
+      "actual": "9502990fd927f78267749e890d9e1127d3560d5f49078c575b40da595c4a8b6b",
+      "expected": "9502990fd927f78267749e890d9e1127d3560d5f49078c575b40da595c4a8b6b"
+    },
+    {
+      "name": "f1edfb4131ada00a.canonical_rgb",
+      "passed": true,
+      "actual": "5280bb61710481616a2363cc0605a75202451c358a2c3dce26abcb6dfd1784f5",
+      "expected": "5280bb61710481616a2363cc0605a75202451c358a2c3dce26abcb6dfd1784f5"
+    },
+    {
+      "name": "f1edfb4131ada00a.ground_truth",
+      "passed": true,
+      "actual": "8a5b0f7e732a7f670932120bbc1e3d3f1109fb3c181fdd928180c14231363b01",
+      "expected": "8a5b0f7e732a7f670932120bbc1e3d3f1109fb3c181fdd928180c14231363b01"
+    },
+    {
+      "name": "f1edfb4131ada00a.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "f1edfb4131ada00a.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "f1edfb4131ada00a.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1141.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1141.jpg"
+    },
+    {
+      "name": "f1edfb4131ada00a.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1141.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1141.jpg"
+    },
+    {
+      "name": "f1edfb4131ada00a.gpu_input",
+      "passed": true,
+      "actual": "5280bb61710481616a2363cc0605a75202451c358a2c3dce26abcb6dfd1784f5",
+      "expected": "5280bb61710481616a2363cc0605a75202451c358a2c3dce26abcb6dfd1784f5"
+    },
+    {
+      "name": "f1edfb4131ada00a.cpu_input",
+      "passed": true,
+      "actual": "9502990fd927f78267749e890d9e1127d3560d5f49078c575b40da595c4a8b6b",
+      "expected": "9502990fd927f78267749e890d9e1127d3560d5f49078c575b40da595c4a8b6b"
+    },
+    {
+      "name": "f1edfb4131ada00a.cpu_ground_truth",
+      "passed": true,
+      "actual": "8a5b0f7e732a7f670932120bbc1e3d3f1109fb3c181fdd928180c14231363b01",
+      "expected": "8a5b0f7e732a7f670932120bbc1e3d3f1109fb3c181fdd928180c14231363b01"
+    },
+    {
+      "name": "f1edfb4131ada00a.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "f1edfb4131ada00a.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "f1edfb4131ada00a.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 163,
+      "expected": 163
+    },
+    {
+      "name": "5b70770820a28e1d.canonical_png",
+      "passed": true,
+      "actual": "0c43ff4ca4985500714e847c646536b2aef483b6a922ca80e8d48a5f9f4dea8b",
+      "expected": "0c43ff4ca4985500714e847c646536b2aef483b6a922ca80e8d48a5f9f4dea8b"
+    },
+    {
+      "name": "5b70770820a28e1d.canonical_rgb",
+      "passed": true,
+      "actual": "a50a71f461dac7343f9dcd81a9d5609812b800a28eb96bc41a3bb8bd90561a4d",
+      "expected": "a50a71f461dac7343f9dcd81a9d5609812b800a28eb96bc41a3bb8bd90561a4d"
+    },
+    {
+      "name": "5b70770820a28e1d.ground_truth",
+      "passed": true,
+      "actual": "efada371e62897eaf75e50c7239c37c70febb48081b3aad9c1adbdba38f4851c",
+      "expected": "efada371e62897eaf75e50c7239c37c70febb48081b3aad9c1adbdba38f4851c"
+    },
+    {
+      "name": "5b70770820a28e1d.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "5b70770820a28e1d.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "5b70770820a28e1d.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:yanbaopptmerge_yanbaoPPT_1735.jpg",
+      "expected": "omnidocbench:yanbaopptmerge_yanbaoPPT_1735.jpg"
+    },
+    {
+      "name": "5b70770820a28e1d.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:yanbaopptmerge_yanbaoPPT_1735.jpg",
+      "expected": "omnidocbench:yanbaopptmerge_yanbaoPPT_1735.jpg"
+    },
+    {
+      "name": "5b70770820a28e1d.gpu_input",
+      "passed": true,
+      "actual": "a50a71f461dac7343f9dcd81a9d5609812b800a28eb96bc41a3bb8bd90561a4d",
+      "expected": "a50a71f461dac7343f9dcd81a9d5609812b800a28eb96bc41a3bb8bd90561a4d"
+    },
+    {
+      "name": "5b70770820a28e1d.cpu_input",
+      "passed": true,
+      "actual": "0c43ff4ca4985500714e847c646536b2aef483b6a922ca80e8d48a5f9f4dea8b",
+      "expected": "0c43ff4ca4985500714e847c646536b2aef483b6a922ca80e8d48a5f9f4dea8b"
+    },
+    {
+      "name": "5b70770820a28e1d.cpu_ground_truth",
+      "passed": true,
+      "actual": "efada371e62897eaf75e50c7239c37c70febb48081b3aad9c1adbdba38f4851c",
+      "expected": "efada371e62897eaf75e50c7239c37c70febb48081b3aad9c1adbdba38f4851c"
+    },
+    {
+      "name": "5b70770820a28e1d.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "5b70770820a28e1d.prefix_tokens",
+      "passed": true,
+      "actual": 6928,
+      "expected": 6928
+    },
+    {
+      "name": "5b70770820a28e1d.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 12,
+      "expected": 12
+    },
+    {
+      "name": "667ad6a544982651.canonical_png",
+      "passed": true,
+      "actual": "5f97ef5fefb8a43e65e7bcf5f3226669d976368d573e631613998f9a96a0cdd7",
+      "expected": "5f97ef5fefb8a43e65e7bcf5f3226669d976368d573e631613998f9a96a0cdd7"
+    },
+    {
+      "name": "667ad6a544982651.canonical_rgb",
+      "passed": true,
+      "actual": "ad1c857425df43ae254deedc3b7c8a7cbb1f0ca80a72e8555adacd23f715cc2f",
+      "expected": "ad1c857425df43ae254deedc3b7c8a7cbb1f0ca80a72e8555adacd23f715cc2f"
+    },
+    {
+      "name": "667ad6a544982651.ground_truth",
+      "passed": true,
+      "actual": "fbb081f6ff77273ac6519220bf06cb854ef1fe184cd5a5c1f7da455367856b53",
+      "expected": "fbb081f6ff77273ac6519220bf06cb854ef1fe184cd5a5c1f7da455367856b53"
+    },
+    {
+      "name": "667ad6a544982651.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "667ad6a544982651.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "667ad6a544982651.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png",
+      "expected": "omnidocbench:page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png"
+    },
+    {
+      "name": "667ad6a544982651.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png",
+      "expected": "omnidocbench:page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png"
+    },
+    {
+      "name": "667ad6a544982651.gpu_input",
+      "passed": true,
+      "actual": "ad1c857425df43ae254deedc3b7c8a7cbb1f0ca80a72e8555adacd23f715cc2f",
+      "expected": "ad1c857425df43ae254deedc3b7c8a7cbb1f0ca80a72e8555adacd23f715cc2f"
+    },
+    {
+      "name": "667ad6a544982651.cpu_input",
+      "passed": true,
+      "actual": "5f97ef5fefb8a43e65e7bcf5f3226669d976368d573e631613998f9a96a0cdd7",
+      "expected": "5f97ef5fefb8a43e65e7bcf5f3226669d976368d573e631613998f9a96a0cdd7"
+    },
+    {
+      "name": "667ad6a544982651.cpu_ground_truth",
+      "passed": true,
+      "actual": "fbb081f6ff77273ac6519220bf06cb854ef1fe184cd5a5c1f7da455367856b53",
+      "expected": "fbb081f6ff77273ac6519220bf06cb854ef1fe184cd5a5c1f7da455367856b53"
+    },
+    {
+      "name": "667ad6a544982651.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "667ad6a544982651.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "667ad6a544982651.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 231,
+      "expected": 231
+    },
+    {
+      "name": "23aab39cd5bf7391.canonical_png",
+      "passed": true,
+      "actual": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5",
+      "expected": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5"
+    },
+    {
+      "name": "23aab39cd5bf7391.canonical_rgb",
+      "passed": true,
+      "actual": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4",
+      "expected": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4"
+    },
+    {
+      "name": "23aab39cd5bf7391.ground_truth",
+      "passed": true,
+      "actual": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424",
+      "expected": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424"
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg"
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_input",
+      "passed": true,
+      "actual": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4",
+      "expected": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_input",
+      "passed": true,
+      "actual": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5",
+      "expected": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_ground_truth",
+      "passed": true,
+      "actual": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424",
+      "expected": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "23aab39cd5bf7391.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 398,
+      "expected": 398
+    },
+    {
+      "name": "eb9484a26254fd69.canonical_png",
+      "passed": true,
+      "actual": "4b529de276c249381605c5c9156ae1e9595f92fbf3a2c1ab0d5e0f92e9d3441e",
+      "expected": "4b529de276c249381605c5c9156ae1e9595f92fbf3a2c1ab0d5e0f92e9d3441e"
+    },
+    {
+      "name": "eb9484a26254fd69.canonical_rgb",
+      "passed": true,
+      "actual": "6bfba08a165c52c58cdf58d275e18d8597886395d8233c3e4f42fd8bf0d7ce48",
+      "expected": "6bfba08a165c52c58cdf58d275e18d8597886395d8233c3e4f42fd8bf0d7ce48"
+    },
+    {
+      "name": "eb9484a26254fd69.ground_truth",
+      "passed": true,
+      "actual": "2211998d765a62bc4cc9e576933fa53d2ab6b55059c721d5156cf77443878873",
+      "expected": "2211998d765a62bc4cc9e576933fa53d2ab6b55059c721d5156cf77443878873"
+    },
+    {
+      "name": "eb9484a26254fd69.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "eb9484a26254fd69.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "eb9484a26254fd69.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "expected": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png"
+    },
+    {
+      "name": "eb9484a26254fd69.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "expected": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png"
+    },
+    {
+      "name": "eb9484a26254fd69.gpu_input",
+      "passed": true,
+      "actual": "6bfba08a165c52c58cdf58d275e18d8597886395d8233c3e4f42fd8bf0d7ce48",
+      "expected": "6bfba08a165c52c58cdf58d275e18d8597886395d8233c3e4f42fd8bf0d7ce48"
+    },
+    {
+      "name": "eb9484a26254fd69.cpu_input",
+      "passed": true,
+      "actual": "4b529de276c249381605c5c9156ae1e9595f92fbf3a2c1ab0d5e0f92e9d3441e",
+      "expected": "4b529de276c249381605c5c9156ae1e9595f92fbf3a2c1ab0d5e0f92e9d3441e"
+    },
+    {
+      "name": "eb9484a26254fd69.cpu_ground_truth",
+      "passed": true,
+      "actual": "2211998d765a62bc4cc9e576933fa53d2ab6b55059c721d5156cf77443878873",
+      "expected": "2211998d765a62bc4cc9e576933fa53d2ab6b55059c721d5156cf77443878873"
+    },
+    {
+      "name": "eb9484a26254fd69.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "eb9484a26254fd69.prefix_tokens",
+      "passed": true,
+      "actual": 6448,
+      "expected": 6448
+    },
+    {
+      "name": "eb9484a26254fd69.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 22,
+      "expected": 22
+    },
+    {
+      "name": "b8b0554d4af644d1.canonical_png",
+      "passed": true,
+      "actual": "dc43eae8c91c6c5a75e6f87ccaab4a69f15f44176e8f7d8aa167f14a9236211a",
+      "expected": "dc43eae8c91c6c5a75e6f87ccaab4a69f15f44176e8f7d8aa167f14a9236211a"
+    },
+    {
+      "name": "b8b0554d4af644d1.canonical_rgb",
+      "passed": true,
+      "actual": "d63509cdbada2bdd31fd77f5cd485c18ba6c05bfdbf9a979fbfafb30dc69109c",
+      "expected": "d63509cdbada2bdd31fd77f5cd485c18ba6c05bfdbf9a979fbfafb30dc69109c"
+    },
+    {
+      "name": "b8b0554d4af644d1.ground_truth",
+      "passed": true,
+      "actual": "b6432b8ba6df7ff32a783c1c01740ff0e1227f001f2bba39ed499dfe725f3299",
+      "expected": "b6432b8ba6df7ff32a783c1c01740ff0e1227f001f2bba39ed499dfe725f3299"
+    },
+    {
+      "name": "b8b0554d4af644d1.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "b8b0554d4af644d1.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "b8b0554d4af644d1.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+      "expected": "omnidocbench:page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png"
+    },
+    {
+      "name": "b8b0554d4af644d1.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+      "expected": "omnidocbench:page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png"
+    },
+    {
+      "name": "b8b0554d4af644d1.gpu_input",
+      "passed": true,
+      "actual": "d63509cdbada2bdd31fd77f5cd485c18ba6c05bfdbf9a979fbfafb30dc69109c",
+      "expected": "d63509cdbada2bdd31fd77f5cd485c18ba6c05bfdbf9a979fbfafb30dc69109c"
+    },
+    {
+      "name": "b8b0554d4af644d1.cpu_input",
+      "passed": true,
+      "actual": "dc43eae8c91c6c5a75e6f87ccaab4a69f15f44176e8f7d8aa167f14a9236211a",
+      "expected": "dc43eae8c91c6c5a75e6f87ccaab4a69f15f44176e8f7d8aa167f14a9236211a"
+    },
+    {
+      "name": "b8b0554d4af644d1.cpu_ground_truth",
+      "passed": true,
+      "actual": "b6432b8ba6df7ff32a783c1c01740ff0e1227f001f2bba39ed499dfe725f3299",
+      "expected": "b6432b8ba6df7ff32a783c1c01740ff0e1227f001f2bba39ed499dfe725f3299"
+    },
+    {
+      "name": "b8b0554d4af644d1.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "b8b0554d4af644d1.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "b8b0554d4af644d1.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 309,
+      "expected": 309
+    },
+    {
+      "name": "26587cc8d139432f.canonical_png",
+      "passed": true,
+      "actual": "745ee279ef05825a4877ee01a97d7ecce0307184f2ab7281d47670d34d2ae552",
+      "expected": "745ee279ef05825a4877ee01a97d7ecce0307184f2ab7281d47670d34d2ae552"
+    },
+    {
+      "name": "26587cc8d139432f.canonical_rgb",
+      "passed": true,
+      "actual": "37a0430ec02a35205d3a9eae052333f4c749c7e80487754a89b74f14b934df06",
+      "expected": "37a0430ec02a35205d3a9eae052333f4c749c7e80487754a89b74f14b934df06"
+    },
+    {
+      "name": "26587cc8d139432f.ground_truth",
+      "passed": true,
+      "actual": "68834ca0039a74060e403ff0ed0a973546cd2162a1a70921e2b29ea17dd1f667",
+      "expected": "68834ca0039a74060e403ff0ed0a973546cd2162a1a70921e2b29ea17dd1f667"
+    },
+    {
+      "name": "26587cc8d139432f.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "26587cc8d139432f.cpu_contract",
+      "passed": true,
+      "actual": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+      "expected": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136"
+    },
+    {
+      "name": "26587cc8d139432f.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+      "expected": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg"
+    },
+    {
+      "name": "26587cc8d139432f.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+      "expected": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg"
+    },
+    {
+      "name": "26587cc8d139432f.gpu_input",
+      "passed": true,
+      "actual": "37a0430ec02a35205d3a9eae052333f4c749c7e80487754a89b74f14b934df06",
+      "expected": "37a0430ec02a35205d3a9eae052333f4c749c7e80487754a89b74f14b934df06"
+    },
+    {
+      "name": "26587cc8d139432f.cpu_input",
+      "passed": true,
+      "actual": "745ee279ef05825a4877ee01a97d7ecce0307184f2ab7281d47670d34d2ae552",
+      "expected": "745ee279ef05825a4877ee01a97d7ecce0307184f2ab7281d47670d34d2ae552"
+    },
+    {
+      "name": "26587cc8d139432f.cpu_ground_truth",
+      "passed": true,
+      "actual": "68834ca0039a74060e403ff0ed0a973546cd2162a1a70921e2b29ea17dd1f667",
+      "expected": "68834ca0039a74060e403ff0ed0a973546cd2162a1a70921e2b29ea17dd1f667"
+    },
+    {
+      "name": "26587cc8d139432f.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "26587cc8d139432f.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "26587cc8d139432f.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 87,
+      "expected": 87
+    }
+  ],
+  "pages": [
+    {
+      "sample_id": "465b09aa350ba9b8",
+      "id": "omnidocbench:page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "1043d2d31993cefcb4a4a211bbe54af73b8557dfad581d398f8c63887f5c5bbf",
+      "cpu_record_sha256": "5aeac0ff2ac50d40100ed37ab3603d781d38fc233c3b9152ffeb7da75389a76d",
+      "gpu_tokens": 726,
+      "cpu_tokens": 726,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 726,
+      "diagnostic_ground_truth_characters": 1109,
+      "gpu_diagnostic_edit_distance": 244,
+      "cpu_diagnostic_edit_distance": 244,
+      "gpu_diagnostic_cer": 0.2200180342651037,
+      "cpu_diagnostic_cer": 0.2200180342651037
+    },
+    {
+      "sample_id": "982038e172a15db6",
+      "id": "omnidocbench:page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "927464c77151c2769eb159dd828f68fe5530af0e41ccc8df3ee2a94a576d9df9",
+      "cpu_record_sha256": "ceb6fce7ad80ea8db6a70df5a358682a2b2915d892df8c694569bfebc04edf80",
+      "gpu_tokens": 4096,
+      "cpu_tokens": 4096,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "length",
+      "cpu_finish_reason": "length",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 4096,
+      "diagnostic_ground_truth_characters": 445,
+      "gpu_diagnostic_edit_distance": 2665,
+      "cpu_diagnostic_edit_distance": 2665,
+      "gpu_diagnostic_cer": 5.98876404494382,
+      "cpu_diagnostic_cer": 5.98876404494382
+    },
+    {
+      "sample_id": "95232a60600389ca",
+      "id": "omnidocbench:page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "682351d42f8855252db0ade5ae1fd9d19419197665f6f1719bcab2b375f1cae4",
+      "cpu_record_sha256": "40506f1bb85893e65aeb4a69cd1875475e987215a06693bdf8ce484793e7d193",
+      "gpu_tokens": 662,
+      "cpu_tokens": 662,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 662,
+      "diagnostic_ground_truth_characters": 1443,
+      "gpu_diagnostic_edit_distance": 416,
+      "cpu_diagnostic_edit_distance": 416,
+      "gpu_diagnostic_cer": 0.2882882882882883,
+      "cpu_diagnostic_cer": 0.2882882882882883
+    },
+    {
+      "sample_id": "e4fb4f3b184b6770",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2211.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "304d343c2a2b99ab44e07eea39061fb53faff137923bcc1eece6bfa4d86dcb01",
+      "cpu_record_sha256": "b6e4f9a0b00dcf63213d512b9128733ecb339879a30a908879a1b9b0244262dc",
+      "gpu_tokens": 1391,
+      "cpu_tokens": 1391,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1391,
+      "diagnostic_ground_truth_characters": 2177,
+      "gpu_diagnostic_edit_distance": 963,
+      "cpu_diagnostic_edit_distance": 963,
+      "gpu_diagnostic_cer": 0.4423518603582912,
+      "cpu_diagnostic_cer": 0.4423518603582912
+    },
+    {
+      "sample_id": "a9534e9adda14a97",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "60cb7a8f7b21d4ddcd5a285c9e2fa1aeb81734c82f63b6a62b9ac86a281e4e10",
+      "cpu_record_sha256": "1f3854395ed4aa56483e71ad24d263cdf586e8497985ce81d118652f78c3b355",
+      "gpu_tokens": 42,
+      "cpu_tokens": 42,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 42,
+      "diagnostic_ground_truth_characters": 11,
+      "gpu_diagnostic_edit_distance": 33,
+      "cpu_diagnostic_edit_distance": 33,
+      "gpu_diagnostic_cer": 3.0,
+      "cpu_diagnostic_cer": 3.0
+    },
+    {
+      "sample_id": "f49121f28edbfb30",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "5f08c7c9b1aa73bd238760d2f29f9ce7892b836496c27834a27a1f25806539a3",
+      "cpu_record_sha256": "04349db63e66efac63c988df72cfffb0a49adfb74c3f362fe8e690107ac20cb4",
+      "gpu_tokens": 1031,
+      "cpu_tokens": 1031,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1031,
+      "diagnostic_ground_truth_characters": 1366,
+      "gpu_diagnostic_edit_distance": 383,
+      "cpu_diagnostic_edit_distance": 383,
+      "gpu_diagnostic_cer": 0.28038067349926793,
+      "cpu_diagnostic_cer": 0.28038067349926793
+    },
+    {
+      "sample_id": "7c29550143111265",
+      "id": "omnidocbench:jiaocaineedrop_2005_QP.pdf_5.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "eceba66891e1b137b8c61871037e74d62a4a074ccf7597927e4fcdd2bb2e781f",
+      "cpu_record_sha256": "129a61d5fb145a641780f1e7e393a233c972119a6808bdd8952df8fe14a580b7",
+      "gpu_tokens": 299,
+      "cpu_tokens": 299,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 299,
+      "diagnostic_ground_truth_characters": 815,
+      "gpu_diagnostic_edit_distance": 80,
+      "cpu_diagnostic_edit_distance": 80,
+      "gpu_diagnostic_cer": 0.09815950920245399,
+      "cpu_diagnostic_cer": 0.09815950920245399
+    },
+    {
+      "sample_id": "59eb719b39164f3e",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "2e5dd31e65373d835def66219ea8eb17f05c9ab3fc5e5bfab9775990bbe97758",
+      "cpu_record_sha256": "ec12327b3c348552b1670ece4166c67249f5f959249ce101a704ad4c87814399",
+      "gpu_tokens": 333,
+      "cpu_tokens": 333,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 333,
+      "diagnostic_ground_truth_characters": 422,
+      "gpu_diagnostic_edit_distance": 103,
+      "cpu_diagnostic_edit_distance": 103,
+      "gpu_diagnostic_cer": 0.24407582938388625,
+      "cpu_diagnostic_cer": 0.24407582938388625
+    },
+    {
+      "sample_id": "4d3e077b20d3029c",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_467.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "a47fe1384aed892ef9381a22c83bb78d270d1b0d100e9c8c9ddbd3a966e6382f",
+      "cpu_record_sha256": "cab2e262d391053c16a77af17215c8e741d16b24b42cc784748879f015455038",
+      "gpu_tokens": 912,
+      "cpu_tokens": 912,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 912,
+      "diagnostic_ground_truth_characters": 1829,
+      "gpu_diagnostic_edit_distance": 269,
+      "cpu_diagnostic_edit_distance": 269,
+      "gpu_diagnostic_cer": 0.14707490431930018,
+      "cpu_diagnostic_cer": 0.14707490431930018
+    },
+    {
+      "sample_id": "034663d51f01ee0b",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "f34f6bfab2b9aca286998dd8c8ff46ed07f0aa62c85c6b14f9ae3ea03ae2c095",
+      "cpu_record_sha256": "13ddbe3b7f7770fcbd70ffb6180a3058d4f755ccae1953545bbc32bfa09f5842",
+      "gpu_tokens": 568,
+      "cpu_tokens": 568,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 568,
+      "diagnostic_ground_truth_characters": 875,
+      "gpu_diagnostic_edit_distance": 367,
+      "cpu_diagnostic_edit_distance": 367,
+      "gpu_diagnostic_cer": 0.41942857142857143,
+      "cpu_diagnostic_cer": 0.41942857142857143
+    },
+    {
+      "sample_id": "1798b29cb5373418",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "408e7df4d32c8d9dcd112ab72daea17681ca0ad0b514274856143416788efb5e",
+      "cpu_record_sha256": "e7eba205c69d45baeffbf862340aecda55a1a36db525813945c0d76c983bdd7d",
+      "gpu_tokens": 468,
+      "cpu_tokens": 468,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 468,
+      "diagnostic_ground_truth_characters": 720,
+      "gpu_diagnostic_edit_distance": 122,
+      "cpu_diagnostic_edit_distance": 122,
+      "gpu_diagnostic_cer": 0.16944444444444445,
+      "cpu_diagnostic_cer": 0.16944444444444445
+    },
+    {
+      "sample_id": "8b12f8b2f5f2304b",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "9eb7aed8afbdabfab039eb32007f26fa3b4d514834a07e4fc76544d2e8554b7c",
+      "cpu_record_sha256": "cb27e526586dd0cff1e971c4cc2b7653c9fae79c71fd875e59608f84f847fcd3",
+      "gpu_tokens": 441,
+      "cpu_tokens": 441,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 441,
+      "diagnostic_ground_truth_characters": 682,
+      "gpu_diagnostic_edit_distance": 299,
+      "cpu_diagnostic_edit_distance": 299,
+      "gpu_diagnostic_cer": 0.43841642228739003,
+      "cpu_diagnostic_cer": 0.43841642228739003
+    },
+    {
+      "sample_id": "acb9530787d464d6",
+      "id": "omnidocbench:page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "07566c752f51a057ef82a646b162822a9ca2a34e173f29bdce4a18b04e1bfc7e",
+      "cpu_record_sha256": "75ec8996cad8f7e72e48397508965b546cf1f3c11a49d25845fc09baa860086a",
+      "gpu_tokens": 4096,
+      "cpu_tokens": 4096,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "length",
+      "cpu_finish_reason": "length",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 4096,
+      "diagnostic_ground_truth_characters": 14,
+      "gpu_diagnostic_edit_distance": 4093,
+      "cpu_diagnostic_edit_distance": 4093,
+      "gpu_diagnostic_cer": 292.35714285714283,
+      "cpu_diagnostic_cer": 292.35714285714283
+    },
+    {
+      "sample_id": "4d9c4914bab5d42c",
+      "id": "omnidocbench:page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "47adb7277b6df222f1f5c8ad1b55aaf44ff8a769b4b78987bcec2fc68381fc6c",
+      "cpu_record_sha256": "e59d23ecf1bf12c78638f1b5526c917f232628a3a60bf54cd3ae677ebaf854e9",
+      "gpu_tokens": 895,
+      "cpu_tokens": 895,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 895,
+      "diagnostic_ground_truth_characters": 1100,
+      "gpu_diagnostic_edit_distance": 126,
+      "cpu_diagnostic_edit_distance": 126,
+      "gpu_diagnostic_cer": 0.11454545454545455,
+      "cpu_diagnostic_cer": 0.11454545454545455
+    },
+    {
+      "sample_id": "02efc5e800fa8102",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "be9d9382dfee42384f32943257c9b426f4881c13278f8924cefbe34accc4c0c1",
+      "cpu_record_sha256": "c2e8a38e4d00497022c69c3d194f203638256d908721619300da041398105b53",
+      "gpu_tokens": 310,
+      "cpu_tokens": 310,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 310,
+      "diagnostic_ground_truth_characters": 350,
+      "gpu_diagnostic_edit_distance": 131,
+      "cpu_diagnostic_edit_distance": 131,
+      "gpu_diagnostic_cer": 0.3742857142857143,
+      "cpu_diagnostic_cer": 0.3742857142857143
+    },
+    {
+      "sample_id": "fbc152be4bd73507",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1349.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "5115f87ab99a6756479b38cfee7c47689d2caa9367cdca917710c11cc64542ab",
+      "cpu_record_sha256": "505844282c062480755ac76149bb616b56e310db346aff7bd53f3efb36b7cc50",
+      "gpu_tokens": 1412,
+      "cpu_tokens": 1412,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1412,
+      "diagnostic_ground_truth_characters": 2038,
+      "gpu_diagnostic_edit_distance": 581,
+      "cpu_diagnostic_edit_distance": 581,
+      "gpu_diagnostic_cer": 0.28508341511285573,
+      "cpu_diagnostic_cer": 0.28508341511285573
+    },
+    {
+      "sample_id": "4ef7fc10e6e1e8b9",
+      "id": "omnidocbench:page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "6a5e19662680f03c5913ede728c7cfa3f3589126380791543221bfbe87489248",
+      "cpu_record_sha256": "5a837529944369e0b41189978fdd1506301a0d0d458815be432cac3cdc94345b",
+      "gpu_tokens": 886,
+      "cpu_tokens": 886,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 886,
+      "diagnostic_ground_truth_characters": 1133,
+      "gpu_diagnostic_edit_distance": 86,
+      "cpu_diagnostic_edit_distance": 86,
+      "gpu_diagnostic_cer": 0.07590467784642542,
+      "cpu_diagnostic_cer": 0.07590467784642542
+    },
+    {
+      "sample_id": "d57c80b4e4d5a634",
+      "id": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "3e4297e0db0a1a4e511068fae887f88813c2d65244fc013e9370834bfb023658",
+      "cpu_record_sha256": "fee35f54cd86bbf013800512f568ddea544eeb52e1d553c88fa8fe6e8008e30c",
+      "gpu_tokens": 657,
+      "cpu_tokens": 657,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 657,
+      "diagnostic_ground_truth_characters": 2080,
+      "gpu_diagnostic_edit_distance": 96,
+      "cpu_diagnostic_edit_distance": 96,
+      "gpu_diagnostic_cer": 0.046153846153846156,
+      "cpu_diagnostic_cer": 0.046153846153846156
+    },
+    {
+      "sample_id": "c7558286258574a2",
+      "id": "omnidocbench:page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "3bda3f0923fa8a8c4b69bd0dfdaad8c4742cd4280fde9d779f328754531c73f4",
+      "cpu_record_sha256": "2314991b7da8fd20f32ed0f44204e4a87af38985c0e8928bc79c87f3be32f3a0",
+      "gpu_tokens": 427,
+      "cpu_tokens": 427,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 427,
+      "diagnostic_ground_truth_characters": 432,
+      "gpu_diagnostic_edit_distance": 104,
+      "cpu_diagnostic_edit_distance": 104,
+      "gpu_diagnostic_cer": 0.24074074074074073,
+      "cpu_diagnostic_cer": 0.24074074074074073
+    },
+    {
+      "sample_id": "76b4d329ba700cfa",
+      "id": "omnidocbench:page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "40b2acd22052e1555a50b1f8c2d24023feac1ecc22c64ef8772e6917be61f0e8",
+      "cpu_record_sha256": "2cef0ef0951d4adb05710daaf99018018be141249c012179d55fe061c3a18193",
+      "gpu_tokens": 4096,
+      "cpu_tokens": 4096,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "length",
+      "cpu_finish_reason": "length",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 4096,
+      "diagnostic_ground_truth_characters": 4172,
+      "gpu_diagnostic_edit_distance": 9282,
+      "cpu_diagnostic_edit_distance": 9282,
+      "gpu_diagnostic_cer": 2.2248322147651005,
+      "cpu_diagnostic_cer": 2.2248322147651005
+    },
+    {
+      "sample_id": "f1edfb4131ada00a",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1141.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "136d16e6a16b05d969137d82e1ee8aeb2f096b57e5ce8671a745f4319407c7f0",
+      "cpu_record_sha256": "0f05c37efc9670196b7be8297e1ba94a9dabfbcfa23190d9364102d5bd690194",
+      "gpu_tokens": 466,
+      "cpu_tokens": 466,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 466,
+      "diagnostic_ground_truth_characters": 602,
+      "gpu_diagnostic_edit_distance": 163,
+      "cpu_diagnostic_edit_distance": 163,
+      "gpu_diagnostic_cer": 0.2707641196013289,
+      "cpu_diagnostic_cer": 0.2707641196013289
+    },
+    {
+      "sample_id": "5b70770820a28e1d",
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_1735.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "701d6092352166c2e0b250c0bb5329a272f3530f3959ed155d800675c4f8b028",
+      "cpu_record_sha256": "971c78ecf7fca0227bfe0a9048526159542b177be2682cf46dd507acdae16697",
+      "gpu_tokens": 84,
+      "cpu_tokens": 84,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 84,
+      "diagnostic_ground_truth_characters": 110,
+      "gpu_diagnostic_edit_distance": 12,
+      "cpu_diagnostic_edit_distance": 12,
+      "gpu_diagnostic_cer": 0.10909090909090909,
+      "cpu_diagnostic_cer": 0.10909090909090909
+    },
+    {
+      "sample_id": "667ad6a544982651",
+      "id": "omnidocbench:page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "9f16bddd0e6d50ee690171216de869395ef5607295edc8140edd775a8c56f696",
+      "cpu_record_sha256": "7f7f66696e4b29eb7b02face49bb8760cbdc9fc83fce9c24ffad3ae643292955",
+      "gpu_tokens": 580,
+      "cpu_tokens": 580,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 580,
+      "diagnostic_ground_truth_characters": 770,
+      "gpu_diagnostic_edit_distance": 231,
+      "cpu_diagnostic_edit_distance": 231,
+      "gpu_diagnostic_cer": 0.3,
+      "cpu_diagnostic_cer": 0.3
+    },
+    {
+      "sample_id": "23aab39cd5bf7391",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "a51988ac3c46afa6e1c92b9cea29879e5158bfb0c295b3f26ad733145b4aa309",
+      "cpu_record_sha256": "5a00a5e51f8f9d30ac9b33eef899452461aca4624c68c00b41e5313d310ca3c5",
+      "gpu_tokens": 724,
+      "cpu_tokens": 724,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 724,
+      "diagnostic_ground_truth_characters": 1048,
+      "gpu_diagnostic_edit_distance": 398,
+      "cpu_diagnostic_edit_distance": 398,
+      "gpu_diagnostic_cer": 0.3797709923664122,
+      "cpu_diagnostic_cer": 0.3797709923664122
+    },
+    {
+      "sample_id": "eb9484a26254fd69",
+      "id": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "013e0512ed306854ff27ab7d781106cc9e59312afaed40af19879f1918634d0d",
+      "cpu_record_sha256": "ac73e1817ff3288ab25bf19d442d8672a974c07724bcadde40cad9b6f0a716d3",
+      "gpu_tokens": 219,
+      "cpu_tokens": 219,
+      "tokens_exact": true,
+      "text_exact": false,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 219,
+      "diagnostic_ground_truth_characters": 528,
+      "gpu_diagnostic_edit_distance": 22,
+      "cpu_diagnostic_edit_distance": 23,
+      "gpu_diagnostic_cer": 0.041666666666666664,
+      "cpu_diagnostic_cer": 0.043560606060606064
+    },
+    {
+      "sample_id": "b8b0554d4af644d1",
+      "id": "omnidocbench:page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+      "category": "handwriting",
+      "provenance_passed": true,
+      "gpu_record_sha256": "d404f6eb6b042cc74901ede3603982e5bc0245506853a7cc992e66bab7a662c1",
+      "cpu_record_sha256": "665c93f1934b45724e108e5874e292ff44e3b12388a54308318318d86208a36d",
+      "gpu_tokens": 303,
+      "cpu_tokens": 303,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 303,
+      "diagnostic_ground_truth_characters": 727,
+      "gpu_diagnostic_edit_distance": 309,
+      "cpu_diagnostic_edit_distance": 309,
+      "gpu_diagnostic_cer": 0.4250343878954608,
+      "cpu_diagnostic_cer": 0.4250343878954608
+    },
+    {
+      "sample_id": "26587cc8d139432f",
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+      "category": "handwriting",
+      "provenance_passed": true,
+      "gpu_record_sha256": "75578dd93f21f8162b24ed30f456ce5c6a6d8325a407b1f9fb6dfee4bc5cca5c",
+      "cpu_record_sha256": "5321b825a1e255efbc7bf22948d220d143781edd921bb139d93f1969659a920e",
+      "gpu_tokens": 338,
+      "cpu_tokens": 338,
+      "tokens_exact": true,
+      "text_exact": false,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 338,
+      "diagnostic_ground_truth_characters": 1115,
+      "gpu_diagnostic_edit_distance": 87,
+      "cpu_diagnostic_edit_distance": 83,
+      "gpu_diagnostic_cer": 0.07802690582959641,
+      "cpu_diagnostic_cer": 0.07443946188340807
+    }
+  ],
+  "qualification": "Independent free greedy output comparison; tensor parity, OCR accuracy qualification, and bare-metal performance are separate gates.",
+  "metric": "NFC+whitespace-normalized assembled-ground-truth character edit distance, diagnostic only, not official OmniDocBench scoring.",
+  "corpus_qualification": "Pixel/annotation freeze only. Visual category evidence belongs to the selection manifest/review report; newly found duplicate candidates require review. No quality or performance acceptance claim.",
+  "completed_output_parity_passed": false
+}

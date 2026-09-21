@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "status": "single_prospective_observer_correction_reviewed",
+  "scope": "Independent read-only source/specification review and five bounded host-only tests; no GPU execution, compilation, source mutation or inference by reviewer.",
+  "prior_rejected_capture_audit": "reference/bf16-fused-v4-lowering-review-v1.json",
+  "prior_audit_sha256": "a3fdbe67fa39177190d30761c42f70ee781d6a171a98299663baa87dbf6910e2",
+  "reviewed_sha256": {
+    "scripts/test_verify_bf16_reduction_lowering.py": "a047a4e6fcd13473f50d360e50026b54a8061268fb7c98695011e7b98a95351b",
+    "reference/bf16-fused-substage-export-spec-v3.json": "85610099350e8261b8833085222a4ad90c3fc613063f8856492071eb48e3093e",
+    "scripts/instrument_bf16_flex.py": "aab08e6f46ce1d0e9605667dbd250d58d6695d4fd93d6eb48208a2cf8cf83c14",
+    "reference/bf16-fused-substage-export-spec-v2.json": "3a7333b3ed7cf22b39cdd65364624fb80d8f50a8d14c55fd127d7a674e77b9e8",
+    "scripts/export_bf16_fused_substages.py": "806948fc7b0ecbc7828de7b0140e7568716223ac0f40b7abb77d3ca3da42d6cf",
+    "scripts/verify_bf16_reduction_lowering.py": "65e59f4d5570dc1be57ac6196f2a0084c98a54f31ce772a92408aa5e6966a2c1"
+  },
+  "checks": {
+    "generated_candidate_changes_only_one_debug_sum_store": true,
+    "original_FIELDS_indices_and_observation_buffer_shape_preserved": true,
+    "v2_specification_preserved": true,
+    "v3_explicitly_partial_and_sum_unavailable": true,
+    "no_reconstruction_or_full_v2_completion_claim": true,
+    "all_raw_natural_lse_log2_lse_and_frozen_fixture_bit_gates_preserved": true,
+    "new_required_MMA_and_PTX_reduction_structure_gate": true,
+    "saved_rejected_v4_fails_both_structure_checks": true,
+    "six_reviewed_files_unchanged_before_after_host_tests": true
+  },
+  "host_tests": {
+    "command": "C:/Users/amazi/mambaforge/python.exe -m unittest discover -s scripts -p test_verify_bf16_reduction_lowering.py -v",
+    "passed": 5,
+    "failed": 0,
+    "exit_code": 0,
+    "cases": ["original positive control", "rejected v4 negative control", "missing artifact rejection", "changed shuffle-offset rejection", "exactly one generated store deletion"]
+  },
+  "remaining_gate": "Actual fresh GPU capture and its full bit-equality plus generated-lowering checks remain mandatory. This source-review receipt does not record or predict the fresh run outcome.",
+  "limitations": [
+    "The reduction guard anonymizes exp2 leaves and checks the reduction structure, not the identity of every native argument or internal value.",
+    "Any fresh output/lowering mismatch must remain rejected; raw BF16 agreement alone is insufficient.",
+    "No native local sum is inferred from denominator differences. No full-model, OCR-quality or performance qualification."
+  ]
+}

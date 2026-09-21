@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "kind": "windows-fullpage-perfview-export-independent-review",
+  "created_utc": "2026-09-20T15:30:08.028812+00:00",
+  "status": "sample_payload_integrity_passed_export_process_failure_preserved",
+  "verdict": "Saved sampled-stack payload is usable for exploratory CPU hotspot ranking. PerfView export remains failed (exit 1); its ancillary GUI metadata is incomplete. This review does not independently qualify ETL event loss, lifetime coverage, benchmark latency, phase boundaries, or numerical parity.",
+  "scope": "Read-only review of saved XML ZIP, logs, launch/exit records, prior capture review and pinned upstream source. One complete streaming XML read with CRC and before/after ZIP digest checks; no ETL read/hash, export/conversion rerun, model execution, build or recording.",
+  "export": {
+    "command": [
+      "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\tools\\perfview-3.2.6\\PerfView.exe",
+      "/AcceptEULA",
+      "/NoGui",
+      "/LogFile:D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\perfview-stacks.log",
+      "UserCommand",
+      "SaveCPUStacks",
+      "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\cpu.etl",
+      "ocr_bench"
+    ],
+    "pid": 3352,
+    "exit_code": 1,
+    "error": "System.NullReferenceException in ExecuteUserCommand; original throw-site stack discarded by reflection wrapper"
+  },
+  "payload": {
+    "zip_sha256": "18facb2cda667464e12332009052b8bc9d124551dbd10d12a77bf1acff70d671",
+    "xml_member": {
+      "name": "cpu.perfView.xml",
+      "uncompressed_bytes": 208377660,
+      "compressed_bytes": 29726357,
+      "crc32": "ef9d72e0",
+      "crc_validated_by_complete_read": true
+    },
+    "headers": {
+      "Frames": {
+        "Count": "227"
+      },
+      "Stacks": {
+        "Count": "315837"
+      },
+      "Samples": {
+        "Count": "3118232"
+      }
+    },
+    "actual_counts": {
+      "Frames": 227,
+      "Stacks": 315837,
+      "Samples": 3118232
+    },
+    "sample_ids_present": 3118232,
+    "all_declared_counts_exact": true,
+    "frame_stack_ids_contiguous": true,
+    "all_references_valid_and_all_stack_chains_acyclic": true,
+    "every_sample_has_exactly_one_process_root_pid": 121604,
+    "sampled_cpu_metric_total": 3118232.0,
+    "sample_time_range_ms": [
+      944.641,
+      233437.362
+    ],
+    "root_analyzer_counts_times_and_call_path_totals_reproduced": true
+  },
+  "failure_analysis": {
+    "classification": "Strong source-and-artifact-supported inference; no exception reproduction or debugger observation.",
+    "observed_gui_children": [
+      "FilterGuiState",
+      "Notes"
+    ],
+    "first_expected_missing_gui_child": "Log",
+    "source_chain": [
+      {
+        "source": "src/PerfView/UserCommands.cs",
+        "lines": [
+          1478,
+          1497
+        ],
+        "finding": "SaveCPUStacks resolves symbols, assigns Notes, then calls SaveAsXml; the success message follows that call and is absent from the log."
+      },
+      {
+        "source": "src/PerfView/Extensibility.cs",
+        "lines": [
+          1035,
+          1068
+        ],
+        "finding": "SaveAsXml only assigns GuiState.Log when MainWindow is non-null. Its default GUI callback serializes that state after stack serialization."
+      },
+      {
+        "source": "src/PerfView/OtherSources/XMLStackSource.cs",
+        "lines": [
+          17,
+          55
+        ],
+        "finding": "Writer emits StackSource before the additional-data callback. Nested using scopes dispose XML and ZIP writers when the callback throws."
+      },
+      {
+        "source": "src/PerfView/Extensibility.cs",
+        "lines": [
+          1883,
+          1902
+        ],
+        "finding": "GUI writer emits FilterGuiState and Notes, then calls XmlEscape(Log) before writing the Log element. Actual XML ends at this exact boundary."
+      },
+      {
+        "source": "src/Utilities/XmlUtilities.cs",
+        "lines": [
+          46,
+          48
+        ],
+        "finding": "XmlEscape unconditionally invokes obj.ToString(), so a null Log produces NullReferenceException."
+      }
+    ],
+    "conclusion": "The /NoGui null Log path explains complete data arrays plus closed valid ZIP/XML, missing Log and later GUI fields, exit 1 and missing save-success message. The failure is not evidence that data arrays were truncated."
+  },
+  "symbol_limits": {
+    "unknown_exclusive_leaf_metric": 266973.0,
+    "unknown_exclusive_leaf_percent": 8.561678540916775,
+    "project_unknown_exclusive_leaf_metric": 0,
+    "unknown_leaf_frames": [
+      {
+        "id": 39,
+        "name": "c:\\windows\\system32\\ucrtbase!?",
+        "exclusive_metric": 93440.0
+      },
+      {
+        "id": 5,
+        "name": "c:\\windows\\system32\\ntdll!?",
+        "exclusive_metric": 80922.0
+      },
+      {
+        "id": 4,
+        "name": "c:\\windows\\system32\\ntoskrnl!?",
+        "exclusive_metric": 79046.0
+      },
+      {
+        "id": 33,
+        "name": "c:\\windows\\system32\\driverstore\\filerepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvlddmkm.sys!?",
+        "exclusive_metric": 8310.0
+      },
+      {
+        "id": 31,
+        "name": "c:\\windows\\system32\\drivers\\dxgmms2.sys!?",
+        "exclusive_metric": 2209.0
+      },
+      {
+        "id": 28,
+        "name": "c:\\windows\\system32\\vcruntime140!?",
+        "exclusive_metric": 1241.0
+      },
+      {
+        "id": 9,
+        "name": "c:\\windows\\system32\\kernelbase!?",
+        "exclusive_metric": 900.0
+      },
+      {
+        "id": 152,
+        "name": "c:\\windows\\system32\\drivers\\hdaudbus.sys!?",
+        "exclusive_metric": 170.0
+      },
+      {
+        "id": 156,
+        "name": "c:\\windows\\system32\\drivers\\amdppm.sys!?",
+        "exclusive_metric": 159.0
+      },
+      {
+        "id": 32,
+        "name": "c:\\windows\\system32\\drivers\\dxgkrnl.sys!?",
+        "exclusive_metric": 142.0
+      },
+      {
+        "id": 19,
+        "name": "c:\\windows\\system32\\kernel32!?",
+        "exclusive_metric": 135.0
+      },
+      {
+        "id": 182,
+        "name": "c:\\windows\\system32\\drivers\\watchdog.sys!?",
+        "exclusive_metric": 88.0
+      },
+      {
+        "id": 139,
+        "name": "?!?",
+        "exclusive_metric": 33.0
+      },
+      {
+        "id": 165,
+        "name": "c:\\windows\\system32\\drivers\\ndis.sys!?",
+        "exclusive_metric": 26.0
+      },
+      {
+        "id": 187,
+        "name": "c:\\windows\\system32\\drivers\\mtkwl6ex.sys!?",
+        "exclusive_metric": 18.0
+      },
+      {
+        "id": 167,
+        "name": "c:\\windows\\system32\\drivers\\storport.sys!?",
+        "exclusive_metric": 17.0
+      },
+      {
+        "id": 158,
+        "name": "c:\\windows\\system32\\drivers\\netio.sys!?",
+        "exclusive_metric": 16.0
+      },
+      {
+        "id": 162,
+        "name": "c:\\windows\\system32\\drivers\\wdf01000.sys!?",
+        "exclusive_metric": 15.0
+      },
+      {
+        "id": 188,
+        "name": "c:\\windows\\system32\\drivers\\wpprecorder.sys!?",
+        "exclusive_metric": 15.0
+      },
+      {
+        "id": 155,
+        "name": "c:\\windows\\system32\\drivers\\tcpip.sys!?",
+        "exclusive_metric": 12.0
+      },
+      {
+        "id": 161,
+        "name": "c:\\windows\\system32\\drivers\\usbxhci.sys!?",
+        "exclusive_metric": 8.0
+      },
+      {
+        "id": 168,
+        "name": "c:\\windows\\system32\\drivers\\cng.sys!?",
+        "exclusive_metric": 7.0
+      },
+      {
+        "id": 170,
+        "name": "c:\\windows\\system32\\drivers\\stornvme.sys!?",
+        "exclusive_metric": 7.0
+      },
+      {
+        "id": 185,
+        "name": "c:\\windows\\system32\\drivers\\hidclass.sys!?",
+        "exclusive_metric": 6.0
+      },
+      {
+        "id": 166,
+        "name": "c:\\windows\\system32\\drivers\\classpnp.sys!?",
+        "exclusive_metric": 5.0
+      },
+      {
+        "id": 164,
+        "name": "c:\\windows\\system32\\drivers\\afd.sys!?",
+        "exclusive_metric": 3.0
+      },
+      {
+        "id": 186,
+        "name": "c:\\windows\\system32\\drivers\\partmgr.sys!?",
+        "exclusive_metric": 3.0
+      },
+      {
+        "id": 196,
+        "name": "c:\\windows\\system32\\drivers\\nwifi.sys!?",
+        "exclusive_metric": 3.0
+      },
+      {
+        "id": 197,
+        "name": "c:\\windows\\system32\\drivers\\ndu.sys!?",
+        "exclusive_metric": 3.0
+      },
+      {
+        "id": 183,
+        "name": "c:\\windows\\system32\\drivers\\usbccgp.sys!?",
+        "exclusive_metric": 3.0
+      },
+      {
+        "id": 184,
+        "name": "c:\\windows\\system32\\drivers\\hidusb.sys!?",
+        "exclusive_metric": 2.0
+      },
+      {
+        "id": 198,
+        "name": "c:\\windows\\system32\\drivers\\volsnap.sys!?",
+        "exclusive_metric": 2.0
+      },
+      {
+        "id": 209,
+        "name": "c:\\windows\\system32\\drivers\\bthport.sys!?",
+        "exclusive_metric": 2.0
+      },
+      {
+        "id": 193,
+        "name": "c:\\windows\\system32\\drivers\\ucx01000.sys!?",
+        "exclusive_metric": 1.0
+      },
+      {
+        "id": 192,
+        "name": "c:\\windows\\system32\\drivers\\vmswitch.sys!?",
+        "exclusive_metric": 1.0
+      },
+      {
+        "id": 194,
+        "name": "c:\\windows\\system32\\drivers\\usbhub3.sys!?",
+        "exclusive_metric": 1.0
+      },
+      {
+        "id": 190,
+        "name": "c:\\windows\\system32\\drivers\\wfplwfs.sys!?",
+        "exclusive_metric": 1.0
+      },
+      {
+        "id": 208,
+        "name": "c:\\windows\\system32\\drivers\\wdiwifi.sys!?",
+        "exclusive_metric": 1.0
+      }
+    ],
+    "out_of_range_project_symbols": [
+      {
+        "id": 153,
+        "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!??_ZN11gemm_common5cache18CACHE_INFO_DEFAULT17h2f8a26adb2a0b7ecE",
+        "inclusive_metric": 9.0,
+        "exclusive_metric": 0
+      },
+      {
+        "id": 154,
+        "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!??_ZN8gemm_f3211microkernel3fma3f329U32_MASKS17h750cf6ee1e766e27E",
+        "inclusive_metric": 15.0,
+        "exclusive_metric": 0
+      }
+    ],
+    "samples_with_any_out_of_range_ancestor": 24.0,
+    "samples_with_broken_ancestry": 2557.0,
+    "broken_ancestry_percent": 0.08200159577606797,
+    "interpretation": "The two !?? names are uncertain out-of-range nearest-symbol labels, not trustworthy caller identities. They have no exclusive samples and affect 24 inclusive samples. System symbols remain unresolved under the local-only symbol policy. BROKEN ancestry is quantified rather than called complete unwinding."
+  },
+  "exclusive_leaf_by_caller": [
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::axpy_avx2",
+      "call_path": "attention_call_path",
+      "metric": 799442.0,
+      "percent_of_all_samples": 25.637669038095947
+    },
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::dot_avx2",
+      "call_path": "linear_call_path",
+      "metric": 724708.0,
+      "percent_of_all_samples": 23.240990407384697
+    },
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::dot_avx2",
+      "call_path": "attention_call_path",
+      "metric": 718938.0,
+      "percent_of_all_samples": 23.055949653521612
+    },
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::axpy_avx2",
+      "call_path": "axpy_without_resolved_operator_caller",
+      "metric": 548.0,
+      "percent_of_all_samples": 0.017574061198781875
+    },
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::axpy_avx2",
+      "call_path": "normalization_call_path",
+      "metric": 53.0,
+      "percent_of_all_samples": 0.0016996811013420426
+    },
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::axpy_avx2",
+      "call_path": "linear_call_path",
+      "metric": 9.0,
+      "percent_of_all_samples": 0.0002886250926807242
+    },
+    {
+      "leaf": "ocr_bench!falcon_ocr::kernels::x86::dot_avx2",
+      "call_path": "dot_without_resolved_operator_caller",
+      "metric": 4.0,
+      "percent_of_all_samples": 0.00012827781896921077
+    }
+  ],
+  "caller_interpretation": "Categories use resolved stack ancestry and the same precedence as the independently reproduced root summary. Dot samples are split between linear and attention callers; a dot-only ranking cannot assign them all to attention. Sampled CPU weights are not per-phase wall-clock timings.",
+  "etl_binding": {
+    "sha256_recorded_by_capture": "3d6dd82b9f0e74fa36aa5f7a5dbcaf43d521c7532b57a810db3d8390cf41f03e",
+    "independently_read_or_hashed_here": false,
+    "count_agreement_note": "Root reports equality to the exact-PID in-lifetime ETL sample inventory, excluding one 189.9us post-exit sample; this receipt independently checks the XML inventory only."
+  },
+  "upstream_version": "Microsoft PerfView v3.2.6 tagged source; source files preserved under artifacts/diagnostics/perfview-export-review-v1.",
+  "upstream_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/perfview/v3.2.6/src/Utilities/XmlUtilities.cs",
+      "path": "artifacts\\diagnostics\\perfview-export-review-v1\\src\\Utilities\\XmlUtilities.cs",
+      "sha256": "ece31825137ae3ab66d60f3be2f8573f8d0ed1eeac1bbabde74e2f981b3b5260"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/perfview/v3.2.6/src/PerfView/UserCommands.cs",
+      "path": "artifacts\\diagnostics\\perfview-export-review-v1\\src\\PerfView\\UserCommands.cs",
+      "sha256": "53b45d760d3c05bfbe2cb4591774f8bb262b263fcc2a3ca644bb38cda508a005"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/perfview/v3.2.6/src/PerfView/Extensibility.cs",
+      "path": "artifacts\\diagnostics\\perfview-export-review-v1\\src\\PerfView\\Extensibility.cs",
+      "sha256": "b7c0d5ec5d361d8ed7d9c95df24c462c0cec30a60ca9b8b44f589383496f9eac"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/microsoft/perfview/v3.2.6/src/PerfView/OtherSources/XMLStackSource.cs",
+      "path": "artifacts\\diagnostics\\perfview-export-review-v1\\src\\PerfView\\OtherSources\\XMLStackSource.cs",
+      "sha256": "642e9dbb249316bd3990a1257eb591bef5960785c7142b8b6f4aba923113f579"
+    }
+  ],
+  "bound_small_inputs_before_after": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\xml-integrity.json": "5816abc8b4920ee9de522bef09895c3fe1c891b7c9e3637ceba3407f01b4e92e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\windows-fullpage-profile-stacks-v1.json": "5d8e4b7747b8a22d850b781145b7ed81465d609ae4ce0a81e23c20af6975bf6a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\windows-fullpage-profile-capture-v2-review.json": "b5bb08f503b3c33d90ea4e4c16795468c6fd55c81dd6cfb4277caf65bf0ecc68",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\perfview-stacks-launch.json": "684073d0b7bbc0a67abf8d11050b256789c28c812c37744ffdac53042b464858",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\perfview-stacks-exit.json": "b7e05943da0c6558e4167e53cf9d8e3a22f0028c62aad164366821053c0ee011",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\perfview-stacks.log": "848934d3243f73876bec2ca847fc9c0011c2a6f096a94acbad8108d298b14605",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\src\\Utilities\\XmlUtilities.cs": "ece31825137ae3ab66d60f3be2f8573f8d0ed1eeac1bbabde74e2f981b3b5260",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\src\\PerfView\\UserCommands.cs": "53b45d760d3c05bfbe2cb4591774f8bb262b263fcc2a3ca644bb38cda508a005",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\src\\PerfView\\Extensibility.cs": "b7c0d5ec5d361d8ed7d9c95df24c462c0cec30a60ca9b8b44f589383496f9eac",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\src\\PerfView\\OtherSources\\XMLStackSource.cs": "642e9dbb249316bd3990a1257eb591bef5960785c7142b8b6f4aba923113f579",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\inspect_xml.py": "9f86de31347d6ff5e93ba77630ea70fae4a2147c04d49a6b77b8812b42c87947",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\finalize_receipt.py": "eb029474b52b54ed3d99f14b38fc09bf8b56d7a2e62a71d890a5d3ea4004fa98"
+  },
+  "zip_before_after_check_receipt": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\perfview-export-review-v1\\xml-integrity.json"
+}

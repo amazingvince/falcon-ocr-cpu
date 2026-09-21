@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "validated_plan_no_execution",
+  "captured_utc": "2026-09-20T08:35:04.513548+00:00",
+  "plan": "artifacts/benchmarks/fullpages-plan-v2/plan.json",
+  "plan_sha256": "e123ab3c7ce89484f4cfd5ffaecbcb6af541de59dbeef2cbc80b8b3e482fa211",
+  "build_manifest": "artifacts/builds/ocr-bench-fullpages-v2-windows/build.json",
+  "build_manifest_sha256": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+  "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+  "source_archive_sha256": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+  "jobs": 72,
+  "repetitions": 3,
+  "warmup": 2,
+  "stage_instrumentation_validation": "reference/stage-timing-windows-validation-v1.json",
+  "protocol_tests_passed": 17,
+  "source_and_input_preflight_passed": true,
+  "performance_run": false,
+  "notes": [
+    "Same frozen input/mode selection as v1, with measured projection and transformer-prefill subintervals required.",
+    "Three repetitions are the prespecified minimum; seven remains recommended.",
+    "Other project CPU/GPU jobs are still active. No quiet-host attestation or speed result is claimed."
+  ]
+}

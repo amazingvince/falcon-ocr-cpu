@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+  "method": "One reviewer inspected all 15 images on a contact sheet and six full-size source images. This verifies rendering and declared fixture content, not OCR inference accuracy or professionally reviewed translations.",
+  "contact_sheet": {
+    "path": "artifacts/supplement/original-v1/contact-sheet.jpg",
+    "sha256": "2123fbda100f9a79a61b7e346d1ac7ccd40cfa774faa03b07d3d2ec23d5bb4bb"
+  },
+  "qualification": "Visual rendering approved; byte-identical rerender and independent blank/rotation pixel checks passed. GPU/CPU inference comparison has not yet run.",
+  "pages": [
+    {
+      "id": "original-supplement-v1:receipt-market-clean",
+      "canonical_png_sha256": "92dff18218e6dfcdfb546a8499bf38d5190733f32028db49946b959dbf8219e6",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Narrow receipt with aligned item/quantity/amount columns, subtotal, tax, total, payment and change; all text is inside the page.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:receipt-market-faint",
+      "canonical_png_sha256": "c30ab21d7a4bf183b133d026118b7ff437962f8b625c14d40d5a92b904b7f297",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Same market receipt geometry and text with visibly reduced gray contrast; full-size inspection confirms text remains present and unclipped.",
+      "inspection": [
+        "contact_sheet",
+        "full_size_source_image"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:receipt-cafe",
+      "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Second narrow receipt has a different short item layout, explicit USD amounts, and consistent subtotal/tax/total, without clipped text.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:blank-white",
+      "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Uniform white page with no visible labels or marks; the displayed contact-sheet label lies outside the source image.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:blank-offwhite",
+      "canonical_png_sha256": "973635514016ab54abc91052496d3bf1b584dff74357fd5328f21bce13d3dc09",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Uniform off-white landscape page with no visible labels or marks; empty expected text is intentional.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:sparse-room",
+      "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "One small line reading Room 204 near the center of an otherwise empty page.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:rotation-000",
+      "canonical_png_sha256": "8309ced897e184bd9d6220b03c32532cc719a5378ebea4367d187e60d758ff01",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Upright library note has a title and short prose lines with ample margins and no clipping.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:rotation-090",
+      "canonical_png_sha256": "0989c8fff8ecd943080155e8435312eef336c7d6f99dfc00c43396d81f3f3b92",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "The complete upright note is rotated counterclockwise by 90 degrees; all lines remain inside the transposed page.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:rotation-180",
+      "canonical_png_sha256": "5d4855b8f4832f854cde53dbdebae4d18f1e89f613310abdc8ba22e94b305d5c",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "The entire note is upside down; full text and margins remain present.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:rotation-270",
+      "canonical_png_sha256": "4f4ede248e4f0bfcf60d8fedb0606613fcaa0fa1af529c5a9810ff29545d667b",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "The complete note is rotated clockwise by 90 degrees; all lines remain inside the transposed page.",
+      "inspection": [
+        "contact_sheet"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:script-russian",
+      "canonical_png_sha256": "2722749fe7ea873e27822162be6f0cff2cf667c1f5f70359f20cb8a964036d78",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Full-size view shows four clear Cyrillic text lines with intact punctuation, spaces and margins, matching the authored logical strings.",
+      "inspection": [
+        "contact_sheet",
+        "full_size_source_image"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:script-greek",
+      "canonical_png_sha256": "1c27d411134abd78afde45aca9e6882d0535a33cb5a8d6b68b81773473df6e43",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Full-size view shows four Greek text lines with visible accents and intact punctuation/margins, matching the authored logical strings.",
+      "inspection": [
+        "contact_sheet",
+        "full_size_source_image"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:script-arabic",
+      "canonical_png_sha256": "c6061329583b2bb75af769566f2d8bb8242e9f595f9a43d3acaafd28a21d95ed",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Full-size view shows five right-aligned right-to-left lines with connected Arabic shaping and correct punctuation placement; no replacement-glyph boxes or clipping.",
+      "inspection": [
+        "contact_sheet",
+        "full_size_source_image"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:script-hebrew",
+      "canonical_png_sha256": "c12dbb9e66072d62839be1a49f748aa40b87e226e5b8c54525aa010f29cf2ba5",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Full-size view shows five right-aligned right-to-left Hebrew lines with correct final-letter forms and punctuation placement; no replacement-glyph boxes or clipping.",
+      "inspection": [
+        "contact_sheet",
+        "full_size_source_image"
+      ]
+    },
+    {
+      "id": "original-supplement-v1:script-vietnamese",
+      "canonical_png_sha256": "200a29069ccac5d8da7c57e790aa1ebb54f75a1f6928adc31eb0996b72d5a51c",
+      "verdict": "approved_for_synthetic_diagnostics",
+      "evidence": "Full-size view shows four Latin-script Vietnamese lines with visible accents, intact punctuation/margins, and no replacement-glyph boxes.",
+      "inspection": [
+        "contact_sheet",
+        "full_size_source_image"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "operational_recovery_completed_single_numerical_attempt_rejected_prelaunch",
+  "startup_receipt_path": "artifacts/reference/bf16-ptx-observer-v2-operational-recovery-v1/startup.json",
+  "startup_receipt_sha256": "e89e42ef99228acf395ed862a0dc1ab52167cd5eaa5e1d8890df80476a8814fc",
+  "actual_command": "bash scripts/run_bf16_ptx_observer_v2_lf.sh --output artifacts/reference/bf16-ptx-observer-v2",
+  "actual_launcher_sha256": "468d2769bb436a37f520c642de8654d152cfc6a0cc2dba88e7bba8a530d30810",
+  "reviewed_launcher_sha256": "7f235db418a6bec4f2be4916d45a72c6a8ec897b0c8e0c217f43d519458e1a7c",
+  "wrapper_closure_checks": {
+    "reviewed": true,
+    "actual": true,
+    "archived_actual": true,
+    "archived_reviewed": true,
+    "only_line_endings": true
+  },
+  "prior_format_failure_assembler_or_kernel_attempts": 0,
+  "numerical_attempt_assembler_invocations": 1,
+  "numerical_attempt_observer_launches": 0,
+  "runtime_report_path": "artifacts/reference/bf16-ptx-observer-v2/report.json",
+  "runtime_report_sha256": "7d7a7d8a565cfaac0085f3c9695e915c780604de30458d92d365bf917422e6c0",
+  "runtime_source_window_unchanged": true,
+  "runtime_input_window_unchanged": true,
+  "gpu_status": {
+    "checked_utc": "2026-09-20T13:08:14.929744+00:00",
+    "uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "name": "NVIDIA GeForce RTX 4090",
+    "memory_used_mib": 42,
+    "memory_free_mib": 24096,
+    "utilization_percent": 0,
+    "observer_process_exit_code": 1,
+    "owned_gpu_work_running": false,
+    "qualification": "Read-only nvidia-smi snapshot after process exit; no observer CUDA kernel was launched."
+  },
+  "qualification": "Only line endings changed in the separately archived execution wrapper. Reviewed numerical sources, spec, PTX candidate and all gates stayed fixed. Root released this operational recovery; no numerical retry followed the machine-gate rejection."
+}

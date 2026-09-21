@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "three_page_serving_evidence_verified",
+  "pages": 3,
+  "matching_token_ids": 4881,
+  "vllm_report_sha256": "491eac0d1c5916139481cf522f35a23e23c390013209cd0c67e3bb9ffcac8c09",
+  "official_report_sha256": "ec46fea3cdf02fc9680cfad5dd3d988d81a99b32990081cd4bf68d9086b24fa0",
+  "manifest_sha256": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+  "harness_capture_sha256": "b54849621a7ffa6b3feba3cf5b930a755c0c64d03a14bfcef9841f4859ae6c9d",
+  "harness_capture_phase": "after container startup environment capture, before first HTTP inference request",
+  "installed_source_files": 9,
+  "preserved_ptx_files": 4,
+  "page_record_sha256": {
+    "3f294b5e60a0c2d4": "bbd067ade7005a4a3f92f769caeffac3b1534b6204cb6fa5cd336e887e04e6b8",
+    "2c243b31d36eb729": "ebd1d87c29ce82f74ba698b30bcf6ff59d80f29ad2c479cf65dab4634c985607",
+    "f75c4a0b98e45ab3": "8ea536351df3e9068fe5d3f8ed12300987632d4f3b6fe758485d426046d45dd3"
+  },
+  "script_sha256": "a7400fc3bad78f80a622745a3bb234ecdb249aa70c001df3083c591a2f02a967",
+  "qualification": "Three-page output and preserved-file verification. Historical corpus startup limitations remain; copied harness sources are attested only at their recorded capture phase. No hidden-state, corpus-wide quality or performance qualification."
+}

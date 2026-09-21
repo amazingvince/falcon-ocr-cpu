@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T12:10:09.793188+00:00",
+  "status": "portable_analyzer_initialized_no_trace_recorded",
+  "tool": {
+    "release": "v3.2.6",
+    "published": "2026-08-19T20:33:57Z",
+    "source": "https://github.com/microsoft/perfview/releases/download/v3.2.6/PerfView.exe",
+    "sha256": "84b8523f7fb4783fd0baae6b080adb1b5aac388192145ad713e504c69954556d",
+    "github_digest": "sha256:84b8523f7fb4783fd0baae6b080adb1b5aac388192145ad713e504c69954556d",
+    "size": 24842080,
+    "signature_status": "Valid",
+    "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+    "certificate_thumbprint": "1D77A9B9E8FE2075D9AD15123257FB90DB0DA4A1",
+    "file_version": "3.2.6"
+  },
+  "source_urls": [
+    "https://github.com/microsoft/perfview/releases/tag/v3.2.6",
+    "https://github.com/microsoft/perfview/blob/v3.2.6/documentation/Downloading.md",
+    "https://github.com/microsoft/perfview/blob/v3.2.6/src/PerfView/UserCommands.cs"
+  ],
+  "files_sha256": {
+    "artifacts/tools/perfview-3.2.6/PerfView.exe": "84b8523f7fb4783fd0baae6b080adb1b5aac388192145ad713e504c69954556d",
+    "artifacts/tools/perfview-3.2.6/verification.json": "11df1048894af8cce6745fae8cd78981946b8a84ee118d97b85a03b71d8525d7",
+    "artifacts/tools/perfview-3.2.6/release.json": "9a64502b7523ec69c200ed39e564a337194b9527d3fe02d88218bfc925b94d7d",
+    "reference/benchmarks/windows-fullpages-symbols-v1.json": "7e8398aabc236ba83cef03487b85553cffab0aeb63c2d2452da50f131699bc60",
+    "artifacts/builds/ocr-bench-fullpages-v2-windows/ocr_bench.pdb": "19d3058d9d409c526839ca6c3387e7fafbd9a4addaf1e870d6b19ed5f58e9879",
+    "artifacts/diagnostics/perfview-readiness-v1/pdb-signature-retry.log": "627c281fed466484c21cb23a07a9f57e3f7fe14e61eed6f0a4701e9835162ea9",
+    "artifacts/diagnostics/perfview-readiness-v1/pdb-signature-accepted.log": "3cb1bbb863a0e78897adabe77c59bad4f65bf06c23749f9a2a11ce030a7f09ba",
+    "artifacts/diagnostics/perfview-readiness-v1/image-symbols.log": "19938f4391d2ed2e0e8d68d798343c41931d7fdbd19b3c5be747c450da9801b3"
+  },
+  "native_pdb_open": {
+    "passed": true,
+    "guid": "854fda6b-cea5-4cad-bdd6-d8d27009373b",
+    "age": 5,
+    "exit_code": 0
+  },
+  "attempts": [
+    {
+      "operation": "sandboxed PdbSignature",
+      "result": "stalled before log; only project-owned PID52752 stopped; cause unestablished"
+    },
+    {
+      "operation": "outside-sandbox PdbSignature",
+      "exit_code": -3,
+      "result": "standard EULA initialization required"
+    },
+    {
+      "operation": "outside-sandbox PdbSignature with AcceptEULA",
+      "exit_code": 0,
+      "result": "matching native PDB opened"
+    },
+    {
+      "operation": "optional ImageSize export",
+      "exit_code": 1,
+      "result": "PdbScope extension absent; no symbol-size report produced"
+    }
+  ],
+  "planned_analysis": [
+    "Record a separate bounded WPR CPU trace after inference jobs finish using a project-owned instance.",
+    "Analyze only the benchmark process with SaveCPUStacksAsCsv and retain original ETL/logs plus its matching binary/PDB.",
+    "Check sample/event loss, process identity, unresolved frames and time coverage before assigning hotspots."
+  ],
+  "recording_started": false,
+  "etl_analyzed": false,
+  "stack_symbol_resolution_tested": false,
+  "performance_measured": false,
+  "limitations": [
+    "Signature/PDB opening does not establish ETW capture permission, trace parsing, sample completeness or resolved CPU stacks.",
+    "Optional ImageSize is unavailable without PdbScope; CPU stack export remains untested.",
+    "No changes to frozen model, benchmark executable, PDB or source archive. No profile was uploaded.",
+    "Profiled latency must not substitute for unprofiled quiet benchmark controls."
+  ]
+}

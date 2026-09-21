@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "bounded_source_review_passed",
+  "scope": "Read-only review of one unmodified PTX assembler/Driver-ABI control and five host-only tests. No GPU execution, assembly or candidate observation by reviewer.",
+  "checked_source_and_artifact_sha256": {
+    "scripts/export_bf16_ptx_roundtrip.py": "1ff611d9c527108784d2fd7851eaf78742346ab34985576eae06fbc2759ec089",
+    "scripts/cuda_ptx_reference.py": "eb580de4046ef7bde5c5e55cec5ebf92009911e89bbd314f5a8b57930d6a0bb5",
+    "scripts/test_cuda_ptx_reference.py": "7dffda1822b318cf274681df4cd3928bd2c3a6917f376a0c3e7464e34e165b2b",
+    "artifacts/reference/bf16-fused-substages-v5/original-0.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "artifacts/reference/bf16-fused-substages-v5/original-0.cubin": "7ba5f8153557a08dbc5069b058359d01c09c0e6e860b0be8e2d23a5bc9f15c7e",
+    "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.ptx": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a",
+    "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.cubin": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+    "artifacts/reference/bf16-fused-substages-v5/report.json": "99f612c1d6b78405d5e0cd6c783a05f120fb44d09af98d9c0f3371f36b73f047"
+  },
+  "host_tests": {
+    "command": [
+      "C:\\Users\\amazi\\mambaforge\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts",
+      "-p",
+      "test_cuda_ptx_reference.py",
+      "-v"
+    ],
+    "passed": 5,
+    "failed": 0,
+    "exit_code": 0,
+    "output": "test_attention_typed_kernel_parameters (test_cuda_ptx_reference.AbiTests) ... ok\ntest_bad_attention_pointer_count_rejected (test_cuda_ptx_reference.AbiTests) ... ok\ntest_bad_elf_rejected (test_cuda_ptx_reference.AbiTests) ... ok\ntest_natural_lse_distinct_i64_size (test_cuda_ptx_reference.AbiTests) ... ok\ntest_real_code_section_and_truncation (test_cuda_ptx_reference.AbiTests) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.002s\n\nOK\n"
+  },
+  "closed_findings": [
+    "Generated module compilation removed; natural LSE launches the preserved cubin using its distinct i64-size ABI.",
+    "Original inputs, copied snapshots, tools, compiled cubin and loaded module bytes are bound and rechecked; compiled section parsing and compiled cubin digest use the same bytes.",
+    "Cleanup exceptions reject and remain recorded instead of suppressing the result receipt."
+  ],
+  "reviewed_invariants": [
+    "Attention: fourteen pointers, five u32 scalars, two null scratch pointers; grid2x1x16, block128, shared27136.",
+    "Natural LSE: two pointers, u64(144),u32(2304),two null scratch pointers; grid18,block128,shared0.",
+    "Actual Torch-selected pinned assembler; one explicit unmodified attention PTX assembly, no observer patch or flag sweep.",
+    "Entire saved machine text equality gates any GPU kernel launch; same loaded attributes and complete raw/natural/log2 output equality plus frozen controls remain mandatory.",
+    "Explicit rejection on source/input window changes and no production/model-qualification claim."
+  ],
+  "remaining_gates": [
+    "Actual single assembler roundtrip and all prospective launch/output gates have not been run in this review.",
+    "Passing this control would establish the unchanged launch path only; it would not qualify future observer intermediates or the model."
+  ]
+}

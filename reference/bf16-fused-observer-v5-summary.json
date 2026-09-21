@@ -1,0 +1,579 @@
+{
+  "schema_version": 1,
+  "status": "rejected_instrumentation_fixture_or_lowering_difference",
+  "accepted": false,
+  "report_path": "artifacts/reference/bf16-fused-substages-v5/report.json",
+  "report_sha256": "99f612c1d6b78405d5e0cd6c783a05f120fb44d09af98d9c0f3371f36b73f047",
+  "capture_sha256": "6bbbdbdf1575ed53be6b22992f829aa9500cda20df1e3ddedf5c1efa918e959d",
+  "unavailable_fields": [
+    "sum_unrounded_probabilities_f32"
+  ],
+  "observation_scope": "Partial observation only. The native rounded local probability sum is unavailable. Do not infer its exact rounded value from denominator differences; do not claim completion of v2.",
+  "cases": [
+    {
+      "case": "prefill.layer.0",
+      "checks": {
+        "raw_instrumented_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "max_absolute": 0.0
+        },
+        "lse_instrumented_vs_original": {
+          "equal": false,
+          "different_count": 7,
+          "elements": 2304,
+          "max_absolute": 9.5367431640625e-07
+        },
+        "log2_lse_instrumented_vs_original": {
+          "equal": false,
+          "different_count": 7,
+          "elements": 2304,
+          "max_absolute": 9.5367431640625e-07
+        },
+        "raw_original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "max_absolute": 0.0
+        },
+        "lse_original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "max_absolute": 0.0
+        },
+        "observation_stores": {
+          "equal": true
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.17",
+      "checks": {
+        "raw_instrumented_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "max_absolute": 0.0
+        },
+        "lse_instrumented_vs_original": {
+          "equal": false,
+          "different_count": 9,
+          "elements": 2304,
+          "max_absolute": 4.76837158203125e-07
+        },
+        "log2_lse_instrumented_vs_original": {
+          "equal": false,
+          "different_count": 11,
+          "elements": 2304,
+          "max_absolute": 9.5367431640625e-07
+        },
+        "raw_original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "max_absolute": 0.0
+        },
+        "lse_original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "max_absolute": 0.0
+        },
+        "observation_stores": {
+          "equal": true
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.19",
+      "checks": {
+        "raw_instrumented_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "max_absolute": 0.0
+        },
+        "lse_instrumented_vs_original": {
+          "equal": false,
+          "different_count": 12,
+          "elements": 2304,
+          "max_absolute": 4.76837158203125e-07
+        },
+        "log2_lse_instrumented_vs_original": {
+          "equal": false,
+          "different_count": 13,
+          "elements": 2304,
+          "max_absolute": 9.5367431640625e-07
+        },
+        "raw_original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "max_absolute": 0.0
+        },
+        "lse_original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "max_absolute": 0.0
+        },
+        "observation_stores": {
+          "equal": true
+        }
+      }
+    }
+  ],
+  "reduction_lowering": {
+    "qualification": "Original and candidate reduction DAG shapes compare with exp2 leaves anonymized; this is a structural lowering check, not a proof of all native internal values.",
+    "checks": {
+      "original_two_MMA_add_reductions": true,
+      "candidate_two_matching_MMA_add_reductions": false,
+      "original_eight_native_row_reductions": true,
+      "original_native_local_XOR_structure": true,
+      "candidate_identical_row_reduction_shapes": false
+    },
+    "equal": false
+  },
+  "compiled_artifacts": {
+    "original": [
+      {
+        "metadata": {
+          "hash": "6d1973d91e2ba269652eae96458d3086d590863586eb913cfaeab27549244a91",
+          "target": {
+            "backend": "cuda",
+            "arch": 89,
+            "warp_size": 32
+          },
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 3,
+          "warp_size": 32,
+          "maxnreg": null,
+          "ptx_version": null,
+          "ptx_options": null,
+          "ir_override": null,
+          "enable_fp_fusion": true,
+          "enable_reflect_ftz": true,
+          "launch_cooperative_grid": false,
+          "launch_pdl": false,
+          "supported_fp8_dtypes": [
+            "fp8e4b15",
+            "fp8e4nv",
+            "fp8e5"
+          ],
+          "deprecated_fp8_dot_operand_dtypes": [],
+          "default_dot_input_precision": "tf32",
+          "allowed_dot_input_precisions": [
+            "tf32",
+            "tf32x3",
+            "ieee",
+            "bf16x3",
+            "bf16x6"
+          ],
+          "max_num_imprecise_acc_default": 0,
+          "extern_libs": [
+            [
+              "libdevice",
+              "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+            ]
+          ],
+          "debug": true,
+          "backend_name": "cuda",
+          "sanitize_overflow": false,
+          "arch": "sm89",
+          "instrumentation_mode": "",
+          "triton_version": "3.6.0",
+          "tensordesc_meta": [],
+          "shared": 27136,
+          "tmem_size": 0,
+          "global_scratch_size": 0,
+          "global_scratch_align": 1,
+          "profile_scratch_size": 0,
+          "profile_scratch_align": 1,
+          "name": "triton_tem_fused_flex_attention_0"
+        },
+        "selected_launcher": {
+          "launcher_kind": "torch_static_triton_launcher",
+          "cache_hash": "NUMXHWI6FORGSZJOV2LELDJQQ3KZBBRVQ3VZCPH25KZHKSJEJKIQ",
+          "retained_kernel_hash": "6d1973d91e2ba269652eae96458d3086d590863586eb913cfaeab27549244a91",
+          "retained_kernel_name": "triton_tem_fused_flex_attention_0",
+          "selected_cubin_path": "/home/amazi/falcon-ocr-rust-reference/cache/triton/NUMXHWI6FORGSZJOV2LELDJQQ3KZBBRVQ3VZCPH25KZHKSJEJKIQ/triton_tem_fused_flex_attention_0.cubin",
+          "selected_cubin_sha256": "7ba5f8153557a08dbc5069b058359d01c09c0e6e860b0be8e2d23a5bc9f15c7e",
+          "metadata_sha256": "4ba3774d795c217e819e8d9cb7f702ca77eb6f62103937528247639ba7ef061d",
+          "compile_result_class": "StaticTritonCompileResult",
+          "config": "num_warps: 4, num_ctas: 1, num_stages: 3, maxnreg: None",
+          "n_regs": 255,
+          "n_spills": 540,
+          "shared": 27136
+        },
+        "artifacts": {
+          "ptx": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-0.ptx",
+            "sha256": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+            "bytes": 582922
+          },
+          "cubin": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-0.cubin",
+            "sha256": "7ba5f8153557a08dbc5069b058359d01c09c0e6e860b0be8e2d23a5bc9f15c7e",
+            "bytes": 604464
+          },
+          "ttir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-0.ttir",
+            "sha256": "75a4f791e0a157b890ad1e6990b61538edebb8c99e60c57fdedf729f14c573f8",
+            "bytes": 60359
+          },
+          "ttgir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-0.ttgir",
+            "sha256": "b891c8743b35224f9e04a3057bb21d7e708373446a576bda27b4b3a71b365715",
+            "bytes": 79358
+          },
+          "llir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-0.llir",
+            "sha256": "c3ae29441576b15849e45e0f1697a685630f4f1b3bf4b9e10f37277bf0eeba2b",
+            "bytes": 967291
+          }
+        },
+        "instruction_counts": {
+          "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 256,
+          "mul.f32": 396,
+          "sub.f32": 136,
+          "ex2.approx.ftz.f32": 136,
+          "fma.rn.f32": 8,
+          "cvt.rn.bf16x2.f32": 96,
+          "div.full.f32": 64
+        }
+      }
+    ],
+    "original.natural_lse": [
+      {
+        "metadata": {
+          "hash": "d517b9fbe27a1d6f3e1cf944c8417fe17dbd961d8ab898b6ea4b5907153e941f",
+          "target": {
+            "backend": "cuda",
+            "arch": 89,
+            "warp_size": 32
+          },
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1,
+          "warp_size": 32,
+          "maxnreg": null,
+          "ptx_version": null,
+          "ptx_options": null,
+          "ir_override": null,
+          "enable_fp_fusion": true,
+          "enable_reflect_ftz": true,
+          "launch_cooperative_grid": false,
+          "launch_pdl": false,
+          "supported_fp8_dtypes": [
+            "fp8e4b15",
+            "fp8e4nv",
+            "fp8e5"
+          ],
+          "deprecated_fp8_dot_operand_dtypes": [],
+          "default_dot_input_precision": "tf32",
+          "allowed_dot_input_precisions": [
+            "tf32",
+            "tf32x3",
+            "ieee",
+            "bf16x3",
+            "bf16x6"
+          ],
+          "max_num_imprecise_acc_default": 0,
+          "extern_libs": [
+            [
+              "libdevice",
+              "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+            ]
+          ],
+          "debug": true,
+          "backend_name": "cuda",
+          "sanitize_overflow": false,
+          "arch": "sm89",
+          "instrumentation_mode": "",
+          "triton_version": "3.6.0",
+          "tensordesc_meta": [],
+          "shared": 0,
+          "tmem_size": 0,
+          "global_scratch_size": 0,
+          "global_scratch_align": 1,
+          "profile_scratch_size": 0,
+          "profile_scratch_align": 1,
+          "name": "triton_poi_fused_mul_1"
+        },
+        "selected_launcher": {
+          "launcher_kind": "torch_static_triton_launcher",
+          "cache_hash": "2UL3T67CPIOW6PQ47FCMQQL74F633FQ5RK4JRNXKJNMQOFJ6SQPQ",
+          "retained_kernel_hash": "d517b9fbe27a1d6f3e1cf944c8417fe17dbd961d8ab898b6ea4b5907153e941f",
+          "retained_kernel_name": "triton_poi_fused_mul_1",
+          "selected_cubin_path": "/home/amazi/falcon-ocr-rust-reference/cache/triton/2UL3T67CPIOW6PQ47FCMQQL74F633FQ5RK4JRNXKJNMQOFJ6SQPQ/triton_poi_fused_mul_1.cubin",
+          "selected_cubin_sha256": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+          "metadata_sha256": "d523f90d69bfeede05b3a31854c6cb23e1f5c38fdeb7d8e7fd740daff3058c45",
+          "compile_result_class": "StaticTritonCompileResult",
+          "config": "XBLOCK: 128, num_warps: 4, num_ctas: 1, num_stages: 1, maxnreg: None",
+          "n_regs": 18,
+          "n_spills": 0,
+          "shared": 0
+        },
+        "artifacts": {
+          "ptx": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.ptx",
+            "sha256": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a",
+            "bytes": 11746
+          },
+          "cubin": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.cubin",
+            "sha256": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+            "bytes": 9832
+          },
+          "ttir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.ttir",
+            "sha256": "9268867be26bacef789d5766dad5bcd1d4468e2f81fa6ee0a5ebff6ae689b51b",
+            "bytes": 8191
+          },
+          "ttgir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.ttgir",
+            "sha256": "ab76ed6e78bfdcb6aad9666da426efdcada3ff0d67588942ec678261bd046a68",
+            "bytes": 8750
+          },
+          "llir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/original-natural-lse-0.llir",
+            "sha256": "dfcb8b6e8254870525f75b3bd5d6a0d81e668cefa2adb5629dbb8c498bbc6ea2",
+            "bytes": 5211
+          }
+        },
+        "instruction_counts": {
+          "div.s64": 1,
+          "div.u32": 1,
+          "mul.f32": 1
+        }
+      }
+    ],
+    "instrumented": [
+      {
+        "metadata": {
+          "hash": "3ad7c305b77e3f4df903980c860549f21d5b78eb63ae3e7eedeac1dac0035a24",
+          "target": {
+            "backend": "cuda",
+            "arch": 89,
+            "warp_size": 32
+          },
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 3,
+          "warp_size": 32,
+          "maxnreg": null,
+          "ptx_version": null,
+          "ptx_options": null,
+          "ir_override": null,
+          "enable_fp_fusion": true,
+          "enable_reflect_ftz": true,
+          "launch_cooperative_grid": false,
+          "launch_pdl": false,
+          "supported_fp8_dtypes": [
+            "fp8e4b15",
+            "fp8e4nv",
+            "fp8e5"
+          ],
+          "deprecated_fp8_dot_operand_dtypes": [],
+          "default_dot_input_precision": "tf32",
+          "allowed_dot_input_precisions": [
+            "tf32",
+            "tf32x3",
+            "ieee",
+            "bf16x3",
+            "bf16x6"
+          ],
+          "max_num_imprecise_acc_default": 0,
+          "extern_libs": [
+            [
+              "libdevice",
+              "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+            ]
+          ],
+          "debug": true,
+          "backend_name": "cuda",
+          "sanitize_overflow": false,
+          "arch": "sm89",
+          "instrumentation_mode": "",
+          "triton_version": "3.6.0",
+          "tensordesc_meta": [],
+          "shared": 54784,
+          "tmem_size": 0,
+          "global_scratch_size": 0,
+          "global_scratch_align": 1,
+          "profile_scratch_size": 0,
+          "profile_scratch_align": 1,
+          "name": "triton_tem_fused_flex_attention_0"
+        },
+        "selected_launcher": {
+          "launcher_kind": "torch_static_triton_launcher",
+          "cache_hash": "HLL4GBNXPY7U36IDTAGIMBKJ6IOVW6HLMOXD47XN5LA5VQADLISA",
+          "retained_kernel_hash": "3ad7c305b77e3f4df903980c860549f21d5b78eb63ae3e7eedeac1dac0035a24",
+          "retained_kernel_name": "triton_tem_fused_flex_attention_0",
+          "selected_cubin_path": "/home/amazi/falcon-ocr-rust-reference/cache/triton/HLL4GBNXPY7U36IDTAGIMBKJ6IOVW6HLMOXD47XN5LA5VQADLISA/triton_tem_fused_flex_attention_0.cubin",
+          "selected_cubin_sha256": "aea70c807ecd3258dd2dae012ad78e9fa2f2443c78d29008044664081e3b3ca8",
+          "metadata_sha256": "a6620131055a3296eafcf8a61f4db77721e3c36b5057a78c12f54948741d7f98",
+          "compile_result_class": "StaticTritonCompileResult",
+          "config": "num_warps: 4, num_ctas: 1, num_stages: 3, maxnreg: None",
+          "n_regs": 255,
+          "n_spills": 460,
+          "shared": 54784
+        },
+        "artifacts": {
+          "ptx": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-0.ptx",
+            "sha256": "b9ebd98edd615b9472292ef3dae1dc513ce92c7a96552df1cba9aebba34d7942",
+            "bytes": 1071268
+          },
+          "cubin": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-0.cubin",
+            "sha256": "aea70c807ecd3258dd2dae012ad78e9fa2f2443c78d29008044664081e3b3ca8",
+            "bytes": 975536
+          },
+          "ttir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-0.ttir",
+            "sha256": "9a3dc0fe97e905a32f98a5f5e17bf2620d1b3a7e7e85181a1c68ac349966cb16",
+            "bytes": 114916
+          },
+          "ttgir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-0.ttgir",
+            "sha256": "8d5195e19387f2f1c8a6b6368f8610ee90bbbafdfa92b5b15c8b0a6b071b1585",
+            "bytes": 150727
+          },
+          "llir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-0.llir",
+            "sha256": "136c6323c2e432a3499d176e35b904a341d1e0d1ca59fa3445c0023b180a07e5",
+            "bytes": 1904444
+          }
+        },
+        "instruction_counts": {
+          "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 256,
+          "mul.f32": 652,
+          "sub.f32": 397,
+          "ex2.approx.ftz.f32": 398,
+          "cvt.rn.bf16.f32": 192,
+          "cvt.rn.bf16x2.f32": 96,
+          "fma.rn.f32": 5,
+          "div.full.f32": 64
+        }
+      }
+    ],
+    "instrumented.natural_lse": [
+      {
+        "metadata": {
+          "hash": "d517b9fbe27a1d6f3e1cf944c8417fe17dbd961d8ab898b6ea4b5907153e941f",
+          "target": {
+            "backend": "cuda",
+            "arch": 89,
+            "warp_size": 32
+          },
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1,
+          "warp_size": 32,
+          "maxnreg": null,
+          "ptx_version": null,
+          "ptx_options": null,
+          "ir_override": null,
+          "enable_fp_fusion": true,
+          "enable_reflect_ftz": true,
+          "launch_cooperative_grid": false,
+          "launch_pdl": false,
+          "supported_fp8_dtypes": [
+            "fp8e4b15",
+            "fp8e4nv",
+            "fp8e5"
+          ],
+          "deprecated_fp8_dot_operand_dtypes": [],
+          "default_dot_input_precision": "tf32",
+          "allowed_dot_input_precisions": [
+            "tf32",
+            "tf32x3",
+            "ieee",
+            "bf16x3",
+            "bf16x6"
+          ],
+          "max_num_imprecise_acc_default": 0,
+          "extern_libs": [
+            [
+              "libdevice",
+              "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+            ]
+          ],
+          "debug": true,
+          "backend_name": "cuda",
+          "sanitize_overflow": false,
+          "arch": "sm89",
+          "instrumentation_mode": "",
+          "triton_version": "3.6.0",
+          "tensordesc_meta": [],
+          "shared": 0,
+          "tmem_size": 0,
+          "global_scratch_size": 0,
+          "global_scratch_align": 1,
+          "profile_scratch_size": 0,
+          "profile_scratch_align": 1,
+          "name": "triton_poi_fused_mul_1"
+        },
+        "selected_launcher": {
+          "launcher_kind": "torch_static_triton_launcher",
+          "cache_hash": "2UL3T67CPIOW6PQ47FCMQQL74F633FQ5RK4JRNXKJNMQOFJ6SQPQ",
+          "retained_kernel_hash": "d517b9fbe27a1d6f3e1cf944c8417fe17dbd961d8ab898b6ea4b5907153e941f",
+          "retained_kernel_name": "triton_poi_fused_mul_1",
+          "selected_cubin_path": "/home/amazi/falcon-ocr-rust-reference/cache/triton/2UL3T67CPIOW6PQ47FCMQQL74F633FQ5RK4JRNXKJNMQOFJ6SQPQ/triton_poi_fused_mul_1.cubin",
+          "selected_cubin_sha256": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+          "metadata_sha256": "d523f90d69bfeede05b3a31854c6cb23e1f5c38fdeb7d8e7fd740daff3058c45",
+          "compile_result_class": "StaticTritonCompileResult",
+          "config": "XBLOCK: 128, num_warps: 4, num_ctas: 1, num_stages: 1, maxnreg: None",
+          "n_regs": 18,
+          "n_spills": 0,
+          "shared": 0
+        },
+        "artifacts": {
+          "ptx": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-natural-lse-0.ptx",
+            "sha256": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a",
+            "bytes": 11746
+          },
+          "cubin": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-natural-lse-0.cubin",
+            "sha256": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+            "bytes": 9832
+          },
+          "ttir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-natural-lse-0.ttir",
+            "sha256": "9268867be26bacef789d5766dad5bcd1d4468e2f81fa6ee0a5ebff6ae689b51b",
+            "bytes": 8191
+          },
+          "ttgir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-natural-lse-0.ttgir",
+            "sha256": "ab76ed6e78bfdcb6aad9666da426efdcada3ff0d67588942ec678261bd046a68",
+            "bytes": 8750
+          },
+          "llir": {
+            "path": "artifacts/reference/bf16-fused-substages-v5/instrumented-natural-lse-0.llir",
+            "sha256": "dfcb8b6e8254870525f75b3bd5d6a0d81e668cefa2adb5629dbb8c498bbc6ea2",
+            "bytes": 5211
+          }
+        },
+        "instruction_counts": {
+          "div.s64": 1,
+          "div.u32": 1,
+          "mul.f32": 1
+        }
+      }
+    ]
+  },
+  "sources": {
+    "export_bf16_fused_substages.py": "806948fc7b0ecbc7828de7b0140e7568716223ac0f40b7abb77d3ca3da42d6cf",
+    "instrumented.py": "a8952efb86c5e5abf2f6653f33d0453732c8f75ae0319ef74e96debc1ec08091",
+    "instrument_bf16_flex.py": "aab08e6f46ce1d0e9605667dbd250d58d6695d4fd93d6eb48208a2cf8cf83c14",
+    "original.py": "1189460ad74ae2b36885008bd77138b06d270f8b8fd42bca292f664447a55f37",
+    "specification.json": "85610099350e8261b8833085222a4ad90c3fc613063f8856492071eb48e3093e",
+    "verify_bf16_reduction_lowering.py": "65e59f4d5570dc1be57ac6196f2a0084c98a54f31ce772a92408aa5e6966a2c1"
+  },
+  "qualification": "The single authorized partial-observation correction was rejected. Removing only the debug sum consumer did not restore masked reduction structure or full LSE equality. No native intermediate claims and no additional capture attempts are authorized. Earlier evidence remains preserved."
+}

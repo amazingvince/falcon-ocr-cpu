@@ -1,0 +1,196 @@
+{
+  "comparison": "Compact candidate versus Expanded using identical binary; native Linux x86_64, Rust 1.92.0, AVX2, four compute threads",
+  "default_cache_layout": "expanded",
+  "candidate": "compact",
+  "cache_contract": {
+    "prefix_key_heads": 16,
+    "generated_key_heads": 8,
+    "value_heads": 8,
+    "prefix_key_rotations_preserved": true
+  },
+  "single_same_prefix": {
+    "tensor_count": 1904,
+    "all_tensor_bits_identical": true,
+    "duplicate_head_tensors_checked": 726,
+    "teacher_forced_output_steps": 17
+  },
+  "mixed_batch": {
+    "tensor_count": 2256,
+    "all_tensor_bits_identical": true,
+    "duplicate_head_tensors_checked": 792,
+    "also_matches_original_pre_workspace_trace": true,
+    "expanded": {
+      "cache_layout": "expanded",
+      "decode_start_heap_bytes": 281948364,
+      "description": "Rust live heap only, including captured tensors; excludes mmap model weights and native allocations",
+      "finish_reasons": [
+        "eos",
+        "eos",
+        "eos",
+        "eos"
+      ],
+      "input_tokens": [
+        144,
+        48,
+        64,
+        144
+      ],
+      "peak_heap_bytes": 308611520,
+      "start_heap_bytes": 17662984,
+      "tensor_count": 2256,
+      "token_ids": [
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          273,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ]
+      ],
+      "trace_sha256": "a1f956cb75b65d2b2be88e4768d4d4130a0cbf7e2bfe49530255c4872dc22e46"
+    },
+    "compact": {
+      "cache_layout": "compact",
+      "decode_start_heap_bytes": 255275211,
+      "description": "Rust live heap only, including captured tensors; excludes mmap model weights and native allocations",
+      "finish_reasons": [
+        "eos",
+        "eos",
+        "eos",
+        "eos"
+      ],
+      "input_tokens": [
+        144,
+        48,
+        64,
+        144
+      ],
+      "peak_heap_bytes": 281938367,
+      "start_heap_bytes": 17662983,
+      "tensor_count": 2256,
+      "token_ids": [
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          273,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ]
+      ],
+      "trace_sha256": "a1f956cb75b65d2b2be88e4768d4d4130a0cbf7e2bfe49530255c4872dc22e46"
+    }
+  },
+  "baseline_normalized_decode_start_heap_saved_bytes": 26673152,
+  "baseline_normalized_decode_start_heap_saved_mib": 25.4375,
+  "warm_decode_heap_allocations": {
+    "expanded_single": 0,
+    "expanded_batch4": 0,
+    "compact_single": 0,
+    "compact_batch4": 0
+  },
+  "validation_tests": [
+    "tests/cache_layout.rs::compact_cache_preserves_single_and_mixed_batch_traces",
+    "tests/decode_allocations.rs::warm_fp32_decode_has_no_heap_allocations",
+    "tests/prefill_workspace.rs::mixed_batch_workspace_trace"
+  ],
+  "performance_qualification": "not performed; functional runs may overlap other CPU work",
+  "gpu_numerical_qualification": "unchanged; this compares CPU layouts, not a new GPU parity gate",
+  "trace_directory": "/home/amazi/falcon-ocr-rust-reference/diagnostics/prefill-reuse",
+  "source_archive": "/home/amazi/falcon-ocr-rust-reference/diagnostics/prefill-reuse/compact-source.zip",
+  "source_archive_sha256": "381209e4762b714fd8807e229c04370358a9fedf12fca815044105ef80dbe10f",
+  "source_sha256": {
+    "src/config.rs": "59abb57842547390810dcbc8adf46fe2b28914acc3264faae729330faeb32edf",
+    "src/kernels.rs": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+    "src/model.rs": "e01d39ce3cddd6ba21e3d3e5865a6dba8eacd500e3b93820be9dc32f1a679185",
+    "src/runner.rs": "8c50ce4d9e0ae63b727f4361ca95e3bd77be2994ee9c46c1d64bea8da7e99e21",
+    "tests/cache_layout.rs": "d3559a5a60a6fd3460eb22b40caee5c5077f447741bebb1c756036cce620e9e0",
+    "tests/prefill_workspace.rs": "beb092ab662994cb2fb4f6fe4e9262077b96fe88dd55a3f872c5ee6b5422efc8",
+    "tests/decode_allocations.rs": "6075fab82b1bb2336fbc47a891992d4b3298fa55ea66b677299fa8693b92fe45"
+  }
+}

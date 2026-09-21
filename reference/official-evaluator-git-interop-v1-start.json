@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "evaluation_dispatched_with_process_local_git_interop",
+  "recorded_utc": "2026-09-20T13:19:06.096150+00:00",
+  "pre_dispatch_audit": "reference/official-evaluator-line-endings-v1.json",
+  "source_sha256": {
+    "reference/official-evaluator-line-endings-v1.json": "3b9912e3b9ba232a3400ac1a9255d513f2ec65a635fe234061c2e176fd21940b",
+    "reference/official-evaluator-line-endings-independent-review-v1.json": "69872fd5ce325cfd6367f28f0107133e453611ba761e73cf0e72715aa8e33495",
+    "scripts/audit_evaluator_line_endings.py": "8061b83ba88c8b0b589de161b74935b47cb82da7790e1f80adb327a5a890269e",
+    "scripts/run_official_evaluation.py": "003a8955bd799f9d4b4b46dff0c5ea2de0b9a409d04497530a469327cbca920f",
+    "artifacts/evaluation/v3-checked-fp32-v1.log": "14f829cc4aab26f4991d93907ffaaeef332fec7bd12dba25380e249428cffad5"
+  },
+  "requested_process_environment": {
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "core.autocrlf",
+    "GIT_CONFIG_VALUE_0": "true",
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "effective_setting_probe": {
+    "command": "env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.autocrlf GIT_CONFIG_VALUE_0=true git -C artifacts/OmniDocBench-eval status --porcelain --untracked-files=no",
+    "exit_code": 0,
+    "stdout": "",
+    "scope": "Same explicit process-local Git setting as dispatched evaluation; strict clean-tree test passed after all materialized raw bytes were audited."
+  },
+  "inheritance": "The evaluation wrapper retains os.environ in its child environment; evaluator workers set OMP/OPENBLAS threads2 as recorded in the unchanged wrapper.",
+  "output_root": "artifacts/evaluation/v3-checked-fp32-v1",
+  "log": "artifacts/evaluation/v3-checked-fp32-v1-gitinterop.log",
+  "final_report": "reference/official-components-v3-fp32.json",
+  "post_evaluation_raw_source_recheck_pending": true,
+  "limits": "The setting permits expected CRLF checkout normalization only. No tracked source or local Git config was changed. Original failed invocation stopped before preparation/scoring.84 absent skip-worktree paths are outside materialized byte equality."
+}

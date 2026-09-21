@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "planning_validation_only_no_performance_execution",
+  "validated_utc": "2026-09-20T08:09:42.277913+00:00",
+  "workload": {
+    "path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json",
+    "sha256": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c"
+  },
+  "plan": {
+    "path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\fullpages-plan-v1\\plan.json",
+    "sha256": "82ffc45b122e51d3e05ac1cffb6a05dea5ac48aa89fabb603b34468856e0553a",
+    "jobs": 72,
+    "coverage": "complete_matrix"
+  },
+  "build": {
+    "path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v1-windows\\build.json",
+    "sha256": "692ecb091a81e69d29292760bccdf6dc2b6ce2e9989f6297974668cb0a811144",
+    "binary_sha256": "30efc40221745d1bf65723acb4d45eacdedce123743f5ec9299cb580a2968af7",
+    "source_archive_sha256": "97414e671d79ec695ce383b40c807b090dada0a1b845080f242c070b2c61640f"
+  },
+  "protocol_archive_sha256": "3df28860958e223e25a60c5dedec5aae809cabdba7b5be8254b6212f8ee63c17",
+  "script_sha256": {
+    "scripts/realistic_benchmark.py": "bef2d369e9c407baa4dd8531b1f263149b345b4f8ab63dd6cb9b2eae08af3393",
+    "scripts/compare_realistic_benchmarks.py": "74de836dc972e39f3a8667dbb9d1101fe93040b9b78d382ea308bd386e9d9343"
+  },
+  "checks": {
+    "model_assets_sha256_and_sizes": true,
+    "source_and_canonical_image_sha256": true,
+    "decoded_RGB_sha256_and_dimensions": true,
+    "complete_archived_source_hashes": true,
+    "current_source_inventory_at_validation": true,
+    "binary_hash_and_size": true,
+    "protocol_tests_passed": 16,
+    "run_without_explicit_plan_and_quiet_attestation_rejected": true
+  },
+  "performance_run": false,
+  "no_execution_start_record": true,
+  "limitations": [
+    "Validation records the source inventory at capture time. Subsequent source inventory edits require a fresh build and new plan before running.",
+    "This receipt contains no recognition, timings, GPU comparison or quality qualification.",
+    "The frozen complete matrix has72processes. A chosen profile/batch subset must be declared in a new plan and remains selected-group evidence."
+  ]
+}

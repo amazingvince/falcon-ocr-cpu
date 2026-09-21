@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "default_weight_layout": "unpacked",
+  "candidate_weight_layout": "phase_packed",
+  "qualification_scope": "Bit preservation versus current FP32 runner; no additional upstream GPU parity or performance promotion claim.",
+  "dispatch": "AVX2/FMA, 2-8 live batch-decode rows only; existing prefill and row1 paths unchanged.",
+  "shared_additional_packed_tensor_bytes": 876085248,
+  "shared_immutable_copy": "OnceLock on Model, initialized by opt-in Runner construction; no repacking across runners.",
+  "platforms": [
+    "native Windows x86_64",
+    "WSL2 Linux x86_64"
+  ],
+  "trace_tensor_counts": {
+    "canonical_single_17_steps": 1904,
+    "mixed_expanded_cache": 2144,
+    "mixed_compact_cache": 2144,
+    "full_live_batch2": 450,
+    "full_live_batch4": 674,
+    "full_live_batch8": 1122
+  },
+  "mixed_live_rows": [
+    3,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "warmed_decode_heap_allocations": 0,
+  "allocation_scope": "Single and batch4, both weight layouts, both cache layouts; separate-process allocator tests.",
+  "free_outputs": "IDs, text and finish reasons equal; mixed generation includes EOS-driven compaction.",
+  "configuration_tests": "Opt-in default compatibility, incompatible backend rejection and batch limit pass.",
+  "first_n_row_operator_checks": [
+    {
+      "rows": 2,
+      "report": "artifacts\\benchmarks\\linear-phase-packed-rows2-validation.json",
+      "report_sha256": "19cef8ea9abc814d026dede32585241741afcf007fe32b17a3b75d56a4d6287f",
+      "operators": 60,
+      "elements": 337920,
+      "wo_cases": 6,
+      "w2_cases": 6
+    },
+    {
+      "rows": 4,
+      "report": "artifacts\\benchmarks\\linear-phase-packed-rows4-validation.json",
+      "report_sha256": "3ec34833d2f7433b958f67c1061f8e9e6432d90b426048f94db413aa7b6be2b7",
+      "operators": 48,
+      "elements": 516096,
+      "wo_cases": 6,
+      "w2_cases": 6
+    },
+    {
+      "rows": 8,
+      "report": "artifacts\\benchmarks\\linear-phase-packed-rows8-validation.json",
+      "report_sha256": "068ccdd5acfbc99d78612bd2286e0a67bfd36966392b52b5cde20a8de724f5bf",
+      "operators": 36,
+      "elements": 712704,
+      "wo_cases": 6,
+      "w2_cases": 6
+    }
+  ],
+  "operator_reference_note": "First N captured rows retain expected GPU outputs from each original capture batch; these checks establish exact preservation against current AVX2, not a new GPU batch-size-specific tolerance policy.",
+  "source_sha256": {
+    "src/config.rs": "77b89dd0b6505e3f20bd10c38eb0f772654e98ab83c6beb22087baea3ba34686",
+    "src/model.rs": "7e72bb796b159ae5102a52c680ff85efd6a9dd6d77f39b03bb8656cb950dc45f",
+    "src/runner.rs": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+    "src/kernels.rs": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+    "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "src/main.rs": "05aeca51573cb99dd24ef06e3cba7bc2eafa1efb0665b25f6100ffa02ff37d83",
+    "src/lib.rs": "16b321762b473f0e12fdc0f7da69036b54fded50070a3c594a28cae86c41d38d",
+    "tests/weight_layout.rs": "cca7c3b1cf0da115c801c299efb43b873888a94c421f514576d78c2069a88ffb",
+    "tests/decode_allocations.rs": "c2dac69087350a3c3669294e80f88d4a4c291950d8159285b6853b9eacff3bde",
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6"
+  },
+  "logs": [
+    {
+      "path": "artifacts/benchmarks/weight-layout-native-tests.log",
+      "sha256": "85c9756d1dd27ce4b89607158794f1b62b833e5de8249c955aa5877455f022c2"
+    },
+    {
+      "path": "artifacts/benchmarks/weight-layout-wsl-tests.log",
+      "sha256": "d7e8ba2a343ff10c3493d2075981f8aa042a415d69bb34f7b44e865fcb2b72d2"
+    }
+  ]
+}

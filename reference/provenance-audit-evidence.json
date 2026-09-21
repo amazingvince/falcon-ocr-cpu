@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "audit_started_utc": "2026-09-20T07:32:07.659197+00:00",
+  "audit_completed_utc": "2026-09-20T07:32:08.598835+00:00",
+  "scope": "Read-only current-file hash audit; inference records remain untouched. Active-run observations are snapshots, not completeness checks.",
+  "checks": [
+    {
+      "name": "model_manifest.attention.py",
+      "path": "artifacts/model/attention.py",
+      "recorded_sha256": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+      "audit_time_sha256": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.config.json",
+      "path": "artifacts/model/config.json",
+      "recorded_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "audit_time_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.configuration_falcon_ocr.py",
+      "path": "artifacts/model/configuration_falcon_ocr.py",
+      "recorded_sha256": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+      "audit_time_sha256": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.model_args.json",
+      "path": "artifacts/model/model_args.json",
+      "recorded_sha256": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+      "audit_time_sha256": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.modeling_falcon_ocr.py",
+      "path": "artifacts/model/modeling_falcon_ocr.py",
+      "recorded_sha256": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+      "audit_time_sha256": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.processing_falcon_ocr.py",
+      "path": "artifacts/model/processing_falcon_ocr.py",
+      "recorded_sha256": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+      "audit_time_sha256": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.rope.py",
+      "path": "artifacts/model/rope.py",
+      "recorded_sha256": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+      "audit_time_sha256": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.special_tokens_map.json",
+      "path": "artifacts/model/special_tokens_map.json",
+      "recorded_sha256": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+      "audit_time_sha256": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.tokenizer.json",
+      "path": "artifacts/model/tokenizer.json",
+      "recorded_sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "audit_time_sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.tokenizer_config.json",
+      "path": "artifacts/model/tokenizer_config.json",
+      "recorded_sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "audit_time_sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.README.md",
+      "path": "artifacts/model/README.md",
+      "recorded_sha256": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+      "audit_time_sha256": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+      "matches": true
+    },
+    {
+      "name": "model_manifest.model.safetensors",
+      "path": "artifacts/model/model.safetensors",
+      "recorded_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "audit_time_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "matches": true
+    },
+    {
+      "name": "gpu_corpus_manifest",
+      "path": "reference/corpus-v3-evaluation-lock.json",
+      "recorded_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "audit_time_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "matches": true
+    },
+    {
+      "name": "gpu_requirements",
+      "path": "requirements/reference-lock.txt",
+      "recorded_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+      "audit_time_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+      "matches": true
+    },
+    {
+      "name": "serving.request_sha256",
+      "path": "artifacts/reference/vllm-smoke-fp32/request.json",
+      "recorded_sha256": "cdea84450726b2b51cce48dc15fa6e6ac63207b18067d50d67a76617234d138b",
+      "audit_time_sha256": "cdea84450726b2b51cce48dc15fa6e6ac63207b18067d50d67a76617234d138b",
+      "matches": true
+    },
+    {
+      "name": "serving.response_sha256",
+      "path": "artifacts/reference/vllm-smoke-fp32/response.json",
+      "recorded_sha256": "43001547eef8352b2b1888693ea25e48f97f26e266dedef427a7a5ad6da9656d",
+      "audit_time_sha256": "43001547eef8352b2b1888693ea25e48f97f26e266dedef427a7a5ad6da9656d",
+      "matches": true
+    },
+    {
+      "name": "serving.image_sha256",
+      "path": "artifacts/reference/smoke-fp32/input.png",
+      "recorded_sha256": "d62f8db10dca06c65c99ae4dde59e4a68b9548c56a42c76caa2bf7044ccca0db",
+      "audit_time_sha256": "d62f8db10dca06c65c99ae4dde59e4a68b9548c56a42c76caa2bf7044ccca0db",
+      "matches": true
+    },
+    {
+      "name": "serving.golden_metadata_sha256",
+      "path": "artifacts/reference/smoke-fp32/metadata.json",
+      "recorded_sha256": "c84b1fcc4526135677579392d2c2c52b1566c1f361ac950a6409a5145a8fc65e",
+      "audit_time_sha256": "c84b1fcc4526135677579392d2c2c52b1566c1f361ac950a6409a5145a8fc65e",
+      "matches": true
+    },
+    {
+      "name": "serving.server_log_sha256",
+      "path": "artifacts/reference/vllm-smoke-fp32/server.log",
+      "recorded_sha256": "cc54514d341f6306395c9243b1c3068acf16254acf70b049075a7b393a5ae95e",
+      "audit_time_sha256": "cc54514d341f6306395c9243b1c3068acf16254acf70b049075a7b393a5ae95e",
+      "matches": true
+    },
+    {
+      "name": "serving.compiled_precision_record",
+      "path": "artifacts/reference/vllm-smoke-fp32/precision-audit.json",
+      "recorded_sha256": "e9ce0bb541fc8738239ef2c573c7890632e754ca19b20f803ff03fda8a163161",
+      "audit_time_sha256": "e9ce0bb541fc8738239ef2c573c7890632e754ca19b20f803ff03fda8a163161",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.model_executor/models/falcon_ocr.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/model_executor/models/falcon_ocr.py",
+      "recorded_sha256": "cdd1d75296ec6571cede595d7a94589d5b253ad021d776464998e7fb8b6af108",
+      "audit_time_sha256": "cdd1d75296ec6571cede595d7a94589d5b253ad021d776464998e7fb8b6af108",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.model_executor/models/falcon_ocr_multimodal.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/model_executor/models/falcon_ocr_multimodal.py",
+      "recorded_sha256": "e69caf69e5eefc3977d25b62fb1f28ad3f34d0b58146c90cfdc731e5d00f82b2",
+      "audit_time_sha256": "e69caf69e5eefc3977d25b62fb1f28ad3f34d0b58146c90cfdc731e5d00f82b2",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.v1/attention/ops/triton_unified_attention.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/v1/attention/ops/triton_unified_attention.py",
+      "recorded_sha256": "8e8d393c4d551547de397859462ad7c3750230841458e658d73381dbf3f59005",
+      "audit_time_sha256": "8e8d393c4d551547de397859462ad7c3750230841458e658d73381dbf3f59005",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.v1/attention/ops/triton_decode_attention.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/v1/attention/ops/triton_decode_attention.py",
+      "recorded_sha256": "cf4debbbbdf2245355177dd7be91c4ac75730a9207a10cd7dab6306a5c3bdec4",
+      "audit_time_sha256": "cf4debbbbdf2245355177dd7be91c4ac75730a9207a10cd7dab6306a5c3bdec4",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.entrypoints/openai/chat_completion/protocol.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/entrypoints/openai/chat_completion/protocol.py",
+      "recorded_sha256": "99618fc469c6003e9e1c04af5b1b18df103f1d6a63fe0bf114d1d8fae4bb41f5",
+      "audit_time_sha256": "99618fc469c6003e9e1c04af5b1b18df103f1d6a63fe0bf114d1d8fae4bb41f5",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.platforms/interface.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/platforms/interface.py",
+      "recorded_sha256": "7edbeb61505f93b49ffdd0c7c87fa8d9c833fc9dadf9bf7fc67d6865c69f9b83",
+      "audit_time_sha256": "7edbeb61505f93b49ffdd0c7c87fa8d9c833fc9dadf9bf7fc67d6865c69f9b83",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.envs.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/envs.py",
+      "recorded_sha256": "7edf5da0b40cab435441eaf40126b0f0512830ef2be98f2a23a347c95838ff44",
+      "audit_time_sha256": "7edf5da0b40cab435441eaf40126b0f0512830ef2be98f2a23a347c95838ff44",
+      "matches": true
+    },
+    {
+      "name": "serving.installed_source.v1/attention/backends/triton_attn.py",
+      "path": "artifacts/reference/vllm-smoke-fp32/sources/v1/attention/backends/triton_attn.py",
+      "recorded_sha256": "b09529836c74da19ec36f0282b3ca3a7de3c1f93b3a4254f63f17bbec2c786d1",
+      "audit_time_sha256": "b09529836c74da19ec36f0282b3ca3a7de3c1f93b3a4254f63f17bbec2c786d1",
+      "matches": true
+    },
+    {
+      "name": "serving.environment.model_config_sha256",
+      "path": "artifacts/model/config.json",
+      "recorded_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "audit_time_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "matches": true
+    },
+    {
+      "name": "serving.environment.tokenizer_sha256",
+      "path": "artifacts/model/tokenizer.json",
+      "recorded_sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "audit_time_sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "matches": true
+    }
+  ],
+  "all_recorded_file_hashes_match": true,
+  "cpu_embedded_sources_vs_current_workspace": [
+    {
+      "key": "bf16_attention",
+      "path": "src/bf16_attention.rs",
+      "embedded_run_sha256": "abfd6a5292fb9926efa22170914e70a5176b9531c2acd02c13bc8b02b33ebcdb",
+      "audit_time_sha256": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+      "matches_current_workspace": false
+    },
+    {
+      "key": "bf16_kernels",
+      "path": "src/bf16_kernels.rs",
+      "embedded_run_sha256": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "audit_time_sha256": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "bf16_model",
+      "path": "src/bf16_model.rs",
+      "embedded_run_sha256": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+      "audit_time_sha256": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "bf16_ops",
+      "path": "src/bf16_ops.rs",
+      "embedded_run_sha256": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+      "audit_time_sha256": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "bf16_runner",
+      "path": "src/bf16_runner.rs",
+      "embedded_run_sha256": "431b101f6705c108225d64aa58875fcdd49ae51196544bc230c09f65fdc2bc31",
+      "audit_time_sha256": "0ee735b86b301bee66b1796604a1099fb4f0dbc831f3b71ab3cd5009d1ede6a3",
+      "matches_current_workspace": false
+    },
+    {
+      "key": "config",
+      "path": "src/config.rs",
+      "embedded_run_sha256": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+      "audit_time_sha256": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "harness",
+      "path": "examples/corpus_eval.rs",
+      "embedded_run_sha256": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+      "audit_time_sha256": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "kernels",
+      "path": "src/kernels.rs",
+      "embedded_run_sha256": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+      "audit_time_sha256": "b5adcf5c201f645d1a897c7f000dbdd50692809a8eacd5e522636ae8543dbeba",
+      "matches_current_workspace": false
+    },
+    {
+      "key": "lock",
+      "path": "Cargo.lock",
+      "embedded_run_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "audit_time_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "model",
+      "path": "src/model.rs",
+      "embedded_run_sha256": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+      "audit_time_sha256": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "preprocess",
+      "path": "src/preprocess.rs",
+      "embedded_run_sha256": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "audit_time_sha256": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "runner",
+      "path": "src/runner.rs",
+      "embedded_run_sha256": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+      "audit_time_sha256": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+      "matches_current_workspace": true
+    },
+    {
+      "key": "tokenizer",
+      "path": "src/tokenizer.rs",
+      "embedded_run_sha256": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f",
+      "audit_time_sha256": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f",
+      "matches_current_workspace": true
+    }
+  ],
+  "cpu_source_note": "A mismatch means current workspace differs from compile-time embedded bytes; it does not show the archived binary ran other code.",
+  "serving_entrypoint_source": {
+    "recorded_smoke_sha256": "baa224c099a012cfd2068b3123079a51d334844c4a20202a3417279c7b6b184f",
+    "audit_time_sha256": "c4b4c440be9005eeb09aacfb712488688f4c10cf12bbd0a9a48af61d41431014",
+    "scope": "Current entrypoint was strengthened for the next serving run during this audit; its new hash is not substituted into the historical smoke report."
+  },
+  "cpu_v3_binary": {
+    "path": "artifacts/cpu/corpus-eval-v3.exe",
+    "audit_time_sha256": "befd29f70f27ced1ff5289b34b28112c36f712e213ac774f3587c690fe0c08d5",
+    "startup_attested": false,
+    "present_in_run_contract": false
+  },
+  "gpu_source_capture": "reference/gpu-corpus-source-capture-after-launch.json",
+  "gpu_source_capture_sha256": "8dbe785483411bcbc2870538f1aa78c11cb4bce5fc257d86aa99f06cedcdc67c",
+  "serving_ptx_files_retained_in_smoke_output": 0,
+  "serving_ptx_hashes_in_report": 4,
+  "unverified_serving_hashes": [
+    {
+      "field": "environment.chat_template_sha256",
+      "reason": "Template path is inside removed immutable container; no copied template located in smoke output."
+    }
+  ],
+  "inspected_source_sha256_at_audit": {
+    "scripts/run_corpus_reference.py": "696616815f92024ca58cba048f0dedb99b837a773cfe0f067450af000da2bfc8",
+    "scripts/reference_preflight.py": "04a4429a16ea03d424739f744364dec0fc0ffa7e33035791f8c38ab77d3906bc",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "scripts/export_reference.py": "e8e1d8fcedc5e58831836d2c3760420bade6f5ab04b3566e5dba753ea4318940",
+    "scripts/compare_corpus.py": "37b2a97ee69fe317c5a2213c46082846c57d069c594af2146e8bbaa0d39f5bd2",
+    "examples/corpus_eval.rs": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+    "scripts/run_reference_vllm.sh": "00865cc6fecf1b157a0dadc0f96a34ce81eab15cadba97ada730c94f8cd69cc6",
+    "scripts/vllm_reference_entry.py": "c4b4c440be9005eeb09aacfb712488688f4c10cf12bbd0a9a48af61d41431014",
+    "scripts/request_vllm_reference.py": "92b963e7a9eddbb3c8734d390faf7921e933a2d63e80bb81b1e966c491afb0ce",
+    "scripts/request_vllm_fullpages.py": "c0f470478f7a82724e1d99759f998446eb464b74219ff6c9ad8f395509d2d4e8",
+    "scripts/finalize_vllm_reference.py": "ead4e82342316cb87c88b0514a2d65feed3c400e5050244b734a77ebdef2975e",
+    "scripts/audit_vllm_precision.py": "b5705510f19c7a6c2e93f275fc6becd833a7deb871f5a1dee955aa875643a7c3"
+  },
+  "audit_script": "artifacts/provenance/capture_audit.py",
+  "audit_script_sha256": "ec7e0ec8d455d9253a74a51b2d6e487a3e581467019020978db25b66d2ce3c3c"
+}

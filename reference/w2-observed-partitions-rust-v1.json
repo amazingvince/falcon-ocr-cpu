@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "status": "observed_operator_outputs_exact_both_platforms",
+  "created_utc": "2026-09-20T11:41:47.845154+00:00",
+  "case": "prefill.layer.12.w2",
+  "input_shape": [
+    144,
+    2304
+  ],
+  "weight_shape": [
+    768,
+    2304
+  ],
+  "fixed_k_ranges": [
+    [
+      0,
+      165
+    ],
+    [
+      165,
+      330
+    ],
+    [
+      330,
+      495
+    ],
+    [
+      495,
+      660
+    ],
+    [
+      660,
+      825
+    ],
+    [
+      825,
+      990
+    ],
+    [
+      990,
+      1155
+    ],
+    [
+      1155,
+      1320
+    ],
+    [
+      1320,
+      1485
+    ],
+    [
+      1485,
+      1650
+    ],
+    [
+      1650,
+      1815
+    ],
+    [
+      1815,
+      1980
+    ],
+    [
+      1980,
+      2145
+    ],
+    [
+      2145,
+      2304
+    ]
+  ],
+  "capture_report_sha256": "697b717ac9949c1f90bf94eaca8f074164ec40d10f7917ca8bd4ecf3c5a7a7f4",
+  "production_kernels_sha256": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+  "platforms": {
+    "windows": {
+      "build_receipt": "artifacts\\builds\\w2-observed-partitions-windows-v1\\build.json",
+      "build_sha256": "0838eace076d544d69f3dbaea6dfc98f2431f76604f938754d864cfc26cf69e4",
+      "binary_sha256": "4483a315301e063af180452f43c9c8e2227b2a6c992f87f5be7bb6d07ff255f6",
+      "source_archive_sha256": "1453db787f93a600d132a1ccad904b98b90688f31ce607d4e2af84dbecf0225c",
+      "report": "artifacts\\diagnostics\\w2-observed-partitions-windows-v1\\report.json",
+      "report_sha256": "c8060ce4d4c02e4ed0b71922c042ae0146b0fe3e33f3a6397d8252dd22cc9829",
+      "tests_passed": 3,
+      "all_partials_vs_gpu": {
+        "bit_mismatches": 0,
+        "elements": 1548288,
+        "max_abs_error": 0.0,
+        "nonfinite_pairs": 0,
+        "rms_error": 0.0,
+        "worst_actual_bits": "3eb91eef",
+        "worst_expected_bits": "3eb91eef",
+        "worst_flat_index": 0
+      },
+      "ascending_fold_vs_gpu_output": {
+        "bit_mismatches": 0,
+        "elements": 110592,
+        "max_abs_error": 0.0,
+        "nonfinite_pairs": 0,
+        "rms_error": 0.0,
+        "worst_actual_bits": "c01fe167",
+        "worst_expected_bits": "c01fe167",
+        "worst_flat_index": 0
+      },
+      "unsplit_vs_gpu_output": {
+        "bit_mismatches": 98306,
+        "elements": 110592,
+        "max_abs_error": 0.00830078125,
+        "nonfinite_pairs": 0,
+        "rms_error": 0.00019000314296714027,
+        "worst_actual_bits": "45ee0611",
+        "worst_expected_bits": "45ee0622",
+        "worst_flat_index": 1770
+      },
+      "runtime_threads": 4,
+      "wsl": false
+    },
+    "linux": {
+      "build_receipt": "artifacts\\builds\\w2-observed-partitions-linux-v1\\build.json",
+      "build_sha256": "06fb6795ad79e11be461ec6ee8623fa94915969b3f253ce39b93a7d629bbab7c",
+      "binary_sha256": "fb6b223726302701bb295cf1ca25b105ab7a81d3b055f92faf59308f8c58a451",
+      "source_archive_sha256": "775bee07ff9338bd7de9cf109b370f9be55ac63332602c019ef5406207fbfbae",
+      "report": "artifacts\\diagnostics\\w2-observed-partitions-linux-v1\\report.json",
+      "report_sha256": "9ee325344cdcc824115d48d4a4a48a49602ff074a1a94a51245135d831210939",
+      "tests_passed": 3,
+      "all_partials_vs_gpu": {
+        "bit_mismatches": 0,
+        "elements": 1548288,
+        "max_abs_error": 0.0,
+        "nonfinite_pairs": 0,
+        "rms_error": 0.0,
+        "worst_actual_bits": "3eb91eef",
+        "worst_expected_bits": "3eb91eef",
+        "worst_flat_index": 0
+      },
+      "ascending_fold_vs_gpu_output": {
+        "bit_mismatches": 0,
+        "elements": 110592,
+        "max_abs_error": 0.0,
+        "nonfinite_pairs": 0,
+        "rms_error": 0.0,
+        "worst_actual_bits": "c01fe167",
+        "worst_expected_bits": "c01fe167",
+        "worst_flat_index": 0
+      },
+      "unsplit_vs_gpu_output": {
+        "bit_mismatches": 98306,
+        "elements": 110592,
+        "max_abs_error": 0.00830078125,
+        "nonfinite_pairs": 0,
+        "rms_error": 0.00019000314296714027,
+        "worst_actual_bits": "45ee0611",
+        "worst_expected_bits": "45ee0622",
+        "worst_flat_index": 1770
+      },
+      "runtime_threads": 4,
+      "wsl": true
+    }
+  },
+  "all_three_output_files_cross_platform_byte_exact": true,
+  "independent_raw_partial_and_fold_comparison": true,
+  "artifact_closure_unchanged": true,
+  "evidence_sha256": {
+    "artifacts\\reference\\linear-owned-workspace-fp32-v1\\report.json": "697b717ac9949c1f90bf94eaca8f074164ec40d10f7917ca8bd4ecf3c5a7a7f4",
+    "artifacts\\reference\\linear-owned-workspace-fp32-v1\\control\\input.f32le": "5f1c88b10a47561f3e339e18cebf5214b859b35bdc171897b3666c6a6f5b1c23",
+    "artifacts\\reference\\linear-owned-workspace-fp32-v1\\control\\output.f32le": "aa9c02dae08179baa18fe0bc90086d94a9e82b759c6eb398010f3a8e557c9698",
+    "artifacts\\reference\\linear-owned-workspace-fp32-v1\\control\\weight.f32le": "164ba1be2384536340fdcbf4db180d5a82f14af0c0be5fd66435ea6ad8b2da3a",
+    "artifacts\\reference\\linear-owned-workspace-fp32-v1\\control\\workspace.bin": "c281433824d165991ea68a35e050c74911d912482e249268bf4a9496a5ed8ada",
+    "artifacts\\diagnostics\\w2-observed-partitions-windows-v1\\cpu-ascending-fold.f32le": "aa9c02dae08179baa18fe0bc90086d94a9e82b759c6eb398010f3a8e557c9698",
+    "artifacts\\diagnostics\\w2-observed-partitions-windows-v1\\cpu-partials.f32le": "d26b4fb62f6059eddaa54054c9dd41b9de9ab8187b5d149f1650f2615ef207c4",
+    "artifacts\\diagnostics\\w2-observed-partitions-windows-v1\\cpu-unsplit.f32le": "4bd4decf96c59852f0b630c676a7b40fe2b3a8d8a2e2f160e57f912f5ddc03eb",
+    "artifacts\\builds\\w2-observed-partitions-windows-v1\\build.json": "0838eace076d544d69f3dbaea6dfc98f2431f76604f938754d864cfc26cf69e4",
+    "artifacts\\builds\\w2-observed-partitions-windows-v1\\source.zip": "1453db787f93a600d132a1ccad904b98b90688f31ce607d4e2af84dbecf0225c",
+    "artifacts\\builds\\w2-observed-partitions-windows-v1\\observed-w2-partitions.exe": "4483a315301e063af180452f43c9c8e2227b2a6c992f87f5be7bb6d07ff255f6",
+    "artifacts\\builds\\w2-observed-partitions-windows-v1\\build.log": "fb2bdd912622369e4e417db7e23d072a07693b16385b841c20a8b76fb2cf74ed",
+    "artifacts\\builds\\w2-observed-partitions-windows-v1\\tests.log": "ba65cc7c8456d1697174755ec5576c51b3c8bcef43465c9a196510bc286c0d43",
+    "artifacts\\diagnostics\\w2-observed-partitions-windows-v1\\report.json": "c8060ce4d4c02e4ed0b71922c042ae0146b0fe3e33f3a6397d8252dd22cc9829",
+    "artifacts\\diagnostics\\w2-observed-partitions-windows-v1.log": "75eba3772933a730829a11ef8300e7cc28c53f179d0235c8b396669143140607",
+    "artifacts\\diagnostics\\w2-observed-partitions-linux-v1\\cpu-ascending-fold.f32le": "aa9c02dae08179baa18fe0bc90086d94a9e82b759c6eb398010f3a8e557c9698",
+    "artifacts\\diagnostics\\w2-observed-partitions-linux-v1\\cpu-partials.f32le": "d26b4fb62f6059eddaa54054c9dd41b9de9ab8187b5d149f1650f2615ef207c4",
+    "artifacts\\diagnostics\\w2-observed-partitions-linux-v1\\cpu-unsplit.f32le": "4bd4decf96c59852f0b630c676a7b40fe2b3a8d8a2e2f160e57f912f5ddc03eb",
+    "artifacts\\builds\\w2-observed-partitions-linux-v1\\build.json": "06fb6795ad79e11be461ec6ee8623fa94915969b3f253ce39b93a7d629bbab7c",
+    "artifacts\\builds\\w2-observed-partitions-linux-v1\\source.zip": "775bee07ff9338bd7de9cf109b370f9be55ac63332602c019ef5406207fbfbae",
+    "artifacts\\builds\\w2-observed-partitions-linux-v1\\observed-w2-partitions": "fb6b223726302701bb295cf1ca25b105ab7a81d3b055f92faf59308f8c58a451",
+    "artifacts\\builds\\w2-observed-partitions-linux-v1\\build.log": "44cf875aa2fb8b18d32c918625890b40099b558cfba39652a561a5db975169df",
+    "artifacts\\builds\\w2-observed-partitions-linux-v1\\tests.log": "b6f57750a488dc8c590a97a8d91c04e582679f7f98f83559af5d7f75b1f1155c",
+    "artifacts\\diagnostics\\w2-observed-partitions-linux-v1\\report.json": "9ee325344cdcc824115d48d4a4a48a49602ff074a1a94a51245135d831210939",
+    "artifacts\\diagnostics\\w2-observed-partitions-linux-v1.log": "8abb171e677d6c9a50b22aee1db9175fd826f32f777fb6e6d3d7b7865af104e0"
+  },
+  "limitations": [
+    "One saved equal-input operator under the conditional fixed workspace layout; no generalized cuBLAS ABI or exact hardware instruction order claim.",
+    "The probe visibly duplicates production GEMM arguments and uses matching locked dependencies. Historical unsplit metrics agree, but no old unsplit raw output was available for a bitwise historical join.",
+    "No full-graph tensor or corpus gate is closed by this operator comparison. No production arithmetic, tolerance, or default changed.",
+    "Concurrent functional execution only; no timing or bare-metal Linux performance claim."
+  ]
+}

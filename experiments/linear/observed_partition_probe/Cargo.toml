@@ -1,0 +1,20 @@
+[package]
+name = "observed-w2-partitions"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+publish = false
+
+[workspace]
+
+[dependencies]
+anyhow = "=1.0.104"
+gemm = "=0.19.0"
+rayon = "=1.12.0"
+serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
+sha2 = "=0.10.9"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+debug = 1

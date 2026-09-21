@@ -1,0 +1,161 @@
+{
+  "comparison": "Expanded-cache shared prefill workspace reuse; native Linux AVX2, four threads, mixed four-request batch",
+  "before": {
+    "decode_start_heap_bytes": 308420810,
+    "description": "Rust live heap only, including captured tensors; excludes mmap model weights and native allocations",
+    "finish_reasons": [
+      "eos",
+      "eos",
+      "eos",
+      "eos"
+    ],
+    "input_tokens": [
+      144,
+      48,
+      64,
+      144
+    ],
+    "peak_heap_bytes": 335083966,
+    "start_heap_bytes": 17662982,
+    "tensor_count": 2256,
+    "token_ids": [
+      [
+        561,
+        791,
+        1169,
+        1135,
+        6830,
+        864,
+        18974,
+        535,
+        3358,
+        524,
+        864,
+        540,
+        541,
+        542,
+        543,
+        544,
+        263
+      ],
+      [
+        273,
+        263
+      ],
+      [
+        561,
+        791,
+        1169,
+        1135,
+        6830,
+        263
+      ],
+      [
+        561,
+        791,
+        1169,
+        1135,
+        6830,
+        864,
+        18974,
+        535,
+        3358,
+        524,
+        864,
+        540,
+        541,
+        542,
+        543,
+        544,
+        263
+      ]
+    ],
+    "trace_sha256": "a1f956cb75b65d2b2be88e4768d4d4130a0cbf7e2bfe49530255c4872dc22e46"
+  },
+  "after": {
+    "decode_start_heap_bytes": 281944265,
+    "description": "Rust live heap only, including captured tensors; excludes mmap model weights and native allocations",
+    "finish_reasons": [
+      "eos",
+      "eos",
+      "eos",
+      "eos"
+    ],
+    "input_tokens": [
+      144,
+      48,
+      64,
+      144
+    ],
+    "peak_heap_bytes": 308607421,
+    "start_heap_bytes": 17662981,
+    "tensor_count": 2256,
+    "token_ids": [
+      [
+        561,
+        791,
+        1169,
+        1135,
+        6830,
+        864,
+        18974,
+        535,
+        3358,
+        524,
+        864,
+        540,
+        541,
+        542,
+        543,
+        544,
+        263
+      ],
+      [
+        273,
+        263
+      ],
+      [
+        561,
+        791,
+        1169,
+        1135,
+        6830,
+        263
+      ],
+      [
+        561,
+        791,
+        1169,
+        1135,
+        6830,
+        864,
+        18974,
+        535,
+        3358,
+        524,
+        864,
+        540,
+        541,
+        542,
+        543,
+        544,
+        263
+      ]
+    ],
+    "trace_sha256": "a1f956cb75b65d2b2be88e4768d4d4130a0cbf7e2bfe49530255c4872dc22e46"
+  },
+  "bit_identical": true,
+  "baseline_normalized_decode_start_heap_saved_bytes": 26476544,
+  "trace_directory": "/home/amazi/falcon-ocr-rust-reference/diagnostics/prefill-reuse",
+  "source_sha256_after": {
+    "src/model.rs": "c569602910a63a68fda4af9386acccc7c2fbd7da52aa66ff97972f44e9b14783",
+    "src/runner.rs": "00d91e2c1c570feee5e7da9fe82fca4a887a315003f353cda1d28861e60b3798",
+    "src/kernels.rs": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+    "tests/prefill_workspace.rs": "a949ccb4c814fe25cdb6722827a8a271daf64ca7de2301b9427daa0414cadcf9"
+  },
+  "source_sha256_before": {
+    "src/model.rs": "f5eeabc5d1b72da1608f69cf16fd3b99e914c2a407fe8ee23e76be57b85505b3",
+    "src/runner.rs": "d3af409915c128b5532ab59b25dcafb420d0e38f7b7188f1c69abd163a728a45",
+    "src/kernels.rs": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e"
+  }
+}

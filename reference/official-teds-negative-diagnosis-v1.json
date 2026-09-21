@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "status": "negative_saved_teds_reproduced_exactly_no_score_acceptance",
+  "evaluator_revision": "59b103c4b47d3a01fada83491585d6512a40c0bc",
+  "diagnosis": "The local report validator assumed [0,1], but pinned upstream TEDS is unclamped and may be negative.",
+  "replay": {
+    "scope": "One saved table pair diagnostic only; no full scoring or model inference; no score acceptance.",
+    "python": "3.10.20 (main, Jul 18 2026, 17:02:35) [Clang 22.1.3 ]",
+    "packages": {
+      "apted": "1.0.3",
+      "lxml": "4.9.1",
+      "Levenshtein": "0.25.1"
+    },
+    "source_and_input_sha256": {
+      "/mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/evaluation/v3-checked-fp32-v1/gpu/result/predictions_quick_match_table_result.json": "bd9e185cdc451ae0b32a488cc561961a30313853d8830ebc5025e9c2ceb094dc",
+      "/mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/OmniDocBench-eval/metrics/table_metric.py": "e506ed341c89a24b03adba75e8ea3247a1d2eece10a9e09f4a81aee7f1b4f060"
+    },
+    "config_source": {
+      "path": "/home/amazi/falcon-ocr-evaluation/.venv/lib/python3.10/site-packages/apted/config.py",
+      "sha256": "deca4418d140f523a7781df8aff5964b30d1ec22d67edb2f3b63e5a4d80aaed1",
+      "delete": "    def delete(self, node):\n        \"\"\"Calculates the cost of deleting a node\"\"\"\n        return 1\n",
+      "insert": "    def insert(self, node):\n        \"\"\"Calculates the cost of inserting a node\"\"\"\n        return 1\n"
+    },
+    "image": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+    "gt_idx": [
+      11
+    ],
+    "norm_pred_sha256": "0aaf382e07993e5bc36331f07d214767657aeba511e8b39e81b9d6f4daf20a6c",
+    "norm_gt_sha256": "6ed3d0522ff8854528e1e8ee04e9791ce64dcc8ed0d0df9dead2a61da42f7cba",
+    "metrics": {
+      "TEDS": {
+        "pred_dom_descendants": 54,
+        "true_dom_descendants": 48,
+        "pred_apted_nodes": 55,
+        "true_apted_nodes": 49,
+        "distance": 61.88801892551893,
+        "denominator": 54,
+        "formula": -0.14607442454664676,
+        "saved": -0.14607442454664676,
+        "replayed": -0.14607442454664676,
+        "bit_equal_saved": true,
+        "hex": "-0x1.2b291161adcf0p-3",
+        "delete_insert_bound": 102,
+        "pair_lower_bound": -0.8888888888888888
+      },
+      "TEDS_structure_only": {
+        "pred_dom_descendants": 54,
+        "true_dom_descendants": 48,
+        "pred_apted_nodes": 55,
+        "true_apted_nodes": 49,
+        "distance": 34,
+        "denominator": 54,
+        "formula": 0.37037037037037035,
+        "saved": 0.37037037037037035,
+        "replayed": 0.37037037037037035,
+        "bit_equal_saved": true,
+        "hex": "0x1.7b425ed097b42p-2",
+        "delete_insert_bound": 102,
+        "pair_lower_bound": -0.8888888888888888
+      }
+    },
+    "source_and_input_unchanged": true
+  },
+  "range_proof": {
+    "formula": "1 - APTED(tree_pred, tree_true) / max(DOM_descendants_pred, DOM_descendants_true)",
+    "preconditions": "Nonempty parsed body/table elements and positive denominator; missing tables return0 and arithmetic/parser failures remain separately rejected by the execution error audit.",
+    "costs": "Pinned Config.insert/delete return1. CustomConfig.rename is nonnegative and ≤1. Both roots have tag table and None rowspan/colspan, hence can remain matched at zero cost.",
+    "construction": "Keep the shared table root, delete all source nonroot APTED nodes, then insert all target nonroot nodes. load_html_tree collapses children of td into cell content, so APTED nonroot counts do not exceed DOM descendant counts.",
+    "bound": "0 ≤ distance ≤ n_pred_nonroot + n_true_nonroot ≤ D_pred + D_true ≤ 2*max(D_pred,D_true). Therefore -1 ≤ TEDS ≤1. This is a bound, not a claim that every endpoint is attainable.",
+    "specific_pair_bound": "distance ≤102 and denominator54, hence score ≥1-102/54=-0.8888888888888888."
+  },
+  "proposed_minimal_reporting_correction": "Accept finite numeric values in [-1,1] for TEDS and TEDS_structure_only. Preserve actual negatives, per-table identity/value agreement, expected result inventory, page/sample completeness, and recomputed means. Do not clamp, drop or relabel the original failed run as completed.",
+  "scope_limits": [
+    "Only one saved pair was replayed, in both original TEDS modes; no matcher, full evaluator or model inference was run.",
+    "The original failed execution and all saved scores remain untouched.",
+    "A first diagnostic metadata lookup requested missing distribution python-Levenshtein and failed before scoring. The successful replay used installed distribution Levenshtein0.25.1.",
+    "The wider range is a correction to a report validator's mathematical contract, not a numerical model tolerance change."
+  ]
+}

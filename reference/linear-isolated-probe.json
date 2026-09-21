@@ -1,0 +1,5688 @@
+{
+  "debug_assertions": false,
+  "fixture": "artifacts/reference/linear-operators.safetensors",
+  "fixture_sha256": "a8b9c60e8f5da012efca80fa6955edff814616f6372668229e0aba74e6f3d338",
+  "interpretation": "Complete FP32 outputs compared to independent GPU projection. F64 is a mathematical oracle on explicitly listed rows, all output channels. Timings exclude allocation and validation. Frozen full-model tolerances remain unchanged.",
+  "kernel_source_sha256": "801f94d88787d80af52a274fde2f3c385a27b42b067fd3f1a65cadd9282e90d5",
+  "operators": [
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1782,
+        "max_abs": 1.773238182067871e-6,
+        "peak_error_index": 1876,
+        "reference_peak_abs": 8.876973152160645,
+        "rms_abs": 3.205460726924772e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1816,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 1559,
+        "reference_peak_abs": 8.876972198486328,
+        "rms_abs": 4.655463129835397e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1811,
+        "max_abs": 1.862645149230957e-6,
+        "peak_error_index": 1740,
+        "reference_peak_abs": 8.876973152160645,
+        "rms_abs": 3.88485430349388e-7
+      },
+      "operator": "decode.2.layer.12.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.019666666666666666,
+        "samples_ms": [
+          0.031200000000000002,
+          0.02323333333333333,
+          0.017266666666666666,
+          0.015333333333333332,
+          0.014266666666666665,
+          0.019666666666666666,
+          0.02653333333333333
+        ],
+        "useful_gflops_per_second": 159.9522711864407
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3992,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 1064,
+        "reference_peak_abs": 5.873189449310303,
+        "rms_abs": 2.5312365371486483e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4094,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 2846,
+        "reference_peak_abs": 5.873189449310303,
+        "rms_abs": 3.441953880445613e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4044,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 3754,
+        "reference_peak_abs": 5.873189449310303,
+        "rms_abs": 2.683887587976306e-7
+      },
+      "operator": "decode.2.layer.12.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.032433333333333335,
+        "samples_ms": [
+          0.1057,
+          0.032433333333333335,
+          0.026933333333333333,
+          0.024433333333333335,
+          0.023266666666666668,
+          0.21009999999999998,
+          0.10076666666666666
+        ],
+        "useful_gflops_per_second": 218.22881808838642
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 544,
+        "max_abs": 6.258487701416016e-7,
+        "peak_error_index": 151,
+        "reference_peak_abs": 4.64849328994751,
+        "rms_abs": 1.556610731195211e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 465,
+        "max_abs": 4.76837158203125e-7,
+        "peak_error_index": 130,
+        "reference_peak_abs": 4.64849328994751,
+        "rms_abs": 1.2442134985450457e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 552,
+        "max_abs": 5.383044481277466e-7,
+        "peak_error_index": 286,
+        "reference_peak_abs": 4.64849328994751,
+        "rms_abs": 1.5161296658690702e-7
+      },
+      "operator": "decode.2.layer.12.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0831,
+        "samples_ms": [
+          0.10226666666666666,
+          0.0831,
+          0.09753333333333335,
+          0.12560000000000002,
+          0.013133333333333335,
+          0.013433333333333332,
+          0.012133333333333331
+        ],
+        "useful_gflops_per_second": 42.58657039711191
+      },
+      "weight_key": "weights.layers.12.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 594,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 164,
+        "reference_peak_abs": 19.356712341308594,
+        "rms_abs": 4.5808694572544764e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 457,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 161,
+        "reference_peak_abs": 19.356712341308594,
+        "rms_abs": 2.9722665462557725e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 599,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 442,
+        "reference_peak_abs": 19.356712341308594,
+        "rms_abs": 4.376792591090257e-7
+      },
+      "operator": "decode.2.layer.12.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0335,
+        "samples_ms": [
+          0.06766666666666667,
+          0.029800000000000004,
+          0.06533333333333334,
+          0.012000000000000002,
+          0.046933333333333334,
+          0.0315,
+          0.0335
+        ],
+        "useful_gflops_per_second": 46.95116417910448
+      },
+      "weight_key": "weights.layers.12.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1653,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 1832,
+        "reference_peak_abs": 28.623123168945312,
+        "rms_abs": 3.825301557167119e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1733,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 1839,
+        "reference_peak_abs": 28.623123168945312,
+        "rms_abs": 5.326141306268975e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1742,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 1818,
+        "reference_peak_abs": 28.623123168945312,
+        "rms_abs": 4.510418510409983e-7
+      },
+      "operator": "decode.2.layer.19.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.015633333333333336,
+        "samples_ms": [
+          0.03423333333333333,
+          0.019,
+          0.015166666666666667,
+          0.014766666666666666,
+          0.015633333333333336,
+          0.15246666666666667,
+          0.015166666666666667
+        ],
+        "useful_gflops_per_second": 201.21927505330487
+      },
+      "weight_key": "weights.layers.19.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3815,
+        "max_abs": 1.1920928955078125e-6,
+        "peak_error_index": 238,
+        "reference_peak_abs": 8.113839149475098,
+        "rms_abs": 2.3631828650102416e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3938,
+        "max_abs": 1.7881393432617188e-6,
+        "peak_error_index": 2840,
+        "reference_peak_abs": 8.113839149475098,
+        "rms_abs": 3.282828629710077e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3917,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 3014,
+        "reference_peak_abs": 8.113839149475098,
+        "rms_abs": 2.582018513068921e-7
+      },
+      "operator": "decode.2.layer.19.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0273,
+        "samples_ms": [
+          0.13906666666666667,
+          0.036899999999999995,
+          0.0273,
+          0.022500000000000003,
+          0.049466666666666666,
+          0.024033333333333334,
+          0.024566666666666667
+        ],
+        "useful_gflops_per_second": 259.2632967032967
+      },
+      "weight_key": "weights.layers.19.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 586,
+        "max_abs": 0.000011444091796875,
+        "peak_error_index": 22,
+        "reference_peak_abs": 111.2621078491211,
+        "rms_abs": 3.4215666299378713e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 479,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 12,
+        "reference_peak_abs": 111.26211547851562,
+        "rms_abs": 2.24742989808694e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 581,
+        "max_abs": 0.000011444091796875,
+        "peak_error_index": 22,
+        "reference_peak_abs": 111.2621078491211,
+        "rms_abs": 3.470603491543996e-6
+      },
+      "operator": "decode.2.layer.19.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.012866666666666667,
+        "samples_ms": [
+          0.10510000000000001,
+          0.031566666666666666,
+          0.013933333333333332,
+          0.012499999999999999,
+          0.012633333333333335,
+          0.012866666666666667,
+          0.012433333333333333
+        ],
+        "useful_gflops_per_second": 275.04746113989637
+      },
+      "weight_key": "weights.layers.19.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 571,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 26,
+        "reference_peak_abs": 413.7184143066406,
+        "rms_abs": 2.598401972397723e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 406,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 312,
+        "reference_peak_abs": 413.7183837890625,
+        "rms_abs": 2.0822073490925274e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 586,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 312,
+        "reference_peak_abs": 413.7184143066406,
+        "rms_abs": 2.8822812977019203e-6
+      },
+      "operator": "decode.2.layer.19.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.008733333333333334,
+        "samples_ms": [
+          0.03393333333333333,
+          0.0086,
+          0.0094,
+          0.008366666666666666,
+          0.008733333333333334,
+          0.008466666666666667,
+          0.12926666666666667
+        ],
+        "useful_gflops_per_second": 180.09893129770992
+      },
+      "weight_key": "weights.layers.19.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1696,
+        "max_abs": 2.0265579223632812e-6,
+        "peak_error_index": 1614,
+        "reference_peak_abs": 12.491640090942383,
+        "rms_abs": 3.735557115144472e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1748,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 1703,
+        "reference_peak_abs": 12.4916410446167,
+        "rms_abs": 5.576356425357248e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1779,
+        "max_abs": 3.0994415283203125e-6,
+        "peak_error_index": 1682,
+        "reference_peak_abs": 12.491640090942383,
+        "rms_abs": 4.940011954679585e-7
+      },
+      "operator": "decode.2.layer.21.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0148,
+        "samples_ms": [
+          0.08953333333333334,
+          0.06433333333333334,
+          0.013533333333333333,
+          0.013966666666666667,
+          0.014733333333333333,
+          0.0148,
+          0.017066666666666664
+        ],
+        "useful_gflops_per_second": 212.54918918918918
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3582,
+        "max_abs": 1.2516975402832031e-6,
+        "peak_error_index": 120,
+        "reference_peak_abs": 10.385407447814941,
+        "rms_abs": 2.5685990435244687e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3814,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1761,
+        "reference_peak_abs": 10.385407447814941,
+        "rms_abs": 3.6256368121190673e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3688,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1761,
+        "reference_peak_abs": 10.385407447814941,
+        "rms_abs": 2.862432024991577e-7
+      },
+      "operator": "decode.2.layer.21.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.024233333333333332,
+        "samples_ms": [
+          0.06633333333333334,
+          0.027466666666666667,
+          0.02386666666666667,
+          0.021866666666666663,
+          0.10346666666666667,
+          0.022466666666666666,
+          0.024233333333333332
+        ],
+        "useful_gflops_per_second": 292.0724071526823
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 579,
+        "max_abs": 0.0001220703125,
+        "peak_error_index": 312,
+        "reference_peak_abs": 1485.2796630859375,
+        "rms_abs": 0.000011126541422020427
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 415,
+        "max_abs": 0.0001220703125,
+        "peak_error_index": 312,
+        "reference_peak_abs": 1485.2796630859375,
+        "rms_abs": 7.458781656122078e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 574,
+        "max_abs": 0.00006103515625,
+        "peak_error_index": 265,
+        "reference_peak_abs": 1485.2796630859375,
+        "rms_abs": 0.000010329037647848749
+      },
+      "operator": "decode.2.layer.21.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.012466666666666668,
+        "samples_ms": [
+          0.0476,
+          0.015233333333333333,
+          0.012466666666666668,
+          0.012266666666666667,
+          0.0119,
+          0.012066666666666665,
+          0.012533333333333334
+        ],
+        "useful_gflops_per_second": 283.8725133689839
+      },
+      "weight_key": "weights.layers.21.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 640,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 312,
+        "reference_peak_abs": 53.83311080932617,
+        "rms_abs": 1.8095794105929526e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 483,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 312,
+        "reference_peak_abs": 53.83311080932617,
+        "rms_abs": 1.1260405022499476e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 642,
+        "max_abs": 6.67572021484375e-6,
+        "peak_error_index": 117,
+        "reference_peak_abs": 53.83311080932617,
+        "rms_abs": 1.778152849503481e-6
+      },
+      "operator": "decode.2.layer.21.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.008933333333333333,
+        "samples_ms": [
+          0.0253,
+          0.02666666666666667,
+          0.008933333333333333,
+          0.010933333333333331,
+          0.0084,
+          0.007899999999999999,
+          0.008033333333333333
+        ],
+        "useful_gflops_per_second": 176.06686567164178
+      },
+      "weight_key": "weights.layers.21.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1703,
+        "max_abs": 1.4901161193847656e-6,
+        "peak_error_index": 1645,
+        "reference_peak_abs": 11.126998901367188,
+        "rms_abs": 2.9943460615998336e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1762,
+        "max_abs": 3.337860107421875e-6,
+        "peak_error_index": 1686,
+        "reference_peak_abs": 11.126998901367188,
+        "rms_abs": 4.5894800210852225e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1776,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 1686,
+        "reference_peak_abs": 11.126998901367188,
+        "rms_abs": 3.912362098558295e-7
+      },
+      "operator": "decode.2.layer.9.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.014166666666666668,
+        "samples_ms": [
+          0.049499999999999995,
+          0.031433333333333334,
+          0.061866666666666674,
+          0.013433333333333332,
+          0.013966666666666667,
+          0.0138,
+          0.014166666666666668
+        ],
+        "useful_gflops_per_second": 222.0513882352941
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 4082,
+        "max_abs": 1.1920928955078125e-6,
+        "peak_error_index": 1794,
+        "reference_peak_abs": 4.593569278717041,
+        "rms_abs": 2.4031137575052807e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4147,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 366,
+        "reference_peak_abs": 4.593569278717041,
+        "rms_abs": 3.286263887410563e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4101,
+        "max_abs": 1.3113021850585938e-6,
+        "peak_error_index": 4459,
+        "reference_peak_abs": 4.593569278717041,
+        "rms_abs": 2.523884996889667e-7
+      },
+      "operator": "decode.2.layer.9.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.05756666666666666,
+        "samples_ms": [
+          0.0713,
+          0.03203333333333334,
+          0.024733333333333333,
+          0.0227,
+          0.07426666666666666,
+          0.05756666666666666,
+          0.10679999999999999
+        ],
+        "useful_gflops_per_second": 122.95115228720324
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 472,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 18,
+        "reference_peak_abs": 24.8304443359375,
+        "rms_abs": 3.461837562374086e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 374,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 197,
+        "reference_peak_abs": 24.830442428588867,
+        "rms_abs": 3.1532708306870497e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 485,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 249,
+        "reference_peak_abs": 24.8304443359375,
+        "rms_abs": 3.612358372244472e-7
+      },
+      "operator": "decode.2.layer.9.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.034800000000000005,
+        "samples_ms": [
+          0.0824,
+          0.034800000000000005,
+          0.018,
+          0.10246666666666666,
+          0.050133333333333335,
+          0.0133,
+          0.0112
+        ],
+        "useful_gflops_per_second": 101.69379310344826
+      },
+      "weight_key": "weights.layers.9.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 561,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 132,
+        "reference_peak_abs": 35.39603042602539,
+        "rms_abs": 8.23921833379657e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 406,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 21,
+        "reference_peak_abs": 35.396034240722656,
+        "rms_abs": 4.933068367043941e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 569,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 249,
+        "reference_peak_abs": 35.39603042602539,
+        "rms_abs": 8.051951216871907e-7
+      },
+      "operator": "decode.2.layer.9.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.008566666666666667,
+        "samples_ms": [
+          0.0529,
+          0.008566666666666667,
+          0.008833333333333334,
+          0.008499999999999999,
+          0.008766666666666667,
+          0.0084,
+          0.0084
+        ],
+        "useful_gflops_per_second": 183.60280155642025
+      },
+      "weight_key": "weights.layers.9.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1785,
+        "max_abs": 2.0265579223632812e-6,
+        "peak_error_index": 1660,
+        "reference_peak_abs": 7.895812511444092,
+        "rms_abs": 3.085153377837267e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1796,
+        "max_abs": 2.6226043701171875e-6,
+        "peak_error_index": 1661,
+        "reference_peak_abs": 7.895812034606934,
+        "rms_abs": 4.5117799932445924e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1802,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1646,
+        "reference_peak_abs": 7.895812511444092,
+        "rms_abs": 3.7927129827440165e-7
+      },
+      "operator": "decode.6.layer.12.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0388,
+        "samples_ms": [
+          0.03793333333333333,
+          0.07216666666666667,
+          0.1665,
+          0.014133333333333333,
+          0.0134,
+          0.08346666666666668,
+          0.0388
+        ],
+        "useful_gflops_per_second": 81.07546391752577
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3943,
+        "max_abs": 1.1920928955078125e-6,
+        "peak_error_index": 1429,
+        "reference_peak_abs": 6.3905930519104,
+        "rms_abs": 2.461989484474034e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4083,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 4286,
+        "reference_peak_abs": 6.390592098236084,
+        "rms_abs": 3.4221035967409394e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4011,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 4286,
+        "reference_peak_abs": 6.3905930519104,
+        "rms_abs": 2.6680659612010586e-7
+      },
+      "operator": "decode.6.layer.12.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.027933333333333334,
+        "samples_ms": [
+          0.08936666666666666,
+          0.028133333333333333,
+          0.024533333333333334,
+          0.024499999999999997,
+          0.024566666666666667,
+          0.027933333333333334,
+          0.029566666666666668
+        ],
+        "useful_gflops_per_second": 253.3850119331742
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 577,
+        "max_abs": 5.960464477539062e-7,
+        "peak_error_index": 66,
+        "reference_peak_abs": 6.188692569732666,
+        "rms_abs": 1.808944983369051e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 496,
+        "max_abs": 4.76837158203125e-7,
+        "peak_error_index": 18,
+        "reference_peak_abs": 6.188692092895508,
+        "rms_abs": 1.394850539140205e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 585,
+        "max_abs": 7.152557373046875e-7,
+        "peak_error_index": 6,
+        "reference_peak_abs": 6.188692569732666,
+        "rms_abs": 1.8473197782195226e-7
+      },
+      "operator": "decode.6.layer.12.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.013633333333333332,
+        "samples_ms": [
+          0.07233333333333333,
+          0.018266666666666664,
+          0.012966666666666666,
+          0.014166666666666668,
+          0.013433333333333332,
+          0.013633333333333332,
+          0.013433333333333332
+        ],
+        "useful_gflops_per_second": 259.5802444987775
+      },
+      "weight_key": "weights.layers.12.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 592,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 312,
+        "reference_peak_abs": 16.15557289123535,
+        "rms_abs": 4.758315649816841e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 439,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 197,
+        "reference_peak_abs": 16.15557289123535,
+        "rms_abs": 3.1450401606001824e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 599,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 197,
+        "reference_peak_abs": 16.15557289123535,
+        "rms_abs": 4.74327362471401e-7
+      },
+      "operator": "decode.6.layer.12.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.008433333333333333,
+        "samples_ms": [
+          0.03966666666666667,
+          0.0229,
+          0.008433333333333333,
+          0.008933333333333333,
+          0.007866666666666666,
+          0.008033333333333333,
+          0.007866666666666666
+        ],
+        "useful_gflops_per_second": 186.50561264822136
+      },
+      "weight_key": "weights.layers.12.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1635,
+        "max_abs": 2.384185791015625e-6,
+        "peak_error_index": 1657,
+        "reference_peak_abs": 21.71449851989746,
+        "rms_abs": 3.7821459004422753e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1697,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 1563,
+        "reference_peak_abs": 21.71449851989746,
+        "rms_abs": 5.273906779360381e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1708,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 1881,
+        "reference_peak_abs": 21.71449851989746,
+        "rms_abs": 4.6644411075565717e-7
+      },
+      "operator": "decode.6.layer.19.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.014133333333333333,
+        "samples_ms": [
+          0.06353333333333333,
+          0.031133333333333332,
+          0.015133333333333332,
+          0.013833333333333335,
+          0.0133,
+          0.013366666666666666,
+          0.014133333333333333
+        ],
+        "useful_gflops_per_second": 222.57509433962267
+      },
+      "weight_key": "weights.layers.19.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3912,
+        "max_abs": 1.0728836059570312e-6,
+        "peak_error_index": 1412,
+        "reference_peak_abs": 6.89412784576416,
+        "rms_abs": 2.3406540957974426e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4036,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 4367,
+        "reference_peak_abs": 6.89412784576416,
+        "rms_abs": 3.153576105364077e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3951,
+        "max_abs": 1.1920928955078125e-6,
+        "peak_error_index": 282,
+        "reference_peak_abs": 6.89412784576416,
+        "rms_abs": 2.4696873876673843e-7
+      },
+      "operator": "decode.6.layer.19.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.02256666666666667,
+        "samples_ms": [
+          0.16176666666666664,
+          0.0323,
+          0.02256666666666667,
+          0.02223333333333333,
+          0.023966666666666667,
+          0.022033333333333332,
+          0.022099999999999998
+        ],
+        "useful_gflops_per_second": 313.6434859675037
+      },
+      "weight_key": "weights.layers.19.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 601,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 7,
+        "reference_peak_abs": 30.77326774597168,
+        "rms_abs": 1.1921217261412258e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 462,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 134,
+        "reference_peak_abs": 30.773265838623047,
+        "rms_abs": 7.988583718479873e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 613,
+        "max_abs": 4.291534423828125e-6,
+        "peak_error_index": 59,
+        "reference_peak_abs": 30.77326774597168,
+        "rms_abs": 1.2380372570492511e-6
+      },
+      "operator": "decode.6.layer.19.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.012766666666666667,
+        "samples_ms": [
+          0.10966666666666665,
+          0.11913333333333333,
+          0.012766666666666667,
+          0.012733333333333333,
+          0.012533333333333334,
+          0.0129,
+          0.012333333333333333
+        ],
+        "useful_gflops_per_second": 277.2018798955613
+      },
+      "weight_key": "weights.layers.19.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 571,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 312,
+        "reference_peak_abs": 420.3045654296875,
+        "rms_abs": 2.9870873912313614e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 412,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 89,
+        "reference_peak_abs": 420.3045959472656,
+        "rms_abs": 1.7223200619451886e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 574,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 312,
+        "reference_peak_abs": 420.3045654296875,
+        "rms_abs": 2.9566714896253354e-6
+      },
+      "operator": "decode.6.layer.19.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.008866666666666667,
+        "samples_ms": [
+          0.036300000000000006,
+          0.0083,
+          0.009166666666666667,
+          0.009033333333333334,
+          0.008866666666666667,
+          0.008533333333333332,
+          0.007966666666666667
+        ],
+        "useful_gflops_per_second": 177.39067669172934
+      },
+      "weight_key": "weights.layers.19.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1770,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1724,
+        "reference_peak_abs": 8.336946487426758,
+        "rms_abs": 3.3479680813315143e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1800,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 1707,
+        "reference_peak_abs": 8.336946487426758,
+        "rms_abs": 5.267118785197307e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1833,
+        "max_abs": 2.6226043701171875e-6,
+        "peak_error_index": 1674,
+        "reference_peak_abs": 8.336946487426758,
+        "rms_abs": 4.5090549754040424e-7
+      },
+      "operator": "decode.6.layer.21.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.014433333333333334,
+        "samples_ms": [
+          0.0817,
+          0.015766666666666665,
+          0.014366666666666666,
+          0.013733333333333334,
+          0.014433333333333334,
+          0.014366666666666666,
+          0.015366666666666667
+        ],
+        "useful_gflops_per_second": 217.94882217090068
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3756,
+        "max_abs": 5.066394805908203e-6,
+        "peak_error_index": 2894,
+        "reference_peak_abs": 8.736210823059082,
+        "rms_abs": 2.497268841450056e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3892,
+        "max_abs": 5.125999450683594e-6,
+        "peak_error_index": 2894,
+        "reference_peak_abs": 8.736209869384766,
+        "rms_abs": 3.273000494215861e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3853,
+        "max_abs": 2.592802047729492e-6,
+        "peak_error_index": 1750,
+        "reference_peak_abs": 8.736210823059082,
+        "rms_abs": 2.5233785488818037e-7
+      },
+      "operator": "decode.6.layer.21.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.04576666666666667,
+        "samples_ms": [
+          0.059033333333333333,
+          0.04576666666666667,
+          0.03783333333333333,
+          0.0833,
+          0.06516666666666666,
+          0.026433333333333336,
+          0.030333333333333334
+        ],
+        "useful_gflops_per_second": 154.65159504734157
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 511,
+        "max_abs": 0.00006103515625,
+        "peak_error_index": 432,
+        "reference_peak_abs": 522.6533203125,
+        "rms_abs": 6.718055466479539e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 349,
+        "max_abs": 0.00006103515625,
+        "peak_error_index": 265,
+        "reference_peak_abs": 522.6533813476562,
+        "rms_abs": 4.870385515521287e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 518,
+        "max_abs": 0.00006103515625,
+        "peak_error_index": 265,
+        "reference_peak_abs": 522.6533203125,
+        "rms_abs": 7.228577205963517e-6
+      },
+      "operator": "decode.6.layer.21.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.036166666666666666,
+        "samples_ms": [
+          0.10073333333333333,
+          0.0656,
+          0.014666666666666666,
+          0.015199999999999998,
+          0.036166666666666666,
+          0.03676666666666666,
+          0.013899999999999997
+        ],
+        "useful_gflops_per_second": 97.85098617511521
+      },
+      "weight_key": "weights.layers.21.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 611,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 312,
+        "reference_peak_abs": 124.46675872802734,
+        "rms_abs": 1.2447137024370598e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 450,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 719,
+        "reference_peak_abs": 124.46675109863281,
+        "rms_abs": 7.407490980108625e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 607,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 312,
+        "reference_peak_abs": 124.46675872802734,
+        "rms_abs": 1.2350496828125588e-6
+      },
+      "operator": "decode.6.layer.21.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.008866666666666667,
+        "samples_ms": [
+          0.10953333333333333,
+          0.0096,
+          0.008733333333333334,
+          0.008499999999999999,
+          0.009166666666666667,
+          0.008166666666666668,
+          0.008866666666666667
+        ],
+        "useful_gflops_per_second": 177.39067669172934
+      },
+      "weight_key": "weights.layers.21.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1712,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 2035,
+        "reference_peak_abs": 10.225240707397461,
+        "rms_abs": 2.99718184116951e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1739,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 2034,
+        "reference_peak_abs": 10.225240707397461,
+        "rms_abs": 4.4849806150996257e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1768,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 1636,
+        "reference_peak_abs": 10.225240707397461,
+        "rms_abs": 3.886662840744006e-7
+      },
+      "operator": "decode.6.layer.9.qkv",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.013933333333333332,
+        "samples_ms": [
+          0.0253,
+          0.013933333333333332,
+          0.014066666666666667,
+          0.013233333333333335,
+          0.014133333333333333,
+          0.013333333333333334,
+          0.013366666666666666
+        ],
+        "useful_gflops_per_second": 225.76995215311007
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 4062,
+        "max_abs": 1.1920928955078125e-6,
+        "peak_error_index": 1794,
+        "reference_peak_abs": 4.913723468780518,
+        "rms_abs": 2.409960612279898e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4140,
+        "max_abs": 2.0265579223632812e-6,
+        "peak_error_index": 1990,
+        "reference_peak_abs": 4.913722991943359,
+        "rms_abs": 3.3436575235399047e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4116,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2536,
+        "reference_peak_abs": 4.913723468780518,
+        "rms_abs": 2.575085948288169e-7
+      },
+      "operator": "decode.6.layer.9.w13",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.024933333333333335,
+        "samples_ms": [
+          0.11986666666666668,
+          0.02606666666666667,
+          0.025900000000000003,
+          0.02376666666666667,
+          0.0243,
+          0.024933333333333335,
+          0.022633333333333335
+        ],
+        "useful_gflops_per_second": 283.8725133689839
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 495,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 249,
+        "reference_peak_abs": 25.255712509155273,
+        "rms_abs": 3.7583982534536843e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 404,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 249,
+        "reference_peak_abs": 25.255712509155273,
+        "rms_abs": 3.4633650201712466e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 496,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 205,
+        "reference_peak_abs": 25.255712509155273,
+        "rms_abs": 3.7475166267680694e-7
+      },
+      "operator": "decode.6.layer.9.w2",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.014233333333333334,
+        "samples_ms": [
+          0.027533333333333337,
+          0.019333333333333334,
+          0.0129,
+          0.013033333333333334,
+          0.013633333333333332,
+          0.014233333333333334,
+          0.050033333333333325
+        ],
+        "useful_gflops_per_second": 248.63775175644028
+      },
+      "weight_key": "weights.layers.9.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 553,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 232,
+        "reference_peak_abs": 33.0063591003418,
+        "rms_abs": 8.096451980001787e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 436,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 249,
+        "reference_peak_abs": 33.00636291503906,
+        "rms_abs": 5.765791909343525e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 578,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 232,
+        "reference_peak_abs": 33.0063591003418,
+        "rms_abs": 8.330154723461716e-7
+      },
+      "operator": "decode.6.layer.9.wo",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0084,
+        "samples_ms": [
+          0.016733333333333333,
+          0.009533333333333333,
+          0.008066666666666666,
+          0.008466666666666667,
+          0.007866666666666666,
+          0.0084,
+          0.007666666666666666
+        ],
+        "useful_gflops_per_second": 187.24571428571429
+      },
+      "weight_key": "weights.layers.9.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 60822,
+        "max_abs": 0.0000133514404296875,
+        "peak_error_index": 29275,
+        "reference_peak_abs": 32.494850158691406,
+        "rms_abs": 7.518901081068806e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 275200,
+        "max_abs": 0.00001239776611328125,
+        "peak_error_index": 1826,
+        "reference_peak_abs": 32.494850158691406,
+        "rms_abs": 8.519876626662156e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 58619,
+        "max_abs": 6.67572021484375e-6,
+        "peak_error_index": 1826,
+        "reference_peak_abs": 32.494850158691406,
+        "rms_abs": 5.113316467594516e-7
+      },
+      "operator": "prefill.layer.0.qkv",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.8155999999999999,
+        "samples_ms": [
+          0.8988999999999999,
+          0.7419666666666666,
+          0.8355333333333332,
+          0.8155999999999999,
+          0.7196333333333333,
+          0.9154,
+          0.6994333333333334
+        ],
+        "useful_gflops_per_second": 555.4007258460031
+      },
+      "weight_key": "weights.layers.0.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1468,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1843,
+        "reference_peak_abs": 18.467679977416992,
+        "rms_abs": 2.410061722902848e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1555,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 819,
+        "reference_peak_abs": 18.467681884765625,
+        "rms_abs": 3.3914567630118416e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1526,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1852,
+        "reference_peak_abs": 18.467679977416992,
+        "rms_abs": 2.855049369685124e-7
+      },
+      "operator": "prefill.layer.0.qkv.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0166,
+        "samples_ms": [
+          0.0191,
+          0.017866666666666666,
+          0.016533333333333334,
+          0.0166,
+          0.015933333333333334,
+          0.01916666666666667,
+          0.0166
+        ],
+        "useful_gflops_per_second": 189.50168674698796
+      },
+      "weight_key": "weights.layers.0.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 2976,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1843,
+        "reference_peak_abs": 22.729061126708984,
+        "rms_abs": 2.3585434169234671e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3221,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 861,
+        "reference_peak_abs": 22.729061126708984,
+        "rms_abs": 3.331003020460791e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3026,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1495,
+        "reference_peak_abs": 22.729061126708984,
+        "rms_abs": 2.6057407461179095e-7
+      },
+      "operator": "prefill.layer.0.qkv.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.0233,
+        "samples_ms": [
+          0.02333333333333333,
+          0.0227,
+          0.024466666666666664,
+          0.02366666666666667,
+          0.0233,
+          0.023033333333333333,
+          0.0213
+        ],
+        "useful_gflops_per_second": 270.01957081545066
+      },
+      "weight_key": "weights.layers.0.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 5996,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1843,
+        "reference_peak_abs": 22.729061126708984,
+        "rms_abs": 2.3052789948134668e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 6510,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 861,
+        "reference_peak_abs": 22.729061126708984,
+        "rms_abs": 3.2408810758118456e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 6193,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1495,
+        "reference_peak_abs": 22.729061126708984,
+        "rms_abs": 2.601566536168449e-7
+      },
+      "operator": "prefill.layer.0.qkv.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.06723333333333333,
+        "samples_ms": [
+          0.0705,
+          0.0377,
+          0.06723333333333333,
+          0.03843333333333333,
+          0.0971,
+          0.06536666666666667,
+          0.09146666666666665
+        ],
+        "useful_gflops_per_second": 187.15288051561726
+      },
+      "weight_key": "weights.layers.0.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 12604,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 10392,
+        "reference_peak_abs": 32.494850158691406,
+        "rms_abs": 2.2911168775725973e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 13311,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 800,
+        "reference_peak_abs": 32.49484634399414,
+        "rms_abs": 3.3560101906348454e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 13268,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 10392,
+        "reference_peak_abs": 32.494850158691406,
+        "rms_abs": 2.84370447302405e-7
+      },
+      "operator": "prefill.layer.0.qkv.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.07193333333333334,
+        "samples_ms": [
+          0.1128,
+          0.07193333333333334,
+          0.0954,
+          0.060000000000000005,
+          0.05726666666666667,
+          0.08313333333333332,
+          0.06066666666666667
+        ],
+        "useful_gflops_per_second": 349.84926784059314
+      },
+      "weight_key": "weights.layers.0.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 141150,
+        "max_abs": 5.602836608886719e-6,
+        "peak_error_index": 111046,
+        "reference_peak_abs": 7.107884407043457,
+        "rms_abs": 5.422925122972331e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 0,
+        "max_abs": 0.0,
+        "peak_error_index": 0,
+        "reference_peak_abs": 20.432865142822266,
+        "rms_abs": 0.0
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 141150,
+        "max_abs": 5.602836608886719e-6,
+        "peak_error_index": 111046,
+        "reference_peak_abs": 7.107884407043457,
+        "rms_abs": 5.422925122972331e-7
+      },
+      "operator": "prefill.layer.0.w13",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.6009333333333335,
+        "samples_ms": [
+          1.9307999999999998,
+          1.5681333333333332,
+          1.5393666666666668,
+          1.7162333333333333,
+          1.7210333333333334,
+          1.5781666666666665,
+          1.6009333333333335
+        ],
+        "useful_gflops_per_second": 636.6385475139501
+      },
+      "weight_key": "weights.layers.0.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 4120,
+        "max_abs": 1.2516975402832031e-6,
+        "peak_error_index": 142,
+        "reference_peak_abs": 2.9385106563568115,
+        "rms_abs": 1.9316605050618736e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4158,
+        "max_abs": 1.6391277313232422e-6,
+        "peak_error_index": 4448,
+        "reference_peak_abs": 2.9385104179382324,
+        "rms_abs": 2.664840718595231e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4157,
+        "max_abs": 9.5367431640625e-7,
+        "peak_error_index": 1220,
+        "reference_peak_abs": 2.9385106563568115,
+        "rms_abs": 2.0285010630484833e-7
+      },
+      "operator": "prefill.layer.0.w13.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.06473333333333334,
+        "samples_ms": [
+          0.14596666666666666,
+          0.06473333333333334,
+          0.09343333333333333,
+          0.17013333333333336,
+          0.0377,
+          0.024233333333333332,
+          0.0238
+        ],
+        "useful_gflops_per_second": 109.33915550978372
+      },
+      "weight_key": "weights.layers.0.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 8259,
+        "max_abs": 1.3113021850585938e-6,
+        "peak_error_index": 7596,
+        "reference_peak_abs": 3.2906076908111572,
+        "rms_abs": 1.9483121664141003e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 8294,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 7648,
+        "reference_peak_abs": 3.2906076908111572,
+        "rms_abs": 2.5562390873321834e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 8168,
+        "max_abs": 9.685754776000977e-7,
+        "peak_error_index": 1781,
+        "reference_peak_abs": 3.2906076908111572,
+        "rms_abs": 1.7879456939173048e-7
+      },
+      "operator": "prefill.layer.0.w13.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.04876666666666667,
+        "samples_ms": [
+          0.09803333333333332,
+          0.10859999999999999,
+          0.04153333333333333,
+          0.10880000000000001,
+          0.04876666666666667,
+          0.03593333333333334,
+          0.0359
+        ],
+        "useful_gflops_per_second": 290.2756527682843
+      },
+      "weight_key": "weights.layers.0.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 16645,
+        "max_abs": 1.3113021850585938e-6,
+        "peak_error_index": 7596,
+        "reference_peak_abs": 5.010563850402832,
+        "rms_abs": 1.9536315282359882e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 16636,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 7648,
+        "reference_peak_abs": 5.010563373565674,
+        "rms_abs": 2.5414663313456145e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 16477,
+        "max_abs": 1.0915100574493408e-6,
+        "peak_error_index": 15021,
+        "reference_peak_abs": 5.010563850402832,
+        "rms_abs": 1.7649624674775458e-7
+      },
+      "operator": "prefill.layer.0.w13.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.08456666666666666,
+        "samples_ms": [
+          0.07523333333333333,
+          0.0768,
+          0.12816666666666668,
+          0.11113333333333335,
+          0.08456666666666666,
+          0.07096666666666666,
+          0.1183
+        ],
+        "useful_gflops_per_second": 334.7838234134805
+      },
+      "weight_key": "weights.layers.0.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 33089,
+        "max_abs": 1.3113021850585938e-6,
+        "peak_error_index": 7596,
+        "reference_peak_abs": 5.010563850402832,
+        "rms_abs": 1.9378967681264704e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 33411,
+        "max_abs": 2.205371856689453e-6,
+        "peak_error_index": 30280,
+        "reference_peak_abs": 5.01056432723999,
+        "rms_abs": 3.2200148735745854e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 34013,
+        "max_abs": 1.7881393432617188e-6,
+        "peak_error_index": 35372,
+        "reference_peak_abs": 5.010563850402832,
+        "rms_abs": 2.6803021481976863e-7
+      },
+      "operator": "prefill.layer.0.w13.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.13046666666666668,
+        "samples_ms": [
+          0.13793333333333332,
+          0.13343333333333335,
+          0.13033333333333333,
+          0.12516666666666668,
+          0.12103333333333333,
+          0.13046666666666668,
+          0.13193333333333335
+        ],
+        "useful_gflops_per_second": 434.00437404190086
+      },
+      "weight_key": "weights.layers.0.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 21816,
+        "max_abs": 0.00079345703125,
+        "peak_error_index": 18101,
+        "reference_peak_abs": 1408.6396484375,
+        "rms_abs": 0.000021755287974108387
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 97029,
+        "max_abs": 0.00067138671875,
+        "peak_error_index": 102581,
+        "reference_peak_abs": 1408.6397705078125,
+        "rms_abs": 9.145795553890534e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 19722,
+        "max_abs": 0.00030517578125,
+        "peak_error_index": 17747,
+        "reference_peak_abs": 1408.6396484375,
+        "rms_abs": 0.000011833802392677578
+      },
+      "operator": "prefill.layer.0.w2",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        133,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.2023,
+        "samples_ms": [
+          1.0304666666666666,
+          1.0624666666666667,
+          1.2884666666666666,
+          1.3635000000000002,
+          1.2023,
+          1.1757,
+          1.4576333333333331
+        ],
+        "useful_gflops_per_second": 423.86087998003825
+      },
+      "weight_key": "weights.layers.0.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 23519,
+        "max_abs": 0.000026702880859375,
+        "peak_error_index": 15609,
+        "reference_peak_abs": 50.89768600463867,
+        "rms_abs": 1.3926956240882225e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 102206,
+        "max_abs": 0.000034332275390625,
+        "peak_error_index": 78585,
+        "reference_peak_abs": 50.897682189941406,
+        "rms_abs": 1.5656930150521292e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 20310,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 9465,
+        "reference_peak_abs": 50.89768600463867,
+        "rms_abs": 4.226193177231782e-7
+      },
+      "operator": "prefill.layer.0.wo",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        102,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.6835666666666667,
+        "samples_ms": [
+          0.8509666666666665,
+          0.7227,
+          0.7461666666666668,
+          0.6129666666666667,
+          0.6384,
+          0.6835666666666667,
+          0.6653
+        ],
+        "useful_gflops_per_second": 331.33917589115913
+      },
+      "weight_key": "weights.layers.0.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 60920,
+        "max_abs": 0.0000152587890625,
+        "peak_error_index": 42943,
+        "reference_peak_abs": 47.7254638671875,
+        "rms_abs": 1.0525332969972601e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 274252,
+        "max_abs": 0.000019073486328125,
+        "peak_error_index": 5879,
+        "reference_peak_abs": 47.7254753112793,
+        "rms_abs": 1.2861466150418314e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 59418,
+        "max_abs": 0.000011444091796875,
+        "peak_error_index": 3829,
+        "reference_peak_abs": 47.7254638671875,
+        "rms_abs": 7.616940867899223e-7
+      },
+      "operator": "prefill.layer.12.qkv",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.6990999999999999,
+        "samples_ms": [
+          0.6634666666666665,
+          0.6335000000000001,
+          0.6032666666666667,
+          0.6990999999999999,
+          0.8588,
+          0.7925,
+          0.9061333333333335
+        ],
+        "useful_gflops_per_second": 647.9542726362466
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1735,
+        "max_abs": 1.7881393432617188e-6,
+        "peak_error_index": 1916,
+        "reference_peak_abs": 11.808884620666504,
+        "rms_abs": 3.1048552419165315e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1775,
+        "max_abs": 2.6226043701171875e-6,
+        "peak_error_index": 1554,
+        "reference_peak_abs": 11.808883666992188,
+        "rms_abs": 4.5999890719380113e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1800,
+        "max_abs": 2.6226043701171875e-6,
+        "peak_error_index": 1595,
+        "reference_peak_abs": 11.808884620666504,
+        "rms_abs": 3.8865503949296623e-7
+      },
+      "operator": "prefill.layer.12.qkv.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.013766666666666668,
+        "samples_ms": [
+          0.015199999999999998,
+          0.014033333333333333,
+          0.013266666666666664,
+          0.013766666666666668,
+          0.013366666666666666,
+          0.013966666666666667,
+          0.013433333333333332
+        ],
+        "useful_gflops_per_second": 228.50324455205808
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3371,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3827,
+        "reference_peak_abs": 44.87360382080078,
+        "rms_abs": 3.310122862788386e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3461,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 3827,
+        "reference_peak_abs": 44.873600006103516,
+        "rms_abs": 4.850311942743404e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3389,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3818,
+        "reference_peak_abs": 44.87360382080078,
+        "rms_abs": 3.5025308356036504e-7
+      },
+      "operator": "prefill.layer.12.qkv.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.02266666666666667,
+        "samples_ms": [
+          0.02266666666666667,
+          0.023166666666666665,
+          0.030766666666666664,
+          0.08866666666666667,
+          0.020900000000000002,
+          0.0207,
+          0.022066666666666665
+        ],
+        "useful_gflops_per_second": 277.5642352941176
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 6582,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3827,
+        "reference_peak_abs": 47.7254638671875,
+        "rms_abs": 3.4261570038803437e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 6861,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 3827,
+        "reference_peak_abs": 47.725460052490234,
+        "rms_abs": 4.96165753249124e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 6675,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3818,
+        "reference_peak_abs": 47.7254638671875,
+        "rms_abs": 3.7220849466427316e-7
+      },
+      "operator": "prefill.layer.12.qkv.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.034499999999999996,
+        "samples_ms": [
+          0.15473333333333333,
+          0.040799999999999996,
+          0.06213333333333334,
+          0.034166666666666665,
+          0.03386666666666667,
+          0.034499999999999996,
+          0.03423333333333333
+        ],
+        "useful_gflops_per_second": 364.7220869565218
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 13239,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3827,
+        "reference_peak_abs": 47.7254638671875,
+        "rms_abs": 3.359943173932292e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 13912,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 5847,
+        "reference_peak_abs": 47.725460052490234,
+        "rms_abs": 5.165028379298217e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 13799,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3778,
+        "reference_peak_abs": 47.7254638671875,
+        "rms_abs": 4.267812552371586e-7
+      },
+      "operator": "prefill.layer.12.qkv.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.06703333333333333,
+        "samples_ms": [
+          0.06703333333333333,
+          0.07063333333333334,
+          0.06956666666666667,
+          0.06696666666666666,
+          0.0685,
+          0.06356666666666667,
+          0.0668
+        ],
+        "useful_gflops_per_second": 375.4225360517156
+      },
+      "weight_key": "weights.layers.12.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 136039,
+        "max_abs": 0.000010251998901367188,
+        "peak_error_index": 146526,
+        "reference_peak_abs": 39.45405960083008,
+        "rms_abs": 8.346310240256548e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 0,
+        "max_abs": 0.0,
+        "peak_error_index": 0,
+        "reference_peak_abs": 42.32994079589844,
+        "rms_abs": 0.0
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 136039,
+        "max_abs": 0.000010251998901367188,
+        "peak_error_index": 146526,
+        "reference_peak_abs": 39.45405960083008,
+        "rms_abs": 8.346310240256548e-7
+      },
+      "operator": "prefill.layer.12.w13",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.4040666666666668,
+        "samples_ms": [
+          1.3279999999999998,
+          1.3210333333333333,
+          1.4843666666666666,
+          1.5808,
+          1.4040666666666668,
+          1.3379,
+          1.7049
+        ],
+        "useful_gflops_per_second": 725.9027624519254
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3894,
+        "max_abs": 1.5497207641601562e-6,
+        "peak_error_index": 2534,
+        "reference_peak_abs": 13.430732727050781,
+        "rms_abs": 2.5431672380134625e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4018,
+        "max_abs": 2.205371856689453e-6,
+        "peak_error_index": 93,
+        "reference_peak_abs": 13.430731773376465,
+        "rms_abs": 3.521679068347341e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3904,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 4278,
+        "reference_peak_abs": 13.430732727050781,
+        "rms_abs": 2.7039392312290625e-7
+      },
+      "operator": "prefill.layer.12.w13.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0253,
+        "samples_ms": [
+          0.031133333333333332,
+          0.028399999999999998,
+          0.0257,
+          0.0253,
+          0.024433333333333335,
+          0.025233333333333333,
+          0.0228
+        ],
+        "useful_gflops_per_second": 279.75841897233204
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 7420,
+        "max_abs": 1.5497207641601562e-6,
+        "peak_error_index": 2534,
+        "reference_peak_abs": 21.470561981201172,
+        "rms_abs": 2.627151754914681e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 7803,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 7516,
+        "reference_peak_abs": 21.470565795898438,
+        "rms_abs": 3.5272587920705915e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 7383,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 7516,
+        "reference_peak_abs": 21.470561981201172,
+        "rms_abs": 2.597327350075405e-7
+      },
+      "operator": "prefill.layer.12.w13.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.03833333333333334,
+        "samples_ms": [
+          0.04246666666666667,
+          0.03833333333333334,
+          0.03866666666666667,
+          0.0381,
+          0.038733333333333335,
+          0.03713333333333333,
+          0.03526666666666666
+        ],
+        "useful_gflops_per_second": 369.28111304347823
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 14501,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 12124,
+        "reference_peak_abs": 39.45405960083008,
+        "rms_abs": 2.6761024171692924e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 15298,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 12124,
+        "reference_peak_abs": 39.454063415527344,
+        "rms_abs": 3.6571689010944424e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 14668,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 7516,
+        "reference_peak_abs": 39.45405960083008,
+        "rms_abs": 2.751489393691376e-7
+      },
+      "operator": "prefill.layer.12.w13.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.08233333333333333,
+        "samples_ms": [
+          0.0771,
+          0.07016666666666667,
+          0.06333333333333334,
+          0.10553333333333333,
+          0.08233333333333333,
+          0.23443333333333335,
+          0.211
+        ],
+        "useful_gflops_per_second": 343.865004048583
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 28962,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 12124,
+        "reference_peak_abs": 39.45405960083008,
+        "rms_abs": 2.690721997162345e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 31132,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 9590,
+        "reference_peak_abs": 39.45405578613281,
+        "rms_abs": 4.4538301603307337e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 31018,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 9590,
+        "reference_peak_abs": 39.45405960083008,
+        "rms_abs": 3.744086139235771e-7
+      },
+      "operator": "prefill.layer.12.w13.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.14093333333333333,
+        "samples_ms": [
+          0.17420000000000002,
+          0.1622,
+          0.17676666666666666,
+          0.14036666666666667,
+          0.13816666666666666,
+          0.13663333333333333,
+          0.14093333333333333
+        ],
+        "useful_gflops_per_second": 401.77226111636713
+      },
+      "weight_key": "weights.layers.12.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 21691,
+        "max_abs": 0.00927734375,
+        "peak_error_index": 1770,
+        "reference_peak_abs": 14438.7109375,
+        "rms_abs": 0.00026169924503564694
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 98306,
+        "max_abs": 0.00830078125,
+        "peak_error_index": 1770,
+        "reference_peak_abs": 20310.267578125,
+        "rms_abs": 0.00019000314296714027
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 19894,
+        "max_abs": 0.0029296875,
+        "peak_error_index": 1847,
+        "reference_peak_abs": 14438.7109375,
+        "rms_abs": 0.0001388712057478986
+      },
+      "operator": "prefill.layer.12.w2",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.3970000000000002,
+        "samples_ms": [
+          1.3077999999999999,
+          1.4003333333333332,
+          1.4520333333333333,
+          1.2090333333333334,
+          1.3970000000000002,
+          1.5287333333333335,
+          1.3021
+        ],
+        "useful_gflops_per_second": 364.78735576234783
+      },
+      "weight_key": "weights.layers.12.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 23105,
+        "max_abs": 0.00006103515625,
+        "peak_error_index": 8285,
+        "reference_peak_abs": 125.87458038330078,
+        "rms_abs": 7.173466738630353e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 99882,
+        "max_abs": 0.000072479248046875,
+        "peak_error_index": 42780,
+        "reference_peak_abs": 137.6647491455078,
+        "rms_abs": 9.616608601018081e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 21162,
+        "max_abs": 0.00002765655517578125,
+        "peak_error_index": 10120,
+        "reference_peak_abs": 125.87458038330078,
+        "rms_abs": 3.6848658289757936e-6
+      },
+      "operator": "prefill.layer.12.wo",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        55,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.6694333333333334,
+        "samples_ms": [
+          0.8411666666666667,
+          0.7606999999999999,
+          0.6694333333333334,
+          0.5537333333333333,
+          0.5446333333333333,
+          0.6271333333333334,
+          0.8972666666666665
+        ],
+        "useful_gflops_per_second": 338.3345356769406
+      },
+      "weight_key": "weights.layers.12.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 60668,
+        "max_abs": 0.0000152587890625,
+        "peak_error_index": 14234,
+        "reference_peak_abs": 42.14888000488281,
+        "rms_abs": 1.1504500304833223e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 273944,
+        "max_abs": 0.000026702880859375,
+        "peak_error_index": 18330,
+        "reference_peak_abs": 42.14888381958008,
+        "rms_abs": 1.3636186828563346e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 59073,
+        "max_abs": 0.000011444091796875,
+        "peak_error_index": 18330,
+        "reference_peak_abs": 42.14888000488281,
+        "rms_abs": 8.112076847305706e-7
+      },
+      "operator": "prefill.layer.17.qkv",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.7987000000000001,
+        "samples_ms": [
+          0.7987000000000001,
+          0.7940666666666667,
+          0.888,
+          0.7869999999999999,
+          0.9121666666666667,
+          0.8575333333333334,
+          0.7212666666666667
+        ],
+        "useful_gflops_per_second": 567.1526630775008
+      },
+      "weight_key": "weights.layers.17.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1626,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1560,
+        "reference_peak_abs": 15.012962341308594,
+        "rms_abs": 3.4867379558571197e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1697,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 1714,
+        "reference_peak_abs": 15.012962341308594,
+        "rms_abs": 5.175749862603028e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1686,
+        "max_abs": 2.384185791015625e-6,
+        "peak_error_index": 1714,
+        "reference_peak_abs": 15.012962341308594,
+        "rms_abs": 4.2631123945829803e-7
+      },
+      "operator": "prefill.layer.17.qkv.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.013466666666666667,
+        "samples_ms": [
+          0.04986666666666667,
+          0.013966666666666667,
+          0.0134,
+          0.013600000000000001,
+          0.012733333333333333,
+          0.012466666666666668,
+          0.013466666666666667
+        ],
+        "useful_gflops_per_second": 233.59366336633664
+      },
+      "weight_key": "weights.layers.17.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3216,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 3961,
+        "reference_peak_abs": 24.666881561279297,
+        "rms_abs": 3.5564270618125906e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3328,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 4030,
+        "reference_peak_abs": 24.66688346862793,
+        "rms_abs": 4.810025886729382e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3222,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1835,
+        "reference_peak_abs": 24.666881561279297,
+        "rms_abs": 3.500700204940982e-7
+      },
+      "operator": "prefill.layer.17.qkv.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.023133333333333336,
+        "samples_ms": [
+          0.021033333333333334,
+          0.020133333333333333,
+          0.023133333333333336,
+          0.021866666666666663,
+          0.023433333333333334,
+          0.023966666666666667,
+          0.09376666666666666
+        ],
+        "useful_gflops_per_second": 271.9649567723343
+      },
+      "weight_key": "weights.layers.17.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 6402,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 3961,
+        "reference_peak_abs": 24.666881561279297,
+        "rms_abs": 3.5596233619139283e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 6670,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 4030,
+        "reference_peak_abs": 24.66688346862793,
+        "rms_abs": 4.810711200099722e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 6419,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 5863,
+        "reference_peak_abs": 24.666881561279297,
+        "rms_abs": 3.5676624801702e-7
+      },
+      "operator": "prefill.layer.17.qkv.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.03453333333333333,
+        "samples_ms": [
+          0.03333333333333333,
+          0.09799999999999999,
+          0.0353,
+          0.03423333333333333,
+          0.03366666666666667,
+          0.03453333333333333,
+          0.11276666666666667
+        ],
+        "useful_gflops_per_second": 364.3700386100386
+      },
+      "weight_key": "weights.layers.17.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 12905,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 16253,
+        "reference_peak_abs": 38.12284851074219,
+        "rms_abs": 3.584605586653873e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 13625,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 3879,
+        "reference_peak_abs": 38.12284851074219,
+        "rms_abs": 5.366286447586651e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 13488,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6078,
+        "reference_peak_abs": 38.12284851074219,
+        "rms_abs": 4.359259072213336e-7
+      },
+      "operator": "prefill.layer.17.qkv.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.07153333333333334,
+        "samples_ms": [
+          0.05773333333333334,
+          0.0718,
+          0.1455,
+          0.055999999999999994,
+          0.1324,
+          0.07153333333333334,
+          0.06546666666666666
+        ],
+        "useful_gflops_per_second": 351.8055545200372
+      },
+      "weight_key": "weights.layers.17.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 136048,
+        "max_abs": 0.000011444091796875,
+        "peak_error_index": 129588,
+        "reference_peak_abs": 20.981523513793945,
+        "rms_abs": 8.251119688627818e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 0,
+        "max_abs": 0.0,
+        "peak_error_index": 0,
+        "reference_peak_abs": 25.61073112487793,
+        "rms_abs": 0.0
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 136048,
+        "max_abs": 0.000011444091796875,
+        "peak_error_index": 129588,
+        "reference_peak_abs": 20.981523513793945,
+        "rms_abs": 8.251119688627818e-7
+      },
+      "operator": "prefill.layer.17.w13",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.547,
+        "samples_ms": [
+          1.547,
+          1.4211333333333334,
+          1.5778666666666668,
+          1.7283333333333335,
+          1.4853333333333332,
+          1.5314333333333332,
+          1.6412666666666667
+        ],
+        "useful_gflops_per_second": 658.833789269554
+      },
+      "weight_key": "weights.layers.17.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3767,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2316,
+        "reference_peak_abs": 7.870060920715332,
+        "rms_abs": 2.4690594391904195e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3924,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 2444,
+        "reference_peak_abs": 7.870059967041016,
+        "rms_abs": 3.4719482118861824e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3873,
+        "max_abs": 1.2516975402832031e-6,
+        "peak_error_index": 330,
+        "reference_peak_abs": 7.870060920715332,
+        "rms_abs": 2.6786084930016505e-7
+      },
+      "operator": "prefill.layer.17.w13.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.02476666666666667,
+        "samples_ms": [
+          0.07203333333333332,
+          0.07723333333333333,
+          0.03593333333333334,
+          0.02476666666666667,
+          0.022966666666666663,
+          0.02256666666666667,
+          0.0233
+        ],
+        "useful_gflops_per_second": 285.78282637954237
+      },
+      "weight_key": "weights.layers.17.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 7319,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2316,
+        "reference_peak_abs": 9.529449462890625,
+        "rms_abs": 2.5877017083683516e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 7668,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 2444,
+        "reference_peak_abs": 9.529449462890625,
+        "rms_abs": 3.4682934779041727e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 7320,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 8160,
+        "reference_peak_abs": 9.529449462890625,
+        "rms_abs": 2.5816934032777976e-7
+      },
+      "operator": "prefill.layer.17.w13.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.041299999999999996,
+        "samples_ms": [
+          0.08433333333333333,
+          0.051,
+          0.041299999999999996,
+          0.038566666666666666,
+          0.037333333333333336,
+          0.03803333333333333,
+          0.0855
+        ],
+        "useful_gflops_per_second": 342.7548668280872
+      },
+      "weight_key": "weights.layers.17.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 14173,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 10480,
+        "reference_peak_abs": 14.228262901306152,
+        "rms_abs": 2.65831934986434e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 14976,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 2444,
+        "reference_peak_abs": 14.228263854980469,
+        "rms_abs": 3.6046033355467675e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 14327,
+        "max_abs": 2.384185791015625e-6,
+        "peak_error_index": 10364,
+        "reference_peak_abs": 14.228262901306152,
+        "rms_abs": 2.743521168726947e-7
+      },
+      "operator": "prefill.layer.17.w13.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.06746666666666666,
+        "samples_ms": [
+          0.06746666666666666,
+          0.10573333333333335,
+          0.11026666666666668,
+          0.10826666666666666,
+          0.0674,
+          0.06633333333333334,
+          0.0673
+        ],
+        "useful_gflops_per_second": 419.63762845849806
+      },
+      "weight_key": "weights.layers.17.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 28813,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 10480,
+        "reference_peak_abs": 15.318835258483887,
+        "rms_abs": 2.654291075369811e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 30995,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 24996,
+        "reference_peak_abs": 15.31883430480957,
+        "rms_abs": 4.40779501059032e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 30844,
+        "max_abs": 2.384185791015625e-6,
+        "peak_error_index": 13344,
+        "reference_peak_abs": 15.318835258483887,
+        "rms_abs": 3.7360671206678273e-7
+      },
+      "operator": "prefill.layer.17.w13.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.12643333333333334,
+        "samples_ms": [
+          0.13893333333333333,
+          0.12643333333333334,
+          0.15103333333333332,
+          0.12539999999999998,
+          0.12203333333333333,
+          0.1213,
+          0.12736666666666666
+        ],
+        "useful_gflops_per_second": 447.8494911679409
+      },
+      "weight_key": "weights.layers.17.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 21610,
+        "max_abs": 0.0009765625,
+        "peak_error_index": 8247,
+        "reference_peak_abs": 2434.197998046875,
+        "rms_abs": 0.000037456626089053054
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 96097,
+        "max_abs": 0.001220703125,
+        "peak_error_index": 18999,
+        "reference_peak_abs": 2434.1982421875,
+        "rms_abs": 0.000042324330047996
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 20620,
+        "max_abs": 0.0008544921875,
+        "peak_error_index": 7915,
+        "reference_peak_abs": 2434.197998046875,
+        "rms_abs": 0.000029981838496700102
+      },
+      "operator": "prefill.layer.17.w2",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        24,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.2965666666666666,
+        "samples_ms": [
+          1.4249,
+          1.3236999999999999,
+          1.2610333333333335,
+          1.2965666666666666,
+          1.2788,
+          1.1041666666666667,
+          1.5054666666666667
+        ],
+        "useful_gflops_per_second": 393.04414427847905
+      },
+      "weight_key": "weights.layers.17.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 23298,
+        "max_abs": 0.0001678466796875,
+        "peak_error_index": 14904,
+        "reference_peak_abs": 230.02273559570312,
+        "rms_abs": 6.7495770538117585e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 101607,
+        "max_abs": 0.00018310546875,
+        "peak_error_index": 73272,
+        "reference_peak_abs": 233.57301330566406,
+        "rms_abs": 7.85796947407098e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 21277,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 9528,
+        "reference_peak_abs": 230.02273559570312,
+        "rms_abs": 3.200370974915262e-6
+      },
+      "operator": "prefill.layer.17.wo",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        95,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.5899333333333333,
+        "samples_ms": [
+          0.5696666666666667,
+          0.5742666666666667,
+          0.6173666666666667,
+          0.5899333333333333,
+          0.7089,
+          0.5661333333333334,
+          0.6175666666666667
+        ],
+        "useful_gflops_per_second": 383.92883263645615
+      },
+      "weight_key": "weights.layers.17.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 62374,
+        "max_abs": 0.000034332275390625,
+        "peak_error_index": 32404,
+        "reference_peak_abs": 54.170841217041016,
+        "rms_abs": 1.3123937884809756e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 273633,
+        "max_abs": 0.00003814697265625,
+        "peak_error_index": 128660,
+        "reference_peak_abs": 98.6926498413086,
+        "rms_abs": 1.5745119172009171e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 60579,
+        "max_abs": 0.000011920928955078125,
+        "peak_error_index": 63119,
+        "reference_peak_abs": 54.170841217041016,
+        "rms_abs": 9.397584752758434e-7
+      },
+      "operator": "prefill.layer.21.qkv",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        62,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.7093999999999999,
+        "samples_ms": [
+          0.5986333333333334,
+          0.6356333333333334,
+          0.7093999999999999,
+          0.7792333333333333,
+          0.6947000000000001,
+          0.8004333333333333,
+          0.8376999999999999
+        ],
+        "useful_gflops_per_second": 638.5464223287286
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1627,
+        "max_abs": 3.2186508178710938e-6,
+        "peak_error_index": 1706,
+        "reference_peak_abs": 14.837654113769531,
+        "rms_abs": 3.763138030061561e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1716,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 1668,
+        "reference_peak_abs": 14.837654113769531,
+        "rms_abs": 5.437414488062608e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1740,
+        "max_abs": 3.337860107421875e-6,
+        "peak_error_index": 1668,
+        "reference_peak_abs": 14.837654113769531,
+        "rms_abs": 4.734612418499324e-7
+      },
+      "operator": "prefill.layer.21.qkv.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.024066666666666667,
+        "samples_ms": [
+          0.014400000000000001,
+          0.014166666666666668,
+          0.013999999999999999,
+          0.07556666666666667,
+          0.16066666666666665,
+          0.05256666666666667,
+          0.024066666666666667
+        ],
+        "useful_gflops_per_second": 130.70891966759
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3198,
+        "max_abs": 3.4570693969726562e-6,
+        "peak_error_index": 3732,
+        "reference_peak_abs": 15.181659698486328,
+        "rms_abs": 3.938699575812479e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3418,
+        "max_abs": 4.291534423828125e-6,
+        "peak_error_index": 3714,
+        "reference_peak_abs": 15.181658744812012,
+        "rms_abs": 5.343262513476689e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3242,
+        "max_abs": 4.291534423828125e-6,
+        "peak_error_index": 3714,
+        "reference_peak_abs": 15.181659698486328,
+        "rms_abs": 4.0425696587473913e-7
+      },
+      "operator": "prefill.layer.21.qkv.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.019966666666666667,
+        "samples_ms": [
+          0.02086666666666667,
+          0.020366666666666665,
+          0.020066666666666667,
+          0.019733333333333335,
+          0.019766666666666665,
+          0.019966666666666667,
+          0.0196
+        ],
+        "useful_gflops_per_second": 315.0979632721202
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 6358,
+        "max_abs": 3.4570693969726562e-6,
+        "peak_error_index": 3732,
+        "reference_peak_abs": 23.295963287353516,
+        "rms_abs": 4.0179836081308926e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 6753,
+        "max_abs": 4.291534423828125e-6,
+        "peak_error_index": 3714,
+        "reference_peak_abs": 23.295963287353516,
+        "rms_abs": 5.402788778183898e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 6423,
+        "max_abs": 4.291534423828125e-6,
+        "peak_error_index": 3714,
+        "reference_peak_abs": 23.295963287353516,
+        "rms_abs": 4.1109085161914527e-7
+      },
+      "operator": "prefill.layer.21.qkv.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.03323333333333333,
+        "samples_ms": [
+          0.033466666666666665,
+          0.034466666666666666,
+          0.033633333333333335,
+          0.03323333333333333,
+          0.032633333333333334,
+          0.03163333333333333,
+          0.032766666666666666
+        ],
+        "useful_gflops_per_second": 378.6232296890673
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 12822,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 11923,
+        "reference_peak_abs": 29.299930572509766,
+        "rms_abs": 4.114968957509461e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 13536,
+        "max_abs": 5.7220458984375e-6,
+        "peak_error_index": 16293,
+        "reference_peak_abs": 29.299930572509766,
+        "rms_abs": 6.321664768737047e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 13291,
+        "max_abs": 4.291534423828125e-6,
+        "peak_error_index": 9907,
+        "reference_peak_abs": 29.299930572509766,
+        "rms_abs": 5.14691333968404e-7
+      },
+      "operator": "prefill.layer.21.qkv.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.09850000000000002,
+        "samples_ms": [
+          0.06319999999999999,
+          0.09850000000000002,
+          0.11613333333333332,
+          0.1511,
+          0.09786666666666666,
+          0.08886666666666665,
+          0.15083333333333335
+        ],
+        "useful_gflops_per_second": 255.49059898477154
+      },
+      "weight_key": "weights.layers.21.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 135531,
+        "max_abs": 7.152557373046875e-6,
+        "peak_error_index": 110143,
+        "reference_peak_abs": 19.876977920532227,
+        "rms_abs": 8.185978115257638e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 0,
+        "max_abs": 0.0,
+        "peak_error_index": 0,
+        "reference_peak_abs": 19.876972198486328,
+        "rms_abs": 0.0
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 135531,
+        "max_abs": 7.152557373046875e-6,
+        "peak_error_index": 110143,
+        "reference_peak_abs": 19.876977920532227,
+        "rms_abs": 8.185978115257638e-7
+      },
+      "operator": "prefill.layer.21.w13",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.3952666666666664,
+        "samples_ms": [
+          1.3382666666666667,
+          1.6165999999999998,
+          1.2572333333333332,
+          1.3952666666666664,
+          1.3961,
+          1.6629000000000003,
+          1.2737666666666667
+        ],
+        "useful_gflops_per_second": 730.4810588179082
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3674,
+        "max_abs": 1.043081283569336e-6,
+        "peak_error_index": 1750,
+        "reference_peak_abs": 10.702674865722656,
+        "rms_abs": 2.494924756410146e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3839,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 337,
+        "reference_peak_abs": 10.702674865722656,
+        "rms_abs": 3.459279478577505e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3687,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 337,
+        "reference_peak_abs": 10.702674865722656,
+        "rms_abs": 2.748577328916697e-7
+      },
+      "operator": "prefill.layer.21.w13.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.027333333333333334,
+        "samples_ms": [
+          0.03153333333333333,
+          0.027333333333333334,
+          0.027433333333333334,
+          0.026899999999999997,
+          0.06396666666666667,
+          0.025666666666666667,
+          0.02613333333333333
+        ],
+        "useful_gflops_per_second": 258.9471219512195
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 7161,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 7920,
+        "reference_peak_abs": 13.852197647094727,
+        "rms_abs": 2.6134678159050554e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 7540,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 4158,
+        "reference_peak_abs": 13.852197647094727,
+        "rms_abs": 3.5222945444329935e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 7208,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 337,
+        "reference_peak_abs": 13.852197647094727,
+        "rms_abs": 2.718433648812858e-7
+      },
+      "operator": "prefill.layer.21.w13.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.04713333333333333,
+        "samples_ms": [
+          0.04713333333333333,
+          0.043966666666666675,
+          0.04323333333333334,
+          0.0573,
+          0.05196666666666666,
+          0.15976666666666667,
+          0.04376666666666667
+        ],
+        "useful_gflops_per_second": 300.3347100424328
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 14165,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 7920,
+        "reference_peak_abs": 14.28528118133545,
+        "rms_abs": 2.6786494121570985e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 14935,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 4158,
+        "reference_peak_abs": 14.285280227661133,
+        "rms_abs": 3.6129249750757404e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 14282,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 337,
+        "reference_peak_abs": 14.28528118133545,
+        "rms_abs": 2.761224564522355e-7
+      },
+      "operator": "prefill.layer.21.w13.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.0785,
+        "samples_ms": [
+          0.0785,
+          0.0737,
+          0.0832,
+          0.12933333333333333,
+          0.13736666666666666,
+          0.07363333333333334,
+          0.07333333333333333
+        ],
+        "useful_gflops_per_second": 360.6567133757962
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 28577,
+        "max_abs": 2.7418136596679688e-6,
+        "peak_error_index": 22590,
+        "reference_peak_abs": 14.28528118133545,
+        "rms_abs": 2.6254961722026347e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 30891,
+        "max_abs": 6.4373016357421875e-6,
+        "peak_error_index": 4158,
+        "reference_peak_abs": 14.28528118133545,
+        "rms_abs": 4.3434736069948195e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 30706,
+        "max_abs": 5.4836273193359375e-6,
+        "peak_error_index": 4158,
+        "reference_peak_abs": 14.28528118133545,
+        "rms_abs": 3.6542695260082177e-7
+      },
+      "operator": "prefill.layer.21.w13.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.11780000000000002,
+        "samples_ms": [
+          0.11780000000000002,
+          0.11939999999999999,
+          0.11499999999999999,
+          0.1144,
+          0.12539999999999998,
+          0.11766666666666668,
+          0.11983333333333333
+        ],
+        "useful_gflops_per_second": 480.67151103565357
+      },
+      "weight_key": "weights.layers.21.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 22118,
+        "max_abs": 0.001953125,
+        "peak_error_index": 7992,
+        "reference_peak_abs": 3696.072265625,
+        "rms_abs": 0.00003511133869791277
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 97006,
+        "max_abs": 0.001953125,
+        "peak_error_index": 13368,
+        "reference_peak_abs": 3696.07177734375,
+        "rms_abs": 0.0000391777219902978
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 20514,
+        "max_abs": 0.000732421875,
+        "peak_error_index": 7423,
+        "reference_peak_abs": 3696.072265625,
+        "rms_abs": 0.000022642862681405493
+      },
+      "operator": "prefill.layer.21.w2",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        17,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.2996,
+        "samples_ms": [
+          1.2297,
+          1.2731,
+          1.3492333333333335,
+          1.1461666666666668,
+          1.3970333333333331,
+          1.4462666666666666,
+          1.2996
+        ],
+        "useful_gflops_per_second": 392.1267590027701
+      },
+      "weight_key": "weights.layers.21.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 22820,
+        "max_abs": 0.0000762939453125,
+        "peak_error_index": 17208,
+        "reference_peak_abs": 166.45347595214844,
+        "rms_abs": 7.45902251443952e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 102309,
+        "max_abs": 0.000091552734375,
+        "peak_error_index": 97080,
+        "reference_peak_abs": 166.45346069335938,
+        "rms_abs": 8.684938730959683e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 21355,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 5688,
+        "reference_peak_abs": 166.45347595214844,
+        "rms_abs": 3.7787499456268905e-6
+      },
+      "operator": "prefill.layer.21.wo",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.6932,
+        "samples_ms": [
+          0.7145666666666667,
+          0.6932,
+          0.6460333333333333,
+          0.7030333333333334,
+          0.6451,
+          0.6547,
+          0.7238333333333333
+        ],
+        "useful_gflops_per_second": 326.7345874206578
+      },
+      "weight_key": "weights.layers.21.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 63770,
+        "max_abs": 0.0000152587890625,
+        "peak_error_index": 6019,
+        "reference_peak_abs": 48.1358757019043,
+        "rms_abs": 8.407973261049711e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 278046,
+        "max_abs": 0.000015497207641601562,
+        "peak_error_index": 255572,
+        "reference_peak_abs": 48.13587951660156,
+        "rms_abs": 1.0261547417214496e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 62808,
+        "max_abs": 5.7220458984375e-6,
+        "peak_error_index": 6020,
+        "reference_peak_abs": 48.1358757019043,
+        "rms_abs": 6.481970384889807e-7
+      },
+      "operator": "prefill.layer.6.qkv",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        124,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.7513666666666667,
+        "samples_ms": [
+          0.6968333333333333,
+          0.8552666666666666,
+          0.7752333333333333,
+          0.7513666666666667,
+          0.6928666666666666,
+          0.7640000000000001,
+          0.6750333333333334
+        ],
+        "useful_gflops_per_second": 602.8811924936781
+      },
+      "weight_key": "weights.layers.6.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1738,
+        "max_abs": 1.821666955947876e-6,
+        "peak_error_index": 1604,
+        "reference_peak_abs": 11.834827423095703,
+        "rms_abs": 2.873523594652058e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1787,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 1992,
+        "reference_peak_abs": 11.83482837677002,
+        "rms_abs": 4.1694631422143935e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1815,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 156,
+        "reference_peak_abs": 11.834827423095703,
+        "rms_abs": 3.661422118969168e-7
+      },
+      "operator": "prefill.layer.6.qkv.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.014033333333333333,
+        "samples_ms": [
+          0.025766666666666663,
+          0.015266666666666666,
+          0.014033333333333333,
+          0.013066666666666666,
+          0.013899999999999997,
+          0.0141,
+          0.013566666666666666
+        ],
+        "useful_gflops_per_second": 224.1611401425178
+      },
+      "weight_key": "weights.layers.6.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3441,
+        "max_abs": 2.6226043701171875e-6,
+        "peak_error_index": 3669,
+        "reference_peak_abs": 12.660951614379883,
+        "rms_abs": 2.889014545287115e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3521,
+        "max_abs": 2.384185791015625e-6,
+        "peak_error_index": 3669,
+        "reference_peak_abs": 12.66094970703125,
+        "rms_abs": 3.797461730974221e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3441,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1910,
+        "reference_peak_abs": 12.660951614379883,
+        "rms_abs": 2.784949742259243e-7
+      },
+      "operator": "prefill.layer.6.qkv.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.021433333333333335,
+        "samples_ms": [
+          0.06256666666666667,
+          0.03056666666666667,
+          0.02126666666666667,
+          0.020633333333333333,
+          0.021433333333333335,
+          0.020833333333333332,
+          0.04263333333333333
+        ],
+        "useful_gflops_per_second": 293.53604976671846
+      },
+      "weight_key": "weights.layers.6.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 6923,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6022,
+        "reference_peak_abs": 48.1358757019043,
+        "rms_abs": 2.98269561025514e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 7053,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 6029,
+        "reference_peak_abs": 48.13587188720703,
+        "rms_abs": 4.0742356726516716e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 6898,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 6029,
+        "reference_peak_abs": 48.1358757019043,
+        "rms_abs": 3.085911909989588e-7
+      },
+      "operator": "prefill.layer.6.qkv.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.033466666666666665,
+        "samples_ms": [
+          0.045466666666666676,
+          0.03306666666666667,
+          0.03406666666666667,
+          0.03366666666666667,
+          0.033133333333333334,
+          0.033466666666666665,
+          0.03333333333333333
+        ],
+        "useful_gflops_per_second": 375.98342629482073
+      },
+      "weight_key": "weights.layers.6.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 14068,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6022,
+        "reference_peak_abs": 48.1358757019043,
+        "rms_abs": 2.87238374068777e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 14420,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6018,
+        "reference_peak_abs": 48.13587188720703,
+        "rms_abs": 4.454912899143285e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 14426,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6026,
+        "reference_peak_abs": 48.1358757019043,
+        "rms_abs": 3.6429525348368534e-7
+      },
+      "operator": "prefill.layer.6.qkv.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.05433333333333334,
+        "samples_ms": [
+          0.055400000000000005,
+          0.0542,
+          0.05416666666666667,
+          0.05433333333333334,
+          0.05486666666666667,
+          0.054299999999999994,
+          0.05603333333333333
+        ],
+        "useful_gflops_per_second": 463.17467484662575
+      },
+      "weight_key": "weights.layers.6.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 140599,
+        "max_abs": 9.447336196899414e-6,
+        "peak_error_index": 131607,
+        "reference_peak_abs": 25.392105102539062,
+        "rms_abs": 7.172184008972478e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 0,
+        "max_abs": 0.0,
+        "peak_error_index": 0,
+        "reference_peak_abs": 25.392101287841797,
+        "rms_abs": 0.0
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 140599,
+        "max_abs": 9.447336196899414e-6,
+        "peak_error_index": 131607,
+        "reference_peak_abs": 25.392105102539062,
+        "rms_abs": 7.172184008972478e-7
+      },
+      "operator": "prefill.layer.6.w13",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.4736666666666665,
+        "samples_ms": [
+          1.6662,
+          1.4606333333333332,
+          1.4599000000000002,
+          1.4736666666666665,
+          1.4789333333333332,
+          1.5468666666666666,
+          1.3777666666666668
+        ],
+        "useful_gflops_per_second": 691.6190038452839
+      },
+      "weight_key": "weights.layers.6.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 4201,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2212,
+        "reference_peak_abs": 5.05606746673584,
+        "rms_abs": 2.485852189536682e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4215,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 2212,
+        "reference_peak_abs": 5.056066989898682,
+        "rms_abs": 3.4336642288766213e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4253,
+        "max_abs": 1.1920928955078125e-6,
+        "peak_error_index": 4142,
+        "reference_peak_abs": 5.05606746673584,
+        "rms_abs": 2.6228923786341265e-7
+      },
+      "operator": "prefill.layer.6.w13.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.0243,
+        "samples_ms": [
+          0.03513333333333333,
+          0.027333333333333334,
+          0.024433333333333335,
+          0.0243,
+          0.024166666666666666,
+          0.02413333333333333,
+          0.0228
+        ],
+        "useful_gflops_per_second": 291.2711111111111
+      },
+      "weight_key": "weights.layers.6.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 8196,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2212,
+        "reference_peak_abs": 5.791274547576904,
+        "rms_abs": 2.4640887407485155e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 8266,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 8236,
+        "reference_peak_abs": 5.791274070739746,
+        "rms_abs": 3.238313847667191e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 8167,
+        "max_abs": 1.4901161193847656e-6,
+        "peak_error_index": 4058,
+        "reference_peak_abs": 5.791274547576904,
+        "rms_abs": 2.2629275340807994e-7
+      },
+      "operator": "prefill.layer.6.w13.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.04073333333333333,
+        "samples_ms": [
+          0.04286666666666667,
+          0.04343333333333333,
+          0.042833333333333334,
+          0.036366666666666665,
+          0.04006666666666667,
+          0.04073333333333333,
+          0.038766666666666665
+        ],
+        "useful_gflops_per_second": 347.5231423895254
+      },
+      "weight_key": "weights.layers.6.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 15887,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2212,
+        "reference_peak_abs": 25.392105102539062,
+        "rms_abs": 2.5076208877898185e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 16207,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 8236,
+        "reference_peak_abs": 25.392107009887695,
+        "rms_abs": 3.290392609644492e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 15864,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 12260,
+        "reference_peak_abs": 25.392105102539062,
+        "rms_abs": 2.3595689237962945e-7
+      },
+      "operator": "prefill.layer.6.w13.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.06986666666666667,
+        "samples_ms": [
+          0.06986666666666667,
+          0.07116666666666667,
+          0.14886666666666667,
+          0.11393333333333333,
+          0.06346666666666666,
+          0.06353333333333333,
+          0.06520000000000001
+        ],
+        "useful_gflops_per_second": 405.2225954198473
+      },
+      "weight_key": "weights.layers.6.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 32294,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 2212,
+        "reference_peak_abs": 25.392105102539062,
+        "rms_abs": 2.5024564859684863e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 33114,
+        "max_abs": 2.6226043701171875e-6,
+        "peak_error_index": 29142,
+        "reference_peak_abs": 25.39210319519043,
+        "rms_abs": 4.1523347985642677e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 33519,
+        "max_abs": 2.294778823852539e-6,
+        "peak_error_index": 29142,
+        "reference_peak_abs": 25.392105102539062,
+        "rms_abs": 3.446169222332611e-7
+      },
+      "operator": "prefill.layer.6.w13.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.14183333333333334,
+        "samples_ms": [
+          0.19949999999999998,
+          0.1436,
+          0.14183333333333334,
+          0.1454,
+          0.11916666666666668,
+          0.12436666666666668,
+          0.11939999999999999
+        ],
+        "useful_gflops_per_second": 399.2228249118684
+      },
+      "weight_key": "weights.layers.6.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 21021,
+        "max_abs": 0.00146484375,
+        "peak_error_index": 2204,
+        "reference_peak_abs": 3808.933837890625,
+        "rms_abs": 0.00004179113324286336
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 95672,
+        "max_abs": 0.001220703125,
+        "peak_error_index": 2123,
+        "reference_peak_abs": 3808.93408203125,
+        "rms_abs": 0.000018299058200685396
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 17768,
+        "max_abs": 0.000732421875,
+        "peak_error_index": 1697,
+        "reference_peak_abs": 3808.933837890625,
+        "rms_abs": 0.000024139319778946684
+      },
+      "operator": "prefill.layer.6.w2",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.4098,
+        "samples_ms": [
+          1.3740333333333332,
+          1.4098,
+          1.5311666666666668,
+          1.6409666666666667,
+          1.4085333333333334,
+          1.2140333333333333,
+          1.5008
+        ],
+        "useful_gflops_per_second": 361.47534118314655
+      },
+      "weight_key": "weights.layers.6.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 23093,
+        "max_abs": 0.0001220703125,
+        "peak_error_index": 8697,
+        "reference_peak_abs": 247.9195556640625,
+        "rms_abs": 4.523221579344157e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 99934,
+        "max_abs": 0.0001373291015625,
+        "peak_error_index": 22521,
+        "reference_peak_abs": 257.11199951171875,
+        "rms_abs": 6.076935362834236e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 20711,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 13305,
+        "reference_peak_abs": 247.9195556640625,
+        "rms_abs": 1.9981737319197337e-6
+      },
+      "operator": "prefill.layer.6.wo",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        29,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.7456333333333333,
+        "samples_ms": [
+          0.7260666666666666,
+          0.7456333333333333,
+          0.6148666666666667,
+          0.7483000000000001,
+          0.8757999999999999,
+          0.7664,
+          0.6391333333333333
+        ],
+        "useful_gflops_per_second": 303.7584371228039
+      },
+      "weight_key": "weights.layers.6.attention.wo.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 62972,
+        "max_abs": 0.0000457763671875,
+        "peak_error_index": 49090,
+        "reference_peak_abs": 70.36275482177734,
+        "rms_abs": 1.096659623612796e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 274249,
+        "max_abs": 0.00005340576171875,
+        "peak_error_index": 270274,
+        "reference_peak_abs": 72.69680786132812,
+        "rms_abs": 1.3271906261001393e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 61448,
+        "max_abs": 0.0000152587890625,
+        "peak_error_index": 6136,
+        "reference_peak_abs": 70.36275482177734,
+        "rms_abs": 7.592186806459713e-7
+      },
+      "operator": "prefill.layer.9.qkv",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        131,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.7604666666666665,
+        "samples_ms": [
+          0.7604666666666665,
+          0.7318000000000001,
+          0.7811333333333333,
+          0.8856,
+          0.8004000000000001,
+          0.7075333333333335,
+          0.6620666666666667
+        ],
+        "useful_gflops_per_second": 595.6669132988517
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 1650,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1992,
+        "reference_peak_abs": 19.650402069091797,
+        "rms_abs": 3.149410483868916e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 1718,
+        "max_abs": 2.384185791015625e-6,
+        "peak_error_index": 1724,
+        "reference_peak_abs": 19.650400161743164,
+        "rms_abs": 4.643022507210519e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 1695,
+        "max_abs": 2.0265579223632812e-6,
+        "peak_error_index": 1962,
+        "reference_peak_abs": 19.650402069091797,
+        "rms_abs": 3.975658908210949e-7
+      },
+      "operator": "prefill.layer.9.qkv.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.029466666666666665,
+        "samples_ms": [
+          0.08926666666666666,
+          0.014766666666666666,
+          0.015733333333333332,
+          0.029466666666666665,
+          0.024366666666666665,
+          0.0555,
+          0.16516666666666666
+        ],
+        "useful_gflops_per_second": 106.75547511312219
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 3336,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 1992,
+        "reference_peak_abs": 27.03756332397461,
+        "rms_abs": 3.2473821287025373e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 3427,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 4082,
+        "reference_peak_abs": 27.037565231323242,
+        "rms_abs": 4.356372638994185e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 3349,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 3975,
+        "reference_peak_abs": 27.03756332397461,
+        "rms_abs": 3.338160127048012e-7
+      },
+      "operator": "prefill.layer.9.qkv.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.020666666666666667,
+        "samples_ms": [
+          0.06166666666666667,
+          0.018566666666666665,
+          0.018666666666666668,
+          0.020666666666666667,
+          0.02073333333333333,
+          0.020133333333333333,
+          0.06520000000000001
+        ],
+        "useful_gflops_per_second": 304.4252903225806
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 6730,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6088,
+        "reference_peak_abs": 66.72652435302734,
+        "rms_abs": 3.2829129316368336e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 6912,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 4082,
+        "reference_peak_abs": 66.72652435302734,
+        "rms_abs": 4.44332321049974e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 6747,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6088,
+        "reference_peak_abs": 66.72652435302734,
+        "rms_abs": 3.4689334918447253e-7
+      },
+      "operator": "prefill.layer.9.qkv.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.05073333333333333,
+        "samples_ms": [
+          0.041633333333333335,
+          0.15669999999999998,
+          0.07663333333333333,
+          0.03606666666666667,
+          0.035,
+          0.051833333333333335,
+          0.05073333333333333
+        ],
+        "useful_gflops_per_second": 248.02060446780555
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 13342,
+        "max_abs": 3.814697265625e-6,
+        "peak_error_index": 6088,
+        "reference_peak_abs": 66.72652435302734,
+        "rms_abs": 3.2888101159425643e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 13930,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 6082,
+        "reference_peak_abs": 66.72653198242188,
+        "rms_abs": 5.091833748233651e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 13847,
+        "max_abs": 7.62939453125e-6,
+        "peak_error_index": 6082,
+        "reference_peak_abs": 66.72652435302734,
+        "rms_abs": 4.2051317558162394e-7
+      },
+      "operator": "prefill.layer.9.qkv.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 2048,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.06266666666666666,
+        "samples_ms": [
+          0.06266666666666666,
+          0.1449,
+          0.07376666666666667,
+          0.0684,
+          0.055766666666666666,
+          0.05803333333333333,
+          0.057999999999999996
+        ],
+        "useful_gflops_per_second": 401.58229787234046
+      },
+      "weight_key": "weights.layers.9.attention.wqkv.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 139073,
+        "max_abs": 9.5367431640625e-6,
+        "peak_error_index": 12370,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 7.143205840963052e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 0,
+        "max_abs": 0.0,
+        "peak_error_index": 0,
+        "reference_peak_abs": 30.703384399414062,
+        "rms_abs": 0.0
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 139073,
+        "max_abs": 9.5367431640625e-6,
+        "peak_error_index": 12370,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 7.143205840963052e-7
+      },
+      "operator": "prefill.layer.9.w13",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.5788,
+        "samples_ms": [
+          1.7694666666666665,
+          1.5492666666666663,
+          1.3105333333333335,
+          1.6068,
+          1.7789,
+          1.4232000000000002,
+          1.5788
+        ],
+        "useful_gflops_per_second": 645.5636382062326
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 4102,
+        "max_abs": 1.3113021850585938e-6,
+        "peak_error_index": 2704,
+        "reference_peak_abs": 6.587912082672119,
+        "rms_abs": 2.4614648733662093e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 4129,
+        "max_abs": 1.6689300537109375e-6,
+        "peak_error_index": 2704,
+        "reference_peak_abs": 6.587911128997803,
+        "rms_abs": 3.36555833015421e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 4110,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 4338,
+        "reference_peak_abs": 6.587912082672119,
+        "rms_abs": 2.564979769665264e-7
+      },
+      "operator": "prefill.layer.9.w13.rows1",
+      "oracle_rows": [
+        0
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 1
+      },
+      "timing": {
+        "median_ms": 0.026966666666666667,
+        "samples_ms": [
+          0.037,
+          0.1318,
+          0.035833333333333335,
+          0.026966666666666667,
+          0.026400000000000003,
+          0.0238,
+          0.024866666666666665
+        ],
+        "useful_gflops_per_second": 262.4680346106304
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 7962,
+        "max_abs": 1.3113021850585938e-6,
+        "peak_error_index": 2704,
+        "reference_peak_abs": 6.8491010665893555,
+        "rms_abs": 2.469725209019138e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 8135,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 5534,
+        "reference_peak_abs": 6.8491010665893555,
+        "rms_abs": 3.242069268802303e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 7885,
+        "max_abs": 1.430511474609375e-6,
+        "peak_error_index": 1292,
+        "reference_peak_abs": 6.8491010665893555,
+        "rms_abs": 2.2416079210734796e-7
+      },
+      "operator": "prefill.layer.9.w13.rows2",
+      "oracle_rows": [
+        0,
+        1
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 2
+      },
+      "timing": {
+        "median_ms": 0.04263333333333333,
+        "samples_ms": [
+          0.04263333333333333,
+          0.05906666666666666,
+          0.05243333333333333,
+          0.041433333333333336,
+          0.0902,
+          0.0426,
+          0.03983333333333334
+        ],
+        "useful_gflops_per_second": 332.03540265832686
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 15607,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 12370,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 2.499507025982472e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 16010,
+        "max_abs": 2.86102294921875e-6,
+        "peak_error_index": 10226,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 3.3239606851320865e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 15500,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 10226,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 2.3398423851063935e-7
+      },
+      "operator": "prefill.layer.9.w13.rows4",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 4
+      },
+      "timing": {
+        "median_ms": 0.060566666666666664,
+        "samples_ms": [
+          0.06816666666666667,
+          0.06736666666666667,
+          0.06269999999999999,
+          0.060566666666666664,
+          0.05803333333333333,
+          0.060099999999999994,
+          0.06053333333333333
+        ],
+        "useful_gflops_per_second": 467.44444689047884
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 31487,
+        "max_abs": 1.9073486328125e-6,
+        "peak_error_index": 12370,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 2.474027638287656e-7
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 32757,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 19836,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 4.092785544413402e-7
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 32878,
+        "max_abs": 2.1457672119140625e-6,
+        "peak_error_index": 20888,
+        "reference_peak_abs": 28.938392639160156,
+        "rms_abs": 3.4395277473844106e-7
+      },
+      "operator": "prefill.layer.9.w13.rows8",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "shape": {
+        "input_dim": 768,
+        "output_dim": 4608,
+        "rows": 8
+      },
+      "timing": {
+        "median_ms": 0.14173333333333332,
+        "samples_ms": [
+          0.14173333333333332,
+          0.1233,
+          0.12013333333333333,
+          0.12053333333333334,
+          0.2886666666666667,
+          0.17733333333333334,
+          0.2669333333333333
+        ],
+        "useful_gflops_per_second": 399.5044967074318
+      },
+      "weight_key": "weights.layers.9.feed_forward.w13.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 20799,
+        "max_abs": 0.0029296875,
+        "peak_error_index": 1591,
+        "reference_peak_abs": 9192.64453125,
+        "rms_abs": 0.00009004247466991523
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 92092,
+        "max_abs": 0.00244140625,
+        "peak_error_index": 1591,
+        "reference_peak_abs": 9192.6455078125,
+        "rms_abs": 0.000047949567266578516
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 17935,
+        "max_abs": 0.00146484375,
+        "peak_error_index": 2155,
+        "reference_peak_abs": 9192.64453125,
+        "rms_abs": 0.000053599359642860285
+      },
+      "operator": "prefill.layer.9.w2",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 2304,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 1.3102333333333334,
+        "samples_ms": [
+          1.3102333333333334,
+          1.2193666666666667,
+          1.1791666666666665,
+          1.3359333333333332,
+          1.4868333333333332,
+          1.3014333333333332,
+          1.7634333333333334
+        ],
+        "useful_gflops_per_second": 388.94441397206606
+      },
+      "weight_key": "weights.layers.9.feed_forward.w2.weight"
+    },
+    {
+      "candidate_vs_f64_sampled": {
+        "different_elements": 22558,
+        "max_abs": 0.00009918212890625,
+        "peak_error_index": 14073,
+        "reference_peak_abs": 212.6185302734375,
+        "rms_abs": 6.432381525776699e-6
+      },
+      "candidate_vs_gpu_full": {
+        "different_elements": 97550,
+        "max_abs": 0.00009918212890625,
+        "peak_error_index": 70137,
+        "reference_peak_abs": 214.46762084960938,
+        "rms_abs": 8.149666157304416e-6
+      },
+      "gpu_vs_f64_sampled": {
+        "different_elements": 20062,
+        "max_abs": 0.000030517578125,
+        "peak_error_index": 965,
+        "reference_peak_abs": 212.6185302734375,
+        "rms_abs": 3.2217648109758157e-6
+      },
+      "operator": "prefill.layer.9.wo",
+      "oracle_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        16,
+        25,
+        33,
+        42,
+        50,
+        58,
+        67,
+        75,
+        84,
+        91,
+        92,
+        100,
+        109,
+        117,
+        126,
+        134,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "shape": {
+        "input_dim": 1024,
+        "output_dim": 768,
+        "rows": 144
+      },
+      "timing": {
+        "median_ms": 0.6093,
+        "samples_ms": [
+          0.5995,
+          0.6422,
+          0.6664,
+          0.6093,
+          0.7202000000000001,
+          0.6068333333333333,
+          0.5075
+        ],
+        "useful_gflops_per_second": 371.7256129985229
+      },
+      "weight_key": "weights.layers.9.attention.wo.weight"
+    }
+  ],
+  "schema_version": 1,
+  "simd": "Auto",
+  "threads": 16,
+  "timing_configuration": {
+    "iterations_per_sample": 3,
+    "samples": 7,
+    "warmups": 2
+  }
+}

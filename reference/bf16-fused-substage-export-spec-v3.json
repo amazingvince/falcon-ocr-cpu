@@ -1,0 +1,210 @@
+{
+  "schema_version": 3,
+  "status": "prospective_partial_observation_not_executed",
+  "created_utc": "2026-09-20T11:54:59.718685+00:00",
+  "owner": "gpu_reference after currently ordered GPU work; no interruption",
+  "purpose": "Distinguish actual fused QK/max/exp2/normalizer behavior from the existing independent Torch tile oracle; no production or tolerance changes.",
+  "inputs": {
+    "fixture": "artifacts/reference/attention-operators-bf16.safetensors",
+    "fixture_sha256": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+    "token_trace": "artifacts/reference/smoke-bf16/trace.safetensors",
+    "token_trace_sha256": "e938f90ad6964d6de89f0c2df1d7be9297c57e7516a7391d8061eb9f54c6f2d3",
+    "cases": [
+      "prefill.layer.0",
+      "prefill.layer.17",
+      "prefill.layer.19"
+    ],
+    "probes": [
+      {
+        "case": "prefill.layer.0",
+        "query_row": 13,
+        "head": 1,
+        "role": "crossing"
+      },
+      {
+        "case": "prefill.layer.0",
+        "query_row": 13,
+        "head": 2,
+        "role": "nonfailing control"
+      },
+      {
+        "case": "prefill.layer.0",
+        "query_row": 53,
+        "head": 8,
+        "role": "crossing"
+      },
+      {
+        "case": "prefill.layer.17",
+        "query_row": 54,
+        "head": 10,
+        "role": "crossing"
+      },
+      {
+        "case": "prefill.layer.17",
+        "query_row": 124,
+        "head": 11,
+        "role": "crossing"
+      },
+      {
+        "case": "prefill.layer.19",
+        "query_row": 41,
+        "head": 6,
+        "role": "scaled-output failure; inspect dimension54 near raw BF16 midpoint"
+      },
+      {
+        "case": "prefill.layer.19",
+        "query_row": 41,
+        "head": 5,
+        "role": "adjacent head control; no failure asserted"
+      }
+    ],
+    "preservation": "Complete original Q/K/V tensors, dtypes, strides, all heads/query rows, exact mask inputs and original padded capacity256. Do not crop to a single row/head or rebuild a dense mask."
+  },
+  "source": {
+    "path": "artifacts/reference/bf16-flex-prefill-compiled.py",
+    "sha256": "df8bf27f03ed01178889a917b328d377e3c797336d007e82a391d69c992cd5c7",
+    "ptx_inventory": "reference/bf16-mma-ptx-inventory.json",
+    "ptx_inventory_sha256": "237ec00b1c5026bfda3565e037dc245e924d412c3b84b6c19ccf778458be4bcc",
+    "retained_ptx": [
+      {
+        "path": "artifacts/reference/bf16-mma-ptx/DFQ7SOOKEVMW4ZDWRYRCN7HK4BXCKWGDN6JK7QY4D5QFYJ4KOYRA.ptx",
+        "sha256": "d05139c56a808316777b0f0af409f67c988573bee2fef02249e4231d69d58d60",
+        "num_warps": 2,
+        "target": {
+          "backend": "cuda",
+          "arch": 89,
+          "warp_size": 32
+        }
+      },
+      {
+        "path": "artifacts/reference/bf16-mma-ptx/FUO54TKCDVFRKAWX6ZKL5V74LBTXCFBF4DBDYNI64DGVKFZP77JQ.ptx",
+        "sha256": "32c7423c11ec30d8c9bb1c43f1106b2d1372254fa0432a49b0f45b1d54181221",
+        "num_warps": 2,
+        "target": {
+          "backend": "cuda",
+          "arch": 89,
+          "warp_size": 32
+        }
+      },
+      {
+        "path": "artifacts/reference/bf16-mma-ptx/NUMXHWI6FORGSZJOV2LELDJQQ3KZBBRVQ3VZCPH25KZHKSJEJKIQ.ptx",
+        "sha256": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+        "num_warps": 4,
+        "target": {
+          "backend": "cuda",
+          "arch": 89,
+          "warp_size": 32
+        }
+      }
+    ]
+  },
+  "expected_from_saved_prefill_source": {
+    "BLOCK_M": 128,
+    "BLOCK_N": 64,
+    "QK_HEAD_DIM": 64,
+    "V_HEAD_DIM": 64,
+    "SPARSE_Q_BLOCK_SIZE": 128,
+    "SPARSE_KV_BLOCK_SIZE": 128,
+    "Q_LEN": 144,
+    "KV_LEN": 144,
+    "SM_SCALE": 0.125,
+    "RCP_LN2_F32_BITS": "3fb8aa3b",
+    "PRESCALE_QK": false,
+    "FLOAT32_PRECISION": "ieee",
+    "IS_DIVISIBLE": false,
+    "HAS_FULL_BLOCKS": true,
+    "num_warps": 4,
+    "num_stages": 3,
+    "SPLIT_KV": "not used for prefill"
+  },
+  "required_actual_launch_metadata": [
+    "Q/K/V shapes,dtypes,strides",
+    "mask/index tensors and hashes",
+    "full and partial sparse schedules",
+    "actual grid",
+    "BLOCK_M/N/head dimensions",
+    "SM_SCALE and RCP_LN2 bit patterns",
+    "PRESCALE_QK/FLOAT32_PRECISION/IS_DIVISIBLE",
+    "num_warps,num_stages,split count",
+    "compiler/Triton/CUDA/driver/GPU identity",
+    "source,PTX,CUBIN hashes"
+  ],
+  "method": [
+    "Clone the pinned generated Flex implementation with observation stores only. Preserve score/mask code and all original loop iterations.",
+    "Store actual tl.dot QK before scaling and actual downstream intermediates, without recomputing different products for export.",
+    "Retain the physical64-key masked tail. Capture any all-masked key192 iteration; generated partial loop can execute128,192 before full0,64. Label loop_kind,key_start,ordinal rather than assuming the old three-live-tile oracle indices.",
+    "Preserve fused tl.dot(P.to(BF16),V,scaled_acc) with its accumulator argument. Do not export a separate zero-initialized PV and replace the update by PV+scaled_acc.",
+    "Do not change layouts, heads, matrix shapes, warp/stage settings or autotune decisions to make instrumentation pass. Extra stores may change register allocation and compiled scheduling; validate before interpretation.",
+    "Capture the actual final FP32 accumulator and denominator before division, actual quotient before output cast, and BF16 cast. Never infer these from rounded raw output or LSE."
+  ],
+  "per_iteration_fields": {
+    "matrix": [
+      "qk_unscaled_f32",
+      "scores_scaled_f32",
+      "post_mod_scores_log2_f32",
+      "exp2_argument_f32",
+      "exp2_result_f32",
+      "probabilities_bf16_exact_promoted_f32",
+      "accumulator_before_f32",
+      "accumulator_after_alpha_f32",
+      "accumulator_after_fused_dot_f32"
+    ],
+    "row_vector": [
+      "maximum_before_f32",
+      "maximum_after_f32",
+      "alpha_argument_f32",
+      "alpha_result_f32",
+      "denominator_before_f32",
+      "denominator_after_f32"
+    ],
+    "indices": [
+      "loop_kind",
+      "loop_ordinal",
+      "key_start",
+      "query_block",
+      "head",
+      "validity_mask"
+    ]
+  },
+  "acceptance": {
+    "must_match": "Complete raw BF16 attention and FP32 LSE from instrumented versus uninstrumented pinned Flex bit for bit, for all three cases, not only selected probes. Also match the frozen native fixture before attributing it. Also require complete FP32 log2-LSE equality, not only natural LSE.",
+    "if_any_mismatch": "Reject as instrumentation-changed; preserve mismatch indices/counts and generated artifacts. Do not describe exported values as original native internals.",
+    "instruction_audit": "Compare original/instrumented MMA shapes and accumulator chains, explicit scaling/subtractions, ex2.approx.ftz, BF16 conversions and denominator update. Record differences; output equality is necessary but does not prove an identical internal instruction schedule.",
+    "masked_reduction_lowering": "Require restored original masked-loop MMA-layout add reduction and local plus XOR2/XOR1 PTX reduction structure. Preserve actual compiled artifacts and explicit comparison; reject if not restored."
+  },
+  "second_stage_same_argument_exp2": {
+    "inputs": "Use accepted fused arguments plus saved CPU/GPU/counterfactual argument bit patterns near the four crossings, and all unmasked arguments from the five probe heads.",
+    "operators": [
+      "Observed GPU ex2.approx.ftz.f32 intrinsic with exact FP32 bits",
+      "torch.exp2 at identical FP32 inputs",
+      "Rust exp2 replay already preserved"
+    ],
+    "outputs": [
+      "FP32 argument/result bits",
+      "BF16 RN-even output bits",
+      "PTX identifying the exp2 implementation"
+    ],
+    "limit": "GPU function behavior at CPU arguments cannot be inferred from the existing GPU-argument-only comparison."
+  },
+  "out_of_scope": [
+    "No new QK grouping/permutation search",
+    "No production arithmetic change",
+    "No bound change or full-model BF16 qualification"
+  ],
+  "supersedes_design": {
+    "path": "reference/bf16-fused-substage-export-spec-v2.json",
+    "sha256": "3a7333b3ed7cf22b39cdd65364624fb80d8f50a8d14c55fd127d7a674e77b9e8",
+    "reason": "v4 observer candidate failed LSE equality, and its saved lowering shows a changed masked-loop reduction associated with the extra debug sum consumer. This is an observed arithmetic perturbation, not proof that it uniquely explains every mismatch. v2 remains unchanged and incomplete. This prospective partial scope removes only that consumer."
+  },
+  "final_fields": [
+    "accumulator_before_division_f32",
+    "denominator_before_division_f32",
+    "quotient_before_output_cast_f32",
+    "output_bf16_exact_promoted_f32"
+  ],
+  "unavailable_fields": [
+    "sum_unrounded_probabilities_f32"
+  ],
+  "observation_scope": "Partial observation only. The native rounded local probability sum is unavailable. Do not infer its exact rounded value from denominator differences; do not claim completion of v2.",
+  "only_permitted_instrumentation_change": "Remove the added debug tl.sum(p,1) consumer/store only; preserve native denominator expression, every other observation, original FIELDS indices and buffer shape, layouts, matrix shapes, warp/stage settings and autotune choices."
+}

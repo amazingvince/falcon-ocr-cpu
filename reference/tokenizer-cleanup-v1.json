@@ -1,0 +1,42 @@
+{
+  "fixture": "artifacts/reference/tokenizer-cleanup-v1/fixture.json",
+  "fixture_sha256": "2663c936b41d4ae49081f747f17c3526b6d680c3f93f7214655dc5d218db454b",
+  "cases": 14,
+  "versions": {
+    "transformers": "5.14.1",
+    "tokenizers": "0.22.2"
+  },
+  "tokenizer_assets": {
+    "tokenizer.json": {
+      "sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "bytes": 5063163
+    },
+    "tokenizer_config.json": {
+      "sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "bytes": 4352
+    },
+    "special_tokens_map.json": {
+      "sha256": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+      "bytes": 9357
+    }
+  },
+  "sources": {
+    "decode": {
+      "installed_file": "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/transformers/tokenization_utils_base.py",
+      "installed_file_sha256": "f86fc8ce6ad86bcbb4bad93b84b3cde9f7b93b516703b5d220889c66bbdd7b5a",
+      "method_source_sha256": "3a4af65aaefa0fa0131cf77a6d849e9be7abf73929ad7d5473cb712380d02b68"
+    },
+    "backend_decode": {
+      "installed_file": "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/transformers/tokenization_utils_tokenizers.py",
+      "installed_file_sha256": "4142769e9147cd371e7ee4b3270f521013fcbf1306fc9842aa87bb503f9f64fb",
+      "method_source_sha256": "8572e715e3f3b20b3db6b7ad2336ce4e74730734b89bf0717551bfd0f5a3346f"
+    },
+    "legacy_cleanup": {
+      "installed_file": "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/transformers/tokenization_utils_base.py",
+      "installed_file_sha256": "f86fc8ce6ad86bcbb4bad93b84b3cde9f7b93b516703b5d220889c66bbdd7b5a",
+      "method_source_sha256": "908608f296f4c75854992f6f7d7a6750ca9333bdfbf68156c0ae88dfc4705e8e"
+    }
+  },
+  "interpretation": "Transformers 5.14.1 ignores the configured cleanup=True for BPE unless the separate force-BPE-cleanup attribute is enabled. hf_cleaned_decode records actual decode(clean_up_tokenization_spaces=True), not the legacy WordPiece cleanup helper.",
+  "upstream_final_policy": "Actual tokenizer.decode(skip_special_tokens=False), remove both named EOS strings, then Python str.strip()."
+}

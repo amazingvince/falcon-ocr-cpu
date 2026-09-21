@@ -1,0 +1,14 @@
+{
+  "recorded_utc": "2026-09-20T14:39:23.321338+00:00",
+  "sample_started_utc": "2026-09-20T14:39:13.245697+00:00",
+  "sample_seconds": 10,
+  "system_cpu_percent": 9.6,
+  "logical_cpus": 32,
+  "available_physical_bytes": 29274759168,
+  "c_drive_free_bytes": 8993959936,
+  "matching_project_processes": [],
+  "uninspectable_relevant_process_names": [],
+  "planned_joint_expanded_kv_payload_bytes": 3316121600,
+  "planned_packed_weight_payload_bytes": 876085248,
+  "scope": "Read-only prelaunch sample after all project agent heavy work completed. Native process screening uses candidate executable names and project cwd/arguments; it is not exhaustive interference detection. WSL process and isolated 4090 idle checks are separate. No processes terminated or host settings changed. Reserved tensor bytes exclude model weights, scratch, allocator and OS costs. This sample does not establish constant quiet during the bracket."
+}

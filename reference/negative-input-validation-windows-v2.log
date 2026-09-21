@@ -1,0 +1,35 @@
+   Compiling falcon-ocr v0.1.0 (C:\Users\amazi\Documents\ChatGPT\falcon-ocr)
+    Finished `release` profile [optimized + debuginfo] target(s) in 58.94s
+     Running tests\negative_inputs.rs (target\release\deps\negative_inputs-f8d25d30936b761e.exe)
+
+running 5 tests
+test cli_requires_an_image_before_attempting_model_load ... ok
+test cli_runtime_errors_exit_nonzero_without_partial_json_results ... ok
+preparing missing
+preparing empty
+preparing unsupported
+preparing truncated PNG header
+preparing truncated JPEG header
+test file_preparation_returns_errors_for_missing_empty_unsupported_and_truncated_files ... ok
+validating zero minimum
+validating zero maximum
+validating reversed bounds
+validating unaligned maximum
+validating maximum below one patch
+validating zero output cap
+test generation_and_runner_options_reject_invalid_values ... ok
+public entry points: zero minimum
+public entry points: zero maximum
+public entry points: reversed bounds
+public entry points: unaligned maximum
+public entry points: maximum below one patch
+public entry points: zero output cap
+public file entry points: missing
+public file entry points: empty
+public file entry points: unsupported
+public file entry points: truncated PNG header
+public file entry points: truncated JPEG header
+test public_runner_errors_and_empty_collections_do_not_generate ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.33s
+

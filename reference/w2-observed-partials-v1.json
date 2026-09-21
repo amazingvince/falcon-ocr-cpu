@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "status": "gpu_partials_independently_validated_cpu_fold_exact_rust_probe_prepared",
+  "created_utc": "2026-09-20T11:39:21.703074+00:00",
+  "artifacts_sha256": {
+    "reference/w2-observed-partials-v1.md": "d2db9c80ff84cf9a57a58f270e242ce7f50096dba38b8300dc6fd2ed7823adee",
+    "artifacts/diagnostics/w2-observed-partial-fold-v1/report.json": "9c7166386f22d3b1f70c8b9a5aad09e6458dd7f7f0f1e2c22a7d2af97c1dae14",
+    "experiments/linear/replay_observed_partials.py": "b0479c779804d683e21ec37ea5e7f64d3273abc053817a5330cc655e20a3bbcf",
+    "experiments/linear/capture_observed_partition_probe.py": "067f4b136468c087aa6f8c2d3bdeed4db8c6371edd8937eb8e152bcf0e929d1d",
+    "experiments/linear/observed_partition_probe/Cargo.toml": "e1a08a15f30da0c439cbc3c287f250e351bac69f054dd7ff08b89ea96f5ac402",
+    "experiments/linear/observed_partition_probe/Cargo.lock": "823a93702c235c76adeb6c1d78ff24ef163037b993c1b0d0e9ee19508054c599",
+    "experiments/linear/observed_partition_probe/src/main.rs": "8207d535f073a188c4aaa65b3913154fe5b317bcd12aa0279f1976fcaf628905"
+  },
+  "fold_elements": 110592,
+  "fold_bit_mismatches": 0,
+  "fold_max_abs_error": 0.0,
+  "conditional_ranges": [
+    [
+      0,
+      165
+    ],
+    [
+      165,
+      330
+    ],
+    [
+      330,
+      495
+    ],
+    [
+      495,
+      660
+    ],
+    [
+      660,
+      825
+    ],
+    [
+      825,
+      990
+    ],
+    [
+      990,
+      1155
+    ],
+    [
+      1155,
+      1320
+    ],
+    [
+      1320,
+      1485
+    ],
+    [
+      1485,
+      1650
+    ],
+    [
+      1650,
+      1815
+    ],
+    [
+      1815,
+      1980
+    ],
+    [
+      1980,
+      2145
+    ],
+    [
+      2145,
+      2304
+    ]
+  ],
+  "rust_probe_read_only_review": "preprocessing reviewed source and capture driver; no remaining concrete finding; root owns build/test/execution",
+  "production_changes": false,
+  "gpu_calls_by_author": false,
+  "arithmetic_or_partition_sweep": false,
+  "qualification": "One ascending FP32 fold is output-equivalent on saved GPU partials; actual GPU reduction order remains unproven."
+}

@@ -1,0 +1,38 @@
+{
+  "status": "prelaunch_checks_passed",
+  "recorded_utc": "2026-09-20T16:57:15.141719+00:00",
+  "plan_sha256": "904841b075f91c3f2109b00db07f4a697fadbb35bfef0a5345f8956e081407cc",
+  "native_matching_processes": [],
+  "native_process_query": [
+    "powershell.exe",
+    "-NoProfile",
+    "-Command",
+    "Get-Process | Where-Object { $_.ProcessName -match '^(cargo|rustc|ocr_bench|falcon[-_].*|crossover-tests)$' } | Select-Object Id,ProcessName,CPU | ConvertTo-Json -Compress"
+  ],
+  "available_physical_bytes": 32283738112,
+  "minimum_available_physical_bytes": 12884901888,
+  "wsl_check": {
+    "distribution": "Ubuntu-24.04-CUDA",
+    "root_observed_immediately_prior_tool_exit_code": 0,
+    "matching_processes": [],
+    "process_names": [
+      "cargo",
+      "rustc",
+      "falcon-ocr",
+      "ocr_bench",
+      "python",
+      "python3",
+      "cc1",
+      "cc1plus",
+      "ld",
+      "ninja",
+      "cmake"
+    ],
+    "distro_stopped": false
+  },
+  "agent_work": "Linux build/model/tests, numerical build/CPU/GPU/comparison, independent review all confirmed exited; no further work queued during timing.",
+  "limits": [
+    "Point-in-time project-process checks; normal desktop and WSL system services remain.",
+    "No continuous CPU-frequency, thermal, bandwidth or hardware-counter assertion."
+  ]
+}

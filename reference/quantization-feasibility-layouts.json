@@ -1,0 +1,582 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T07:39:32.166398+00:00",
+  "qualification": "Payload arithmetic from actual tensor headers; no quantized checkpoint, speed, RSS, or accuracy claim.",
+  "checkpoint": "artifacts/model/model.safetensors",
+  "checkpoint_expected_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+  "verification_scope": "The earlier provenance audit hashed the entire checkpoint; this script reads only its safetensors header.",
+  "tensor_header_sha256": "3fc07c3e421e4e66e7271abbb58fe0352330115de18e1673b5d89f7e5a4ba519",
+  "checkpoint_file_bytes": 1079789464,
+  "safetensors_header_bytes_including_length": 11800,
+  "fp32_tensor_payload_bytes": 1079777664,
+  "non_2d_retained_fp32_bytes": 6528,
+  "matrix_groups": {
+    "img_projector.weight": {
+      "shape_out_in": [
+        768,
+        768
+      ],
+      "matrices": 1,
+      "weights_per_matrix": 589824,
+      "fp32_payload_per_matrix": 2359296,
+      "bf16_payload_per_matrix": 1179648,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 294912,
+          "scale_and_other_metadata_bytes": 73728,
+          "payload_per_matrix": 368640,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 294912,
+          "scale_and_other_metadata_bytes": 36864,
+          "payload_per_matrix": 331776,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 294912,
+          "scale_and_other_metadata_bytes": 18432,
+          "payload_per_matrix": 313344,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 294912,
+          "scale_and_other_metadata_bytes": 36864,
+          "payload_per_matrix": 331776,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 294912,
+          "scale_and_other_metadata_bytes": 36864,
+          "payload_per_matrix": 331776,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 589824,
+          "scale_and_other_metadata_bytes": 36864,
+          "payload_per_matrix": 626688,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 589824,
+          "scale_and_other_metadata_bytes": 36864,
+          "payload_per_matrix": 626688,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 592896
+    },
+    "attention.wo.weight": {
+      "shape_out_in": [
+        768,
+        1024
+      ],
+      "matrices": 22,
+      "weights_per_matrix": 786432,
+      "fp32_payload_per_matrix": 3145728,
+      "bf16_payload_per_matrix": 1572864,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 393216,
+          "scale_and_other_metadata_bytes": 98304,
+          "payload_per_matrix": 491520,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 393216,
+          "scale_and_other_metadata_bytes": 49152,
+          "payload_per_matrix": 442368,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 393216,
+          "scale_and_other_metadata_bytes": 24576,
+          "payload_per_matrix": 417792,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 393216,
+          "scale_and_other_metadata_bytes": 49152,
+          "payload_per_matrix": 442368,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 393216,
+          "scale_and_other_metadata_bytes": 49152,
+          "payload_per_matrix": 442368,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 49152,
+          "payload_per_matrix": 835584,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 49152,
+          "payload_per_matrix": 835584,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 789504
+    },
+    "attention.wqkv.weight": {
+      "shape_out_in": [
+        2048,
+        768
+      ],
+      "matrices": 22,
+      "weights_per_matrix": 1572864,
+      "fp32_payload_per_matrix": 6291456,
+      "bf16_payload_per_matrix": 3145728,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 196608,
+          "payload_per_matrix": 983040,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 98304,
+          "payload_per_matrix": 884736,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 49152,
+          "payload_per_matrix": 835584,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 98304,
+          "payload_per_matrix": 884736,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 786432,
+          "scale_and_other_metadata_bytes": 98304,
+          "payload_per_matrix": 884736,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 1572864,
+          "scale_and_other_metadata_bytes": 98304,
+          "payload_per_matrix": 1671168,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 1572864,
+          "scale_and_other_metadata_bytes": 98304,
+          "payload_per_matrix": 1671168,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 1581056
+    },
+    "feed_forward.w13.weight": {
+      "shape_out_in": [
+        4608,
+        768
+      ],
+      "matrices": 22,
+      "weights_per_matrix": 3538944,
+      "fp32_payload_per_matrix": 14155776,
+      "bf16_payload_per_matrix": 7077888,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 442368,
+          "payload_per_matrix": 2211840,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 221184,
+          "payload_per_matrix": 1990656,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 110592,
+          "payload_per_matrix": 1880064,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 221184,
+          "payload_per_matrix": 1990656,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 221184,
+          "payload_per_matrix": 1990656,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 3538944,
+          "scale_and_other_metadata_bytes": 221184,
+          "payload_per_matrix": 3760128,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 3538944,
+          "scale_and_other_metadata_bytes": 221184,
+          "payload_per_matrix": 3760128,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 3557376
+    },
+    "feed_forward.w2.weight": {
+      "shape_out_in": [
+        768,
+        2304
+      ],
+      "matrices": 22,
+      "weights_per_matrix": 1769472,
+      "fp32_payload_per_matrix": 7077888,
+      "bf16_payload_per_matrix": 3538944,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 884736,
+          "scale_and_other_metadata_bytes": 221184,
+          "payload_per_matrix": 1105920,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 884736,
+          "scale_and_other_metadata_bytes": 110592,
+          "payload_per_matrix": 995328,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 884736,
+          "scale_and_other_metadata_bytes": 55296,
+          "payload_per_matrix": 940032,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 884736,
+          "scale_and_other_metadata_bytes": 110592,
+          "payload_per_matrix": 995328,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 884736,
+          "scale_and_other_metadata_bytes": 110592,
+          "payload_per_matrix": 995328,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 110592,
+          "payload_per_matrix": 1880064,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 1769472,
+          "scale_and_other_metadata_bytes": 110592,
+          "payload_per_matrix": 1880064,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 1772544
+    },
+    "output.weight": {
+      "shape_out_in": [
+        65536,
+        768
+      ],
+      "matrices": 1,
+      "weights_per_matrix": 50331648,
+      "fp32_payload_per_matrix": 201326592,
+      "bf16_payload_per_matrix": 100663296,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 6291456,
+          "payload_per_matrix": 31457280,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 28311552,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 1572864,
+          "payload_per_matrix": 26738688,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 28311552,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 28311552,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 50331648,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 53477376,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 50331648,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 53477376,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 50593792
+    },
+    "tok_embeddings.weight": {
+      "shape_out_in": [
+        65536,
+        768
+      ],
+      "matrices": 1,
+      "weights_per_matrix": 50331648,
+      "fp32_payload_per_matrix": 201326592,
+      "bf16_payload_per_matrix": 100663296,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 6291456,
+          "payload_per_matrix": 31457280,
+          "effective_bits_per_weight": 5.0
+        },
+        "custom_q4_g64_f32scale": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 28311552,
+          "effective_bits_per_weight": 4.5
+        },
+        "custom_q4_g128_f32scale": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 1572864,
+          "payload_per_matrix": 26738688,
+          "effective_bits_per_weight": 4.25
+        },
+        "ggml_q4_0": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 28311552,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q4_K": {
+          "code_bytes": 25165824,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 28311552,
+          "effective_bits_per_weight": 4.5
+        },
+        "ggml_q8_0": {
+          "code_bytes": 50331648,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 53477376,
+          "effective_bits_per_weight": 8.5
+        },
+        "custom_q8_g64_f32scale": {
+          "code_bytes": 50331648,
+          "scale_and_other_metadata_bytes": 3145728,
+          "payload_per_matrix": 53477376,
+          "effective_bits_per_weight": 8.5
+        }
+      },
+      "w8_per_channel_f32scale_bytes": 50593792
+    }
+  },
+  "policies": {
+    "transformer_linears_only": {
+      "selected_fp32_bytes": 674758656,
+      "retained_fp32_bytes": 405019008,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "selected_quantized_bytes": 105431040,
+          "whole_model_tensor_payload_bytes": 510450048,
+          "whole_model_tensor_payload_mib": 486.8031005859375,
+          "ratio_vs_all_fp32_payload": 2.115344426414864
+        },
+        "custom_q4_g64_f32scale": {
+          "selected_quantized_bytes": 94887936,
+          "whole_model_tensor_payload_bytes": 499906944,
+          "whole_model_tensor_payload_mib": 476.7484130859375,
+          "ratio_vs_all_fp32_payload": 2.159957321977108
+        },
+        "custom_q4_g128_f32scale": {
+          "selected_quantized_bytes": 89616384,
+          "whole_model_tensor_payload_bytes": 494635392,
+          "whole_model_tensor_payload_mib": 471.7210693359375,
+          "ratio_vs_all_fp32_payload": 2.182976959319563
+        },
+        "ggml_q4_0": {
+          "selected_quantized_bytes": 94887936,
+          "whole_model_tensor_payload_bytes": 499906944,
+          "whole_model_tensor_payload_mib": 476.7484130859375,
+          "ratio_vs_all_fp32_payload": 2.159957321977108
+        },
+        "ggml_q4_K": {
+          "selected_quantized_bytes": 94887936,
+          "whole_model_tensor_payload_bytes": 499906944,
+          "whole_model_tensor_payload_mib": 476.7484130859375,
+          "ratio_vs_all_fp32_payload": 2.159957321977108
+        },
+        "ggml_q8_0": {
+          "selected_quantized_bytes": 179232768,
+          "whole_model_tensor_payload_bytes": 584251776,
+          "whole_model_tensor_payload_mib": 557.1859130859375,
+          "ratio_vs_all_fp32_payload": 1.8481375810143879
+        },
+        "custom_q8_g64_f32scale": {
+          "selected_quantized_bytes": 179232768,
+          "whole_model_tensor_payload_bytes": 584251776,
+          "whole_model_tensor_payload_mib": 557.1859130859375,
+          "ratio_vs_all_fp32_payload": 1.8481375810143879
+        }
+      }
+    },
+    "transformer_linears_and_output": {
+      "selected_fp32_bytes": 876085248,
+      "retained_fp32_bytes": 203692416,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "selected_quantized_bytes": 136888320,
+          "whole_model_tensor_payload_bytes": 340580736,
+          "whole_model_tensor_payload_mib": 324.8031005859375,
+          "ratio_vs_all_fp32_payload": 3.1704014639277776
+        },
+        "custom_q4_g64_f32scale": {
+          "selected_quantized_bytes": 123199488,
+          "whole_model_tensor_payload_bytes": 326891904,
+          "whole_model_tensor_payload_mib": 311.7484130859375,
+          "ratio_vs_all_fp32_payload": 3.303164290052286
+        },
+        "custom_q4_g128_f32scale": {
+          "selected_quantized_bytes": 116355072,
+          "whole_model_tensor_payload_bytes": 320047488,
+          "whole_model_tensor_payload_mib": 305.2210693359375,
+          "ratio_vs_all_fp32_payload": 3.3738045274081325
+        },
+        "ggml_q4_0": {
+          "selected_quantized_bytes": 123199488,
+          "whole_model_tensor_payload_bytes": 326891904,
+          "whole_model_tensor_payload_mib": 311.7484130859375,
+          "ratio_vs_all_fp32_payload": 3.303164290052286
+        },
+        "ggml_q4_K": {
+          "selected_quantized_bytes": 123199488,
+          "whole_model_tensor_payload_bytes": 326891904,
+          "whole_model_tensor_payload_mib": 311.7484130859375,
+          "ratio_vs_all_fp32_payload": 3.303164290052286
+        },
+        "ggml_q8_0": {
+          "selected_quantized_bytes": 232710144,
+          "whole_model_tensor_payload_bytes": 436402560,
+          "whole_model_tensor_payload_mib": 416.1859130859375,
+          "ratio_vs_all_fp32_payload": 2.474269775136058
+        },
+        "custom_q8_g64_f32scale": {
+          "selected_quantized_bytes": 232710144,
+          "whole_model_tensor_payload_bytes": 436402560,
+          "whole_model_tensor_payload_mib": 416.1859130859375,
+          "ratio_vs_all_fp32_payload": 2.474269775136058
+        }
+      }
+    },
+    "all_2d_weights": {
+      "selected_fp32_bytes": 1079771136,
+      "retained_fp32_bytes": 6528,
+      "formats": {
+        "custom_q4_g32_f32scale": {
+          "selected_quantized_bytes": 168714240,
+          "whole_model_tensor_payload_bytes": 168720768,
+          "whole_model_tensor_payload_mib": 160.9046630859375,
+          "ratio_vs_all_fp32_payload": 6.399791067807373
+        },
+        "custom_q4_g64_f32scale": {
+          "selected_quantized_bytes": 151842816,
+          "whole_model_tensor_payload_bytes": 151849344,
+          "whole_model_tensor_payload_mib": 144.8148193359375,
+          "ratio_vs_all_fp32_payload": 7.110848394577194
+        },
+        "custom_q4_g128_f32scale": {
+          "selected_quantized_bytes": 143407104,
+          "whole_model_tensor_payload_bytes": 143413632,
+          "whole_model_tensor_payload_mib": 136.7698974609375,
+          "ratio_vs_all_fp32_payload": 7.529114554465784
+        },
+        "ggml_q4_0": {
+          "selected_quantized_bytes": 151842816,
+          "whole_model_tensor_payload_bytes": 151849344,
+          "whole_model_tensor_payload_mib": 144.8148193359375,
+          "ratio_vs_all_fp32_payload": 7.110848394577194
+        },
+        "ggml_q4_K": {
+          "selected_quantized_bytes": 151842816,
+          "whole_model_tensor_payload_bytes": 151849344,
+          "whole_model_tensor_payload_mib": 144.8148193359375,
+          "ratio_vs_all_fp32_payload": 7.110848394577194
+        },
+        "ggml_q8_0": {
+          "selected_quantized_bytes": 286814208,
+          "whole_model_tensor_payload_bytes": 286820736,
+          "whole_model_tensor_payload_mib": 273.5335693359375,
+          "ratio_vs_all_fp32_payload": 3.7646429580321557
+        },
+        "custom_q8_g64_f32scale": {
+          "selected_quantized_bytes": 286814208,
+          "whole_model_tensor_payload_bytes": 286820736,
+          "whole_model_tensor_payload_mib": 273.5335693359375,
+          "ratio_vs_all_fp32_payload": 3.7646429580321557
+        }
+      }
+    }
+  },
+  "excluded_costs": [
+    "serialization metadata",
+    "alignment",
+    "allocator metadata",
+    "ISA packing",
+    "scratch",
+    "KV cache",
+    "coexisting original mapped/resident weights"
+  ],
+  "isa_native_windows": {
+    "os": "windows",
+    "arch": "x86_64",
+    "avx2": true,
+    "fma": true,
+    "avx512f": true,
+    "avx512bw": true,
+    "avx512vl": true,
+    "avx512vnni": true,
+    "avx512bf16": true,
+    "avxvnni": false,
+    "avx512fp16": false,
+    "raw_cpuid_amx_int8": false,
+    "raw_cpuid_amx_tile": false
+  },
+  "source_sha256": {
+    "experiments/quantization/q4_reference.rs": "8fe9614c6f422187cbe7b89834debaca76025809c900a144e07c86ff3bbd12d2",
+    "experiments/quantization/isa_probe.rs": "c1560f630961c1effb3c8ad8258fbf6f822e56c593365190b292b1cae79d36be",
+    "experiments/quantization/describe_layout.py": "0e562c3a4f5a714d0a6f635b40fe9e9df5f7b55225aeda936241cac08518e4bc"
+  },
+  "scalar_tests": {
+    "command": "rustc --edition 2024 --test experiments/quantization/q4_reference.rs -C opt-level=1 -o artifacts/quantization/q4-reference-tests.exe; artifacts/quantization/q4-reference-tests.exe --test-threads 1",
+    "observed_passed": 4,
+    "observed_failed": 0,
+    "rustc": "1.92.0 (ded5c06cf 2025-12-08)",
+    "host": "x86_64-pc-windows-msvc"
+  }
+}

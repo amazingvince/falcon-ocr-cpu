@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "status": "small_report_consistency_verified_complete_profile_rejected",
+  "scope": "Independent small JSON/JSONL/log/source-hash review only; no XML/ETL/ETLX reads, conversion, exporter rerun, model, or profiler execution",
+  "checked_small_files_sha256": {
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\export-scope-diagnostic-v1.json": "77739789ed8910d058922ae675873fa6f49e923d4487cc2a8ef8c61b30a5171e",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\export-scope-diagnostic-v1.rejected-samples.jsonl": "dcddc588ab50bb0cc18b73df2c35ba7d1f3ab2519b28f173d5861a2d1f8a64a5",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\trace-audit-v4.json": "37d46af7873aec974f663d6dc8187b3df1322511b58ef8e7b671f23b681f20b5",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\boundary-inspection-v1.json": "57258787e45878ffc58f637441b90a6db7ac7a31c2d446bcbcba974704562b39",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\audit-execution.json": "56be396dcbb62f94cee0a77348e06c52b567a0b920b559093c01a50ad0e04df7",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\export-execution.json": "f7032924df456cea3d140c6a7b3296cd8c5570fb01f6c9f9a4bf60c746b1084b",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-compact-fixed64-v1\\perfview-stacks.log": "a54e75b3b63768fd2d1916056fc30f18bd8d070eb4af467ededffa030fd3a76b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\inspect_compact_export_scope.py": "f9a1e327e37a8753583ea65907fcbe8f1765458cc4c7083b27390fee4d14900b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\compact-export-scope-validation-v1\\validation.json": "92f1cf90f20f75ce3a2f526fcc5f24da5ad082b438842bb343f18f0b63c1ff77"
+  },
+  "all_checked_small_files_unchanged": true,
+  "reported_xml_integrity": {
+    "counts": {
+      "Frames": 233,
+      "Stacks": 306114,
+      "Samples": 2692194
+    },
+    "declared_actual_counts_match": true,
+    "CRC_references_cycles_validated_by_original_diagnostic_not_rescanned": true
+  },
+  "process_scope": {
+    "target_pid": 79568,
+    "sample_counts": {
+      "valid_target": 2692193,
+      "wrong_pid": 1,
+      "rootless": 0,
+      "ambiguous_roots": 0
+    },
+    "sample_metric_total": 2692194.0,
+    "foreign_record": {
+      "ordinal": 1658773,
+      "sample_id": 1658773,
+      "time_relative_ms": 120274.327,
+      "stack_id": 228615,
+      "metric": 1.0,
+      "classification": "wrong_pid",
+      "process_roots": [
+        "Process64 NgcIso (11532) Args: \\??\\C:\\WINDOWS\\System32\\NgcIso.exe"
+      ],
+      "root_pids": [
+        11532
+      ],
+      "complete_chain_leaf_to_root": [
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "c:\\windows\\system32\\ntoskrnl!?",
+        "BROKEN",
+        "Thread (85312) CPU=1ms",
+        "Process64 NgcIso (11532) Args: \\??\\C:\\WINDOWS\\System32\\NgcIso.exe"
+      ]
+    }
+  },
+  "separate_exact_pid_lifecycle_defect": {
+    "pid": 79568,
+    "thread_id": 136944,
+    "event_index": 7169251,
+    "relative_ms": 194483.1326,
+    "delta_from_process_end_ms": 0.7251000000105705,
+    "out_of_bounds": true,
+    "owner_process_index": 557
+  },
+  "exporter": {
+    "exit_code": 1,
+    "NullReferenceException_preserved": true,
+    "zip_sha256_recorded_only": "d51ca11414483ac43e1bed7f2dd1387210c9a0f63453769b7a2e38521ba5449a"
+  },
+  "audit": {
+    "status": "audit_failed",
+    "exit_code": 1,
+    "in_bound_sample_count": 2692193,
+    "out_of_bounds_count": 1,
+    "attached_stack_fraction": 0.9993481150868455,
+    "available_event_loss_zero": true,
+    "separate_buffers_lost": null
+  },
+  "target_only_category_accounting": {
+    "denominator": 2692193,
+    "category_counts_and_percentages_recomputed_from_small_report": true,
+    "categories": [
+      {
+        "name": "attention_call_path",
+        "sample_count": 1203347,
+        "sample_metric": 1203347.0,
+        "percent_of_valid_target_metric": 44.69764983416865,
+        "percent_of_all_export_metric": 44.697633231483316
+      },
+      {
+        "name": "linear_call_path",
+        "sample_count": 847914,
+        "sample_metric": 847914.0,
+        "percent_of_valid_target_metric": 31.495290270794108,
+        "percent_of_all_export_metric": 31.495278572049415
+      },
+      {
+        "name": "attention_gemm_call_path",
+        "sample_count": 340632,
+        "sample_metric": 340632.0,
+        "percent_of_valid_target_metric": 12.652584714394548,
+        "percent_of_all_export_metric": 12.65258001466462
+      },
+      {
+        "name": "rayon_without_resolved_operator_caller",
+        "sample_count": 194112,
+        "sample_metric": 194112.0,
+        "percent_of_valid_target_metric": 7.210181439443606,
+        "percent_of_all_export_metric": 7.210178761263118
+      },
+      {
+        "name": "gemm_call_path",
+        "sample_count": 60914,
+        "sample_metric": 60914.0,
+        "percent_of_valid_target_metric": 2.2626163874581056,
+        "percent_of_all_export_metric": 2.262615547022243
+      },
+      {
+        "name": "gate_call_path",
+        "sample_count": 31783,
+        "sample_metric": 31783.0,
+        "percent_of_valid_target_metric": 1.180561720500722,
+        "percent_of_all_export_metric": 1.1805612819878508
+      },
+      {
+        "name": "normalization_call_path",
+        "sample_count": 10557,
+        "sample_metric": 10557.0,
+        "percent_of_valid_target_metric": 0.3921338477590574,
+        "percent_of_all_export_metric": 0.39213370210319165
+      },
+      {
+        "name": "other_or_unresolved",
+        "sample_count": 2931,
+        "sample_metric": 2931.0,
+        "percent_of_valid_target_metric": 0.10887035216271641,
+        "percent_of_all_export_metric": 0.10887031172344935
+      },
+      {
+        "name": "dot_without_resolved_operator_caller",
+        "sample_count": 3,
+        "sample_metric": 3.0,
+        "percent_of_valid_target_metric": 0.00011143331848793901,
+        "percent_of_all_export_metric": 0.00011143327709667283
+      }
+    ]
+  },
+  "complete_profile_accepted": false,
+  "limits": [
+    "The XML foreign-PID sample at 120274.327 ms and exact-PID ETLX lifecycle sample at 194483.1326 ms are distinct defects. Their causes are not established.",
+    "Equal aggregate target sample counts do not prove an event-level ETL/XML bijection; no individual target-event matching was performed.",
+    "Reported ZIP CRC, full inventory/reference/cycle validation and XML payload hash are inherited from the hash-bound diagnostic, not independently rescanned here.",
+    "Target-only categories are exploratory sampled CPU call-path shares, not accepted full-profile results, elapsed phases, hardware counters or performance gains.",
+    "Both strict capture-audit rejection and exporter exit 1 remain preserved; no acceptance gates were changed."
+  ]
+}

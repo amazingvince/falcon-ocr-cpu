@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "scope": "CPU-only sink expression at saved attention values; Linux under WSL versus native Windows; not full-model BF16 parity or a performance measurement",
+  "reports": {
+    "artifacts\\diagnostics\\bf16-sink-replay-windows-v1\\report.json": "dcaf5ffeea2137aae31f824222506836614526af4c0b53eb24c8f265eb424170",
+    "artifacts\\diagnostics\\bf16-sink-replay-wsl-v1\\report.json": "4e3e4ff9a0b0e2d5131bea61a7cd65a4bef4dd9721a55f762a5b56213ef0c987"
+  },
+  "equal_input_tensor_hashes": true,
+  "equal_source_hashes": true,
+  "equal_normalized_input_records": 3328,
+  "equal_normalized_output_records": 3328,
+  "comparison": "Bit-pattern hex records identical; input/output text line endings normalized only",
+  "selected_heads": 13,
+  "saved_cpu_values_reproduced_per_platform": 832,
+  "scaled_failures": 20,
+  "gpu_raw_with_cpu_lse_restores_frozen_bound": 20,
+  "cpu_raw_with_gpu_lse_restores_frozen_bound": 0,
+  "bounds_changed": false,
+  "production_changed": false,
+  "qualification": "No backend promotion; upstream attention causes remain unresolved"
+}

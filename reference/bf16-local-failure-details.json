@@ -1,0 +1,620 @@
+{
+  "contract_sha256": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+  "bound_changes": false,
+  "violating_elements": [
+    {
+      "backend": "avx512",
+      "kind": "linear",
+      "case": "prefill.layer.0.w2.rows32.packed",
+      "index": [
+        2,
+        267
+      ],
+      "flat_index": 1803,
+      "gpu": -0.000652313232421875,
+      "cpu": -0.000644683837890625,
+      "bound": 3.814697265625e-06,
+      "error": 7.62939453125e-06,
+      "error_to_bound": 2.0,
+      "f64_dot": -0.0006516708235722035,
+      "f64_rounded_bf16": -0.000652313232421875,
+      "gpu_fp32_accumulation": -0.0006513595581054688
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.0.raw",
+      "index": [
+        13,
+        1,
+        52
+      ],
+      "flat_index": 13428,
+      "gpu": 0.00165557861328125,
+      "cpu": 0.00162506103515625,
+      "bound": 7.62939453125e-06,
+      "error": 3.0517578125e-05,
+      "error_to_bound": 4.0,
+      "independent_blockwise_oracle": 0.00165557861328125
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        13,
+        1,
+        52
+      ],
+      "flat_index": 13428,
+      "gpu": 3.170967102050781e-05,
+      "cpu": 3.0994415283203125e-05,
+      "bound": 2.384185791015625e-07,
+      "error": 7.152557373046875e-07,
+      "error_to_bound": 3.0,
+      "independent_blockwise_oracle": 3.170967102050781e-05
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        53,
+        8,
+        13
+      ],
+      "flat_index": 54797,
+      "gpu": 0.0002155303955078125,
+      "cpu": 0.000213623046875,
+      "bound": 9.5367431640625e-07,
+      "error": 1.9073486328125e-06,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.0002155303955078125
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        53,
+        8,
+        59
+      ],
+      "flat_index": 54843,
+      "gpu": 0.000751495361328125,
+      "cpu": 0.000759124755859375,
+      "bound": 3.814697265625e-06,
+      "error": 7.62939453125e-06,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.000751495361328125
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        54,
+        10,
+        50
+      ],
+      "flat_index": 55986,
+      "gpu": 0.0020904541015625,
+      "cpu": 0.0020294189453125,
+      "bound": 1.52587890625e-05,
+      "error": 6.103515625e-05,
+      "error_to_bound": 4.0,
+      "independent_blockwise_oracle": 0.0020904541015625
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        124,
+        11,
+        37
+      ],
+      "flat_index": 127717,
+      "gpu": -0.01153564453125,
+      "cpu": -0.01141357421875,
+      "bound": 6.103515625e-05,
+      "error": 0.0001220703125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": -0.01153564453125
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        124,
+        11,
+        44
+      ],
+      "flat_index": 127724,
+      "gpu": 0.00372314453125,
+      "cpu": 0.003814697265625,
+      "bound": 1.52587890625e-05,
+      "error": 9.1552734375e-05,
+      "error_to_bound": 6.0,
+      "independent_blockwise_oracle": 0.00372314453125
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        54,
+        10,
+        50
+      ],
+      "flat_index": 55986,
+      "gpu": 0.0019989013671875,
+      "cpu": 0.00194549560546875,
+      "bound": 1.52587890625e-05,
+      "error": 5.340576171875e-05,
+      "error_to_bound": 3.5,
+      "independent_blockwise_oracle": 0.0019989013671875
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        124,
+        11,
+        37
+      ],
+      "flat_index": 127717,
+      "gpu": -0.01123046875,
+      "cpu": -0.0111083984375,
+      "bound": 6.103515625e-05,
+      "error": 0.0001220703125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": -0.01123046875
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        124,
+        11,
+        44
+      ],
+      "flat_index": 127724,
+      "gpu": 0.0036163330078125,
+      "cpu": 0.0037078857421875,
+      "bound": 1.52587890625e-05,
+      "error": 9.1552734375e-05,
+      "error_to_bound": 6.0,
+      "independent_blockwise_oracle": 0.0036163330078125
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "case": "prefill.layer.19.scaled",
+      "index": [
+        41,
+        6,
+        54
+      ],
+      "flat_index": 42422,
+      "gpu": 0.003875732421875,
+      "cpu": 0.00390625,
+      "bound": 1.52587890625e-05,
+      "error": 3.0517578125e-05,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.003875732421875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.raw",
+      "index": [
+        13,
+        1,
+        52
+      ],
+      "flat_index": 13428,
+      "gpu": 0.00165557861328125,
+      "cpu": 0.00162506103515625,
+      "bound": 7.62939453125e-06,
+      "error": 3.0517578125e-05,
+      "error_to_bound": 4.0,
+      "independent_blockwise_oracle": 0.00165557861328125
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.raw",
+      "index": [
+        99,
+        7,
+        2
+      ],
+      "flat_index": 101826,
+      "gpu": 0.0042724609375,
+      "cpu": 0.00433349609375,
+      "bound": 3.0517578125e-05,
+      "error": 6.103515625e-05,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.0042724609375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.raw",
+      "index": [
+        125,
+        1,
+        52
+      ],
+      "flat_index": 128116,
+      "gpu": 0.00023555755615234375,
+      "cpu": 0.00021076202392578125,
+      "bound": 9.5367431640625e-07,
+      "error": 2.47955322265625e-05,
+      "error_to_bound": 26.0,
+      "independent_blockwise_oracle": 0.00023555755615234375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        13,
+        1,
+        52
+      ],
+      "flat_index": 13428,
+      "gpu": 3.170967102050781e-05,
+      "cpu": 3.0994415283203125e-05,
+      "bound": 2.384185791015625e-07,
+      "error": 7.152557373046875e-07,
+      "error_to_bound": 3.0,
+      "independent_blockwise_oracle": 3.170967102050781e-05
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        43,
+        9,
+        36
+      ],
+      "flat_index": 44644,
+      "gpu": 0.0001201629638671875,
+      "cpu": 0.00011920928955078125,
+      "bound": 4.76837158203125e-07,
+      "error": 9.5367431640625e-07,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.0001201629638671875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        99,
+        7,
+        2
+      ],
+      "flat_index": 101826,
+      "gpu": 0.0001430511474609375,
+      "cpu": 0.00014495849609375,
+      "bound": 9.5367431640625e-07,
+      "error": 1.9073486328125e-06,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.0001430511474609375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        121,
+        7,
+        58
+      ],
+      "flat_index": 124410,
+      "gpu": -0.0001850128173828125,
+      "cpu": -0.00018310546875,
+      "bound": 9.5367431640625e-07,
+      "error": 1.9073486328125e-06,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": -0.0001850128173828125
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.0.scaled",
+      "index": [
+        125,
+        1,
+        52
+      ],
+      "flat_index": 128116,
+      "gpu": 4.559755325317383e-06,
+      "cpu": 4.082918167114258e-06,
+      "bound": 2.9802322387695312e-08,
+      "error": 4.76837158203125e-07,
+      "error_to_bound": 16.0,
+      "independent_blockwise_oracle": 4.559755325317383e-06
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        4,
+        11,
+        25
+      ],
+      "flat_index": 4825,
+      "gpu": -0.04052734375,
+      "cpu": -0.041015625,
+      "bound": 0.000244140625,
+      "error": 0.00048828125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": -0.04052734375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        4,
+        11,
+        28
+      ],
+      "flat_index": 4828,
+      "gpu": 0.18359375,
+      "cpu": 0.181640625,
+      "bound": 0.0009765625,
+      "error": 0.001953125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.18359375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        4,
+        11,
+        36
+      ],
+      "flat_index": 4836,
+      "gpu": 0.1103515625,
+      "cpu": 0.107421875,
+      "bound": 0.00048828125,
+      "error": 0.0029296875,
+      "error_to_bound": 6.0,
+      "independent_blockwise_oracle": 0.1103515625
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        4,
+        11,
+        50
+      ],
+      "flat_index": 4850,
+      "gpu": -0.0272216796875,
+      "cpu": -0.0267333984375,
+      "bound": 0.0001220703125,
+      "error": 0.00048828125,
+      "error_to_bound": 4.0,
+      "independent_blockwise_oracle": -0.0272216796875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        4,
+        11,
+        62
+      ],
+      "flat_index": 4862,
+      "gpu": -0.02978515625,
+      "cpu": -0.031005859375,
+      "bound": 0.0001220703125,
+      "error": 0.001220703125,
+      "error_to_bound": 10.0,
+      "independent_blockwise_oracle": -0.02978515625
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.raw",
+      "index": [
+        54,
+        10,
+        50
+      ],
+      "flat_index": 55986,
+      "gpu": 0.0020904541015625,
+      "cpu": 0.0020294189453125,
+      "bound": 1.52587890625e-05,
+      "error": 6.103515625e-05,
+      "error_to_bound": 4.0,
+      "independent_blockwise_oracle": 0.0020904541015625
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        4,
+        11,
+        25
+      ],
+      "flat_index": 4825,
+      "gpu": -0.03857421875,
+      "cpu": -0.0390625,
+      "bound": 0.000244140625,
+      "error": 0.00048828125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": -0.03857421875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        4,
+        11,
+        28
+      ],
+      "flat_index": 4828,
+      "gpu": 0.1748046875,
+      "cpu": 0.1728515625,
+      "bound": 0.0009765625,
+      "error": 0.001953125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.1748046875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        4,
+        11,
+        36
+      ],
+      "flat_index": 4836,
+      "gpu": 0.10546875,
+      "cpu": 0.1025390625,
+      "bound": 0.00048828125,
+      "error": 0.0029296875,
+      "error_to_bound": 6.0,
+      "independent_blockwise_oracle": 0.10546875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        4,
+        11,
+        50
+      ],
+      "flat_index": 4850,
+      "gpu": -0.0260009765625,
+      "cpu": -0.0255126953125,
+      "bound": 0.0001220703125,
+      "error": 0.00048828125,
+      "error_to_bound": 4.0,
+      "independent_blockwise_oracle": -0.0260009765625
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        4,
+        11,
+        62
+      ],
+      "flat_index": 4862,
+      "gpu": -0.0284423828125,
+      "cpu": -0.029541015625,
+      "bound": 0.0001220703125,
+      "error": 0.0010986328125,
+      "error_to_bound": 9.0,
+      "independent_blockwise_oracle": -0.0284423828125
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.17.scaled",
+      "index": [
+        54,
+        10,
+        50
+      ],
+      "flat_index": 55986,
+      "gpu": 0.0019989013671875,
+      "cpu": 0.00194549560546875,
+      "bound": 1.52587890625e-05,
+      "error": 5.340576171875e-05,
+      "error_to_bound": 3.5,
+      "independent_blockwise_oracle": 0.0019989013671875
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.19.raw",
+      "index": [
+        74,
+        7,
+        0
+      ],
+      "flat_index": 76224,
+      "gpu": 0.00531005859375,
+      "cpu": 0.005218505859375,
+      "bound": 3.0517578125e-05,
+      "error": 9.1552734375e-05,
+      "error_to_bound": 3.0,
+      "independent_blockwise_oracle": 0.00531005859375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.19.raw",
+      "index": [
+        74,
+        7,
+        54
+      ],
+      "flat_index": 76278,
+      "gpu": 0.00933837890625,
+      "cpu": 0.00946044921875,
+      "bound": 6.103515625e-05,
+      "error": 0.0001220703125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.00933837890625
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.19.scaled",
+      "index": [
+        74,
+        7,
+        0
+      ],
+      "flat_index": 76224,
+      "gpu": 0.00482177734375,
+      "cpu": 0.004730224609375,
+      "bound": 3.0517578125e-05,
+      "error": 9.1552734375e-05,
+      "error_to_bound": 3.0,
+      "independent_blockwise_oracle": 0.00482177734375
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "case": "prefill.layer.19.scaled",
+      "index": [
+        74,
+        7,
+        54
+      ],
+      "flat_index": 76278,
+      "gpu": 0.00848388671875,
+      "cpu": 0.00860595703125,
+      "bound": 6.103515625e-05,
+      "error": 0.0001220703125,
+      "error_to_bound": 2.0,
+      "independent_blockwise_oracle": 0.00848388671875
+    }
+  ],
+  "qualification": "Exact locations and values only; numerical failures remain failures"
+}

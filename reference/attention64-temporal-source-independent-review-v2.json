@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "status": "source_delta_review_passed",
+  "scope": "One-line test import correction after preserved v1 E0432 compile failure; no operator/model/benchmark execution or runtime claim.",
+  "prior_review": {
+    "path": "reference/attention64-temporal-source-independent-review-v1.json",
+    "sha256": "6f3ddc966db03d1a12234d172a6bc5ab213a090ff4d1f87578c021259ec0694c"
+  },
+  "preserved_v1_experiment_archive": {
+    "path": "artifacts/diagnostics/attention64-temporal-v1/failed-experiment-sources.zip",
+    "sha256": "8898cd26de372788fbd30afb877389057f8c3f8970c7ced9ac5329ead17af9b1",
+    "entries_verified": 9
+  },
+  "v2_preparation": {
+    "path": "artifacts/diagnostics/attention64-temporal-v2/preparation.json",
+    "sha256": "e4cd25e94123c60c2e08d62ec6ecc9fbb35338cd143a56ff90f80a973feb0d96"
+  },
+  "changed_experiment_sources": [
+    "experiments/attention64_temporal/tests.rs"
+  ],
+  "exact_change": {
+    "from": "use super::super::{self as kernels, Simd};",
+    "to": "use crate::kernels::{self, Simd};"
+  },
+  "reviewed_source_sha256": {
+    "experiments/attention64_temporal/candidate.rs": "d238663ba33de3925a54f3cd5e055f37d2edf5929cd4c98cc49bdfb5703e3619",
+    "experiments/attention64_temporal/tests.rs": "6063300664c960cba4f2601b1f3cf21a2e0d1b3d02530950d7b5bb3c43dfc6ba",
+    "experiments/attention64_temporal/patch.py": "310b08ffdf5ba67c4b655e695095216662bbd8902be02758c8b98b4e1c47222f",
+    "experiments/attention64_temporal/test_source.py": "5a319b39ddb1e79e2ad04669f8627241704707417b83aa1c501997047169ec2e",
+    "experiments/attention64_temporal/README.md": "ee74657e824a5840fac16b3098208e6551de0c6180b77480b7f76be01a1c5c42",
+    "experiments/attention64_temporal/temporal_candidate.rs": "d636e7fb065b50fde80bf905cf245a69fe60d2b2a8e45361ad6eed3bed1f7fc8",
+    "experiments/attention64_temporal/temporal_model_tests.rs": "51c7fe618cbb2760fcc3efd1ba329d36a107b7888ce7fdcafdb75bc5c12cbfc2",
+    "experiments/attention64_temporal/capture.py": "4672d9161044ee7ff4fbb7b0adee177097fe5243a8604b9e65a8f42a8ceaf1c3",
+    "experiments/cache_layout/temporal_model_qualification.rs": "26759aeb8c2789a4522639a9a22e5a3dce0900fd7adac5fbf431dc42e18c5b74"
+  },
+  "conclusion": "Test module now imports the crate kernels module directly. All other reviewed experiment bytes are unchanged; numerical arithmetic and four-changed/two-added runtime scope remain unchanged. The earlier source review did not establish Rust compilability; preserve its receipt and failed build.",
+  "tests_reexecuted_by_reviewer": false,
+  "source_edits_by_reviewer": false
+}

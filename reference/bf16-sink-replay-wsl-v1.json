@@ -1,0 +1,1160 @@
+{
+  "schema_version": 1,
+  "scope": "Frozen scaled-output failure heads, all 64 dimensions per selected head; CPU-only counterfactual replay, not model qualification",
+  "gpu_execution": false,
+  "bounds_changed": false,
+  "production_changed": false,
+  "inputs_sha256": {
+    "reference/bf16-local-contract-v1.json": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+    "reference/bf16-local-failure-details.json": "4d6e761b26068c54330af079571df0a1854907df75173106ccb1bfbb9e2bbdea",
+    "artifacts/reference/attention-operators-bf16.safetensors": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+    "artifacts/reference/bf16-local-contract-v1.safetensors": "6bb2adae8f97e6dad4c0a3ef2f29102e1ce310588eaab64c1804a64bf527f185",
+    "artifacts/cpu/bf16-native-attention-avx512.safetensors": "748af6e8a08d2d6a6b0e8780091a47b8fa6bb0f67bf2ddf51c09576a9198f471",
+    "artifacts/cpu/bf16-native-attention-scalar.safetensors": "adf136738a12d63d59319632ef173680f1d8fce55983abafce58ee41a835fe31"
+  },
+  "sources_sha256": {
+    "experiments/bf16_attention/analyze_sinks.py": "b1b07fb65a0cadb316b38d0cc65952151c04d8605c7c85fb9963b7c19c65fee3",
+    "experiments/bf16_attention/sink_probe.rs": "bdfed45000ad9b52ba12a0b268b9a372aecdccfd41b6366b78fa268df229811f",
+    "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3"
+  },
+  "source_capture": "Sources preserved before compilation; sources and input artifacts unchanged after replay",
+  "rustc": "rustc 1.92.0 (ded5c06cf 2025-12-08)\nbinary: rustc\ncommit-hash: ded5c06cf21d2b93bffd5d884aa6e96934ee4234\ncommit-date: 2025-12-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.92.0\nLLVM version: 21.1.3\n",
+  "build_command": [
+    "rustc",
+    "/mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/diagnostics/bf16-sink-replay-wsl-v1/sources/experiments/bf16_attention/sink_probe.rs",
+    "--edition=2021",
+    "-C",
+    "opt-level=3",
+    "-o",
+    "/mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/diagnostics/bf16-sink-replay-wsl-v1/sink_probe"
+  ],
+  "executable_sha256": "e3aed44c63debe05df1f6eb344759f5a7bbdb57d08f84991fd9211c167ce9033",
+  "request_sha256": "e445afb101faaf5324110f769515f257405735f4679650924348d9ab9eaca31f",
+  "output_sha256": "d6bb7019d24d762e2ebabb66b35ab210c221343c3000c550bf59f30cbcfe6a88",
+  "replay_count": 3328,
+  "independent_rounding_checks": 3328,
+  "heads": [
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.0",
+      "row": 13,
+      "head": 1,
+      "sink": 9.5,
+      "lse": {
+        "cpu": 5.5603508949279785,
+        "gpu": 5.5603508949279785
+      },
+      "gpu_scale": 0.019083764404058456,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.0",
+      "row": 53,
+      "head": 8,
+      "sink": 9.625,
+      "lse": {
+        "cpu": 5.037258148193359,
+        "gpu": 5.037258148193359
+      },
+      "gpu_scale": 0.01007330697029829,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.17",
+      "row": 54,
+      "head": 10,
+      "sink": 0.5546875,
+      "lse": {
+        "cpu": 3.6610774993896484,
+        "gpu": 3.6610774993896484
+      },
+      "gpu_scale": 0.9571555852890015,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.17",
+      "row": 124,
+      "head": 11,
+      "sink": 1.953125,
+      "lse": {
+        "cpu": 5.482566833496094,
+        "gpu": 5.482566833496094
+      },
+      "gpu_scale": 0.9715139269828796,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.19",
+      "row": 41,
+      "head": 6,
+      "sink": 2.046875,
+      "lse": {
+        "cpu": 3.8521230220794678,
+        "gpu": 3.8521227836608887
+      },
+      "gpu_scale": 0.8587865233421326,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "row": 13,
+      "head": 1,
+      "sink": 9.5,
+      "lse": {
+        "cpu": 5.560351371765137,
+        "gpu": 5.5603508949279785
+      },
+      "gpu_scale": 0.019083764404058456,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "row": 43,
+      "head": 9,
+      "sink": 8.0,
+      "lse": {
+        "cpu": 4.719027519226074,
+        "gpu": 4.719027519226074
+      },
+      "gpu_scale": 0.03622974455356598,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "row": 99,
+      "head": 7,
+      "sink": 9.25,
+      "lse": {
+        "cpu": 5.886746883392334,
+        "gpu": 5.886745452880859
+      },
+      "gpu_scale": 0.033463794738054276,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 64,
+        "precast_f32": 64,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "row": 121,
+      "head": 7,
+      "sink": 9.25,
+      "lse": {
+        "cpu": 5.944242000579834,
+        "gpu": 5.944242000579834
+      },
+      "gpu_scale": 0.03537418320775032,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "row": 125,
+      "head": 1,
+      "sink": 9.5,
+      "lse": {
+        "cpu": 5.572724342346191,
+        "gpu": 5.572723388671875
+      },
+      "gpu_scale": 0.01931675523519516,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "row": 4,
+      "head": 11,
+      "sink": 1.953125,
+      "lse": {
+        "cpu": 4.9757609367370605,
+        "gpu": 4.975760459899902
+      },
+      "gpu_scale": 0.9535862803459167,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "row": 54,
+      "head": 10,
+      "sink": 0.5546875,
+      "lse": {
+        "cpu": 3.6610774993896484,
+        "gpu": 3.6610774993896484
+      },
+      "gpu_scale": 0.9571555852890015,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.19",
+      "row": 74,
+      "head": 7,
+      "sink": 1.5703125,
+      "lse": {
+        "cpu": 3.858792304992676,
+        "gpu": 3.858792304992676
+      },
+      "gpu_scale": 0.9079184532165527,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    }
+  ],
+  "scaled_failures": [
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.0",
+      "index": [
+        13,
+        1,
+        52
+      ],
+      "gpu_raw": 0.00165557861328125,
+      "cpu_raw": 0.00162506103515625,
+      "gpu_expected": 3.170967102050781e-05,
+      "saved_cpu": 3.0994415283203125e-05,
+      "frozen_bound": 2.384185791015625e-07,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.019083764404058456,
+          "precast": 3.101228139712475e-05,
+          "rounded": 3.0994415283203125e-05,
+          "error": 7.152557373046875e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.019083764404058456,
+          "precast": 3.1594670872436836e-05,
+          "rounded": 3.170967102050781e-05,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.019083764404058456,
+          "precast": 3.101228139712475e-05,
+          "rounded": 3.0994415283203125e-05,
+          "error": 7.152557373046875e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.019083764404058456,
+          "precast": 3.1594670872436836e-05,
+          "rounded": 3.170967102050781e-05,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.0",
+      "index": [
+        53,
+        8,
+        13
+      ],
+      "gpu_raw": 0.0213623046875,
+      "cpu_raw": 0.021240234375,
+      "gpu_expected": 0.0002155303955078125,
+      "saved_cpu": 0.000213623046875,
+      "frozen_bound": 9.5367431640625e-07,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.00021395939984358847,
+          "rounded": 0.000213623046875,
+          "error": 1.9073486328125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.0002151890512323007,
+          "rounded": 0.0002155303955078125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.00021395939984358847,
+          "rounded": 0.000213623046875,
+          "error": 1.9073486328125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.0002151890512323007,
+          "rounded": 0.0002155303955078125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.0",
+      "index": [
+        53,
+        8,
+        59
+      ],
+      "gpu_raw": 0.07470703125,
+      "cpu_raw": 0.0751953125,
+      "gpu_expected": 0.000751495361328125,
+      "saved_cpu": 0.000759124755859375,
+      "frozen_bound": 3.814697265625e-06,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.0007574654882773757,
+          "rounded": 0.000759124755859375,
+          "error": 7.62939453125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.0007525468827225268,
+          "rounded": 0.000751495361328125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.0007574654882773757,
+          "rounded": 0.000759124755859375,
+          "error": 7.62939453125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.01007330697029829,
+          "precast": 0.0007525468827225268,
+          "rounded": 0.000751495361328125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.17",
+      "index": [
+        54,
+        10,
+        50
+      ],
+      "gpu_raw": 0.0020904541015625,
+      "cpu_raw": 0.0020294189453125,
+      "gpu_expected": 0.0019989013671875,
+      "saved_cpu": 0.00194549560546875,
+      "frozen_bound": 1.52587890625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.0019424696220085025,
+          "rounded": 0.00194549560546875,
+          "error": 5.340576171875e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.002000889740884304,
+          "rounded": 0.0019989013671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.0019424696220085025,
+          "rounded": 0.00194549560546875,
+          "error": 5.340576171875e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.002000889740884304,
+          "rounded": 0.0019989013671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.17",
+      "index": [
+        124,
+        11,
+        37
+      ],
+      "gpu_raw": -0.01153564453125,
+      "cpu_raw": -0.01141357421875,
+      "gpu_expected": -0.01123046875,
+      "saved_cpu": -0.0111083984375,
+      "frozen_bound": 6.103515625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": -0.011088446713984013,
+          "rounded": -0.0111083984375,
+          "error": 0.0001220703125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": -0.011207039467990398,
+          "rounded": -0.01123046875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": -0.011088446713984013,
+          "rounded": -0.0111083984375,
+          "error": 0.0001220703125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": -0.011207039467990398,
+          "rounded": -0.01123046875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.17",
+      "index": [
+        124,
+        11,
+        44
+      ],
+      "gpu_raw": 0.00372314453125,
+      "cpu_raw": 0.003814697265625,
+      "gpu_expected": 0.0036163330078125,
+      "saved_cpu": 0.0037078857421875,
+      "frozen_bound": 1.52587890625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": 0.0037060314789414406,
+          "rounded": 0.0037078857421875,
+          "error": 9.1552734375e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": 0.0036170866806060076,
+          "rounded": 0.0036163330078125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": 0.0037060314789414406,
+          "rounded": 0.0037078857421875,
+          "error": 9.1552734375e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9715139269828796,
+          "precast": 0.0036170866806060076,
+          "rounded": 0.0036163330078125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "avx512",
+      "case": "prefill.layer.19",
+      "index": [
+        41,
+        6,
+        54
+      ],
+      "gpu_raw": 0.0045166015625,
+      "cpu_raw": 0.004547119140625,
+      "gpu_expected": 0.003875732421875,
+      "saved_cpu": 0.00390625,
+      "frozen_bound": 1.52587890625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.0039050045888870955,
+          "rounded": 0.00390625,
+          "error": 3.0517578125e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.003878796473145485,
+          "rounded": 0.003875732421875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.0039050045888870955,
+          "rounded": 0.00390625,
+          "error": 3.0517578125e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.003878796473145485,
+          "rounded": 0.003875732421875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "index": [
+        13,
+        1,
+        52
+      ],
+      "gpu_raw": 0.00165557861328125,
+      "cpu_raw": 0.00162506103515625,
+      "gpu_expected": 3.170967102050781e-05,
+      "saved_cpu": 3.0994415283203125e-05,
+      "frozen_bound": 2.384185791015625e-07,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.019083773717284203,
+          "precast": 3.101229594903998e-05,
+          "rounded": 3.0994415283203125e-05,
+          "error": 7.152557373046875e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.019083773717284203,
+          "precast": 3.159468906233087e-05,
+          "rounded": 3.170967102050781e-05,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.019083764404058456,
+          "precast": 3.101228139712475e-05,
+          "rounded": 3.0994415283203125e-05,
+          "error": 7.152557373046875e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.019083764404058456,
+          "precast": 3.1594670872436836e-05,
+          "rounded": 3.170967102050781e-05,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "index": [
+        43,
+        9,
+        36
+      ],
+      "gpu_raw": 0.0033111572265625,
+      "cpu_raw": 0.0032958984375,
+      "gpu_expected": 0.0001201629638671875,
+      "saved_cpu": 0.00011920928955078125,
+      "frozen_bound": 4.76837158203125e-07,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.03622974455356598,
+          "precast": 0.00011940956028411165,
+          "rounded": 0.00011920928955078125,
+          "error": 9.5367431640625e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.03622974455356598,
+          "precast": 0.00011996238026767969,
+          "rounded": 0.0001201629638671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.03622974455356598,
+          "precast": 0.00011940956028411165,
+          "rounded": 0.00011920928955078125,
+          "error": 9.5367431640625e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.03622974455356598,
+          "precast": 0.00011996238026767969,
+          "rounded": 0.0001201629638671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "index": [
+        99,
+        7,
+        2
+      ],
+      "gpu_raw": 0.0042724609375,
+      "cpu_raw": 0.00433349609375,
+      "gpu_expected": 0.0001430511474609375,
+      "saved_cpu": 0.00014495849609375,
+      "frozen_bound": 9.5367431640625e-07,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.033463846892118454,
+          "precast": 0.00014501545228995383,
+          "rounded": 0.00014495849609375,
+          "error": 1.9073486328125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.033463846892118454,
+          "precast": 0.0001429729745723307,
+          "rounded": 0.0001430511474609375,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.033463798463344574,
+          "precast": 0.0001450152340112254,
+          "rounded": 0.00014495849609375,
+          "error": 1.9073486328125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.033463798463344574,
+          "precast": 0.00014297277084551752,
+          "rounded": 0.0001430511474609375,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "index": [
+        121,
+        7,
+        58
+      ],
+      "gpu_raw": -0.005218505859375,
+      "cpu_raw": -0.00518798828125,
+      "gpu_expected": -0.0001850128173828125,
+      "saved_cpu": -0.00018310546875,
+      "frozen_bound": 9.5367431640625e-07,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.03537418320775032,
+          "precast": -0.00018352085317019373,
+          "rounded": -0.00018310546875,
+          "error": 1.9073486328125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.03537418320775032,
+          "precast": -0.00018460038700141013,
+          "rounded": -0.0001850128173828125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.03537418320775032,
+          "precast": -0.00018352085317019373,
+          "rounded": -0.00018310546875,
+          "error": 1.9073486328125e-06,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.03537418320775032,
+          "precast": -0.00018460038700141013,
+          "rounded": -0.0001850128173828125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.0",
+      "index": [
+        125,
+        1,
+        52
+      ],
+      "gpu_raw": 0.00023555755615234375,
+      "cpu_raw": 0.00021076202392578125,
+      "gpu_expected": 4.559755325317383e-06,
+      "saved_cpu": 4.082918167114258e-06,
+      "frozen_bound": 2.9802322387695312e-08,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.019316773861646652,
+          "precast": 4.071242528880248e-06,
+          "rounded": 4.082918167114258e-06,
+          "error": 4.76837158203125e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.019316773861646652,
+          "precast": 4.5502119974116795e-06,
+          "rounded": 4.559755325317383e-06,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.01931675523519516,
+          "precast": 4.07123843615409e-06,
+          "rounded": 4.082918167114258e-06,
+          "error": 4.76837158203125e-07,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.01931675523519516,
+          "precast": 4.550207449938171e-06,
+          "rounded": 4.559755325317383e-06,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "index": [
+        4,
+        11,
+        25
+      ],
+      "gpu_raw": -0.04052734375,
+      "cpu_raw": -0.041015625,
+      "gpu_expected": -0.03857421875,
+      "saved_cpu": -0.0390625,
+      "frozen_bound": 0.000244140625,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.03911193832755089,
+          "rounded": -0.0390625,
+          "error": 0.00048828125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.03864631801843643,
+          "rounded": -0.03857421875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.03911193832755089,
+          "rounded": -0.0390625,
+          "error": 0.00048828125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.03864631801843643,
+          "rounded": -0.03857421875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "index": [
+        4,
+        11,
+        28
+      ],
+      "gpu_raw": 0.18359375,
+      "cpu_raw": 0.181640625,
+      "gpu_expected": 0.1748046875,
+      "saved_cpu": 0.1728515625,
+      "frozen_bound": 0.0009765625,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.173210009932518,
+          "rounded": 0.1728515625,
+          "error": 0.001953125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.17507247626781464,
+          "rounded": 0.1748046875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.173210009932518,
+          "rounded": 0.1728515625,
+          "error": 0.001953125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.17507247626781464,
+          "rounded": 0.1748046875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "index": [
+        4,
+        11,
+        36
+      ],
+      "gpu_raw": 0.1103515625,
+      "cpu_raw": 0.107421875,
+      "gpu_expected": 0.10546875,
+      "saved_cpu": 0.1025390625,
+      "frozen_bound": 0.00048828125,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.10243602842092514,
+          "rounded": 0.1025390625,
+          "error": 0.0029296875,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.10522973537445068,
+          "rounded": 0.10546875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.10243602842092514,
+          "rounded": 0.1025390625,
+          "error": 0.0029296875,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": 0.10522973537445068,
+          "rounded": 0.10546875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "index": [
+        4,
+        11,
+        50
+      ],
+      "gpu_raw": -0.0272216796875,
+      "cpu_raw": -0.0267333984375,
+      "gpu_expected": -0.0260009765625,
+      "saved_cpu": -0.0255126953125,
+      "frozen_bound": 0.0001220703125,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.025492601096630096,
+          "rounded": -0.0255126953125,
+          "error": 0.00048828125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.025958219543099403,
+          "rounded": -0.0260009765625,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.025492601096630096,
+          "rounded": -0.0255126953125,
+          "error": 0.00048828125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.025958219543099403,
+          "rounded": -0.0260009765625,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "index": [
+        4,
+        11,
+        62
+      ],
+      "gpu_raw": -0.02978515625,
+      "cpu_raw": -0.031005859375,
+      "gpu_expected": -0.0284423828125,
+      "saved_cpu": -0.029541015625,
+      "frozen_bound": 0.0001220703125,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.02956676296889782,
+          "rounded": -0.029541015625,
+          "error": 0.0010986328125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.028402715921401978,
+          "rounded": -0.0284423828125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.02956676296889782,
+          "rounded": -0.029541015625,
+          "error": 0.0010986328125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9535862803459167,
+          "precast": -0.028402715921401978,
+          "rounded": -0.0284423828125,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.17",
+      "index": [
+        54,
+        10,
+        50
+      ],
+      "gpu_raw": 0.0020904541015625,
+      "cpu_raw": 0.0020294189453125,
+      "gpu_expected": 0.0019989013671875,
+      "saved_cpu": 0.00194549560546875,
+      "frozen_bound": 1.52587890625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.0019424696220085025,
+          "rounded": 0.00194549560546875,
+          "error": 5.340576171875e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.002000889740884304,
+          "rounded": 0.0019989013671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.0019424696220085025,
+          "rounded": 0.00194549560546875,
+          "error": 5.340576171875e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9571555852890015,
+          "precast": 0.002000889740884304,
+          "rounded": 0.0019989013671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.19",
+      "index": [
+        74,
+        7,
+        0
+      ],
+      "gpu_raw": 0.00531005859375,
+      "cpu_raw": 0.005218505859375,
+      "gpu_expected": 0.00482177734375,
+      "saved_cpu": 0.004730224609375,
+      "frozen_bound": 3.0517578125e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.004737977869808674,
+          "rounded": 0.004730224609375,
+          "error": 9.1552734375e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.0048211002722382545,
+          "rounded": 0.00482177734375,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.004737977869808674,
+          "rounded": 0.004730224609375,
+          "error": 9.1552734375e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.0048211002722382545,
+          "rounded": 0.00482177734375,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    {
+      "backend": "scalar",
+      "case": "prefill.layer.19",
+      "index": [
+        74,
+        7,
+        54
+      ],
+      "gpu_raw": 0.00933837890625,
+      "cpu_raw": 0.00946044921875,
+      "gpu_expected": 0.00848388671875,
+      "saved_cpu": 0.00860595703125,
+      "frozen_bound": 6.103515625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.00858931615948677,
+          "rounded": 0.00860595703125,
+          "error": 0.0001220703125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.00847848691046238,
+          "rounded": 0.00848388671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.00858931615948677,
+          "rounded": 0.00860595703125,
+          "error": 0.0001220703125,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.9079184532165527,
+          "precast": 0.00847848691046238,
+          "rounded": 0.00848388671875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Exact checks cover selected failure heads, not all attention elements.",
+    "Substituting raw values diagnoses the sink boundary; it does not identify or fix the upstream QK/PV cause.",
+    "This CPU expression is not a capture of GPU sigmoid internals.",
+    "No numerical gate or production backend is promoted by counterfactual replay."
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "environment": {
+    "image": "ghcr.io/tiiuae/falcon-ocr@sha256:5d11a0fe592de85efef88bfa5266a9392dce501e3647c6f4c69df9b74ada9afd",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "cuda_runtime": "12.8",
+    "gpu_uuid_selector": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "visible_devices": 1,
+    "derived_physical_index": 1,
+    "nvml_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "torch_uuid": "2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_free_bytes": 24102567936,
+    "gpu_total_bytes": 25756696576,
+    "allocation_verified": true,
+    "packages": {
+      "vllm": "0.1.0",
+      "torch": "2.10.0",
+      "triton": "3.6.0",
+      "transformers": "5.3.0",
+      "tokenizers": "0.22.2",
+      "pillow": "12.2.0",
+      "safetensors": "0.7.0"
+    },
+    "precision": "fp32",
+    "torch_allow_tf32": false,
+    "torch_float32_matmul_precision": "highest",
+    "environment_controls": {
+      "NVIDIA_TF32_OVERRIDE": "0",
+      "TRITON_F32_DEFAULT": "ieee",
+      "VLLM_FLOAT32_MATMUL_PRECISION": "highest",
+      "VLLM_ATTENTION_BACKEND": null
+    },
+    "model_config_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "tokenizer_sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+    "tokenizer_config_sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+    "artifact_manifest_sha256": "eea9640e8ab9feccd9358a6b3526e579b14dc4bfcd47ecd561853863952b594d",
+    "verified_model_files": {
+      "attention.py": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+      "config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "configuration_falcon_ocr.py": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+      "model_args.json": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+      "modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+      "processing_falcon_ocr.py": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+      "rope.py": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+      "special_tokens_map.json": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+      "tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "README.md": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+      "model.safetensors": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    "chat_template_sha256": "c1a44a164c5e33280456401e40c6b86cc1f13bfd4d09326c814a61b23ca67182",
+    "entrypoint_sha256": "c4b4c440be9005eeb09aacfb712488688f4c10cf12bbd0a9a48af61d41431014",
+    "server_arguments": [
+      "--model",
+      "/models/Falcon-OCR",
+      "--served-model-name",
+      "falcon-ocr",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18080",
+      "--max-model-len",
+      "16384",
+      "--max-num-seqs",
+      "1",
+      "--max-num-batched-tokens",
+      "16384",
+      "--gpu-memory-utilization",
+      "0.55",
+      "--trust-remote-code",
+      "--dtype",
+      "float32",
+      "--attention-backend",
+      "TRITON_ATTN",
+      "--chat-template",
+      "/app/falcon_ocr_chat_template.jinja",
+      "--limit-mm-per-prompt",
+      "{\"image\":1}",
+      "--no-enable-chunked-prefill",
+      "--enforce-eager",
+      "--hf-overrides",
+      "{\"image_config\":{\"spatial_patch_size\":16,\"merge_size\":1,\"min_image_size\":64,\"max_image_size\":1536,\"min_pixels\":3136,\"max_pixels\":10035200}}"
+    ],
+    "qualification": "Preflight passes only; actual serving and attention precision still require observed runtime evidence."
+  },
+  "image_config_override": {
+    "spatial_patch_size": 16,
+    "merge_size": 1,
+    "min_image_size": 64,
+    "max_image_size": 1536,
+    "min_pixels": 3136,
+    "max_pixels": 10035200
+  },
+  "manifest_sha256": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+  "pages": [
+    {
+      "sample_id": "3f294b5e60a0c2d4",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "category": "ordinary",
+      "input_sha256": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "golden_record_sha256": "353469cd07511817b62fe0eaa4d5e60b76563e26c2006fead8965a6689348be9",
+      "request_sha256": "716d32b4df412d1615976ab85597de169e2b997090cd7e18a15464f76580e68c",
+      "response_sha256": "f0c7e0f34a7074f28b5fa681208c32295d25749c4608f8663dc7f8ead9546e59",
+      "usage": {
+        "prompt_tokens": 6544,
+        "total_tokens": 7684,
+        "completion_tokens": 1140,
+        "prompt_tokens_details": null
+      },
+      "finish_reason": "eos",
+      "api_finish_reason": "stop",
+      "reported_stop_reason": 263,
+      "reported_stop_appended": false,
+      "unparsed_logprob_tokens": [],
+      "tokens_exact": true,
+      "text_exact": true,
+      "outer_whitespace_exact": true,
+      "prefix_exact": true,
+      "finish_reason_exact": true,
+      "first_token_divergence": null,
+      "elapsed_seconds_including_first_request_compile": 44.209527710999964
+    },
+    {
+      "sample_id": "2c243b31d36eb729",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "category": "tables",
+      "input_sha256": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e",
+      "golden_record_sha256": "5434fc7bd87510672eb81c7227412cb43f370977c99d8e4d3575612304e361d3",
+      "request_sha256": "addf7f12c6e4078f6916c34c068d7303fea13a53c2433c924b10375257167ed9",
+      "response_sha256": "5a5dc0d47bc27be1afa4891eb6511c668144899d3ac9b39d2d25f47756d1cf75",
+      "usage": {
+        "prompt_tokens": 7120,
+        "total_tokens": 9400,
+        "completion_tokens": 2280,
+        "prompt_tokens_details": null
+      },
+      "finish_reason": "eos",
+      "api_finish_reason": "stop",
+      "reported_stop_reason": 263,
+      "reported_stop_appended": false,
+      "unparsed_logprob_tokens": [],
+      "tokens_exact": true,
+      "text_exact": true,
+      "outer_whitespace_exact": true,
+      "prefix_exact": true,
+      "finish_reason_exact": true,
+      "first_token_divergence": null,
+      "elapsed_seconds_including_first_request_compile": 73.34635334500001
+    },
+    {
+      "sample_id": "f75c4a0b98e45ab3",
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "category": "multi_column",
+      "input_sha256": "e900609f33a80d87830fd823ad2fd835628f3513ef63544e6d1571f9ecf11a2c",
+      "golden_record_sha256": "d603f7c72fee2f46adb8c878de9a0a2eb76de7837cb944e23bcfeda7a1c7cba8",
+      "request_sha256": "ca7ddb79106c8e506e7e49e8035b88bd77341f28d523892e69bae9ae0c54ae3e",
+      "response_sha256": "1bf3b456f8e29fbd2754c65b3d991b379212170e8291d07aa0cbd6405f2bd25e",
+      "usage": {
+        "prompt_tokens": 7120,
+        "total_tokens": 8581,
+        "completion_tokens": 1461,
+        "prompt_tokens_details": null
+      },
+      "finish_reason": "eos",
+      "api_finish_reason": "stop",
+      "reported_stop_reason": 263,
+      "reported_stop_appended": false,
+      "unparsed_logprob_tokens": [],
+      "tokens_exact": true,
+      "text_exact": true,
+      "outer_whitespace_exact": true,
+      "prefix_exact": true,
+      "finish_reason_exact": true,
+      "first_token_divergence": null,
+      "elapsed_seconds_including_first_request_compile": 52.103835247000006
+    }
+  ],
+  "request_source_sha256": {
+    "request_vllm_fullpages.py": "19be8a87d356da74589c83ba5d7f50a18242fc408598a9f2aa4532628acfd039",
+    "fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032"
+  },
+  "source_capture_phase": "before first HTTP health check or inference request",
+  "text_policy": "HF plain OCR removes known EOS strings and strips outer whitespace; compare the API text after the same outer-whitespace stripping, recording raw equality separately.",
+  "fullpages_passed": true,
+  "precision_audit_pending": false,
+  "qualification": "Three actual direct-vLLM full-page HTTP requests with IEEE compiled-attention PTX evidence. This is not corpus-wide serving, tensor, quality, or performance qualification.",
+  "compiled_precision_evidence": {
+    "triton_version": "3.6.0",
+    "TRITON_F32_DEFAULT": "ieee",
+    "runtime_fp32_default_knob": "ieee",
+    "ptx_files": 4,
+    "attention_ptx_files": 1,
+    "attention_contains_tf32_instructions": false,
+    "qualification": "PTX evidence for compiled Triton kernels from the served request; CUDA-library GEMMs are governed separately by highest matmul precision and NVIDIA_TF32_OVERRIDE=0.",
+    "record_sha256": "dab58bec513b6a83a8b08be3709cffbd17fa4279b2c06c531b113ec566ae22e5"
+  },
+  "installed_source_files": [
+    {
+      "path": "model_executor/models/falcon_ocr.py",
+      "sha256": "cdd1d75296ec6571cede595d7a94589d5b253ad021d776464998e7fb8b6af108",
+      "bytes": 28490
+    },
+    {
+      "path": "model_executor/models/falcon_ocr_multimodal.py",
+      "sha256": "e69caf69e5eefc3977d25b62fb1f28ad3f34d0b58146c90cfdc731e5d00f82b2",
+      "bytes": 15980
+    },
+    {
+      "path": "transformers_utils/configs/falcon_ocr.py",
+      "sha256": "d6ab78a73c154de34ad49a12dcede5fad224dabeeac92704c759214e00e25bc5",
+      "bytes": 3422
+    },
+    {
+      "path": "v1/attention/ops/triton_unified_attention.py",
+      "sha256": "8e8d393c4d551547de397859462ad7c3750230841458e658d73381dbf3f59005",
+      "bytes": 39926
+    },
+    {
+      "path": "v1/attention/ops/triton_decode_attention.py",
+      "sha256": "cf4debbbbdf2245355177dd7be91c4ac75730a9207a10cd7dab6306a5c3bdec4",
+      "bytes": 19463
+    },
+    {
+      "path": "entrypoints/openai/chat_completion/protocol.py",
+      "sha256": "99618fc469c6003e9e1c04af5b1b18df103f1d6a63fe0bf114d1d8fae4bb41f5",
+      "bytes": 28984
+    },
+    {
+      "path": "platforms/interface.py",
+      "sha256": "7edbeb61505f93b49ffdd0c7c87fa8d9c833fc9dadf9bf7fc67d6865c69f9b83",
+      "bytes": 22936
+    },
+    {
+      "path": "envs.py",
+      "sha256": "7edf5da0b40cab435441eaf40126b0f0512830ef2be98f2a23a347c95838ff44",
+      "bytes": 80491
+    },
+    {
+      "path": "v1/attention/backends/triton_attn.py",
+      "sha256": "b09529836c74da19ec36f0282b3ca3a7de3c1f93b3a4254f63f17bbec2c786d1",
+      "bytes": 23794
+    }
+  ],
+  "server_log_sha256": "25c63d789983052be3250e22e81913e41ad5a659dc21dee8414a2e37cbf2118f",
+  "server_shutdown": "Project-owned reference container stopped after the completed request and precision audit."
+}

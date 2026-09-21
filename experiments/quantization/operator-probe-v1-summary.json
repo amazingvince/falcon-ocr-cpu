@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T08:29:01.198543+00:00",
+  "status": "bounded_isolated_arithmetic_diagnostic_complete",
+  "checkpoint_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+  "fixture_sha256": "ce7345c219d8923182ff66e9aad2f4d6bad3c193a19c3445a850c2d3a90e5417",
+  "fixture_sidecar_sha256": "148b9d4286bf413b7c9c693b920290298d5f46cd137449ac4e394430495a8962",
+  "original_trace_sha256": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+  "binary_sha256": "23e25fc538f87044cb5c9ff53df8f0e3b01f9f8700da06c9564c055aa9e0dfe5",
+  "source_archive_sha256": "3e096e11c64a59f8a0b0d6af3816909edf23364b17a2fcf13d912a62fc90af97",
+  "source_unchanged_during_build": true,
+  "source_sha256": {
+    "cargo_lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "probe": "8bc1fdd83c757b8aecd067cd4d7860f7ffdc6f99c77cec5b79b819b7aa83c162",
+    "q4": "177b09077cbacdf6a1023fb34123bfcd18c90df2adb19b12a0a018f13251e829",
+    "q8": "5aa93329f3064b2c9c442d2824ed0927acd81f52ea555daf9de73b88b68bdb56"
+  },
+  "previous_q4_feasibility_source_sha256": "8fe9614c6f422187cbe7b89834debaca76025809c900a144e07c86ff3bbd12d2",
+  "evidence": {
+    "operators.json": {
+      "path": "artifacts/quantization/operator-probe-v1/operators.json",
+      "sha256": "c03ee111b0f49f53e7a1ae0dc086fcc6395f570f3d2862c283f4642ca09355d2"
+    },
+    "independent-check.json": {
+      "path": "artifacts/quantization/operator-probe-v1/independent-check.json",
+      "sha256": "58a2a1c7188f9ff7c09bcbec80c67d4d049235db5e82945ba14f2d164ad4c406"
+    },
+    "unit-tests.json": {
+      "path": "artifacts/quantization/operator-probe-v1/unit-tests.json",
+      "sha256": "02ac7574dee7cfad8b15a41506aec62b82c450d05a6d01d9669b84ca29131ab4"
+    },
+    "build.json": {
+      "path": "artifacts/quantization/operator-probe-v1/build.json",
+      "sha256": "4b6418fb5db547ed0d78b00a46ff0768dd5fe9879af0a111e7fe03a686346d89"
+    },
+    "source.zip": {
+      "path": "artifacts/quantization/operator-probe-v1/source.zip",
+      "sha256": "3e096e11c64a59f8a0b0d6af3816909edf23364b17a2fcf13d912a62fc90af97"
+    }
+  },
+  "coverage": {
+    "fixture_cases": 7,
+    "operators": 28,
+    "formats": 4,
+    "full_reconstructed_weight_elements_per_format": 53673984,
+    "sampled_output_elements_per_format": 2220,
+    "total_output_elements_per_format": 5914624,
+    "sampled_output_fraction": 0.00037534085006925207,
+    "total_sampled_outputs_all_formats": 8880
+  },
+  "arithmetic_checks": {
+    "all_112_code_scale_and_dequantized_matrix_hashes_exact": true,
+    "all_sampled_f64_oracles_pass": true,
+    "fp32_gamma_k_bound_violations": 0,
+    "rust_unit_tests_passed": 8,
+    "independent_python_reference_self_tests": "passed"
+  },
+  "formats": {
+    "w4a32_g64": {
+      "quantized_tensor_payload_bytes_28_matrices": 30191616,
+      "weight_reconstruction_full": {
+        "elements": 53673984,
+        "rms_abs": 0.010687335795619125,
+        "reference_rms": 0.09822827983221462,
+        "relative_l2": 0.10880100734609569,
+        "max_abs": 0.18199725449085236
+      },
+      "sampled_quantization_only_f64": {
+        "elements": 2220,
+        "rms_abs": 7.741508878017404,
+        "reference_rms": 97.14049244620337,
+        "relative_l2": 0.07969394310312632,
+        "max_abs": 102.56487220394138
+      },
+      "sampled_candidate_vs_gpu": {
+        "elements": 2220,
+        "rms_abs": 7.741507813836783,
+        "reference_rms": 97.14048769866459,
+        "relative_l2": 0.07969393604293391,
+        "max_abs": 102.564453125
+      },
+      "max_fraction_of_fp32_accumulation_bound": 0.005347170609008259,
+      "per_operator_case_relative_l2_range": {
+        "qkv": [
+          0.1038649733593113,
+          0.20388691568768805
+        ],
+        "wo": [
+          0.08714967233340047,
+          0.1660675620876148
+        ],
+        "w13": [
+          0.0575744436403619,
+          0.2804657896875061
+        ],
+        "w2": [
+          0.07200378064504445,
+          0.147299987936787
+        ]
+      }
+    },
+    "w4a32_g128": {
+      "quantized_tensor_payload_bytes_28_matrices": 28514304,
+      "weight_reconstruction_full": {
+        "elements": 53673984,
+        "rms_abs": 0.011736504291300569,
+        "reference_rms": 0.09822827983221462,
+        "relative_l2": 0.1194819283341609,
+        "max_abs": 0.1826830804347992
+      },
+      "sampled_quantization_only_f64": {
+        "elements": 2220,
+        "rms_abs": 11.014865804880099,
+        "reference_rms": 97.14049244620337,
+        "relative_l2": 0.11339108468057393,
+        "max_abs": 204.4710223909818
+      },
+      "sampled_candidate_vs_gpu": {
+        "elements": 2220,
+        "rms_abs": 11.014859248742281,
+        "reference_rms": 97.14048769866459,
+        "relative_l2": 0.11339102273102655,
+        "max_abs": 204.47080993652344
+      },
+      "max_fraction_of_fp32_accumulation_bound": 0.003179143248893731,
+      "per_operator_case_relative_l2_range": {
+        "qkv": [
+          0.08576539982095654,
+          0.2262884623470196
+        ],
+        "wo": [
+          0.11954167898416888,
+          0.1651516297217983
+        ],
+        "w13": [
+          0.09093100871528963,
+          0.24233044289218908
+        ],
+        "w2": [
+          0.09561484458212664,
+          0.15271571932213301
+        ]
+      }
+    },
+    "w8a32_g64": {
+      "quantized_tensor_payload_bytes_28_matrices": 57028608,
+      "weight_reconstruction_full": {
+        "elements": 53673984,
+        "rms_abs": 0.0005892258480581585,
+        "reference_rms": 0.09822827983221462,
+        "relative_l2": 0.005998535748204337,
+        "max_abs": 0.009981997311115265
+      },
+      "sampled_quantization_only_f64": {
+        "elements": 2220,
+        "rms_abs": 0.4599200035567696,
+        "reference_rms": 97.14049244620337,
+        "relative_l2": 0.004734585876342704,
+        "max_abs": 9.701851853732776
+      },
+      "sampled_candidate_vs_gpu": {
+        "elements": 2220,
+        "rms_abs": 0.45990831501892526,
+        "reference_rms": 97.14048769866459,
+        "relative_l2": 0.00473446578161711,
+        "max_abs": 9.701889038085938
+      },
+      "max_fraction_of_fp32_accumulation_bound": 0.0034140991507469864,
+      "per_operator_case_relative_l2_range": {
+        "qkv": [
+          0.004288124443352535,
+          0.01167982633300813
+        ],
+        "wo": [
+          0.004059352350852818,
+          0.008096508735700851
+        ],
+        "w13": [
+          0.006073434656126414,
+          0.011644789701708558
+        ],
+        "w2": [
+          0.003886763100651495,
+          0.006815295824218749
+        ]
+      }
+    },
+    "w8a32_g128": {
+      "quantized_tensor_payload_bytes_28_matrices": 55351296,
+      "weight_reconstruction_full": {
+        "elements": 53673984,
+        "rms_abs": 0.0006471274522066823,
+        "reference_rms": 0.09822827983221462,
+        "relative_l2": 0.006587995364594103,
+        "max_abs": 0.009981997311115265
+      },
+      "sampled_quantization_only_f64": {
+        "elements": 2220,
+        "rms_abs": 0.480349615357575,
+        "reference_rms": 97.14049244620337,
+        "relative_l2": 0.004944895823166572,
+        "max_abs": 10.514161076437205
+      },
+      "sampled_candidate_vs_gpu": {
+        "elements": 2220,
+        "rms_abs": 0.4803485068779195,
+        "reference_rms": 97.14048769866459,
+        "relative_l2": 0.00494488465373973,
+        "max_abs": 10.514167785644531
+      },
+      "max_fraction_of_fp32_accumulation_bound": 0.005535382412293761,
+      "per_operator_case_relative_l2_range": {
+        "qkv": [
+          0.00555381783263702,
+          0.014924591621722287
+        ],
+        "wo": [
+          0.004219785221836713,
+          0.013906638392492145
+        ],
+        "w13": [
+          0.006976561130742488,
+          0.01178689175927041
+        ],
+        "w2": [
+          0.004284176873036868,
+          0.00799320491338595
+        ]
+      }
+    }
+  },
+  "group_or_layer_policy_selected": false,
+  "quality_budget_selected": false,
+  "calibration_used": false,
+  "held_out_quality_evaluation": false,
+  "model_integration": false,
+  "timings": null,
+  "interpretation": [
+    "The saved seven synthetic fixture cases locate FP32 drift; they are arithmetic diagnostics, not calibration or held-out OCR quality examples.",
+    "All Q4/W8 formats use the same fixed equal-input activations and geometric row/channel sample selection. No model graph is run.",
+    "Aggregate sampled relative L2 weights errors by the measured output signal energy; it is not average page quality, CER, token agreement or an acceptance threshold.",
+    "Full matrix format reconstruction is exact across independent Rust and Python implementations. Operator outputs are sampled, not exhaustively evaluated.",
+    "No group size, quantized layer policy or quality budget is selected from these outcomes. Production FP32/BF16 policies and gates remain unchanged."
+  ]
+}

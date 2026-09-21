@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "windows-profile-trace-audit-v4-summary",
+  "status": "audit_failed_preserved",
+  "model_qualification": false,
+  "diagnostic_data_preserved": true,
+  "target_pid": 121604,
+  "attempts": 1,
+  "exit_code": 1,
+  "capture": {
+    "path": "D:/falcon-ocr-rust-builds/profiles/fullpage-expanded-v2/capture.json",
+    "sha256": "5407d1cba6aa08e8ec4a5fa4afe0cd5126b5c07acf3c733bd1a92c7185f1a13b"
+  },
+  "audit": {
+    "path": "D:/falcon-ocr-rust-builds/profiles/fullpage-expanded-v2/trace-audit-v4.json",
+    "sha256": "278a5907b8c8f90a820acb6db0e1775d8017071e261bc3087b785462c467f018"
+  },
+  "execution": {
+    "path": "D:/falcon-ocr-rust-builds/profiles/fullpage-expanded-v2/trace-audit-v4-execution.json",
+    "sha256": "bcd29351093764bd38ad7c3e81a51f05b73650f7966899307a1cff7184cf9a16"
+  },
+  "etl": {
+    "path": "D:/falcon-ocr-rust-builds/profiles/fullpage-expanded-v2/cpu.etl",
+    "sha256": "3d6dd82b9f0e74fa36aa5f7a5dbcaf43d521c7532b57a810db3d8390cf41f03e",
+    "bytes": 803209216,
+    "capture_and_audit_digest_agree": true,
+    "input_unchanged": true
+  },
+  "helper": {
+    "path": "artifacts/tools/trace-audit-build-v4/TraceAudit.exe",
+    "sha256": "930cace564616e131a94f1f9b871c73a2e2536e96692aa16149a0d8aa18a5a1e"
+  },
+  "source_and_loaded_dependency_closure": true,
+  "loaded_dependencies": 4,
+  "failed_checks": [
+    "One sampled-profile event outside target/session bounds. Existing audit records its count; the event was not inspected in this one-shot task."
+  ],
+  "identity": {
+    "exact_pid_lifetimes": 1,
+    "same_name_processes": 1,
+    "expected_image": "ocr_bench.exe",
+    "command_line_matches_python_list2cmdline": true,
+    "start_events": 1,
+    "stop_events": 1,
+    "start_utc": "2026-09-20T15:05:25.4565526Z",
+    "end_utc": "2026-09-20T15:09:17.9622376Z",
+    "exit_status": 0
+  },
+  "loss": {
+    "raw_before": 0,
+    "raw_after": 0,
+    "etlx": 0,
+    "callback_count": 0,
+    "truncated": false,
+    "separate_buffers_lost": null,
+    "separate_buffers_lost_status": "unknown in this API; recorder evidence is a separate source"
+  },
+  "samples": {
+    "in_bounds_events": 3118232,
+    "with_attached_stack": 3116575,
+    "without_attached_stack": 1657,
+    "attached_stack_fraction": 0.9994686091349201,
+    "minimum_attached_stack_fraction": 0.99,
+    "wrong_or_missing_owner": 0,
+    "out_of_bounds": 1,
+    "nonempty_one_second_bins": 234,
+    "bins_count_sum": 3118232
+  },
+  "modules": {
+    "count": 10,
+    "pdb_identity_available": 10,
+    "target_pdb": {
+      "name": "ocr_bench.pdb",
+      "signature": "854fda6b-cea5-4cad-bdd6-d8d27009373b",
+      "age": 5
+    }
+  },
+  "limitations": [
+    "No retries, gate changes, additional ETL event scans, model execution, recorder or GPU work.",
+    "The strict failure remains visible; substantial diagnostic sample coverage is retained.",
+    "The helper's first/last sample UTC fields use .NET Framework AddMilliseconds and can round sub-millisecond offsets. Exact relative-ms fields drive its bounds gate; actual process/session UTC timestamps are separate.",
+    "Attached stacks do not establish complete unwind or resolved project symbols. Root owns PerfView exports and downstream attribution."
+  ]
+}

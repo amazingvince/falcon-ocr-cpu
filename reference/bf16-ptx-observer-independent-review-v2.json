@@ -1,0 +1,102 @@
+{
+  "schema_version": 2,
+  "created_utc": "2026-09-20T13:01:47.475211+00:00",
+  "reviewer": "kernels",
+  "status": "source_review_passed_root_release_required_before_execution",
+  "candidate_ptx_sha256": "164bf064bb7e6ecdc31a3ff3f0f031c3471a0670dddcc933dd0d6780a5171717",
+  "spec": {
+    "path": "reference/bf16-ptx-observer-spec-v2.json",
+    "sha256": "568fac1e9db7645fdc4e020d187be0ae2d3558fa8abf02deee4dddb242fd33d5"
+  },
+  "source_and_evidence_sha256": {
+    "scripts/instrument_bf16_ptx.py": "a03fea91e09cdce0430f1aee974e2fca2fa9c720a559903371e7045775fa8030",
+    "scripts/bf16_ptx_observer_support.py": "1728ce1759a54206db4dbc8abcd3d627b76091b443efd81f0c3e746155af989c",
+    "scripts/export_bf16_ptx_observer.py": "5813aa0d571f5c46df28859d3178f78d53698bd3089dd0b02dec71c8c2f92b9d",
+    "scripts/test_bf16_ptx_observer.py": "09953a0e14dfc2a152f9cbf842d7e237636b07905362a7dc71eba4e5a701d200",
+    "scripts/cuda_ptx_reference.py": "eb580de4046ef7bde5c5e55cec5ebf92009911e89bbd314f5a8b57930d6a0bb5",
+    "scripts/run_reference.sh": "163655bf6b5077e479721a30b021683a1350fec54f862a663c475d9435b80d03",
+    "reference/bf16-ptx-observer-spec-v1.json": "a4cd0b35cd14e689bae3160261a0d8a7b383f2bc2b67137c79dd8c0b012445c8",
+    "reference/bf16-ptx-observer-independent-review-v1.json": "239e02f66c6e0d491f4a37db3b82133ae795b6842574c97a166204092557c94b",
+    "reference/bf16-ptx-observer-v1-rejection.json": "274daecde58aa2550c10a1a28786c331c6c602e8f680e8c1ddc036481580cc11",
+    "reference/bf16-ptx-observer-extra-fadd-diagnosis-v1.json": "7e06860837dd1328fe8bb31adad28bfbc127a7092bc6a01de81b92e144ff8265",
+    "artifacts/reference/bf16-ptx-observer-v1/report.json": "c0f06b09d76daa5e34bcda6a5c0d5a6811873d79440ab0eb4a719fad9b35a501",
+    "artifacts/reference/bf16-ptx-observer-v1/observer.ptx": "46fa0c3e0586e71d7a26f3dede80da363adceeddd4875101bfd114972f7317c2",
+    "artifacts/reference/bf16-ptx-observer-v1/observer.cubin": "326749cdd1983ad2e389f8350fbb83081c6868261ccf1003f1564d4f53e7a40a",
+    "artifacts/reference/bf16-ptx-observer-v1/observer.sass": "4b8211636e01795a316ec33514351c659d97c1f9818b0c8dd914787b037f58dc",
+    "artifacts/reference/bf16-ptx-observer-v1/original.sass": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d",
+    "artifacts/reference/bf16-ptx-observer-v1/restored-original.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "artifacts/reference/bf16-ptx-observer-v1/mapping.json": "f73894756d9e69623b23a768de937ef38d933552db062d12bd9cb7afb3b299fd",
+    "scripts/instrument_bf16_ptx_v2.py": "73e3b60afc852c93c8d7c2c2f8b1bdde3c2d70876c94665d55f222174dd3b6f3",
+    "scripts/bf16_ptx_observer_support_v2.py": "ad3e499f8ca6674e0bbf172b849b7b33f156a5e506f4312b8ff80907af4406f8",
+    "scripts/export_bf16_ptx_observer_v2.py": "4c82058f38e74027768ba5feaef81f469a8d2fa34b73bb560eca2edbfd223978",
+    "scripts/test_bf16_ptx_observer_v2.py": "73be4b24307de60c782382f5fa950089ec449db97333eb73f8069f72880b8dba",
+    "scripts/run_bf16_ptx_observer_v2.sh": "7f235db418a6bec4f2be4916d45a72c6a8ec897b0c8e0c217f43d519458e1a7c",
+    "reference\\bf16-ptx-observer-spec-v2.json": "568fac1e9db7645fdc4e020d187be0ae2d3558fa8abf02deee4dddb242fd33d5",
+    "artifacts\\reference\\bf16-ptx-observer-prepared-v2\\observer.ptx": "164bf064bb7e6ecdc31a3ff3f0f031c3471a0670dddcc933dd0d6780a5171717"
+  },
+  "source_and_evidence_window_unchanged": true,
+  "gpu_execution_by_reviewer": false,
+  "assembly_by_reviewer": false,
+  "production_changes": false,
+  "host_tests": {
+    "command": [
+      "C:\\Users\\amazi\\mambaforge\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts",
+      "-p",
+      "test_bf16_ptx_observer_v2.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "passed": 10,
+    "log": "reference/bf16-ptx-observer-independent-review-v2-tests.txt",
+    "log_sha256": "ef6f13c8c056f64fb3cd497ec3bbfef4835e44f90377b751c7e94aac109eab46"
+  },
+  "independent_audit": {
+    "v2_equals_preserved_v1_with_only_four_stores_deleted": true,
+    "deleted_offsets": [
+      1088,
+      40000,
+      195648,
+      234560
+    ],
+    "original_ptx_mechanical_restoration_exact": true,
+    "generated_static_stores": 2131,
+    "unique_valid_store_cells_per_layer": {
+      "0": 6365,
+      "17": 4254,
+      "19": 4238
+    },
+    "emitted_addresses_equal_decoder_coverage": true,
+    "bounds_and_alignment_passed": true,
+    "declared_unavailable_argument_cells": 32,
+    "unchanged_available_decoded_entries": 15977,
+    "available_values_match_v1_decoder_bits": true,
+    "unavailable_values_inferred_or_recomputed": false
+  },
+  "cause_review": {
+    "diagnosis": "reference/bf16-ptx-observer-extra-fadd-diagnosis-v1.json",
+    "sha256": "7e06860837dd1328fe8bb31adad28bfbc127a7092bc6a01de81b92e144ff8265",
+    "independently_rehashed_all_six_diagnosis_inputs": true,
+    "only_fadd_source_location_delta": "line416 original128 versus observer129",
+    "native_subtraction": "0x1e390 FADD R146,R62,-R228 followed by native MUFU.EX2",
+    "duplicate_subtraction": "0x1e840 FADD R110,R62,-R228; same unchanged operand definitions and no intervening control transfer",
+    "duplicate_consumer_scope": "Four debug stores through direct/integer-copy aliases before their overwrite; no FP consumer of the duplicate was found in the reviewed live interval.",
+    "interpretation": "Supports localized compiler rematerialization for debug stores; does not overturn v1 rejection or prove every original machine dependency unchanged."
+  },
+  "reviewed_scope": [
+    "Versioned v2 files and launcher preserve all17 explicitly pinned v1 source/spec/report/PTX/cubin/SASS/review/diagnosis files.",
+    "Only masked-loop exp2_argument cells at steps0/1, probes0/1/5/6, columns0/2/4/6 are omitted.",
+    "Absent raw cells must remain zero with zero validity; decoder emits boolean availability masks and canonical host NaN placeholders excluded from acceptance.",
+    "All original PTX operations, other stores, launch ABI/grid/strides, source/binary windows, arithmetic inventory gate and complete raw/natural/log2 output gates remain unchanged."
+  ],
+  "limits": [
+    "Source/host review only; root must release the one candidate before GPU assembly or launch.",
+    "One candidate, no retry or variant/flag sweep. Any machine inventory or complete output failure still rejects all observations.",
+    "SASS opcode/immediate inventory does not establish full machine dependency or scheduling equivalence.",
+    "No BF16 model qualification, production change, or tolerance relaxation."
+  ]
+}

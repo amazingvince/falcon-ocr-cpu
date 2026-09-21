@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "status": "read_only_scheduling_audit_no_benchmark",
+  "qualification": "Mixed-source serial-equivalent workload proxy only. Existing observations are functional runs under concurrent load with different threads, builds and two cap512 cases. Neither a forecast, bound nor a performance comparison; no linear thread scaling assumed.",
+  "checked_files_sha256": {
+    "artifacts\\benchmarks\\fullpages-plan-v2\\plan.json": "e123ab3c7ce89484f4cfd5ffaecbcb6af541de59dbeef2cbc80b8b3e482fa211",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+    "scripts\\realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "scripts\\compare_realistic_benchmarks.py": "63085cc599261a092991858ddc68fbf1fd9ac79ee3426c35da507fdee5a166f5",
+    "docs\\REALISTIC_BENCHMARKS.md": "af0748a4fa2b20f8971a6e135006b373a10dfb5c976e22959fa453fe07e7c075",
+    "reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "src\\model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "artifacts\\functional-batch\\mixed-b4-v1\\sequential-control.jsonl": "88013e450f3d37d13ccf39f6e52dc4fa85357ea3af4c1b3b475313a009f15f30",
+    "artifacts\\functional-batch\\mixed-b4-v1\\plan.json": "25572beea457125589fd55aee13fb228e3547b7b6697d1a752719d8f3bc466df",
+    "artifacts\\cpu\\corpus-v3-fp32-4096\\run.json": "d00e1d4ee70d693caedc82b4951da924cc1370f85b99e5032ed3dae24a46d210",
+    "artifacts\\cpu\\original-supplement-fp32-512\\run.json": "82a33c60921eaf166b62e7c1523f0e5b329c9d24864262f3d594f34c3ecce80e",
+    "artifacts\\cpu\\corpus-v3-fp32-4096\\2c243b31d36eb729.json": "13c6031570f592a60c90a1837c1c8545f0136a086b7e0189db23ce53f45ae992",
+    "artifacts\\cpu\\corpus-v3-fp32-4096\\f75c4a0b98e45ab3.json": "d4a14504a33efa6d32bdffc9bd5e5081e46b1b27767ce9b932a85b574421e359",
+    "artifacts\\cpu\\original-supplement-fp32-512\\receipt-market-clean.json": "693333af889eff7a2ad0f4d675f7103289a61b6a898080162868a353857f125f",
+    "artifacts\\cpu\\original-supplement-fp32-512\\rotation-090.json": "05c5b07d2e9a59817e1967b70dca9593220b34158e2cde4db4043787b9562079"
+  },
+  "current_build_source_mismatches": [],
+  "current_plan_script_mismatches": [],
+  "full_readiness_validation_performed": false,
+  "processes": 72,
+  "warmups_per_process": 2,
+  "measured_repetitions_per_process": 3,
+  "batch_passes": 360,
+  "page_recognitions": 1350,
+  "page_recognitions_by_input": {
+    "prose": 330,
+    "blank-white": 60,
+    "sparse-room": 210,
+    "receipt-cafe": 120,
+    "table": 360,
+    "columns": 150,
+    "receipt-market-clean": 60,
+    "rotation-090": 60
+  },
+  "timing_proxies": {
+    "prose": {
+      "source_path": "artifacts/functional-batch/mixed-b4-v1/sequential-control.jsonl",
+      "record_index": 0,
+      "threads": 4,
+      "max_new_tokens": 4096,
+      "output_tokens": 1140,
+      "finish_reason": "eos",
+      "observed_total_ms": 357910.5078
+    },
+    "blank-white": {
+      "source_path": "artifacts/functional-batch/mixed-b4-v1/sequential-control.jsonl",
+      "record_index": 1,
+      "threads": 4,
+      "max_new_tokens": 4096,
+      "output_tokens": 2,
+      "finish_reason": "eos",
+      "observed_total_ms": 43554.0868
+    },
+    "sparse-room": {
+      "source_path": "artifacts/functional-batch/mixed-b4-v1/sequential-control.jsonl",
+      "record_index": 2,
+      "threads": 4,
+      "max_new_tokens": 4096,
+      "output_tokens": 6,
+      "finish_reason": "eos",
+      "observed_total_ms": 16358.0781
+    },
+    "receipt-cafe": {
+      "source_path": "artifacts/functional-batch/mixed-b4-v1/sequential-control.jsonl",
+      "record_index": 3,
+      "threads": 4,
+      "max_new_tokens": 4096,
+      "output_tokens": 94,
+      "finish_reason": "eos",
+      "observed_total_ms": 21605.8279
+    },
+    "table": {
+      "source_path": "artifacts/cpu/corpus-v3-fp32-4096/2c243b31d36eb729.json",
+      "threads": 16,
+      "max_new_tokens": 4096,
+      "output_tokens": 2280,
+      "finish_reason": "eos",
+      "observed_total_ms": 221197.9032
+    },
+    "columns": {
+      "source_path": "artifacts/cpu/corpus-v3-fp32-4096/f75c4a0b98e45ab3.json",
+      "threads": 16,
+      "max_new_tokens": 4096,
+      "output_tokens": 1461,
+      "finish_reason": "eos",
+      "observed_total_ms": 97734.42169999999
+    },
+    "receipt-market-clean": {
+      "source_path": "artifacts/cpu/original-supplement-fp32-512/receipt-market-clean.json",
+      "threads": 4,
+      "max_new_tokens": 512,
+      "output_tokens": 187,
+      "finish_reason": "eos",
+      "observed_total_ms": 26376.2736
+    },
+    "rotation-090": {
+      "source_path": "artifacts/cpu/original-supplement-fp32-512/rotation-090.json",
+      "threads": 4,
+      "max_new_tokens": 512,
+      "output_tokens": 60,
+      "finish_reason": "eos",
+      "observed_total_ms": 46861.5519
+    }
+  },
+  "groups": [
+    {
+      "profile": "fullpages",
+      "batch": 1,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "prose"
+      ],
+      "serial_equivalent_proxy_minutes": 178.95525390000003,
+      "expanded_joint_reserved_KV_payload_bytes": 1917583360
+    },
+    {
+      "profile": "fullpages",
+      "batch": 2,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "prose",
+        "table"
+      ],
+      "serial_equivalent_proxy_minutes": 289.5542055,
+      "expanded_joint_reserved_KV_payload_bytes": 3938975744
+    },
+    {
+      "profile": "fullpages",
+      "batch": 4,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "prose",
+        "table",
+        "columns",
+        "prose"
+      ],
+      "serial_equivalent_proxy_minutes": 517.37667025,
+      "expanded_joint_reserved_KV_payload_bytes": 7877951488
+    },
+    {
+      "profile": "fullpages",
+      "batch": 8,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "prose",
+        "table",
+        "columns",
+        "prose",
+        "table",
+        "columns",
+        "prose",
+        "table"
+      ],
+      "serial_equivalent_proxy_minutes": 966.3970382,
+      "expanded_joint_reserved_KV_payload_bytes": 15859712000
+    },
+    {
+      "profile": "mixed-sparse-first",
+      "batch": 1,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "sparse-room"
+      ],
+      "serial_equivalent_proxy_minutes": 8.17903905,
+      "expanded_joint_reserved_KV_payload_bytes": 1294729216
+    },
+    {
+      "profile": "mixed-sparse-first",
+      "batch": 2,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "sparse-room",
+        "table"
+      ],
+      "serial_equivalent_proxy_minutes": 118.77799065,
+      "expanded_joint_reserved_KV_payload_bytes": 3316121600
+    },
+    {
+      "profile": "mixed-sparse-first",
+      "batch": 4,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "sparse-room",
+        "table",
+        "receipt-cafe",
+        "prose"
+      ],
+      "serial_equivalent_proxy_minutes": 308.5361585,
+      "expanded_joint_reserved_KV_payload_bytes": 6407323648
+    },
+    {
+      "profile": "mixed-sparse-first",
+      "batch": 8,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "sparse-room",
+        "table",
+        "receipt-cafe",
+        "prose",
+        "blank-white",
+        "columns",
+        "receipt-market-clean",
+        "rotation-090"
+      ],
+      "serial_equivalent_proxy_minutes": 415.79932549999995,
+      "expanded_joint_reserved_KV_payload_bytes": 12901154816
+    },
+    {
+      "profile": "mixed-page-first",
+      "batch": 1,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "table"
+      ],
+      "serial_equivalent_proxy_minutes": 110.59895159999999,
+      "expanded_joint_reserved_KV_payload_bytes": 2021392384
+    },
+    {
+      "profile": "mixed-page-first",
+      "batch": 2,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "table",
+        "sparse-room"
+      ],
+      "serial_equivalent_proxy_minutes": 118.77799065,
+      "expanded_joint_reserved_KV_payload_bytes": 3316121600
+    },
+    {
+      "profile": "mixed-page-first",
+      "batch": 4,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "table",
+        "sparse-room",
+        "prose",
+        "receipt-cafe"
+      ],
+      "serial_equivalent_proxy_minutes": 308.5361585,
+      "expanded_joint_reserved_KV_payload_bytes": 6407323648
+    },
+    {
+      "profile": "mixed-page-first",
+      "batch": 8,
+      "processes": 6,
+      "batch_passes": 30,
+      "request_order": [
+        "table",
+        "sparse-room",
+        "prose",
+        "receipt-cafe",
+        "columns",
+        "blank-white",
+        "rotation-090",
+        "receipt-market-clean"
+      ],
+      "serial_equivalent_proxy_minutes": 415.79932549999995,
+      "expanded_joint_reserved_KV_payload_bytes": 12901154816
+    }
+  ],
+  "total_serial_equivalent_proxy_hours": 62.62146846333334,
+  "safe_window_policy": {
+    "existing_72_process_plan_resumable": false,
+    "method": "Create fresh immutable one-profile/one-batch plans using the existing CLI; each runs its complete six-process bracket in one uninterrupted quiet window. Preserve existing 72-process plan unchanged.",
+    "coverage": "selected_groups_only",
+    "interrupted_group": "Preserve failed/partial attempt; new fresh plan for the entire bracket. No sample salvage or reordering.",
+    "aggregation": "Current comparator evaluates one plan; there is no verified cross-plan complete-matrix aggregator. Preserve per-group comparisons and a metadata inventory without altering coverage labels."
+  },
+  "priority": [
+    "fullpages b1 after corpus and boundary work finish",
+    "mixed-sparse-first and mixed-page-first b2/b4, and fullpages b2",
+    "remaining short groups",
+    "long b8 brackets only with adequate uninterrupted quiet window and memory headroom"
+  ],
+  "gaps": [
+    "Actual quiet per-group durations are unavailable, especially native16thread prose; proxy sources cannot qualify latency.",
+    "The current runner lacks a physical-memory preflight; expanded fullpages b8 reserves 14.77GiB KV payload before weights/scratch/packing/OS. Payload is not measured resident memory.",
+    "No verified cross-plan complete_matrix aggregator.",
+    "A full existing plan validation must still recheck executable/archive/model/input/source identities before execution."
+  ],
+  "schema_review": "Current frozen source supports literal text and projection/transformer-prefill timing fields required by validator; no present source-schema blocker identified. Historical proxy records are not substitute benchmark reports.",
+  "performance_claim": false
+}

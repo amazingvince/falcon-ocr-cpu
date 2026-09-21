@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "status": "launcher_failed_before_python_cuda_or_assembly",
+  "command": "bash scripts/run_bf16_ptx_observer_v2.sh --output artifacts/reference/bf16-ptx-observer-v2",
+  "exit_code": 1,
+  "actual_assembler_invocations": 0,
+  "actual_observer_kernel_launches": 0,
+  "actual_original_control_kernel_launches": 0,
+  "actual_natural_lse_kernel_launches": 0,
+  "evidence": "Bash rejected set -euo pipefail at line2 with a carriage return in option name. Neither preflight nor exec Python lines were reached.",
+  "launcher_sha256": "7f235db418a6bec4f2be4916d45a72c6a8ec897b0c8e0c217f43d519458e1a7c",
+  "launcher_crlf_count": 14,
+  "launcher_lf_count": 14,
+  "spec_sha256": "568fac1e9db7645fdc4e020d187be0ae2d3558fa8abf02deee4dddb242fd33d5",
+  "candidate_sha256": "164bf064bb7e6ecdc31a3ff3f0f031c3471a0670dddcc933dd0d6780a5171717",
+  "review_receipt_sha256": "b8918bc64916e2ba1627dbaa73c7de3c854db65152d71707cc8d104cf315d850",
+  "reviewed_source_window_unchanged": {
+    "scripts/instrument_bf16_ptx_v2.py": true,
+    "scripts/bf16_ptx_observer_support_v2.py": true,
+    "scripts/export_bf16_ptx_observer_v2.py": true,
+    "scripts/test_bf16_ptx_observer_v2.py": true,
+    "scripts/cuda_ptx_reference.py": true,
+    "scripts/run_bf16_ptx_observer_v2.sh": true
+  },
+  "intended_output_directory_exists": false,
+  "runtime_gates_evaluated": false,
+  "native_intermediates_accepted": false,
+  "retry_performed": false,
+  "qualification": "This is a frozen launcher-format failure before any candidate assembly or GPU execution. No observer acceptance/rejection under machine/output gates was evaluated. No source change or retry performed; explicit root release required for any correction."
+}

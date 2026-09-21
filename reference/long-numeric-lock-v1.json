@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "dataset": "original-numeric-stress",
+  "revision": "7b9f309ab21b697b061b91883b7fc66f593380f558f9f436ecf1f495d6baaa32",
+  "source_metadata_sha256": "cc8941c8e0eb0c2e71a538322764711d51fcb101dec4a013a77cbe15d77985c8",
+  "qualification": "Original deterministic numerical stress page; not natural-document OCR accuracy evidence. Measure actual EOS and budget truncation.",
+  "pages": [
+    {
+      "id": "original:long-numeric-v1",
+      "category": "long_numeric_stress",
+      "source_family": "original-long-numeric-v1",
+      "canonical_path": "artifacts/corpus/long-numeric-v1/canonical-rgb.png",
+      "canonical_png_sha256": "0c761b868797ed7c58aaed48ed4dc6db0cf94780a4608d9dad9857d9121f183c",
+      "rgb_sha256": "77984d552c8db40cbfddc409a9d4f6316d063092742798b6bdb9f9ff21c6da75",
+      "ground_truth_path": "artifacts/corpus/long-numeric-v1/ground-truth.txt",
+      "ground_truth_sha256": "e6f81e35e8821348d8f1da7aac86907a52fb72d3072e6d949e645e6dbe04a6a3",
+      "width": 1376,
+      "height": 1504,
+      "generator_sha256": "7b9f309ab21b697b061b91883b7fc66f593380f558f9f436ecf1f495d6baaa32",
+      "plain_ground_truth_tokens": 9599,
+      "requested_max_new_tokens": 8192,
+      "requested_max_dimension": 1536
+    }
+  ]
+}

@@ -1,0 +1,1137 @@
+{
+  "kind": "fp32-crossover-independent-review-v1",
+  "status": "saved_controls_and_signed_decomposition_verified",
+  "method": "Independent read-only raw payload loading, original bit comparisons, FP64 recomputation, archive/source/input closure; did not invoke capture/comparer/model or alter code.",
+  "control_checks": [
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.8.q",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.8.k",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.8.v",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.8.attention",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.8.hidden",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.9.v",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.8.q",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.8.k",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.8.v",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.8.attention",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.8.hidden",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.9.v",
+      "bit_mismatches": 0
+    }
+  ],
+  "saved_entry_states_exact": 3,
+  "stage_count": 17,
+  "values_per_branch": 3207168,
+  "row_statistics_verified": 2448,
+  "fp64_decomposition_residual_max_abs": 0.0,
+  "layer9_v": {
+    "stage": "layer.9.v",
+    "global": {
+      "original_rust_minus_gpu": {
+        "max_abs": 0.006622314453125,
+        "rms": 0.00010810784355556972,
+        "signed_mean": 1.5528555902872338e-07
+      },
+      "engine_difference_on_cpu_entry_state": {
+        "max_abs": 6.103515625e-05,
+        "rms": 5.652412524300419e-06,
+        "signed_mean": -5.064733462252965e-08
+      },
+      "incoming_state_difference_through_gpu": {
+        "max_abs": 0.00658416748046875,
+        "rms": 0.00010795045085231075,
+        "signed_mean": 2.0593289365125304e-07
+      }
+    },
+    "row112": {
+      "row": 112,
+      "original_rust_minus_gpu": {
+        "max_abs": 0.006622314453125,
+        "rms": 0.0009118501119353317,
+        "signed_mean": 2.1215833839960396e-05
+      },
+      "engine_difference_on_cpu_entry_state": {
+        "max_abs": 3.814697265625e-05,
+        "rms": 6.466845648093411e-06,
+        "signed_mean": 1.2312375474721193e-07
+      },
+      "incoming_state_difference_through_gpu": {
+        "max_abs": 0.00658416748046875,
+        "rms": 0.0009081166005613542,
+        "signed_mean": 2.1092710085213184e-05
+      }
+    },
+    "worst_coordinate": [
+      112,
+      14,
+      2
+    ],
+    "at_worst": {
+      "rust_cpu": -19.03121566772461,
+      "gpu_cpu": -19.031253814697266,
+      "gpu_gpu": -19.037837982177734,
+      "original_rust_minus_gpu": 0.006622314453125,
+      "engine_difference_on_cpu_entry_state": 3.814697265625e-05,
+      "incoming_state_difference_through_gpu": 0.00658416748046875
+    }
+  },
+  "stages_summary": [
+    {
+      "stage": "input",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.00213287644549358,
+          "signed_mean": 5.167829739447269e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "signed_mean": 0.0
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.00213287644549358,
+          "signed_mean": 5.167829739447269e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00229644775390625,
+          "rms": 0.0006720608628494382,
+          "signed_mean": 2.126287048061689e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "signed_mean": 0.0
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00229644775390625,
+          "rms": 0.0006720608628494382,
+          "signed_mean": 2.126287048061689e-06
+        }
+      },
+      "worst_coordinate": [
+        142,
+        464
+      ],
+      "at_worst": {
+        "rust_cpu": 64341.63671875,
+        "gpu_cpu": 64341.63671875,
+        "gpu_gpu": 64341.5390625,
+        "original_rust_minus_gpu": 0.09765625,
+        "engine_difference_on_cpu_entry_state": 0.0,
+        "incoming_state_difference_through_gpu": 0.09765625
+      }
+    },
+    {
+      "stage": "layer.8.attention_norm",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00016401708126068115,
+          "rms": 8.967589000728156e-06,
+          "signed_mean": -9.144813893789838e-09
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 9.5367431640625e-07,
+          "rms": 6.737313993979352e-08,
+          "signed_mean": 1.2949353523628848e-11
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00016401708126068115,
+          "rms": 8.9673853331284e-06,
+          "signed_mean": -9.157763247313466e-09
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00016401708126068115,
+          "rms": 4.887779653103107e-05,
+          "signed_mean": 1.0704826157355758e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "signed_mean": 0.0
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00016401708126068115,
+          "rms": 4.887779653103107e-05,
+          "signed_mean": 1.0704826157355758e-06
+        }
+      },
+      "worst_coordinate": [
+        112,
+        261
+      ],
+      "at_worst": {
+        "rust_cpu": -0.19290611147880554,
+        "gpu_cpu": -0.19290611147880554,
+        "gpu_gpu": -0.19274209439754486,
+        "original_rust_minus_gpu": -0.00016401708126068115,
+        "engine_difference_on_cpu_entry_state": 0.0,
+        "incoming_state_difference_through_gpu": -0.00016401708126068115
+      }
+    },
+    {
+      "stage": "layer.8.qkv",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00170135498046875,
+          "rms": 3.04825445435153e-05,
+          "signed_mean": -7.954040310349026e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.0517578125e-05,
+          "rms": 1.244588593493743e-06,
+          "signed_mean": 1.8345502894590027e-10
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.001689910888671875,
+          "rms": 3.048367874450525e-05,
+          "signed_mean": -7.972385813243616e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0011043548583984375,
+          "rms": 0.00015491923755179266,
+          "signed_mean": 3.7868630897719413e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 7.152557373046875e-06,
+          "rms": 1.0960526383281415e-06,
+          "signed_mean": -1.3302269508130848e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.001102447509765625,
+          "rms": 0.00015493756527489843,
+          "signed_mean": 3.91988578485325e-07
+        }
+      },
+      "worst_coordinate": [
+        114,
+        1638
+      ],
+      "at_worst": {
+        "rust_cpu": -32.045494079589844,
+        "gpu_cpu": -32.04548263549805,
+        "gpu_gpu": -32.043792724609375,
+        "original_rust_minus_gpu": -0.00170135498046875,
+        "engine_difference_on_cpu_entry_state": -1.1444091796875e-05,
+        "incoming_state_difference_through_gpu": -0.001689910888671875
+      }
+    },
+    {
+      "stage": "layer.8.q",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00019884109497070312,
+          "rms": 1.1055366445231277e-05,
+          "signed_mean": -4.045661170268586e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.32133674621582e-06,
+          "rms": 5.123186208435707e-07,
+          "signed_mean": -3.5362131124551233e-10
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00019931793212890625,
+          "rms": 1.1054097477560811e-05,
+          "signed_mean": -4.010299039144035e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00019884109497070312,
+          "rms": 5.444987904244486e-05,
+          "signed_mean": -2.4459948235744378e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 2.4139881134033203e-06,
+          "rms": 5.475591145293438e-07,
+          "signed_mean": 2.9481043384294026e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00019931793212890625,
+          "rms": 5.44656548358725e-05,
+          "signed_mean": -2.4754758669587318e-06
+        }
+      },
+      "worst_coordinate": [
+        112,
+        12,
+        27
+      ],
+      "at_worst": {
+        "rust_cpu": 1.116205096244812,
+        "gpu_cpu": 1.1162046194076538,
+        "gpu_gpu": 1.1164039373397827,
+        "original_rust_minus_gpu": -0.00019884109497070312,
+        "engine_difference_on_cpu_entry_state": 4.76837158203125e-07,
+        "incoming_state_difference_through_gpu": -0.00019931793212890625
+      }
+    },
+    {
+      "stage": "layer.8.k",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0002655982971191406,
+          "rms": 8.735157546507319e-06,
+          "signed_mean": -1.3663753289310737e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.470348358154297e-06,
+          "rms": 4.5021702077657866e-07,
+          "signed_mean": -3.766394356890462e-10
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0002663135528564453,
+          "rms": 8.729638364438557e-06,
+          "signed_mean": -1.328711385362169e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00019121170043945312,
+          "rms": 4.7395388170865266e-05,
+          "signed_mean": -1.5345065094152233e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.430511474609375e-06,
+          "rms": 3.835847456048495e-07,
+          "signed_mean": -1.5902742234175093e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00019121170043945312,
+          "rms": 4.7381866399822816e-05,
+          "signed_mean": -1.5186037671810482e-06
+        }
+      },
+      "worst_coordinate": [
+        17,
+        10,
+        28
+      ],
+      "at_worst": {
+        "rust_cpu": -3.321514129638672,
+        "gpu_cpu": -3.3215134143829346,
+        "gpu_gpu": -3.321779727935791,
+        "original_rust_minus_gpu": 0.0002655982971191406,
+        "engine_difference_on_cpu_entry_state": -7.152557373046875e-07,
+        "incoming_state_difference_through_gpu": 0.0002663135528564453
+      }
+    },
+    {
+      "stage": "layer.8.v",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00170135498046875,
+          "rms": 5.238717138445735e-05,
+          "signed_mean": -1.7320879427037047e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.0517578125e-05,
+          "rms": 1.984150036653453e-06,
+          "signed_mean": 5.395943642522777e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.001689910888671875,
+          "rms": 5.239393959253296e-05,
+          "signed_mean": -1.7860473791289326e-07
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0011043548583984375,
+          "rms": 0.000247963900786956,
+          "signed_mean": 6.21550134383142e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 7.152557373046875e-06,
+          "rms": 1.6875766785987026e-06,
+          "signed_mean": -7.06349965184927e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.001102447509765625,
+          "rms": 0.00024794380027067875,
+          "signed_mean": 6.286136340349913e-06
+        }
+      },
+      "worst_coordinate": [
+        114,
+        2,
+        38
+      ],
+      "at_worst": {
+        "rust_cpu": -32.045494079589844,
+        "gpu_cpu": -32.04548263549805,
+        "gpu_gpu": -32.043792724609375,
+        "original_rust_minus_gpu": -0.00170135498046875,
+        "engine_difference_on_cpu_entry_state": -1.1444091796875e-05,
+        "incoming_state_difference_through_gpu": -0.001689910888671875
+      }
+    },
+    {
+      "stage": "layer.8.attention",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.001087188720703125,
+          "rms": 2.134869546759841e-05,
+          "signed_mean": -1.765887557168987e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.4849853515625e-05,
+          "rms": 2.116357048205777e-06,
+          "signed_mean": 1.173207449708021e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00109100341796875,
+          "rms": 2.1262518812837147e-05,
+          "signed_mean": -2.9390950068770078e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.000762939453125,
+          "rms": 0.00010541404548181823,
+          "signed_mean": -6.490844214113167e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 2.6702880859375e-05,
+          "rms": 1.9323630224460296e-06,
+          "signed_mean": -5.8217381138092605e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0007495880126953125,
+          "rms": 0.00010443636017727459,
+          "signed_mean": -6.432626832975075e-06
+        }
+      },
+      "worst_coordinate": [
+        17,
+        230
+      ],
+      "at_worst": {
+        "rust_cpu": -56.52511978149414,
+        "gpu_cpu": -56.525123596191406,
+        "gpu_gpu": -56.52403259277344,
+        "original_rust_minus_gpu": -0.001087188720703125,
+        "engine_difference_on_cpu_entry_state": 3.814697265625e-06,
+        "incoming_state_difference_through_gpu": -0.00109100341796875
+      }
+    },
+    {
+      "stage": "layer.8.wo",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.002593994140625,
+          "rms": 8.917436767569937e-05,
+          "signed_mean": 9.849537929295804e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0001678466796875,
+          "rms": 1.3986091692944197e-05,
+          "signed_mean": 3.535408015725099e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0025787353515625,
+          "rms": 8.833783378781069e-05,
+          "signed_mean": 6.314129913570705e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.002471923828125,
+          "rms": 0.0004340391185812986,
+          "signed_mean": 1.1646033575137457e-05
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.103515625e-05,
+          "rms": 9.901935838070288e-06,
+          "signed_mean": -1.4163864155610403e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.002410888671875,
+          "rms": 0.0004323637927706178,
+          "signed_mean": 1.178767221669356e-05
+        }
+      },
+      "worst_coordinate": [
+        17,
+        249
+      ],
+      "at_worst": {
+        "rust_cpu": -169.48184204101562,
+        "gpu_cpu": -169.48182678222656,
+        "gpu_gpu": -169.479248046875,
+        "original_rust_minus_gpu": -0.002593994140625,
+        "engine_difference_on_cpu_entry_state": -1.52587890625e-05,
+        "incoming_state_difference_through_gpu": -0.0025787353515625
+      }
+    },
+    {
+      "stage": "layer.8.attention_residual",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.002132483882734332,
+          "signed_mean": 5.303171309168209e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.001953125,
+          "rms": 1.7627338466598233e-05,
+          "signed_mean": 8.266390607416354e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.0021326659681872155,
+          "signed_mean": 5.220507403094045e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00194549560546875,
+          "rms": 0.0006176862601558858,
+          "signed_mean": 1.3786368072032928e-05
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.103515625e-05,
+          "rms": 9.913875919416995e-06,
+          "signed_mean": -1.263494292894999e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.001934051513671875,
+          "rms": 0.000617570179083165,
+          "signed_mean": 1.3912717501322428e-05
+        }
+      },
+      "worst_coordinate": [
+        142,
+        464
+      ],
+      "at_worst": {
+        "rust_cpu": 64339.390625,
+        "gpu_cpu": 64339.390625,
+        "gpu_gpu": 64339.29296875,
+        "original_rust_minus_gpu": 0.09765625,
+        "engine_difference_on_cpu_entry_state": 0.0,
+        "incoming_state_difference_through_gpu": 0.09765625
+      }
+    },
+    {
+      "stage": "layer.8.ffn_norm",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00013828277587890625,
+          "rms": 5.941365862828544e-06,
+          "signed_mean": -7.461219934071742e-09
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.291534423828125e-06,
+          "rms": 3.18931467112486e-07,
+          "signed_mean": 1.0731623861164823e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0001392364501953125,
+          "rms": 5.936122228859451e-06,
+          "signed_mean": -8.534382320188225e-09
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 5.996227264404297e-05,
+          "rms": 1.9842411477457627e-05,
+          "signed_mean": 2.644252390382462e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.9073486328125e-06,
+          "rms": 3.242642209252394e-07,
+          "signed_mean": -2.7191238890130385e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 5.9723854064941406e-05,
+          "rms": 1.9848029707998977e-05,
+          "signed_mean": 2.6714436292725924e-07
+        }
+      },
+      "worst_coordinate": [
+        17,
+        249
+      ],
+      "at_worst": {
+        "rust_cpu": -4.504726409912109,
+        "gpu_cpu": -4.504725456237793,
+        "gpu_gpu": -4.504864692687988,
+        "original_rust_minus_gpu": 0.00013828277587890625,
+        "engine_difference_on_cpu_entry_state": -9.5367431640625e-07,
+        "incoming_state_difference_through_gpu": 0.0001392364501953125
+      }
+    },
+    {
+      "stage": "layer.8.w13",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0005159378051757812,
+          "rms": 1.452899404480868e-05,
+          "signed_mean": -2.2585305032152693e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.0251998901367188e-05,
+          "rms": 1.0183655332454298e-06,
+          "signed_mean": -1.1387269800625476e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0005185604095458984,
+          "rms": 1.4512422999230972e-05,
+          "signed_mean": -2.1446578052090145e-07
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0005159378051757812,
+          "rms": 4.310368309688616e-05,
+          "signed_mean": 5.881789956024224e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 5.245208740234375e-06,
+          "rms": 1.0384246345564213e-06,
+          "signed_mean": 1.2525420661151858e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0005185604095458984,
+          "rms": 4.307591186470979e-05,
+          "signed_mean": 5.756535749412706e-06
+        }
+      },
+      "worst_coordinate": [
+        112,
+        826
+      ],
+      "at_worst": {
+        "rust_cpu": 2.9007492065429688,
+        "gpu_cpu": 2.9007465839385986,
+        "gpu_gpu": 2.9012651443481445,
+        "original_rust_minus_gpu": -0.0005159378051757812,
+        "engine_difference_on_cpu_entry_state": 2.6226043701171875e-06,
+        "incoming_state_difference_through_gpu": -0.0005185604095458984
+      }
+    },
+    {
+      "stage": "layer.8.gate",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.02935791015625,
+          "rms": 0.00015287168938998833,
+          "signed_mean": 1.4032445587271711e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0006103515625,
+          "rms": 5.140662570018066e-06,
+          "signed_mean": 6.813568822829035e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.02935791015625,
+          "rms": 0.00015319455277640882,
+          "signed_mean": 7.218876764442691e-09
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.009143829345703125,
+          "rms": 0.00026605418710889717,
+          "signed_mean": -5.4437546190025226e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 8.392333984375e-05,
+          "rms": 4.089978472483074e-06,
+          "signed_mean": 6.997691951159086e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.009059906005859375,
+          "rms": 0.0002645804990131661,
+          "signed_mean": -5.5137315385141135e-06
+        }
+      },
+      "worst_coordinate": [
+        17,
+        905
+      ],
+      "at_worst": {
+        "rust_cpu": 895.6309204101562,
+        "gpu_cpu": 895.6309204101562,
+        "gpu_gpu": 895.6015625,
+        "original_rust_minus_gpu": 0.02935791015625,
+        "engine_difference_on_cpu_entry_state": 0.0,
+        "incoming_state_difference_through_gpu": 0.02935791015625
+      }
+    },
+    {
+      "stage": "layer.8.w2",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.016510009765625,
+          "rms": 0.0008740338739683274,
+          "signed_mean": 7.804220769213755e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.00146484375,
+          "rms": 2.996649829682282e-05,
+          "signed_mean": -3.232795548952978e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.016448974609375,
+          "rms": 0.0008768157461373998,
+          "signed_mean": 8.127500324109052e-07
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0054779052734375,
+          "rms": 0.0016189869038853435,
+          "signed_mean": 7.990049198269844e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 8.0108642578125e-05,
+          "rms": 1.744065290932338e-05,
+          "signed_mean": -1.12154521048069e-06
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00545501708984375,
+          "rms": 0.0016098172517869547,
+          "signed_mean": 9.111594408750534e-06
+        }
+      },
+      "worst_coordinate": [
+        129,
+        234
+      ],
+      "at_worst": {
+        "rust_cpu": -275.3644104003906,
+        "gpu_cpu": -275.3644714355469,
+        "gpu_gpu": -275.38092041015625,
+        "original_rust_minus_gpu": 0.016510009765625,
+        "engine_difference_on_cpu_entry_state": 6.103515625e-05,
+        "incoming_state_difference_through_gpu": 0.016448974609375
+      }
+    },
+    {
+      "stage": "layer.8.hidden",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.0023494403707898246,
+          "signed_mean": 6.084809784725722e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.00390625,
+          "rms": 3.9968353968423556e-05,
+          "signed_mean": 2.2326545419033478e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.002349745749426678,
+          "signed_mean": 6.0624832393066885e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00737762451171875,
+          "rms": 0.0019060220086863358,
+          "signed_mean": 2.180148536960284e-05
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 9.1552734375e-05,
+          "rms": 1.88329697003597e-05,
+          "signed_mean": -1.2142894168694813e-06
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0073699951171875,
+          "rms": 0.0018970405493485395,
+          "signed_mean": 2.301577478647232e-05
+        }
+      },
+      "worst_coordinate": [
+        142,
+        464
+      ],
+      "at_worst": {
+        "rust_cpu": 64385.828125,
+        "gpu_cpu": 64385.828125,
+        "gpu_gpu": 64385.73046875,
+        "original_rust_minus_gpu": 0.09765625,
+        "engine_difference_on_cpu_entry_state": 0.0,
+        "incoming_state_difference_through_gpu": 0.09765625
+      }
+    },
+    {
+      "stage": "layer.9.attention_norm",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0003835707902908325,
+          "rms": 1.4157640190266513e-05,
+          "signed_mean": -9.476619653612403e-09
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.1324882507324219e-05,
+          "rms": 1.0686682868453857e-06,
+          "signed_mean": 3.286012384006864e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0003825277090072632,
+          "rms": 1.4134871356044477e-05,
+          "signed_mean": -1.2762632037619268e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0003835707902908325,
+          "rms": 0.00010783658726603002,
+          "signed_mean": 3.7369096996068643e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.198883056640625e-06,
+          "rms": 1.0914308095437957e-06,
+          "signed_mean": -5.199520577055713e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0003825277090072632,
+          "rms": 0.00010738630282706722,
+          "signed_mean": 3.7889049053774215e-06
+        }
+      },
+      "worst_coordinate": [
+        112,
+        127
+      ],
+      "at_worst": {
+        "rust_cpu": -0.2180406004190445,
+        "gpu_cpu": -0.21803955733776093,
+        "gpu_gpu": -0.21765702962875366,
+        "original_rust_minus_gpu": -0.0003835707902908325,
+        "engine_difference_on_cpu_entry_state": -1.043081283569336e-06,
+        "incoming_state_difference_through_gpu": -0.0003825277090072632
+      }
+    },
+    {
+      "stage": "layer.9.qkv",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.006622314453125,
+          "rms": 5.9493508642111646e-05,
+          "signed_mean": 4.279850982255893e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.103515625e-05,
+          "rms": 3.420406172655517e-06,
+          "signed_mean": -3.0514089625436704e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00658416748046875,
+          "rms": 5.941092357464723e-05,
+          "signed_mean": 7.331259944799564e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.006622314453125,
+          "rms": 0.0004918709402273039,
+          "signed_mean": 2.333317752345465e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.814697265625e-05,
+          "rms": 3.821494588154792e-06,
+          "signed_mean": 2.7283931558486074e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00658416748046875,
+          "rms": 0.0004898392335276665,
+          "signed_mean": 2.0604784367606044e-07
+        }
+      },
+      "worst_coordinate": [
+        112,
+        1986
+      ],
+      "at_worst": {
+        "rust_cpu": -19.03121566772461,
+        "gpu_cpu": -19.031253814697266,
+        "gpu_gpu": -19.037837982177734,
+        "original_rust_minus_gpu": 0.006622314453125,
+        "engine_difference_on_cpu_entry_state": 3.814697265625e-05,
+        "incoming_state_difference_through_gpu": 0.00658416748046875
+      }
+    },
+    {
+      "stage": "layer.9.v",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.006622314453125,
+          "rms": 0.00010810784355556972,
+          "signed_mean": 1.5528555902872338e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.103515625e-05,
+          "rms": 5.652412524300419e-06,
+          "signed_mean": -5.064733462252965e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00658416748046875,
+          "rms": 0.00010795045085231075,
+          "signed_mean": 2.0593289365125304e-07
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.006622314453125,
+          "rms": 0.0009118501119353317,
+          "signed_mean": 2.1215833839960396e-05
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.814697265625e-05,
+          "rms": 6.466845648093411e-06,
+          "signed_mean": 1.2312375474721193e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00658416748046875,
+          "rms": 0.0009081166005613542,
+          "signed_mean": 2.1092710085213184e-05
+        }
+      },
+      "worst_coordinate": [
+        112,
+        14,
+        2
+      ],
+      "at_worst": {
+        "rust_cpu": -19.03121566772461,
+        "gpu_cpu": -19.031253814697266,
+        "gpu_gpu": -19.037837982177734,
+        "original_rust_minus_gpu": 0.006622314453125,
+        "engine_difference_on_cpu_entry_state": 3.814697265625e-05,
+        "incoming_state_difference_through_gpu": 0.00658416748046875
+      }
+    }
+  ],
+  "policy_sha256_unchanged": "8f6382a4386b15f76e6984679208a44d0fa644b9d55a21ce579bbb26e0bfbe1c",
+  "original_failure_inventory_unchanged": [
+    "decode.2.layer.21.attention",
+    "decode.6.layer.19.attention",
+    "layer.12.k",
+    "layer.12.q",
+    "layer.12.v",
+    "layer.13.attention",
+    "layer.17.attention",
+    "layer.17.k",
+    "layer.18.k",
+    "layer.9.v"
+  ],
+  "historical_startup_attestation_complete": false,
+  "source_and_artifact_closure_unchanged": true,
+  "evidence_sha256": {
+    "reference/fp32-crossover-decomposition-v1.json": "b3e262ecc47713c356d3c8926fe1a642a610337eb077372705ff30510e067735",
+    "artifacts/diagnostics/fp32-crossover-v1/plan.json": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c",
+    "artifacts/diagnostics/fp32-crossover-v1/rust/report.json": "7947b11589c9e708ec6b7386a16727b677204ce0c55f516867a3f5c93e374e4a",
+    "artifacts/diagnostics/fp32-crossover-gpu-v1/report.json": "72d577e05c7eb91d9d32890ef8e789fa988cdd80397a3e5b48cb4969a1e398ed",
+    "artifacts/diagnostics/fp32-crossover-v1/execution.json": "8e122d4df988da03bafca42278b6f443ff8d38c040b06af61a13b17732ce8f87",
+    "artifacts/diagnostics/fp32-crossover-v1/preparation.json": "5afe1b3727d598388c3c14e5a417c122641d5d7ff4e9c310273cfab7ffe97a22",
+    "artifacts/diagnostics/fp32-crossover-v1/build.json": "2feccf83863200c7d16d0790ef2942d368e09082df07b922aea8b4d818c6fac8",
+    "artifacts/diagnostics/fp32-crossover-v1/crossover-tests.exe": "e018880c33a197b6a75d6117782c5f6df2061ae9f770db011a03d37c75e4db52",
+    "artifacts/diagnostics/fp32-crossover-v1/build.log": "a7f11b479527c6b327814abf9c76db8093d78e00d62384c9b6594aac2df34a48",
+    "artifacts/diagnostics/fp32-crossover-v1/test-list.txt": "351c98d47d1d64edb1552ad181170e4f5df7eed5c288dcd1847f5963e6ced260",
+    "artifacts/diagnostics/fp32-crossover-v1/build-start.json": "f9e1f287b81e6fabb7f6f6608b03766a5999e3d4b8ef53111695a8990f0ab8fc",
+    "artifacts/diagnostics/fp32-crossover-v1/run-start.json": "a49014680ab5594763e701d6d18955b465dfe8f68edda1807f51c16c51f7477d",
+    "artifacts/diagnostics/fp32-crossover-v1/run.log": "af796c1115c14a051dbaf636e7dc429be47fa0d27bd49b3c44ba9658c9272fde",
+    "artifacts/diagnostics/fp32-crossover-v1/rust/tensors.safetensors": "7b7e80488ccabbfc4c4d106f09ffb904a6591839527b62ac4a9a11fc2f163224",
+    "artifacts/reference/smoke-fp32/trace.safetensors": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+    "artifacts/cpu/smoke-trace-sinks-pairwise.safetensors": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+    "reference/tolerances-smoke-fp32-v1.json": "8f6382a4386b15f76e6984679208a44d0fa644b9d55a21ce579bbb26e0bfbe1c",
+    "artifacts/reference/smoke-fp32/metadata.json": "c84b1fcc4526135677579392d2c2c52b1566c1f361ac950a6409a5145a8fc65e",
+    "artifacts/cpu/smoke-trace-sinks-pairwise.json": "745ee7d9e4668a8c8d45fce312d59169494639b4bba3863801fef5d11c60f66f",
+    "artifacts/model/artifact-manifest.json": "eea9640e8ab9feccd9358a6b3526e579b14dc4bfcd47ecd561853863952b594d",
+    "reference/windows-rust-smoke-fp32-sinks-pairwise.json": "ae3fb3b1dd270d8cf7e2b6115d525db2479aebd21495c9459a3565a1623b00e7",
+    "artifacts/model/attention.py": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+    "artifacts/model/config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "artifacts/model/configuration_falcon_ocr.py": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+    "artifacts/model/modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+    "artifacts/model/processing_falcon_ocr.py": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+    "artifacts/model/rope.py": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+    "artifacts/model/tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+    "artifacts/model/tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+    "examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+    "examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+    "examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+    "experiments/fp32_crossover/adapter.py": "82bfb211ca531af64572331a0f75bbbfa8230671efe9fa12978ff8a8c42860f2",
+    "experiments/fp32_crossover/capture.py": "678c5be110f290c37cb4c04ec4943d8d275df8c99e3d6022656334dee9ecdad3",
+    "experiments/fp32_crossover/compare.py": "17eeee2ccbade3b4c9ff4d027c43277a44c13d6fe7a476054764c0f993c2b8c2",
+    "experiments/fp32_crossover/contract.py": "b848f1a2a135f56853817c2768d0ce7742c0517a7410d8873ac0442445240405",
+    "experiments/fp32_crossover/export_gpu.py": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b",
+    "experiments/fp32_crossover/README.md": "5a56c464b9b085021d501dc86821e15c527096aeaadb952b3f2140d21e176489",
+    "experiments/fp32_crossover/rust_arm.rs": "f88bf1cea465092819e67a860f9f82f91fd2eae5ac3151799f997039eadc45ed",
+    "experiments/fp32_crossover/SOURCE_REVIEW_NOTES.md": "644130035c09d362baf9db256646df861a433b32b1fbe37ffdc7661b2a7bb338",
+    "experiments/fp32_crossover/test_source.py": "2657e8d289f8a671eeab39a3152784d9437b21997f319cda44940d548f035ce8",
+    "reference/manifest.json": "245d8f97674066030fdc6a80a6f2eef6641a190cf52baa0ba78755b74db74cc2",
+    "requirements/reference-lock.txt": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+    "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+    "scripts/build_windows.ps1": "36e034617ffe5de1848a538f4a6fd3c80f822f47cdc6053ea21a515c9282d992",
+    "scripts/export_reference.py": "e8e1d8fcedc5e58831836d2c3760420bade6f5ab04b3566e5dba753ea4318940",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "scripts/reference_preflight.py": "735ae548eb942ec23f3cc2610efa2122f14b6d0f35ec0f1a8766109c31a1cb97",
+    "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+    "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+    "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+    "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+    "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+    "tests/fixtures/decode.json": "f5b491e99b89273d16a7d0fe5b4b458505adf1dc70a5c2dd37a5a228d06ba37e",
+    "tests/fixtures/model-config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "tests/fixtures/preprocess.json": "c3a3dca3a5ba9cd746123dc5ed96fa962517f656bf474dabbafa03a9f58e9878",
+    "artifacts/model/model_args.json": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+    "artifacts/model/special_tokens_map.json": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+    "artifacts/model/README.md": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+    "artifacts/model/model.safetensors": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "artifacts/diagnostics/fp32-crossover-gpu-v1/tensors.safetensors": "de8b170d0d9b9688c40fe0848fc77f8a4a1f62ce0f10ba3f76a109f887c88fcf",
+    "artifacts/diagnostics/fp32-crossover-v1/project/Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "artifacts/diagnostics/fp32-crossover-v1/project/Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "artifacts/diagnostics/fp32-crossover-v1/project/examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+    "artifacts/diagnostics/fp32-crossover-v1/project/examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+    "artifacts/diagnostics/fp32-crossover-v1/project/examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+    "artifacts/diagnostics/fp32-crossover-v1/project/examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+    "artifacts/diagnostics/fp32-crossover-v1/project/rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/fp32_crossover_arm.rs": "f88bf1cea465092819e67a860f9f82f91fd2eae5ac3151799f997039eadc45ed",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/fp32_crossover_forward.rs": "be21550516e4b874ea4d779071b04390aa4532a130a4d15a14ed0a23d3f1db7a",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/model.rs": "0bc2a1018637abc6b0d1fe3ded6665f8481bffe8a7fd0a5a54627dc2fdf5bd51",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "artifacts/diagnostics/fp32-crossover-v1/project/src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+    "artifacts/diagnostics/fp32-crossover-v1/project/tests/fixtures/decode.json": "f5b491e99b89273d16a7d0fe5b4b458505adf1dc70a5c2dd37a5a228d06ba37e",
+    "artifacts/diagnostics/fp32-crossover-v1/project/tests/fixtures/model-config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "artifacts/diagnostics/fp32-crossover-v1/project/tests/fixtures/preprocess.json": "c3a3dca3a5ba9cd746123dc5ed96fa962517f656bf474dabbafa03a9f58e9878",
+    "artifacts/diagnostics/fp32-crossover-v1/source.zip": "3a476c6d4dc4fb3a7b8be27842454ab6067ea30310c0285a6191f7c7dfa15835",
+    "reference/fp32-crossover-gpu-execution-v1.json": "b169ce77f677ecb8c2a9fc49fa101e36341e417d8af406b4e6b8278ff8b7ff61",
+    "artifacts/diagnostics/fp32-crossover-gpu-v1.stdout.log": "69f3e18447c7f3ce23bdc7e6730ac115c544086d8f718a8fb710d80dec3b8de1",
+    "artifacts/diagnostics/fp32-crossover-gpu-v1.stderr.log": "03c7a6c4e69367ba8d1ddf305ae18c5d90970f25a544be33fc81ea562c84a9ec",
+    "reference/fp32-crossover-decomposition-v1.md": "e6daf85a54432df4ad675e4506c55fe291fdddf2d4c7b33ecbe3b349d2701a21",
+    "docs/STATUS.md": "f1c12cc44760dce0a70b34703d8a47cad69b20a308b3dd143c7bc46760629141"
+  },
+  "limits": [
+    "One segment/state decomposition only; no new numerical policy, hidden-gate closure, model quality or performance claim.",
+    "The later engine-path difference includes changed intermediate inputs; this is not same-operator-input error isolation.",
+    "This review does not independently attest old GPU/Rust startup source or allocator histories.",
+    "The incoming-state term is the conditional GPU-path effect of the original state difference; it does not identify which earlier layer introduced that difference."
+  ],
+  "interpretation_review": {
+    "no_concrete_defect": true,
+    "worst_coordinate": [
+      112,
+      14,
+      2
+    ],
+    "original_signed_difference": 0.006622314453125,
+    "engine_signed_term": 3.814697265625e-05,
+    "incoming_signed_term": 0.00658416748046875,
+    "incoming_share_percent": 99.42396313364056,
+    "engine_share_percent": 0.5760368663594471,
+    "unchanged_absolute_tolerance": 0.005096435546875,
+    "incoming_term_alone_exceeds_bound": true,
+    "terms_reinforce_at_worst_coordinate": true,
+    "conclusion": "The original first prefill failure is dominated by differences already in the saved layer7 state, propagated through the same GPU segment. Replacing just this segment with the measured GPU path leaves the coordinate beyond its unchanged bound.",
+    "limits": "This does not identify an earlier operation, explain later failures, assess decode failures or close any numerical gate. Later engine terms include changed intermediate states. Global and per-row stage magnitudes are not operator accuracy rankings.",
+    "reviewed_document_sha256": {
+      "reference/fp32-crossover-decomposition-v1.md": "e6daf85a54432df4ad675e4506c55fe291fdddf2d4c7b33ecbe3b349d2701a21",
+      "docs/STATUS.md": "f1c12cc44760dce0a70b34703d8a47cad69b20a308b3dd143c7bc46760629141"
+    }
+  }
+}

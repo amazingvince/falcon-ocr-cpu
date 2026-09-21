@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "conclusion": "FP64 image projection halves RMS embedding error versus GPU, but increases failing intermediate stages. Injecting exact GPU embeddings still leaves 23 failures. Image projection alone does not explain or fix downstream rounding amplification; production arithmetic remains unchanged. Every same-prefix logit argmax agrees. These diagnostic interventions do not qualify a runner.",
+  "backend": "AVX2",
+  "threads": 4,
+  "platform": "Linux under WSL",
+  "interventions": [
+    {
+      "all_argmax_match": true,
+      "compared_tensors": 1904,
+      "report_sha256": "316b646ad1c9eddb06ec40b50feee6b8b14970e343689fa39e62d7792b3358db",
+      "intervention": "production",
+      "last_hidden": {
+        "max_abs": 4.353515625,
+        "rms_abs": 0.11057767155338316,
+        "reference_max_abs": 71137.046875
+      },
+      "prefill_logits": {
+        "max_abs": 8.0108642578125E-05,
+        "rms_abs": 2.606182695847334E-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "failed_tensor_count": 17,
+      "embedding": {
+        "max_abs": 4.76837158203125E-06,
+        "rms_abs": 6.981711198613964E-07,
+        "reference_max_abs": 7.976918697357178
+      },
+      "report": "reference/projector-intervention-production.json"
+    },
+    {
+      "all_argmax_match": true,
+      "compared_tensors": 1904,
+      "report_sha256": "f3826ab025080ca225f096e4943d0d5b53afcbad3762f6bb385e971dd6094549",
+      "intervention": "fp64_projector",
+      "last_hidden": {
+        "max_abs": 4.7568359375,
+        "rms_abs": 0.12061682990593779,
+        "reference_max_abs": 71137.046875
+      },
+      "prefill_logits": {
+        "max_abs": 7.43865966796875E-05,
+        "rms_abs": 2.4796341593676408E-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "failed_tensor_count": 44,
+      "embedding": {
+        "max_abs": 1.7881393432617188E-06,
+        "rms_abs": 3.611711779310726E-07,
+        "reference_max_abs": 7.976918697357178
+      },
+      "report": "reference/projector-intervention-fp64_projector.json"
+    },
+    {
+      "all_argmax_match": true,
+      "compared_tensors": 1904,
+      "report_sha256": "8501a868cb4b83396fcd1f67a96f3cde402e1a11631c25c72975cf4ac46c644f",
+      "intervention": "gpu_embedding",
+      "last_hidden": {
+        "max_abs": 4.0126953125,
+        "rms_abs": 0.10348822843302231,
+        "reference_max_abs": 71137.046875
+      },
+      "prefill_logits": {
+        "max_abs": 6.580352783203125E-05,
+        "rms_abs": 1.9955692490802312E-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "failed_tensor_count": 23,
+      "embedding": {
+        "max_abs": 0.0,
+        "rms_abs": 0.0,
+        "reference_max_abs": 7.976918697357178
+      },
+      "report": "reference/projector-intervention-gpu_embedding.json"
+    }
+  ],
+  "tolerance_policy": "reference/tolerances-smoke-fp32-v1.json"
+}

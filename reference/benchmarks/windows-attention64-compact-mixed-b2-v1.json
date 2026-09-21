@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "kind": "attention64-compact-mixed-b2-performance-result-v1",
+  "status": "target_met_in_one_mixed_pair_bracket",
+  "finished_utc": "2026-09-20T17:31:38.731177+00:00",
+  "plan_sha256": "904841b075f91c3f2109b00db07f4a697fadbb35bfef0a5345f8956e081407cc",
+  "source_changes": [
+    "src/kernels.rs"
+  ],
+  "control": "Original arithmetic with compact cache; frozen ocr-bench-fullpages-v2-windows build.",
+  "candidate": "Combined expanded/compact fixed64 attention; frozen attention64-compact-v1 build.",
+  "runtime": {
+    "cpu": "AMD Ryzen 9 7950X",
+    "environment": "Native Windows",
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 16,
+    "execution": "joint",
+    "batch_size": 2,
+    "cache_layout": "compact",
+    "weight_layout": "unpacked",
+    "warmups_per_process": 2,
+    "measured_repetitions_per_process": 3,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096
+  },
+  "inputs": [
+    {
+      "key": "sparse-room",
+      "output_tokens": 6,
+      "finish_reason": "eos",
+      "input_tokens": 3088,
+      "prepared_dimensions": [
+        1024,
+        768
+      ]
+    },
+    {
+      "key": "table",
+      "output_tokens": 2280,
+      "finish_reason": "eos",
+      "input_tokens": 7120,
+      "prepared_dimensions": [
+        1184,
+        1536
+      ]
+    }
+  ],
+  "results": [
+    {
+      "name": "control-before",
+      "median_ms": 142474.758,
+      "samples_ms": [
+        143280.7446,
+        140637.3021,
+        142474.758
+      ],
+      "median_pages_per_second": 0.01403757429087895,
+      "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+      "report_sha256": "afa07793ae56a574ed6786d7a56ed1f32e312760c4fadb24c6528d863db088a5"
+    },
+    {
+      "name": "candidate",
+      "median_ms": 128912.0499,
+      "samples_ms": [
+        126264.9103,
+        129142.13010000001,
+        128912.0499
+      ],
+      "median_pages_per_second": 0.015514453470807774,
+      "binary_sha256": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+      "report_sha256": "016c7c073baf266547a4b9d3b9b779d70ce5050baa21c5d4920bc9fd94f9fecb"
+    },
+    {
+      "name": "control-after",
+      "median_ms": 141836.7571,
+      "samples_ms": [
+        143948.90000000002,
+        141836.7571,
+        140839.2992
+      ],
+      "median_pages_per_second": 0.014100717196952892,
+      "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+      "report_sha256": "c31d6d4f3b972d1322d00bbab3da680ad1a95e68ae1d368c46856b54ee2d3d58"
+    }
+  ],
+  "candidate_latency_reduction_percent": {
+    "control_before": 9.519376126962786,
+    "control_after": 9.112382054031032
+  },
+  "control_drift_percent": -0.4477992515698914,
+  "absolute_control_drift_limit_percent": 5,
+  "latency_reduction_target_percent": 5,
+  "control_stability_pass": true,
+  "target_met_in_this_pair": true,
+  "no_regression_in_this_pair": true,
+  "default_promotion": false,
+  "output_scope": {
+    "measured_pair_repetitions": 9,
+    "measured_request_outputs": 18,
+    "unique_inputs": 2,
+    "all_measured_ids_text_stops_counts_exact": true,
+    "cpu_dimensions_match_frozen_workload": true,
+    "gpu_observed_prepared_dimensions_available": false,
+    "warmup_outputs_exported": false,
+    "token_ids_storage": "Two stored vectors per case; the bound compiled harness asserts each measured repetition equals both vectors. All 18 literal request results are separately stored and checked."
+  },
+  "independent_review": {
+    "path": "reference/benchmarks/windows-attention64-compact-mixed-b2-review-v1.json",
+    "sha256": "b123307b018f741c458438e6c0513d6da0f7a66f26e18fecc2833489f0a3f324",
+    "checks": 789,
+    "bound_file_count": 28
+  },
+  "evidence": {
+    "experiments/profiling/review_mixed_compact_candidate_results.py": {
+      "sha256": "09d8f905872f08371c2d4605bdfa6805a52094c9b1048b8f379235fd20dc97a4"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/plan.json": {
+      "sha256": "904841b075f91c3f2109b00db07f4a697fadbb35bfef0a5345f8956e081407cc"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/comparison.json": {
+      "sha256": "71a6f3d81dc6b7602916d9e32e73bf5099c5b777a531d11257529423976b3997"
+    },
+    "experiments/profiling/benchmark_mixed_compact_candidate.py": {
+      "sha256": "c7913c5b185de96006ffb1b6d94e40806bc2a1055e6726d86d944b8c99be809c"
+    },
+    "scripts/realistic_benchmark.py": {
+      "sha256": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/protocol-source.zip": {
+      "sha256": "e1ac76cfb09c459b605d9853824f43b5f764b458a5952ed9147378e23594db06"
+    },
+    "reference/benchmarks/realistic-fp32-v1-workloads.json": {
+      "sha256": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c"
+    },
+    "artifacts/reference/functional-originals-fp32-4096/sparse-room.json": {
+      "sha256": "a9a77300c5f25f03d420603b2172eeeb4f35c09b215bf0d793aadca44148dd0c"
+    },
+    "artifacts/reference/corpus-v3-fp32-4096/2c243b31d36eb729.json": {
+      "sha256": "5434fc7bd87510672eb81c7227412cb43f370977c99d8e4d3575612304e361d3"
+    },
+    "artifacts/builds/ocr-bench-fullpages-v2-windows/build.json": {
+      "sha256": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/benchmark-build/build.json": {
+      "sha256": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0"
+    },
+    "artifacts/builds/ocr-bench-fullpages-v2-windows/ocr_bench.exe": {
+      "sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db"
+    },
+    "artifacts/builds/ocr-bench-fullpages-v2-windows/source.zip": {
+      "sha256": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/benchmark-build/ocr_bench.exe": {
+      "sha256": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/benchmark-build/source.zip": {
+      "sha256": "f39d1f4641237aa82dc318d9bc14d5a28c71c292c27fdd497d39253c257ac4d3"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/execution-start.json": {
+      "sha256": "9181257508061e80921564fe056ee8176771f67b01e661db0d5d605fb1d51fee"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.json": {
+      "sha256": "afa07793ae56a574ed6786d7a56ed1f32e312760c4fadb24c6528d863db088a5"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.execution.json": {
+      "sha256": "14a717f935b6cba4b0a3ac7b446aa08421134f80c3da889f6aa0a3491dace3f4"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.start.json": {
+      "sha256": "6672254ef5170989245a1105459793bb1a0a4674f8c874b68286980ec1673bf7"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.log": {
+      "sha256": "b629cfe28a12d8bba62481b6dc6192cdc55741ee1450ee5d5d394ebd48040747"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.json": {
+      "sha256": "016c7c073baf266547a4b9d3b9b779d70ce5050baa21c5d4920bc9fd94f9fecb"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.execution.json": {
+      "sha256": "b70e9df10df98e0a55a5301a48e972589d87d913438dbcb73e6e2d546b223929"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.start.json": {
+      "sha256": "7d550693a50be6e3b4989f8d661edd1bb430da19da981be309004b80c7cb945c"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.log": {
+      "sha256": "5887cf6b15996e7cf508c5974e9812c67043444e0bc3cfb8d0e2e1715ff2c9dd"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.json": {
+      "sha256": "c31d6d4f3b972d1322d00bbab3da680ad1a95e68ae1d368c46856b54ee2d3d58"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.execution.json": {
+      "sha256": "f07674843731a20dc01f8e954ecfbf0a7de7b595a2f225b46520b4e23498b972"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.start.json": {
+      "sha256": "2e811dff8cf08cbf1bdd03038c90cc0bb1125c88d4360c60d8fc67caf9cbb5cb"
+    },
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.log": {
+      "sha256": "10c4a50efc72a75cca01d04b94b45dab15ad33d6e9fdec68c75c06bc62e8b946"
+    },
+    "reference/benchmarks/windows-attention64-compact-mixed-b2-review-v1.json": {
+      "sha256": "b123307b018f741c458438e6c0513d6da0f7a66f26e18fecc2833489f0a3f324"
+    }
+  },
+  "evidence_rehashed_for_summary": [
+    "experiments/profiling/review_mixed_compact_candidate_results.py",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/plan.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/comparison.json",
+    "experiments/profiling/benchmark_mixed_compact_candidate.py",
+    "scripts/realistic_benchmark.py",
+    "reference/benchmarks/realistic-fp32-v1-workloads.json",
+    "artifacts/reference/functional-originals-fp32-4096/sparse-room.json",
+    "artifacts/reference/corpus-v3-fp32-4096/2c243b31d36eb729.json",
+    "artifacts/builds/ocr-bench-fullpages-v2-windows/build.json",
+    "artifacts/diagnostics/attention64-compact-v1/benchmark-build/build.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/execution-start.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.execution.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.start.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-before.log",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.execution.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.start.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/candidate.log",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.execution.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.start.json",
+    "artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/control-after.log",
+    "reference/benchmarks/windows-attention64-compact-mixed-b2-review-v1.json"
+  ],
+  "summary_validation": "Small saved JSON/source/log bytes rechecked here; executable/source-ZIP identities are inherited from the hash-bound independent review, not rehashed by this summary.",
+  "limits": [
+    "Short shared B2 decode interval followed by a long singleton tail (6/2280 output tokens); no sustained B2, B4 or B8 throughput claim.",
+    "One fixed sparse/table pair and one control/candidate/control bracket; no broad workload/platform promotion.",
+    "Per-request decode/total intervals include waiting and may overlap; no additive service-cost or isolated kernel-time interpretation.",
+    "Incremental fixed64 attention versus compact controls; historical cache/attention percentage gains cannot be added.",
+    "Historical table GPU startup provenance remains incomplete; GPU records do not record observed prepared dimensions.",
+    "Model loading/file decode precede measured warm RGB recognition; two warmups per process are not individually exported.",
+    "Ten original GPU hidden-tensor gates remain open; no tolerance change, default promotion or full-corpus rerun is implied.",
+    "This receipt performed no model run, benchmark or build; it summarizes preserved completed evidence."
+  ]
+}

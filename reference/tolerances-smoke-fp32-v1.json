@@ -1,0 +1,1131 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T04:54:36.151786+00:00",
+  "source": "strict FP32 GPU FlexAttention versus dense GPU attention under identical prefixes",
+  "limitation": "Calibrated only on the named small fixture; not a corpus or long-context qualification",
+  "rule": "atol = max(4 * observed max error, 32 * FP32 epsilon * max(1, reference peak)); rtol = 0",
+  "reference_sha256": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+  "operator_sha256": "a8f2dea453518406cfce720a73fed5ab975f9612b9b926bd80f23cc5747a8715",
+  "stages": {
+    "decode.*.embedding": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 1.5986164808273315,
+      "absolute_tolerance": 6.098237918195082e-06
+    },
+    "decode.*.layer.0.attention": {
+      "baseline_max_abs": 1.7881393432617188e-06,
+      "reference_max_abs": 4.0342488288879395,
+      "absolute_tolerance": 1.538943797640968e-05
+    },
+    "decode.*.layer.0.hidden": {
+      "baseline_max_abs": 1.430511474609375e-05,
+      "reference_max_abs": 42.1368408203125,
+      "absolute_tolerance": 0.00016073929145932198
+    },
+    "decode.*.layer.0.k": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 3.9607717990875244,
+      "absolute_tolerance": 1.5109145351743791e-05
+    },
+    "decode.*.layer.0.q": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 6.076008319854736,
+      "absolute_tolerance": 2.3178132323664613e-05
+    },
+    "decode.*.layer.0.v": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 12.15241813659668,
+      "absolute_tolerance": 4.635779623640701e-05
+    },
+    "decode.*.layer.1.attention": {
+      "baseline_max_abs": 3.814697265625e-06,
+      "reference_max_abs": 4.910836696624756,
+      "absolute_tolerance": 1.8733355318545364e-05
+    },
+    "decode.*.layer.1.hidden": {
+      "baseline_max_abs": 2.288818359375e-05,
+      "reference_max_abs": 62.82352828979492,
+      "absolute_tolerance": 0.00023965274158399552
+    },
+    "decode.*.layer.1.k": {
+      "baseline_max_abs": 3.7550926208496094e-06,
+      "reference_max_abs": 5.140092849731445,
+      "absolute_tolerance": 1.960789813892916e-05
+    },
+    "decode.*.layer.1.q": {
+      "baseline_max_abs": 3.1441450119018555e-06,
+      "reference_max_abs": 5.280879020690918,
+      "absolute_tolerance": 2.0144954760326073e-05
+    },
+    "decode.*.layer.1.v": {
+      "baseline_max_abs": 5.7220458984375e-06,
+      "reference_max_abs": 8.869766235351562,
+      "absolute_tolerance": 3.3835473004728556e-05
+    },
+    "decode.*.layer.10.attention": {
+      "baseline_max_abs": 6.079673767089844e-06,
+      "reference_max_abs": 9.157023429870605,
+      "absolute_tolerance": 3.493127223919146e-05
+    },
+    "decode.*.layer.10.hidden": {
+      "baseline_max_abs": 6.4849853515625e-05,
+      "reference_max_abs": 101.97103118896484,
+      "absolute_tolerance": 0.0003889886138495058
+    },
+    "decode.*.layer.10.k": {
+      "baseline_max_abs": 4.410743713378906e-06,
+      "reference_max_abs": 3.7484331130981445,
+      "absolute_tolerance": 1.7642974853515625e-05
+    },
+    "decode.*.layer.10.q": {
+      "baseline_max_abs": 5.304813385009766e-06,
+      "reference_max_abs": 6.2034502029418945,
+      "absolute_tolerance": 2.3664284526603296e-05
+    },
+    "decode.*.layer.10.v": {
+      "baseline_max_abs": 1.049041748046875e-05,
+      "reference_max_abs": 12.538270950317383,
+      "absolute_tolerance": 4.782970790984109e-05
+    },
+    "decode.*.layer.11.attention": {
+      "baseline_max_abs": 7.62939453125e-06,
+      "reference_max_abs": 13.147130012512207,
+      "absolute_tolerance": 5.015232090954669e-05
+    },
+    "decode.*.layer.11.hidden": {
+      "baseline_max_abs": 6.4849853515625e-05,
+      "reference_max_abs": 102.62269592285156,
+      "absolute_tolerance": 0.0003914745175279677
+    },
+    "decode.*.layer.11.k": {
+      "baseline_max_abs": 8.165836334228516e-06,
+      "reference_max_abs": 5.02301549911499,
+      "absolute_tolerance": 3.266334533691406e-05
+    },
+    "decode.*.layer.11.q": {
+      "baseline_max_abs": 5.841255187988281e-06,
+      "reference_max_abs": 6.900533676147461,
+      "absolute_tolerance": 2.632344694575295e-05
+    },
+    "decode.*.layer.11.v": {
+      "baseline_max_abs": 1.2636184692382812e-05,
+      "reference_max_abs": 14.175007820129395,
+      "absolute_tolerance": 5.407336357166059e-05
+    },
+    "decode.*.layer.12.attention": {
+      "baseline_max_abs": 6.9141387939453125e-06,
+      "reference_max_abs": 5.092744827270508,
+      "absolute_tolerance": 2.765655517578125e-05
+    },
+    "decode.*.layer.12.hidden": {
+      "baseline_max_abs": 6.4849853515625e-05,
+      "reference_max_abs": 109.226318359375,
+      "absolute_tolerance": 0.00041666533797979355
+    },
+    "decode.*.layer.12.k": {
+      "baseline_max_abs": 4.887580871582031e-06,
+      "reference_max_abs": 4.18458890914917,
+      "absolute_tolerance": 1.9550323486328125e-05
+    },
+    "decode.*.layer.12.q": {
+      "baseline_max_abs": 5.325302481651306e-06,
+      "reference_max_abs": 4.770695686340332,
+      "absolute_tolerance": 2.1301209926605225e-05
+    },
+    "decode.*.layer.12.v": {
+      "baseline_max_abs": 1.0609626770019531e-05,
+      "reference_max_abs": 7.331731796264648,
+      "absolute_tolerance": 4.2438507080078125e-05
+    },
+    "decode.*.layer.13.attention": {
+      "baseline_max_abs": 3.337860107421875e-05,
+      "reference_max_abs": 14.667301177978516,
+      "absolute_tolerance": 0.000133514404296875
+    },
+    "decode.*.layer.13.hidden": {
+      "baseline_max_abs": 8.392333984375e-05,
+      "reference_max_abs": 83.77059936523438,
+      "absolute_tolerance": 0.000335693359375
+    },
+    "decode.*.layer.13.k": {
+      "baseline_max_abs": 5.841255187988281e-06,
+      "reference_max_abs": 5.768204689025879,
+      "absolute_tolerance": 2.3365020751953125e-05
+    },
+    "decode.*.layer.13.q": {
+      "baseline_max_abs": 6.67572021484375e-06,
+      "reference_max_abs": 5.034725666046143,
+      "absolute_tolerance": 2.6702880859375e-05
+    },
+    "decode.*.layer.13.v": {
+      "baseline_max_abs": 1.1444091796875e-05,
+      "reference_max_abs": 11.980887413024902,
+      "absolute_tolerance": 4.57763671875e-05
+    },
+    "decode.*.layer.14.attention": {
+      "baseline_max_abs": 1.6927719116210938e-05,
+      "reference_max_abs": 16.200401306152344,
+      "absolute_tolerance": 6.771087646484375e-05
+    },
+    "decode.*.layer.14.hidden": {
+      "baseline_max_abs": 9.1552734375e-05,
+      "reference_max_abs": 104.07000732421875,
+      "absolute_tolerance": 0.000396995572373271
+    },
+    "decode.*.layer.14.k": {
+      "baseline_max_abs": 7.0035457611083984e-06,
+      "reference_max_abs": 3.69638729095459,
+      "absolute_tolerance": 2.8014183044433594e-05
+    },
+    "decode.*.layer.14.q": {
+      "baseline_max_abs": 5.8710575103759766e-06,
+      "reference_max_abs": 4.394127368927002,
+      "absolute_tolerance": 2.3484230041503906e-05
+    },
+    "decode.*.layer.14.v": {
+      "baseline_max_abs": 2.8848648071289062e-05,
+      "reference_max_abs": 18.314918518066406,
+      "absolute_tolerance": 0.00011539459228515625
+    },
+    "decode.*.layer.15.attention": {
+      "baseline_max_abs": 2.002716064453125e-05,
+      "reference_max_abs": 21.119104385375977,
+      "absolute_tolerance": 8.056298975134268e-05
+    },
+    "decode.*.layer.15.hidden": {
+      "baseline_max_abs": 9.918212890625e-05,
+      "reference_max_abs": 399.6587219238281,
+      "absolute_tolerance": 0.0015245770337060094
+    },
+    "decode.*.layer.15.k": {
+      "baseline_max_abs": 9.655952453613281e-06,
+      "reference_max_abs": 4.062907695770264,
+      "absolute_tolerance": 3.8623809814453125e-05
+    },
+    "decode.*.layer.15.q": {
+      "baseline_max_abs": 5.304813385009766e-06,
+      "reference_max_abs": 4.357957363128662,
+      "absolute_tolerance": 2.1219253540039062e-05
+    },
+    "decode.*.layer.15.v": {
+      "baseline_max_abs": 2.288818359375e-05,
+      "reference_max_abs": 25.896961212158203,
+      "absolute_tolerance": 9.878906712401658e-05
+    },
+    "decode.*.layer.16.attention": {
+      "baseline_max_abs": 6.866455078125e-05,
+      "reference_max_abs": 27.475919723510742,
+      "absolute_tolerance": 0.000274658203125
+    },
+    "decode.*.layer.16.hidden": {
+      "baseline_max_abs": 0.000213623046875,
+      "reference_max_abs": 577.6278686523438,
+      "absolute_tolerance": 0.0022034754510968924
+    },
+    "decode.*.layer.16.k": {
+      "baseline_max_abs": 7.271766662597656e-06,
+      "reference_max_abs": 5.8563551902771,
+      "absolute_tolerance": 2.9087066650390625e-05
+    },
+    "decode.*.layer.16.q": {
+      "baseline_max_abs": 7.152557373046875e-06,
+      "reference_max_abs": 5.3317790031433105,
+      "absolute_tolerance": 2.86102294921875e-05
+    },
+    "decode.*.layer.16.v": {
+      "baseline_max_abs": 1.8596649169921875e-05,
+      "reference_max_abs": 27.470752716064453,
+      "absolute_tolerance": 0.00010479260527063161
+    },
+    "decode.*.layer.17.attention": {
+      "baseline_max_abs": 3.24249267578125e-05,
+      "reference_max_abs": 18.57199478149414,
+      "absolute_tolerance": 0.00012969970703125
+    },
+    "decode.*.layer.17.hidden": {
+      "baseline_max_abs": 0.000213623046875,
+      "reference_max_abs": 620.5266723632812,
+      "absolute_tolerance": 0.0023671214003115892
+    },
+    "decode.*.layer.17.k": {
+      "baseline_max_abs": 8.106231689453125e-06,
+      "reference_max_abs": 5.136175155639648,
+      "absolute_tolerance": 3.24249267578125e-05
+    },
+    "decode.*.layer.17.q": {
+      "baseline_max_abs": 9.000301361083984e-06,
+      "reference_max_abs": 5.350183010101318,
+      "absolute_tolerance": 3.600120544433594e-05
+    },
+    "decode.*.layer.17.v": {
+      "baseline_max_abs": 2.193450927734375e-05,
+      "reference_max_abs": 17.1834659576416,
+      "absolute_tolerance": 8.7738037109375e-05
+    },
+    "decode.*.layer.18.attention": {
+      "baseline_max_abs": 2.574920654296875e-05,
+      "reference_max_abs": 20.392822265625,
+      "absolute_tolerance": 0.000102996826171875
+    },
+    "decode.*.layer.18.hidden": {
+      "baseline_max_abs": 0.000244140625,
+      "reference_max_abs": 622.2918090820312,
+      "absolute_tolerance": 0.002373854862526059
+    },
+    "decode.*.layer.18.k": {
+      "baseline_max_abs": 6.288290023803711e-06,
+      "reference_max_abs": 4.517553806304932,
+      "absolute_tolerance": 2.5153160095214844e-05
+    },
+    "decode.*.layer.18.q": {
+      "baseline_max_abs": 7.62939453125e-06,
+      "reference_max_abs": 4.436419486999512,
+      "absolute_tolerance": 3.0517578125e-05
+    },
+    "decode.*.layer.18.v": {
+      "baseline_max_abs": 3.62396240234375e-05,
+      "reference_max_abs": 29.27107810974121,
+      "absolute_tolerance": 0.00014495849609375
+    },
+    "decode.*.layer.19.attention": {
+      "baseline_max_abs": 7.2479248046875e-05,
+      "reference_max_abs": 42.83833312988281,
+      "absolute_tolerance": 0.0002899169921875
+    },
+    "decode.*.layer.19.hidden": {
+      "baseline_max_abs": 0.0003662109375,
+      "reference_max_abs": 1027.083984375,
+      "absolute_tolerance": 0.003918014466762543
+    },
+    "decode.*.layer.19.k": {
+      "baseline_max_abs": 8.106231689453125e-06,
+      "reference_max_abs": 6.384037017822266,
+      "absolute_tolerance": 3.24249267578125e-05
+    },
+    "decode.*.layer.19.q": {
+      "baseline_max_abs": 7.152557373046875e-06,
+      "reference_max_abs": 4.627958297729492,
+      "absolute_tolerance": 2.86102294921875e-05
+    },
+    "decode.*.layer.19.v": {
+      "baseline_max_abs": 4.76837158203125e-05,
+      "reference_max_abs": 33.55130386352539,
+      "absolute_tolerance": 0.00019073486328125
+    },
+    "decode.*.layer.2.attention": {
+      "baseline_max_abs": 3.5762786865234375e-06,
+      "reference_max_abs": 3.1135685443878174,
+      "absolute_tolerance": 1.430511474609375e-05
+    },
+    "decode.*.layer.2.hidden": {
+      "baseline_max_abs": 2.86102294921875e-05,
+      "reference_max_abs": 73.8405532836914,
+      "absolute_tolerance": 0.0002816793567035347
+    },
+    "decode.*.layer.2.k": {
+      "baseline_max_abs": 3.5762786865234375e-06,
+      "reference_max_abs": 3.759774684906006,
+      "absolute_tolerance": 1.4342402209877037e-05
+    },
+    "decode.*.layer.2.q": {
+      "baseline_max_abs": 3.874301910400391e-06,
+      "reference_max_abs": 5.7993364334106445,
+      "absolute_tolerance": 2.2122712834971026e-05
+    },
+    "decode.*.layer.2.v": {
+      "baseline_max_abs": 5.4836273193359375e-06,
+      "reference_max_abs": 4.877280235290527,
+      "absolute_tolerance": 2.193450927734375e-05
+    },
+    "decode.*.layer.20.attention": {
+      "baseline_max_abs": 2.956390380859375e-05,
+      "reference_max_abs": 27.749303817749023,
+      "absolute_tolerance": 0.000118255615234375
+    },
+    "decode.*.layer.20.hidden": {
+      "baseline_max_abs": 0.00042724609375,
+      "reference_max_abs": 1420.7227783203125,
+      "absolute_tolerance": 0.005419627297669649
+    },
+    "decode.*.layer.20.k": {
+      "baseline_max_abs": 7.867813110351562e-06,
+      "reference_max_abs": 5.786924839019775,
+      "absolute_tolerance": 3.147125244140625e-05
+    },
+    "decode.*.layer.20.q": {
+      "baseline_max_abs": 8.702278137207031e-06,
+      "reference_max_abs": 5.843861103057861,
+      "absolute_tolerance": 3.4809112548828125e-05
+    },
+    "decode.*.layer.20.v": {
+      "baseline_max_abs": 3.24249267578125e-05,
+      "reference_max_abs": 28.625110626220703,
+      "absolute_tolerance": 0.00012969970703125
+    },
+    "decode.*.layer.21.attention": {
+      "baseline_max_abs": 4.851818084716797e-05,
+      "reference_max_abs": 27.18903350830078,
+      "absolute_tolerance": 0.00019407272338867188
+    },
+    "decode.*.layer.21.hidden": {
+      "baseline_max_abs": 0.0028076171875,
+      "reference_max_abs": 1689.1551513671875,
+      "absolute_tolerance": 0.01123046875
+    },
+    "decode.*.layer.21.k": {
+      "baseline_max_abs": 1.004338264465332e-05,
+      "reference_max_abs": 4.934518337249756,
+      "absolute_tolerance": 4.017353057861328e-05
+    },
+    "decode.*.layer.21.q": {
+      "baseline_max_abs": 7.510185241699219e-06,
+      "reference_max_abs": 3.816136360168457,
+      "absolute_tolerance": 3.0040740966796875e-05
+    },
+    "decode.*.layer.21.v": {
+      "baseline_max_abs": 2.574920654296875e-05,
+      "reference_max_abs": 23.28867530822754,
+      "absolute_tolerance": 0.000102996826171875
+    },
+    "decode.*.layer.3.attention": {
+      "baseline_max_abs": 3.4421682357788086e-06,
+      "reference_max_abs": 2.947505474090576,
+      "absolute_tolerance": 1.3768672943115234e-05
+    },
+    "decode.*.layer.3.hidden": {
+      "baseline_max_abs": 3.0517578125e-05,
+      "reference_max_abs": 79.51194763183594,
+      "absolute_tolerance": 0.00030331400921568274
+    },
+    "decode.*.layer.3.k": {
+      "baseline_max_abs": 5.066394805908203e-06,
+      "reference_max_abs": 3.6500203609466553,
+      "absolute_tolerance": 2.0265579223632812e-05
+    },
+    "decode.*.layer.3.q": {
+      "baseline_max_abs": 5.7220458984375e-06,
+      "reference_max_abs": 4.408419609069824,
+      "absolute_tolerance": 2.288818359375e-05
+    },
+    "decode.*.layer.3.v": {
+      "baseline_max_abs": 7.152557373046875e-06,
+      "reference_max_abs": 5.667289733886719,
+      "absolute_tolerance": 2.86102294921875e-05
+    },
+    "decode.*.layer.4.attention": {
+      "baseline_max_abs": 4.380941390991211e-06,
+      "reference_max_abs": 4.941946506500244,
+      "absolute_tolerance": 1.8852029825211503e-05
+    },
+    "decode.*.layer.4.hidden": {
+      "baseline_max_abs": 4.1961669921875e-05,
+      "reference_max_abs": 86.9056396484375,
+      "absolute_tolerance": 0.0003315187059342861
+    },
+    "decode.*.layer.4.k": {
+      "baseline_max_abs": 5.066394805908203e-06,
+      "reference_max_abs": 3.952699899673462,
+      "absolute_tolerance": 2.0265579223632812e-05
+    },
+    "decode.*.layer.4.q": {
+      "baseline_max_abs": 4.291534423828125e-06,
+      "reference_max_abs": 4.437108993530273,
+      "absolute_tolerance": 1.71661376953125e-05
+    },
+    "decode.*.layer.4.v": {
+      "baseline_max_abs": 8.344650268554688e-06,
+      "reference_max_abs": 8.316542625427246,
+      "absolute_tolerance": 3.337860107421875e-05
+    },
+    "decode.*.layer.5.attention": {
+      "baseline_max_abs": 7.62939453125e-06,
+      "reference_max_abs": 8.839327812194824,
+      "absolute_tolerance": 3.371935963514261e-05
+    },
+    "decode.*.layer.5.hidden": {
+      "baseline_max_abs": 3.62396240234375e-05,
+      "reference_max_abs": 82.41873168945312,
+      "absolute_tolerance": 0.00031440251041203737
+    },
+    "decode.*.layer.5.k": {
+      "baseline_max_abs": 5.602836608886719e-06,
+      "reference_max_abs": 3.6387460231781006,
+      "absolute_tolerance": 2.2411346435546875e-05
+    },
+    "decode.*.layer.5.q": {
+      "baseline_max_abs": 3.419816493988037e-06,
+      "reference_max_abs": 5.108535289764404,
+      "absolute_tolerance": 1.948751560121309e-05
+    },
+    "decode.*.layer.5.v": {
+      "baseline_max_abs": 1.33514404296875e-05,
+      "reference_max_abs": 11.697593688964844,
+      "absolute_tolerance": 5.340576171875e-05
+    },
+    "decode.*.layer.6.attention": {
+      "baseline_max_abs": 1.52587890625e-05,
+      "reference_max_abs": 18.960630416870117,
+      "absolute_tolerance": 7.232906500576064e-05
+    },
+    "decode.*.layer.6.hidden": {
+      "baseline_max_abs": 4.57763671875e-05,
+      "reference_max_abs": 79.55673217773438,
+      "absolute_tolerance": 0.00030348484870046377
+    },
+    "decode.*.layer.6.k": {
+      "baseline_max_abs": 5.513429641723633e-06,
+      "reference_max_abs": 4.16777229309082,
+      "absolute_tolerance": 2.205371856689453e-05
+    },
+    "decode.*.layer.6.q": {
+      "baseline_max_abs": 4.857778549194336e-06,
+      "reference_max_abs": 6.298069000244141,
+      "absolute_tolerance": 2.40252265939489e-05
+    },
+    "decode.*.layer.6.v": {
+      "baseline_max_abs": 1.1444091796875e-05,
+      "reference_max_abs": 11.553316116333008,
+      "absolute_tolerance": 4.57763671875e-05
+    },
+    "decode.*.layer.7.attention": {
+      "baseline_max_abs": 9.5367431640625e-06,
+      "reference_max_abs": 15.463918685913086,
+      "absolute_tolerance": 5.899016832699999e-05
+    },
+    "decode.*.layer.7.hidden": {
+      "baseline_max_abs": 4.57763671875e-05,
+      "reference_max_abs": 88.66609191894531,
+      "absolute_tolerance": 0.0003382342983968556
+    },
+    "decode.*.layer.7.k": {
+      "baseline_max_abs": 5.766749382019043e-06,
+      "reference_max_abs": 3.7815778255462646,
+      "absolute_tolerance": 2.3066997528076172e-05
+    },
+    "decode.*.layer.7.q": {
+      "baseline_max_abs": 3.606081008911133e-06,
+      "reference_max_abs": 5.765110969543457,
+      "absolute_tolerance": 2.1992153051542118e-05
+    },
+    "decode.*.layer.7.v": {
+      "baseline_max_abs": 1.0967254638671875e-05,
+      "reference_max_abs": 10.851602554321289,
+      "absolute_tolerance": 4.38690185546875e-05
+    },
+    "decode.*.layer.8.attention": {
+      "baseline_max_abs": 5.7220458984375e-06,
+      "reference_max_abs": 14.3407621383667,
+      "absolute_tolerance": 5.4705666116205975e-05
+    },
+    "decode.*.layer.8.hidden": {
+      "baseline_max_abs": 4.9591064453125e-05,
+      "reference_max_abs": 107.36611938476562,
+      "absolute_tolerance": 0.00040956924203783274
+    },
+    "decode.*.layer.8.k": {
+      "baseline_max_abs": 4.708766937255859e-06,
+      "reference_max_abs": 3.6496047973632812,
+      "absolute_tolerance": 1.8835067749023438e-05
+    },
+    "decode.*.layer.8.q": {
+      "baseline_max_abs": 3.635883331298828e-06,
+      "reference_max_abs": 5.307936191558838,
+      "absolute_tolerance": 2.0248169676051475e-05
+    },
+    "decode.*.layer.8.v": {
+      "baseline_max_abs": 1.52587890625e-05,
+      "reference_max_abs": 18.615798950195312,
+      "absolute_tolerance": 7.10136373527348e-05
+    },
+    "decode.*.layer.9.attention": {
+      "baseline_max_abs": 7.62939453125e-06,
+      "reference_max_abs": 8.836820602416992,
+      "absolute_tolerance": 3.3709795388858765e-05
+    },
+    "decode.*.layer.9.hidden": {
+      "baseline_max_abs": 6.866455078125e-05,
+      "reference_max_abs": 118.60659790039062,
+      "absolute_tolerance": 0.000452448264695704
+    },
+    "decode.*.layer.9.k": {
+      "baseline_max_abs": 3.719702363014221e-06,
+      "reference_max_abs": 3.509267568588257,
+      "absolute_tolerance": 1.4878809452056885e-05
+    },
+    "decode.*.layer.9.q": {
+      "baseline_max_abs": 4.291534423828125e-06,
+      "reference_max_abs": 4.861295700073242,
+      "absolute_tolerance": 1.8544371414463967e-05
+    },
+    "decode.*.layer.9.v": {
+      "baseline_max_abs": 1.0728836059570312e-05,
+      "reference_max_abs": 12.249271392822266,
+      "absolute_tolerance": 4.672726208809763e-05
+    },
+    "decode.*.logits": {
+      "baseline_max_abs": 6.008148193359375e-05,
+      "reference_max_abs": 40.29811096191406,
+      "absolute_tolerance": 0.000240325927734375
+    },
+    "embedding": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 7.976918697357178,
+      "absolute_tolerance": 3.0429529942921363e-05
+    },
+    "layer.0.attention": {
+      "baseline_max_abs": 8.58306884765625e-06,
+      "reference_max_abs": 7.389309883117676,
+      "absolute_tolerance": 3.4332275390625e-05
+    },
+    "layer.0.hidden": {
+      "baseline_max_abs": 0.001708984375,
+      "reference_max_abs": 1409.075927734375,
+      "absolute_tolerance": 0.0068359375
+    },
+    "layer.0.k": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 6.246024131774902,
+      "absolute_tolerance": 2.3826691176509485e-05
+    },
+    "layer.0.q": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 5.660787582397461,
+      "absolute_tolerance": 2.159419091185555e-05
+    },
+    "layer.0.v": {
+      "baseline_max_abs": 0.0,
+      "reference_max_abs": 20.107091903686523,
+      "absolute_tolerance": 7.670246850466356e-05
+    },
+    "layer.1.attention": {
+      "baseline_max_abs": 5.340576171875e-05,
+      "reference_max_abs": 40.20115661621094,
+      "absolute_tolerance": 0.000213623046875
+    },
+    "layer.1.hidden": {
+      "baseline_max_abs": 0.0015869140625,
+      "reference_max_abs": 1658.6822509765625,
+      "absolute_tolerance": 0.00634765625
+    },
+    "layer.1.k": {
+      "baseline_max_abs": 7.152557373046875e-06,
+      "reference_max_abs": 5.387197971343994,
+      "absolute_tolerance": 2.86102294921875e-05
+    },
+    "layer.1.q": {
+      "baseline_max_abs": 6.415415555238724e-06,
+      "reference_max_abs": 5.585195541381836,
+      "absolute_tolerance": 2.5661662220954895e-05
+    },
+    "layer.1.v": {
+      "baseline_max_abs": 7.152557373046875e-06,
+      "reference_max_abs": 42.870994567871094,
+      "absolute_tolerance": 0.0001635398657526821
+    },
+    "layer.10.attention": {
+      "baseline_max_abs": 0.001209259033203125,
+      "reference_max_abs": 63.34333038330078,
+      "absolute_tolerance": 0.0048370361328125
+    },
+    "layer.10.hidden": {
+      "baseline_max_abs": 0.1109619140625,
+      "reference_max_abs": 64324.58984375,
+      "absolute_tolerance": 0.44384765625
+    },
+    "layer.10.k": {
+      "baseline_max_abs": 0.00033092498779296875,
+      "reference_max_abs": 6.295664310455322,
+      "absolute_tolerance": 0.001323699951171875
+    },
+    "layer.10.q": {
+      "baseline_max_abs": 0.00037848949432373047,
+      "reference_max_abs": 6.386669635772705,
+      "absolute_tolerance": 0.0015139579772949219
+    },
+    "layer.10.v": {
+      "baseline_max_abs": 0.00337982177734375,
+      "reference_max_abs": 68.49510955810547,
+      "absolute_tolerance": 0.013519287109375
+    },
+    "layer.11.attention": {
+      "baseline_max_abs": 0.00144195556640625,
+      "reference_max_abs": 73.5717544555664,
+      "absolute_tolerance": 0.005767822265625
+    },
+    "layer.11.hidden": {
+      "baseline_max_abs": 0.127685546875,
+      "reference_max_abs": 64813.734375,
+      "absolute_tolerance": 0.5107421875
+    },
+    "layer.11.k": {
+      "baseline_max_abs": 0.0004081130027770996,
+      "reference_max_abs": 7.194578170776367,
+      "absolute_tolerance": 0.0016324520111083984
+    },
+    "layer.11.q": {
+      "baseline_max_abs": 0.00035178661346435547,
+      "reference_max_abs": 6.858429908752441,
+      "absolute_tolerance": 0.0014071464538574219
+    },
+    "layer.11.v": {
+      "baseline_max_abs": 0.0038547515869140625,
+      "reference_max_abs": 88.72911071777344,
+      "absolute_tolerance": 0.01541900634765625
+    },
+    "layer.12.attention": {
+      "baseline_max_abs": 0.007312774658203125,
+      "reference_max_abs": 44.22071075439453,
+      "absolute_tolerance": 0.0292510986328125
+    },
+    "layer.12.hidden": {
+      "baseline_max_abs": 0.24272918701171875,
+      "reference_max_abs": 70900.65625,
+      "absolute_tolerance": 0.970916748046875
+    },
+    "layer.12.k": {
+      "baseline_max_abs": 0.0003342628479003906,
+      "reference_max_abs": 6.091463565826416,
+      "absolute_tolerance": 0.0013370513916015625
+    },
+    "layer.12.q": {
+      "baseline_max_abs": 0.0005762577056884766,
+      "reference_max_abs": 5.641200065612793,
+      "absolute_tolerance": 0.0023050308227539062
+    },
+    "layer.12.v": {
+      "baseline_max_abs": 0.00159454345703125,
+      "reference_max_abs": 47.7254753112793,
+      "absolute_tolerance": 0.006378173828125
+    },
+    "layer.13.attention": {
+      "baseline_max_abs": 0.0007648468017578125,
+      "reference_max_abs": 22.808935165405273,
+      "absolute_tolerance": 0.00305938720703125
+    },
+    "layer.13.hidden": {
+      "baseline_max_abs": 0.628662109375,
+      "reference_max_abs": 71129.1015625,
+      "absolute_tolerance": 2.5146484375
+    },
+    "layer.13.k": {
+      "baseline_max_abs": 0.0007428005337715149,
+      "reference_max_abs": 6.868949890136719,
+      "absolute_tolerance": 0.0029712021350860596
+    },
+    "layer.13.q": {
+      "baseline_max_abs": 0.0004712045192718506,
+      "reference_max_abs": 5.075977325439453,
+      "absolute_tolerance": 0.0018848180770874023
+    },
+    "layer.13.v": {
+      "baseline_max_abs": 0.00428009033203125,
+      "reference_max_abs": 36.120174407958984,
+      "absolute_tolerance": 0.017120361328125
+    },
+    "layer.14.attention": {
+      "baseline_max_abs": 0.00022459030151367188,
+      "reference_max_abs": 15.533652305603027,
+      "absolute_tolerance": 0.0008983612060546875
+    },
+    "layer.14.hidden": {
+      "baseline_max_abs": 0.630615234375,
+      "reference_max_abs": 71426.21875,
+      "absolute_tolerance": 2.5224609375
+    },
+    "layer.14.k": {
+      "baseline_max_abs": 0.00035834312438964844,
+      "reference_max_abs": 6.479091167449951,
+      "absolute_tolerance": 0.0014333724975585938
+    },
+    "layer.14.q": {
+      "baseline_max_abs": 0.00041472911834716797,
+      "reference_max_abs": 4.516461372375488,
+      "absolute_tolerance": 0.0016589164733886719
+    },
+    "layer.14.v": {
+      "baseline_max_abs": 0.0015916824340820312,
+      "reference_max_abs": 21.928199768066406,
+      "absolute_tolerance": 0.006366729736328125
+    },
+    "layer.15.attention": {
+      "baseline_max_abs": 0.0002536773681640625,
+      "reference_max_abs": 26.737756729125977,
+      "absolute_tolerance": 0.00101470947265625
+    },
+    "layer.15.hidden": {
+      "baseline_max_abs": 0.63427734375,
+      "reference_max_abs": 71388.8515625,
+      "absolute_tolerance": 2.537109375
+    },
+    "layer.15.k": {
+      "baseline_max_abs": 0.00042366981506347656,
+      "reference_max_abs": 6.588664531707764,
+      "absolute_tolerance": 0.0016946792602539062
+    },
+    "layer.15.q": {
+      "baseline_max_abs": 0.0004100725054740906,
+      "reference_max_abs": 4.431758403778076,
+      "absolute_tolerance": 0.0016402900218963623
+    },
+    "layer.15.v": {
+      "baseline_max_abs": 0.0020542144775390625,
+      "reference_max_abs": 35.21661376953125,
+      "absolute_tolerance": 0.00821685791015625
+    },
+    "layer.16.attention": {
+      "baseline_max_abs": 0.0011835098266601562,
+      "reference_max_abs": 31.933353424072266,
+      "absolute_tolerance": 0.004734039306640625
+    },
+    "layer.16.hidden": {
+      "baseline_max_abs": 0.92919921875,
+      "reference_max_abs": 71469.3125,
+      "absolute_tolerance": 3.716796875
+    },
+    "layer.16.k": {
+      "baseline_max_abs": 0.0007824897766113281,
+      "reference_max_abs": 6.498995780944824,
+      "absolute_tolerance": 0.0031299591064453125
+    },
+    "layer.16.q": {
+      "baseline_max_abs": 0.0004557669162750244,
+      "reference_max_abs": 6.447366237640381,
+      "absolute_tolerance": 0.0018230676651000977
+    },
+    "layer.16.v": {
+      "baseline_max_abs": 0.002716064453125,
+      "reference_max_abs": 50.09815979003906,
+      "absolute_tolerance": 0.0108642578125
+    },
+    "layer.17.attention": {
+      "baseline_max_abs": 0.00029754638671875,
+      "reference_max_abs": 31.937564849853516,
+      "absolute_tolerance": 0.001190185546875
+    },
+    "layer.17.hidden": {
+      "baseline_max_abs": 0.95361328125,
+      "reference_max_abs": 71461.921875,
+      "absolute_tolerance": 3.814453125
+    },
+    "layer.17.k": {
+      "baseline_max_abs": 0.0004489421844482422,
+      "reference_max_abs": 7.270993709564209,
+      "absolute_tolerance": 0.0017957687377929688
+    },
+    "layer.17.q": {
+      "baseline_max_abs": 0.00042319297790527344,
+      "reference_max_abs": 5.375372409820557,
+      "absolute_tolerance": 0.0016927719116210938
+    },
+    "layer.17.v": {
+      "baseline_max_abs": 0.00307464599609375,
+      "reference_max_abs": 42.14888381958008,
+      "absolute_tolerance": 0.012298583984375
+    },
+    "layer.18.attention": {
+      "baseline_max_abs": 0.0003032684326171875,
+      "reference_max_abs": 27.594680786132812,
+      "absolute_tolerance": 0.00121307373046875
+    },
+    "layer.18.hidden": {
+      "baseline_max_abs": 0.850341796875,
+      "reference_max_abs": 71576.4296875,
+      "absolute_tolerance": 3.4013671875
+    },
+    "layer.18.k": {
+      "baseline_max_abs": 0.0003743171691894531,
+      "reference_max_abs": 7.42856502532959,
+      "absolute_tolerance": 0.0014972686767578125
+    },
+    "layer.18.q": {
+      "baseline_max_abs": 0.0003924146294593811,
+      "reference_max_abs": 4.376075267791748,
+      "absolute_tolerance": 0.0015696585178375244
+    },
+    "layer.18.v": {
+      "baseline_max_abs": 0.002765655517578125,
+      "reference_max_abs": 36.42015075683594,
+      "absolute_tolerance": 0.0110626220703125
+    },
+    "layer.19.attention": {
+      "baseline_max_abs": 0.00067901611328125,
+      "reference_max_abs": 58.091121673583984,
+      "absolute_tolerance": 0.002716064453125
+    },
+    "layer.19.hidden": {
+      "baseline_max_abs": 0.880859375,
+      "reference_max_abs": 71605.296875,
+      "absolute_tolerance": 3.5234375
+    },
+    "layer.19.k": {
+      "baseline_max_abs": 0.000347137451171875,
+      "reference_max_abs": 7.535101413726807,
+      "absolute_tolerance": 0.0013885498046875
+    },
+    "layer.19.q": {
+      "baseline_max_abs": 0.00036707520484924316,
+      "reference_max_abs": 4.7791032791137695,
+      "absolute_tolerance": 0.0014683008193969727
+    },
+    "layer.19.v": {
+      "baseline_max_abs": 0.005947113037109375,
+      "reference_max_abs": 69.05065155029297,
+      "absolute_tolerance": 0.0237884521484375
+    },
+    "layer.2.attention": {
+      "baseline_max_abs": 3.24249267578125e-05,
+      "reference_max_abs": 27.33134651184082,
+      "absolute_tolerance": 0.00012969970703125
+    },
+    "layer.2.hidden": {
+      "baseline_max_abs": 0.0029296875,
+      "reference_max_abs": 16702.904296875,
+      "absolute_tolerance": 0.06371652334928513
+    },
+    "layer.2.k": {
+      "baseline_max_abs": 9.834766387939453e-06,
+      "reference_max_abs": 6.336063861846924,
+      "absolute_tolerance": 3.933906555175781e-05
+    },
+    "layer.2.q": {
+      "baseline_max_abs": 9.514391422271729e-06,
+      "reference_max_abs": 5.575685501098633,
+      "absolute_tolerance": 3.8057565689086914e-05
+    },
+    "layer.2.v": {
+      "baseline_max_abs": 1.1444091796875e-05,
+      "reference_max_abs": 41.26850128173828,
+      "absolute_tolerance": 0.00015742683899588883
+    },
+    "layer.20.attention": {
+      "baseline_max_abs": 0.0007137022912502289,
+      "reference_max_abs": 25.876117706298828,
+      "absolute_tolerance": 0.0028548091650009155
+    },
+    "layer.20.hidden": {
+      "baseline_max_abs": 1.080078125,
+      "reference_max_abs": 71252.3046875,
+      "absolute_tolerance": 4.3203125
+    },
+    "layer.20.k": {
+      "baseline_max_abs": 0.0006172060966491699,
+      "reference_max_abs": 7.534643650054932,
+      "absolute_tolerance": 0.0024688243865966797
+    },
+    "layer.20.q": {
+      "baseline_max_abs": 0.000392913818359375,
+      "reference_max_abs": 4.396222114562988,
+      "absolute_tolerance": 0.0015716552734375
+    },
+    "layer.20.v": {
+      "baseline_max_abs": 0.0020751953125,
+      "reference_max_abs": 43.670894622802734,
+      "absolute_tolerance": 0.00830078125
+    },
+    "layer.21.attention": {
+      "baseline_max_abs": 0.0005841255187988281,
+      "reference_max_abs": 32.960052490234375,
+      "absolute_tolerance": 0.0023365020751953125
+    },
+    "layer.21.hidden": {
+      "baseline_max_abs": 1.154296875,
+      "reference_max_abs": 71137.046875,
+      "absolute_tolerance": 4.6171875
+    },
+    "layer.21.k": {
+      "baseline_max_abs": 0.0014876127243041992,
+      "reference_max_abs": 6.569253921508789,
+      "absolute_tolerance": 0.005950450897216797
+    },
+    "layer.21.q": {
+      "baseline_max_abs": 0.0004341602325439453,
+      "reference_max_abs": 5.039547920227051,
+      "absolute_tolerance": 0.0017366409301757812
+    },
+    "layer.21.v": {
+      "baseline_max_abs": 0.0024819374084472656,
+      "reference_max_abs": 98.6926498413086,
+      "absolute_tolerance": 0.009927749633789062
+    },
+    "layer.3.attention": {
+      "baseline_max_abs": 1.6689300537109375e-05,
+      "reference_max_abs": 6.107862949371338,
+      "absolute_tolerance": 6.67572021484375e-05
+    },
+    "layer.3.hidden": {
+      "baseline_max_abs": 0.0029296875,
+      "reference_max_abs": 43952.23828125,
+      "absolute_tolerance": 0.16766448318958282
+    },
+    "layer.3.k": {
+      "baseline_max_abs": 8.463859558105469e-06,
+      "reference_max_abs": 6.052157878875732,
+      "absolute_tolerance": 3.3855438232421875e-05
+    },
+    "layer.3.q": {
+      "baseline_max_abs": 1.7404556274414062e-05,
+      "reference_max_abs": 5.559029579162598,
+      "absolute_tolerance": 6.961822509765625e-05
+    },
+    "layer.3.v": {
+      "baseline_max_abs": 1.4543533325195312e-05,
+      "reference_max_abs": 17.30493927001953,
+      "absolute_tolerance": 6.601310451515019e-05
+    },
+    "layer.4.attention": {
+      "baseline_max_abs": 1.33514404296875e-05,
+      "reference_max_abs": 18.248140335083008,
+      "absolute_tolerance": 6.961113103898242e-05
+    },
+    "layer.4.hidden": {
+      "baseline_max_abs": 0.0029296875,
+      "reference_max_abs": 45125.265625,
+      "absolute_tolerance": 0.1721392273902893
+    },
+    "layer.4.k": {
+      "baseline_max_abs": 1.4662742614746094e-05,
+      "reference_max_abs": 5.955509662628174,
+      "absolute_tolerance": 5.8650970458984375e-05
+    },
+    "layer.4.q": {
+      "baseline_max_abs": 1.6570091247558594e-05,
+      "reference_max_abs": 5.121974468231201,
+      "absolute_tolerance": 6.628036499023438e-05
+    },
+    "layer.4.v": {
+      "baseline_max_abs": 2.6702880859375e-05,
+      "reference_max_abs": 39.955013275146484,
+      "absolute_tolerance": 0.00015241627988871187
+    },
+    "layer.5.attention": {
+      "baseline_max_abs": 8.678436279296875e-05,
+      "reference_max_abs": 33.36130905151367,
+      "absolute_tolerance": 0.000347137451171875
+    },
+    "layer.5.hidden": {
+      "baseline_max_abs": 0.01141357421875,
+      "reference_max_abs": 45519.703125,
+      "absolute_tolerance": 0.17364388704299927
+    },
+    "layer.5.k": {
+      "baseline_max_abs": 2.467632293701172e-05,
+      "reference_max_abs": 6.2095794677734375,
+      "absolute_tolerance": 9.870529174804688e-05
+    },
+    "layer.5.q": {
+      "baseline_max_abs": 4.920363426208496e-05,
+      "reference_max_abs": 5.258516311645508,
+      "absolute_tolerance": 0.00019681453704833984
+    },
+    "layer.5.v": {
+      "baseline_max_abs": 5.8650970458984375e-05,
+      "reference_max_abs": 35.96453857421875,
+      "absolute_tolerance": 0.0002346038818359375
+    },
+    "layer.6.attention": {
+      "baseline_max_abs": 0.0009784698486328125,
+      "reference_max_abs": 43.75674057006836,
+      "absolute_tolerance": 0.00391387939453125
+    },
+    "layer.6.hidden": {
+      "baseline_max_abs": 0.01171875,
+      "reference_max_abs": 45960.78515625,
+      "absolute_tolerance": 0.17532648146152496
+    },
+    "layer.6.k": {
+      "baseline_max_abs": 8.821487426757812e-05,
+      "reference_max_abs": 6.6138787269592285,
+      "absolute_tolerance": 0.0003528594970703125
+    },
+    "layer.6.q": {
+      "baseline_max_abs": 7.647275924682617e-05,
+      "reference_max_abs": 6.4473185539245605,
+      "absolute_tolerance": 0.0003058910369873047
+    },
+    "layer.6.v": {
+      "baseline_max_abs": 0.00032806396484375,
+      "reference_max_abs": 48.13587951660156,
+      "absolute_tolerance": 0.001312255859375
+    },
+    "layer.7.attention": {
+      "baseline_max_abs": 0.00043010711669921875,
+      "reference_max_abs": 36.002174377441406,
+      "absolute_tolerance": 0.001720428466796875
+    },
+    "layer.7.hidden": {
+      "baseline_max_abs": 0.0625,
+      "reference_max_abs": 64341.5390625,
+      "absolute_tolerance": 0.25
+    },
+    "layer.7.k": {
+      "baseline_max_abs": 7.808208465576172e-05,
+      "reference_max_abs": 5.975856781005859,
+      "absolute_tolerance": 0.0003123283386230469
+    },
+    "layer.7.q": {
+      "baseline_max_abs": 0.00011691451072692871,
+      "reference_max_abs": 5.927738666534424,
+      "absolute_tolerance": 0.00046765804290771484
+    },
+    "layer.7.v": {
+      "baseline_max_abs": 0.0006103515625,
+      "reference_max_abs": 41.5789794921875,
+      "absolute_tolerance": 0.00244140625
+    },
+    "layer.8.attention": {
+      "baseline_max_abs": 0.00133514404296875,
+      "reference_max_abs": 73.38288116455078,
+      "absolute_tolerance": 0.005340576171875
+    },
+    "layer.8.hidden": {
+      "baseline_max_abs": 0.0625,
+      "reference_max_abs": 64385.73046875,
+      "absolute_tolerance": 0.25
+    },
+    "layer.8.k": {
+      "baseline_max_abs": 0.00017946958541870117,
+      "reference_max_abs": 6.822889804840088,
+      "absolute_tolerance": 0.0007178783416748047
+    },
+    "layer.8.q": {
+      "baseline_max_abs": 0.0001792311668395996,
+      "reference_max_abs": 5.796812057495117,
+      "absolute_tolerance": 0.0007169246673583984
+    },
+    "layer.8.v": {
+      "baseline_max_abs": 0.00197601318359375,
+      "reference_max_abs": 79.94820404052734,
+      "absolute_tolerance": 0.007904052734375
+    },
+    "layer.9.attention": {
+      "baseline_max_abs": 0.0012340545654296875,
+      "reference_max_abs": 62.694583892822266,
+      "absolute_tolerance": 0.00493621826171875
+    },
+    "layer.9.hidden": {
+      "baseline_max_abs": 0.095458984375,
+      "reference_max_abs": 64471.234375,
+      "absolute_tolerance": 0.3818359375
+    },
+    "layer.9.k": {
+      "baseline_max_abs": 0.0001011192798614502,
+      "reference_max_abs": 6.171838760375977,
+      "absolute_tolerance": 0.0004044771194458008
+    },
+    "layer.9.q": {
+      "baseline_max_abs": 0.00014600157737731934,
+      "reference_max_abs": 5.525396347045898,
+      "absolute_tolerance": 0.0005840063095092773
+    },
+    "layer.9.v": {
+      "baseline_max_abs": 0.00127410888671875,
+      "reference_max_abs": 72.69680786132812,
+      "absolute_tolerance": 0.005096435546875
+    },
+    "logits": {
+      "baseline_max_abs": 4.76837158203125e-05,
+      "reference_max_abs": 34.260162353515625,
+      "absolute_tolerance": 0.00019073486328125
+    }
+  }
+}

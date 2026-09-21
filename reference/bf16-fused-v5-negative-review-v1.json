@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "status": "rejected_capture_independently_confirmed",
+  "scope": "Read-only saved-source/compiled-artifact audit and CPU recomputation of the structural guard. No GPU run, compilation, inference or production edit.",
+  "source_review": {
+    "path": "reference/bf16-fused-v5-source-review-v1.json",
+    "sha256": "6ea08db2582edb039745ebb15d63c3e4f4230c329ec703c2b141701b567782d9"
+  },
+  "checked_files_sha256": {
+    "artifacts\\reference\\bf16-fused-substages-v5\\report.json": "99f612c1d6b78405d5e0cd6c783a05f120fb44d09af98d9c0f3371f36b73f047",
+    "artifacts\\reference\\bf16-fused-substages-v5\\export_bf16_fused_substages.py": "806948fc7b0ecbc7828de7b0140e7568716223ac0f40b7abb77d3ca3da42d6cf",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented.py": "a8952efb86c5e5abf2f6653f33d0453732c8f75ae0319ef74e96debc1ec08091",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrument_bf16_flex.py": "aab08e6f46ce1d0e9605667dbd250d58d6695d4fd93d6eb48208a2cf8cf83c14",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original.py": "1189460ad74ae2b36885008bd77138b06d270f8b8fd42bca292f664447a55f37",
+    "artifacts\\reference\\bf16-fused-substages-v5\\specification.json": "85610099350e8261b8833085222a4ad90c3fc613063f8856492071eb48e3093e",
+    "artifacts\\reference\\bf16-fused-substages-v5\\verify_bf16_reduction_lowering.py": "65e59f4d5570dc1be57ac6196f2a0084c98a54f31ce772a92408aa5e6966a2c1",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-0.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-0.cubin": "7ba5f8153557a08dbc5069b058359d01c09c0e6e860b0be8e2d23a5bc9f15c7e",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-0.ttir": "75a4f791e0a157b890ad1e6990b61538edebb8c99e60c57fdedf729f14c573f8",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-0.ttgir": "b891c8743b35224f9e04a3057bb21d7e708373446a576bda27b4b3a71b365715",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-0.llir": "c3ae29441576b15849e45e0f1697a685630f4f1b3bf4b9e10f37277bf0eeba2b",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-natural-lse-0.ptx": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-natural-lse-0.cubin": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-natural-lse-0.ttir": "9268867be26bacef789d5766dad5bcd1d4468e2f81fa6ee0a5ebff6ae689b51b",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-natural-lse-0.ttgir": "ab76ed6e78bfdcb6aad9666da426efdcada3ff0d67588942ec678261bd046a68",
+    "artifacts\\reference\\bf16-fused-substages-v5\\original-natural-lse-0.llir": "dfcb8b6e8254870525f75b3bd5d6a0d81e668cefa2adb5629dbb8c498bbc6ea2",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-0.ptx": "b9ebd98edd615b9472292ef3dae1dc513ce92c7a96552df1cba9aebba34d7942",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-0.cubin": "aea70c807ecd3258dd2dae012ad78e9fa2f2443c78d29008044664081e3b3ca8",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-0.ttir": "9a3dc0fe97e905a32f98a5f5e17bf2620d1b3a7e7e85181a1c68ac349966cb16",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-0.ttgir": "8d5195e19387f2f1c8a6b6368f8610ee90bbbafdfa92b5b15c8b0a6b071b1585",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-0.llir": "136c6323c2e432a3499d176e35b904a341d1e0d1ca59fa3445c0023b180a07e5",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-natural-lse-0.ptx": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-natural-lse-0.cubin": "9001d885c0c65961b25d22175e078cc977dba47237c673f65694c27dfa13b291",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-natural-lse-0.ttir": "9268867be26bacef789d5766dad5bcd1d4468e2f81fa6ee0a5ebff6ae689b51b",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-natural-lse-0.ttgir": "ab76ed6e78bfdcb6aad9666da426efdcada3ff0d67588942ec678261bd046a68",
+    "artifacts\\reference\\bf16-fused-substages-v5\\instrumented-natural-lse-0.llir": "dfcb8b6e8254870525f75b3bd5d6a0d81e668cefa2adb5629dbb8c498bbc6ea2",
+    "artifacts\\reference\\bf16-fused-substages-v5\\capture.safetensors": "6bbbdbdf1575ed53be6b22992f829aa9500cda20df1e3ddedf5c1efa918e959d",
+    "artifacts\\reference\\bf16-fused-substages-v5\\mask-inputs.safetensors": "e60654d77450a0e07d201c0f2a811056538e9f85ec64ba70778ca76577b549ec"
+  },
+  "case_gates": [
+    {
+      "case": "prefill.layer.0",
+      "raw_differences": 0,
+      "natural_lse_differences": 7,
+      "log2_lse_differences": 7,
+      "original_raw_frozen_equal": true,
+      "original_lse_frozen_equal": true,
+      "observation_stores_complete": true
+    },
+    {
+      "case": "prefill.layer.17",
+      "raw_differences": 0,
+      "natural_lse_differences": 9,
+      "log2_lse_differences": 11,
+      "original_raw_frozen_equal": true,
+      "original_lse_frozen_equal": true,
+      "observation_stores_complete": true
+    },
+    {
+      "case": "prefill.layer.19",
+      "raw_differences": 0,
+      "natural_lse_differences": 12,
+      "log2_lse_differences": 13,
+      "original_raw_frozen_equal": true,
+      "original_lse_frozen_equal": true,
+      "observation_stores_complete": true
+    }
+  ],
+  "lowering_checks": {
+    "original_two_MMA_add_reductions": true,
+    "candidate_two_matching_MMA_add_reductions": false,
+    "original_eight_native_row_reductions": true,
+    "original_native_local_XOR_structure": true,
+    "candidate_identical_row_reduction_shapes": false
+  },
+  "recomputed_lowering_exactly_matches_saved_report": true,
+  "unavailable_fields": [
+    "sum_unrounded_probabilities_f32"
+  ],
+  "remaining_observer_use_chain": [
+    {
+      "artifact": "instrumented-0.ttgir",
+      "lines": [
+        423,
+        479,
+        487
+      ],
+      "finding": "Masked scores convert from MMA to blocked3; a separate row maximum and loop state are computed in blocked3."
+    },
+    {
+      "artifact": "instrumented-0.ttgir",
+      "lines": [
+        457,
+        458,
+        461,
+        462,
+        496,
+        497,
+        503,
+        504,
+        510,
+        511,
+        551,
+        552
+      ],
+      "finding": "Incoming maximum/denominator, updated maximum, alpha argument, alpha and updated denominator are converted from blocked3 row state to blocked2 for observer stores."
+    },
+    {
+      "artifact": "instrumented-0.ttgir",
+      "lines": [
+        525,
+        526,
+        527,
+        528,
+        533,
+        539,
+        543,
+        547,
+        548,
+        569,
+        571
+      ],
+      "finding": "Probability calculation is cloned: blocked for matrix observations, blocked3 for the native denominator sum/recurrence, MMA for the BF16 PV operand."
+    },
+    {
+      "artifact": "instrumented-0.ttgir",
+      "lines": [
+        635,
+        643,
+        799,
+        804,
+        910
+      ],
+      "finding": "Masked denominator stays blocked3 across iterations, converts back to MMA after that loop; full-block denominator stays MMA, and final log2 uses the resulting denominator."
+    }
+  ],
+  "finding": "Removing the added probability-sum observer alone did not restore the masked native denominator reduction. Remaining scalar observer consumers share the changed blocked3 recurrence; the artifact does not identify one of those consumers as a unique cause.",
+  "next_mechanism": "A separately authorized stores-only patch of original emitted PTX could avoid high-level relowering. First establish an unmodified roundtrip using the actual Torch-selected assembler, then preserve original arithmetic/control flow and validate generated machine arithmetic and all complete raw/natural-LSE/log2-LSE plus fixture gates. No candidate is implemented or accepted here.",
+  "limitations": [
+    "All instrumented intermediates remain rejected as native observations.",
+    "Anonymized exp2-leaf DAG checks establish reduction shape only, not complete internal value identity.",
+    "The observation-store associations do not prove which single remaining source use caused compiler layout selection.",
+    "No inferred local sum from denominator subtraction; v3 remains partial and does not complete v2.",
+    "No model-quality, numerical-policy relaxation or performance claim."
+  ]
+}

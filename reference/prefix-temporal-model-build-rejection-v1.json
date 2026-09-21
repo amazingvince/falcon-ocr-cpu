@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "status": "rejected_build_provenance_before_inference",
+  "inference_executed": false,
+  "reason": "Both source copies emitted the same Cargo lib/test paths in one shared target directory. Candidate artifacts were reported fresh after the control build; both preserved executables are byte-identical. This does not establish a candidate build.",
+  "artifacts_sha256": {
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/plan.json": "756200e2563eb0b61ad4f99bc7dab7071a7cd5cb4d13266a9c440fcb36a2824d",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/source.zip": "7b829a548f4d562edf80275d7437dfc3681a107f59ff8e221f4bec89d67ef102",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/build-start.json": "74f0a7d70d774b24ace06e55c5fb4ff77488452b00701bd658838244180e45c7",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/build.json": "84dbc984030457c8675633d5bdeae71f87a7c6db66d4c60871cd5d51766a4dfb",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/control-build.log": "459b30c9481643eef3f50bdc9ab35989e3be05e75cfa38be4dc576eb3b857f50",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/candidate-build.log": "fc63f1954588f5f056fa829c4309b21aa47b7de6ec58ffaf080065a68da040fb",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/control-qualification.exe": "00651eb7c431aa814d5e79556fba4674d7905223dabd6c5c4a6451460f7046c3",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/candidate-qualification.exe": "00651eb7c431aa814d5e79556fba4674d7905223dabd6c5c4a6451460f7046c3"
+  },
+  "candidate_compiler_artifacts": [
+    {
+      "package_id": "path+file:///C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/diagnostics/prefix-temporal-model-review-v1/candidate#falcon-ocr@0.1.0",
+      "manifest_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\prefix-temporal-model-review-v1\\candidate\\Cargo.toml",
+      "target": {
+        "kind": [
+          "lib"
+        ],
+        "crate_types": [
+          "lib"
+        ],
+        "name": "falcon_ocr",
+        "src_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\prefix-temporal-model-review-v1\\candidate\\src\\lib.rs",
+        "edition": "2024",
+        "doc": true,
+        "doctest": true,
+        "test": true
+      },
+      "executable": null,
+      "fresh": true
+    },
+    {
+      "package_id": "path+file:///C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/diagnostics/prefix-temporal-model-review-v1/candidate#falcon-ocr@0.1.0",
+      "manifest_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\prefix-temporal-model-review-v1\\candidate\\Cargo.toml",
+      "target": {
+        "kind": [
+          "test"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "temporal_model_qualification",
+        "src_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\prefix-temporal-model-review-v1\\candidate\\tests\\temporal_model_qualification.rs",
+        "edition": "2024",
+        "doc": false,
+        "doctest": false,
+        "test": true
+      },
+      "executable": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\target\\release\\deps\\temporal_model_qualification-ff3971f324b71363.exe",
+      "fresh": true
+    },
+    {
+      "package_id": "path+file:///C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/diagnostics/prefix-temporal-model-review-v1/candidate#falcon-ocr@0.1.0",
+      "manifest_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\prefix-temporal-model-review-v1\\candidate\\Cargo.toml",
+      "target": {
+        "kind": [
+          "bin"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "falcon-ocr",
+        "src_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\prefix-temporal-model-review-v1\\candidate\\src\\main.rs",
+        "edition": "2024",
+        "doc": true,
+        "doctest": false,
+        "test": true
+      },
+      "executable": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\target\\release\\falcon-ocr.exe",
+      "fresh": true
+    }
+  ],
+  "required_correction": "Fresh plan and build with isolated target directories and explicit package/manifest/source/executable checks. Preserve all v1 artifacts; do not run its model plan.",
+  "performance_claim": false
+}

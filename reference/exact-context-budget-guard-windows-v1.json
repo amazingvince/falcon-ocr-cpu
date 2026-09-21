@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "scope": "Native Windows actual CLI over-budget rejection; does not demonstrate successful full-context generation. Model loading and image preparation occur before this guard; model prefill is not entered.",
+  "command": [
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\stage-timing-windows-v1\\falcon-ocr.exe",
+    "--threads",
+    "4",
+    "--backend",
+    "avx2",
+    "run",
+    "artifacts/corpus/long-numeric-v1/canonical-rgb.png",
+    "--max-dimension",
+    "1536",
+    "--max-new-tokens",
+    "8285"
+  ],
+  "binary_sha256": "0996a105f8c79ac6888fd9b62ecaee54c2da353ea9eab833aeae1446211a11a2",
+  "binary_provenance": "reference/stage-timing-windows-validation-v1.json",
+  "image_sha256": "0c761b868797ed7c58aaed48ed4dc6db0cf94780a4608d9dad9857d9121f183c",
+  "requested_prefix": 8100,
+  "requested_output": 8285,
+  "requested_total": 16385,
+  "context_limit": 16384,
+  "exit_code": 1,
+  "stdout_empty": true,
+  "stderr_sha256": "2392c7bc7b6f6fb0cc4d2ade0cb637e75afe559f463c972599f97202a656a163",
+  "error": "Verified model loaded in 1021.8 ms\nError: recognize input images\n\nCaused by:\n    context budget conflict: 8100 input tokens + 8285 requested output tokens exceeds 16384; explicitly lower max_dimension or max_new_tokens\n"
+}

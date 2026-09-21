@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "windows-profile-boundary-review-v1",
+  "source": {
+    "path": "experiments/profiling/inspect_trace_boundary.ps1",
+    "sha256": "63ee138840e9cc5fd40eea7a67279102080e55b158c22cd1dc7076014f8838ba"
+  },
+  "lookup": {
+    "path": "reference/windows-profile-boundary-lookup-v1.json",
+    "sha256": "6eb113850d6394fcda6072db5cfea192e8794016e96a573d5a9256f4f19a869c",
+    "retained_etlx_events_examined": 230,
+    "windows": 2,
+    "window_width_ms": 6
+  },
+  "original_audit": {
+    "path": "D:/falcon-ocr-rust-builds/profiles/fullpage-expanded-v2/trace-audit-v4.json",
+    "sha256": "278a5907b8c8f90a820acb6db0e1775d8017071e261bc3087b785462c467f018",
+    "status": "audit_failed",
+    "verdict_unchanged": true
+  },
+  "process": {
+    "pid": 121604,
+    "index": 566,
+    "stop_event_index": 8127696,
+    "stop_relative_ms": 233438.6559,
+    "stop_timestamp_utc": "2026-09-20T15:09:17.9622376Z",
+    "stop_qpc": 13948197833474
+  },
+  "outlier": {
+    "event_index": 8127701,
+    "event_name": "PerfInfo/Sample",
+    "relative_ms": 233438.8458,
+    "timestamp_utc": "2026-09-20T15:09:17.9624275Z",
+    "qpc": 13948197835373,
+    "delta_from_process_stop_qpc_ticks": 1899,
+    "delta_from_process_stop_ms_decimal": "0.1899",
+    "inside_session_bounds": true,
+    "thread_id": 47800,
+    "thread_index": 20459,
+    "thread_start_relative_ms": 233437.9815,
+    "thread_stop_relative_ms": 233438.391,
+    "delta_from_thread_stop_ms_decimal": "0.4548",
+    "owner_process_index": 566,
+    "processor_number": 3,
+    "stack_index": 2593922,
+    "stack_depth": 10,
+    "instruction_pointer_hex": "0xfffff8009c6b236d",
+    "leaf_module": "c:\\windows\\system32\\drivers\\wtd.sys",
+    "stack_modules": [
+      "c:\\windows\\system32\\drivers\\wtd.sys",
+      "c:\\windows\\system32\\ntoskrnl.exe"
+    ],
+    "project_frames": 0,
+    "executing_dpc": false,
+    "executing_isr": false,
+    "non_process": false,
+    "following_stackwalk_event_index": 8127702,
+    "following_stackwalk_delay_ms_decimal": "0.0052"
+  },
+  "interpretation": {
+    "rounding_explanation_supported": false,
+    "reason": "Original QPC and direct event UTC both place the sample 189.9 microseconds after ProcessStop. This is independent of the helper's derived sample-UTC rounding.",
+    "event_time_inversion_supported": false,
+    "evidence": "The original audit reports no event-time inversion. Retained event indices and timestamps show ThreadStop, module unloads, ProcessStop, then this kernel-only sample and its StackWalk.",
+    "bounded_inference": "The sample is consistent with process/thread teardown or ETW lifetime-to-sample association timing. The retained metadata does not establish the precise kernel or TraceEvent attribution mechanism.",
+    "strict_attribution_concern": "This remains a real post-lifetime attribution edge, so the original strict full-lifetime gate continues to fail."
+  },
+  "usability": {
+    "exploratory_hotspot_ranking": "usable_with_explicit_boundary_qualifier",
+    "target_sample_count_including_outlier": 3118233,
+    "in_bounds_count": 3118232,
+    "outlier_fraction": 3.2069444457806713e-7,
+    "outlier_percent": 0.000032069444457806714,
+    "rationale": "A single kernel-only outlier contributes about 0.0000321 percent of target samples and cannot materially alter broad project hotspot rankings. Extremely close ties and exhaustive lifetime attribution are not established.",
+    "recommended_reporting": "Keep the failed strict audit visible. State whether downstream PerfView counts include this event; explain an expected one-sample count difference. Retain missing-stack and unresolved-symbol coverage separately. Any lifetime-filtered derivative must be labeled as derived, preserving original counts.",
+    "qualification_or_performance_claim": false
+  },
+  "scope": {
+    "new_etl_scan": false,
+    "new_etlx_conversion": false,
+    "symbol_resolution": false,
+    "model_or_recorder_or_gpu_work": false,
+    "acceptance_changes": false,
+    "retained_etlx_full_rehash": false,
+    "retained_etlx_read_only_lock": true,
+    "audit_hash_and_etlx_metadata_unchanged": true
+  }
+}

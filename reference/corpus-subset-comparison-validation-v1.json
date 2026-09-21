@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-09-20T09:10:15.082807+00:00",
+  "qualification": "Read-only comparison implementation validation, not inference, a full corpus qualification, or performance measurement. Historical output/config files were not changed.",
+  "source_sha256": {
+    "scripts/compare_corpus.py": "9a137ce531c4eaf52d6b5db236bb97e9bfb0250c367caf1e8f0e9f6fccfa4a80",
+    "scripts/compare_cpu_corpora.py": "7d9c86ad6110ef92b2d207ef269e0eac315c6d3023af410c4252b7d0d8ea610d",
+    "scripts/corpus_comparison.py": "0ccfbc9077c2e0aa9656e4310eba37d2f1517a3810a99231c71fad0db7a4f8ee",
+    "scripts/test_corpus_comparison.py": "ecbbe4d9c170427e7f7cf33bafa9c63696ac689862a2766468b71e3d6d5adb54",
+    "scripts/validate_text_replay.py": "0589094ba226a5049457664e08f93543619b14ea98e1e4b85979ecc793865e2d",
+    "scripts/validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032",
+    "docs/CORPUS_SUBSET_COMPARISON.md": "46271fdf87dba38fe26503910889f481fbae8cb5d1f24631289d962fe1eb96e7"
+  },
+  "tests": {
+    "corpus_comparison": {
+      "passed": 20,
+      "skipped": 0,
+      "environment": "Pinned WSL reference Python; includes three GPU CLI tests requiring rapidfuzz"
+    },
+    "strict_native_windows_replay": {
+      "passed": 8,
+      "path": "artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2"
+    },
+    "gpu_record_validation": {
+      "passed": 6
+    }
+  },
+  "integration_snapshots": [
+    {
+      "path": "artifacts/cpu/linux-v3-platform-comparison-partial-v2.json",
+      "sha256": "4d32961fba5db130174b44d9e3683a9d2fb8c44d57e4851a68d31c36ba701c9c",
+      "status": "partial",
+      "compared_pages": 7,
+      "exact_pages": 7,
+      "tokens": 4436,
+      "provenance_passed": true,
+      "completed_output_parity_passed": false,
+      "scope": {
+        "qualification": "Only selected pages are compared; no claim of completion of a larger parent corpus.",
+        "selected_manifest": {
+          "path": "reference\\corpus-v3-smoke-lock.json",
+          "sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+          "pages": 24
+        },
+        "ordered_selected_ids": [
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+          "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+          "omnidocbench:page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+          "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+          "omnidocbench:exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+          "omnidocbench:page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+          "omnidocbench:page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+          "omnidocbench:PPT_StewartCalcET7e_03_02_page_015.png",
+          "omnidocbench:page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+          "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "omnidocbench:jiaocaineedrop_chem-354334.pdf_20.jpg",
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "omnidocbench:newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+          "omnidocbench:yanbaor2_yanbaoPPT_3745.jpg",
+          "omnidocbench:yanbaor2_yanbaoPPT_469.jpg",
+          "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+          "omnidocbench:yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+          "omnidocbench:exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+          "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+          "omnidocbench:PPT_The Right Moves_page_024.png",
+          "omnidocbench:PPT_Keuk Chan Narith_page_009.png"
+        ],
+        "sources": {
+          "left": {
+            "path": "reference\\corpus-v3-smoke-lock.json",
+            "sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+            "recorded_run_manifest_sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+            "pages": 24,
+            "entire_source_selected": true
+          },
+          "right": {
+            "path": "reference\\corpus-v3-evaluation-lock.json",
+            "sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+            "recorded_run_manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+            "pages": 200,
+            "entire_source_selected": false
+          }
+        }
+      }
+    },
+    {
+      "path": "artifacts/cpu/linux-v3-gpu-comparison-partial-v2.json",
+      "sha256": "58e3022739f9ecde936cf02e86e7ab077e0219ff94ea25ea094626ed21f173b0",
+      "status": "partial",
+      "compared_pages": 7,
+      "exact_pages": 7,
+      "tokens": 4436,
+      "provenance_passed": true,
+      "completed_output_parity_passed": false,
+      "scope": {
+        "qualification": "Only selected pages are compared; no claim of completion of a larger parent corpus.",
+        "selected_manifest": {
+          "path": "reference/corpus-v3-smoke-lock.json",
+          "sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+          "pages": 24
+        },
+        "ordered_selected_ids": [
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+          "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+          "omnidocbench:page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+          "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+          "omnidocbench:exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+          "omnidocbench:page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+          "omnidocbench:page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+          "omnidocbench:PPT_StewartCalcET7e_03_02_page_015.png",
+          "omnidocbench:page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+          "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "omnidocbench:jiaocaineedrop_chem-354334.pdf_20.jpg",
+          "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "omnidocbench:newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+          "omnidocbench:yanbaor2_yanbaoPPT_3745.jpg",
+          "omnidocbench:yanbaor2_yanbaoPPT_469.jpg",
+          "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+          "omnidocbench:yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+          "omnidocbench:exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+          "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+          "omnidocbench:PPT_The Right Moves_page_024.png",
+          "omnidocbench:PPT_Keuk Chan Narith_page_009.png"
+        ],
+        "sources": {
+          "gpu": {
+            "path": "reference/corpus-v3-evaluation-lock.json",
+            "sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+            "recorded_run_manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+            "pages": 200,
+            "entire_source_selected": false
+          },
+          "cpu": {
+            "path": "reference/corpus-v3-smoke-lock.json",
+            "sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+            "recorded_run_manifest_sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+            "pages": 24,
+            "entire_source_selected": true
+          }
+        }
+      }
+    }
+  ],
+  "snapshot_timing_note": "Integration v2 snapshots preceded the final partial-mismatch exit-status correction. Their output/provenance data is unchanged by that correction; the final 20-test suite explicitly verifies a divergent partial snapshot exits 1.",
+  "preserved_limitations": [
+    "Only saved selected pages are compared; missing selected pages prevent completion.",
+    "Historical prompt/argmax/config/build startup fields remain explicitly missing; no retroactive metadata was invented.",
+    "Old GPU records store prefix counts but not processed image width/height. CPU-to-CPU checks dimensions directly.",
+    "Windows text replay is validated against original inference records and preserves every result field except text.",
+    "OS, threads and extra measured timing fields may differ across platforms."
+  ],
+  "independent_reviews": [
+    "GPU reference agent checked explicit subset membership, wrong parent hash, changed page, empty and duplicate selection rejection.",
+    "Root reviewed subset/output checks and identified the fixed single-read hash binding and partial-mismatch exit-status defects."
+  ]
+}

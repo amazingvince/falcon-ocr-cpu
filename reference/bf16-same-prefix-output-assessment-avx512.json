@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "same_prefix_output_passed": false,
+  "qualification": "Named same-prefix output gates only; local operator and free-generation/corpus gates are separate. No full hidden-trajectory parity claim.",
+  "contract_sha256": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+  "reference_sha256": "e938f90ad6964d6de89f0c2df1d7be9297c57e7516a7391d8061eb9f54c6f2d3",
+  "candidate_sha256": "a2a80a64839264568e31231ce1af4bf098ffd9bbd68482b72d66f7f6835f9f3b",
+  "candidate_metadata_sha256": "48e556d74724a2f375548cacc8603cccf4d2d7c3112b4ec04ecc98009949b117",
+  "failures": [
+    "decode.14.logits"
+  ],
+  "logits": {
+    "decode.0.logits": {
+      "max_abs": 0.609375,
+      "rms_abs": 0.22855960671131964,
+      "reference_max_abs": 35.0,
+      "bounds": {
+        "max_abs_bound": 2.0,
+        "rms_bound": 0.47478840554167673,
+        "required_argmax": 791,
+        "gpu_winner_margin": 12.625
+      },
+      "actual_argmax": 791,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.1.logits": {
+      "max_abs": 0.4833984375,
+      "rms_abs": 0.13019633579890116,
+      "reference_max_abs": 39.25,
+      "bounds": {
+        "max_abs_bound": 1.25,
+        "rms_bound": 0.26220514989154653,
+        "required_argmax": 1169,
+        "gpu_winner_margin": 12.375
+      },
+      "actual_argmax": 1169,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.10.logits": {
+      "max_abs": 0.375,
+      "rms_abs": 0.08917486982328059,
+      "reference_max_abs": 40.5,
+      "bounds": {
+        "max_abs_bound": 2.5,
+        "rms_bound": 0.8435563112399175,
+        "required_argmax": 540,
+        "gpu_winner_margin": 10.25
+      },
+      "actual_argmax": 540,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.11.logits": {
+      "max_abs": 0.7109375,
+      "rms_abs": 0.31265717691190925,
+      "reference_max_abs": 34.5,
+      "bounds": {
+        "max_abs_bound": 3.25,
+        "rms_bound": 1.790037846625065,
+        "required_argmax": 541,
+        "gpu_winner_margin": 14.125
+      },
+      "actual_argmax": 541,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.12.logits": {
+      "max_abs": 0.78125,
+      "rms_abs": 0.40190951812596204,
+      "reference_max_abs": 30.5,
+      "bounds": {
+        "max_abs_bound": 1.9375,
+        "rms_bound": 0.5718249776941806,
+        "required_argmax": 542,
+        "gpu_winner_margin": 9.625
+      },
+      "actual_argmax": 542,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.13.logits": {
+      "max_abs": 0.59375,
+      "rms_abs": 0.19419832398975714,
+      "reference_max_abs": 31.125,
+      "bounds": {
+        "max_abs_bound": 1.8515625,
+        "rms_bound": 0.3306306729579685,
+        "required_argmax": 543,
+        "gpu_winner_margin": 15.5
+      },
+      "actual_argmax": 543,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.14.logits": {
+      "max_abs": 0.75390625,
+      "rms_abs": 0.3703055273541852,
+      "reference_max_abs": 30.875,
+      "bounds": {
+        "max_abs_bound": 1.75,
+        "rms_bound": 0.30275229476180726,
+        "required_argmax": 544,
+        "gpu_winner_margin": 14.875
+      },
+      "actual_argmax": 544,
+      "represents_bf16_values": true,
+      "passed": false
+    },
+    "decode.15.logits": {
+      "max_abs": 0.359375,
+      "rms_abs": 0.07498374335854502,
+      "reference_max_abs": 24.25,
+      "bounds": {
+        "max_abs_bound": 1.25,
+        "rms_bound": 0.3035813727675524,
+        "required_argmax": 263,
+        "gpu_winner_margin": 8.875
+      },
+      "actual_argmax": 263,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.2.logits": {
+      "max_abs": 0.5625,
+      "rms_abs": 0.1413698406561722,
+      "reference_max_abs": 27.25,
+      "bounds": {
+        "max_abs_bound": 2.125,
+        "rms_bound": 0.38718317238962435,
+        "required_argmax": 1135,
+        "gpu_winner_margin": 10.0
+      },
+      "actual_argmax": 1135,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.3.logits": {
+      "max_abs": 0.46875,
+      "rms_abs": 0.08267587723505601,
+      "reference_max_abs": 37.5,
+      "bounds": {
+        "max_abs_bound": 1.375,
+        "rms_bound": 0.3147650561797322,
+        "required_argmax": 6830,
+        "gpu_winner_margin": 12.875
+      },
+      "actual_argmax": 6830,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.4.logits": {
+      "max_abs": 0.4375,
+      "rms_abs": 0.12076396265131664,
+      "reference_max_abs": 18.875,
+      "bounds": {
+        "max_abs_bound": 1.25,
+        "rms_bound": 0.2706739011455099,
+        "required_argmax": 864,
+        "gpu_winner_margin": 2.375
+      },
+      "actual_argmax": 864,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.5.logits": {
+      "max_abs": 0.59375,
+      "rms_abs": 0.17088544209248827,
+      "reference_max_abs": 32.5,
+      "bounds": {
+        "max_abs_bound": 1.625,
+        "rms_bound": 0.3498825134147205,
+        "required_argmax": 18974,
+        "gpu_winner_margin": 9.0
+      },
+      "actual_argmax": 18974,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.6.logits": {
+      "max_abs": 0.81640625,
+      "rms_abs": 0.3352817616731666,
+      "reference_max_abs": 22.875,
+      "bounds": {
+        "max_abs_bound": 2.5,
+        "rms_bound": 0.9719022873241566,
+        "required_argmax": 535,
+        "gpu_winner_margin": 14.0625
+      },
+      "actual_argmax": 535,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.7.logits": {
+      "max_abs": 0.4375,
+      "rms_abs": 0.10182747557707282,
+      "reference_max_abs": 25.125,
+      "bounds": {
+        "max_abs_bound": 3.0,
+        "rms_bound": 1.072993120103486,
+        "required_argmax": 3358,
+        "gpu_winner_margin": 11.0625
+      },
+      "actual_argmax": 3358,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.8.logits": {
+      "max_abs": 0.4375,
+      "rms_abs": 0.08441583488919498,
+      "reference_max_abs": 30.125,
+      "bounds": {
+        "max_abs_bound": 2.1875,
+        "rms_bound": 0.5972309525078684,
+        "required_argmax": 524,
+        "gpu_winner_margin": 11.375
+      },
+      "actual_argmax": 524,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "decode.9.logits": {
+      "max_abs": 0.359375,
+      "rms_abs": 0.07380342446889103,
+      "reference_max_abs": 28.375,
+      "bounds": {
+        "max_abs_bound": 2.0,
+        "rms_bound": 1.016108890545068,
+        "required_argmax": 864,
+        "gpu_winner_margin": 7.0
+      },
+      "actual_argmax": 864,
+      "represents_bf16_values": true,
+      "passed": true
+    },
+    "logits": {
+      "max_abs": 0.5,
+      "rms_abs": 0.18173681808940392,
+      "reference_max_abs": 34.25,
+      "bounds": {
+        "max_abs_bound": 1.25,
+        "rms_bound": 0.28155289340381073,
+        "required_argmax": 561,
+        "gpu_winner_margin": 3.375
+      },
+      "actual_argmax": 561,
+      "represents_bf16_values": true,
+      "passed": true
+    }
+  }
+}

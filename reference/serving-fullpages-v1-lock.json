@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "dataset": "opendatalab/OmniDocBench",
+  "revision": "aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec",
+  "corpus_manifest_sha256": "cdec2de6243a61005463d6546e5d80cd1772bf362d126a62be7673316d6072ae",
+  "annotation_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "preparation_script_sha256": "6da04962a91488b1488fb91344c1b89fbfb5b2a9e92641396f8897b449d89eb9",
+  "ground_truth_script_sha256": "d90fa70851d9e1d0e331a8a920f7b6b35e3e9fafa52a2c950afcaed4c59fb423",
+  "pillow_version": "12.3.0",
+  "source_terms": "Research purposes only; not for commercial use. Do not redistribute source images in runner releases.",
+  "rgb_policy": "Pinned Pillow decode, then RGB conversion before upstream preprocessing; no EXIF auto-orientation.",
+  "ground_truth_policy": "Nonignored blocks with numeric order >= 0, sorted by order/index; text, HTML tables, LaTeX equations; NFC/LF, trim edges, join with two newlines.",
+  "metrics_note": "Assembled text supports diagnostic normalized CER only; retain original blocks for text/table/formula evaluation.",
+  "qualification": "Pixel/annotation freeze only. Visual category evidence belongs to the selection manifest/review report; newly found duplicate candidates require review. No quality or performance acceptance claim.",
+  "selection": "bounded_official_and_vllm_serving",
+  "source_manifest": "reference/corpus-v3-evaluation-lock.json",
+  "source_manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+  "selection_policy": "Three named natural pages selected from existing visual category evidence, without selecting for any observed serving or HF output. Not statistically representative corpus evidence.",
+  "max_dimension": 1536,
+  "min_dimension": 64,
+  "max_new_tokens": 4096,
+  "pages": [
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "category": "ordinary",
+      "split": "evaluation",
+      "smoke": false,
+      "source_family": "docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "source_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/source.jpg",
+      "source_sha256": "6c34770354f7cbcdab3fb611e7364d72c1f44bfb042ebe35c12e90fdc95db37f",
+      "source_bytes": 745175,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png",
+      "canonical_png_sha256": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "rgb_sha256": "093521696d923ee8d30cb5aec22bc635c0ad8e73aa5f40c85c2cf168cae87af2",
+      "width": 1653,
+      "height": 2339,
+      "difference_hash_64": "80e0f0d4d4f0c484",
+      "ground_truth_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/ground-truth.txt",
+      "ground_truth_sha256": "fbeea42cc365d6cf5b6fcb409bfddd6a05d466b4cd0d7d22b6c233e8489883a3",
+      "normalized_ground_truth_sha256": "9491ce61fc4bfab446e943900839a0fb5e38f671b42079902c67f65dfff2a551",
+      "annotation_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/annotation.json",
+      "annotation_page_sha256": "eef28102565cc3a50ba68fee31d0016e7ac3452d63e04a014c8bbf5cc3501dae",
+      "attributes": {
+        "data_source": "academic_literature",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "P003",
+        "status": "supported",
+        "evidence": "Single-column journal opening page has a substantial abstract and introduction in ordinary prose, without a table, displayed equation or code block.",
+        "source": "reference/corpus-v3-candidate-review.json"
+      },
+      "serving_selection_reason": "Single-column journal abstract/introduction prose."
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "category": "tables",
+      "split": "evaluation",
+      "smoke": false,
+      "source_family": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "source_path": "artifacts/corpus/v3/2c243b31d36eb729/source.jpg",
+      "source_sha256": "e334e4f823c20f95d0edf976f798cd899cae9327fa2d38c7f1ca77bb03c1b5f1",
+      "source_bytes": 562083,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/2c243b31d36eb729/canonical-rgb.png",
+      "canonical_png_sha256": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e",
+      "rgb_sha256": "86ad1eb5e4fceab0e8ea5acf2c992351c765ccecbeb9053cca804c050fbfa44c",
+      "width": 1575,
+      "height": 2048,
+      "difference_hash_64": "ea9894989898c888",
+      "ground_truth_path": "artifacts/corpus/v3/2c243b31d36eb729/ground-truth.txt",
+      "ground_truth_sha256": "59877703cff4ddee46bff6ff9e28e4dd21eb886395be258779686a285fdb6a91",
+      "normalized_ground_truth_sha256": "f3489c9ef9cd98bdf21bcfa433e0afbddd3ffdc76b94f6acde6db21497ae831a",
+      "annotation_path": "artifacts/corpus/v3/2c243b31d36eb729/annotation.json",
+      "annotation_page_sha256": "62e001c76c8a5d7978f156d2d9d5d1e1edd707e1529844f9eb117e6b08752147",
+      "attributes": {
+        "data_source": "academic_literature",
+        "language": "english",
+        "layout": "other_layout",
+        "special_issue": [
+          "table_fewer_line",
+          "table_horizontal",
+          "table_span"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E102",
+        "status": "supported",
+        "evidence": "English scientific article is dominated by a long numeric comparison table above two short prose columns.",
+        "source": "reference/corpus-v2-visual-review.json"
+      },
+      "serving_selection_reason": "Scientific page dominated by a long numeric comparison table."
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "category": "multi_column",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_llm-raw-the-eye-o.O-Team%2520Bravo%2520-%2520System%2520Error.pdf_9.jpg",
+      "source_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/source.jpg",
+      "source_sha256": "2b7c8c3b12421bcae6561572bd8409b9bb013e8ed8ddc25e33dc23c298748d54",
+      "source_bytes": 606473,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/canonical-rgb.png",
+      "canonical_png_sha256": "e900609f33a80d87830fd823ad2fd835628f3513ef63544e6d1571f9ecf11a2c",
+      "rgb_sha256": "882800899ed638b5cbba0e941bea78b25d3b3c5e1c80fc67328cd40661eb7a19",
+      "width": 1700,
+      "height": 2200,
+      "difference_hash_64": "ccc8c9c5c0c9dcfc",
+      "ground_truth_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/ground-truth.txt",
+      "ground_truth_sha256": "49e6d106c7e42b18105018487b1335edaeddcffeb23ca46c78f3c47518ae623d",
+      "normalized_ground_truth_sha256": "0e1c0919fe68e244bf1ae4ff3907c5786539d95da9606a06ce491b3bec7a86fd",
+      "annotation_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/annotation.json",
+      "annotation_page_sha256": "9250bb59307ab8361b92ef4607cd4787752a443b2ff71ea4c96e1662937ced04",
+      "attributes": {
+        "data_source": "magazine",
+        "language": "english",
+        "layout": "double_column",
+        "special_issue": [
+          "colorful_backgroud"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E141",
+        "status": "supported",
+        "evidence": "English game manual has two clear parallel prose columns with colored headings and side decoration.",
+        "source": "reference/corpus-v2-visual-review.json"
+      },
+      "serving_selection_reason": "Game manual with two sustained parallel prose columns."
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "schema_version": 2,
+  "dataset": "opendatalab/OmniDocBench",
+  "revision": "aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec",
+  "corpus_manifest_sha256": "cdec2de6243a61005463d6546e5d80cd1772bf362d126a62be7673316d6072ae",
+  "annotation_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "preparation_script_sha256": "6da04962a91488b1488fb91344c1b89fbfb5b2a9e92641396f8897b449d89eb9",
+  "ground_truth_script_sha256": "d90fa70851d9e1d0e331a8a920f7b6b35e3e9fafa52a2c950afcaed4c59fb423",
+  "pillow_version": "12.3.0",
+  "source_terms": "Research purposes only; not for commercial use. Do not redistribute source images in runner releases.",
+  "rgb_policy": "Pinned Pillow decode, then RGB conversion before upstream preprocessing; no EXIF auto-orientation.",
+  "ground_truth_policy": "Nonignored blocks with numeric order >= 0, sorted by order/index; text, HTML tables, LaTeX equations; NFC/LF, trim edges, join with two newlines.",
+  "metrics_note": "Assembled text supports diagnostic normalized CER only; retain original blocks for text/table/formula evaluation.",
+  "qualification": "Pixel/annotation freeze only. Visual category evidence belongs to the selection manifest/review report; newly found duplicate candidates require review. No quality or performance acceptance claim.",
+  "selection": "targeted_tokenizer_regression",
+  "pages": [
+    {
+      "id": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "category": "degraded",
+      "split": "evaluation",
+      "smoke": false,
+      "source_family": "page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "source_path": "artifacts/corpus/v3/eb9484a26254fd69/source.png",
+      "source_sha256": "4b529de276c249381605c5c9156ae1e9595f92fbf3a2c1ab0d5e0f92e9d3441e",
+      "source_bytes": 479772,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/eb9484a26254fd69/canonical-rgb.png",
+      "canonical_png_sha256": "4b529de276c249381605c5c9156ae1e9595f92fbf3a2c1ab0d5e0f92e9d3441e",
+      "rgb_sha256": "6bfba08a165c52c58cdf58d275e18d8597886395d8233c3e4f42fd8bf0d7ce48",
+      "width": 1089,
+      "height": 1559,
+      "difference_hash_64": "e0e8c4e0f0c0c442",
+      "ground_truth_path": "artifacts/corpus/v3/eb9484a26254fd69/ground-truth.txt",
+      "ground_truth_sha256": "2211998d765a62bc4cc9e576933fa53d2ab6b55059c721d5156cf77443878873",
+      "normalized_ground_truth_sha256": "2ebbf862e720055230083fabd63b6ca5b813e8869757eeec7213d36700b36b1a",
+      "annotation_path": "artifacts/corpus/v3/eb9484a26254fd69/annotation.json",
+      "annotation_page_sha256": "500a3dec508114e3e27ee92bb8251d5703e052302d2990272e1d52bb93d79b19",
+      "attributes": {
+        "data_source": "exam_paper",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [
+          "transparent_pages"
+        ],
+        "subset": "layout_hard"
+      },
+      "visual_review": {
+        "review_id": "E004",
+        "status": "supported",
+        "evidence": "English/Chinese exercise page with obvious pale reverse-side show-through.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+      "category": "handwriting",
+      "split": "evaluation",
+      "smoke": false,
+      "source_family": "notes_f7f010b78016aeebd76e56d9283eb67f",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+      "source_path": "artifacts/corpus/v3/26587cc8d139432f/source.jpg",
+      "source_sha256": "293845555229105cc709acc5c672acb133bd0911bd90904c741664089d3f5f64",
+      "source_bytes": 277326,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/26587cc8d139432f/canonical-rgb.png",
+      "canonical_png_sha256": "745ee279ef05825a4877ee01a97d7ecce0307184f2ab7281d47670d34d2ae552",
+      "rgb_sha256": "37a0430ec02a35205d3a9eae052333f4c749c7e80487754a89b74f14b934df06",
+      "width": 1432,
+      "height": 2024,
+      "difference_hash_64": "cc8088c8808080d0",
+      "ground_truth_path": "artifacts/corpus/v3/26587cc8d139432f/ground-truth.txt",
+      "ground_truth_sha256": "68834ca0039a74060e403ff0ed0a973546cd2162a1a70921e2b29ea17dd1f667",
+      "normalized_ground_truth_sha256": "67c668753b13d6f6212830f55702d763b541b23144c711203bce5fcb2fb0b348",
+      "annotation_path": "artifacts/corpus/v3/26587cc8d139432f/annotation.json",
+      "annotation_page_sha256": "bf81426b3bc89592a109009e2bb3688f2b8f669baf2561130fc4dbbf9b28dbd8",
+      "attributes": {
+        "data_source": "note",
+        "language": "en_ch_mixed",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E046",
+        "status": "supported",
+        "evidence": "Handwritten English example sentences and Chinese translations use blue and yellow highlighting.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+      "category": "handwriting",
+      "split": "evaluation",
+      "smoke": false,
+      "source_family": "notes_f7f010b78016aeebd76e56d9283eb67f",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+      "source_path": "artifacts/corpus/v3/025952623c446940/source.jpg",
+      "source_sha256": "b96c9a6179f063551c76b547f42a05f9f3c403085e19db4ac57236f87ced89ff",
+      "source_bytes": 307360,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/025952623c446940/canonical-rgb.png",
+      "canonical_png_sha256": "0b462c40649502a966bd04b04cea9fdf2d3ae2f89378d4d37078267b103f3d6b",
+      "rgb_sha256": "b455452d84dfcf4238f7e74ff741f4c61241ea80ebdc8b72644bb0ca531d0da2",
+      "width": 1434,
+      "height": 2026,
+      "difference_hash_64": "92d28ed0c0e2d0e4",
+      "ground_truth_path": "artifacts/corpus/v3/025952623c446940/ground-truth.txt",
+      "ground_truth_sha256": "8f0c317fff5be90a2666b8a55df52e6fefc7d7436748fa090dc57b4e8a0fcdb4",
+      "normalized_ground_truth_sha256": "b611c57a9e9cd75176011d322d832ce69f7d101f920d257b0ec07af38414b65d",
+      "annotation_path": "artifacts/corpus/v3/025952623c446940/annotation.json",
+      "annotation_page_sha256": "091b64a048c94c8b0f06127a5404bf985deb01553e6fd0911db53ab3e6e45e5b",
+      "attributes": {
+        "data_source": "note",
+        "language": "en_ch_mixed",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E044",
+        "status": "supported",
+        "evidence": "Chinese and English handwritten study notes include numbered phrasal-verb examples.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    }
+  ],
+  "source_manifest": "reference\\corpus-v3-evaluation-lock.json",
+  "source_manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+  "selection_policy": "Three saved v3 outputs changed by the verified BPE cleanup correction; selected to reproduce known failures, not an unbiased quality sample."
+}

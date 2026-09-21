@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-09-20T08:36:43.712161+00:00",
+  "platform": "Ubuntu-24.04-CUDA under WSL 2 on the local Windows host",
+  "scope": "Functional Linux regression only; not bare-metal performance",
+  "source_identity_scope": "Source hashes recorded after successful tests; not a startup build capture",
+  "source_sha256": {
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "tests/gpu_parity.rs": "f8ae9d7237474c517961b21693c4021bfb5ae82d1fae3aa37edad2da443b8e16",
+    "tests/batch_parity.rs": "909553f4fa3569aa9d7c9e64bd11e5535d9e2ab159b2d398dc427c23663b012e",
+    "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82"
+  },
+  "commands": [
+    [
+      "bash",
+      "scripts/build_linux.sh",
+      "test",
+      "--locked",
+      "--release",
+      "--lib",
+      "--jobs",
+      "2"
+    ],
+    [
+      "bash",
+      "scripts/build_linux.sh",
+      "test",
+      "--locked",
+      "--release",
+      "--test",
+      "gpu_parity",
+      "--test",
+      "batch_parity",
+      "--jobs",
+      "2",
+      "--",
+      "--ignored",
+      "--nocapture"
+    ]
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/home/amazi/falcon-ocr-rust-reference/rust-target",
+    "FOCR_TOOL_DIR": "/home/amazi/falcon-ocr-rust-reference/build-tools",
+    "CUDA_VISIBLE_DEVICES": "-1"
+  },
+  "observed_tool_results": {
+    "library": {
+      "passed": 47,
+      "ignored": 7,
+      "failed": 0
+    },
+    "free_running_cpu_matches_gpu_smoke_tokens_and_stop": {
+      "passed": true,
+      "new_timing_subintervals_valid": true
+    },
+    "mixed_batches_preserve_tokens_order_stops_and_limits": {
+      "passed": true,
+      "new_timing_subintervals_valid": true
+    }
+  },
+  "log_note": "Counts were recorded from the completed command tool output; a separate stdout log was not captured for these invocations.",
+  "windows_trace_equivalence_evidence": "reference/stage-timing-windows-validation-v1.json"
+}

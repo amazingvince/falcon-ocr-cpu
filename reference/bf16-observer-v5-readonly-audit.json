@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "status": "rejected_capture_audited_next_mechanism_proposed_only",
+  "created_utc": "2026-09-20T12:10:58.067397+00:00",
+  "source_and_artifact_sha256": {
+    "artifacts/reference/bf16-fused-substages-v5/report.json": "99f612c1d6b78405d5e0cd6c783a05f120fb44d09af98d9c0f3371f36b73f047",
+    "artifacts/reference/bf16-fused-substages-v5/specification.json": "85610099350e8261b8833085222a4ad90c3fc613063f8856492071eb48e3093e",
+    "artifacts/reference/bf16-fused-substages-v5/original.py": "1189460ad74ae2b36885008bd77138b06d270f8b8fd42bca292f664447a55f37",
+    "artifacts/reference/bf16-fused-substages-v5/instrumented.py": "a8952efb86c5e5abf2f6653f33d0453732c8f75ae0319ef74e96debc1ec08091",
+    "artifacts/reference/bf16-fused-substages-v5/original-0.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "artifacts/reference/bf16-fused-substages-v5/instrumented-0.ptx": "b9ebd98edd615b9472292ef3dae1dc513ce92c7a96552df1cba9aebba34d7942",
+    "artifacts/reference/bf16-fused-substages-v5/original-0.cubin": "7ba5f8153557a08dbc5069b058359d01c09c0e6e860b0be8e2d23a5bc9f15c7e",
+    "artifacts/reference/bf16-fused-substages-v5/instrumented-0.cubin": "aea70c807ecd3258dd2dae012ad78e9fa2f2443c78d29008044664081e3b3ca8",
+    "artifacts/reference/bf16-fused-substages-v5/original-0.ttgir": "b891c8743b35224f9e04a3057bb21d7e708373446a576bda27b4b3a71b365715",
+    "artifacts/reference/bf16-fused-substages-v5/instrumented-0.ttgir": "8d5195e19387f2f1c8a6b6368f8610ee90bbbafdfa92b5b15c8b0a6b071b1585",
+    "reference/bf16-fused-observer-v5-summary.json": "a8f1bbe62ca4c3ec97c1cc02ee53accf9631430c81e74ea80680326211be0f6b",
+    "reference/bf16-observer-v5-readonly-audit.md": "b31fe01a9e7c62303880b74acbd7d5efe9142f8d688e2036a11bdb313afca4e8",
+    "artifacts/reference/bf16-observer-v5-audit/compiler-selection.json": "001fdc86b9eb5edae2ee994506fb1947c9ab7b1731ca4c16571a3a5978d7d040",
+    "artifacts/reference/bf16-observer-v5-audit/inspect_compiler_selection.py": "e2317c7b30f5cb8166a775a99789d863bab1f46649ad6225c57a8d63775a543c",
+    "artifacts/reference/bf16-observer-v5-audit/instrumented-v5.sass": "d7e01b21e8a1aad7f39675937d1fa29ac35da37636b08bc43ed4d31edc1a4ca5",
+    "artifacts/reference/bf16-observer-v5-audit/original.sass": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d",
+    "artifacts/reference/bf16-observer-v5-audit/torch-compile-tasks.py": "89e8e652621c9ea8be3bc755a999eb0a49670569c7173bea6c6788e5ac746be0",
+    "artifacts/reference/bf16-observer-v5-audit/triton-nvidia-compiler.py": "eea55698bab00c726b3d1d495b390b72a63aaa8d167781a65ea5212d394d76f6"
+  },
+  "v5_accepted": false,
+  "cuda_execution_performed_in_audit": false,
+  "candidate_implemented": false,
+  "candidate_compiled": false,
+  "read_only_host_actions": [
+    "inspect existing source/IR/PTX",
+    "disassemble existing cubins with nvdisasm13.1.115",
+    "read installed compiler-selection source and run its environment-selection helper with CUDA uninitialized"
+  ],
+  "compiler_selection": {
+    "phase": "Read-only audit-time selection probe; not startup attestation for historical captures",
+    "TRITON_PTXAS_PATH_before": null,
+    "TRITON_PTXAS_PATH_after_torch_helper": "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/torch/bin/ptxas",
+    "selected_ptxas": "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/torch/bin/ptxas",
+    "selected_ptxas_sha256": "daba837a68265cae38c832d13399b61dab811891de9b8914defddef143b849f2",
+    "selected_ptxas_version": "ptxas: NVIDIA (R) Ptx optimizing assembler\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Wed_Aug_20_01:55:12_PM_PDT_2025\nCuda compilation tools, release 13.0, V13.0.88\nBuild cuda_13.0.r13.0/compiler.36424714_0\n",
+    "disable_line_info": false,
+    "disable_ptxas_opt": false,
+    "cuda_initialized": false,
+    "candidate_compiled": false,
+    "gpu_executed": false
+  },
+  "observed_masked_reduction": {
+    "original": {
+      "layout": "MMA v2 [4,1] warps [16,8] instruction",
+      "row_DAGs_per_loop": 4,
+      "exp2_leaves_per_row": 16,
+      "adds_per_row": 17,
+      "shuffle_offsets": [
+        2,
+        1
+      ]
+    },
+    "v5": {
+      "layout": "blocked3",
+      "row_DAGs_masked_loop": 1,
+      "exp2_leaves_per_row": 64,
+      "adds_per_row": 63,
+      "shuffle_offsets": []
+    },
+    "qualification": "Physical source/IR/PTX use chains are observed; no claim that one remaining store uniquely caused layout selection."
+  },
+  "recommendation": "One prospective stores-only observer inserted into original emitted PTX; first require exact unmodified assembler/ABI control, then preserve original arithmetic and audit SASS plus all full-output equality gates. No implementation or run authorized by this audit.",
+  "required_future_gates": [
+    "original assembler/source/options startup identity",
+    "unmodified PTX roundtrip control",
+    "original instructions reconstructed after removing only debug additions",
+    "same grid/strides/sparse schedule/launch ABI",
+    "bounded unique complete observation writes with register-to-matrix mapping evidence",
+    "native arithmetic/reduction and SASS audit",
+    "complete raw BF16, natural LSE, log2 LSE equality and frozen fixture joins"
+  ],
+  "primary_sources": [
+    "https://docs.nvidia.com/cuda/archive/13.0.0/parallel-thread-execution/index.html",
+    "https://docs.nvidia.com/cuda/archive/13.0.0/cuda-driver-api/group__CUDA__MODULE.html",
+    "https://docs.nvidia.com/cuda/archive/13.0.0/cuda-binary-utilities/index.html"
+  ]
+}

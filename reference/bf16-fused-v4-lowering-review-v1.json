@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "status": "specific_instrumentation_lowering_difference_identified",
+  "scope": "Read-only inspection of preserved rejected v4 generated source, TTGIR and PTX. No GPU execution, compilation, source edits, new fixtures or threshold changes.",
+  "capture": "artifacts/reference/bf16-fused-substages-v4",
+  "capture_remains_rejected": true,
+  "capture_report_sha256": "cbe34afe8e613099652e8ae974a967b9a4f59ce66ec4240788b881001b2eaf2b",
+  "existing_gate": [
+    {"case": "prefill.layer.0", "raw_bf16_mismatches": 0, "raw_elements": 147456, "natural_lse_mismatches": 7, "log2_lse_mismatches": 7, "original_raw_and_lse_match_frozen": true},
+    {"case": "prefill.layer.17", "raw_bf16_mismatches": 0, "raw_elements": 147456, "natural_lse_mismatches": 9, "log2_lse_mismatches": 11, "original_raw_and_lse_match_frozen": true},
+    {"case": "prefill.layer.19", "raw_bf16_mismatches": 0, "raw_elements": 147456, "natural_lse_mismatches": 12, "log2_lse_mismatches": 13, "original_raw_and_lse_match_frozen": true}
+  ],
+  "identity_checks": {
+    "all_5_saved_source_hashes_match_capture_report": true,
+    "all_20_saved_ptx_cubin_ttir_ttgir_llir_hashes_match_capture_report": true,
+    "natural_lse_pointwise_ptx_cubin_ttir_ttgir_llir_byte_identical_between_controls": true,
+    "original_and_instrumented_num_warps": 4,
+    "original_and_instrumented_num_stages": 3,
+    "original_and_instrumented_enable_fp_fusion": true,
+    "original_shared_bytes": 27136,
+    "instrumented_shared_bytes": 54784
+  },
+  "finding": {
+    "operation": "masked-loop sum of unrounded probabilities feeding l_i",
+    "original_ttgir": {"path": "original-0.ttgir", "lines": [269, 274], "layout": "nvidia_mma v2, warpsPerCTA [4,1], instruction shape [16,8]"},
+    "instrumented_ttgir": {"path": "instrumented-0.ttgir", "lines": [544, 552], "layout": "blocked3: sizePerThread [1,1], threadsPerWarp [32,1], warpsPerCTA [4,1], order [0,1]"},
+    "dataflow": "Instrumented reduction %136 feeds denominator %l_i_318; line639 carries it out of the masked loop, line647 converts it back to MMA layout, and the later denominator feeds final log2 LSE at918-919.",
+    "original_ptx": {"path": "original-0.ptx", "lines": [6358, 6460], "arithmetic": "Per-thread local partial sums followed by butterfly lane exchanges at XOR offsets2 and1, then denominator FMA."},
+    "instrumented_ptx": {"path": "instrumented-0.ptx", "lines": [12328, 12397], "arithmetic": "63 sequential add.f32 instructions sum all64 values in one thread, store that sum, then feed it to denominator FMA."},
+    "instrumented_source_location": "PTX attributes this reduction to generated source line452:99, the added sum_unrounded_probabilities_f32 store; the consuming denominator FMA is at457:24.",
+    "full_block_loop": "Its probability reduction remains MMA-layout in both programs (original TTGIR381-386; instrumented804-812).",
+    "conclusion": "Instrumentation changes a floating-point summation order that reaches LSE. This is an actual arithmetic lowering difference, not merely a scheduling or register-number difference."
+  },
+  "bounded_correction_assessment": {
+    "justified_target": "Prevent the debug-only tl.sum(p,1) observation consumer from selecting/reusing a non-native reduction layout in the live denominator path.",
+    "guaranteed_source_level_fix_established": false,
+    "candidate_guard": "If one narrowly scoped observer correction is pursued, require generated masked-loop reduction layout and PTX addition/shuffle structure to retain the original MMA arithmetic before attempting the unchanged complete raw/log2-LSE/natural-LSE/frozen-fixture gate.",
+    "not_authorized_by_this_review": "No variant sweep, replacement reduction, tolerance widening, or interpretation of rejected intermediate values as native execution."
+  },
+  "limitations": [
+    "The saved artifacts prove this denominator arithmetic perturbation, but do not establish that it is the unique cause of every observed LSE mismatch.",
+    "No valid native intermediate oracle is obtained from rejected v4. Raw BF16 agreement does not waive the complete LSE gate.",
+    "Additional observer consumers and compiler cloning/layout decisions may also matter. No source correction was compiled or tested by this review.",
+    "No full-model, numerical-policy, OCR-quality or performance qualification follows."
+  ],
+  "reviewed_sha256": {
+    "instrument_bf16_flex.py": "b58612d8a5c54fe70aa045deef5f9c46c0fdc6e5565fd58ee50f6998e5e0f564",
+    "original.py": "1189460ad74ae2b36885008bd77138b06d270f8b8fd42bca292f664447a55f37",
+    "instrumented.py": "605e867651559b2f617cbcbe5e8599a7afa280c8fd9dc5a33d6568a70fae1e09",
+    "original-0.ttgir": "b891c8743b35224f9e04a3057bb21d7e708373446a576bda27b4b3a71b365715",
+    "instrumented-0.ttgir": "2a8b0c351febc3b21750cf6f66ca23ec8f83ace7d985c08e8176dc5248c3f456",
+    "original-0.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "instrumented-0.ptx": "68b4251fdce2acd0e7337ca4bbb843cdaa53545456dcca6fcff125b17caeb048",
+    "original-natural-lse-0.ptx": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a",
+    "instrumented-natural-lse-0.ptx": "f14a4db0efeec5c3a5c3a1844c842ee82d4e402c1f54526648f0b731d9e7a42a"
+  }
+}

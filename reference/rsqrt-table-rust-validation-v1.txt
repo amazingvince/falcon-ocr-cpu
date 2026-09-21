@@ -1,0 +1,1 @@
+{"status":"observed_boundary_values_exact","table_entries":16777216,"boundary_pairs":1057,"gpu_work":false}

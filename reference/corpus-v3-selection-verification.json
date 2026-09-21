@@ -1,0 +1,16 @@
+{
+  "manifest_sha256": "cdec2de6243a61005463d6546e5d80cd1772bf362d126a62be7673316d6072ae",
+  "candidate_review_sha256": "58f9f9502ddadc047d3fedd041d3d7d975a2a9840279cf89a8086b00c7897b3a",
+  "selector_sha256": "83ac3542a0b1371105668de2340f993e613e61b5b7b85b99c8d5d4508d153bf3",
+  "deterministic_first_freeze_and_replay_match": true,
+  "prior_artifacts_unchanged": {
+    "reference\\corpus-manifest-v1.json": "3e2ff266d059b158b07a1337a03736da64f7fc455121ffaf1d053ec949fdfb03",
+    "reference\\corpus-manifest-v2.json": "dd7911e3f7b8258fbc9cf9d45e46161aae9461baa7a28c99e3abc072ab0ed569",
+    "reference\\corpus-smoke-lock-v1.json": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+    "reference\\corpus-v2-calibration-lock.json": "d1cb8bf6f8f1ba82b7968aa7cc72efe0728a2b7e209f09679ad9be30ba7c9998",
+    "reference\\corpus-v2-duplicates.json": "0e2684ab74ef4697e1b356d929ae11ec408c1326b2cd0e0116e845ca24f3f664",
+    "reference\\corpus-v2-evaluation-lock.json": "6817dc965cc736097adbba358922a55393ddcee407cee8be6cf2d4ed9e9d81de",
+    "reference\\corpus-v2-smoke-lock.json": "eb0d28ac95968e7900b04605d37acd7e4f98645569fe5f93dac209944c733595",
+    "reference\\corpus-v2-visual-review.json": "0b0f00f9a47edfe935ed44722854acf48e83182dced06b0cb9c7eca8d3dfe392"
+  }
+}

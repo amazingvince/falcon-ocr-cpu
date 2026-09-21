@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T10:10:57.392573+00:00",
+  "scope": "First-release RGB buffers and PNG/JPEG files, public Runner/CLI behavior. Read-only source and saved-evidence audit; no production edits, test/CLI/build execution or inference.",
+  "status": "successful_input_evidence_sufficient_on_frozen_scope_two_negative_path_test_gaps",
+  "source_sha256_at_audit": {
+    "docs/PLAN.md": "3b0c40598d68945e53fda26e681011d691698b6c6d7d72f84639e5e260423661",
+    "README.md": "3e8186d22a7b1748d2ef9edd2a1c43fcc86ce5ac028e7a1fa53aa588d08b2681",
+    "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "tests/fixtures/README.md": "55a73e3ffdcaa3300ddcc8afae87cbb38b400c3db7df1d9435f757e8c1aaf30f",
+    "tests/fixtures/preprocess.json": "c3a3dca3a5ba9cd746123dc5ed96fa962517f656bf474dabbafa03a9f58e9878",
+    "tests/fixtures/decode.json": "f5b491e99b89273d16a7d0fe5b4b458505adf1dc70a5c2dd37a5a228d06ba37e",
+    "tests/generate_preprocess_fixtures.py": "024582fbc6beea5d125778c72715d3d17b7f8d67558d09d750a53d0e03d27888",
+    "tests/generate_decode_fixtures.py": "4528e50d339c0092d1fb9626b0073d7286de386ca00b2c8efd1a1a356e536b5e",
+    "tests/gpu_parity.rs": "f8ae9d7237474c517961b21693c4021bfb5ae82d1fae3aa37edad2da443b8e16",
+    "tests/batch_parity.rs": "909553f4fa3569aa9d7c9e64bd11e5535d9e2ab159b2d398dc427c23663b012e",
+    "tests/cache_layout.rs": "7060aaf05bee2660a7433ce172ab433be9cea261f404a1e4e0af1d6d8092544b",
+    "tests/weight_layout.rs": "cca7c3b1cf0da115c801c299efb43b873888a94c421f514576d78c2069a88ffb",
+    "tests/batch_trace.rs": "a2c267b98f05581a6d26cfbe416111be370cf92d184d6141fdc0cc9a9cc1eb5c",
+    "reference/stage-timing-windows-validation-v1.json": "a1f807c1efc4d2527dc533d8470697b0e35ca1d97eb77308d25b389d527e2935",
+    "reference/stage-timing-linux-validation-v1.json": "a3885275812e279b34142e5b16fb4e999f41021a76e6c178344a75962f307b12",
+    "reference/tokenizer-cleanup-v1.json": "9580354442bb5eed1aa38ec500509ac57651695ddd3dfc40037a25c18e163701",
+    "reference/tokenizer-regression-fp32-v1.json": "7075f065b6f2dd032cac4d8d6b007146ec6edb722b091ee09b4a093827c22b60",
+    "reference/exact-context-budget-guard-windows-v1.json": "7754aac923d19d8ede57ee22be0c4d76646892f70707281e1aa269077f83b5c3",
+    "reference/compact-cache-parity.json": "e4f42f300257477639dfa452c9bf32c341cf2c9689106eacd20c7ceb5ccf15cc",
+    "reference/image-api-requirements-audit-v1.md": "809cadb215877746759a14707e43ab9476c434ebaa4c7d3232f07a3579995f05"
+  },
+  "fixture_inventory": {
+    "resize_cases": 12,
+    "two_stage_cases": 9,
+    "png_patch_cases": 39,
+    "jpeg_patch_cases": 36,
+    "jpeg_files": 12,
+    "pillow": "12.3.0",
+    "fixture_sha256_scope": "Metadata files hashed now; actual decoder comparisons come from existing Windows/Linux test evidence, not rerun here."
+  },
+  "confirmed_implementation_defects": [],
+  "actionable_gaps": [
+    {
+      "id": "FILE-ERROR-EVIDENCE",
+      "requirement": "Exercise empty/invalid inputs; clearly reject unsupported choices.",
+      "missing_evidence": [
+        "missing file",
+        "empty bytes",
+        "recognizable unsupported format",
+        "truncated PNG",
+        "truncated JPEG",
+        "representative public file/CLI nonzero/no-result behavior"
+      ],
+      "proposed_scope": "One small error fixture table, no model forward. Verify errors rather than panic; preserve pinned-reference treatment where malformed-codec behavior matters."
+    },
+    {
+      "id": "PUBLIC-ARGUMENT-EMPTY-BATCH-EVIDENCE",
+      "requirement": "Public dimension/output/batch controls and empty/invalid input behavior.",
+      "missing_evidence": [
+        "zero output cap",
+        "zero/reversed dimensions",
+        "unaligned max dimension",
+        "zero batch size",
+        "library empty batch/file no-op",
+        "CLI no image argument",
+        "invalid first-chunk member propagates before prefill"
+      ],
+      "proposed_scope": "Small table tests for existing validators plus public-entry checks, using existing model assets only if construction requires them; no generation. Preserve existing Ok([]) empty-library behavior and all-or-error CLI output semantics unless root deliberately changes the contract."
+    }
+  ],
+  "not_new_requirements": [
+    "PDF/layout/HTTP support",
+    "extra successful PNG/JPEG modes solely to broaden a fixture count",
+    "general codec fuzzing",
+    "metadata orientation or ICC conversion",
+    "universal arbitrary-image float-position tolerance",
+    "recoverable process-wide OOM from arbitrary allocations"
+  ],
+  "separate_existing_gates": [
+    "Full-context numerical qualification",
+    "Large full-page mixed-batch functionality currently running",
+    "Memory-pressure/performance qualification"
+  ],
+  "requested_coordination": "No tests or source fixes begun; root owns active captured production files and must coordinate any follow-up."
+}

@@ -1,0 +1,23 @@
+{
+  "image": "ghcr.io/tiiuae/falcon-ocr@sha256:5d11a0fe592de85efef88bfa5266a9392dce501e3647c6f4c69df9b74ada9afd",
+  "attempts": [
+    {
+      "attempt": 1,
+      "status": "failed_before_serving",
+      "cuda_preflight": "passed; exactly one RTX 4090 visible and allocation verified",
+      "failure": "The pinned fork's Platform.device_id_to_physical_device_id uses int(CUDA_VISIBLE_DEVICES entry), rejecting the UUID string during model registry inspection.",
+      "additional_finding": "The documented VLLM_ATTENTION_BACKEND environment variable is unsupported in this build; --attention-backend is the actual CLI setting.",
+      "resolution": "Derive the physical ordinal from the expected UUID at every launch, then verify NVML UUID and PyTorch CUDA UUID/name/count before starting the server; use explicit --attention-backend TRITON_ATTN. No model math changed."
+    },
+    {
+      "attempt": 2,
+      "status": "serving_smoke_passed",
+      "report": "reference/vllm-smoke-fp32.json",
+      "observed_tokens": 17,
+      "prompt_tokens": 144,
+      "text_exact": true,
+      "compiled_triton_attention_ieee_verified": true,
+      "runtime_model_math_patched": false
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-09-20T08:13:16.650202+00:00",
+  "capture_scope": "Source snapshot captured after successful manual build; not startup-attested and not a hermetic build.",
+  "source_revision": "abb63d85ed7a6d559ea42b5db648e2585ac9ecb8",
+  "source_tag": "AOCL-202609W02",
+  "tracked_sources_clean_after_build": true,
+  "source_archive": {
+    "path": "artifacts/provenance/aocl-windows-source-after-build-v1.zip",
+    "sha256": "a8594eb5e2914dbbde8de2cbbc785d714d5335d83ec96affd5740c5dd75bf2d7"
+  },
+  "source_file_manifest": {
+    "path": "artifacts/aocl-dlp-build-windows-v2/source-files-after-build.json",
+    "sha256": "53fc8a36c95ca6f289fb602f6079e53c2044c4a087a070c30f9e5a087557ac49",
+    "file_count": 641
+  },
+  "library": {
+    "path": "artifacts/aocl-dlp-build-windows-v2/Release/aocl-dlp.dll",
+    "sha256": "f2ce2248710bdcc5feed97f73eead203733c8ebc6c1d759aa18ececd4e4cab1e",
+    "bytes": 9871360
+  },
+  "build": {
+    "platform": "native Windows x64",
+    "cmake": "4.2.1",
+    "generator": "Visual Studio 17 2022",
+    "compiler": "MSVC 19.44.35222.0",
+    "configuration": "Release",
+    "threading_model": "none",
+    "openmp": false,
+    "parallel_projects": 2,
+    "msvc_mp": 2,
+    "cmake_cache_sha256": "7a0f3e320396b2736ee05019fac172611bcdaabe6ee606da6f205476468bd93b",
+    "build_log_path": "artifacts/aocl-dlp-build-windows-v2/build.log",
+    "build_log_sha256": "4e3d827e6197693239935fbd9e7a9df453dbcce990255cd4523766d1460228ba"
+  },
+  "future_reproducer": {
+    "path": "scripts/build_aocl.py",
+    "sha256": "35d432601ff898cc87e1750bd972c9a4a028e3e6ad1d1178cc39629cbfee8578",
+    "end_to_end_executed": false
+  },
+  "environment_note": "Initial configure failed because MSBuild saw both Path and PATH. Explicit Python env=dict(os.environ) coalesced case-insensitive keys; successful configure/build used it. No global environment change.",
+  "scope": "Isolated operator experiments only; not linked into the production runner. No speed or full-model qualification claim."
+}

@@ -1,0 +1,2198 @@
+{
+  "arch": "x86_64",
+  "backend": "avx2",
+  "binary_sha256": "2b60e353cf6f10dd5154b646a1b1f7bd2d44d48fe9289451acf1ba4123ab89b5",
+  "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+  "cases": [
+    {
+      "batch_size": 1,
+      "execution": "sequential_batch_api",
+      "image_indices": [
+        0
+      ],
+      "median_ms": 561.6677,
+      "median_pages_per_second": 1.7804121547313474,
+      "memory_after": {
+        "peak_private_commit_bytes": 83415040,
+        "peak_resident_bytes": 1151545344,
+        "private_commit_bytes": 41054208,
+        "resident_bytes": 1111400448
+      },
+      "samples": [
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.8865678444698377,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 392.70149999999995,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 134.3015,
+                "preprocessing_ms": 0.1386,
+                "time_to_first_token_ms": 134.4401,
+                "total_ms": 530.0605
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 530.0631
+        },
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.8335657683539017,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 400.6941,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 141.5447,
+                "preprocessing_ms": 0.1495,
+                "time_to_first_token_ms": 141.6942,
+                "total_ms": 545.3824000000001
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 545.3854
+        },
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.7906686822433353,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 406.7858,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 149.062,
+                "preprocessing_ms": 0.1928,
+                "time_to_first_token_ms": 149.25480000000002,
+                "total_ms": 558.4481999999999
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 558.4506
+        },
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.7698234831152646,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 408.0888,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 154.5814,
+                "preprocessing_ms": 0.1733,
+                "time_to_first_token_ms": 154.7547,
+                "total_ms": 565.0252999999999
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 565.0281
+        },
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.7292248334670026,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 421.7589,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 152.51919999999998,
+                "preprocessing_ms": 0.18259999999999998,
+                "time_to_first_token_ms": 152.7018,
+                "total_ms": 578.2902
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 578.2937999999999
+        },
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.7804121547313474,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 402.7198,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 155.3496,
+                "preprocessing_ms": 0.1838,
+                "time_to_first_token_ms": 155.5334,
+                "total_ms": 561.6641999999999
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 561.6677
+        },
+        {
+          "emitted_tokens": 17,
+          "pages_per_second": 1.7443556141038827,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 415.74899999999997,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 154.4964,
+                "preprocessing_ms": 0.19369999999999998,
+                "time_to_first_token_ms": 154.6901,
+                "total_ms": 573.273
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 573.2776
+        }
+      ],
+      "token_ids": [
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ]
+      ]
+    },
+    {
+      "batch_size": 2,
+      "execution": "sequential_batch_api",
+      "image_indices": [
+        0,
+        0
+      ],
+      "median_ms": 1209.8917000000001,
+      "median_pages_per_second": 1.6530405159403936,
+      "memory_after": {
+        "peak_private_commit_bytes": 85696512,
+        "peak_resident_bytes": 1152483328,
+        "private_commit_bytes": 41742336,
+        "resident_bytes": 1111941120
+      },
+      "samples": [
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.630746751552471,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 436.0881,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 159.25629999999998,
+                "preprocessing_ms": 0.15789999999999998,
+                "time_to_first_token_ms": 159.4142,
+                "total_ms": 597.7435
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 460.6859,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 165.4333,
+                "preprocessing_ms": 0.1305,
+                "time_to_first_token_ms": 165.56380000000001,
+                "total_ms": 628.6854
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1226.432
+        },
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.593412450510601,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 463.30949999999996,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 175.2333,
+                "preprocessing_ms": 0.2278,
+                "time_to_first_token_ms": 175.46110000000002,
+                "total_ms": 642.2889
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 440.3268,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 168.82829999999998,
+                "preprocessing_ms": 0.1659,
+                "time_to_first_token_ms": 168.99419999999998,
+                "total_ms": 612.875
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1255.1678
+        },
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.6691708402197065,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 436.4126,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 164.637,
+                "preprocessing_ms": 0.15080000000000002,
+                "time_to_first_token_ms": 164.7878,
+                "total_ms": 605.5125
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 431.35679999999996,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 158.4611,
+                "preprocessing_ms": 0.1865,
+                "time_to_first_token_ms": 158.64759999999998,
+                "total_ms": 592.6842
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1198.1997
+        },
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.6530405159403936,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 430.6331,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 167.0618,
+                "preprocessing_ms": 0.1889,
+                "time_to_first_token_ms": 167.2507,
+                "total_ms": 601.0561
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 432.5104,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.9284,
+                "preprocessing_ms": 0.2084,
+                "time_to_first_token_ms": 171.13680000000002,
+                "total_ms": 608.8308
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1209.8917000000001
+        },
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.632332324579162,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 435.8468,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 162.9676,
+                "preprocessing_ms": 0.1802,
+                "time_to_first_token_ms": 163.14780000000002,
+                "total_ms": 603.0173
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 447.6009,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.5339,
+                "preprocessing_ms": 0.1799,
+                "time_to_first_token_ms": 170.7138,
+                "total_ms": 622.2184
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1225.2407
+        },
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.6777253935985714,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 437.4304,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 163.72129999999999,
+                "preprocessing_ms": 0.1641,
+                "time_to_first_token_ms": 163.88539999999998,
+                "total_ms": 606.1939
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 422.5349,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 159.69920000000002,
+                "preprocessing_ms": 0.1797,
+                "time_to_first_token_ms": 159.87890000000002,
+                "total_ms": 585.8924
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1192.0902
+        },
+        {
+          "emitted_tokens": 34,
+          "pages_per_second": 1.6880755440815187,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 427.1026,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 159.409,
+                "preprocessing_ms": 0.1717,
+                "time_to_first_token_ms": 159.58069999999998,
+                "total_ms": 589.8337
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 423.3528,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 167.09109999999998,
+                "preprocessing_ms": 0.13549999999999998,
+                "time_to_first_token_ms": 167.2266,
+                "total_ms": 594.9440000000001
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 1184.7811
+        }
+      ],
+      "token_ids": [
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ]
+      ]
+    },
+    {
+      "batch_size": 4,
+      "execution": "sequential_batch_api",
+      "image_indices": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_ms": 2488.587,
+      "median_pages_per_second": 1.6073378186095162,
+      "memory_after": {
+        "peak_private_commit_bytes": 86487040,
+        "peak_resident_bytes": 1152983040,
+        "private_commit_bytes": 42512384,
+        "resident_bytes": 1112694784
+      },
+      "samples": [
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.5979714710957322,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 443.3634,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 166.8144,
+                "preprocessing_ms": 0.18239999999999998,
+                "time_to_first_token_ms": 166.9968,
+                "total_ms": 613.6857
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 450.4463,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 167.2722,
+                "preprocessing_ms": 0.1917,
+                "time_to_first_token_ms": 167.4639,
+                "total_ms": 620.7565999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 448.6503,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 166.0243,
+                "preprocessing_ms": 0.2046,
+                "time_to_first_token_ms": 166.2289,
+                "total_ms": 618.5481000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 466.4124,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 179.5652,
+                "preprocessing_ms": 0.1992,
+                "time_to_first_token_ms": 179.7644,
+                "total_ms": 650.1767000000001
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2503.1736
+        },
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.5698530444866525,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 442.1809,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 190.6618,
+                "preprocessing_ms": 0.16210000000000002,
+                "time_to_first_token_ms": 190.8239,
+                "total_ms": 636.4286999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 458.5956,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.6076,
+                "preprocessing_ms": 0.217,
+                "time_to_first_token_ms": 171.8246,
+                "total_ms": 633.4245
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 450.8625,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 185.3589,
+                "preprocessing_ms": 0.2298,
+                "time_to_first_token_ms": 185.58870000000002,
+                "total_ms": 639.495
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 458.0394,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 177.60999999999999,
+                "preprocessing_ms": 0.1503,
+                "time_to_first_token_ms": 177.76029999999997,
+                "total_ms": 638.6545
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2548.0092
+        },
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.5782376806219043,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 449.0716,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 180.7568,
+                "preprocessing_ms": 0.1666,
+                "time_to_first_token_ms": 180.9234,
+                "total_ms": 633.6308
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 447.2292,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 175.20430000000002,
+                "preprocessing_ms": 0.187,
+                "time_to_first_token_ms": 175.39130000000003,
+                "total_ms": 626.0925000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 462.26099999999997,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 173.2303,
+                "preprocessing_ms": 0.127,
+                "time_to_first_token_ms": 173.3573,
+                "total_ms": 638.8553999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 451.1791,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 180.4566,
+                "preprocessing_ms": 0.2215,
+                "time_to_first_token_ms": 180.6781,
+                "total_ms": 635.8891
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2534.4725000000003
+        },
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.6073378186095162,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 442.439,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 169.2667,
+                "preprocessing_ms": 0.1923,
+                "time_to_first_token_ms": 169.45899999999997,
+                "total_ms": 615.3846
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 442.64320000000004,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 172.13049999999998,
+                "preprocessing_ms": 0.199,
+                "time_to_first_token_ms": 172.3295,
+                "total_ms": 618.2077
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 450.3629,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.6328,
+                "preprocessing_ms": 0.1584,
+                "time_to_first_token_ms": 170.7912,
+                "total_ms": 624.9559
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 454.8933,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.0008,
+                "preprocessing_ms": 0.2145,
+                "time_to_first_token_ms": 171.21529999999998,
+                "total_ms": 630.0337999999999
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2488.587
+        },
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.6794536065636403,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 426.101,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 166.41320000000002,
+                "preprocessing_ms": 0.5286,
+                "time_to_first_token_ms": 166.94180000000003,
+                "total_ms": 596.8646
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 439.0927,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.6234,
+                "preprocessing_ms": 0.18780000000000002,
+                "time_to_first_token_ms": 171.8112,
+                "total_ms": 614.8027000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 426.95529999999997,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 162.9658,
+                "preprocessing_ms": 0.152,
+                "time_to_first_token_ms": 163.1178,
+                "total_ms": 592.7833999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 402.961,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.4285,
+                "preprocessing_ms": 0.1838,
+                "time_to_first_token_ms": 170.6123,
+                "total_ms": 577.2699
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2381.7270000000003
+        },
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.758670487319678,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 410.4589,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 159.98999999999998,
+                "preprocessing_ms": 0.214,
+                "time_to_first_token_ms": 160.20399999999998,
+                "total_ms": 574.0385
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 407.7402,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 155.038,
+                "preprocessing_ms": 0.14980000000000002,
+                "time_to_first_token_ms": 155.1878,
+                "total_ms": 566.2806
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 413.23019999999997,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 155.2672,
+                "preprocessing_ms": 0.22619999999999998,
+                "time_to_first_token_ms": 155.4934,
+                "total_ms": 571.6247
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 403.4256,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 156.312,
+                "preprocessing_ms": 0.1997,
+                "time_to_first_token_ms": 156.51170000000002,
+                "total_ms": 562.4964
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2274.4454
+        },
+        {
+          "emitted_tokens": 68,
+          "pages_per_second": 1.6970429577999298,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 393.9934,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 155.0461,
+                "preprocessing_ms": 0.1673,
+                "time_to_first_token_ms": 155.2134,
+                "total_ms": 552.4143
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 406.3422,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 153.6717,
+                "preprocessing_ms": 0.21760000000000002,
+                "time_to_first_token_ms": 153.8893,
+                "total_ms": 564.0587
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 442.2987,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 158.62550000000002,
+                "preprocessing_ms": 0.2273,
+                "time_to_first_token_ms": 158.85280000000003,
+                "total_ms": 604.7108
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 450.2366,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 182.5431,
+                "preprocessing_ms": 0.19110000000000002,
+                "time_to_first_token_ms": 182.73420000000002,
+                "total_ms": 635.8517999999999
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 2357.0411
+        }
+      ],
+      "token_ids": [
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ]
+      ]
+    },
+    {
+      "batch_size": 8,
+      "execution": "sequential_batch_api",
+      "image_indices": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_ms": 4856.6645,
+      "median_pages_per_second": 1.6472210505790548,
+      "memory_after": {
+        "peak_private_commit_bytes": 86528000,
+        "peak_resident_bytes": 1153896448,
+        "private_commit_bytes": 44044288,
+        "resident_bytes": 1114173440
+      },
+      "samples": [
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.586799982196104,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 441.592,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.96620000000001,
+                "preprocessing_ms": 0.4724,
+                "time_to_first_token_ms": 172.4386,
+                "total_ms": 617.857
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 457.62059999999997,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 173.5265,
+                "preprocessing_ms": 0.19540000000000002,
+                "time_to_first_token_ms": 173.7219,
+                "total_ms": 635.3251
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 467.62989999999996,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 175.34730000000002,
+                "preprocessing_ms": 0.1485,
+                "time_to_first_token_ms": 175.49580000000003,
+                "total_ms": 647.0747
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 444.2998,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 177.6661,
+                "preprocessing_ms": 0.1797,
+                "time_to_first_token_ms": 177.8458,
+                "total_ms": 625.1381
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 440.3827,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.6584,
+                "preprocessing_ms": 0.10289999999999999,
+                "time_to_first_token_ms": 171.7613,
+                "total_ms": 615.4321
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 462.6131,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 177.06369999999998,
+                "preprocessing_ms": 0.1693,
+                "time_to_first_token_ms": 177.23299999999998,
+                "total_ms": 643.611
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 452.3498,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 177.5743,
+                "preprocessing_ms": 0.12290000000000001,
+                "time_to_first_token_ms": 177.69719999999998,
+                "total_ms": 634.4119000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 439.5592,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 178.83579999999998,
+                "preprocessing_ms": 0.196,
+                "time_to_first_token_ms": 179.03179999999998,
+                "total_ms": 622.7316000000001
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 5041.5932
+        },
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.6070754066096642,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 445.6803,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 168.0957,
+                "preprocessing_ms": 0.0955,
+                "time_to_first_token_ms": 168.19119999999998,
+                "total_ms": 618.3297
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 459.2006,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 177.3556,
+                "preprocessing_ms": 0.1964,
+                "time_to_first_token_ms": 177.55200000000002,
+                "total_ms": 640.5011000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 436.1791,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 174.8401,
+                "preprocessing_ms": 0.11230000000000001,
+                "time_to_first_token_ms": 174.9524,
+                "total_ms": 614.5868
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 454.8408,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 177.8045,
+                "preprocessing_ms": 0.2061,
+                "time_to_first_token_ms": 178.01059999999998,
+                "total_ms": 636.2636
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 437.663,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 176.35410000000002,
+                "preprocessing_ms": 0.0859,
+                "time_to_first_token_ms": 176.44000000000003,
+                "total_ms": 617.3005
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 461.9736,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 182.4178,
+                "preprocessing_ms": 0.1742,
+                "time_to_first_token_ms": 182.592,
+                "total_ms": 648.5937
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 429.5543,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.6791,
+                "preprocessing_ms": 0.114,
+                "time_to_first_token_ms": 170.7931,
+                "total_ms": 603.2986999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 435.9141,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 160.3066,
+                "preprocessing_ms": 0.2023,
+                "time_to_first_token_ms": 160.5089,
+                "total_ms": 599.0953
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 4977.9866999999995
+        },
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.6154215246598742,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 426.40729999999996,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 165.9871,
+                "preprocessing_ms": 0.102,
+                "time_to_first_token_ms": 166.0891,
+                "total_ms": 596.3353
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 439.6442,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.3005,
+                "preprocessing_ms": 0.22690000000000002,
+                "time_to_first_token_ms": 171.5274,
+                "total_ms": 614.1459
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 453.9509,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 176.5745,
+                "preprocessing_ms": 0.1031,
+                "time_to_first_token_ms": 176.6776,
+                "total_ms": 634.684
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 450.5668,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 184.4622,
+                "preprocessing_ms": 0.3004,
+                "time_to_first_token_ms": 184.7626,
+                "total_ms": 639.0785
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 438.992,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 187.252,
+                "preprocessing_ms": 0.1125,
+                "time_to_first_token_ms": 187.36450000000002,
+                "total_ms": 630.0432000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 449.1007,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 169.3553,
+                "preprocessing_ms": 0.24640000000000004,
+                "time_to_first_token_ms": 169.6017,
+                "total_ms": 623.1473
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 439.5129,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 173.31650000000002,
+                "preprocessing_ms": 0.1144,
+                "time_to_first_token_ms": 173.4309,
+                "total_ms": 616.5477000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 432.8229,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 161.9476,
+                "preprocessing_ms": 0.16870000000000002,
+                "time_to_first_token_ms": 162.1163,
+                "total_ms": 598.2718
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 4952.2678
+        },
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.6514940467974788,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 419.4044,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 166.1139,
+                "preprocessing_ms": 0.09770000000000001,
+                "time_to_first_token_ms": 166.2116,
+                "total_ms": 589.7962
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 433.2572,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 172.96020000000001,
+                "preprocessing_ms": 0.1718,
+                "time_to_first_token_ms": 173.132,
+                "total_ms": 609.2795
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 454.7348,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 161.3421,
+                "preprocessing_ms": 0.1185,
+                "time_to_first_token_ms": 161.4606,
+                "total_ms": 618.7104
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 443.6562,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 174.40210000000002,
+                "preprocessing_ms": 0.1503,
+                "time_to_first_token_ms": 174.5524,
+                "total_ms": 620.2860000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 424.8695,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.12060000000002,
+                "preprocessing_ms": 0.132,
+                "time_to_first_token_ms": 170.25260000000003,
+                "total_ms": 598.2879
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 445.6329,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 165.9301,
+                "preprocessing_ms": 0.2016,
+                "time_to_first_token_ms": 166.13170000000002,
+                "total_ms": 615.6180999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 420.07050000000004,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 160.0475,
+                "preprocessing_ms": 0.1164,
+                "time_to_first_token_ms": 160.1639,
+                "total_ms": 583.6958
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 433.18780000000004,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 170.7569,
+                "preprocessing_ms": 0.18589999999999998,
+                "time_to_first_token_ms": 170.9428,
+                "total_ms": 608.4128
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 4844.098599999999
+        },
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.7442842639133487,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 425.4765,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 165.4651,
+                "preprocessing_ms": 0.1189,
+                "time_to_first_token_ms": 165.584,
+                "total_ms": 594.2174
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 438.3439,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 164.5168,
+                "preprocessing_ms": 0.1762,
+                "time_to_first_token_ms": 164.69299999999998,
+                "total_ms": 606.1304
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 422.9459,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 164.9854,
+                "preprocessing_ms": 0.1292,
+                "time_to_first_token_ms": 165.1146,
+                "total_ms": 591.8948
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 407.0437,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 157.8032,
+                "preprocessing_ms": 0.183,
+                "time_to_first_token_ms": 157.9862,
+                "total_ms": 569.5346
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 398.5931,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 151.371,
+                "preprocessing_ms": 0.1149,
+                "time_to_first_token_ms": 151.48590000000002,
+                "total_ms": 553.5894999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 400.5415,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 153.2278,
+                "preprocessing_ms": 0.214,
+                "time_to_first_token_ms": 153.4418,
+                "total_ms": 557.1705000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 394.5478,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 150.71,
+                "preprocessing_ms": 0.10450000000000001,
+                "time_to_first_token_ms": 150.8145,
+                "total_ms": 550.0589
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 407.24559999999997,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 153.5384,
+                "preprocessing_ms": 0.1499,
+                "time_to_first_token_ms": 153.6883,
+                "total_ms": 563.8018999999999
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 4586.4084
+        },
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.68209137448354,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 418.2353,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 148.8197,
+                "preprocessing_ms": 0.10579999999999999,
+                "time_to_first_token_ms": 148.9255,
+                "total_ms": 570.6261999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 392.622,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 148.53379999999999,
+                "preprocessing_ms": 0.3332,
+                "time_to_first_token_ms": 148.867,
+                "total_ms": 546.1525
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 405.62850000000003,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 150.68300000000002,
+                "preprocessing_ms": 0.0923,
+                "time_to_first_token_ms": 150.77530000000002,
+                "total_ms": 563.8148
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 432.2358,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 174.7068,
+                "preprocessing_ms": 0.1308,
+                "time_to_first_token_ms": 174.83759999999998,
+                "total_ms": 610.9005
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 441.7669,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 176.56269999999998,
+                "preprocessing_ms": 0.14100000000000001,
+                "time_to_first_token_ms": 176.70369999999997,
+                "total_ms": 621.8327999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 441.6074,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 171.7207,
+                "preprocessing_ms": 0.1728,
+                "time_to_first_token_ms": 171.8935,
+                "total_ms": 616.9511
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 431.9866,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 164.7182,
+                "preprocessing_ms": 0.0987,
+                "time_to_first_token_ms": 164.8169,
+                "total_ms": 601.0929
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 442.66610000000003,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 176.6433,
+                "preprocessing_ms": 0.2429,
+                "time_to_first_token_ms": 176.8862,
+                "total_ms": 624.6005
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 4755.984200000001
+        },
+        {
+          "emitted_tokens": 136,
+          "pages_per_second": 1.6472210505790548,
+          "per_request": [
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 435.72630000000004,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 168.6114,
+                "preprocessing_ms": 0.1555,
+                "time_to_first_token_ms": 168.7669,
+                "total_ms": 608.3747000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 428.79679999999996,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 169.9075,
+                "preprocessing_ms": 0.1819,
+                "time_to_first_token_ms": 170.0894,
+                "total_ms": 602.1583
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 436.0271,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 181.6062,
+                "preprocessing_ms": 0.4293,
+                "time_to_first_token_ms": 182.0355,
+                "total_ms": 623.0649000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 416.8055,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 164.5134,
+                "preprocessing_ms": 0.16,
+                "time_to_first_token_ms": 164.6734,
+                "total_ms": 584.6021999999999
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 434.2995,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 167.93820000000002,
+                "preprocessing_ms": 0.10179999999999999,
+                "time_to_first_token_ms": 168.04000000000002,
+                "total_ms": 606.4848000000001
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 445.9207,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 166.0877,
+                "preprocessing_ms": 0.1821,
+                "time_to_first_token_ms": 166.2698,
+                "total_ms": 615.3572
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 434.9295,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 167.1425,
+                "preprocessing_ms": 0.1144,
+                "time_to_first_token_ms": 167.2569,
+                "total_ms": 605.8062
+              },
+              "width": 256
+            },
+            {
+              "finish_reason": "eos",
+              "height": 128,
+              "input_tokens": 144,
+              "output_tokens": 17,
+              "timings": {
+                "decode_ms": 446.38620000000003,
+                "image_decode_ms": 0.0,
+                "prefill_ms": 159.75220000000002,
+                "preprocessing_ms": 0.1928,
+                "time_to_first_token_ms": 159.94500000000002,
+                "total_ms": 610.8045
+              },
+              "width": 256
+            }
+          ],
+          "wall_ms": 4856.6645
+        }
+      ],
+      "token_ids": [
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ],
+        [
+          561,
+          791,
+          1169,
+          1135,
+          6830,
+          864,
+          18974,
+          535,
+          3358,
+          524,
+          864,
+          540,
+          541,
+          542,
+          543,
+          544,
+          263
+        ]
+      ]
+    }
+  ],
+  "cpu_label": "Ryzen 9 7950X",
+  "environment_label": "native Windows",
+  "images": [
+    {
+      "height": 128,
+      "path": "artifacts/reference/smoke-fp32/canonical-rgb.png",
+      "rgb_sha256": "6d8184a6b8ad1d1f2f524a67c1196d2de7accacf8679a764b7c0e8a337675880",
+      "sha256": "d62f8db10dca06c65c99ae4dde59e4a68b9548c56a42c76caa2bf7044ccca0db",
+      "width": 256
+    }
+  ],
+  "loaded_memory": {
+    "peak_private_commit_bytes": 5611520,
+    "peak_resident_bytes": 1088274432,
+    "private_commit_bytes": 5238784,
+    "resident_bytes": 1088200704
+  },
+  "logical_cpus": 32,
+  "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+  "notes": [
+    "Warm RGB-buffer recognition includes resizing and tokenization but excludes file read/decode and model loading.",
+    "Peak memory counters are process-lifetime high-water marks, not isolated per-case peaks.",
+    "Repeated input pages are explicitly indexed; this is not a corpus quality evaluation.",
+    "Sequential batch API baseline; no matrix-batch speedup claimed."
+  ],
+  "options": {
+    "max_dimension": 256,
+    "max_new_tokens": 24,
+    "min_dimension": 64
+  },
+  "os": "windows",
+  "precision": "fp32",
+  "read_decode_ms": 0.5302,
+  "repetitions": 7,
+  "schema_version": 1,
+  "source_sha256": {
+    "harness": "c2245833c3b90a4673eb5e140aadb43287866063686fb4e7030cf1f186be8c21",
+    "kernels": "801f94d88787d80af52a274fde2f3c385a27b42b067fd3f1a65cadd9282e90d5",
+    "model": "e51f02006d336a36d815fb902c756beed1a1228442fcbc9e3d8ae38b9af727f4",
+    "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "runner": "f5dfba8c2b00f1fd8532ba1d831b6ebf50eec8cace3af38eef2b4c693e2e026d"
+  },
+  "threads": 16,
+  "time_unix": 1789881408,
+  "verified_model_load_ms": 807.6148,
+  "warmup": 2,
+  "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+}

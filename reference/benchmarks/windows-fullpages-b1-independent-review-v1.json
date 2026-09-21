@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "kind": "independent-saved-benchmark-review",
+  "status": "passed_bounded_review",
+  "created_utc": "2026-09-20T14:31:32.635487+00:00",
+  "benchmark_directory": "artifacts/benchmarks/fullpages-b1-window-v1",
+  "findings": [],
+  "default_promotion": false,
+  "checks_passed": 838,
+  "scope": {
+    "platform": "Native Windows",
+    "cpu": "AMD Ryzen 9 7950X",
+    "profile": "fullpages",
+    "batch_size": 1,
+    "input_keys": [
+      "prose"
+    ],
+    "processes": 6,
+    "warmup_runs_per_process": 2,
+    "measured_samples_per_process": 3,
+    "measured_samples_total": 18,
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 16,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "coverage": "selected_groups_only"
+  },
+  "output_evidence": {
+    "literal_outputs_equal": true,
+    "output_tokens_per_sample": 1140,
+    "finish_reason": "eos",
+    "input_tokens": 6544,
+    "prepared_dimensions": [
+      1088,
+      1536
+    ],
+    "text_utf8_sha256": "ba5fda3411a50c6b9c578e4e6f39b03c1f4936ec6f2303651c2a9e2987287aa5",
+    "token_ids_canonical_json_sha256": "59714f21d4cfbfa690e22a52888a794a1b56cc7debcf1cc4b391b9df94bf7ad3",
+    "token_repetitions_evidence": "Each process saves one token sequence; the captured compiled harness rejects any differing measured repetition before writing its result. Literal text/stop/dimensions/counts are retained in all 18 measured samples.",
+    "warmup_outputs_qualified": false
+  },
+  "control_drift_percent": {
+    "sequential": -0.5986940111428085,
+    "expanded": 0.7627506880251822
+  },
+  "control_stability_pass": true,
+  "median_wall_ms": {
+    "sequential-a": 74023.7403,
+    "expanded-a": 74309.5626,
+    "compact": 67828.69510000001,
+    "phase-packed": 75548.80679999999,
+    "expanded-b": 74876.35930000001,
+    "sequential-b": 73580.5646
+  },
+  "compact": {
+    "latency_reduction_percent_vs_controls": {
+      "expanded-a": 8.721444822499858,
+      "expanded-b": 9.412402346864635
+    },
+    "meets_prespecified_5_percent_target_in_this_group": true,
+    "process_lifetime_high_water_reductions": {
+      "expanded-a": {
+        "peak_resident_bytes": {
+          "reduction_bytes": 397533184,
+          "reduction_MiB": 379.1171875,
+          "reduction_percent": 13.36879833162069
+        },
+        "peak_private_commit_bytes": {
+          "reduction_bytes": 665374720,
+          "reduction_MiB": 634.55078125,
+          "reduction_percent": 27.163716385015935
+        }
+      },
+      "expanded-b": {
+        "peak_resident_bytes": {
+          "reduction_bytes": 397570048,
+          "reduction_MiB": 379.15234375,
+          "reduction_percent": 13.369872297285202
+        },
+        "peak_private_commit_bytes": {
+          "reduction_bytes": 665419776,
+          "reduction_MiB": 634.59375,
+          "reduction_percent": 27.16505610894382
+        }
+      }
+    }
+  },
+  "phase_packed": {
+    "latency_reduction_percent_vs_controls": {
+      "expanded-a": -1.66767796315892,
+      "expanded-b": -0.8980771852244329
+    },
+    "packed_weight_bytes": 876085248,
+    "packed_weight_MiB": 835.5,
+    "packing_ms_excluded_from_warm_samples": 130.4174,
+    "multirow_packed_kernel_exercised": false,
+    "reason": "Frozen Runner singleton chunks use single-request forward; Model decode_batch selects packed kernels only with rows > 1. Packing is allocated at Runner construction."
+  },
+  "closure": {
+    "plan_sha256": "760250cf8bc62187d7e58d427c71a59bebd80ec4dcf7a0c465148866c87828f3",
+    "source_archive_members": 29,
+    "protocol_archive_members": 6,
+    "all_recorded_build_sources_match_archive_and_current_files": true,
+    "all_six_end_receipt_hashes_match": true,
+    "all_inputs_unchanged_at_end_of_review": true,
+    "checked_file_count": 69,
+    "checked_files_sha256": {
+      "artifacts/benchmarks/fullpages-b1-independent-review-v1/audit.py": "00cdea0f3cc7bcd0958a2eb75bc23c6c6ba3945e8eb35bdbe555cd94c18992d3",
+      "artifacts/benchmarks/fullpages-b1-window-v1/plan.json": "760250cf8bc62187d7e58d427c71a59bebd80ec4dcf7a0c465148866c87828f3",
+      "artifacts/benchmarks/fullpages-b1-window-v1/comparison.json": "ef25cf55760ec893616f023ab050c60b6a2e996cd700f109d8ceeb10b7803e0e",
+      "artifacts/benchmarks/fullpages-b1-window-v1/execution-start.json": "de3e09e5adf2e7745437eba1a9a79b0bb3c2e40864032e659ca81bfe57e493a7",
+      "artifacts/benchmarks/fullpages-b1-window-v1/execution-complete.json": "02503215f4836dc00a77aa1806a3127ab2193f39bd7cb179e9f306220be12fb2",
+      "artifacts/benchmarks/fullpages-b1-window-v1/commands.json": "14d4b246e35c4f179e9f54409acf3f41b8376e32a1ef1d1e140d637b793f9a4c",
+      "reference/benchmarks/realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+      "artifacts/builds/ocr-bench-fullpages-v2-windows/build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+      "artifacts/builds/ocr-bench-fullpages-v2-windows/ocr_bench.exe": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+      "artifacts/builds/ocr-bench-fullpages-v2-windows/source.zip": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+      "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+      "examples/ocr_bench.rs": "748d231586bf3b3481a74cdce08ebcefd8827ba35cb43a889b71e125e7ed7c91",
+      "examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+      "examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+      "examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+      "examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+      "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+      "scripts/build_linux.sh": "25203d4275f25a786bc91531f36d1ebe25ae77736d0dd59b7af1832b0f759e76",
+      "scripts/build_windows.ps1": "36e034617ffe5de1848a538f4a6fd3c80f822f47cdc6053ea21a515c9282d992",
+      "scripts/capture_rust_build.py": "f346902d34e4a813b7b2000ba08a6dfc15f129f8b7c1c97ebbc72f8041c79738",
+      "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+      "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+      "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+      "src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+      "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+      "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+      "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+      "src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+      "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+      "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+      "src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+      "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+      "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+      "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+      "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+      "src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+      "artifacts/benchmarks/fullpages-b1-window-v1/protocol-source.zip": "d948602b0041db6498d3548c1267f72132c9b77549fd6fb8cc6006d74fccd2f2",
+      "scripts/realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+      "scripts/compare_realistic_benchmarks.py": "63085cc599261a092991858ddc68fbf1fd9ac79ee3426c35da507fdee5a166f5",
+      "reference/serving-fullpages-v1-lock.json": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+      "reference/original-supplement-v1-lock.json": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+      "reference/original-supplement-v1-visual-review.json": "4a79273aff01f7c01cf340690b38856d702cf2f64d035d6a86327239b9de2c31",
+      "artifacts/model/model.safetensors": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "artifacts/model/config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "artifacts/model/tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "artifacts/model/tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "artifacts/corpus/v3/3f294b5e60a0c2d4/source.jpg": "6c34770354f7cbcdab3fb611e7364d72c1f44bfb042ebe35c12e90fdc95db37f",
+      "artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-sequential-a.json": "00c0fbeb6910bd20b3cd76276fe93048eee699808d2731cf13e08623477e299e",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-sequential-a.command.json": "438dc60408c8e3b61fbf0e4c22ba2e68891542d3c13bbc9688d4d011cba70beb",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-sequential-a.log": "610702fae8d1696d787efc6528695af1eed45068056427d32775b03598faaeb2",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-expanded-a.json": "23db1748800b75b9411fdc1f2919c05b57bdc3411379ffb7cecde8da2d1aac5d",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-expanded-a.command.json": "bb4a15980e9697ada5f69adee41f0b0310361f7a05e2709258495f3ebcabe0d8",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-expanded-a.log": "4902a2f898e1bc1bc029de8523335cb36566540574af429e14b22f4813409a61",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-compact.json": "6428d02a71874ab68d2dc9021bab95601a72b03fc0fee15d4c0ac57e8052a13d",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-compact.command.json": "317c48812c5f5fa0501bfb294be554a2a78fc7a1732a38f67451f79a3c39874f",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-compact.log": "64de6c3d685827761f47653b264ae135302c0704a51059a4ef1c81fce5ac1470",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-phase-packed.json": "9d4606b23dc917310256c1d85264a7f4cc298c94e5427f386bb706862efa6a98",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-phase-packed.command.json": "5dc50c9fe61f425dd76fc57f9816c8d78d427d55ae54c179a955a405f6659448",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-phase-packed.log": "26fab64e61a5412d11abdc456f32e7b587a2f2a13b334539198bb73121999333",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-expanded-b.json": "11dce681c1c9d23a3aa5e2dfe6b596221c9761477c8fa4b362633b684734822e",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-expanded-b.command.json": "249a5ee6938daf5b89fbfc28ae2a7bcbc828ad48cdd2d0822877d3180e4d2695",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-expanded-b.log": "f1ba7f856a879060652a2ff81a8b9c11ae7d1913c4c64d237619aaf486e2ecab",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-sequential-b.json": "5a001556c9c9c90ea05fc66516a5c210ef876d8378bf4c22d7c60b6651775fe4",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-sequential-b.command.json": "200cf857e480bd4fcb91e7c515b741915baa10a2dd829e1ba574dbda50c9e649",
+      "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-sequential-b.log": "83c1aaf9fcffaa2fe26fcb2d9da262bf36056db7051c1f4b496152a0cbdda5f2"
+    }
+  },
+  "limits": [
+    "Read-only saved-evidence review; no inference, benchmark, test or build was rerun.",
+    "One selected natural full page, three measured repetitions per process; not a complete workload matrix, confidence-interval claim, numerical qualification or corpus quality gate.",
+    "Quiet conditions are the preserved startup attestation, not an independent retrospective operating-system activity measurement.",
+    "The end receipt is written only after six checked successful subprocesses and final plan validation; it does not contain separate per-process numeric exit-code fields.",
+    "Model/file hashes and source/binary/archive closure are checked; this is not a hermetic compiler/dependency build attestation.",
+    "Peak resident/private commit are process-lifetime high-water marks including load and warmups, not isolated KV bytes. End residency is a snapshot.",
+    "Warm wall time includes RGB-buffer preprocessing and recognition; file decode, verified model load and one-time packing are excluded and separately reported.",
+    "Batch size 1 uses the single-request path even in joint mode; it establishes no multi-request throughput or packed multirow arithmetic result.",
+    "No default is promoted, and results do not transfer to WSL or bare-metal Linux."
+  ]
+}

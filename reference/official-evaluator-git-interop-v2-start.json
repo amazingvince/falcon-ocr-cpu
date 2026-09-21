@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "source_checked_before_dispatch",
+  "recorded_utc": "2026-09-20T13:34:26.705470+00:00",
+  "source_sha256": {
+    "reference/official-evaluator-line-endings-v1.json": "3b9912e3b9ba232a3400ac1a9255d513f2ec65a635fe234061c2e176fd21940b",
+    "reference/official-evaluator-line-endings-independent-review-v1.json": "69872fd5ce325cfd6367f28f0107133e453611ba761e73cf0e72715aa8e33495",
+    "reference/official-teds-reporting-correction-v1.json": "25c6c3176bbd4b818904d7185c96be7990fb19eeaff90cca7edff68f3db6720f",
+    "reference/official-teds-reporting-independent-review-v1.json": "3e0344b9ae168aab321d0fc7875fe9668dc4c53854e9810bf9446013ba522218",
+    "scripts/audit_evaluator_line_endings.py": "8061b83ba88c8b0b589de161b74935b47cb82da7790e1f80adb327a5a890269e",
+    "scripts/run_official_evaluation.py": "003a8955bd799f9d4b4b46dff0c5ea2de0b9a409d04497530a469327cbca920f",
+    "scripts/run_evaluation_checked.py": "d1317f0284c90e5f80890e76c54a75870977c9ac18db924ecc122f702734a867",
+    "scripts/prepare_official_evaluation.py": "7b575e419b9b94a4dda24743b687dcabab98548fef62a5288eef153ebfa68692",
+    "scripts/compare_official_evaluation.py": "c4ff51c5828237274b1d11b369d664716b81d54371ad8e1d7a2b208cda43df82",
+    "scripts/report_quality_regression.py": "6e5f09a0fc10cd5e30d9e72588bf729cb33f6e2209cd603292fe7a8b3ebea299",
+    "reference/corpus-v3-evaluation-lock.json": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+    "reference/windows-rust-corpus-v3-fp32-redecoded-200.json": "a362b42625a5ee594212135ff4a0e36bb64cfcbb64296b91bc19a7712030f4d0"
+  },
+  "materialized_evaluator_raw_hashes_rechecked": 122,
+  "absent_skip_worktree_paths_still_absent": 84,
+  "requested_process_environment": {
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "core.autocrlf",
+    "GIT_CONFIG_VALUE_0": "true",
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "inheritance": "Wrapper retains process environment; scorer workers use OMP/OPENBLAS threads2 and PYTHONHASHSEED0 as recorded in source. Strict revision/clean-tree validation remains enabled.",
+  "output_root": "artifacts\\evaluation\\v3-checked-fp32-v2",
+  "log": "artifacts/evaluation/v3-checked-fp32-v2.log",
+  "final_report": "reference/official-components-v3-fp32.json",
+  "post_evaluation_raw_source_recheck_pending": true,
+  "limits": "122 materialized tracked evaluator files rehashed against existing pinned-blob audit;84 absent skip-worktree paths remain absent. This is a pre-dispatch source check, not a runtime capture. No evaluator source or Git configuration mutated; only reporting accepts upstream unclamped finite TEDS in [-1,1]. Prior failed runs remain unchanged."
+}

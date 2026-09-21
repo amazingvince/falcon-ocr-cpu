@@ -1,0 +1,764 @@
+{
+  "schema_version": 1,
+  "kind": "fp32-crossover-layer7-independent-review-v1",
+  "status": "saved_controls_and_signed_decomposition_verified",
+  "created_utc": "2026-09-20T16:56:16.480915+00:00",
+  "checks": 29344,
+  "controls": [
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.7.q",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.7.k",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.7.v",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.7.attention",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "cpu_trace",
+      "stage": "layer.7.hidden",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.7.q",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.7.k",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.7.v",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.7.attention",
+      "bit_mismatches": 0
+    },
+    {
+      "platform": "gpu_trace",
+      "stage": "layer.7.hidden",
+      "bit_mismatches": 0
+    }
+  ],
+  "saved_entry_states_exact": 3,
+  "payload_count": 42,
+  "stage_count": 14,
+  "values_per_branch": 2654208,
+  "row_statistics_verified": 2016,
+  "fp64_decomposition_residual_max_abs": 0.0,
+  "fixed_endpoint": {
+    "stage": "layer.7.hidden",
+    "coordinate": [
+      112,
+      249
+    ],
+    "rust_cpu": -58.89048767089844,
+    "gpu_cpu": -58.89044952392578,
+    "gpu_gpu": -58.892784118652344,
+    "original_rust_minus_gpu": 0.00229644775390625,
+    "engine_difference_on_cpu_entry_state": -3.814697265625e-05,
+    "incoming_state_difference_through_gpu": 0.0023345947265625,
+    "signed_incoming_fraction": 1.0166112956810631,
+    "signed_engine_fraction": -0.016611295681063124,
+    "fp64_decomposition_residual": 0.0
+  },
+  "stages_summary": [
+    {
+      "stage": "input",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.03125,
+          "rms": 0.0006417142307138523,
+          "signed_mean": 2.920645783888176e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "signed_mean": 0.0
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.03125,
+          "rms": 0.0006417142307138523,
+          "signed_mean": 2.920645783888176e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.000736236572265625,
+          "rms": 0.00021449930377763696,
+          "signed_mean": 2.2882595658302307e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "signed_mean": 0.0
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.000736236572265625,
+          "rms": 0.00021449930377763696,
+          "signed_mean": 2.2882595658302307e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.attention_norm",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00013113021850585938,
+          "rms": 5.925326224768155e-06,
+          "signed_mean": -2.381050749159878e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.76837158203125e-07,
+          "rms": 6.07321969138908e-08,
+          "signed_mean": 1.0748334732534625e-10
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00013113021850585938,
+          "rms": 5.925143190017227e-06,
+          "signed_mean": -2.3917990838924125e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 6.705522537231445e-05,
+          "rms": 2.0145960600738565e-05,
+          "signed_mean": 3.9437448625297594e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.76837158203125e-07,
+          "rms": 8.524768840436995e-08,
+          "signed_mean": 3.868687296441446e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 6.711483001708984e-05,
+          "rms": 2.0143846270347043e-05,
+          "signed_mean": 3.9050579895653453e-07
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.qkv",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0010509490966796875,
+          "rms": 1.7873299717749937e-05,
+          "signed_mean": -1.2099789219948637e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.9073486328125e-05,
+          "rms": 1.1353391181382739e-06,
+          "signed_mean": -1.1407128081625868e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0010547637939453125,
+          "rms": 1.7867880127560076e-05,
+          "signed_mean": -1.095907641178605e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00029158592224121094,
+          "rms": 6.230939419504797e-05,
+          "signed_mean": 6.960026439628564e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 7.152557373046875e-06,
+          "rms": 1.0837740227986922e-06,
+          "signed_mean": -2.5379449652973562e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00029206275939941406,
+          "rms": 6.229852671504578e-05,
+          "signed_mean": 7.213820936158299e-07
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.q",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0002778172492980957,
+          "rms": 8.611383217372763e-06,
+          "signed_mean": -1.4045537261031527e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.902482032775879e-06,
+          "rms": 5.148781677311754e-07,
+          "signed_mean": -1.5315396420214868e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0002778172492980957,
+          "rms": 8.606370824087542e-06,
+          "signed_mean": -1.251399761901004e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0001537799835205078,
+          "rms": 3.263073837629718e-05,
+          "signed_mean": 8.752749636187218e-09
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 2.1457672119140625e-06,
+          "rms": 5.184452471009572e-07,
+          "signed_mean": 1.6547062386962352e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.000154152512550354,
+          "rms": 3.2617165022842616e-05,
+          "signed_mean": -7.794312750775134e-09
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.k",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0002372264862060547,
+          "rms": 6.815470659491085e-06,
+          "signed_mean": -1.315517105125884e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.814697265625e-06,
+          "rms": 4.571867204531048e-07,
+          "signed_mean": 1.746107308125349e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00023555755615234375,
+          "rms": 6.812007244483573e-06,
+          "signed_mean": -1.490127835938419e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00011014938354492188,
+          "rms": 2.577971711693808e-05,
+          "signed_mean": 1.024454149956e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.6689300537109375e-06,
+          "rms": 4.0138027464257555e-07,
+          "signed_mean": -2.304511781403562e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.000110626220703125,
+          "rms": 2.582977763233368e-05,
+          "signed_mean": 1.0474992677700357e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.v",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0010509490966796875,
+          "rms": 2.7823946929186556e-05,
+          "signed_mean": 4.315671099498609e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.9073486328125e-05,
+          "rms": 1.7771579877247642e-06,
+          "signed_mean": -8.59232487629116e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0010547637939453125,
+          "rms": 2.7825257207788727e-05,
+          "signed_mean": 5.174903587127725e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00029158592224121094,
+          "rms": 8.46645087859653e-05,
+          "signed_mean": 6.401387508958578e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 7.152557373046875e-06,
+          "rms": 1.6819727274404806e-06,
+          "signed_mean": -2.786691766232252e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00029206275939941406,
+          "rms": 8.464243088967864e-05,
+          "signed_mean": 9.18807927519083e-08
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.attention",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0010509490966796875,
+          "rms": 1.649545656879377e-05,
+          "signed_mean": 4.0745836828016815e-09
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.814697265625e-05,
+          "rms": 1.466293339864871e-06,
+          "signed_mean": -2.1868952328042546e-10
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0010528564453125,
+          "rms": 1.647474231016462e-05,
+          "signed_mean": 4.293273206082107e-09
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.000102996826171875,
+          "rms": 2.4654567596401654e-05,
+          "signed_mean": 2.817962112544592e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.049041748046875e-05,
+          "rms": 1.4419115441503029e-06,
+          "signed_mean": 1.7189599077482853e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00010204315185546875,
+          "rms": 2.4367487168079283e-05,
+          "signed_mean": 2.6460661217697634e-07
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.wo",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00469970703125,
+          "rms": 7.536500576126857e-05,
+          "signed_mean": 2.740978878271697e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0001678466796875,
+          "rms": 1.038443989608154e-05,
+          "signed_mean": -6.28908849278189e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00463104248046875,
+          "rms": 7.496604640851421e-05,
+          "signed_mean": 2.803869763199516e-07
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.000396728515625,
+          "rms": 7.869359512596457e-05,
+          "signed_mean": 2.1383360338707766e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.814697265625e-05,
+          "rms": 6.654632387003731e-06,
+          "signed_mean": 1.507578417658806e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00035858154296875,
+          "rms": 7.707361911824589e-05,
+          "signed_mean": 2.1232602496941886e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.attention_residual",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.03125,
+          "rms": 0.0006481131513812432,
+          "signed_mean": 3.217575188803797e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0009765625,
+          "rms": 1.2359465954162752e-05,
+          "signed_mean": -8.873973490187415e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.03125,
+          "rms": 0.0006478584001563492,
+          "signed_mean": 3.2264491622939844e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00070953369140625,
+          "rms": 0.00021296477258233386,
+          "signed_mean": 4.420289769768715e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.57763671875e-05,
+          "rms": 6.7954186353786366e-06,
+          "signed_mean": 3.733051319917043e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0007038116455078125,
+          "rms": 0.00021224926049270216,
+          "signed_mean": 4.382959256569545e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.ffn_norm",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00010538101196289062,
+          "rms": 3.692081273702343e-06,
+          "signed_mean": -5.669911124967981e-09
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.291534423828125e-06,
+          "rms": 2.867763143610262e-07,
+          "signed_mean": -7.078477392707538e-10
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00010561943054199219,
+          "rms": 3.683924800117213e-06,
+          "signed_mean": -4.962063385697227e-09
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 3.2842159271240234e-05,
+          "rms": 9.573396415407691e-06,
+          "signed_mean": 1.5868454283918254e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 1.9073486328125e-06,
+          "rms": 2.982372994780538e-07,
+          "signed_mean": -1.9314635816651085e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 3.248453140258789e-05,
+          "rms": 9.550908543686209e-06,
+          "signed_mean": 1.6061600642084764e-07
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.w13",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0004339776933193207,
+          "rms": 8.357681491248566e-06,
+          "signed_mean": -1.629522043569115e-08
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 8.58306884765625e-06,
+          "rms": 9.457611784548228e-07,
+          "signed_mean": 1.6745259664482412e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0004331432282924652,
+          "rms": 8.340694128250134e-06,
+          "signed_mean": -1.7969746402139393e-08
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00015681982040405273,
+          "rms": 2.2737483605301373e-05,
+          "signed_mean": 1.1858254206723966e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 6.198883056640625e-06,
+          "rms": 9.76619528325774e-07,
+          "signed_mean": 2.923214657989269e-09
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0001583695411682129,
+          "rms": 2.267921741130942e-05,
+          "signed_mean": 1.1829022060144073e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.gate",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.15625,
+          "rms": 0.00029744178209717426,
+          "signed_mean": 5.036390594863895e-07
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.03125,
+          "rms": 5.459663744217345e-05,
+          "signed_mean": 9.215877482748654e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.125,
+          "rms": 0.00024851191554478477,
+          "signed_mean": 4.1148028465890285e-07
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.0034885406494140625,
+          "rms": 0.00010574928180842006,
+          "signed_mean": 1.140142697734798e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.38690185546875e-05,
+          "rms": 2.3489410133987557e-06,
+          "signed_mean": 4.238931607877374e-08
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.00353240966796875,
+          "rms": 0.00010638053188872325,
+          "signed_mean": 1.0977533816560243e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.w2",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.001972456307915812,
+          "signed_mean": 2.1287648316367133e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0234375,
+          "rms": 0.00041053770136462224,
+          "signed_mean": -7.29031499860058e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.07421875,
+          "rms": 0.0016330319346454332,
+          "signed_mean": 2.857796331496771e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00218963623046875,
+          "rms": 0.0005990462581218663,
+          "signed_mean": -2.2801298958559832e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 3.719329833984375e-05,
+          "rms": 9.669400690880615e-06,
+          "signed_mean": 2.864787044624488e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0021820068359375,
+          "rms": 0.0006024543690661758,
+          "signed_mean": -2.566608600318432e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.7.hidden",
+      "global": {
+        "original_rust_minus_gpu": {
+          "max_abs": 0.09765625,
+          "rms": 0.00213287644549358,
+          "signed_mean": 5.167829739447269e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 0.0234375,
+          "rms": 0.0004110432448044611,
+          "signed_mean": -7.280409422323659e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.07421875,
+          "rms": 0.0018222108047098368,
+          "signed_mean": 5.895870681679635e-06
+        }
+      },
+      "row112": {
+        "row": 112,
+        "original_rust_minus_gpu": {
+          "max_abs": 0.00229644775390625,
+          "rms": 0.0006720608628494382,
+          "signed_mean": 2.126287048061689e-06
+        },
+        "engine_difference_on_cpu_entry_state": {
+          "max_abs": 4.1961669921875e-05,
+          "rms": 1.0898241316851474e-05,
+          "signed_mean": 3.1238111356894177e-07
+        },
+        "incoming_state_difference_through_gpu": {
+          "max_abs": 0.0023345947265625,
+          "rms": 0.0006759123344367375,
+          "signed_mean": 1.813905934492747e-06
+        }
+      },
+      "fp64_residual_max_abs": 0.0
+    }
+  ],
+  "inputs_sha256": {
+    "artifacts/diagnostics/review_fp32_crossover_layer7.py": "79f197a24b84a1a7655b5fb7be417b8e4d0124523450d35e18ba8e6b12cc6b48",
+    "reference/fp32-crossover-layer7-completion-v1.json": "bcb6f6db4a2b08974f6cbf80d04102619ac20896619c6a6aee1dc7fbff299a12",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/preparation.json": "2a15ac7f1dac1512f51db2f77ab0f8d2121a1ddd1e02a5588d44ec1034f2badf",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/plan.json": "832d98ec8ba2807935017d0eb7ec2b5dca9ecfec0680211a5b41313f8554f4d2",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/build.json": "9e6838528c7457f6f7baad03f0a0d3b09af36abeb0dfaf2e7839512e621ba847",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/execution.json": "fb663eaf8fa203bd301a42ba23ed2fa673465dfad582742d7c8914a82d962729",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/rust/report.json": "c2ac7336a88ee47ca4416895c9a5797e21f680db7df3ebe6136571605933dfe8",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/rust/tensors.safetensors": "4972d70e6ec5c6c744745282141abb7768dbea6314970affa49603cd955e102d",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/gpu-launch-start.json": "1489d069dc80fea419395dcef8e236298cdbfe2bb185e757d93fe3a925443125",
+    "artifacts/diagnostics/fp32-crossover-layer7-gpu-v1/report.json": "c3ed7215c44f33463ce49435298ab9701e79c2eea83054c028b516fc14089529",
+    "artifacts/diagnostics/fp32-crossover-layer7-gpu-v1/tensors.safetensors": "23f81b36dc0deb13a0aca72b757d250e5f5d5451718c215503c441c05fb0776b",
+    "reference/fp32-crossover-layer7-source-review-v1.json": "8401d956e6a2e2ee81acdf7fc7c689fccae1e7d29c63278bc68eb141b7e5cea9",
+    "reference/fp32-crossover-layer7-decomposition-v1.json": "b7d39c1579fcfc51bd9ac5545246421e58d8df7a835acb5b30df270ffbe27dbb",
+    "experiments/fp32_crossover_layer7/adapter.py": "5f7fa4fb4af91f41057e1ccec0519b4065b576a133f29ba35c8824af05b7bbc2",
+    "experiments/fp32_crossover_layer7/capture.py": "1e8deb6958dee8f4accb158c97bdd97cc9c28ae5427ae3d1e86f7eed8c39e842",
+    "experiments/fp32_crossover_layer7/compare.py": "6b4ea7634b9b4ce7a1c5a4d39c6b44d068837876ac992d0cfa45725864ab4010",
+    "experiments/fp32_crossover_layer7/contract.py": "5e1090e21c23ed47f9a487915a0f6373b904fd8bb45c31dbac428601585c5971",
+    "experiments/fp32_crossover_layer7/export_gpu.py": "dd3444622c4bc69a65378ee4708b8cf3c7b5c197349e27064f36a1c23e8cb900",
+    "experiments/fp32_crossover_layer7/rust_arm.rs": "9e9d675abecd4b98e2774e3041ce7f48064d163225537f30b033be22ce724d0f",
+    "experiments/fp32_crossover_layer7/test_source.py": "ab31fba7b5f8d3dabbe96b38dd93c0f901c87c8ce47d896c020fcefa959a01dc",
+    "experiments/fp32_crossover_layer7/README.md": "534f85fb2bb9e3851705393a905affe0e84ca96a91f36d0386a58d3846859b09",
+    "experiments/fp32_crossover_layer7/SOURCE_REVIEW_NOTES.md": "8f3ceb90ebb715e233a958972e1b35abe68fb027ec4e6d63407142dee044f9d3",
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/model/modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+    "reference/fp32-upstream-next-diagnostic-v1.md": "e47a69323cdb5958813043769121f453d2fc7c5c1ace7b7fd18a38187575bf60",
+    "artifacts/diagnostics/fp32-crossover-v1/plan.json": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c",
+    "experiments/fp32_crossover/adapter.py": "82bfb211ca531af64572331a0f75bbbfa8230671efe9fa12978ff8a8c42860f2",
+    "experiments/fp32_crossover/capture.py": "678c5be110f290c37cb4c04ec4943d8d275df8c99e3d6022656334dee9ecdad3",
+    "experiments/fp32_crossover/compare.py": "17eeee2ccbade3b4c9ff4d027c43277a44c13d6fe7a476054764c0f993c2b8c2",
+    "experiments/fp32_crossover/contract.py": "b848f1a2a135f56853817c2768d0ce7742c0517a7410d8873ac0442445240405",
+    "experiments/fp32_crossover/export_gpu.py": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b",
+    "experiments/fp32_crossover/README.md": "5a56c464b9b085021d501dc86821e15c527096aeaadb952b3f2140d21e176489",
+    "experiments/fp32_crossover/rust_arm.rs": "f88bf1cea465092819e67a860f9f82f91fd2eae5ac3151799f997039eadc45ed",
+    "experiments/fp32_crossover/SOURCE_REVIEW_NOTES.md": "644130035c09d362baf9db256646df861a433b32b1fbe37ffdc7661b2a7bb338",
+    "experiments/fp32_crossover/test_source.py": "2657e8d289f8a671eeab39a3152784d9437b21997f319cda44940d548f035ce8",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/crossover-tests.exe": "4ad42e03ad38a34c126a234739466976163b25ed1629d7cac3e5a6ed4ada2ba0",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/build.log": "1eb85c30f72af78fa6d9bcef341262f32dfbd6249adb8d79f99f5fd84d14d59b",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/test-list.txt": "f839b3a3ee74eb573acf6a1f066f4132faa048843f4c8ec4a9cae71f0dd44aad",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/build-start.json": "34c7257a51006b4733a77af90b676093703ae701c7811a37cbe6e201358f5c8a",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/run-start.json": "4f307fb4a482f5247b44ab2e59a22370fc2a3d6c1a14690ddd5e4f3291673b80",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/run.log": "3d5df619deecac3655cbf6f004e0a28f58eee4df4a17b92906c2e00aee98aa84",
+    "artifacts/reference/smoke-fp32/trace.safetensors": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+    "artifacts/cpu/smoke-trace-sinks-pairwise.safetensors": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+    "reference/tolerances-smoke-fp32-v1.json": "8f6382a4386b15f76e6984679208a44d0fa644b9d55a21ce579bbb26e0bfbe1c",
+    "artifacts/reference/smoke-fp32/metadata.json": "c84b1fcc4526135677579392d2c2c52b1566c1f361ac950a6409a5145a8fc65e",
+    "artifacts/cpu/smoke-trace-sinks-pairwise.json": "745ee7d9e4668a8c8d45fce312d59169494639b4bba3863801fef5d11c60f66f",
+    "artifacts/model/artifact-manifest.json": "eea9640e8ab9feccd9358a6b3526e579b14dc4bfcd47ecd561853863952b594d",
+    "reference/windows-rust-smoke-fp32-sinks-pairwise.json": "ae3fb3b1dd270d8cf7e2b6115d525db2479aebd21495c9459a3565a1623b00e7",
+    "artifacts/model/attention.py": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+    "artifacts/model/config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "artifacts/model/configuration_falcon_ocr.py": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+    "artifacts/model/processing_falcon_ocr.py": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+    "artifacts/model/rope.py": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+    "artifacts/model/tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+    "artifacts/model/tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+    "examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+    "examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+    "examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+    "reference/manifest.json": "245d8f97674066030fdc6a80a6f2eef6641a190cf52baa0ba78755b74db74cc2",
+    "requirements/reference-lock.txt": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+    "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+    "scripts/build_windows.ps1": "36e034617ffe5de1848a538f4a6fd3c80f822f47cdc6053ea21a515c9282d992",
+    "scripts/export_reference.py": "e8e1d8fcedc5e58831836d2c3760420bade6f5ab04b3566e5dba753ea4318940",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "scripts/reference_preflight.py": "735ae548eb942ec23f3cc2610efa2122f14b6d0f35ec0f1a8766109c31a1cb97",
+    "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+    "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+    "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+    "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+    "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+    "tests/fixtures/decode.json": "f5b491e99b89273d16a7d0fe5b4b458505adf1dc70a5c2dd37a5a228d06ba37e",
+    "tests/fixtures/model-config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "tests/fixtures/preprocess.json": "c3a3dca3a5ba9cd746123dc5ed96fa962517f656bf474dabbafa03a9f58e9878",
+    "artifacts/model/model_args.json": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+    "artifacts/model/special_tokens_map.json": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+    "artifacts/model/README.md": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/source.zip": "82c8c21f4e65e1f9e97e1be5c23e6ad6cc96db2c73d2094dd33f82163611ecdb",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/fp32_crossover_layer7_arm.rs": "9e9d675abecd4b98e2774e3041ce7f48064d163225537f30b033be22ce724d0f",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/fp32_crossover_layer7_forward.rs": "396d98f6a89b12607db89475341a3d73e69a16e21084279b065ad7fe96301574",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/model.rs": "8194df407071f230aac2144403cdec84d3ad31011e2bfdeb7d4eddcc329030d2",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/tests/fixtures/decode.json": "f5b491e99b89273d16a7d0fe5b4b458505adf1dc70a5c2dd37a5a228d06ba37e",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/tests/fixtures/model-config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/project/tests/fixtures/preprocess.json": "c3a3dca3a5ba9cd746123dc5ed96fa962517f656bf474dabbafa03a9f58e9878"
+  },
+  "all_bound_inputs_unchanged": true,
+  "original_trace_payloads_rehashed": true,
+  "model_weights_read_or_rehashed": false,
+  "external_cpu_before_gpu_gate_verified": true,
+  "scope": "Independent saved bytes and FP64 accounting only, after owner completion signal. No model/build/GPU/capture/comparer execution. Original controls and states are compared bitwise; FP64 row/global summary reproducibility uses rel1e-13/abs1e-18 only for host JSON reductions, not a model tolerance. Signed fixed values and observed full-array decomposition identity are exact.",
+  "limits": [
+    "One layer7 diagnostic; no numerical gate closure, full-model/quality/performance/default promotion.",
+    "Different intermediates later in the segment mean engine term is not an isolated operator error.",
+    "Observer allocation/synchronization and absent earlier-layer history remain limitations.",
+    "Historical startup provenance gaps remain; weights identity is inherited from pinned capture metadata, not rehashed here."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "bounded_linux_wrapper_review_passed",
+  "scope": "Read-only wrapper review and two host-only source archive tests. No Rust build, test executable, inference or GPU launch by reviewer.",
+  "reviewed_files_sha256": {
+    "experiments/cache_layout/capture_temporal_linux.py": "4d927b18a5cff5e18253e91867db446639bca3a3714c0d4706d751551ba246c6",
+    "experiments/cache_layout/test_temporal_linux.py": "fcb7b2ebbc1e62c61d20c4e04d4872468f58476c4acf1c2e255179b625480e8a",
+    "reference/prefix-temporal-candidate-windows-v1.json": "d5cda80c9eee15fab3347484e38fdf7c391f6c39279763d586b33004f20b0e93",
+    "artifacts/diagnostics/prefix-temporal-candidate-windows-v1/build.json": "a1d075c11cc520d50543e33499c2461fa4a98af54ec51fa5b37440cb879a8cb6",
+    "artifacts/diagnostics/prefix-temporal-candidate-windows-v1/execution.json": "c2fc05624f59ef8b777df3d0771a754a08d5863f0f8640ceca276ee2649a3949",
+    "artifacts/diagnostics/prefix-temporal-candidate-windows-v1/source.zip": "3c56404aa7a996b0e29b93916a71d50b75cfa033dc33ca8bc12480e51a574176",
+    "scripts/build_linux.sh": "25203d4275f25a786bc91531f36d1ebe25ae77736d0dd59b7af1832b0f759e76"
+  },
+  "host_tests": {
+    "command": [
+      "C:\\Users\\amazi\\mambaforge\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "experiments/cache_layout",
+      "-p",
+      "test_temporal_linux.py",
+      "-v"
+    ],
+    "passed": 2,
+    "failed": 0,
+    "exit_code": 0,
+    "output": "test_actual_native_archive_has_identical_candidate_bytes (test_temporal_linux.LinuxArchiveTests) ... ok\ntest_changed_missing_and_added_archive_members_rejected (test_temporal_linux.LinuxArchiveTests) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.152s\n\nOK\n"
+  },
+  "findings": [],
+  "reviewed_checks": [
+    "Uses exact pinned native source ZIP; verifies each extracted byte against frozen source inventory and refuses unlisted candidate files.",
+    "Original native receipt/build/execution/evidence and wrapper identities are rechecked before and after build/test; output directories are new.",
+    "Copied candidate sources and preserved ZIPs are rechecked; Cargo builds offline/locked with the pinned compiler release and ext4 target.",
+    "Exactly the same eight native focused tests selected; individual test completions checked, with four-thread pools and CUDA_VISIBLE_DEVICES=-1.",
+    "Preserved emitted binary identity is rechecked and buffer-capacity accounting compared to native with backend availability separately recorded."
+  ],
+  "limitations": [
+    "Actual Linux compile and eight focused Rust test results are still pending.",
+    "Tests establish each platform candidate versus its own unchanged compact oracle; this wrapper does not save all arithmetic outputs for independent Windows/Linux byte comparison.",
+    "No model, warmed full-runner allocation, RSS or performance qualification."
+  ]
+}

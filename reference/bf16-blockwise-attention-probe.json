@@ -1,0 +1,470 @@
+{
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "source_sha256": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+  "oracle_sha256": "dcc4d8049c2cc38e36f84863fd5cbcff30084854192eb17905b5975c7c2d57a1",
+  "result_sha256": "0e1e0354cd67318841f73c7d9a1f9902768c2f2c5884bb08e4d419165c0d7979",
+  "cases": [
+    {
+      "name": "prefill.layer.0",
+      "schedule": [
+        {
+          "query_block": 0,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        },
+        {
+          "query_block": 1,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        }
+      ],
+      "raw": {
+        "elements": 147456,
+        "equal": 147437,
+        "max_abs": 0.03125,
+        "rms_abs": 0.00012605827942024916,
+        "peak": 9.4375,
+        "error_to_peak": 0.0033112582781456954,
+        "max_reference_ulp": 3.0,
+        "over_one_reference_ulp": 1,
+        "over_two_reference_ulp": 1
+      },
+      "lse": {
+        "elements": 2304,
+        "equal": 2130,
+        "max_abs": 9.5367431640625e-07,
+        "rms_abs": 1.916021261649803e-07,
+        "peak": 9.901463508605957,
+        "error_to_peak": 9.631650064430923e-08
+      },
+      "scaled": {
+        "elements": 147456,
+        "equal": 147437,
+        "max_abs": 0.015625,
+        "rms_abs": 4.2469153413549066e-05,
+        "peak": 7.40625,
+        "error_to_peak": 0.002109704641350211,
+        "max_reference_ulp": 5.0,
+        "over_one_reference_ulp": 2,
+        "over_two_reference_ulp": 1
+      }
+    },
+    {
+      "name": "prefill.layer.17",
+      "schedule": [
+        {
+          "query_block": 0,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        },
+        {
+          "query_block": 1,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        }
+      ],
+      "raw": {
+        "elements": 147456,
+        "equal": 147447,
+        "max_abs": 0.03125,
+        "rms_abs": 9.876555122900754e-05,
+        "peak": 32.0,
+        "error_to_peak": 0.0009765625,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      },
+      "lse": {
+        "elements": 2304,
+        "equal": 2120,
+        "max_abs": 9.5367431640625e-07,
+        "rms_abs": 1.4344382748276985e-07,
+        "peak": 7.6320719718933105,
+        "error_to_peak": 1.2495614820174046e-07
+      },
+      "scaled": {
+        "elements": 147456,
+        "equal": 147447,
+        "max_abs": 0.03125,
+        "rms_abs": 9.876555122900754e-05,
+        "peak": 32.0,
+        "error_to_peak": 0.0009765625,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      }
+    },
+    {
+      "name": "prefill.layer.19",
+      "schedule": [
+        {
+          "query_block": 0,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        },
+        {
+          "query_block": 1,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        }
+      ],
+      "raw": {
+        "elements": 147456,
+        "equal": 147450,
+        "max_abs": 0.015625,
+        "rms_abs": 6.103868508944288e-05,
+        "peak": 57.75,
+        "error_to_peak": 0.00027056277056277056,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      },
+      "lse": {
+        "elements": 2304,
+        "equal": 2159,
+        "max_abs": 9.5367431640625e-07,
+        "rms_abs": 1.4145206250759657e-07,
+        "peak": 9.673788070678711,
+        "error_to_peak": 9.858333772029187e-08
+      },
+      "scaled": {
+        "elements": 147456,
+        "equal": 147450,
+        "max_abs": 0.015625,
+        "rms_abs": 6.103868508944288e-05,
+        "peak": 57.75,
+        "error_to_peak": 0.00027056277056277056,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      }
+    },
+    {
+      "name": "prefill.layer.21",
+      "schedule": [
+        {
+          "query_block": 0,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        },
+        {
+          "query_block": 1,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        }
+      ],
+      "raw": {
+        "elements": 147456,
+        "equal": 147453,
+        "max_abs": 0.0625,
+        "rms_abs": 0.000164028286235407,
+        "peak": 33.25,
+        "error_to_peak": 0.0018796992481203006,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      },
+      "lse": {
+        "elements": 2304,
+        "equal": 2193,
+        "max_abs": 9.5367431640625e-07,
+        "rms_abs": 1.296201190825741e-07,
+        "peak": 7.904842853546143,
+        "error_to_peak": 1.2064431059226282e-07
+      },
+      "scaled": {
+        "elements": 147456,
+        "equal": 147453,
+        "max_abs": 0.0625,
+        "rms_abs": 0.000164028286235407,
+        "peak": 33.25,
+        "error_to_peak": 0.0018796992481203006,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      }
+    },
+    {
+      "name": "decode.2.layer.21",
+      "schedule": [
+        {
+          "query_block": 0,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        }
+      ],
+      "raw": {
+        "elements": 1024,
+        "equal": 1023,
+        "max_abs": 6.103515625e-05,
+        "rms_abs": 1.9073486328125e-06,
+        "peak": 13.8125,
+        "error_to_peak": 4.41883484162896e-06,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      },
+      "lse": {
+        "elements": 16,
+        "equal": 13,
+        "max_abs": 9.5367431640625e-07,
+        "rms_abs": 2.920019426255749e-07,
+        "peak": 8.375418663024902,
+        "error_to_peak": 1.1386586805701446e-07
+      },
+      "scaled": {
+        "elements": 1024,
+        "equal": 1023,
+        "max_abs": 6.103515625e-05,
+        "rms_abs": 1.9073486328125e-06,
+        "peak": 13.8125,
+        "error_to_peak": 4.41883484162896e-06,
+        "max_reference_ulp": 1.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      }
+    },
+    {
+      "name": "decode.6.layer.19",
+      "schedule": [
+        {
+          "query_block": 0,
+          "partial": [
+            [
+              128,
+              false
+            ],
+            [
+              192,
+              false
+            ]
+          ],
+          "full": [
+            [
+              0,
+              true
+            ],
+            [
+              64,
+              true
+            ]
+          ]
+        }
+      ],
+      "raw": {
+        "elements": 1024,
+        "equal": 1024,
+        "max_abs": 0.0,
+        "rms_abs": 0.0,
+        "peak": 42.0,
+        "error_to_peak": 0.0,
+        "max_reference_ulp": 0.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      },
+      "lse": {
+        "elements": 16,
+        "equal": 14,
+        "max_abs": 4.76837158203125e-07,
+        "rms_abs": 1.6858739115832577e-07,
+        "peak": 6.868074893951416,
+        "error_to_peak": 6.942806617077901e-08
+      },
+      "scaled": {
+        "elements": 1024,
+        "equal": 1024,
+        "max_abs": 0.0,
+        "rms_abs": 0.0,
+        "peak": 42.0,
+        "error_to_peak": 0.0,
+        "max_reference_ulp": 0.0,
+        "over_one_reference_ulp": 0,
+        "over_two_reference_ulp": 0
+      }
+    }
+  ],
+  "qualification": "Independent operator diagnostic; not a full-model BF16 acceptance policy"
+}

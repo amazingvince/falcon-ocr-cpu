@@ -1,0 +1,51 @@
+{
+  "v1_report_sha256_unchanged": "3c451b0079221bdb90aecee210256f26c8218d0f138043615aae41af0ae34922",
+  "result_validator_existing_v1": {
+    "cpu": {
+      "files": 11,
+      "text_samples": 296,
+      "text_pages": 23,
+      "formula_samples": 15,
+      "formula_pages": 6,
+      "table_samples": 11,
+      "table_pages": 9,
+      "reading_order_pages": 23
+    },
+    "gpu": "same counts; both validated without rewriting"
+  },
+  "synthetic_regression_tests_passed": 13,
+  "supplement_regression_tests_passed": 7,
+  "preflight_on_incomplete_v3": {
+    "evaluation_started": false,
+    "output_directory_created": false,
+    "report_created": false,
+    "observed_cpu_missing_or_invalid_pages": 165,
+    "observed_gpu_complete": false
+  },
+  "evaluation_execution_status": "not_run; waiting for complete validated source runs",
+  "scripts": {
+    "scripts/prepare_official_evaluation.py": "14402915ba1d9f7de3ba2eaa168439147da5f1c13cd6e9c1aa9dd441cef5b5b2",
+    "scripts/compare_official_evaluation.py": "01bcb9a81ecb7935508639bde67f38a0d39fc1e8e6fade747366293a7c3a5562",
+    "scripts/run_evaluation_checked.py": "d1317f0284c90e5f80890e76c54a75870977c9ac18db924ecc122f702734a867",
+    "scripts/run_official_evaluation.py": "003a8955bd799f9d4b4b46dff0c5ea2de0b9a409d04497530a469327cbca920f",
+    "tests/test_official_evaluation_workflow.py": "cc5da80cc5bc223eea461a62c42551550fbb8d2c95a975816efa25c0552784ca",
+    "scripts/validate_text_replay.py": "0589094ba226a5049457664e08f93543619b14ea98e1e4b85979ecc793865e2d",
+    "scripts/compare_original_supplement.py": "9c6855c2ec6cea5cd1b0de62bfa5ac712b0d0c627a04723c664e01513022e441",
+    "tests/test_original_supplement_comparison.py": "4917d3e1a8ba5bc361ad5c8992ac6c70a24ac0bcb84a9b01b5908b4961277968"
+  },
+  "saved_token_replay_validation": {
+    "policy": "All original inference fields except decoded text must be bit-preserving through JSON float round trips; no numerical tolerance.",
+    "preliminary_replay": "Rejected on all_inference_result_fields_sha256 because a preserved timing changed by one ULP.",
+    "corrected_replay_directory": "artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2",
+    "corrected_replay_pages_checked": 38,
+    "corrected_replay_run_sha256": "2ec6bddb63e484bce82e45084915950be4b0a8d8197745b277841ecaa7810f2f",
+    "one_ulp_timing_regression": "passed; nextafter(20.5,+inf) rejected",
+    "preflight_exit_code": 1,
+    "remaining_cpu_pages": 162,
+    "gpu_complete": false,
+    "evaluation_started": false,
+    "output_directory_created": false,
+    "report_created": false,
+    "evidence_path": "artifacts/evaluation/v3-replay-v2-preflight-status.json"
+  }
+}

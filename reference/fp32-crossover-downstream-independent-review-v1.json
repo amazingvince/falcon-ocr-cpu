@@ -1,0 +1,584 @@
+{
+  "kind": "fp32-crossover-downstream-independent-review-v1",
+  "status": "saved_controls_and_telescoping_verified",
+  "plan_sha256": "89d79b4717157f9d66c43092c9c83acd80880e0f823550e2a34111dafc6e7c36",
+  "gpu_report_sha256": "9d14800ac47f217afeb0f390e9cf96271fbb8e8d4765cdfb424d75eea43fbd78",
+  "analysis_sha256": "32d15683c8d226f4d0ea9163147cb6cee1d19b823a8d3c89fc5ec1861e792806",
+  "checks": 33191,
+  "new_controls_bit_exact": 17,
+  "new_full_entry_states_exact": 2,
+  "new_payloads_verified": 34,
+  "historical_payloads_directly_verified": 79,
+  "stages": 17,
+  "row_statistics_verified": 2448,
+  "values_per_branch": 3207168,
+  "fp64_telescoping_residual_max_abs": 0.0,
+  "fixed_endpoint": {
+    "stage": "layer.9.v",
+    "coordinate": [
+      112,
+      14,
+      2
+    ],
+    "original_absolute_bound": 0.005096435546875,
+    "A": -19.037837982177734,
+    "B": -19.031208038330078,
+    "C": -19.031253814697266,
+    "D": -19.03121566772461,
+    "D_minus_A_original": 0.006622314453125,
+    "D_minus_C_downstream_accumulated_engine": 3.814697265625e-05,
+    "C_minus_B_layer7_engine_propagated": -4.57763671875e-05,
+    "B_minus_A_earlier_state_propagated": 0.00662994384765625,
+    "signed_fractions_of_original_total": {
+      "downstream_engine": 0.00576036866359447,
+      "layer7_engine_propagated": -0.0069124423963133645,
+      "earlier_state_propagated": 1.0011520737327189
+    },
+    "fp64_telescoping_residual": 0.0,
+    "B_minus_A_exceeds_original_bound_descriptive_only": true
+  },
+  "stage_summaries": [
+    {
+      "stage": "input",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.09765625,
+          "rms": 0.00213287644549358,
+          "signed_mean": 5.167829739447269e-06
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 0.0,
+          "rms": 0.0,
+          "signed_mean": 0.0
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 0.0234375,
+          "rms": 0.0004110432448044611,
+          "signed_mean": -7.280409422323659e-07
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.07421875,
+          "rms": 0.0018222108047098368,
+          "signed_mean": 5.895870681679635e-06
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.attention_norm",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.00016401708126068115,
+          "rms": 8.967589000728156e-06,
+          "signed_mean": -9.144813893789838e-09
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 9.5367431640625e-07,
+          "rms": 6.737313993979352e-08,
+          "signed_mean": 1.2949353523628848e-11
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 1.1205673217773438e-05,
+          "rms": 9.952240415001597e-07,
+          "signed_mean": -2.27972495202443e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.0001656264066696167,
+          "rms": 8.970683051596066e-06,
+          "signed_mean": -6.878038295289036e-09
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.qkv",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.00170135498046875,
+          "rms": 3.04825445435153e-05,
+          "signed_mean": -7.954040310349026e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 3.0517578125e-05,
+          "rms": 1.244588593493743e-06,
+          "signed_mean": 1.8345502894590027e-10
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 4.1961669921875e-05,
+          "rms": 3.0685921101610816e-06,
+          "signed_mean": -4.753215105463621e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.001705169677734375,
+          "rms": 3.0454442482791818e-05,
+          "signed_mean": -7.497064302697254e-08
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.q",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.00019884109497070312,
+          "rms": 1.1055366445231277e-05,
+          "signed_mean": -4.045661170268586e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 4.32133674621582e-06,
+          "rms": 5.123186208435707e-07,
+          "signed_mean": -3.5362131124551233e-10
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 1.7642974853515625e-05,
+          "rms": 1.1520859805121054e-06,
+          "signed_mean": -1.7994058773871144e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.00020051002502441406,
+          "rms": 1.1049295943758136e-05,
+          "signed_mean": -3.8303584514053234e-08
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.k",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.0002655982971191406,
+          "rms": 8.735157546507319e-06,
+          "signed_mean": -1.3663753289310737e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 4.470348358154297e-06,
+          "rms": 4.5021702077657866e-07,
+          "signed_mean": -3.766394356890462e-10
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 7.62939453125e-06,
+          "rms": 9.673157253837457e-07,
+          "signed_mean": 3.4293290923020297e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.00026535987854003906,
+          "rms": 8.72693927809692e-06,
+          "signed_mean": -1.671644294592372e-08
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.v",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.00170135498046875,
+          "rms": 5.238717138445735e-05,
+          "signed_mean": -1.7320879427037047e-07
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 3.0517578125e-05,
+          "rms": 1.984150036653453e-06,
+          "signed_mean": 5.395943642522777e-09
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 4.1961669921875e-05,
+          "rms": 5.006014266633538e-06,
+          "signed_mean": -1.5924254310246194e-08
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.001705169677734375,
+          "rms": 5.2336559786522876e-05,
+          "signed_mean": -1.6268048360264706e-07
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.attention",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.001087188720703125,
+          "rms": 2.134869546759841e-05,
+          "signed_mean": -1.765887557168987e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 6.4849853515625e-05,
+          "rms": 2.116357048205777e-06,
+          "signed_mean": 1.173207449708021e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 4.9591064453125e-05,
+          "rms": 2.379703693917089e-06,
+          "signed_mean": -5.449457699905717e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.001094818115234375,
+          "rms": 2.1438778368308715e-05,
+          "signed_mean": -2.394149236886436e-08
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.wo",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.002593994140625,
+          "rms": 8.917436767569937e-05,
+          "signed_mean": 9.849537929295804e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 0.0001678466796875,
+          "rms": 1.3986091692944197e-05,
+          "signed_mean": 3.535408015725099e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 0.0001220703125,
+          "rms": 1.061855793576862e-05,
+          "signed_mean": -8.964074098643053e-08
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.002593994140625,
+          "rms": 8.924973218588921e-05,
+          "signed_mean": 1.5278204012213758e-07
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.attention_residual",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.09765625,
+          "rms": 0.002132483882734332,
+          "signed_mean": 5.303171309168209e-06
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 0.001953125,
+          "rms": 1.7627338466598233e-05,
+          "signed_mean": 8.266390607416354e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 0.0234375,
+          "rms": 0.00041125276173239626,
+          "signed_mean": -8.266235656467163e-07
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.07421875,
+          "rms": 0.001821781014007796,
+          "signed_mean": 6.0471309687407614e-06
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.ffn_norm",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.00013828277587890625,
+          "rms": 5.941365862828544e-06,
+          "signed_mean": -7.461219934071742e-09
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 4.291534423828125e-06,
+          "rms": 3.18931467112486e-07,
+          "signed_mean": 1.0731623861164823e-09
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 3.337860107421875e-06,
+          "rms": 3.9362802491782223e-07,
+          "signed_mean": -1.878643310874132e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.00014066696166992188,
+          "rms": 5.955114619990934e-06,
+          "signed_mean": -6.655739009314093e-09
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.w13",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.0005159378051757812,
+          "rms": 1.452899404480868e-05,
+          "signed_mean": -2.2585305032152693e-07
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 1.0251998901367188e-05,
+          "rms": 1.0183655332454298e-06,
+          "signed_mean": -1.1387269800625476e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 1.2874603271484375e-05,
+          "rms": 1.2066663088230028e-06,
+          "signed_mean": -1.550342973409986e-08
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.0005238056182861328,
+          "rms": 1.45609739602328e-05,
+          "signed_mean": -1.9896235078680158e-07
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.gate",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.02935791015625,
+          "rms": 0.00015287168938998833,
+          "signed_mean": 1.4032445587271711e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 0.0006103515625,
+          "rms": 5.140662570018066e-06,
+          "signed_mean": 6.813568822829035e-09
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 0.001220703125,
+          "rms": 7.13337469112061e-06,
+          "signed_mean": 2.348398504023632e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.0291748046875,
+          "rms": 0.00015428152993660898,
+          "signed_mean": 4.870478260419076e-09
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.w2",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.016510009765625,
+          "rms": 0.0008740338739683274,
+          "signed_mean": 7.804220769213755e-07
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 0.00146484375,
+          "rms": 2.996649829682282e-05,
+          "signed_mean": -3.232795548952978e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 0.000732421875,
+          "rms": 3.8619761939869804e-05,
+          "signed_mean": 1.4206345137305712e-07
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.01654052734375,
+          "rms": 0.0008862828383233381,
+          "signed_mean": 6.706865810378481e-07
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.8.hidden",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.09765625,
+          "rms": 0.0023494403707898246,
+          "signed_mean": 6.084809784725722e-06
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 0.00390625,
+          "rms": 3.9968353968423556e-05,
+          "signed_mean": 2.2326545419033478e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 0.0234375,
+          "rms": 0.0004127243345919618,
+          "signed_mean": -6.996711750549299e-07
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.07421875,
+          "rms": 0.0020777432201655446,
+          "signed_mean": 6.762154414361619e-06
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.9.attention_norm",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.0003835707902908325,
+          "rms": 1.4157640190266513e-05,
+          "signed_mean": -9.476619653612403e-09
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 1.1324882507324219e-05,
+          "rms": 1.0686682868453857e-06,
+          "signed_mean": 3.286012384006864e-09
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 7.748603820800781e-06,
+          "rms": 1.1966618797543792e-06,
+          "signed_mean": -3.9737569284486405e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.00038586556911468506,
+          "rms": 1.4195488933655482e-05,
+          "signed_mean": -8.788875109170627e-09
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.9.qkv",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.006622314453125,
+          "rms": 5.9493508642111646e-05,
+          "signed_mean": 4.279850982255893e-08
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 6.103515625e-05,
+          "rms": 3.420406172655517e-06,
+          "signed_mean": -3.0514089625436704e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 9.1552734375e-05,
+          "rms": 3.795349157748761e-06,
+          "signed_mean": 8.006888189508269e-09
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.00662994384765625,
+          "rms": 5.973506024930732e-05,
+          "signed_mean": 6.530571125848736e-08
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    },
+    {
+      "stage": "layer.9.v",
+      "global": {
+        "D_minus_A_original": {
+          "max_abs": 0.006622314453125,
+          "rms": 0.00010810784355556972,
+          "signed_mean": 1.5528555902872338e-07
+        },
+        "D_minus_C_downstream_accumulated_engine": {
+          "max_abs": 6.103515625e-05,
+          "rms": 5.652412524300419e-06,
+          "signed_mean": -5.064733462252965e-08
+        },
+        "C_minus_B_layer7_engine_propagated": {
+          "max_abs": 9.1552734375e-05,
+          "rms": 6.36576446180227e-06,
+          "signed_mean": 1.4432215620116848e-08
+        },
+        "B_minus_A_earlier_state_propagated": {
+          "max_abs": 0.00662994384765625,
+          "rms": 0.00010854459441299701,
+          "signed_mean": 1.9150067803113618e-07
+        }
+      },
+      "fp64_telescoping_residual_max_abs": 0.0
+    }
+  ],
+  "source_review": {
+    "concrete_findings": [],
+    "native_arithmetic_and_hooks": "Read before execution; four mechanical source fragments preserve prior setup/arithmetic/hooks/cleanup. All17 actual controls are separately required and now rechecked.",
+    "state_and_sign_review": "C7 is original CPU layer7 hidden; S is saved native GPU7(C6). D-A=(D-C)+(C-B)+(B-A). Conditional substitutions, not unique attribution.",
+    "recording_time": "Source-review receipt finalized after capture; current hashes are checked against the prospectively frozen plan/archive."
+  },
+  "inputs_sha256": {
+    "artifacts/diagnostics/review_fp32_crossover_downstream.py": "5d31d568916f579b242289516c4d77bf09c6517743e2056d61e1bbcf0696b2ab",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/plan.json": "89d79b4717157f9d66c43092c9c83acd80880e0f823550e2a34111dafc6e7c36",
+    "reference/fp32-crossover-downstream-completion-v1.json": "2c7971921b9ce123d4f3c54b6fc7d196195dcefb3a730d4cc62b1af84ae81cf8",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/preparation.json": "3766465c98732d401f9a3a6d0e1c7c8be9707c9002a90231f3df669c960008a5",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/host-validation.json": "6f6453c1f0aebaff277905431bf2fe41bcaeb5723c62a75278bca802f5c645ed",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-launch.py": "cc1e2584f879e1a76cf4b93ae070cd11ba13e3dd00c5c2842edd912b3c72571a",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-launch-start.json": "e5eab3571bf4d3ee8ac7f415398ab3cb272770ebb277db3d23fbe117d1625fd1",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-launch-completion.json": "8826a3f606cff9cd797089a258545729b872a99d9cc8b3459748a96548709a73",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-process.json": "7d619454d2e960ac019e0a663f0ee6b3b9b2cd005309d145de687b2aeee37a8c",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu.stdout.log": "6feef44f4776c91a223fc395b728c672b5e9acf3afd9debcac22b49abba05940",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu.stderr.log": "62442423ed02f7d2a10fc4d0cbd5c751c16399bd965e785a6be42401154cdf3a",
+    "artifacts/diagnostics/fp32-crossover-downstream-gpu-v1/report.json": "9d14800ac47f217afeb0f390e9cf96271fbb8e8d4765cdfb424d75eea43fbd78",
+    "reference/fp32-crossover-downstream-decomposition-v1.json": "32d15683c8d226f4d0ea9163147cb6cee1d19b823a8d3c89fc5ec1861e792806",
+    "artifacts/diagnostics/fp32-crossover-v1/plan.json": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c",
+    "artifacts/diagnostics/fp32-crossover-gpu-v1/report.json": "72d577e05c7eb91d9d32890ef8e789fa988cdd80397a3e5b48cb4969a1e398ed",
+    "artifacts/diagnostics/fp32-crossover-v1/rust/report.json": "7947b11589c9e708ec6b7386a16727b677204ce0c55f516867a3f5c93e374e4a",
+    "artifacts/diagnostics/fp32-crossover-v1/execution.json": "8e122d4df988da03bafca42278b6f443ff8d38c040b06af61a13b17732ce8f87",
+    "reference/fp32-crossover-decomposition-v1.json": "b3e262ecc47713c356d3c8926fe1a642a610337eb077372705ff30510e067735",
+    "reference/fp32-crossover-independent-review-v1.json": "0bcc22437d8875f7c9f2feb44e31018061d78b61200db9b3a0718c7c2ddfae3b",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/plan.json": "832d98ec8ba2807935017d0eb7ec2b5dca9ecfec0680211a5b41313f8554f4d2",
+    "artifacts/diagnostics/fp32-crossover-layer7-gpu-v1/report.json": "c3ed7215c44f33463ce49435298ab9701e79c2eea83054c028b516fc14089529",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/rust/report.json": "c2ac7336a88ee47ca4416895c9a5797e21f680db7df3ebe6136571605933dfe8",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/execution.json": "fb663eaf8fa203bd301a42ba23ed2fa673465dfad582742d7c8914a82d962729",
+    "reference/fp32-crossover-layer7-completion-v1.json": "bcb6f6db4a2b08974f6cbf80d04102619ac20896619c6a6aee1dc7fbff299a12",
+    "reference/fp32-crossover-layer7-independent-review-v1.json": "8ac6549c9533969ea30fbefffdc6bf588269cb0b4fe24543f66c8f24366f27d7",
+    "reference/tolerances-smoke-fp32-v1.json": "8f6382a4386b15f76e6984679208a44d0fa644b9d55a21ce579bbb26e0bfbe1c",
+    "artifacts/model/artifact-manifest.json": "eea9640e8ab9feccd9358a6b3526e579b14dc4bfcd47ecd561853863952b594d",
+    "artifacts/model/README.md": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+    "artifacts/model/attention.py": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+    "artifacts/model/config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "artifacts/model/configuration_falcon_ocr.py": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+    "artifacts/model/model_args.json": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+    "artifacts/model/modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+    "artifacts/model/processing_falcon_ocr.py": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+    "artifacts/model/rope.py": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+    "artifacts/model/special_tokens_map.json": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+    "artifacts/model/tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+    "artifacts/model/tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+    "experiments/fp32_crossover/export_gpu.py": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b",
+    "experiments/fp32_crossover_downstream/README.md": "65a6cb1e6ebeafb1976dab21bbd9ae28b489269c4273f5c1f31d2fee8277d5e0",
+    "experiments/fp32_crossover_downstream/compare.py": "f71bbb45cabe3a948cbd4e20d054db406f113da517bd6e33e93ba73f518156ff",
+    "experiments/fp32_crossover_downstream/contract.py": "fd10303f9947d1c18d0b2b1d8553e8a3510bbb7c8e4fc29909c450e910e5a56f",
+    "experiments/fp32_crossover_downstream/evidence.py": "76defc9db95d06566247d2f396227caf8e4ae4177928e8f08a46adf99d6c24ff",
+    "experiments/fp32_crossover_downstream/export_gpu.py": "0923acc8164565de4d2d3fd1922a55b466741a8fcbe04cc366d42b4da7e25eeb",
+    "experiments/fp32_crossover_downstream/native_segment.py": "f93a4d961c87848c4ad7f89be512ab46c204e77cece3a898747d7ae1e7690ba9",
+    "experiments/fp32_crossover_downstream/prepare.py": "8de8547ee2f1ed82775f0b3144e4ec60c618848e0e083640f1bab626653881cd",
+    "experiments/fp32_crossover_downstream/source_guard.py": "584a7a90d9befa689b223afd6720721a64a0944659fae55392948c0d58886ed9",
+    "experiments/fp32_crossover_downstream/test_source.py": "35e0ea419a79e1cb1838effd9a4c591ade2a77745e4c81223073deb2bedd2140",
+    "reference/fp32-crossover-downstream-next-v1.md": "5b6ef91f55a8ea1cbd8b43c3161f3bd8633239d9a162f8e65061fe1dd26c5de0",
+    "reference/manifest.json": "245d8f97674066030fdc6a80a6f2eef6641a190cf52baa0ba78755b74db74cc2",
+    "requirements/reference-lock.txt": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+    "scripts/export_reference.py": "e8e1d8fcedc5e58831836d2c3760420bade6f5ab04b3566e5dba753ea4318940",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "scripts/reference_preflight.py": "735ae548eb942ec23f3cc2610efa2122f14b6d0f35ec0f1a8766109c31a1cb97",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/source.zip": "45c1e35f7a6b402a29cc1300af60dcff6857551e2c576cdeca2dd5238d4578ed",
+    "artifacts/diagnostics/fp32-crossover-v1/build.json": "2feccf83863200c7d16d0790ef2942d368e09082df07b922aea8b4d818c6fac8",
+    "artifacts/diagnostics/fp32-crossover-v1/preparation.json": "5afe1b3727d598388c3c14e5a417c122641d5d7ff4e9c310273cfab7ffe97a22",
+    "artifacts/diagnostics/fp32-crossover-v1/crossover-tests.exe": "e018880c33a197b6a75d6117782c5f6df2061ae9f770db011a03d37c75e4db52",
+    "artifacts/diagnostics/fp32-crossover-v1/build.log": "a7f11b479527c6b327814abf9c76db8093d78e00d62384c9b6594aac2df34a48",
+    "artifacts/diagnostics/fp32-crossover-v1/test-list.txt": "351c98d47d1d64edb1552ad181170e4f5df7eed5c288dcd1847f5963e6ced260",
+    "artifacts/diagnostics/fp32-crossover-v1/build-start.json": "f9e1f287b81e6fabb7f6f6608b03766a5999e3d4b8ef53111695a8990f0ab8fc",
+    "artifacts/diagnostics/fp32-crossover-v1/run-start.json": "a49014680ab5594763e701d6d18955b465dfe8f68edda1807f51c16c51f7477d",
+    "artifacts/diagnostics/fp32-crossover-v1/run.log": "af796c1115c14a051dbaf636e7dc429be47fa0d27bd49b3c44ba9658c9272fde",
+    "artifacts/diagnostics/fp32-crossover-v1/source.zip": "3a476c6d4dc4fb3a7b8be27842454ab6067ea30310c0285a6191f7c7dfa15835",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/build.json": "9e6838528c7457f6f7baad03f0a0d3b09af36abeb0dfaf2e7839512e621ba847",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/preparation.json": "2a15ac7f1dac1512f51db2f77ab0f8d2121a1ddd1e02a5588d44ec1034f2badf",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/crossover-tests.exe": "4ad42e03ad38a34c126a234739466976163b25ed1629d7cac3e5a6ed4ada2ba0",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/build.log": "1eb85c30f72af78fa6d9bcef341262f32dfbd6249adb8d79f99f5fd84d14d59b",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/test-list.txt": "f839b3a3ee74eb573acf6a1f066f4132faa048843f4c8ec4a9cae71f0dd44aad",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/build-start.json": "34c7257a51006b4733a77af90b676093703ae701c7811a37cbe6e201358f5c8a",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/run-start.json": "4f307fb4a482f5247b44ab2e59a22370fc2a3d6c1a14690ddd5e4f3291673b80",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/run.log": "3d5df619deecac3655cbf6f004e0a28f58eee4df4a17b92906c2e00aee98aa84",
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/source.zip": "82c8c21f4e65e1f9e97e1be5c23e6ad6cc96db2c73d2094dd33f82163611ecdb",
+    "artifacts/diagnostics/fp32-crossover-gpu-v1/tensors.safetensors": "de8b170d0d9b9688c40fe0848fc77f8a4a1f62ce0f10ba3f76a109f887c88fcf",
+    "artifacts/diagnostics/fp32-crossover-v1/rust/tensors.safetensors": "7b7e80488ccabbfc4c4d106f09ffb904a6591839527b62ac4a9a11fc2f163224",
+    "artifacts/diagnostics/fp32-crossover-layer7-gpu-v1/tensors.safetensors": "23f81b36dc0deb13a0aca72b757d250e5f5d5451718c215503c441c05fb0776b",
+    "artifacts/diagnostics/fp32-crossover-downstream-gpu-v1/tensors.safetensors": "37ef2f78a224032d7193de5504ae4087259827fd23d4dfabcd60ade8649467a3"
+  },
+  "all_checked_inputs_unchanged": true,
+  "retained_pins_not_rehashed": {
+    "artifacts/diagnostics/fp32-crossover-layer7-v1/rust/tensors.safetensors": "4972d70e6ec5c6c744745282141abb7768dbea6314970affa49603cd955e102d",
+    "artifacts/reference/smoke-fp32/trace.safetensors": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+    "artifacts/cpu/smoke-trace-sinks-pairwise.safetensors": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+    "artifacts/model/model.safetensors": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "limits": [
+    "No model, GPU, build, benchmark, test, or original comparison script executed by this independent audit.",
+    "Historical93-payload/22-original-control/8-join proofs remain inherited from their pinned prior reviews; this audit directly reads79 historical stage payloads needed for A/C/D and S, plus34 fresh payloads.",
+    "Checkpoint and unrelated original full traces are not reread. Historical source/startup gaps remain.",
+    "Host row/global summary reproduction uses rel1e-13/abs1e-18 only for FP64 reduction/JSON accounting; raw controls, fixed signed values and observed residual identity are exact. No model tolerance changed.",
+    "C-B and B-A depend on the chosen nonlinear substitution order; signed fractions may be negative or exceed one. Maxima/RMS do not add as attribution.",
+    "The earlier-state term still exceeds the original fixed-coordinate bound. This is diagnostic evidence, not a numerical pass, production fix, quality or performance qualification."
+  ]
+}

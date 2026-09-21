@@ -1,0 +1,130 @@
+{
+  "kind": "attention64-compact-single-page-performance-result-v1",
+  "status": "target_met_in_one_page_bracket",
+  "qualification": "Isolated combined candidate; no default promotion or broader model/platform qualification.",
+  "comparison": {
+    "status": "complete",
+    "finished_utc": "2026-09-20T16:24:39.706332+00:00",
+    "plan_sha256": "2647716915e89f9bc4cccb51b4fdee6db3ebbaba3fbf8b0628c68ae02c13396a",
+    "reports": [
+      {
+        "name": "control-before",
+        "report_sha256": "e316f65a3d65e65f4b0fce62eda35478fe69e2b08d7e2fb39389e997038d43fe",
+        "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+        "all_measured_outputs_exact": true,
+        "median_ms": 67413.9623,
+        "samples_ms": [
+          67413.9623,
+          67410.3933,
+          67791.7218
+        ],
+        "stage_medians_ms": {
+          "preprocessing_ms": 61.3476,
+          "prefill_ms": 12706.5252,
+          "decode_ms": 54632.6618,
+          "total_ms": 67413.954
+        }
+      },
+      {
+        "name": "candidate",
+        "report_sha256": "de250d2ad37db564503762952fa8557c05dde24c48d2f4d659af136a7752fa91",
+        "binary_sha256": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+        "all_measured_outputs_exact": true,
+        "median_ms": 63102.3848,
+        "samples_ms": [
+          62969.5073,
+          63232.594900000004,
+          63102.3848
+        ],
+        "stage_medians_ms": {
+          "preprocessing_ms": 63.597899999999996,
+          "prefill_ms": 12690.5239,
+          "decode_ms": 50208.7087,
+          "total_ms": 63102.3804
+        }
+      },
+      {
+        "name": "control-after",
+        "report_sha256": "7580ffcff69632be3b6051088772c9d528be2da7e25ba3f3155291f157a6ff82",
+        "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+        "all_measured_outputs_exact": true,
+        "median_ms": 67239.1736,
+        "samples_ms": [
+          67239.1736,
+          67244.6839,
+          67170.65340000001
+        ],
+        "stage_medians_ms": {
+          "preprocessing_ms": 54.8022,
+          "prefill_ms": 12416.6164,
+          "decode_ms": 54719.7185,
+          "total_ms": 67239.1669
+        }
+      }
+    ],
+    "control_drift_percent": -0.2592767047606137,
+    "control_stability_pass": true,
+    "candidate_latency_reduction_percent": {
+      "control_before": 6.395674357209524,
+      "control_after": 6.152349260877877
+    },
+    "target_met_in_this_page": true,
+    "default_promotion": false,
+    "historical_median_ms": 67828.69510000001
+  },
+  "stage_comparison": {
+    "prefill_ms": {
+      "control_drift_percent": -2.2815741946507817,
+      "candidate_reduction_percent": {
+        "control_before": 0.12592978605984184,
+        "control_after": -2.205975373451974
+      }
+    },
+    "decode_ms": {
+      "control_drift_percent": 0.1593491825800042,
+      "candidate_reduction_percent": {
+        "control_before": 8.097634188491988,
+        "control_after": 8.243846868473925
+      }
+    }
+  },
+  "evidence": {
+    "artifacts/benchmarks/attention64-compact-fullpage-window-v1/plan.json": {
+      "sha256": "2647716915e89f9bc4cccb51b4fdee6db3ebbaba3fbf8b0628c68ae02c13396a"
+    },
+    "artifacts/benchmarks/attention64-compact-fullpage-window-v1/comparison.json": {
+      "sha256": "35da3616d6b458fbec9d42e32c145cfb976988d876ae7767bd2e3dbd5877a432"
+    },
+    "artifacts/benchmarks/attention64-compact-fullpage-window-v1/execution-start.json": {
+      "sha256": "9e239faa5072c0d369ead9d6cce4854febe86b82dd2e47120a69a198e35b8ed0"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/benchmark-build/build.json": {
+      "sha256": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/operators.json": {
+      "sha256": "52c0e5e261decc2904f535b06fb289455c5caa45be70879a26d4b5e4bd68e9ff"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/smoke/report.json": {
+      "sha256": "1cf1142f58ed688e45ca9797a2520ea593a09c0e337b0ca23376bdccdc46ea5b"
+    },
+    "artifacts/diagnostics/attention64-compact-v1/allocations/report.json": {
+      "sha256": "350d80d07bc7bf632cb3419db5410f12fd6e8075a8b1b81055074a84c1dad900"
+    },
+    "reference/benchmarks/compact-candidate-wrapper-independent-review-v1.json": {
+      "sha256": "099378dc3d4573d5ca7a852b66c572cde2df82098f62b04bf89bc8db1bca0236"
+    }
+  },
+  "output_scope": {
+    "measured_pages": 9,
+    "unique_pages": 1,
+    "ids_per_page": 1140,
+    "all_measured_ids_text_stops_dimensions_counts_exact": true,
+    "warmup_outputs_exported": false
+  },
+  "limits": [
+    "Compact candidate compared directly with fresh compact controls; no fresh expanded control in this bracket.",
+    "Historical expanded timings cannot establish an additive combined gain.",
+    "Single page and bracket; candidate full corpus, other primary workload and Linux qualification remain pending.",
+    "Ten original GPU intermediate numerical mismatches remain open without tolerance changes."
+  ]
+}

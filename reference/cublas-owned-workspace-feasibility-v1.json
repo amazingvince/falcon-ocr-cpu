@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "status": "feasible_prospective_capture_only_retention_unverified",
+  "created_utc": "2026-09-20T11:13:13.903545+00:00",
+  "note_sha256": "19217450d3241f2e6a72e9aaf5ec481d2be0a2fc35b09bf5bf2b317fe295ad5d",
+  "logged_algorithms_report_sha256": "d891299cf3c327285c26f6befbd3a4449f50bfbce23f45baed8de6d5b47ff646",
+  "existing_evidence_files_rehashed": {
+    "cublas.log": {
+      "sha256": "5ef3293db264f32030c42c72019e52aa2fa293e3954f2701e22861bce834f916",
+      "bytes": 23131
+    },
+    "cublaslt_6443.log": {
+      "sha256": "ca73941c6a3494e7625747494714475d05e109c4c785b86d718a6b63a819ff72",
+      "bytes": 12232
+    },
+    "outputs.safetensors": {
+      "sha256": "230411c955a518f19fa193fa81e0d033775ce0d4c3f1aa4188661839a89da928",
+      "bytes": 3096776
+    },
+    "prefill.layer.12.w13.json": {
+      "sha256": "8050078848d5dc96218e46e2bda81709770bf992afe5ebb46ad44942f92289de",
+      "bytes": 14772
+    },
+    "prefill.layer.12.w2.json": {
+      "sha256": "eb0a83d13135d353333fe40ba3668fb79c3ea42341e5cae5efc67365920330c5",
+      "bytes": 15347
+    },
+    "profile_linear_logging_reference.py": {
+      "sha256": "63627211c1fec6a765d1b2ca285babac259da0b33bcdb9b30480915aa89c3122",
+      "bytes": 5669
+    },
+    "report.json": {
+      "sha256": "6d19ce3705c2180d9cd3469198fb3bcf08db76ce4780cdbc8efb4d751b51aa86",
+      "bytes": 6309
+    },
+    "run_linear_logging_reference.sh": {
+      "sha256": "e3ccff351d0b6940c6998c6624fca6f15e66caf64b98db25ec3a82c83026d18e",
+      "bytes": 580
+    },
+    "stderr.log": {
+      "sha256": "21c6caa7e7b7cb88cd0a467b60b26874c3ca82e180cea83573587be94764e9e9",
+      "bytes": 292
+    },
+    "stdout.log": {
+      "sha256": "6a412358c68a7df8ddfb113a89efeebb989a641961f4d2f9d120d0f2794dd457",
+      "bytes": 7149
+    }
+  },
+  "installed_header_cpu_only_read": {
+    "path": "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/nvidia/cu13/include/cublas_api.h",
+    "bytes": 331797,
+    "sha256": "71afd43abd16698be7cbe3120d72700dc0004edc3d3944d865cdbc8d04c22b21",
+    "declaration_lines": [
+      246,
+      248,
+      250,
+      256,
+      258,
+      262,
+      272,
+      3082
+    ]
+  },
+  "existing_loaded_library_identities": {
+    "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/torch/lib/libtorch_cuda.so": "fd13a41b54fe3d8af91075962d9fe155a16616ca09c7b79b7251869ff6230d32",
+    "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/nvidia/cu13/lib/libcublas.so.13": "e70f38efabe986acd5eb683497c62f0f1730a6176ee291d9d24c6e339d1fbf86",
+    "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/nvidia/cu13/lib/libcublasLt.so.13": "656298c804f5adbb0df930545c17911b9584ab4e5101c0eeb65d1fe881d880f8",
+    "/home/amazi/falcon-ocr-rust-reference/.venv/lib/python3.12/site-packages/nvidia/cu13/lib/libcudart.so.13": "96c42e418cec19054186b9429c321603cc190bf26a18104e19408117a2a817b0"
+  },
+  "observed_provided_workspace_bytes": 33554432,
+  "observed_W2_selected_workspace_bytes": 6193152,
+  "observed_W2_call": {
+    "transa": "T",
+    "transb": "N",
+    "m": 768,
+    "n": 144,
+    "k": 2304,
+    "lda": 2304,
+    "ldb": 2304,
+    "ldc": 768,
+    "math": "DEFAULT",
+    "stream": "NULL"
+  },
+  "workspace_size_equals_14_output_slabs_but_layout_unverified": true,
+  "basis_plan_host_arithmetic_checked": {
+    "initial_sample_k": "16*j; j=0..143",
+    "optional_exhaustive_k": "16*j+b; j=0..143, b=0..15",
+    "unique_k": 2304,
+    "unique_exact_coordinate_codes": 110592,
+    "largest_code": 147200,
+    "does_not_infer_accumulation_order": true
+  },
+  "interpretation_gate": [
+    "exact original output bits",
+    "same public arguments and source operands",
+    "actual logged algorithm/tile/splits/reduction/selected workspace",
+    "provided workspace capacity and alignment classes",
+    "ordered kernel names/grids/blocks",
+    "same loaded library bytes and runtime identity"
+  ],
+  "unverified": [
+    "post-call scratch retains FP32 split partials",
+    "scratch layout",
+    "K membership or contiguous boundaries",
+    "within-partition FMA order",
+    "final reduction order"
+  ],
+  "sources": [
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublassetworkspace",
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublassetstream",
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublascreate",
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublas-t-gemm"
+  ],
+  "gpu_calls": false,
+  "gpu_diagnostic_implemented": false,
+  "production_changes": false,
+  "rsqrt_inputs_changed": false,
+  "installations": false,
+  "unowned_memory_read": false,
+  "qualification": "Feasibility and proposed acceptance gates only. Retained caller-owned scratch is opaque until independently identified; no public API promises split partial contents or captures between internal kernels."
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "status": "no_concrete_source_blocker_found",
+  "scope": "Independent bounded source review only; no imports, tests, preparation, tensor loading, model or GPU execution",
+  "reviewed_source_sha256": {
+    "experiments/fp32_prefix_suffix_telescope/contract.py": "dbea2b7ff15e3a563970ca4548197ab548ed1cd09712379ea950fd672ed40eb7",
+    "experiments/fp32_prefix_suffix_telescope/legacy_contract.py": "fd10303f9947d1c18d0b2b1d8553e8a3510bbb7c8e4fc29909c450e910e5a56f",
+    "experiments/fp32_prefix_suffix_telescope/legacy_evidence.py": "5a3bf0152de4dc7bb809d9544657cfaf24a7002239900dc873558fa0db531065",
+    "experiments/fp32_prefix_suffix_telescope/evidence.py": "d9b26df3caca126903ccd6ec6259982a2d059cab9e84230654a2dd314e9b9d06",
+    "experiments/fp32_prefix_suffix_telescope/native_segment.py": "4319bbdb6b583504e282c13159fe845695e19ace2fdcd6c253c119a9b271764b",
+    "experiments/fp32_prefix_suffix_telescope/source_guard.py": "5b6e8a32ce367ebd7ae97afee04395907a84f4ceb618e8a7d74e08d272ed3896",
+    "experiments/fp32_prefix_suffix_telescope/prepare.py": "35355ddc8b80d0e09028d03a42967461166ec4b1ce1a479ece08475d564eb334",
+    "experiments/fp32_prefix_suffix_telescope/export_gpu.py": "f76e7e45c58b16084e019b29d6ed5bfd83481d39b95586b397244ee4e4dc10d5",
+    "experiments/fp32_prefix_suffix_telescope/compare.py": "7037a2e1485e2d46ffd1dd0720cc7933b61a44b33ec76dfb51676d289d91c77d",
+    "experiments/fp32_prefix_suffix_telescope/test_source.py": "164a8149272405bb7bceab43f949a1a26c358dd658dd87da9085c89938c1d343",
+    "experiments/fp32_prefix_suffix_telescope/README.md": "be42f76ea30a99fe070b0038f9b1b42796cd36c423da1167e6c02236e7b83b35"
+  },
+  "checks": [
+    "Fixed control_gpu,E8,E7,E0..E6,E9 branch order; 54 full native blocks and 11 layer9 pre-QKV calls",
+    "Complete G0 and C0..C9 entry joins; E7 composition joins layer7 hidden to prior downstream substitution input",
+    "47+17+30 exact finite control arrays must pass before eight unseen endpoints; final inventory is 110 arrays",
+    "Original native model/mask/positions/math/thread setup preserved by source guards; observers return original values and cache is fresh per branch",
+    "Exceptions stop execution and preserve partial tensors/rejected report; final source/input closure required",
+    "FP32 endpoints promoted to FP64 before signed telescope (E0-A)+sum(E[b+1]-E[b])+(D-E9), with all-array residual check and fixed bound unchanged"
+  ],
+  "limits": [
+    "Source inspection does not establish emitted arithmetic, successful controls or runtime provenance; those gates remain mandatory",
+    "No new model qualification or tolerance change; conditional boundary substitutions are not independent kernel causes",
+    "Root owns preparation and GPU execution release"
+  ]
+}

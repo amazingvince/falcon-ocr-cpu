@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "scope": "Test-only whole-model same-prefix intervention on one synthetic fixture; not free-running or corpus qualification",
+  "intervention": "AOCL FP32 only for every prefill W2 with rows>8, K=2304,N=768; current Rust everywhere else",
+  "platform": "windows",
+  "threads": 4,
+  "aocl_library": {
+    "path": "\\\\?\\C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\aocl-dlp-build-windows-v2\\Release\\aocl-dlp.dll",
+    "sha256": "f2ce2248710bdcc5feed97f73eead203733c8ebc6c1d759aa18ececd4e4cab1e",
+    "threading": "OpenMP off; single-thread library"
+  },
+  "test_binary_sha256": "6dad42c88f469b3a16486ae2d8a8ea705af6aa4d7cfa487ba694995f55c46ef7",
+  "interventions_manifest_sha256": "7f1590c9993edf0a27c92812c46838cec32e2bc6014086977808e61a6df0567f",
+  "preservation_manifest_sha256": "cb0d7b03a0eb37b178048629ae63bcadfb2d0fc495d207c705ec62ef6a69fd47",
+  "comparator_inputs_unchanged": {
+    "artifacts/reference/smoke-fp32/trace.safetensors": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+    "reference/tolerances-smoke-fp32-v1.json": "8f6382a4386b15f76e6984679208a44d0fa644b9d55a21ce579bbb26e0bfbe1c",
+    "scripts/compare_traces.py": "60fd8cc7938278ec0bbff15e07999255d39c3ef78767151ab8d83895a26d4894"
+  },
+  "summary_script_sha256": "ab352ea1e0b720efc265e6a9b72e48a94c1ce0a37bae1482a8436dcd023622df",
+  "production_controls_byte_identical": true,
+  "policy_changed": false,
+  "production_promoted": false,
+  "performance_measured": false,
+  "variants": [
+    {
+      "variant": "production",
+      "trace_sha256": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+      "report": "reference/aocl-w2-intervention-summary-v1-production.json",
+      "report_sha256": "4ae6e345be02f4ad6895207a026e62851bf8549fee173d0f1e325b73b63f17c9",
+      "compared_tensors": 1904,
+      "failed_tensors": 10,
+      "failures": [
+        "decode.2.layer.21.attention",
+        "decode.6.layer.19.attention",
+        "layer.12.k",
+        "layer.12.q",
+        "layer.12.v",
+        "layer.13.attention",
+        "layer.17.attention",
+        "layer.17.k",
+        "layer.18.k",
+        "layer.9.v"
+      ],
+      "logit_checks": 17,
+      "all_argmax_match": true,
+      "prefill_logits": {
+        "max_abs": 7.104873657226562e-05,
+        "rms_abs": 2.616277851302731e-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "final_prefill_hidden": {
+        "max_abs": 4.0791015625,
+        "rms_abs": 0.10458479008825908,
+        "reference_max_abs": 71137.046875
+      }
+    },
+    {
+      "variant": "aocl_prefill_w2",
+      "trace_sha256": "aa777d4658c409469b38dc5448d2ecdbde3cbe0f74c2f47a4bd0fe1024bb9ef6",
+      "report": "reference/aocl-w2-intervention-summary-v1-aocl_prefill_w2.json",
+      "report_sha256": "aa3824a046520117c928ba46d763df4f3926ae4b42b1fbf28a395b8b7f034953",
+      "compared_tensors": 1904,
+      "failed_tensors": 47,
+      "failures": [
+        "decode.2.layer.21.attention",
+        "decode.6.layer.19.attention",
+        "decode.7.layer.20.attention",
+        "decode.9.layer.19.attention",
+        "layer.10.v",
+        "layer.11.attention",
+        "layer.11.q",
+        "layer.12.attention",
+        "layer.12.hidden",
+        "layer.12.k",
+        "layer.12.q",
+        "layer.12.v",
+        "layer.13.attention",
+        "layer.13.hidden",
+        "layer.13.k",
+        "layer.13.q",
+        "layer.13.v",
+        "layer.14.attention",
+        "layer.14.hidden",
+        "layer.14.k",
+        "layer.14.q",
+        "layer.14.v",
+        "layer.15.attention",
+        "layer.15.hidden",
+        "layer.15.k",
+        "layer.15.q",
+        "layer.15.v",
+        "layer.16.attention",
+        "layer.16.k",
+        "layer.16.q",
+        "layer.16.v",
+        "layer.17.attention",
+        "layer.17.k",
+        "layer.17.q",
+        "layer.18.hidden",
+        "layer.18.k",
+        "layer.18.q",
+        "layer.19.hidden",
+        "layer.19.q",
+        "layer.20.hidden",
+        "layer.21.attention",
+        "layer.21.hidden",
+        "layer.21.k",
+        "layer.21.q",
+        "layer.21.v",
+        "layer.9.q",
+        "layer.9.v"
+      ],
+      "logit_checks": 17,
+      "all_argmax_match": true,
+      "prefill_logits": {
+        "max_abs": 8.96453857421875e-05,
+        "rms_abs": 3.3322078247196764e-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "final_prefill_hidden": {
+        "max_abs": 5.31005859375,
+        "rms_abs": 0.13024255816504154,
+        "reference_max_abs": 71137.046875
+      }
+    },
+    {
+      "variant": "production_after",
+      "trace_sha256": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+      "report": "reference/aocl-w2-intervention-summary-v1-production_after.json",
+      "report_sha256": "4bc342c1724ce88fe55d585305e83e633ebe72eb83bbadbca428fe2334a73c29",
+      "compared_tensors": 1904,
+      "failed_tensors": 10,
+      "failures": [
+        "decode.2.layer.21.attention",
+        "decode.6.layer.19.attention",
+        "layer.12.k",
+        "layer.12.q",
+        "layer.12.v",
+        "layer.13.attention",
+        "layer.17.attention",
+        "layer.17.k",
+        "layer.18.k",
+        "layer.9.v"
+      ],
+      "logit_checks": 17,
+      "all_argmax_match": true,
+      "prefill_logits": {
+        "max_abs": 7.104873657226562e-05,
+        "rms_abs": 2.616277851302731e-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "final_prefill_hidden": {
+        "max_abs": 4.0791015625,
+        "rms_abs": 0.10458479008825908,
+        "reference_max_abs": 71137.046875
+      }
+    }
+  ]
+}

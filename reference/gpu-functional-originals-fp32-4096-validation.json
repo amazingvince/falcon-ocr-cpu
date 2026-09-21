@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "complete_gpu_reference_validated",
+  "pages": 3,
+  "generated_tokens": 102,
+  "eos_pages": 3,
+  "length_pages": 0,
+  "configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "manifest_sha256": "c2b56cf580b4edef8968bc78edf9c021905cc3ba41c5e8ee065f2f0c7150965a",
+    "max_new_tokens": 4096,
+    "max_dimension": 1536,
+    "min_dimension": 64,
+    "precision": "fp32",
+    "tf32": false,
+    "flex_float32_precision": "ieee",
+    "compiled_blocks": false,
+    "prompt": "<|image|>Extract the text content from this image.\n<|OCR_PLAIN|>",
+    "config_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "cast_target": "HF eager model-wide FP32, including golden frequencies; temporal complex64",
+    "greedy_tie_rule": "torch.argmax: first vocabulary index among equal maxima",
+    "allow_fp16_reduced_precision_reduction": false,
+    "allow_bf16_reduced_precision_reduction": false,
+    "teacher_forced": false,
+    "inference_reexecuted": true,
+    "selected_page_ids": [
+      "original-supplement-v1:receipt-cafe",
+      "original-supplement-v1:blank-white",
+      "original-supplement-v1:sparse-room"
+    ],
+    "requested_limit": null,
+    "runtime_identity_sha256": "cf573bbc9d242df8015c2a4d88e1636357b899fe352d16ec2109ca14c2b220b9"
+  },
+  "run_sha256": "2bc0f36ce9e2c07d70428addad5ba1cd215c7884dcc718e7a81e0139618cd9d3",
+  "summary_sha256": "2bc0f36ce9e2c07d70428addad5ba1cd215c7884dcc718e7a81e0139618cd9d3",
+  "manifest_sha256": "c2b56cf580b4edef8968bc78edf9c021905cc3ba41c5e8ee065f2f0c7150965a",
+  "startup_identity_sha256": "3d57bbdeb623298a1061133984b095efd0b5ed7a0a60f1d6457f18562caa707d",
+  "runtime_identity_sha256": "cf573bbc9d242df8015c2a4d88e1636357b899fe352d16ec2109ca14c2b220b9",
+  "archived_source_file_count": 11,
+  "record_sha256": {
+    "receipt-cafe": "e90998b3965b474ebc0738a59f08db24af4668db1cec32e63acbf4aa4efd20af",
+    "blank-white": "78b667b8812345075a48bed38dd750e6866526c55166c77175e9cb140920f2ec",
+    "sparse-room": "a9a77300c5f25f03d420603b2172eeeb4f35c09b215bf0d793aadca44148dd0c"
+  },
+  "validation_script_sha256": "e5c59d292131f9d90f957f8dcf6e2c1bf66aaa776f16dd5f2a065d87c22b53db",
+  "qualification": "Completed fresh greedy GPU records, input bytes and preserved startup identity validated. CPU/output parity, document quality and performance require separate evidence. Prepared image dimensions were not recorded by this driver; pixels, processing options and prefix lengths are bound."
+}

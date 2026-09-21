@@ -1,0 +1,33 @@
+{
+  "status": "complete",
+  "scope": "Windows and WSL Linux functionality only; no performance measurements.",
+  "raw_aocl_source_files_identical": 641,
+  "aocl_source_capture_windows": "after successful manual build only",
+  "aocl_source_capture_linux": "before configure and after build; unchanged",
+  "rust_probe_sources_before_after_unchanged": true,
+  "rust_probe_source_inventories_cross_platform_identical": true,
+  "windows_v1_vs_v2_operator_error_summaries_unchanged": true,
+  "aocl_cross_platform_output_arrays_bit_exact": 28,
+  "rust_cross_platform_output_arrays_bit_exact": 28,
+  "negative_linux_library_digest_guard_passed": true,
+  "openmp_elf_dependency_present": false,
+  "full_model_intervention_disposition": "Not promoted: unchanged policy failures 10 to 47 of 1904 tensors; all 17 argmax decisions still match.",
+  "artifacts_sha256": {
+    "reference/aocl-windows-build-v1.json": "d22cb406886aa4b0f044399612625b9f511189498fe4dcf386ae44623c4baae6",
+    "reference/aocl-linux-build-v1.json": "ef340f8fb03fa7c385c2a233de289f818d43efddbf93033474ef22341437b64a",
+    "reference/aocl-linux-probe-build-v1.json": "53c1639e52e78d44b7b593aa7185821dd44ae4e32caded8abd5f9f766bdf0b1a",
+    "reference/aocl-windows-fp32-operator-probe-v2.json": "9e6d2b1a1b8f196414d1aa3d8bf95de7206d62465c55eff14f150abbc0983784",
+    "reference/aocl-linux-fp32-operator-probe-v1.json": "0feaa13cf57c025a66750713a83494c18b21f08fe471628fd4c8c5dbe42efdc0",
+    "reference/aocl-windows-linux-fp32-comparison-v1.json": "7c58b895a2f780ec95b9272b8a0291b5b69d7fb3e9c8b0ca50c2e6f4f2e732b4",
+    "reference/aocl-linux-loader-validation-v1.json": "3abca125fd8c9f6927e969d54d9902020bc3f7d8538ac6731a7995f904e5006f",
+    "reference/aocl-w2-intervention-summary-v1.json": "61df4a28d1444414bde0abd07db8e10db1ebb9aa723c763de05a534dbd8c21a9",
+    "artifacts/builds/aocl-probe-v2-windows/build.json": "5233b29f1a55aa0baf4b93fa80663c8a0caede62bd7b49aeec8516542e8d3ef0"
+  },
+  "scripts_sha256": {
+    "scripts/build_aocl.py": "ec39992dbed07ff37b0b860f05c2072f7c9d2359ee8b9d7715c86bf4082530e8",
+    "scripts/capture_rust_build.py": "f346902d34e4a813b7b2000ba08a6dfc15f129f8b7c1c97ebbc72f8041c79738",
+    "scripts/compare_aocl_probes.py": "01e57c6cf6f95607a18dd28eeefe535eeff4db15dc488e1d6beea0f3641ecea3"
+  },
+  "no_global_dependencies_installed": true,
+  "no_gpu_calls": true
+}

@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "scope": "Read-only saved-evidence analysis of one AVX512 BF16 attention output, with local arithmetic counterfactuals; no inference, GPU execution, production/tolerance change, or performance claim.",
+  "case": "prefill.layer.19",
+  "index": [
+    41,
+    6,
+    54
+  ],
+  "input_sha256": {
+    "artifacts/cpu/bf16-attention-tiles-avx512.safetensors": "8d3502339ae1d474fbec2f4997d03ceff09d9f84ee7cf9e5484ed26bc5650452",
+    "artifacts/cpu/bf16-native-attention-avx512-diagnostic.safetensors": "748af6e8a08d2d6a6b0e8780091a47b8fa6bb0f67bf2ddf51c09576a9198f471",
+    "artifacts/reference/attention-operators-bf16.safetensors": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+    "artifacts/reference/attention-blockwise-bf16.safetensors": "0e1e0354cd67318841f73c7d9a1f9902768c2f2c5884bb08e4d419165c0d7979",
+    "artifacts/reference/bf16-attention-tiles.safetensors": "1de7df7665034a58e2647c9ac840decad24e9aca11c81ff6d4e4101189440e23"
+  },
+  "cpu_tile_provenance": {
+    "candidate_hash_matches_prior_comparison": true,
+    "prior_comparison": "reference/bf16-attention-tile-differences-avx512.json",
+    "prior_comparison_sha256": "25bd31f6bb4364f520d20a08798d9dc2efcc6d67382d89f1177672dd637e21cb",
+    "source_archive": "artifacts/cpu/bf16-initial-runner-source.zip",
+    "source_archive_sha256": "271198add0071429bf9d9844acc6f41fdd8614f9ad9dfd9a3a80a14b9c0c8f76",
+    "archived_source_sha256": {
+      "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+      "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "bf16_attention_probe.rs": "a7492a37ea3052ad94d7597a20ad8271a531355a17b2a861962b47947c6023d0",
+      "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372"
+    },
+    "metadata_sha256": "e63d77af057fcf357a81bc5c7a9b5fdb15fcb5c416c455aab6e55ad8112cbdaf",
+    "interpretation": "Archived diagnostic reconstructs each CPU update and checks maximum, denominator, and every accumulator bit against production update before writing. This is CPU candidate evidence, not a fused GPU internal capture. The historical archive is used as preserved source evidence; no new startup attestation is claimed."
+  },
+  "cpu_tiles": [
+    {
+      "tile": 0,
+      "key_start": 128,
+      "live_keys": 16,
+      "maximum_log2": -2.9229888916015625,
+      "alpha": 0.0,
+      "denominator": 3.966946840286255,
+      "pv_dim54": 1.5605354309082031,
+      "accumulator_dim54": 1.5605354309082031,
+      "exact_f64_dot_saved_cpu_bf16_probability_times_saved_bf16_v": 1.5605354309082031,
+      "pv_accumulation_error_vs_this_fixed_input_f64_dot": 0.0,
+      "fp64_replay_of_same_cpu_probabilities_and_alphas": 1.5605354309082031,
+      "saved_accumulator_minus_fixed_probability_fp64_replay": 0.0
+    },
+    {
+      "tile": 1,
+      "key_start": 0,
+      "live_keys": 64,
+      "maximum_log2": 2.7838497161865234,
+      "alpha": 0.01914566196501255,
+      "denominator": 5.091017723083496,
+      "pv_dim54": 0.2534388303756714,
+      "accumulator_dim54": 0.28331631422042847,
+      "exact_f64_dot_saved_cpu_bf16_probability_times_saved_bf16_v": 0.25343868136405945,
+      "pv_accumulation_error_vs_this_fixed_input_f64_dot": 1.4901161193847656e-07,
+      "fp64_replay_of_same_cpu_probabilities_and_alphas": 0.2833161652086531,
+      "saved_accumulator_minus_fixed_probability_fp64_replay": 1.490117753633058e-07
+    },
+    {
+      "tile": 2,
+      "key_start": 64,
+      "live_keys": 64,
+      "maximum_log2": 2.7838497161865234,
+      "alpha": 1.0,
+      "denominator": 6.83806848526001,
+      "pv_dim54": -0.252327024936676,
+      "accumulator_dim54": 0.03098928928375244,
+      "exact_f64_dot_saved_cpu_bf16_probability_times_saved_bf16_v": -0.252327024936676,
+      "pv_accumulation_error_vs_this_fixed_input_f64_dot": 0.0,
+      "fp64_replay_of_same_cpu_probabilities_and_alphas": 0.030989140271977078,
+      "saved_accumulator_minus_fixed_probability_fp64_replay": 1.490117753633058e-07
+    }
+  ],
+  "rounding": {
+    "final_cpu_numerator": 0.03098928928375244,
+    "final_cpu_denominator": 6.83806848526001,
+    "final_cpu_fp32_quotient": 0.00453187758103013,
+    "final_cpu_quotient_f32_bits": "3b948025",
+    "gpu_raw_bf16": 0.0045166015625,
+    "cpu_raw_bf16": 0.004547119140625,
+    "raw_bf16_midpoint": 0.0045318603515625,
+    "cpu_quotient_minus_midpoint": 1.7229467630386353e-08,
+    "gpu_raw_rne_interval_lower_midpoint": 0.0045013427734375,
+    "gpu_raw_rne_interval_upper_midpoint": 0.0045318603515625,
+    "interval_limit": "Only the rounded GPU raw value is known. Its pre-cast quotient is not recoverable uniquely. GPU retained BF16 mantissa is even at these two ties."
+  },
+  "local_fixed_probability_counterfactual": {
+    "formula": "Replace only tile1 PV[54] by FP32(math.fsum(saved CPU BF16 probabilities * saved BF16 V)); retain CPU alpha, all other saved PV terms, FP32 multiply/add accumulation, final CPU denominator, and BF16 rounding.",
+    "tile1_replacement_pv": 0.25343868136405945,
+    "replacement_final_accumulator": 0.030989140272140503,
+    "replacement_fp32_quotient": 0.004531855694949627,
+    "replacement_quotient_bits": "3b947ff6",
+    "replacement_bf16": 0.0045166015625,
+    "matches_gpu_raw_at_this_element": true,
+    "interpretation": "The saved tile1 PV accumulation difference alone is sufficient to move this fixed-CPU-probability counterfactual across the midpoint. This is not proof that GPU probabilities, numerator, denominator, PV grouping, or fused accumulator follow this path. It is not a proposed arithmetic change."
+  },
+  "final_lse": {
+    "gpu_fused": 3.8521227836608887,
+    "cpu": 3.8521230220794678,
+    "gpu_independent_blockwise": 3.8521230220794678,
+    "cpu_and_independent_bits_equal": true,
+    "independent_blockwise_raw": 0.0045166015625,
+    "interpretation": "Independent blockwise oracle shares CPU LSE exactly but matches fused GPU raw/scaled; LSE difference alone does not establish the source of raw drift. LSE combines maximum and denominator and cannot identify either independently."
+  },
+  "sink_replay_review": {
+    "report": "artifacts/diagnostics/bf16-sink-replay-windows-v1/report.json",
+    "report_sha256": "dcaf5ffeea2137aae31f824222506836614526af4c0b53eb24c8f265eb424170",
+    "preserved_proof_rehashed": {
+      "reference/bf16-local-contract-v1.json": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+      "reference/bf16-local-failure-details.json": "4d6e761b26068c54330af079571df0a1854907df75173106ccb1bfbb9e2bbdea",
+      "artifacts/reference/attention-operators-bf16.safetensors": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+      "artifacts/reference/bf16-local-contract-v1.safetensors": "6bb2adae8f97e6dad4c0a3ef2f29102e1ce310588eaab64c1804a64bf527f185",
+      "artifacts/cpu/bf16-native-attention-avx512.safetensors": "748af6e8a08d2d6a6b0e8780091a47b8fa6bb0f67bf2ddf51c09576a9198f471",
+      "artifacts/cpu/bf16-native-attention-scalar.safetensors": "adf136738a12d63d59319632ef173680f1d8fce55983abafce58ee41a835fe31",
+      "artifacts/diagnostics/bf16-sink-replay-windows-v1/sources/experiments/bf16_attention/analyze_sinks.py": "b1b07fb65a0cadb316b38d0cc65952151c04d8605c7c85fb9963b7c19c65fee3",
+      "artifacts/diagnostics/bf16-sink-replay-windows-v1/sources/experiments/bf16_attention/sink_probe.rs": "bdfed45000ad9b52ba12a0b268b9a372aecdccfd41b6366b78fa268df229811f",
+      "artifacts/diagnostics/bf16-sink-replay-windows-v1/sources/src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+      "artifacts/diagnostics/bf16-sink-replay-windows-v1/sink_probe.exe": "654d9b89faf56059972d26d788c8b44164f7472618179598f4da3be972c7cb90",
+      "artifacts/diagnostics/bf16-sink-replay-windows-v1/input.txt": "37c7ba8d449d6ad76018348fe6529d629d74432f09f0d2804935c5e519e3bd4e",
+      "artifacts/diagnostics/bf16-sink-replay-windows-v1/output.txt": "b9e1a08383b00d3d2e5c819e1ff004f3679d485cd285d65fd6fcdb255a3581e4"
+    },
+    "read_only_source_review": "Probe implements the archived CPU sigmoid/multiply expression with an explicit BF16 ties-even cast. Analyzer validates head-major LSE, selected input identity, unchanged frozen bound, all64 CPU scaled values per failure head, and independent discarded-half rounding. No concrete issue found in the performed finite-data replay.",
+    "independent_rounding_lines_rechecked": 3328,
+    "heads": 13,
+    "cpu_scaled_values_reproduced": 832,
+    "failures": 20,
+    "gpu_raw_cpu_lse_passes": 20,
+    "cpu_raw_gpu_lse_passes": 0,
+    "selected_layer19_head": {
+      "backend": "avx512",
+      "case": "prefill.layer.19",
+      "row": 41,
+      "head": 6,
+      "sink": 2.046875,
+      "lse": {
+        "cpu": 3.8521230220794678,
+        "gpu": 3.8521227836608887
+      },
+      "gpu_scale": 0.8587865233421326,
+      "cpu_reproduced_exactly_count": 64,
+      "gpu_same_argument_cpu_replay_difference_counts": {
+        "scale_f32": 0,
+        "precast_f32": 0,
+        "scaled_bf16": 0
+      }
+    },
+    "selected_layer19_failure": {
+      "backend": "avx512",
+      "case": "prefill.layer.19",
+      "index": [
+        41,
+        6,
+        54
+      ],
+      "gpu_raw": 0.0045166015625,
+      "cpu_raw": 0.004547119140625,
+      "gpu_expected": 0.003875732421875,
+      "saved_cpu": 0.00390625,
+      "frozen_bound": 1.52587890625e-05,
+      "variants": {
+        "cpu_raw_cpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.0039050045888870955,
+          "rounded": 0.00390625,
+          "error": 3.0517578125e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_cpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.003878796473145485,
+          "rounded": 0.003875732421875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        },
+        "cpu_raw_gpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.0039050045888870955,
+          "rounded": 0.00390625,
+          "error": 3.0517578125e-05,
+          "passes_frozen_bound": false
+        },
+        "gpu_raw_gpu_lse": {
+          "scale": 0.8587865233421326,
+          "precast": 0.003878796473145485,
+          "rounded": 0.003875732421875,
+          "error": 0.0,
+          "passes_frozen_bound": true
+        }
+      }
+    },
+    "limit": "The GPU-input CPU replay probes a sink boundary; it does not capture GPU sigmoid internals or locate the upstream attention cause."
+  },
+  "unavailable_gpu_evidence": [
+    "No layer19 keys in the independent GPU tile artifact.",
+    "No actual fused layer19 QK/exp2/P-BF16, online maximum/alpha/denominator, PV/accumulator states or pre-cast quotient.",
+    "Dense GPU PV outputs use different normalization/arithmetic and cannot replace missing fused states."
+  ],
+  "next_export": {
+    "case": "prefill.layer.19",
+    "probe": {
+      "query_row": 41,
+      "head": 6,
+      "value_dimension": 54
+    },
+    "keep": "Full original Q/K/V, sparse masks/schedules, padded capacity256, all heads and rows, actual iteration ordering including any masked key192 iteration; do not crop.",
+    "capture": [
+      "actual fused QK, score/log2/exp2 argument/result and BF16 probabilities",
+      "maximum before/after, alpha, unrounded probability sum and denominator before/after",
+      "accumulator before, after alpha, after fused PV dot",
+      "final FP32 denominator, numerator[54] and quotient before BF16 cast",
+      "complete raw BF16 and FP32 head-major LSE plus a nonfailing control"
+    ],
+    "acceptance": "Instrumented complete raw and LSE must match uninstrumented pinned fused output and frozen fixture bit-for-bit; otherwise label instrumentation-changed. Keep independent Torch recomputation explicitly separate."
+  },
+  "method": {
+    "parser": "experiments/bf16_attention/analyze_crossings.py:tensors",
+    "parser_sha256": "7f3c1de2d5f50b2041523e99dfa48d11ce206fe7845958fcba802e0991aaec29",
+    "numpy": "1.26.4",
+    "dot": "math.fsum exact BF16-promoted FP64 products; separate FP32 reconstruction for the single-PV counterfactual",
+    "gpu_execution": false,
+    "new_inference": false
+  }
+}

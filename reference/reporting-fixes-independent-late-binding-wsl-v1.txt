@@ -1,0 +1,6 @@
+test_files_changed_after_successful_join_are_rejected_at_final_closure (__main__.LateOfficialBindingTests.test_files_changed_after_successful_join_are_rejected_at_final_closure) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.869s
+
+OK

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "command": [
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\stage-timing-windows-v1\\falcon-ocr.exe",
+    "--threads",
+    "4",
+    "--backend",
+    "avx2",
+    "trace",
+    "--fixture",
+    "artifacts/reference/smoke-fp32/trace.safetensors",
+    "--output",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\stage-timing-windows-v1\\trace.safetensors",
+    "--max-new-tokens",
+    "17"
+  ],
+  "binary_sha256": "0996a105f8c79ac6888fd9b62ecaee54c2da353ea9eab833aeae1446211a11a2",
+  "source_sha256": {
+    "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+    "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+    "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "src/kernels.rs": "b5adcf5c201f645d1a897c7f000dbdd50692809a8eacd5e522636ae8543dbeba",
+    "src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+    "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/model_diagnostics.rs": "3b10e2b099be161d16b974617ff3262653c26424b0282f8b894e1e2548db1365",
+    "src/numerical_diagnostics.rs": "a7239a0c333f178ade65b401901b4d62f0e1f31002638d230dc0822aaf49e464",
+    "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+    "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82"
+  },
+  "source_archive_sha256": "732f29e6f8d8cd426eff5d7fc027ff76d64661432dab1d3d66dfa663739ad96b",
+  "source_scope": "Archived after ordinary Cargo build; source inventory was not captured at compiler startup.",
+  "scope": "Functional timing-instrumentation regression during concurrent corpus jobs; no performance claim.",
+  "new_trace_sha256": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+  "prior_trace_sha256": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+  "trace_file_byte_identical": true,
+  "timing_subintervals_valid": true,
+  "new_trace_tensor_count": 1904,
+  "observed_timings_unqualified": {
+    "image_decode_ms": 0.0,
+    "preprocessing_ms": 0.0,
+    "image_projection_ms": 0.7776000000000001,
+    "transformer_prefill_ms": 247.0979,
+    "prefill_ms": 248.1907,
+    "decode_ms": 470.6728,
+    "total_ms": 718.9424,
+    "time_to_first_token_ms": 248.1907
+  },
+  "tests": {
+    "windows_library": {
+      "passed": 47,
+      "ignored": 6
+    },
+    "single_and_mixed_batch_integration": {
+      "passed": 2
+    },
+    "benchmark_protocol": {
+      "passed": 17
+    }
+  },
+  "result_sha256": "694c726f3d259df9237939f216a1022ed581d082c4f7669aff867d44b4d8f4a9",
+  "same_prefix_token_ids": [
+    561,
+    791,
+    1169,
+    1135,
+    6830,
+    864,
+    18974,
+    535,
+    3358,
+    524,
+    864,
+    540,
+    541,
+    542,
+    543,
+    544,
+    263
+  ],
+  "teacher_forced": true
+}

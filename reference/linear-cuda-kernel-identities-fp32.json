@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "torch_device_uuid": "2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "cublas_workspace_config": ":4096:8",
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "source_fixture_sha256": "a8b9c60e8f5da012efca80fa6955edff814616f6372668229e0aba74e6f3d338",
+  "source_metadata_sha256": "2cd585ef48c59c9b821e0eae770b2e9c643c4697d239f4b63cac12508cf0e60f",
+  "script_sha256": "17b493be22df20713eaeb65942958acce6c0cd9cc2de47248e081a7310fd1609",
+  "precision": "fp32",
+  "tf32": false,
+  "records": [
+    {
+      "name": "prefill.layer.12.w13",
+      "input_shape": [
+        144,
+        768
+      ],
+      "weight_shape": [
+        4608,
+        768
+      ],
+      "expected_sha256": "a8b9c60e8f5da012efca80fa6955edff814616f6372668229e0aba74e6f3d338",
+      "profiled_calls": 1,
+      "unprofiled_warmup_calls": 3,
+      "trace_path": "artifacts/reference/linear-profiler-fp32/prefill.layer.12.w13.json",
+      "trace_sha256": "135888801b3670df75671fafaefb5cfc74439fb2efdc73eb957ee4103b731533",
+      "kernels": [
+        {
+          "name": "ampere_sgemm_128x64_tn",
+          "arguments": {
+            "External id": 7,
+            "queued": 0,
+            "device": 0,
+            "context": 1,
+            "stream": 7,
+            "correlation": 13,
+            "registers per thread": 122,
+            "shared memory": 12800,
+            "blocks per SM": 1.6875,
+            "warps per SM": 6.75,
+            "grid": [
+              36,
+              3,
+              2
+            ],
+            "block": [
+              128,
+              1,
+              1
+            ],
+            "est. achieved occupancy %": 14
+          }
+        }
+      ],
+      "status": "kernel_identity_captured",
+      "output_matches_saved_gpu_exactly": true,
+      "max_output_difference": 0.0
+    },
+    {
+      "name": "prefill.layer.12.w2",
+      "input_shape": [
+        144,
+        2304
+      ],
+      "weight_shape": [
+        768,
+        2304
+      ],
+      "expected_sha256": "a8b9c60e8f5da012efca80fa6955edff814616f6372668229e0aba74e6f3d338",
+      "profiled_calls": 1,
+      "unprofiled_warmup_calls": 3,
+      "trace_path": "artifacts/reference/linear-profiler-fp32/prefill.layer.12.w2.json",
+      "trace_sha256": "761d50432cab9b3fdd5075c83bfea72bd9c1e6ff4f03838388348fbc21446529",
+      "kernels": [
+        {
+          "name": "ampere_sgemm_128x64_tn",
+          "arguments": {
+            "External id": 519,
+            "queued": 0,
+            "device": 0,
+            "context": 1,
+            "stream": 7,
+            "correlation": 126,
+            "registers per thread": 122,
+            "shared memory": 12800,
+            "blocks per SM": 1.96875,
+            "warps per SM": 7.875,
+            "grid": [
+              6,
+              3,
+              14
+            ],
+            "block": [
+              128,
+              1,
+              1
+            ],
+            "est. achieved occupancy %": 16
+          }
+        },
+        {
+          "name": "void cublasLt::splitKreduce_kernel<32, 16, int, float, float, float, float, false, float, float, float, true, false, false, false>(cublasLt::cublasSplitKParams<float>, float const*, float const*, float*, float*, float const*, float const*, float const*, float const*, float*, void*, long, float*, int*, float*, float*, float const*, float const*, float const*, float const*, float const*)",
+          "arguments": {
+            "External id": 519,
+            "queued": 0,
+            "device": 0,
+            "context": 1,
+            "stream": 7,
+            "correlation": 129,
+            "registers per thread": 44,
+            "shared memory": 0,
+            "blocks per SM": 1.6875,
+            "warps per SM": 27.0,
+            "grid": [
+              24,
+              9,
+              1
+            ],
+            "block": [
+              32,
+              16,
+              1
+            ],
+            "est. achieved occupancy %": 56
+          }
+        }
+      ],
+      "status": "kernel_identity_captured",
+      "output_matches_saved_gpu_exactly": true,
+      "max_output_difference": 0.0
+    },
+    {
+      "name": "decode.2.layer.12.w13",
+      "input_shape": [
+        1,
+        768
+      ],
+      "weight_shape": [
+        4608,
+        768
+      ],
+      "expected_sha256": "a8b9c60e8f5da012efca80fa6955edff814616f6372668229e0aba74e6f3d338",
+      "profiled_calls": 1,
+      "unprofiled_warmup_calls": 3,
+      "trace_path": "artifacts/reference/linear-profiler-fp32/decode.2.layer.12.w13.json",
+      "trace_sha256": "0b5cd2b425140061708d319ac7d7e49edb141c50e038abf0009fadd4dcb13e0e",
+      "kernels": [
+        {
+          "name": "void gemv2T_kernel_val<int, int, float, float, float, float, 128, 16, 4, 4, false, false, cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float>, float> >(cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float>, float>, float, float)",
+          "arguments": {
+            "External id": 1031,
+            "queued": 0,
+            "device": 0,
+            "context": 1,
+            "stream": 7,
+            "correlation": 229,
+            "registers per thread": 63,
+            "shared memory": 2560,
+            "blocks per SM": 4.5,
+            "warps per SM": 18.0,
+            "grid": [
+              576,
+              1,
+              1
+            ],
+            "block": [
+              128,
+              1,
+              1
+            ],
+            "est. achieved occupancy %": 38
+          }
+        }
+      ],
+      "status": "kernel_identity_captured",
+      "output_matches_saved_gpu_exactly": true,
+      "max_output_difference": 0.0
+    },
+    {
+      "name": "decode.2.layer.12.w2",
+      "input_shape": [
+        1,
+        2304
+      ],
+      "weight_shape": [
+        768,
+        2304
+      ],
+      "expected_sha256": "a8b9c60e8f5da012efca80fa6955edff814616f6372668229e0aba74e6f3d338",
+      "profiled_calls": 1,
+      "unprofiled_warmup_calls": 3,
+      "trace_path": "artifacts/reference/linear-profiler-fp32/decode.2.layer.12.w2.json",
+      "trace_sha256": "fbbd473aa2dff532b348dec5f89df7f42a59f3867e0a8dd0193fb90e56675abf",
+      "kernels": [
+        {
+          "name": "std::enable_if<!(false), void>::type internal::gemvx::kernel<int, int, float, float, float, float, false, true, true, false, 9, false, cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float>, float> >(cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float const>, cublasGemvTensorStridedBatched<float>, float>)",
+          "arguments": {
+            "External id": 1543,
+            "queued": 0,
+            "device": 0,
+            "context": 1,
+            "stream": 7,
+            "correlation": 329,
+            "registers per thread": 128,
+            "shared memory": 2112,
+            "blocks per SM": 0.375,
+            "warps per SM": 6.0,
+            "grid": [
+              48,
+              1,
+              1
+            ],
+            "block": [
+              32,
+              16,
+              1
+            ],
+            "est. achieved occupancy %": 13
+          }
+        }
+      ],
+      "status": "kernel_identity_captured",
+      "output_matches_saved_gpu_exactly": true,
+      "max_output_difference": 0.0
+    }
+  ],
+  "split_k_algorithm_id": null,
+  "qualification": "Observed kernel names and launch metadata from bounded same-input CUDA calls. No split-K algorithm ID is inferred from names, no CPU selector search or tolerance change, and profiler timings are not a performance benchmark."
+}

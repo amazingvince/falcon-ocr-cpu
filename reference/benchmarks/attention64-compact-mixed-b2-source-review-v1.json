@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "kind": "mixed-b2-compact-proposal-and-wrapper-source-review",
+  "status": "no_remaining_concrete_source_issue",
+  "created_utc": "2026-09-20T16:41:47.869990+00:00",
+  "scope": "Read-only source, small record and prior receipt review; no imported benchmark code, test execution, model/bulk-asset hashes, build, inference or benchmark. This is not a frozen-plan or performance acceptance receipt.",
+  "recommendation_path": "reference/benchmarks/attention64-compact-mixed-b2-recommendation-v1.md",
+  "selected_workload": "mixed-sparse-first B2; original first two inputs/order unchanged",
+  "mode": {
+    "execution": "joint",
+    "cache_layout": "compact",
+    "weight_layout": "unpacked",
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 16,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096
+  },
+  "inputs": [
+    {
+      "key": "sparse-room",
+      "id": "original-supplement-v1:sparse-room",
+      "prepared_dimensions_from_frozen_workload": [
+        1024,
+        768
+      ],
+      "gpu_dimensions_observed": false,
+      "prefix": 3088,
+      "output_tokens": 6,
+      "finish_reason": "eos",
+      "gpu_record_sha256": "a9a77300c5f25f03d420603b2172eeeb4f35c09b215bf0d793aadca44148dd0c",
+      "kv_reserved_payload_bytes": 786497536
+    },
+    {
+      "key": "table",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "prepared_dimensions_from_frozen_workload": [
+        1184,
+        1536
+      ],
+      "gpu_dimensions_observed": false,
+      "prefix": 7120,
+      "output_tokens": 2280,
+      "finish_reason": "eos",
+      "gpu_record_sha256": "5434fc7bd87510672eb81c7227412cb43f370977c99d8e4d3575612304e361d3",
+      "kv_reserved_payload_bytes": 1331494912
+    }
+  ],
+  "process_order": [
+    "control-before",
+    "candidate",
+    "control-after"
+  ],
+  "warmups_per_process": 2,
+  "measured_repetitions_per_process": 3,
+  "measured_request_outputs_required": 18,
+  "joint_decode_limit": "Only about five forwards have two active rows before sparse EOS; most decode work is a one-row tail. Per-request attention receives one query even inside joint decode. No sustained B2/B4/B8 claim.",
+  "memory": {
+    "compact_reserved_KV_payload_bytes": 2117992448,
+    "compact_reserved_KV_GiB": 1.9725341796875,
+    "weight_file_bytes": 1079789464,
+    "combined_KV_and_weight_payload_GiB": 2.9781664833426476,
+    "not_peak_RSS": true,
+    "excluded": [
+      "prefill/decode workspace",
+      "image buffers",
+      "allocator overhead",
+      "thread stacks",
+      "OS memory"
+    ],
+    "no_phase_packed_weight_copy": true
+  },
+  "scheduling": {
+    "proxy_sources": {
+      "sparse-room": {
+        "source_path": "artifacts/functional-batch/mixed-b4-v1/sequential-control.jsonl",
+        "record_index": 2,
+        "threads": 4,
+        "max_new_tokens": 4096,
+        "output_tokens": 6,
+        "finish_reason": "eos",
+        "observed_total_ms": 16358.0781
+      },
+      "table": {
+        "source_path": "artifacts/cpu/corpus-v3-fp32-4096/2c243b31d36eb729.json",
+        "threads": 16,
+        "max_new_tokens": 4096,
+        "output_tokens": 2280,
+        "finish_reason": "eos",
+        "observed_total_ms": 221197.9032
+      }
+    },
+    "mixed_source_serial_equivalent_15_pass_minutes": 59.388995325,
+    "runtime_forecast": false,
+    "proposed_fixed_process_timeout_seconds": 1800,
+    "three_process_timeout_budget_minutes": 90
+  },
+  "thresholds": {
+    "max_absolute_control_drift_percent": 5,
+    "max_primary_regression_percent_against_each_control": 5,
+    "secondary_speedup_target_percent_against_each_control": 5,
+    "unstable_bracket": "inconclusive",
+    "default_promotion": false
+  },
+  "initial_concrete_finding": {
+    "problem": "Previously accepted arbitrary changed GPU record bytes at preparation and omitted explicit error/replay/config teacher checks.",
+    "resolution": "Both page hashes now independently pinned to prior validated evidence. The exact hashed byte buffer is parsed, and record/config error, postprocessing_replay, teacher forcing or inference_reexecuted=false markers reject; historical missing fields remain absent.",
+    "closed": true
+  },
+  "source_checks": [
+    "Fixed joint/compact/unpacked B2 job and original sparse/table order.",
+    "Same-byte strict plan hash and exact binding inventory; all source/input checks outside measured bracket.",
+    "Matched build compiler/flags/source inventory and only src/kernels.rs changed.",
+    "Fresh process control/candidate/control; timeout/interruption/start-receipt errors kill and reap only the owned child.",
+    "GPU exact record pins independently match prior accepted receipts and actual small record bytes.",
+    "Literal signatures include IDs/text/stops/counts/prefix and frozen CPU prepared dimensions.",
+    "Per-request stage medians index each of the two requests separately; no summation into batch wall time.",
+    "No-regression predicate requires stable controls and <=5 percent slowdown against both.",
+    "Interrupted historical six-mode directory remains preserved and supplies no measured baseline."
+  ],
+  "tests": {
+    "source_test_count": 11,
+    "test_names": [
+      "test_real_gpu_outputs_and_wrong_precision_rejection",
+      "test_changed_gpu_bytes_rejected_before_parsing",
+      "test_explicit_error_replay_or_nonfree_flags_rejected",
+      "test_swapped_requests_and_wrong_gpu_input_rejected",
+      "test_valid_fixed_plan",
+      "test_wrong_supplied_plan_hash_rejected_before_input_work",
+      "test_empty_bound_inventory_rejected",
+      "test_changed_job_order_or_repetitions_rejected",
+      "test_interrupt_cleans_up_child",
+      "test_start_receipt_failure_cleans_up_child",
+      "test_timeout_cleans_up_child"
+    ],
+    "author_reported_passed": 11,
+    "independently_executed": false
+  },
+  "plan_frozen_or_executed_in_this_review": false,
+  "limitations": [
+    "Historical natural table GPU startup metadata remains incomplete.",
+    "GPU prepared dimensions are unavailable; CPU dimensions use frozen workload expectations.",
+    "Warmups are unmeasured and not separately exported; token IDs are stored once per case with compiled per-repetition equality assertions.",
+    "One pair/one bracket screens the selected primary workload only.",
+    "No addition of gains to the prior expanded-cache comparison.",
+    "Single-page isolated optimization can continue independently; no automatic larger matrix."
+  ],
+  "bound_small_files_before_after": {
+    "experiments/profiling/benchmark_mixed_compact_candidate.py": "c7913c5b185de96006ffb1b6d94e40806bc2a1055e6726d86d944b8c99be809c",
+    "experiments/profiling/test_benchmark_mixed_compact_candidate.py": "5580a0b7692521ee07d216aaafea2f1ad15f49b9192b6116dd25d0910f5db1e5",
+    "experiments/profiling/benchmark_compact_candidate.py": "e863fe08fd116664f9f20511b441c69a159c6a98f7d706c242ee9418e940ac0c",
+    "scripts/realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "reference/benchmarks/realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "reference/benchmarks/attention64-compact-mixed-b2-recommendation-v1.md": "dbfc158203b60ffceabcfc997c255276ae35eab307865948a23165300348e82a",
+    "reference/realistic-benchmark-scheduling-review-v1.json": "73658dd18e0cdffacb502b005e95fc67aa36f2b4a4c6966d6193a5c128ddd59c",
+    "reference/benchmarks/mixed-sparse-first-b2-planning-review-v1.json": "b7d654a5ef12994bbef6466df9fe3846a3527acb8dffa8639308c124fb714e5b",
+    "reference/gpu-functional-originals-fp32-4096-validation.json": "7e7eb56a3301045ca6463b9c91ebee88e52a0b8b9348a79ef83aee1ab272a3e8",
+    "reference/windows-rust-corpus-v3-fp32-redecoded-200.json": "a362b42625a5ee594212135ff4a0e36bb64cfcbb64296b91bc19a7712030f4d0",
+    "artifacts/reference/functional-originals-fp32-4096/sparse-room.json": "a9a77300c5f25f03d420603b2172eeeb4f35c09b215bf0d793aadca44148dd0c",
+    "artifacts/reference/corpus-v3-fp32-4096/2c243b31d36eb729.json": "5434fc7bd87510672eb81c7227412cb43f370977c99d8e4d3575612304e361d3",
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/plan.json": "18a4b1a2ffa7b9d58ee7003ec3ec0ee9e65e8abd21e6dadb3a13f97b31a84c4f"
+  }
+}

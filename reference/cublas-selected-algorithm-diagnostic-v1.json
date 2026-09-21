@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "status": "minimal_logging_diagnostic_proposed_not_executed",
+  "created_utc": "2026-09-20T10:46:57.219139+00:00",
+  "profiler_report_sha256": "0f1c9076febb406e1f8140ea4e06774e109d7edcc19f016bf2c155cb8fb4dd07",
+  "all_saved_trace_hashes_verified": true,
+  "note_sha256": "a2136786cb616ef8bcffc5a32d2eb8b05edb656b5a18072ad4eb64cd2dda1203",
+  "torch_source_revision": "70d99e998b4955e0049d13a98d77ae1b14db1f45",
+  "installed_distribution_read_only": "nvidia-cublas==13.1.0.3",
+  "cases": [
+    "prefill.layer.12.w13",
+    "prefill.layer.12.w2"
+  ],
+  "warmups_per_case": 3,
+  "profiled_calls_per_case": 1,
+  "environment_controls": {
+    "CUBLAS_LOGINFO_DBG": "1",
+    "CUBLAS_LOGDEST_DBG": "<fresh-absolute-directory>/cublas.log",
+    "CUBLASLT_LOG_LEVEL": "5",
+    "CUBLASLT_LOG_MASK": "31",
+    "CUBLASLT_LOG_FILE": "<fresh-absolute-directory>/cublaslt_%i.log"
+  },
+  "must_not_change": [
+    "operands",
+    "FP32/TF32 policy",
+    "workspace configuration",
+    "BLAS backend preferences",
+    "allocation flow",
+    "stream",
+    "heuristics cache settings"
+  ],
+  "acceptance": [
+    "exact frozen output bits for both operations",
+    "same kernel names and grids as preserved profiler",
+    "configuration fields joined to executed calls, not heuristic candidates"
+  ],
+  "unknown_if_not_observed": [
+    "public BLAS API",
+    "selected algorithm ID",
+    "split-K count",
+    "reduction scheme",
+    "K partition boundaries",
+    "exact FP32 accumulation order"
+  ],
+  "no_split_count_inferred_from_grid": true,
+  "gpu_calls": false,
+  "installations": false,
+  "cpu_implementation_changes": false,
+  "chunk_count_sweeps": false,
+  "sources": [
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublaslt-logging",
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublasltmatmulalgoconfiggetattribute",
+    "https://docs.nvidia.com/cuda/archive/13.1.0/cublas/index.html#cublasloggerconfigure",
+    "https://github.com/pytorch/pytorch/blob/70d99e998b4955e0049d13a98d77ae1b14db1f45/aten/src/ATen/native/cuda/Blas.cpp",
+    "https://github.com/pytorch/pytorch/blob/70d99e998b4955e0049d13a98d77ae1b14db1f45/aten/src/ATen/cuda/CUDABlas.cpp"
+  ]
+}

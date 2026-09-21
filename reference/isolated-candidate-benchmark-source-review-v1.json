@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "isolated-candidate-benchmark-source-review-v1",
+  "scope": "Bounded source review and mocked offline protocol tests; no inference, native build, actual benchmark child, or large asset hashes.",
+  "status": "no_remaining_concrete_blocker",
+  "source_sha256": {
+    "experiments/profiling/benchmark_candidate.py": "1b534d3cb35f66e66a94a1627390b10b08fa09bee773cd6cda6841dbb531f2fe",
+    "experiments/profiling/test_benchmark_candidate.py": "b3744d38e4e1fc0af2a18914317e36d07367b9aef6ed7ea0dc6640f091dbf826",
+    "scripts/realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e"
+  },
+  "closed_findings": [
+    "All post-Popen exceptions, including interruption or a start-receipt write failure, kill/reap the owned child before rethrowing.",
+    "Validation checks an externally supplied plan digest against the bytes parsed, before execution and at bracket end.",
+    "Fixed control-before/candidate/control-after build roles, three measured repetitions, runtime/limit settings, and complete bound-file inventory are checked.",
+    "Historical baseline goes through the full same-workload report validator, and its exact signatures are rechecked at launch.",
+    "Preparation compares rustc/Cargo versions, Cargo argument suffix and selected build environment except target directory, in addition to the source difference being only src/kernels.rs."
+  ],
+  "tests": {
+    "command": "C:/Users/amazi/mambaforge/python.exe -m unittest discover -s experiments/profiling -p test_benchmark_candidate.py -v",
+    "passed": 7,
+    "failed": 0,
+    "coverage": [
+      "Valid fixed protocol",
+      "Wrong supplied plan digest rejected before input work",
+      "Empty source/input binding inventory rejected",
+      "Changed job build role or repetitions rejected",
+      "Interrupted child cleanup",
+      "Failed start receipt cleanup",
+      "Timed-out child cleanup"
+    ],
+    "subprocess_and_large_asset_checks_mocked": true
+  },
+  "measurement_review": [
+    "Frozen harness times recognize_batch only; verified load and file decoding precede warmups and measured recognitions.",
+    "Harness verifies token IDs/text/stops across measured repetitions; wrapper validates every measured result and exact historical signature.",
+    "Candidate gains compare against both bracketing controls; absolute control drift is gated at5%, candidate target at5%; no automatic promotion."
+  ],
+  "limits": [
+    "Two warmup recognitions are not independently exported or checked against historical outputs; all_measured_outputs_exact correctly scopes the claim to three measured repetitions.",
+    "Build attestation remains the underlying capture's selected source/tool/environment provenance, not a hermetic native-dependency toolchain proof.",
+    "One fixed full page and three measured repetitions support only the declared bounded candidate experiment, not broad workload or platform promotion."
+  ]
+}

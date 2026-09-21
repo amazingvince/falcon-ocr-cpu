@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "kind": "independent-layer7-fp32-crossover-source-review",
+  "status": "no_concrete_source_execution_blocker",
+  "created_utc": "2026-09-20T16:46:08.745938+00:00",
+  "scope": "Read-only source/metadata review plus small source hashing/AST inspection. No imports of the experiment, tests, builds, tensor loads, GPU calls, model execution or benchmark. Sources held throughout; runtime controls remain mandatory.",
+  "fixed_scope": {
+    "entry": "complete original layer.6.hidden [144,768]",
+    "endpoint": {
+      "stage": "layer.7.hidden",
+      "coordinate": [
+        112,
+        249
+      ]
+    },
+    "branches": [
+      "Rust(CPU entry)",
+      "GPU(GPU entry)",
+      "GPU(CPU entry)"
+    ],
+    "stage_shapes": {
+      "input": [
+        144,
+        768
+      ],
+      "layer.7.attention_norm": [
+        144,
+        768
+      ],
+      "layer.7.qkv": [
+        144,
+        2048
+      ],
+      "layer.7.q": [
+        144,
+        16,
+        64
+      ],
+      "layer.7.k": [
+        144,
+        16,
+        64
+      ],
+      "layer.7.v": [
+        144,
+        16,
+        64
+      ],
+      "layer.7.attention": [
+        144,
+        1024
+      ],
+      "layer.7.wo": [
+        144,
+        768
+      ],
+      "layer.7.attention_residual": [
+        144,
+        768
+      ],
+      "layer.7.ffn_norm": [
+        144,
+        768
+      ],
+      "layer.7.w13": [
+        144,
+        4608
+      ],
+      "layer.7.gate": [
+        144,
+        2304
+      ],
+      "layer.7.w2": [
+        144,
+        768
+      ],
+      "layer.7.hidden": [
+        144,
+        768
+      ]
+    },
+    "original_state_controls_each": [
+      "layer.7.q",
+      "layer.7.k",
+      "layer.7.v",
+      "layer.7.attention",
+      "layer.7.hidden"
+    ],
+    "runtime": {
+      "precision": "fp32",
+      "rows": 144,
+      "dim": 768,
+      "heads": 16,
+      "kv_heads": 8,
+      "head_dim": 64,
+      "ffn_dim": 2304,
+      "layer": 7,
+      "gpu_cache_capacity": 256,
+      "rust_cache_capacity": 161,
+      "rust_threads": 4,
+      "rust_backend": "avx2",
+      "tf32": false,
+      "flex_float32_precision": "ieee",
+      "compiled_blocks": false
+    }
+  },
+  "review_findings": [],
+  "checked_design": [
+    "Rust selects exactly layer7 and stops before final norm/logits/session increment. The added eight observation lines are removable to the original numerical body, modulo the declared loop selection/input label.",
+    "Native GPU module hooks capture pre/post-linear buffers, post-normalized repeated V, post-rotary Q/K, post-sink attention, both residual boundaries and existing W13/gate/W2; pass-through returns preserve native operands and results.",
+    "All three branches retain all144 rows; original masks/positions/cache capacities remain separate rather than made artificially equal.",
+    "Exactly five original-state controls per platform must match saved raw bits. GPU original controls precede the crossed branch; failure preserves rejection and prevents interpretation.",
+    "Rust arm uses four AVX2 worker threads, original RMS variant0, immutable model assets and fresh expanded cache161.",
+    "Fresh copied Rust project adds only cfg(test) model declaration/arm/adapter. Offline locked build uses two jobs and rejects fresh=false, wrong manifest/lib source, multiple emitted binaries or target escape.",
+    "Build/run/archive/source windows are checked; compare binds accepted CPU execution, executable and reports plus GPU source/input identities, all stage array shapes/dtypes/bytes, ten raw original controls and three full entry states.",
+    "FP64 decomposition is descriptive signed accounting over all rows/tensors and fixed coordinate; later engine terms include different internal inputs. No new tolerance, numerical qualification or performance claim."
+  ],
+  "scheduling_gate": {
+    "cpu_before_any_gpu_enforced_inside_gpu_exporter": false,
+    "required_coordinator_action": "Before invoking export_gpu.py, verify the accepted source-bound CPU execution/report and all five exact controls plus hashes. Any CPU failure ends this diagnostic. GPU agent explicitly acknowledged this requirement.",
+    "comparer_independently_rechecks_cpu_execution_and_payload": true,
+    "gpu_original_before_crossed_gate_inside_exporter": true
+  },
+  "source_tests": {
+    "names": [
+      "test_adapter_retains_numerical_calls_and_executes_layer7_only",
+      "test_changed_or_ambiguous_anchor_rejects",
+      "test_saved_prefix_resolution_is_unambiguous",
+      "test_frozen_runtime_and_stage_inventory_reject_mutation",
+      "test_cargo_artifact_rejects_shared_stale_or_wrong_source"
+    ],
+    "author_reported_passed": 5,
+    "independently_rerun": false
+  },
+  "old_experiment_sources_verified_unchanged": {
+    "experiments/fp32_crossover/adapter.py": "82bfb211ca531af64572331a0f75bbbfa8230671efe9fa12978ff8a8c42860f2",
+    "experiments/fp32_crossover/capture.py": "678c5be110f290c37cb4c04ec4943d8d275df8c99e3d6022656334dee9ecdad3",
+    "experiments/fp32_crossover/compare.py": "17eeee2ccbade3b4c9ff4d027c43277a44c13d6fe7a476054764c0f993c2b8c2",
+    "experiments/fp32_crossover/contract.py": "b848f1a2a135f56853817c2768d0ce7742c0517a7410d8873ac0442445240405",
+    "experiments/fp32_crossover/export_gpu.py": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b",
+    "experiments/fp32_crossover/README.md": "5a56c464b9b085021d501dc86821e15c527096aeaadb952b3f2140d21e176489",
+    "experiments/fp32_crossover/rust_arm.rs": "f88bf1cea465092819e67a860f9f82f91fd2eae5ac3151799f997039eadc45ed",
+    "experiments/fp32_crossover/SOURCE_REVIEW_NOTES.md": "644130035c09d362baf9db256646df861a433b32b1fbe37ffdc7661b2a7bb338",
+    "experiments/fp32_crossover/test_source.py": "2657e8d289f8a671eeab39a3152784d9437b21997f319cda44940d548f035ce8"
+  },
+  "bound_small_inputs_before_after": {
+    "experiments/fp32_crossover_layer7/adapter.py": "5f7fa4fb4af91f41057e1ccec0519b4065b576a133f29ba35c8824af05b7bbc2",
+    "experiments/fp32_crossover_layer7/capture.py": "1e8deb6958dee8f4accb158c97bdd97cc9c28ae5427ae3d1e86f7eed8c39e842",
+    "experiments/fp32_crossover_layer7/compare.py": "6b4ea7634b9b4ce7a1c5a4d39c6b44d068837876ac992d0cfa45725864ab4010",
+    "experiments/fp32_crossover_layer7/contract.py": "5e1090e21c23ed47f9a487915a0f6373b904fd8bb45c31dbac428601585c5971",
+    "experiments/fp32_crossover_layer7/export_gpu.py": "dd3444622c4bc69a65378ee4708b8cf3c7b5c197349e27064f36a1c23e8cb900",
+    "experiments/fp32_crossover_layer7/rust_arm.rs": "9e9d675abecd4b98e2774e3041ce7f48064d163225537f30b033be22ce724d0f",
+    "experiments/fp32_crossover_layer7/test_source.py": "ab31fba7b5f8d3dabbe96b38dd93c0f901c87c8ce47d896c020fcefa959a01dc",
+    "experiments/fp32_crossover_layer7/README.md": "534f85fb2bb9e3851705393a905affe0e84ca96a91f36d0386a58d3846859b09",
+    "experiments/fp32_crossover_layer7/SOURCE_REVIEW_NOTES.md": "8f3ceb90ebb715e233a958972e1b35abe68fb027ec4e6d63407142dee044f9d3",
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/model/modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+    "reference/fp32-upstream-next-diagnostic-v1.md": "e47a69323cdb5958813043769121f453d2fc7c5c1ace7b7fd18a38187575bf60",
+    "artifacts/diagnostics/fp32-crossover-v1/plan.json": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c",
+    "experiments/fp32_crossover/adapter.py": "82bfb211ca531af64572331a0f75bbbfa8230671efe9fa12978ff8a8c42860f2",
+    "experiments/fp32_crossover/capture.py": "678c5be110f290c37cb4c04ec4943d8d275df8c99e3d6022656334dee9ecdad3",
+    "experiments/fp32_crossover/compare.py": "17eeee2ccbade3b4c9ff4d027c43277a44c13d6fe7a476054764c0f993c2b8c2",
+    "experiments/fp32_crossover/contract.py": "b848f1a2a135f56853817c2768d0ce7742c0517a7410d8873ac0442445240405",
+    "experiments/fp32_crossover/export_gpu.py": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b",
+    "experiments/fp32_crossover/README.md": "5a56c464b9b085021d501dc86821e15c527096aeaadb952b3f2140d21e176489",
+    "experiments/fp32_crossover/rust_arm.rs": "f88bf1cea465092819e67a860f9f82f91fd2eae5ac3151799f997039eadc45ed",
+    "experiments/fp32_crossover/SOURCE_REVIEW_NOTES.md": "644130035c09d362baf9db256646df861a433b32b1fbe37ffdc7661b2a7bb338",
+    "experiments/fp32_crossover/test_source.py": "2657e8d289f8a671eeab39a3152784d9437b21997f319cda44940d548f035ce8"
+  },
+  "limitations": [
+    "Observer copies change allocation and synchronization. Saved endpoint equality is a gate, not proof of unchanged internal hardware scheduling.",
+    "Earlier layers and allocator history are absent; full saved incoming states are used.",
+    "Original CPU/GPU startup provenance is incomplete and not repaired retroactively.",
+    "No tensor/runtime result has yet been accepted by this source review.",
+    "Stop after any failed control or one valid bounded decomposition."
+  ]
+}

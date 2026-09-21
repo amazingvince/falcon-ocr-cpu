@@ -1,0 +1,3081 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "manifest": "reference/corpus-smoke-lock-v1.json",
+  "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+  "gpu_run": "artifacts/reference/corpus-smoke-fp32-4096/run.json",
+  "gpu_run_sha256": "32b38291f8fc5722df4eb47273fcba7930b8d0590fea08406d7468c1982c6e7b",
+  "cpu_run": "artifacts/cpu/corpus-smoke-fp32-4096/run.json",
+  "cpu_run_sha256": "9550cd83bf21c844afb0c2d613f5a72f04919229ddd24dcfa4108cc530786525",
+  "cpu_contract": {
+    "backend": "avx2",
+    "cpu_label": "Ryzen 9 7950X",
+    "environment_label": "native Windows",
+    "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "options": {
+      "max_dimension": 1536,
+      "max_new_tokens": 4096,
+      "min_dimension": 64
+    },
+    "precision": "fp32",
+    "source_sha256": {
+      "config": "0111a272510c862f42f25b32cd9f95f8165ceda00a55949e64378b126f07d701",
+      "harness": "53c97f191a0b3eeccea85fa65ed0d64f147115cfe4e43bd41a64b96fda5057e1",
+      "kernels": "801f94d88787d80af52a274fde2f3c385a27b42b067fd3f1a65cadd9282e90d5",
+      "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "model": "e51f02006d336a36d815fb902c756beed1a1228442fcbc9e3d8ae38b9af727f4",
+      "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "runner": "f5dfba8c2b00f1fd8532ba1d831b6ebf50eec8cace3af38eef2b4c693e2e026d",
+      "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+    },
+    "threads": 16,
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "gpu_configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+    "max_new_tokens": 4096,
+    "max_dimension": 1536,
+    "min_dimension": 64,
+    "precision": "fp32",
+    "tf32": false,
+    "flex_float32_precision": "ieee",
+    "compiled_blocks": false
+  },
+  "expected_pages": 24,
+  "compared_pages": 24,
+  "exact_pages": 24,
+  "compared_gpu_tokens": 28734,
+  "missing_cpu": [],
+  "missing_gpu": [],
+  "provenance_passed": true,
+  "completed_smoke_parity_passed": true,
+  "checks": [
+    {
+      "name": "gpu.model_revision",
+      "passed": true,
+      "actual": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "expected": "fe757d59ecd79d4d68760162306a70a015761ad9"
+    },
+    {
+      "name": "cpu.model_revision",
+      "passed": true,
+      "actual": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "expected": "fe757d59ecd79d4d68760162306a70a015761ad9"
+    },
+    {
+      "name": "gpu.weights_sha256",
+      "passed": true,
+      "actual": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "expected": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    {
+      "name": "cpu.weights_sha256",
+      "passed": true,
+      "actual": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "expected": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    {
+      "name": "gpu.manifest_sha256",
+      "passed": true,
+      "actual": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+      "expected": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef"
+    },
+    {
+      "name": "cpu.manifest_sha256",
+      "passed": true,
+      "actual": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+      "expected": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef"
+    },
+    {
+      "name": "gpu.precision",
+      "passed": true,
+      "actual": "fp32",
+      "expected": "fp32"
+    },
+    {
+      "name": "cpu.precision",
+      "passed": true,
+      "actual": "fp32",
+      "expected": "fp32"
+    },
+    {
+      "name": "options.max_dimension",
+      "passed": true,
+      "actual": 1536,
+      "expected": 1536
+    },
+    {
+      "name": "options.min_dimension",
+      "passed": true,
+      "actual": 64,
+      "expected": 64
+    },
+    {
+      "name": "options.max_new_tokens",
+      "passed": true,
+      "actual": 4096,
+      "expected": 4096
+    },
+    {
+      "name": "gpu.tf32",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "gpu.flex_float32_precision",
+      "passed": true,
+      "actual": "ieee",
+      "expected": "ieee"
+    },
+    {
+      "name": "cpu.teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "cpu.contract_sha256",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "f49121f28edbfb30.canonical_png",
+      "passed": true,
+      "actual": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91",
+      "expected": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91"
+    },
+    {
+      "name": "f49121f28edbfb30.canonical_rgb",
+      "passed": true,
+      "actual": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328",
+      "expected": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328"
+    },
+    {
+      "name": "f49121f28edbfb30.ground_truth",
+      "passed": true,
+      "actual": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e",
+      "expected": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e"
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg"
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_input",
+      "passed": true,
+      "actual": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328",
+      "expected": "5eb741fcc11a8790b8f54a223585b1b8781c67678d74cfad17e68cd8cbe1b328"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_input",
+      "passed": true,
+      "actual": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91",
+      "expected": "e675fdb0533e514a2b42ecf0a9a1c7ec8141116bf74134dfcb02184eefa83b91"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_ground_truth",
+      "passed": true,
+      "actual": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e",
+      "expected": "12714c001538bb215a3c8383a83b70f79acabc4d0a3a62bdf1dcf4ca9a55fd4e"
+    },
+    {
+      "name": "f49121f28edbfb30.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "f49121f28edbfb30.prefix_tokens",
+      "passed": true,
+      "actual": 4913,
+      "expected": 4913
+    },
+    {
+      "name": "f49121f28edbfb30.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 383,
+      "expected": 383
+    },
+    {
+      "name": "e9944e1b55e61e7c.canonical_png",
+      "passed": true,
+      "actual": "29edcc19a7d9e47d97fbbef233a734c8150e7e01a6501a33aee4fd723b3c29ef",
+      "expected": "29edcc19a7d9e47d97fbbef233a734c8150e7e01a6501a33aee4fd723b3c29ef"
+    },
+    {
+      "name": "e9944e1b55e61e7c.canonical_rgb",
+      "passed": true,
+      "actual": "19402ba98b4c91e26f365baadab1700cdc892346b2195b8cd358dd93d1beee3b",
+      "expected": "19402ba98b4c91e26f365baadab1700cdc892346b2195b8cd358dd93d1beee3b"
+    },
+    {
+      "name": "e9944e1b55e61e7c.ground_truth",
+      "passed": true,
+      "actual": "90289ccfe1e5d93d8fd7744f7afe9e6e965165862747bc4298069f1acc85eaac",
+      "expected": "90289ccfe1e5d93d8fd7744f7afe9e6e965165862747bc4298069f1acc85eaac"
+    },
+    {
+      "name": "e9944e1b55e61e7c.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "e9944e1b55e61e7c.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "e9944e1b55e61e7c.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1509.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1509.jpg"
+    },
+    {
+      "name": "e9944e1b55e61e7c.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1509.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1509.jpg"
+    },
+    {
+      "name": "e9944e1b55e61e7c.gpu_input",
+      "passed": true,
+      "actual": "19402ba98b4c91e26f365baadab1700cdc892346b2195b8cd358dd93d1beee3b",
+      "expected": "19402ba98b4c91e26f365baadab1700cdc892346b2195b8cd358dd93d1beee3b"
+    },
+    {
+      "name": "e9944e1b55e61e7c.cpu_input",
+      "passed": true,
+      "actual": "29edcc19a7d9e47d97fbbef233a734c8150e7e01a6501a33aee4fd723b3c29ef",
+      "expected": "29edcc19a7d9e47d97fbbef233a734c8150e7e01a6501a33aee4fd723b3c29ef"
+    },
+    {
+      "name": "e9944e1b55e61e7c.cpu_ground_truth",
+      "passed": true,
+      "actual": "90289ccfe1e5d93d8fd7744f7afe9e6e965165862747bc4298069f1acc85eaac",
+      "expected": "90289ccfe1e5d93d8fd7744f7afe9e6e965165862747bc4298069f1acc85eaac"
+    },
+    {
+      "name": "e9944e1b55e61e7c.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "e9944e1b55e61e7c.prefix_tokens",
+      "passed": true,
+      "actual": 6640,
+      "expected": 6640
+    },
+    {
+      "name": "e9944e1b55e61e7c.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 748,
+      "expected": 748
+    },
+    {
+      "name": "23aab39cd5bf7391.canonical_png",
+      "passed": true,
+      "actual": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5",
+      "expected": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5"
+    },
+    {
+      "name": "23aab39cd5bf7391.canonical_rgb",
+      "passed": true,
+      "actual": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4",
+      "expected": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4"
+    },
+    {
+      "name": "23aab39cd5bf7391.ground_truth",
+      "passed": true,
+      "actual": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424",
+      "expected": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424"
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg"
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_input",
+      "passed": true,
+      "actual": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4",
+      "expected": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_input",
+      "passed": true,
+      "actual": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5",
+      "expected": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_ground_truth",
+      "passed": true,
+      "actual": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424",
+      "expected": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424"
+    },
+    {
+      "name": "23aab39cd5bf7391.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "23aab39cd5bf7391.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "23aab39cd5bf7391.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 398,
+      "expected": 398
+    },
+    {
+      "name": "844ccd0487b3e263.canonical_png",
+      "passed": true,
+      "actual": "25adaa63949da3b4ede7ceda43619e31c49f3d9f36e163d90160d4d1461341eb",
+      "expected": "25adaa63949da3b4ede7ceda43619e31c49f3d9f36e163d90160d4d1461341eb"
+    },
+    {
+      "name": "844ccd0487b3e263.canonical_rgb",
+      "passed": true,
+      "actual": "7746fe48702765efca59b15981cd428aa7747deb9477fb01cd824f625cc233e8",
+      "expected": "7746fe48702765efca59b15981cd428aa7747deb9477fb01cd824f625cc233e8"
+    },
+    {
+      "name": "844ccd0487b3e263.ground_truth",
+      "passed": true,
+      "actual": "87416d6d2d8db8b7a29a8a58bf600f2c15a71d4dc28abe55a16299cf55b27d1d",
+      "expected": "87416d6d2d8db8b7a29a8a58bf600f2c15a71d4dc28abe55a16299cf55b27d1d"
+    },
+    {
+      "name": "844ccd0487b3e263.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "844ccd0487b3e263.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "844ccd0487b3e263.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+      "expected": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg"
+    },
+    {
+      "name": "844ccd0487b3e263.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+      "expected": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg"
+    },
+    {
+      "name": "844ccd0487b3e263.gpu_input",
+      "passed": true,
+      "actual": "7746fe48702765efca59b15981cd428aa7747deb9477fb01cd824f625cc233e8",
+      "expected": "7746fe48702765efca59b15981cd428aa7747deb9477fb01cd824f625cc233e8"
+    },
+    {
+      "name": "844ccd0487b3e263.cpu_input",
+      "passed": true,
+      "actual": "25adaa63949da3b4ede7ceda43619e31c49f3d9f36e163d90160d4d1461341eb",
+      "expected": "25adaa63949da3b4ede7ceda43619e31c49f3d9f36e163d90160d4d1461341eb"
+    },
+    {
+      "name": "844ccd0487b3e263.cpu_ground_truth",
+      "passed": true,
+      "actual": "87416d6d2d8db8b7a29a8a58bf600f2c15a71d4dc28abe55a16299cf55b27d1d",
+      "expected": "87416d6d2d8db8b7a29a8a58bf600f2c15a71d4dc28abe55a16299cf55b27d1d"
+    },
+    {
+      "name": "844ccd0487b3e263.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "844ccd0487b3e263.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "844ccd0487b3e263.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 206,
+      "expected": 206
+    },
+    {
+      "name": "15ef968b6700f557.canonical_png",
+      "passed": true,
+      "actual": "99a4765109634907f733fd6714f0e3852412c58763ead043b52b2a1ea284f87d",
+      "expected": "99a4765109634907f733fd6714f0e3852412c58763ead043b52b2a1ea284f87d"
+    },
+    {
+      "name": "15ef968b6700f557.canonical_rgb",
+      "passed": true,
+      "actual": "e2f869872ec0ae9191524771eea77e457923deb0ded5978b33501c7603600ac3",
+      "expected": "e2f869872ec0ae9191524771eea77e457923deb0ded5978b33501c7603600ac3"
+    },
+    {
+      "name": "15ef968b6700f557.ground_truth",
+      "passed": true,
+      "actual": "1c26796adfaba1936837f467bd8dad37a1111cd1714e8c93e8e0e99cdc5b7925",
+      "expected": "1c26796adfaba1936837f467bd8dad37a1111cd1714e8c93e8e0e99cdc5b7925"
+    },
+    {
+      "name": "15ef968b6700f557.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "15ef968b6700f557.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "15ef968b6700f557.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg",
+      "expected": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg"
+    },
+    {
+      "name": "15ef968b6700f557.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg",
+      "expected": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg"
+    },
+    {
+      "name": "15ef968b6700f557.gpu_input",
+      "passed": true,
+      "actual": "e2f869872ec0ae9191524771eea77e457923deb0ded5978b33501c7603600ac3",
+      "expected": "e2f869872ec0ae9191524771eea77e457923deb0ded5978b33501c7603600ac3"
+    },
+    {
+      "name": "15ef968b6700f557.cpu_input",
+      "passed": true,
+      "actual": "99a4765109634907f733fd6714f0e3852412c58763ead043b52b2a1ea284f87d",
+      "expected": "99a4765109634907f733fd6714f0e3852412c58763ead043b52b2a1ea284f87d"
+    },
+    {
+      "name": "15ef968b6700f557.cpu_ground_truth",
+      "passed": true,
+      "actual": "1c26796adfaba1936837f467bd8dad37a1111cd1714e8c93e8e0e99cdc5b7925",
+      "expected": "1c26796adfaba1936837f467bd8dad37a1111cd1714e8c93e8e0e99cdc5b7925"
+    },
+    {
+      "name": "15ef968b6700f557.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "15ef968b6700f557.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "15ef968b6700f557.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 492,
+      "expected": 492
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.canonical_png",
+      "passed": true,
+      "actual": "27140531537839a54a2d12de207fa5b74e5e75aaf557c9f1a64b869b8922dd88",
+      "expected": "27140531537839a54a2d12de207fa5b74e5e75aaf557c9f1a64b869b8922dd88"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.canonical_rgb",
+      "passed": true,
+      "actual": "900d2a1cacedb7383327e913c3c0d4e9cf910c0038c58dc3235f45cacfb1f756",
+      "expected": "900d2a1cacedb7383327e913c3c0d4e9cf910c0038c58dc3235f45cacfb1f756"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.ground_truth",
+      "passed": true,
+      "actual": "5f45d5c88c99187bc47835fb93760fc3a0b45147af3b6f3cf0bfd894c8bdef6c",
+      "expected": "5f45d5c88c99187bc47835fb93760fc3a0b45147af3b6f3cf0bfd894c8bdef6c"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+      "expected": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+      "expected": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.gpu_input",
+      "passed": true,
+      "actual": "900d2a1cacedb7383327e913c3c0d4e9cf910c0038c58dc3235f45cacfb1f756",
+      "expected": "900d2a1cacedb7383327e913c3c0d4e9cf910c0038c58dc3235f45cacfb1f756"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.cpu_input",
+      "passed": true,
+      "actual": "27140531537839a54a2d12de207fa5b74e5e75aaf557c9f1a64b869b8922dd88",
+      "expected": "27140531537839a54a2d12de207fa5b74e5e75aaf557c9f1a64b869b8922dd88"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.cpu_ground_truth",
+      "passed": true,
+      "actual": "5f45d5c88c99187bc47835fb93760fc3a0b45147af3b6f3cf0bfd894c8bdef6c",
+      "expected": "5f45d5c88c99187bc47835fb93760fc3a0b45147af3b6f3cf0bfd894c8bdef6c"
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "c3f6a9d3aabf90b3.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 575,
+      "expected": 575
+    },
+    {
+      "name": "8f193e26d504d352.canonical_png",
+      "passed": true,
+      "actual": "31eda0ce01491b6eda02cf687c8f0bf15fbdcbc2d38a7924259584ec13131416",
+      "expected": "31eda0ce01491b6eda02cf687c8f0bf15fbdcbc2d38a7924259584ec13131416"
+    },
+    {
+      "name": "8f193e26d504d352.canonical_rgb",
+      "passed": true,
+      "actual": "86bf9873a9bf5d85826e25f90e70bac94eb62b93ff6158ace2f8941f73e79036",
+      "expected": "86bf9873a9bf5d85826e25f90e70bac94eb62b93ff6158ace2f8941f73e79036"
+    },
+    {
+      "name": "8f193e26d504d352.ground_truth",
+      "passed": true,
+      "actual": "a45abf4bc98bdee5fa0fa95937e6f5323bd507701e3a1939e29af75ad4c20225",
+      "expected": "a45abf4bc98bdee5fa0fa95937e6f5323bd507701e3a1939e29af75ad4c20225"
+    },
+    {
+      "name": "8f193e26d504d352.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "8f193e26d504d352.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "8f193e26d504d352.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-44a14308-9d3e-4044-9508-5c3e30141a19.png",
+      "expected": "omnidocbench:page-44a14308-9d3e-4044-9508-5c3e30141a19.png"
+    },
+    {
+      "name": "8f193e26d504d352.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-44a14308-9d3e-4044-9508-5c3e30141a19.png",
+      "expected": "omnidocbench:page-44a14308-9d3e-4044-9508-5c3e30141a19.png"
+    },
+    {
+      "name": "8f193e26d504d352.gpu_input",
+      "passed": true,
+      "actual": "86bf9873a9bf5d85826e25f90e70bac94eb62b93ff6158ace2f8941f73e79036",
+      "expected": "86bf9873a9bf5d85826e25f90e70bac94eb62b93ff6158ace2f8941f73e79036"
+    },
+    {
+      "name": "8f193e26d504d352.cpu_input",
+      "passed": true,
+      "actual": "31eda0ce01491b6eda02cf687c8f0bf15fbdcbc2d38a7924259584ec13131416",
+      "expected": "31eda0ce01491b6eda02cf687c8f0bf15fbdcbc2d38a7924259584ec13131416"
+    },
+    {
+      "name": "8f193e26d504d352.cpu_ground_truth",
+      "passed": true,
+      "actual": "a45abf4bc98bdee5fa0fa95937e6f5323bd507701e3a1939e29af75ad4c20225",
+      "expected": "a45abf4bc98bdee5fa0fa95937e6f5323bd507701e3a1939e29af75ad4c20225"
+    },
+    {
+      "name": "8f193e26d504d352.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "8f193e26d504d352.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "8f193e26d504d352.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 245,
+      "expected": 245
+    },
+    {
+      "name": "7442dc2baaeb00ff.canonical_png",
+      "passed": true,
+      "actual": "83fa483832c57dde7227d025a5ac1fb1510950928be072bf91b88ca3c59bae91",
+      "expected": "83fa483832c57dde7227d025a5ac1fb1510950928be072bf91b88ca3c59bae91"
+    },
+    {
+      "name": "7442dc2baaeb00ff.canonical_rgb",
+      "passed": true,
+      "actual": "d3c740105a3fa8dda517a3b9dc9ef2928e250da6f70e607b8904d0d2458e82a9",
+      "expected": "d3c740105a3fa8dda517a3b9dc9ef2928e250da6f70e607b8904d0d2458e82a9"
+    },
+    {
+      "name": "7442dc2baaeb00ff.ground_truth",
+      "passed": true,
+      "actual": "279c696fb705a05460bbd1894966dbdddf345a7925114f57ad7dd1373025e6a8",
+      "expected": "279c696fb705a05460bbd1894966dbdddf345a7925114f57ad7dd1373025e6a8"
+    },
+    {
+      "name": "7442dc2baaeb00ff.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "7442dc2baaeb00ff.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "7442dc2baaeb00ff.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+      "expected": "omnidocbench:page-e4053f20-e6e6-430e-83ef-db298a3199aa.png"
+    },
+    {
+      "name": "7442dc2baaeb00ff.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+      "expected": "omnidocbench:page-e4053f20-e6e6-430e-83ef-db298a3199aa.png"
+    },
+    {
+      "name": "7442dc2baaeb00ff.gpu_input",
+      "passed": true,
+      "actual": "d3c740105a3fa8dda517a3b9dc9ef2928e250da6f70e607b8904d0d2458e82a9",
+      "expected": "d3c740105a3fa8dda517a3b9dc9ef2928e250da6f70e607b8904d0d2458e82a9"
+    },
+    {
+      "name": "7442dc2baaeb00ff.cpu_input",
+      "passed": true,
+      "actual": "83fa483832c57dde7227d025a5ac1fb1510950928be072bf91b88ca3c59bae91",
+      "expected": "83fa483832c57dde7227d025a5ac1fb1510950928be072bf91b88ca3c59bae91"
+    },
+    {
+      "name": "7442dc2baaeb00ff.cpu_ground_truth",
+      "passed": true,
+      "actual": "279c696fb705a05460bbd1894966dbdddf345a7925114f57ad7dd1373025e6a8",
+      "expected": "279c696fb705a05460bbd1894966dbdddf345a7925114f57ad7dd1373025e6a8"
+    },
+    {
+      "name": "7442dc2baaeb00ff.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "7442dc2baaeb00ff.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "7442dc2baaeb00ff.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 1227,
+      "expected": 1227
+    },
+    {
+      "name": "4bf114e43e8dcfed.canonical_png",
+      "passed": true,
+      "actual": "2b8c9f672efc28cb3001465b0744e1d8eede1077cb44648dd9cdea1428734619",
+      "expected": "2b8c9f672efc28cb3001465b0744e1d8eede1077cb44648dd9cdea1428734619"
+    },
+    {
+      "name": "4bf114e43e8dcfed.canonical_rgb",
+      "passed": true,
+      "actual": "fb93a2a35aa66b13bb137dce70e8017099c6a01ebf1eef84031dfe3836ed0240",
+      "expected": "fb93a2a35aa66b13bb137dce70e8017099c6a01ebf1eef84031dfe3836ed0240"
+    },
+    {
+      "name": "4bf114e43e8dcfed.ground_truth",
+      "passed": true,
+      "actual": "b8f9fd3d3721d6d7891a4d5dd6f26b70c3628a54d077f6f53b474e11fd041bb4",
+      "expected": "b8f9fd3d3721d6d7891a4d5dd6f26b70c3628a54d077f6f53b474e11fd041bb4"
+    },
+    {
+      "name": "4bf114e43e8dcfed.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "4bf114e43e8dcfed.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "4bf114e43e8dcfed.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:book_zh_GB12082006_extracted_page_8.png",
+      "expected": "omnidocbench:book_zh_GB12082006_extracted_page_8.png"
+    },
+    {
+      "name": "4bf114e43e8dcfed.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:book_zh_GB12082006_extracted_page_8.png",
+      "expected": "omnidocbench:book_zh_GB12082006_extracted_page_8.png"
+    },
+    {
+      "name": "4bf114e43e8dcfed.gpu_input",
+      "passed": true,
+      "actual": "fb93a2a35aa66b13bb137dce70e8017099c6a01ebf1eef84031dfe3836ed0240",
+      "expected": "fb93a2a35aa66b13bb137dce70e8017099c6a01ebf1eef84031dfe3836ed0240"
+    },
+    {
+      "name": "4bf114e43e8dcfed.cpu_input",
+      "passed": true,
+      "actual": "2b8c9f672efc28cb3001465b0744e1d8eede1077cb44648dd9cdea1428734619",
+      "expected": "2b8c9f672efc28cb3001465b0744e1d8eede1077cb44648dd9cdea1428734619"
+    },
+    {
+      "name": "4bf114e43e8dcfed.cpu_ground_truth",
+      "passed": true,
+      "actual": "b8f9fd3d3721d6d7891a4d5dd6f26b70c3628a54d077f6f53b474e11fd041bb4",
+      "expected": "b8f9fd3d3721d6d7891a4d5dd6f26b70c3628a54d077f6f53b474e11fd041bb4"
+    },
+    {
+      "name": "4bf114e43e8dcfed.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "4bf114e43e8dcfed.prefix_tokens",
+      "passed": true,
+      "actual": 1888,
+      "expected": 1888
+    },
+    {
+      "name": "4bf114e43e8dcfed.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 123,
+      "expected": 123
+    },
+    {
+      "name": "a5c0f5f013640adf.canonical_png",
+      "passed": true,
+      "actual": "7e2cf589e17a15d9cae7f02d951f04040b7d50c6b6e9c5d7871ea75bf7f13816",
+      "expected": "7e2cf589e17a15d9cae7f02d951f04040b7d50c6b6e9c5d7871ea75bf7f13816"
+    },
+    {
+      "name": "a5c0f5f013640adf.canonical_rgb",
+      "passed": true,
+      "actual": "a7150490f6cfb788983498a27a23df56278a48b8a7ca0597150b82590bf11695",
+      "expected": "a7150490f6cfb788983498a27a23df56278a48b8a7ca0597150b82590bf11695"
+    },
+    {
+      "name": "a5c0f5f013640adf.ground_truth",
+      "passed": true,
+      "actual": "ab05b5a9ba8cd282331bff16465b4c36e8acdde29b8bb8218c8f4e732a715a87",
+      "expected": "ab05b5a9ba8cd282331bff16465b4c36e8acdde29b8bb8218c8f4e732a715a87"
+    },
+    {
+      "name": "a5c0f5f013640adf.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "a5c0f5f013640adf.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "a5c0f5f013640adf.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "expected": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg"
+    },
+    {
+      "name": "a5c0f5f013640adf.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "expected": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg"
+    },
+    {
+      "name": "a5c0f5f013640adf.gpu_input",
+      "passed": true,
+      "actual": "a7150490f6cfb788983498a27a23df56278a48b8a7ca0597150b82590bf11695",
+      "expected": "a7150490f6cfb788983498a27a23df56278a48b8a7ca0597150b82590bf11695"
+    },
+    {
+      "name": "a5c0f5f013640adf.cpu_input",
+      "passed": true,
+      "actual": "7e2cf589e17a15d9cae7f02d951f04040b7d50c6b6e9c5d7871ea75bf7f13816",
+      "expected": "7e2cf589e17a15d9cae7f02d951f04040b7d50c6b6e9c5d7871ea75bf7f13816"
+    },
+    {
+      "name": "a5c0f5f013640adf.cpu_ground_truth",
+      "passed": true,
+      "actual": "ab05b5a9ba8cd282331bff16465b4c36e8acdde29b8bb8218c8f4e732a715a87",
+      "expected": "ab05b5a9ba8cd282331bff16465b4c36e8acdde29b8bb8218c8f4e732a715a87"
+    },
+    {
+      "name": "a5c0f5f013640adf.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "a5c0f5f013640adf.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "a5c0f5f013640adf.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 421,
+      "expected": 421
+    },
+    {
+      "name": "f19a8b1ef5c34f07.canonical_png",
+      "passed": true,
+      "actual": "01bff340871759cc97411b8f389c2848b0767533207417becc8cac5020b737d4",
+      "expected": "01bff340871759cc97411b8f389c2848b0767533207417becc8cac5020b737d4"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.canonical_rgb",
+      "passed": true,
+      "actual": "bf7a09624e9b0134c2712bf6de4b30a646f24a782985caaabd3554f635563726",
+      "expected": "bf7a09624e9b0134c2712bf6de4b30a646f24a782985caaabd3554f635563726"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.ground_truth",
+      "passed": true,
+      "actual": "b5a94e7558954a63eba60e49ed54bb468292859fcbb83706f0cfc3daf6f77997",
+      "expected": "b5a94e7558954a63eba60e49ed54bb468292859fcbb83706f0cfc3daf6f77997"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "f19a8b1ef5c34f07.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63708140.pdf_170.jpg",
+      "expected": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63708140.pdf_170.jpg"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63708140.pdf_170.jpg",
+      "expected": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63708140.pdf_170.jpg"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.gpu_input",
+      "passed": true,
+      "actual": "bf7a09624e9b0134c2712bf6de4b30a646f24a782985caaabd3554f635563726",
+      "expected": "bf7a09624e9b0134c2712bf6de4b30a646f24a782985caaabd3554f635563726"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.cpu_input",
+      "passed": true,
+      "actual": "01bff340871759cc97411b8f389c2848b0767533207417becc8cac5020b737d4",
+      "expected": "01bff340871759cc97411b8f389c2848b0767533207417becc8cac5020b737d4"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.cpu_ground_truth",
+      "passed": true,
+      "actual": "b5a94e7558954a63eba60e49ed54bb468292859fcbb83706f0cfc3daf6f77997",
+      "expected": "b5a94e7558954a63eba60e49ed54bb468292859fcbb83706f0cfc3daf6f77997"
+    },
+    {
+      "name": "f19a8b1ef5c34f07.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "f19a8b1ef5c34f07.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "f19a8b1ef5c34f07.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 181,
+      "expected": 181
+    },
+    {
+      "name": "a1336e3bc391f255.canonical_png",
+      "passed": true,
+      "actual": "89c7e56367c222d9baed9c3cc9681938cb336f096897d5f1236948704c24e452",
+      "expected": "89c7e56367c222d9baed9c3cc9681938cb336f096897d5f1236948704c24e452"
+    },
+    {
+      "name": "a1336e3bc391f255.canonical_rgb",
+      "passed": true,
+      "actual": "3ad532e9ac29d1f4ba8996962726c6df23b9ed2a0971d87bcaf4621ecbb7a2f0",
+      "expected": "3ad532e9ac29d1f4ba8996962726c6df23b9ed2a0971d87bcaf4621ecbb7a2f0"
+    },
+    {
+      "name": "a1336e3bc391f255.ground_truth",
+      "passed": true,
+      "actual": "3400401198fd551c6c54194bbe267264e7ea8e54f6ea6b96cabea3c46582e504",
+      "expected": "3400401198fd551c6c54194bbe267264e7ea8e54f6ea6b96cabea3c46582e504"
+    },
+    {
+      "name": "a1336e3bc391f255.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "a1336e3bc391f255.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "a1336e3bc391f255.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg"
+    },
+    {
+      "name": "a1336e3bc391f255.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg"
+    },
+    {
+      "name": "a1336e3bc391f255.gpu_input",
+      "passed": true,
+      "actual": "3ad532e9ac29d1f4ba8996962726c6df23b9ed2a0971d87bcaf4621ecbb7a2f0",
+      "expected": "3ad532e9ac29d1f4ba8996962726c6df23b9ed2a0971d87bcaf4621ecbb7a2f0"
+    },
+    {
+      "name": "a1336e3bc391f255.cpu_input",
+      "passed": true,
+      "actual": "89c7e56367c222d9baed9c3cc9681938cb336f096897d5f1236948704c24e452",
+      "expected": "89c7e56367c222d9baed9c3cc9681938cb336f096897d5f1236948704c24e452"
+    },
+    {
+      "name": "a1336e3bc391f255.cpu_ground_truth",
+      "passed": true,
+      "actual": "3400401198fd551c6c54194bbe267264e7ea8e54f6ea6b96cabea3c46582e504",
+      "expected": "3400401198fd551c6c54194bbe267264e7ea8e54f6ea6b96cabea3c46582e504"
+    },
+    {
+      "name": "a1336e3bc391f255.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "a1336e3bc391f255.prefix_tokens",
+      "passed": true,
+      "actual": 7024,
+      "expected": 7024
+    },
+    {
+      "name": "a1336e3bc391f255.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 1236,
+      "expected": 1236
+    },
+    {
+      "name": "4a221661204e2a92.canonical_png",
+      "passed": true,
+      "actual": "68d956909abd0a6c89fe09b4ec96d8adaa44a94b07f15a4610f24cb44cb7b351",
+      "expected": "68d956909abd0a6c89fe09b4ec96d8adaa44a94b07f15a4610f24cb44cb7b351"
+    },
+    {
+      "name": "4a221661204e2a92.canonical_rgb",
+      "passed": true,
+      "actual": "f286d21e212689f8cc2ad72fd8e7117d0a21bb94d83a5a8e58d9b7dc4013ebaa",
+      "expected": "f286d21e212689f8cc2ad72fd8e7117d0a21bb94d83a5a8e58d9b7dc4013ebaa"
+    },
+    {
+      "name": "4a221661204e2a92.ground_truth",
+      "passed": true,
+      "actual": "f499edab6fea41b8273d9cff26bc9650ec1262a63a02ccd2b9bfac300578d511",
+      "expected": "f499edab6fea41b8273d9cff26bc9650ec1262a63a02ccd2b9bfac300578d511"
+    },
+    {
+      "name": "4a221661204e2a92.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "4a221661204e2a92.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "4a221661204e2a92.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg"
+    },
+    {
+      "name": "4a221661204e2a92.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg"
+    },
+    {
+      "name": "4a221661204e2a92.gpu_input",
+      "passed": true,
+      "actual": "f286d21e212689f8cc2ad72fd8e7117d0a21bb94d83a5a8e58d9b7dc4013ebaa",
+      "expected": "f286d21e212689f8cc2ad72fd8e7117d0a21bb94d83a5a8e58d9b7dc4013ebaa"
+    },
+    {
+      "name": "4a221661204e2a92.cpu_input",
+      "passed": true,
+      "actual": "68d956909abd0a6c89fe09b4ec96d8adaa44a94b07f15a4610f24cb44cb7b351",
+      "expected": "68d956909abd0a6c89fe09b4ec96d8adaa44a94b07f15a4610f24cb44cb7b351"
+    },
+    {
+      "name": "4a221661204e2a92.cpu_ground_truth",
+      "passed": true,
+      "actual": "f499edab6fea41b8273d9cff26bc9650ec1262a63a02ccd2b9bfac300578d511",
+      "expected": "f499edab6fea41b8273d9cff26bc9650ec1262a63a02ccd2b9bfac300578d511"
+    },
+    {
+      "name": "4a221661204e2a92.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "4a221661204e2a92.prefix_tokens",
+      "passed": true,
+      "actual": 7024,
+      "expected": 7024
+    },
+    {
+      "name": "4a221661204e2a92.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 548,
+      "expected": 548
+    },
+    {
+      "name": "8cdcdeb583b40cd4.canonical_png",
+      "passed": true,
+      "actual": "7bceacf119ff52ad63198c84c879c6889ed5f87af8e37792cdbaa4e2436e2eef",
+      "expected": "7bceacf119ff52ad63198c84c879c6889ed5f87af8e37792cdbaa4e2436e2eef"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.canonical_rgb",
+      "passed": true,
+      "actual": "43b87c2a6bde313a9b728c2d5dd427dc58a5e7235cd19df7107a3b249c780942",
+      "expected": "43b87c2a6bde313a9b728c2d5dd427dc58a5e7235cd19df7107a3b249c780942"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.ground_truth",
+      "passed": true,
+      "actual": "2129e0a13b3a6df192c369aa6ec665019cd0cc96618e2c00e6b6a2b5b6d5940a",
+      "expected": "2129e0a13b3a6df192c369aa6ec665019cd0cc96618e2c00e6b6a2b5b6d5940a"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "8cdcdeb583b40cd4.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg",
+      "expected": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg",
+      "expected": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.gpu_input",
+      "passed": true,
+      "actual": "43b87c2a6bde313a9b728c2d5dd427dc58a5e7235cd19df7107a3b249c780942",
+      "expected": "43b87c2a6bde313a9b728c2d5dd427dc58a5e7235cd19df7107a3b249c780942"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.cpu_input",
+      "passed": true,
+      "actual": "7bceacf119ff52ad63198c84c879c6889ed5f87af8e37792cdbaa4e2436e2eef",
+      "expected": "7bceacf119ff52ad63198c84c879c6889ed5f87af8e37792cdbaa4e2436e2eef"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.cpu_ground_truth",
+      "passed": true,
+      "actual": "2129e0a13b3a6df192c369aa6ec665019cd0cc96618e2c00e6b6a2b5b6d5940a",
+      "expected": "2129e0a13b3a6df192c369aa6ec665019cd0cc96618e2c00e6b6a2b5b6d5940a"
+    },
+    {
+      "name": "8cdcdeb583b40cd4.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "8cdcdeb583b40cd4.prefix_tokens",
+      "passed": true,
+      "actual": 5200,
+      "expected": 5200
+    },
+    {
+      "name": "8cdcdeb583b40cd4.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 245,
+      "expected": 245
+    },
+    {
+      "name": "2481e823cf3d165a.canonical_png",
+      "passed": true,
+      "actual": "615fab6b2ba2c5ce2cf67a30065b8db51a26f84ffadc0264f2a550a4e47e615e",
+      "expected": "615fab6b2ba2c5ce2cf67a30065b8db51a26f84ffadc0264f2a550a4e47e615e"
+    },
+    {
+      "name": "2481e823cf3d165a.canonical_rgb",
+      "passed": true,
+      "actual": "818032fa9e10841d714000c56c70e5ecf932836204785eb9dcd00a81e2c26132",
+      "expected": "818032fa9e10841d714000c56c70e5ecf932836204785eb9dcd00a81e2c26132"
+    },
+    {
+      "name": "2481e823cf3d165a.ground_truth",
+      "passed": true,
+      "actual": "ddc92b68213f42c18d8903991f1f7212c8da3f3e36c0d4a2682cb7a51027b1a0",
+      "expected": "ddc92b68213f42c18d8903991f1f7212c8da3f3e36c0d4a2682cb7a51027b1a0"
+    },
+    {
+      "name": "2481e823cf3d165a.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "2481e823cf3d165a.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "2481e823cf3d165a.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_068.png",
+      "expected": "omnidocbench:newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_068.png"
+    },
+    {
+      "name": "2481e823cf3d165a.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_068.png",
+      "expected": "omnidocbench:newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_068.png"
+    },
+    {
+      "name": "2481e823cf3d165a.gpu_input",
+      "passed": true,
+      "actual": "818032fa9e10841d714000c56c70e5ecf932836204785eb9dcd00a81e2c26132",
+      "expected": "818032fa9e10841d714000c56c70e5ecf932836204785eb9dcd00a81e2c26132"
+    },
+    {
+      "name": "2481e823cf3d165a.cpu_input",
+      "passed": true,
+      "actual": "615fab6b2ba2c5ce2cf67a30065b8db51a26f84ffadc0264f2a550a4e47e615e",
+      "expected": "615fab6b2ba2c5ce2cf67a30065b8db51a26f84ffadc0264f2a550a4e47e615e"
+    },
+    {
+      "name": "2481e823cf3d165a.cpu_ground_truth",
+      "passed": true,
+      "actual": "ddc92b68213f42c18d8903991f1f7212c8da3f3e36c0d4a2682cb7a51027b1a0",
+      "expected": "ddc92b68213f42c18d8903991f1f7212c8da3f3e36c0d4a2682cb7a51027b1a0"
+    },
+    {
+      "name": "2481e823cf3d165a.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "2481e823cf3d165a.prefix_tokens",
+      "passed": true,
+      "actual": 7120,
+      "expected": 7120
+    },
+    {
+      "name": "2481e823cf3d165a.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 132,
+      "expected": 132
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.canonical_png",
+      "passed": true,
+      "actual": "854a9981be969d8373367d40d21f7c64778148c2fe1b6558e581cb962e29a5b2",
+      "expected": "854a9981be969d8373367d40d21f7c64778148c2fe1b6558e581cb962e29a5b2"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.canonical_rgb",
+      "passed": true,
+      "actual": "d008ebf09784f480906496c4e29b18057cbe51192f1ecdd0ddf900e6af189db6",
+      "expected": "d008ebf09784f480906496c4e29b18057cbe51192f1ecdd0ddf900e6af189db6"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.ground_truth",
+      "passed": true,
+      "actual": "9da13e5ab4e00f63dfca97cd098b4aa46a46db4b8f1c76e0d7aa84649ad32087",
+      "expected": "9da13e5ab4e00f63dfca97cd098b4aa46a46db4b8f1c76e0d7aa84649ad32087"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+      "expected": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+      "expected": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.gpu_input",
+      "passed": true,
+      "actual": "d008ebf09784f480906496c4e29b18057cbe51192f1ecdd0ddf900e6af189db6",
+      "expected": "d008ebf09784f480906496c4e29b18057cbe51192f1ecdd0ddf900e6af189db6"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.cpu_input",
+      "passed": true,
+      "actual": "854a9981be969d8373367d40d21f7c64778148c2fe1b6558e581cb962e29a5b2",
+      "expected": "854a9981be969d8373367d40d21f7c64778148c2fe1b6558e581cb962e29a5b2"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.cpu_ground_truth",
+      "passed": true,
+      "actual": "9da13e5ab4e00f63dfca97cd098b4aa46a46db4b8f1c76e0d7aa84649ad32087",
+      "expected": "9da13e5ab4e00f63dfca97cd098b4aa46a46db4b8f1c76e0d7aa84649ad32087"
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.prefix_tokens",
+      "passed": true,
+      "actual": 4432,
+      "expected": 4432
+    },
+    {
+      "name": "d4f0b9ee4f7e19c1.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 614,
+      "expected": 614
+    },
+    {
+      "name": "bc2882dcec9a3e02.canonical_png",
+      "passed": true,
+      "actual": "2c771fad74a34cb0bc3dc9c52c9982bb8bd04f23d71c4a74edd657fea8b7e641",
+      "expected": "2c771fad74a34cb0bc3dc9c52c9982bb8bd04f23d71c4a74edd657fea8b7e641"
+    },
+    {
+      "name": "bc2882dcec9a3e02.canonical_rgb",
+      "passed": true,
+      "actual": "c896b6b09ee08e4eaf3fe9e1dde35cc6e9f976ac7e8021fdab4402358402dff8",
+      "expected": "c896b6b09ee08e4eaf3fe9e1dde35cc6e9f976ac7e8021fdab4402358402dff8"
+    },
+    {
+      "name": "bc2882dcec9a3e02.ground_truth",
+      "passed": true,
+      "actual": "5c1d071229a3ccc541f4833f4adbdd4a54ce316e768a226ebcc592530e3b2c87",
+      "expected": "5c1d071229a3ccc541f4833f4adbdd4a54ce316e768a226ebcc592530e3b2c87"
+    },
+    {
+      "name": "bc2882dcec9a3e02.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "bc2882dcec9a3e02.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "bc2882dcec9a3e02.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.apcata.2007.01.024.pdf_7.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.apcata.2007.01.024.pdf_7.jpg"
+    },
+    {
+      "name": "bc2882dcec9a3e02.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.apcata.2007.01.024.pdf_7.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.apcata.2007.01.024.pdf_7.jpg"
+    },
+    {
+      "name": "bc2882dcec9a3e02.gpu_input",
+      "passed": true,
+      "actual": "c896b6b09ee08e4eaf3fe9e1dde35cc6e9f976ac7e8021fdab4402358402dff8",
+      "expected": "c896b6b09ee08e4eaf3fe9e1dde35cc6e9f976ac7e8021fdab4402358402dff8"
+    },
+    {
+      "name": "bc2882dcec9a3e02.cpu_input",
+      "passed": true,
+      "actual": "2c771fad74a34cb0bc3dc9c52c9982bb8bd04f23d71c4a74edd657fea8b7e641",
+      "expected": "2c771fad74a34cb0bc3dc9c52c9982bb8bd04f23d71c4a74edd657fea8b7e641"
+    },
+    {
+      "name": "bc2882dcec9a3e02.cpu_ground_truth",
+      "passed": true,
+      "actual": "5c1d071229a3ccc541f4833f4adbdd4a54ce316e768a226ebcc592530e3b2c87",
+      "expected": "5c1d071229a3ccc541f4833f4adbdd4a54ce316e768a226ebcc592530e3b2c87"
+    },
+    {
+      "name": "bc2882dcec9a3e02.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "bc2882dcec9a3e02.prefix_tokens",
+      "passed": true,
+      "actual": 6928,
+      "expected": 6928
+    },
+    {
+      "name": "bc2882dcec9a3e02.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 1826,
+      "expected": 1826
+    },
+    {
+      "name": "ebac2ad1cac11a99.canonical_png",
+      "passed": true,
+      "actual": "6f3a0084de7f4ba085b18bf0cf137626fb1c6ee5583b16bcb936be205ff20501",
+      "expected": "6f3a0084de7f4ba085b18bf0cf137626fb1c6ee5583b16bcb936be205ff20501"
+    },
+    {
+      "name": "ebac2ad1cac11a99.canonical_rgb",
+      "passed": true,
+      "actual": "d746ef5de4ff552ffe579dedab9cdb16d180ecf368addff239cc213e1c655823",
+      "expected": "d746ef5de4ff552ffe579dedab9cdb16d180ecf368addff239cc213e1c655823"
+    },
+    {
+      "name": "ebac2ad1cac11a99.ground_truth",
+      "passed": true,
+      "actual": "b76a485329a72a996e992d45f937a560f1f1d754c9b00c044e7ef4b31ec7dc6b",
+      "expected": "b76a485329a72a996e992d45f937a560f1f1d754c9b00c044e7ef4b31ec7dc6b"
+    },
+    {
+      "name": "ebac2ad1cac11a99.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "ebac2ad1cac11a99.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "ebac2ad1cac11a99.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+      "expected": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png"
+    },
+    {
+      "name": "ebac2ad1cac11a99.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+      "expected": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png"
+    },
+    {
+      "name": "ebac2ad1cac11a99.gpu_input",
+      "passed": true,
+      "actual": "d746ef5de4ff552ffe579dedab9cdb16d180ecf368addff239cc213e1c655823",
+      "expected": "d746ef5de4ff552ffe579dedab9cdb16d180ecf368addff239cc213e1c655823"
+    },
+    {
+      "name": "ebac2ad1cac11a99.cpu_input",
+      "passed": true,
+      "actual": "6f3a0084de7f4ba085b18bf0cf137626fb1c6ee5583b16bcb936be205ff20501",
+      "expected": "6f3a0084de7f4ba085b18bf0cf137626fb1c6ee5583b16bcb936be205ff20501"
+    },
+    {
+      "name": "ebac2ad1cac11a99.cpu_ground_truth",
+      "passed": true,
+      "actual": "b76a485329a72a996e992d45f937a560f1f1d754c9b00c044e7ef4b31ec7dc6b",
+      "expected": "b76a485329a72a996e992d45f937a560f1f1d754c9b00c044e7ef4b31ec7dc6b"
+    },
+    {
+      "name": "ebac2ad1cac11a99.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "ebac2ad1cac11a99.prefix_tokens",
+      "passed": true,
+      "actual": 6160,
+      "expected": 6160
+    },
+    {
+      "name": "ebac2ad1cac11a99.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 500,
+      "expected": 500
+    },
+    {
+      "name": "df13ca79dd59b21e.canonical_png",
+      "passed": true,
+      "actual": "3db67f686d78934b85e3953a46aabdb5d2d7c34c6c61f3779ca626c3fa3d6095",
+      "expected": "3db67f686d78934b85e3953a46aabdb5d2d7c34c6c61f3779ca626c3fa3d6095"
+    },
+    {
+      "name": "df13ca79dd59b21e.canonical_rgb",
+      "passed": true,
+      "actual": "e6be151f9b4aa4c43a4f077c9b473decb0ad28e9bb4ecdfe5436a15ced19f7b2",
+      "expected": "e6be151f9b4aa4c43a4f077c9b473decb0ad28e9bb4ecdfe5436a15ced19f7b2"
+    },
+    {
+      "name": "df13ca79dd59b21e.ground_truth",
+      "passed": true,
+      "actual": "c324e10e33f82729d18c0a25edf7f620d589fe9779f105113733ea703256746a",
+      "expected": "c324e10e33f82729d18c0a25edf7f620d589fe9779f105113733ea703256746a"
+    },
+    {
+      "name": "df13ca79dd59b21e.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "df13ca79dd59b21e.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "df13ca79dd59b21e.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2263.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2263.jpg"
+    },
+    {
+      "name": "df13ca79dd59b21e.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2263.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2263.jpg"
+    },
+    {
+      "name": "df13ca79dd59b21e.gpu_input",
+      "passed": true,
+      "actual": "e6be151f9b4aa4c43a4f077c9b473decb0ad28e9bb4ecdfe5436a15ced19f7b2",
+      "expected": "e6be151f9b4aa4c43a4f077c9b473decb0ad28e9bb4ecdfe5436a15ced19f7b2"
+    },
+    {
+      "name": "df13ca79dd59b21e.cpu_input",
+      "passed": true,
+      "actual": "3db67f686d78934b85e3953a46aabdb5d2d7c34c6c61f3779ca626c3fa3d6095",
+      "expected": "3db67f686d78934b85e3953a46aabdb5d2d7c34c6c61f3779ca626c3fa3d6095"
+    },
+    {
+      "name": "df13ca79dd59b21e.cpu_ground_truth",
+      "passed": true,
+      "actual": "c324e10e33f82729d18c0a25edf7f620d589fe9779f105113733ea703256746a",
+      "expected": "c324e10e33f82729d18c0a25edf7f620d589fe9779f105113733ea703256746a"
+    },
+    {
+      "name": "df13ca79dd59b21e.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "df13ca79dd59b21e.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "df13ca79dd59b21e.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 1111,
+      "expected": 1111
+    },
+    {
+      "name": "02efc5e800fa8102.canonical_png",
+      "passed": true,
+      "actual": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489",
+      "expected": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489"
+    },
+    {
+      "name": "02efc5e800fa8102.canonical_rgb",
+      "passed": true,
+      "actual": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920",
+      "expected": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920"
+    },
+    {
+      "name": "02efc5e800fa8102.ground_truth",
+      "passed": true,
+      "actual": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c",
+      "expected": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c"
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "expected": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg"
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_input",
+      "passed": true,
+      "actual": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920",
+      "expected": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_input",
+      "passed": true,
+      "actual": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489",
+      "expected": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_ground_truth",
+      "passed": true,
+      "actual": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c",
+      "expected": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c"
+    },
+    {
+      "name": "02efc5e800fa8102.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "02efc5e800fa8102.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "02efc5e800fa8102.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 131,
+      "expected": 131
+    },
+    {
+      "name": "caa02ee83b64c5f8.canonical_png",
+      "passed": true,
+      "actual": "978d20f27117033481c078dbc697803a6bc71f0ccbdab2a1145e83739d5ab7ad",
+      "expected": "978d20f27117033481c078dbc697803a6bc71f0ccbdab2a1145e83739d5ab7ad"
+    },
+    {
+      "name": "caa02ee83b64c5f8.canonical_rgb",
+      "passed": true,
+      "actual": "150518686c75f854249268b9c350a86b88850e2b4d1b2fa9ecaef9bfa0fb92c2",
+      "expected": "150518686c75f854249268b9c350a86b88850e2b4d1b2fa9ecaef9bfa0fb92c2"
+    },
+    {
+      "name": "caa02ee83b64c5f8.ground_truth",
+      "passed": true,
+      "actual": "434da4c6ef9fcfbb243715f3ef4f75250e9054d2b55343e6b0946288b6da8101",
+      "expected": "434da4c6ef9fcfbb243715f3ef4f75250e9054d2b55343e6b0946288b6da8101"
+    },
+    {
+      "name": "caa02ee83b64c5f8.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "caa02ee83b64c5f8.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "caa02ee83b64c5f8.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg"
+    },
+    {
+      "name": "caa02ee83b64c5f8.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "expected": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg"
+    },
+    {
+      "name": "caa02ee83b64c5f8.gpu_input",
+      "passed": true,
+      "actual": "150518686c75f854249268b9c350a86b88850e2b4d1b2fa9ecaef9bfa0fb92c2",
+      "expected": "150518686c75f854249268b9c350a86b88850e2b4d1b2fa9ecaef9bfa0fb92c2"
+    },
+    {
+      "name": "caa02ee83b64c5f8.cpu_input",
+      "passed": true,
+      "actual": "978d20f27117033481c078dbc697803a6bc71f0ccbdab2a1145e83739d5ab7ad",
+      "expected": "978d20f27117033481c078dbc697803a6bc71f0ccbdab2a1145e83739d5ab7ad"
+    },
+    {
+      "name": "caa02ee83b64c5f8.cpu_ground_truth",
+      "passed": true,
+      "actual": "434da4c6ef9fcfbb243715f3ef4f75250e9054d2b55343e6b0946288b6da8101",
+      "expected": "434da4c6ef9fcfbb243715f3ef4f75250e9054d2b55343e6b0946288b6da8101"
+    },
+    {
+      "name": "caa02ee83b64c5f8.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "caa02ee83b64c5f8.prefix_tokens",
+      "passed": true,
+      "actual": 7024,
+      "expected": 7024
+    },
+    {
+      "name": "caa02ee83b64c5f8.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 232,
+      "expected": 232
+    },
+    {
+      "name": "417692fb6e2a625b.canonical_png",
+      "passed": true,
+      "actual": "d8699273baf51ea150403ee2a8d0404510652a425d89684d93ed6ecc18703188",
+      "expected": "d8699273baf51ea150403ee2a8d0404510652a425d89684d93ed6ecc18703188"
+    },
+    {
+      "name": "417692fb6e2a625b.canonical_rgb",
+      "passed": true,
+      "actual": "ea2955a36f9dd9393ca5b83a6052c0b530599d243d1ca0a698a9d6878e0c44f9",
+      "expected": "ea2955a36f9dd9393ca5b83a6052c0b530599d243d1ca0a698a9d6878e0c44f9"
+    },
+    {
+      "name": "417692fb6e2a625b.ground_truth",
+      "passed": true,
+      "actual": "c7e890b87441fc8b975fb4ca10ff0a77f33c93a13fcea34e182433138c6c6aac",
+      "expected": "c7e890b87441fc8b975fb4ca10ff0a77f33c93a13fcea34e182433138c6c6aac"
+    },
+    {
+      "name": "417692fb6e2a625b.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "417692fb6e2a625b.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "417692fb6e2a625b.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:book_en_搬书匠-3299-Swift Data Structure and Algorithms-2016-英文版_page_142.png",
+      "expected": "omnidocbench:book_en_搬书匠-3299-Swift Data Structure and Algorithms-2016-英文版_page_142.png"
+    },
+    {
+      "name": "417692fb6e2a625b.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:book_en_搬书匠-3299-Swift Data Structure and Algorithms-2016-英文版_page_142.png",
+      "expected": "omnidocbench:book_en_搬书匠-3299-Swift Data Structure and Algorithms-2016-英文版_page_142.png"
+    },
+    {
+      "name": "417692fb6e2a625b.gpu_input",
+      "passed": true,
+      "actual": "ea2955a36f9dd9393ca5b83a6052c0b530599d243d1ca0a698a9d6878e0c44f9",
+      "expected": "ea2955a36f9dd9393ca5b83a6052c0b530599d243d1ca0a698a9d6878e0c44f9"
+    },
+    {
+      "name": "417692fb6e2a625b.cpu_input",
+      "passed": true,
+      "actual": "d8699273baf51ea150403ee2a8d0404510652a425d89684d93ed6ecc18703188",
+      "expected": "d8699273baf51ea150403ee2a8d0404510652a425d89684d93ed6ecc18703188"
+    },
+    {
+      "name": "417692fb6e2a625b.cpu_ground_truth",
+      "passed": true,
+      "actual": "c7e890b87441fc8b975fb4ca10ff0a77f33c93a13fcea34e182433138c6c6aac",
+      "expected": "c7e890b87441fc8b975fb4ca10ff0a77f33c93a13fcea34e182433138c6c6aac"
+    },
+    {
+      "name": "417692fb6e2a625b.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "417692fb6e2a625b.prefix_tokens",
+      "passed": true,
+      "actual": 7504,
+      "expected": 7504
+    },
+    {
+      "name": "417692fb6e2a625b.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 65,
+      "expected": 65
+    },
+    {
+      "name": "f4d86abe06e3d7a4.canonical_png",
+      "passed": true,
+      "actual": "657a75d876607dbe07b682bda33edf59ad13a3e8c0428fe4fe2cfdd96ee960b7",
+      "expected": "657a75d876607dbe07b682bda33edf59ad13a3e8c0428fe4fe2cfdd96ee960b7"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.canonical_rgb",
+      "passed": true,
+      "actual": "b35be03d4776e23444d087fc2e55a12f25932a7b58d359994e0a982dec05757f",
+      "expected": "b35be03d4776e23444d087fc2e55a12f25932a7b58d359994e0a982dec05757f"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.ground_truth",
+      "passed": true,
+      "actual": "5aa515f08e766ac5ec04b4b0d53b03e86f13e29a48360b781f2ab2cf6a843da3",
+      "expected": "5aa515f08e766ac5ec04b4b0d53b03e86f13e29a48360b781f2ab2cf6a843da3"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "f4d86abe06e3d7a4.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63710191.pdf_336.jpg",
+      "expected": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63710191.pdf_336.jpg"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63710191.pdf_336.jpg",
+      "expected": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63710191.pdf_336.jpg"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.gpu_input",
+      "passed": true,
+      "actual": "b35be03d4776e23444d087fc2e55a12f25932a7b58d359994e0a982dec05757f",
+      "expected": "b35be03d4776e23444d087fc2e55a12f25932a7b58d359994e0a982dec05757f"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.cpu_input",
+      "passed": true,
+      "actual": "657a75d876607dbe07b682bda33edf59ad13a3e8c0428fe4fe2cfdd96ee960b7",
+      "expected": "657a75d876607dbe07b682bda33edf59ad13a3e8c0428fe4fe2cfdd96ee960b7"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.cpu_ground_truth",
+      "passed": true,
+      "actual": "5aa515f08e766ac5ec04b4b0d53b03e86f13e29a48360b781f2ab2cf6a843da3",
+      "expected": "5aa515f08e766ac5ec04b4b0d53b03e86f13e29a48360b781f2ab2cf6a843da3"
+    },
+    {
+      "name": "f4d86abe06e3d7a4.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "f4d86abe06e3d7a4.prefix_tokens",
+      "passed": true,
+      "actual": 6544,
+      "expected": 6544
+    },
+    {
+      "name": "f4d86abe06e3d7a4.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 300,
+      "expected": 300
+    },
+    {
+      "name": "a947debf6fed06e3.canonical_png",
+      "passed": true,
+      "actual": "795f620f73bc50f81484c09ce3c1491351965535acc9355fd6f5c3c037f6428b",
+      "expected": "795f620f73bc50f81484c09ce3c1491351965535acc9355fd6f5c3c037f6428b"
+    },
+    {
+      "name": "a947debf6fed06e3.canonical_rgb",
+      "passed": true,
+      "actual": "91f7b9006792505d1c2f0d69444bbdd203327a0ae0459266cc65c5fc828ab170",
+      "expected": "91f7b9006792505d1c2f0d69444bbdd203327a0ae0459266cc65c5fc828ab170"
+    },
+    {
+      "name": "a947debf6fed06e3.ground_truth",
+      "passed": true,
+      "actual": "51ea42bbec28c80c98c1b8d6b43c36dc4264b61d1fdf5f0034e14f28281033f3",
+      "expected": "51ea42bbec28c80c98c1b8d6b43c36dc4264b61d1fdf5f0034e14f28281033f3"
+    },
+    {
+      "name": "a947debf6fed06e3.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+        "max_new_tokens": 4096,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "a947debf6fed06e3.cpu_contract",
+      "passed": true,
+      "actual": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3",
+      "expected": "e8c9fa4737cd36134232e8b7ea371091ccf92e5b45ed0a896227f8068044d3b3"
+    },
+    {
+      "name": "a947debf6fed06e3.gpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-2329f04a-41b3-435b-993a-a0652294b07d.png",
+      "expected": "omnidocbench:page-2329f04a-41b3-435b-993a-a0652294b07d.png"
+    },
+    {
+      "name": "a947debf6fed06e3.cpu_id",
+      "passed": true,
+      "actual": "omnidocbench:page-2329f04a-41b3-435b-993a-a0652294b07d.png",
+      "expected": "omnidocbench:page-2329f04a-41b3-435b-993a-a0652294b07d.png"
+    },
+    {
+      "name": "a947debf6fed06e3.gpu_input",
+      "passed": true,
+      "actual": "91f7b9006792505d1c2f0d69444bbdd203327a0ae0459266cc65c5fc828ab170",
+      "expected": "91f7b9006792505d1c2f0d69444bbdd203327a0ae0459266cc65c5fc828ab170"
+    },
+    {
+      "name": "a947debf6fed06e3.cpu_input",
+      "passed": true,
+      "actual": "795f620f73bc50f81484c09ce3c1491351965535acc9355fd6f5c3c037f6428b",
+      "expected": "795f620f73bc50f81484c09ce3c1491351965535acc9355fd6f5c3c037f6428b"
+    },
+    {
+      "name": "a947debf6fed06e3.cpu_ground_truth",
+      "passed": true,
+      "actual": "51ea42bbec28c80c98c1b8d6b43c36dc4264b61d1fdf5f0034e14f28281033f3",
+      "expected": "51ea42bbec28c80c98c1b8d6b43c36dc4264b61d1fdf5f0034e14f28281033f3"
+    },
+    {
+      "name": "a947debf6fed06e3.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "a947debf6fed06e3.prefix_tokens",
+      "passed": true,
+      "actual": 7120,
+      "expected": 7120
+    },
+    {
+      "name": "a947debf6fed06e3.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 943,
+      "expected": 943
+    }
+  ],
+  "pages": [
+    {
+      "sample_id": "f49121f28edbfb30",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "9dcd1654cc944951086ef5adb628106db107ee0efbb486f747c29c16a16239d2",
+      "cpu_record_sha256": "47f0f75c08cbeb624e7f5f6b143f141d705f76f08eaea3172184e5fd107d92c3",
+      "gpu_tokens": 1031,
+      "cpu_tokens": 1031,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1031,
+      "diagnostic_ground_truth_characters": 1366,
+      "gpu_diagnostic_edit_distance": 383,
+      "cpu_diagnostic_edit_distance": 383,
+      "gpu_diagnostic_cer": 0.28038067349926793,
+      "cpu_diagnostic_cer": 0.28038067349926793
+    },
+    {
+      "sample_id": "e9944e1b55e61e7c",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1509.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "bae513743acb4a15b286ab127aea7b758c095d8c8f686e92997328b210e6f66a",
+      "cpu_record_sha256": "44f6c4224ea1cdc93285c92942c37be59f6489367be95d82601ee79cccf7cded",
+      "gpu_tokens": 621,
+      "cpu_tokens": 621,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 621,
+      "diagnostic_ground_truth_characters": 516,
+      "gpu_diagnostic_edit_distance": 748,
+      "cpu_diagnostic_edit_distance": 748,
+      "gpu_diagnostic_cer": 1.449612403100775,
+      "cpu_diagnostic_cer": 1.449612403100775
+    },
+    {
+      "sample_id": "23aab39cd5bf7391",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "category": "degraded",
+      "provenance_passed": true,
+      "gpu_record_sha256": "900c14e2db1fab3ca1f85c99a7effce75e1a4bbd6287d577027ca2d42c7307a2",
+      "cpu_record_sha256": "bd346f98a6c7b1d3f0a1f63bd150843564117d0a79cbe651c91906bcb489b51d",
+      "gpu_tokens": 724,
+      "cpu_tokens": 724,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 724,
+      "diagnostic_ground_truth_characters": 1048,
+      "gpu_diagnostic_edit_distance": 398,
+      "cpu_diagnostic_edit_distance": 398,
+      "gpu_diagnostic_cer": 0.3797709923664122,
+      "cpu_diagnostic_cer": 0.3797709923664122
+    },
+    {
+      "sample_id": "844ccd0487b3e263",
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+      "category": "handwriting",
+      "provenance_passed": true,
+      "gpu_record_sha256": "6fe6eb0eceaa3142e32d36c2f880097210d880975182c34f59fa1f8b7e398903",
+      "cpu_record_sha256": "20479a7f87bbac2e181e4aa1fd2a91df5c61db4b2e8861cf9efe711375e1f5fb",
+      "gpu_tokens": 420,
+      "cpu_tokens": 420,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 420,
+      "diagnostic_ground_truth_characters": 526,
+      "gpu_diagnostic_edit_distance": 206,
+      "cpu_diagnostic_edit_distance": 206,
+      "gpu_diagnostic_cer": 0.3916349809885932,
+      "cpu_diagnostic_cer": 0.3916349809885932
+    },
+    {
+      "sample_id": "15ef968b6700f557",
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_79.jpg",
+      "category": "handwriting",
+      "provenance_passed": true,
+      "gpu_record_sha256": "218278782e1c9ffcd6156b2ad6103277db64ffa8d36746a355d3908f1698f713",
+      "cpu_record_sha256": "50451f51f11ef855a11393d3728a71da1d4e43fb04c1f45dfe17aba251c33552",
+      "gpu_tokens": 538,
+      "cpu_tokens": 538,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 538,
+      "diagnostic_ground_truth_characters": 1197,
+      "gpu_diagnostic_edit_distance": 492,
+      "cpu_diagnostic_edit_distance": 492,
+      "gpu_diagnostic_cer": 0.41102756892230574,
+      "cpu_diagnostic_cer": 0.41102756892230574
+    },
+    {
+      "sample_id": "c3f6a9d3aabf90b3",
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+      "category": "handwriting",
+      "provenance_passed": true,
+      "gpu_record_sha256": "9e75356dc6dea14f8054030a4db18c664dd2389792c9744c654664ea8932cf99",
+      "cpu_record_sha256": "e5557bcb669210fa713a965d6018faaeae312c58b05548ea40e7a9146ca6de30",
+      "gpu_tokens": 735,
+      "cpu_tokens": 735,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 735,
+      "diagnostic_ground_truth_characters": 809,
+      "gpu_diagnostic_edit_distance": 575,
+      "cpu_diagnostic_edit_distance": 575,
+      "gpu_diagnostic_cer": 0.7107540173053152,
+      "cpu_diagnostic_cer": 0.7107540173053152
+    },
+    {
+      "sample_id": "8f193e26d504d352",
+      "id": "omnidocbench:page-44a14308-9d3e-4044-9508-5c3e30141a19.png",
+      "category": "formulas",
+      "provenance_passed": true,
+      "gpu_record_sha256": "775e827cd16a6f28ab1e525d5022c8b9d972af114e26326c9da65a5991fdfea8",
+      "cpu_record_sha256": "baa687abb1c50bc913f2ad493be98f0f3402a00a9f5428bede0e7a8f5d7f4e2f",
+      "gpu_tokens": 625,
+      "cpu_tokens": 625,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 625,
+      "diagnostic_ground_truth_characters": 930,
+      "gpu_diagnostic_edit_distance": 245,
+      "cpu_diagnostic_edit_distance": 245,
+      "gpu_diagnostic_cer": 0.26344086021505375,
+      "cpu_diagnostic_cer": 0.26344086021505375
+    },
+    {
+      "sample_id": "7442dc2baaeb00ff",
+      "id": "omnidocbench:page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+      "category": "formulas",
+      "provenance_passed": true,
+      "gpu_record_sha256": "832b86b7fa0b677bc556fe32c14d06cf972af2c40cc7bbd60658cf13d5eff04c",
+      "cpu_record_sha256": "6b99d22787eaef4aacd5fce9fc9d0afaf5da5cece31f2eaf773e23de9d1689fa",
+      "gpu_tokens": 2215,
+      "cpu_tokens": 2215,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 2215,
+      "diagnostic_ground_truth_characters": 4307,
+      "gpu_diagnostic_edit_distance": 1227,
+      "cpu_diagnostic_edit_distance": 1227,
+      "gpu_diagnostic_cer": 0.2848850708149524,
+      "cpu_diagnostic_cer": 0.2848850708149524
+    },
+    {
+      "sample_id": "4bf114e43e8dcfed",
+      "id": "omnidocbench:book_zh_GB12082006_extracted_page_8.png",
+      "category": "formulas",
+      "provenance_passed": true,
+      "gpu_record_sha256": "06d6337efa1148e0aba502cd69fc6e6442bf9e02a89e8ca6f9fc1b1c48936d83",
+      "cpu_record_sha256": "0918e541670127aaf4f1007b8921b4a4c8742f994750be2bf19295c2f16e3b21",
+      "gpu_tokens": 617,
+      "cpu_tokens": 617,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 617,
+      "diagnostic_ground_truth_characters": 962,
+      "gpu_diagnostic_edit_distance": 123,
+      "cpu_diagnostic_edit_distance": 123,
+      "gpu_diagnostic_cer": 0.12785862785862787,
+      "cpu_diagnostic_cer": 0.12785862785862787
+    },
+    {
+      "sample_id": "a5c0f5f013640adf",
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "category": "formulas",
+      "provenance_passed": true,
+      "gpu_record_sha256": "68d32ce3a220dcfdaea93d13e89287253aa7e7f31651a7791babcd951437fcb4",
+      "cpu_record_sha256": "499be4c968b9d0f9fddcab4b75d75dbd470c2d6df450f35723b1ee0d336b8513",
+      "gpu_tokens": 986,
+      "cpu_tokens": 986,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 986,
+      "diagnostic_ground_truth_characters": 1399,
+      "gpu_diagnostic_edit_distance": 421,
+      "cpu_diagnostic_edit_distance": 421,
+      "gpu_diagnostic_cer": 0.30092923516797715,
+      "cpu_diagnostic_cer": 0.30092923516797715
+    },
+    {
+      "sample_id": "f19a8b1ef5c34f07",
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63708140.pdf_170.jpg",
+      "category": "tables",
+      "provenance_passed": true,
+      "gpu_record_sha256": "747fba0c46f7c6313bdcacdc090ca63dd9e20eba691f90542820c09df990460a",
+      "cpu_record_sha256": "392d8cfec90da21abfc5a28bd66a6ccb7eaa1ab4ae09330c3e83e9f6da639c27",
+      "gpu_tokens": 883,
+      "cpu_tokens": 883,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 883,
+      "diagnostic_ground_truth_characters": 1447,
+      "gpu_diagnostic_edit_distance": 181,
+      "cpu_diagnostic_edit_distance": 181,
+      "gpu_diagnostic_cer": 0.12508638562543192,
+      "cpu_diagnostic_cer": 0.12508638562543192
+    },
+    {
+      "sample_id": "a1336e3bc391f255",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg",
+      "category": "tables",
+      "provenance_passed": true,
+      "gpu_record_sha256": "80f99a6044a3798e42fbd7c43643b344241a874120a1881ef20126badd2ae5dd",
+      "cpu_record_sha256": "d015f876f7cb061bd5c6d3bc845b16a5f6de4ce88c83cf492a41a49e7d378a66",
+      "gpu_tokens": 2195,
+      "cpu_tokens": 2195,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 2195,
+      "diagnostic_ground_truth_characters": 6569,
+      "gpu_diagnostic_edit_distance": 1236,
+      "cpu_diagnostic_edit_distance": 1236,
+      "gpu_diagnostic_cer": 0.18815649261683665,
+      "cpu_diagnostic_cer": 0.18815649261683665
+    },
+    {
+      "sample_id": "4a221661204e2a92",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg",
+      "category": "tables",
+      "provenance_passed": true,
+      "gpu_record_sha256": "617bae8a1bca143ff238a41416baf91c5e05bbef3b83558a8054e841cb24ede7",
+      "cpu_record_sha256": "cc4470edb54d814cf26b06b56d90295c10935c07b84bfbb8f2041b3486490f7e",
+      "gpu_tokens": 2567,
+      "cpu_tokens": 2567,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 2567,
+      "diagnostic_ground_truth_characters": 5265,
+      "gpu_diagnostic_edit_distance": 548,
+      "cpu_diagnostic_edit_distance": 548,
+      "gpu_diagnostic_cer": 0.10408357075023741,
+      "cpu_diagnostic_cer": 0.10408357075023741
+    },
+    {
+      "sample_id": "8cdcdeb583b40cd4",
+      "id": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg",
+      "category": "tables",
+      "provenance_passed": true,
+      "gpu_record_sha256": "a49666189d469a8e322085282b36ba388662d5d0471f88da8cb8848add11b4c6",
+      "cpu_record_sha256": "d2d0277f97755a8503a53cdf7426ff7e530bb442f0c9383965cd5dbafe149092",
+      "gpu_tokens": 1420,
+      "cpu_tokens": 1420,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1420,
+      "diagnostic_ground_truth_characters": 2901,
+      "gpu_diagnostic_edit_distance": 245,
+      "cpu_diagnostic_edit_distance": 245,
+      "gpu_diagnostic_cer": 0.08445363667700793,
+      "cpu_diagnostic_cer": 0.08445363667700793
+    },
+    {
+      "sample_id": "2481e823cf3d165a",
+      "id": "omnidocbench:newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_068.png",
+      "category": "tiny_text",
+      "provenance_passed": true,
+      "gpu_record_sha256": "02ed10fa17f0b06cd3de89a891a82f5c9da4e11576a292d6c38eb04f85796104",
+      "cpu_record_sha256": "1245e5665bcfd920f4771dcaef4d00a94e1f1feeb25e3017c3011764c17e524d",
+      "gpu_tokens": 1204,
+      "cpu_tokens": 1204,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1204,
+      "diagnostic_ground_truth_characters": 4581,
+      "gpu_diagnostic_edit_distance": 132,
+      "cpu_diagnostic_edit_distance": 132,
+      "gpu_diagnostic_cer": 0.028814669286182055,
+      "cpu_diagnostic_cer": 0.028814669286182055
+    },
+    {
+      "sample_id": "d4f0b9ee4f7e19c1",
+      "id": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+      "category": "tiny_text",
+      "provenance_passed": true,
+      "gpu_record_sha256": "8b3913cd894b608b319e995946c76957369f3c608afbc7ea9548ad6d9fe1b350",
+      "cpu_record_sha256": "806f8cad8327922424281431a8cf748e125b94bc882a0140c889d1d29c29bb81",
+      "gpu_tokens": 1698,
+      "cpu_tokens": 1698,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1698,
+      "diagnostic_ground_truth_characters": 5944,
+      "gpu_diagnostic_edit_distance": 614,
+      "cpu_diagnostic_edit_distance": 614,
+      "gpu_diagnostic_cer": 0.10329744279946164,
+      "cpu_diagnostic_cer": 0.10329744279946164
+    },
+    {
+      "sample_id": "bc2882dcec9a3e02",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.apcata.2007.01.024.pdf_7.jpg",
+      "category": "tiny_text",
+      "provenance_passed": true,
+      "gpu_record_sha256": "2a4f0cfa74aa2a7579b3adf63589aee117b371df77dcd0a766e1832fb0e2cf40",
+      "cpu_record_sha256": "6112862617310dc00007a82bf29b0330c9ead3b6f2a1d53034629c0245285f7d",
+      "gpu_tokens": 2428,
+      "cpu_tokens": 2428,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 2428,
+      "diagnostic_ground_truth_characters": 7384,
+      "gpu_diagnostic_edit_distance": 1826,
+      "cpu_diagnostic_edit_distance": 1826,
+      "gpu_diagnostic_cer": 0.2472914409534128,
+      "cpu_diagnostic_cer": 0.2472914409534128
+    },
+    {
+      "sample_id": "ebac2ad1cac11a99",
+      "id": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+      "category": "tiny_text",
+      "provenance_passed": true,
+      "gpu_record_sha256": "299453b10ceb6029696d1a5b167df59e2ebedff9aad8207a6e4ecf0bc72a2078",
+      "cpu_record_sha256": "4230b636005416f8972e5634067a95a92d54eef9ffe02d24a8b37b3fd38a783d",
+      "gpu_tokens": 2237,
+      "cpu_tokens": 2237,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 2237,
+      "diagnostic_ground_truth_characters": 8705,
+      "gpu_diagnostic_edit_distance": 500,
+      "cpu_diagnostic_edit_distance": 500,
+      "gpu_diagnostic_cer": 0.05743825387708214,
+      "cpu_diagnostic_cer": 0.05743825387708214
+    },
+    {
+      "sample_id": "df13ca79dd59b21e",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2263.jpg",
+      "category": "multi_column",
+      "provenance_passed": true,
+      "gpu_record_sha256": "6a8b2899171bfabef410917c240427a41261e415b21417dc9811dc9012671008",
+      "cpu_record_sha256": "4021ccef3402d3e342bbc97f500928ff4a484e75a24fcf1e7a566e2408c39cb5",
+      "gpu_tokens": 1858,
+      "cpu_tokens": 1858,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1858,
+      "diagnostic_ground_truth_characters": 1597,
+      "gpu_diagnostic_edit_distance": 1111,
+      "cpu_diagnostic_edit_distance": 1111,
+      "gpu_diagnostic_cer": 0.6956793988728867,
+      "cpu_diagnostic_cer": 0.6956793988728867
+    },
+    {
+      "sample_id": "02efc5e800fa8102",
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "category": "multi_column",
+      "provenance_passed": true,
+      "gpu_record_sha256": "27c2c0585a89dd58c2baa4668dca4ed94d91d6eb61990a3ded5da7196a13942e",
+      "cpu_record_sha256": "9e805a20c178ef598900a40567fda46fa62f40b2185a9321cfdc10704e9846cb",
+      "gpu_tokens": 310,
+      "cpu_tokens": 310,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 310,
+      "diagnostic_ground_truth_characters": 350,
+      "gpu_diagnostic_edit_distance": 131,
+      "cpu_diagnostic_edit_distance": 131,
+      "gpu_diagnostic_cer": 0.3742857142857143,
+      "cpu_diagnostic_cer": 0.3742857142857143
+    },
+    {
+      "sample_id": "caa02ee83b64c5f8",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "category": "multi_column",
+      "provenance_passed": true,
+      "gpu_record_sha256": "b108b9ae4736eb6b473dede38853866907fec767cf8ce114e5019c862e8a102c",
+      "cpu_record_sha256": "39c9292c83d3397bb81107e70af97b888b1b5dbd004c90e0acc2cb445b0af7ed",
+      "gpu_tokens": 1454,
+      "cpu_tokens": 1454,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 1454,
+      "diagnostic_ground_truth_characters": 6259,
+      "gpu_diagnostic_edit_distance": 232,
+      "cpu_diagnostic_edit_distance": 232,
+      "gpu_diagnostic_cer": 0.03706662406135165,
+      "cpu_diagnostic_cer": 0.03706662406135165
+    },
+    {
+      "sample_id": "417692fb6e2a625b",
+      "id": "omnidocbench:book_en_搬书匠-3299-Swift Data Structure and Algorithms-2016-英文版_page_142.png",
+      "category": "ordinary",
+      "provenance_passed": true,
+      "gpu_record_sha256": "a0257634f66045c567e6d1bbce5c3757635f84d18d6c9ad1efd0d4d3463e308f",
+      "cpu_record_sha256": "fb08320264301fb8710fa325fa54787e5c22446b6fd55f2e5e035c0d2085dc09",
+      "gpu_tokens": 385,
+      "cpu_tokens": 385,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 385,
+      "diagnostic_ground_truth_characters": 1123,
+      "gpu_diagnostic_edit_distance": 65,
+      "cpu_diagnostic_edit_distance": 65,
+      "gpu_diagnostic_cer": 0.0578806767586821,
+      "cpu_diagnostic_cer": 0.0578806767586821
+    },
+    {
+      "sample_id": "f4d86abe06e3d7a4",
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63710191.pdf_336.jpg",
+      "category": "ordinary",
+      "provenance_passed": true,
+      "gpu_record_sha256": "f3195b2fdedac85b7e51741c78dcd9d4a85a9bb59fd9b31b634fdd50bc168c37",
+      "cpu_record_sha256": "fb4fc1aefd1704b66a31dc2db77196d3c2ef24682c2db32244c806664ff914a0",
+      "gpu_tokens": 808,
+      "cpu_tokens": 808,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 808,
+      "diagnostic_ground_truth_characters": 1827,
+      "gpu_diagnostic_edit_distance": 300,
+      "cpu_diagnostic_edit_distance": 300,
+      "gpu_diagnostic_cer": 0.16420361247947454,
+      "cpu_diagnostic_cer": 0.16420361247947454
+    },
+    {
+      "sample_id": "a947debf6fed06e3",
+      "id": "omnidocbench:page-2329f04a-41b3-435b-993a-a0652294b07d.png",
+      "category": "ordinary",
+      "provenance_passed": true,
+      "gpu_record_sha256": "a70c0d22853a6ea01c9a4b86ccf3c46b8ae392f8bfe631af1cb99e9e3dfbee64",
+      "cpu_record_sha256": "653a2eb9c0c16ce0b6073c7deec533a02aa934e10410ff0584f72149559e2777",
+      "gpu_tokens": 775,
+      "cpu_tokens": 775,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "eos",
+      "cpu_finish_reason": "eos",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 775,
+      "diagnostic_ground_truth_characters": 1956,
+      "gpu_diagnostic_edit_distance": 943,
+      "cpu_diagnostic_edit_distance": 943,
+      "gpu_diagnostic_cer": 0.48210633946830267,
+      "cpu_diagnostic_cer": 0.48210633946830267
+    }
+  ],
+  "qualification": "Independent free greedy output comparison; tensor parity, OCR accuracy qualification, and bare-metal performance are separate gates.",
+  "metric": "NFC+whitespace-normalized assembled-ground-truth character edit distance, diagnostic only, not official OmniDocBench scoring.",
+  "v1_split_limitation": "v1 treats pages of the same notes_<hash> notebook as separate families, causing evaluation/calibration overlap. It is qualitative smoke only and must not calibrate quantization. v2 metadata selection fixes known notebook family assignment.",
+  "completed_output_parity_passed": true
+}

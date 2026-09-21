@@ -1,0 +1,23 @@
+{
+  "kind": "linux-attention64-compact-functional-root-check-v1",
+  "status": "passed",
+  "report_path": "artifacts\\diagnostics\\attention64-compact-linux-v1\\report.json",
+  "report_sha256": "02fcf76e14e60f32d23b43f9ee23a8b7e6033c0832f8fb932f57feaf33656399",
+  "all_saved_output_hashes_verified": 23,
+  "tensor_count": 1904,
+  "exact_same_platform_tensor_payloads": true,
+  "exact_ids_text_stops": true,
+  "teacher_tokens": 17,
+  "operator_tests_passed": 11,
+  "allocation_intervals": 8,
+  "allocations_each": 0,
+  "source_archive_sha256": "c2f9e8a7385466d1abe8231f506d06c0f193aeb7f50621acc46ee2e6b0a4b43e",
+  "control_sha256": "dddf246344e0b733bdb910a5b432fbfb0d43c9c69948d1651a6ac82e1ba3df6d",
+  "performance_claim": false,
+  "cross_platform_tensor_equality_claim": false,
+  "limits": [
+    "Linux under WSL only; bare-metal Linux performance deferred.",
+    "Same-platform saved control; no new GPU numerical gate or full corpus rerun.",
+    "Root rechecked saved outputs only; it did not rerun the operators or model."
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "script_sha256": "543d2c9322d76ef932486c434362661ac033a02655642e6bfe90ece21cde13c3",
+  "argument_manifest_sha256": "793937e17c660bba0c9366c9651096464807d2721d7227397641c9362625060f",
+  "fused_evidence": {
+    "status": "no_accepted_fused_capture",
+    "native_intermediate_claim": false,
+    "report_sha256": "cbe34afe8e613099652e8ae974a967b9a4f59ce66ec4240788b881001b2eaf2b",
+    "observation_status": "rejected_instrumentation_or_fixture_difference"
+  },
+  "distinct_arguments": 1876,
+  "original_rust_arguments": 1876,
+  "native_vs_torch_f32_differences": 0,
+  "native_vs_torch_bf16_differences": 0,
+  "native_vs_rust_f32_differences": 1180,
+  "native_vs_rust_bf16_differences": 1,
+  "fused_same_argument_checks": [],
+  "compiled_artifacts": {
+    "ptx": "af95da43ef2e02bac693714a006a0cd5d27790ebd6df9c8d9758f3d8aa2508cc",
+    "cubin": "3709100d708da8e746f892fb83a6a0078d6a05e075a04d1c2fe452d40dcfa8f6",
+    "ttir": "d0c3d8e56ad4c396d08880fab7ccfc1a90cd64001fac4e02d32a1b58876b6bba",
+    "ttgir": "13394acd76f5f9b7e74af1fa27f18fb8b5f74c747cc04a345a64a13d16d031f6",
+    "llir": "d85b06b9804168b6ec0d6598b514805acf8842e4417289328187c319a89a89cd"
+  },
+  "outputs_sha256": "726c8e36980f86ea4b6e88f5ff9e57f5e32170f2dd41b5d4618bb3a22d1c1837",
+  "qualification": "Same exact FP32 arguments replayed on the GPU, including saved CPU/counterfactual arguments. Native fused intermediates are included only if the separate complete raw/LSE observation acceptance passed. This replay is not a replacement for that acceptance and changes no arithmetic or bounds.",
+  "report_path": "artifacts/reference/bf16-exp2-gpu-replay-v1/report.json",
+  "report_sha256": "1eabbc4f4f00cba7bffe91eab72cd0ef7002add6f080beb76f8ed72ca41a31f7",
+  "bf16_differences": [
+    {
+      "argument_bits": "c0c9799f",
+      "native_ex2_bits": "3c508000",
+      "native_bf16_bits": "3c50",
+      "torch_exp2_bits": "3c508000",
+      "torch_bf16_bits": "3c50",
+      "rust_exp2_bits": "3c508001",
+      "rust_bf16_bits": "3c51"
+    }
+  ]
+}

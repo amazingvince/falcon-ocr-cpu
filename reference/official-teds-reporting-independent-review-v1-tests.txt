@@ -1,0 +1,24 @@
+test_failed_or_changed_contract_cannot_pass (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_gpu_historical_schema_without_optional_dimensions_is_valid (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_gpu_missing_context_diagnostics_and_nonfinite_values_are_rejected (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_gpu_teacher_forcing_and_replay_markers_are_rejected (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_missing_record_prevents_preparation_before_writes (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_saved_token_replay_preserves_every_nontext_result_field (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_saved_token_replay_rejects_one_ulp_timing_change (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_valid_source_and_bad_stop_contract (test_official_evaluation_workflow.OfficialInputValidationTests) ... ok
+test_duplicate_audited_page_is_rejected (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_logged_error_is_rejected_even_with_all_pages (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_missing_and_stale_result_files_are_rejected (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_nonfinite_and_inconsistent_aggregates_are_rejected (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_omitted_page_score_and_unknown_page_are_rejected (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_silent_zero_exit_with_partial_pages_is_rejected (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_table_and_formula_pair_counts_are_rejected (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_teds_finite_range_endpoints_and_negative_structure_are_valid (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_teds_out_of_range_and_nonfinite_values_are_rejected_at_every_level (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_upstream_negative_teds_is_preserved_and_included_in_mean (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+test_valid_empty_component_and_exact_counts (test_official_evaluation_workflow.OfficialResultValidationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 1.080s
+
+OK

@@ -1,0 +1,19 @@
+test_all_layouts_and_original_order_are_frozen (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_build_binary_archive_and_live_source_binding (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_candidate_outputs_must_be_valid_and_match_declared_layout (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_complete_outputs_qualify_only_when_all_candidates_finish (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_equal_outputs_without_mixed_completion_cannot_qualify (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_foreign_execution_platform_rejected_before_assets_or_launch (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_frozen_selection_rejects_changed_order_and_metadata (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_late_plan_or_result_artifact_changes_cannot_qualify (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_literal_text_ids_stops_dimensions_and_order_compared (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_memory_guard_prevents_any_launch (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_mismatch_preserves_failed_comparison_and_fails_gate (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_nonfinite_timing_and_unobserved_packing_rejected (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_process_failure_or_missing_requests_cannot_qualify (test_functional_batch_regression.FunctionalBatchTests) ... ok
+test_replay_markers_rejected (test_functional_batch_regression.FunctionalBatchTests) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 1.407s
+
+OK

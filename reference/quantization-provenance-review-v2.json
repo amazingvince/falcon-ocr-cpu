@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_and_concrete_provenance_gaps_fixed",
+  "review_scope": [
+    "Separation of quantization error from accumulator rounding",
+    "Actual checkpoint/fixture/case mapping and preserved build identity",
+    "W4/W8 codes, FP32 scales and reconstruction convention",
+    "Fixed output sampling and independent full-matrix byte reconstruction"
+  ],
+  "findings": [
+    {
+      "problem": "Unpinned sidecar could change layer-to-weight mappings while retaining fixture identity.",
+      "resolution": "Rust and independent checker pin full sidecar SHA256 before case/weight selection; actual captured v2 rejects altered weight_prefix before any operator progress."
+    },
+    {
+      "problem": "Independent checker previously trusted candidate-declared source hashes without automatically binding captured executable/source archive.",
+      "resolution": "Checker now verifies fixed input pins, preserved complete/unchanged-source build, executable digest, complete ZIP entry inventory/digests, and embedded source map. Historical checker and current verifier hashes remain distinct."
+    }
+  ],
+  "actual_v1_evidence_verified": true,
+  "v1_original_reports_unchanged": true,
+  "strict_v1_full_reconstructions_passed": 112,
+  "strict_v1_sampled_outputs_passed": 8880,
+  "v2_full_reconstructions_passed": 112,
+  "v2_sampled_outputs_passed": 8880,
+  "v1_v2_operators_canonical_sha256": "cac48b39017518337fb91d4a7ce2bcabc999f81264b471614d6fb72bf8acacef",
+  "v1_v2_operator_records_identical": true,
+  "provenance_unit_tests_passed": 6,
+  "actual_binary_before_selection_guard_passed": true,
+  "arithmetic_review": "FP32 candidate vs F64 using already-FP32-dequantized weights bounds accumulator rounding; F64 dequantized vs F64 original weights isolates quantization. The independent checker reconstructs all code bytes, scale bits, and full restored matrix bytes via NumPy and checks SHA256 exactly. The sampled FP32 test checks a conservative gamma-K bound, not an exact alternative FMA implementation.",
+  "format_review": "W4 uses signed [-7,7] with adjacent low/high two-complement nibbles and zero odd-row padding; W8 uses [-127,127] i8. Scale is FP64 absmax/qmax rounded to FP32, with explicit zero/subnormal handling. This is a custom W4A32/W8A32 format, not GGML or W8A8.",
+  "sampling_review": {
+    "full_weight_elements_per_format": 53673984,
+    "sampled_output_elements_per_format": 2220,
+    "possible_output_elements_per_format": 5914624,
+    "sample_fraction": 0.00037534085006925207,
+    "selection": "Fixed geometric row/channel boundaries/quartiles, including adjacent W13 and Q/K/V boundaries; no output-dependent selection."
+  },
+  "unchanged": [
+    "Quantization format",
+    "Sampling policy",
+    "Arithmetic thresholds",
+    "q4_reference.rs",
+    "q8_reference.rs",
+    "Production src/Cargo",
+    "Existing benchmark capture script and plan"
+  ],
+  "limitations": [
+    "No quality/calibration/corpus qualification or model integration.",
+    "No performance measurements.",
+    "Full matrix reconstruction checks do not imply full operator-output coverage; only 0.0375 percent of possible outputs are sampled per format."
+  ],
+  "artifacts_sha256": {
+    "reference/quantization-v1-strict-validation.json": "ef06f275b1202140c7849873d0a2e83c9c77540218a3d8fde3ecc8b59c0d6a58",
+    "reference/quantization-v2-sidecar-guard.json": "40b333ad8a7649383a76042bf30de0def14a7f20ffae79508b66b34fa7f55fa4",
+    "artifacts/quantization/operator-probe-v1/build.json": "4b6418fb5db547ed0d78b00a46ff0768dd5fe9879af0a111e7fe03a686346d89",
+    "artifacts/quantization/operator-probe-v1/operators.json": "c03ee111b0f49f53e7a1ae0dc086fcc6395f570f3d2862c283f4642ca09355d2",
+    "artifacts/quantization/operator-probe-v1/independent-check.json": "58a2a1c7188f9ff7c09bcbec80c67d4d049235db5e82945ba14f2d164ad4c406",
+    "artifacts/quantization/operator-probe-v2/build.json": "ec4cdc17cf9aefd053e55f78c3bbe82c01b33e63e216dbd9cfc4a12226a9c185",
+    "artifacts/quantization/operator-probe-v2/operators.json": "6b65d9b377ee310a30e43909ca326e975bab310f1960f4dd3381abc91987f18a",
+    "artifacts/quantization/operator-probe-v2/independent-check.json": "d4a729d83b1b61163aa55b22ffc5e0b344dce7808c92fc58659ae32688142552",
+    "tests/test_quantization_provenance.py": "1cc7bfde15d45bb7b36a508381eb42c10cc839fece48da5060f97f9d78f07a3e"
+  }
+}

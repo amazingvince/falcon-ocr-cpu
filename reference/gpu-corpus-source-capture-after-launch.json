@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "capture_started_utc": "2026-09-20T07:29:36.670834+00:00",
+  "capture_completed_utc": "2026-09-20T07:29:36.843960+00:00",
+  "timing": "AFTER the active GPU 200-page corpus launch; not startup-attested",
+  "qualification": "Audit-time preservation only. No retroactive execution metadata or guarantee about launch-time bytes is inferred.",
+  "operator_statement": "GPU reference agent stated all four driver/helper Python files were unchanged during the active run; this statement is not a startup hash.",
+  "related_run": "artifacts/reference/corpus-v3-fp32-4096/run.json",
+  "archive": "artifacts/provenance/gpu-corpus-source-after-launch-20260920.zip",
+  "archive_sha256": "c8bc4465f2d5a9b219ef597de649c045976983779db93603ea1fd7ae4436f89a",
+  "archive_bytes": 1050918,
+  "files": [
+    {
+      "path": "scripts/run_corpus_reference.py",
+      "sha256": "696616815f92024ca58cba048f0dedb99b837a773cfe0f067450af000da2bfc8",
+      "bytes": 10550,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "scripts/export_reference.py",
+      "sha256": "e8e1d8fcedc5e58831836d2c3760420bade6f5ab04b3566e5dba753ea4318940",
+      "bytes": 12933,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "scripts/reference_preflight.py",
+      "sha256": "04a4429a16ea03d424739f744364dec0fc0ffa7e33035791f8c38ab77d3906bc",
+      "bytes": 2902,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "scripts/fetch_reference.py",
+      "sha256": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+      "bytes": 3274,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "requirements/reference-lock.txt",
+      "sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+      "bytes": 1184,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/artifact-manifest.json",
+      "sha256": "eea9640e8ab9feccd9358a6b3526e579b14dc4bfcd47ecd561853863952b594d",
+      "bytes": 2033,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/attention.py",
+      "sha256": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+      "bytes": 4566,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/config.json",
+      "sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "bytes": 747,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/configuration_falcon_ocr.py",
+      "sha256": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+      "bytes": 2223,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/model_args.json",
+      "sha256": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+      "bytes": 823,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/modeling_falcon_ocr.py",
+      "sha256": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+      "bytes": 32874,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/processing_falcon_ocr.py",
+      "sha256": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+      "bytes": 15537,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/rope.py",
+      "sha256": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+      "bytes": 4689,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/special_tokens_map.json",
+      "sha256": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+      "bytes": 9357,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/tokenizer.json",
+      "sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "bytes": 5063163,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/tokenizer_config.json",
+      "sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "bytes": 4352,
+      "unchanged_at_capture_end": true
+    },
+    {
+      "path": "artifacts/model/README.md",
+      "sha256": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+      "bytes": 21429,
+      "unchanged_at_capture_end": true
+    }
+  ]
+}

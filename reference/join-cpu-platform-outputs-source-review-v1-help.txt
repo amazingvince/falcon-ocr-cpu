@@ -1,0 +1,14 @@
+usage: join_cpu_platform_outputs.py [-h] --windows-comparison
+                                    WINDOWS_COMPARISON --linux-comparison
+                                    LINUX_COMPARISON --output OUTPUT
+
+Join completed CPU/GPU comparisons and directly compare common CPU outputs.
+This is saved-output evidence, not new inference, tensor parity or timing.
+Existing comparisons supply provenance qualification; their historical gaps
+are retained. Every selected record is rehashed before and after use.
+
+options:
+  -h, --help            show this help message and exit
+  --windows-comparison WINDOWS_COMPARISON
+  --linux-comparison LINUX_COMPARISON
+  --output OUTPUT

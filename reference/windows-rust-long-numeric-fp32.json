@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "manifest": "reference/long-numeric-lock-v1.json",
+  "manifest_sha256": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+  "gpu_run": "artifacts/reference/long-numeric-fp32-8192/run.json",
+  "gpu_run_sha256": "aa4a067966a74c57186a4418fee791cd3d2c8031a61aac8c9054432acdb0aa8e",
+  "cpu_run": "artifacts/cpu/long-numeric-fp32-8192/run.json",
+  "cpu_run_sha256": "979459fc69a7e55d186262409141287ee62c200d4e359116eb85f8d83e21ae58",
+  "cpu_contract": {
+    "backend": "avx2",
+    "cpu_label": "Ryzen 9 7950X",
+    "environment_label": "native Windows; functional comparison with concurrent GPU work",
+    "manifest_sha256": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "options": {
+      "max_dimension": 1536,
+      "max_new_tokens": 8192,
+      "min_dimension": 64
+    },
+    "precision": "fp32",
+    "source_sha256": {
+      "config": "0111a272510c862f42f25b32cd9f95f8165ceda00a55949e64378b126f07d701",
+      "harness": "53c97f191a0b3eeccea85fa65ed0d64f147115cfe4e43bd41a64b96fda5057e1",
+      "kernels": "801f94d88787d80af52a274fde2f3c385a27b42b067fd3f1a65cadd9282e90d5",
+      "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "model": "e51f02006d336a36d815fb902c756beed1a1228442fcbc9e3d8ae38b9af727f4",
+      "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "runner": "f5dfba8c2b00f1fd8532ba1d831b6ebf50eec8cace3af38eef2b4c693e2e026d",
+      "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+    },
+    "threads": 16,
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "gpu_configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "manifest_sha256": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+    "max_new_tokens": 8192,
+    "max_dimension": 1536,
+    "min_dimension": 64,
+    "precision": "fp32",
+    "tf32": false,
+    "flex_float32_precision": "ieee",
+    "compiled_blocks": false
+  },
+  "expected_pages": 1,
+  "compared_pages": 1,
+  "exact_pages": 1,
+  "compared_gpu_tokens": 8192,
+  "missing_cpu": [],
+  "missing_gpu": [],
+  "provenance_passed": true,
+  "completed_smoke_parity_passed": true,
+  "checks": [
+    {
+      "name": "gpu.model_revision",
+      "passed": true,
+      "actual": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "expected": "fe757d59ecd79d4d68760162306a70a015761ad9"
+    },
+    {
+      "name": "cpu.model_revision",
+      "passed": true,
+      "actual": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "expected": "fe757d59ecd79d4d68760162306a70a015761ad9"
+    },
+    {
+      "name": "gpu.weights_sha256",
+      "passed": true,
+      "actual": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "expected": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    {
+      "name": "cpu.weights_sha256",
+      "passed": true,
+      "actual": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "expected": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    {
+      "name": "gpu.manifest_sha256",
+      "passed": true,
+      "actual": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+      "expected": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5"
+    },
+    {
+      "name": "cpu.manifest_sha256",
+      "passed": true,
+      "actual": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+      "expected": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5"
+    },
+    {
+      "name": "gpu.precision",
+      "passed": true,
+      "actual": "fp32",
+      "expected": "fp32"
+    },
+    {
+      "name": "cpu.precision",
+      "passed": true,
+      "actual": "fp32",
+      "expected": "fp32"
+    },
+    {
+      "name": "options.max_dimension",
+      "passed": true,
+      "actual": 1536,
+      "expected": 1536
+    },
+    {
+      "name": "options.min_dimension",
+      "passed": true,
+      "actual": 64,
+      "expected": 64
+    },
+    {
+      "name": "options.max_new_tokens",
+      "passed": true,
+      "actual": 8192,
+      "expected": 8192
+    },
+    {
+      "name": "gpu.tf32",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "gpu.flex_float32_precision",
+      "passed": true,
+      "actual": "ieee",
+      "expected": "ieee"
+    },
+    {
+      "name": "cpu.teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "cpu.contract_sha256",
+      "passed": true,
+      "actual": "a0b02df253042e746286c595580cca0b0b5a92f09b6ca6041e2b1ce0fc2e8082",
+      "expected": "a0b02df253042e746286c595580cca0b0b5a92f09b6ca6041e2b1ce0fc2e8082"
+    },
+    {
+      "name": "long-numeric-v1.canonical_png",
+      "passed": true,
+      "actual": "0c761b868797ed7c58aaed48ed4dc6db0cf94780a4608d9dad9857d9121f183c",
+      "expected": "0c761b868797ed7c58aaed48ed4dc6db0cf94780a4608d9dad9857d9121f183c"
+    },
+    {
+      "name": "long-numeric-v1.canonical_rgb",
+      "passed": true,
+      "actual": "77984d552c8db40cbfddc409a9d4f6316d063092742798b6bdb9f9ff21c6da75",
+      "expected": "77984d552c8db40cbfddc409a9d4f6316d063092742798b6bdb9f9ff21c6da75"
+    },
+    {
+      "name": "long-numeric-v1.ground_truth",
+      "passed": true,
+      "actual": "e6f81e35e8821348d8f1da7aac86907a52fb72d3072e6d949e645e6dbe04a6a3",
+      "expected": "e6f81e35e8821348d8f1da7aac86907a52fb72d3072e6d949e645e6dbe04a6a3"
+    },
+    {
+      "name": "long-numeric-v1.gpu_configuration",
+      "passed": true,
+      "actual": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+        "max_new_tokens": 8192,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      },
+      "expected": {
+        "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+        "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "manifest_sha256": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+        "max_new_tokens": 8192,
+        "max_dimension": 1536,
+        "min_dimension": 64,
+        "precision": "fp32",
+        "tf32": false,
+        "flex_float32_precision": "ieee",
+        "compiled_blocks": false
+      }
+    },
+    {
+      "name": "long-numeric-v1.cpu_contract",
+      "passed": true,
+      "actual": "a0b02df253042e746286c595580cca0b0b5a92f09b6ca6041e2b1ce0fc2e8082",
+      "expected": "a0b02df253042e746286c595580cca0b0b5a92f09b6ca6041e2b1ce0fc2e8082"
+    },
+    {
+      "name": "long-numeric-v1.gpu_id",
+      "passed": true,
+      "actual": "original:long-numeric-v1",
+      "expected": "original:long-numeric-v1"
+    },
+    {
+      "name": "long-numeric-v1.cpu_id",
+      "passed": true,
+      "actual": "original:long-numeric-v1",
+      "expected": "original:long-numeric-v1"
+    },
+    {
+      "name": "long-numeric-v1.gpu_input",
+      "passed": true,
+      "actual": "77984d552c8db40cbfddc409a9d4f6316d063092742798b6bdb9f9ff21c6da75",
+      "expected": "77984d552c8db40cbfddc409a9d4f6316d063092742798b6bdb9f9ff21c6da75"
+    },
+    {
+      "name": "long-numeric-v1.cpu_input",
+      "passed": true,
+      "actual": "0c761b868797ed7c58aaed48ed4dc6db0cf94780a4608d9dad9857d9121f183c",
+      "expected": "0c761b868797ed7c58aaed48ed4dc6db0cf94780a4608d9dad9857d9121f183c"
+    },
+    {
+      "name": "long-numeric-v1.cpu_ground_truth",
+      "passed": true,
+      "actual": "e6f81e35e8821348d8f1da7aac86907a52fb72d3072e6d949e645e6dbe04a6a3",
+      "expected": "e6f81e35e8821348d8f1da7aac86907a52fb72d3072e6d949e645e6dbe04a6a3"
+    },
+    {
+      "name": "long-numeric-v1.cpu_teacher_forced",
+      "passed": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "long-numeric-v1.prefix_tokens",
+      "passed": true,
+      "actual": 8100,
+      "expected": 8100
+    },
+    {
+      "name": "long-numeric-v1.gpu_diagnostic_distance",
+      "passed": true,
+      "actual": 11190,
+      "expected": 11190
+    }
+  ],
+  "pages": [
+    {
+      "sample_id": "long-numeric-v1",
+      "id": "original:long-numeric-v1",
+      "category": "long_numeric_stress",
+      "provenance_passed": true,
+      "gpu_record_sha256": "b5ab8ee6e581f0317579f5cba0cee276d176da5b0068aeafd5ec85174ddbf5bf",
+      "cpu_record_sha256": "9c77e2e430238882368e0850551adce1cc0896cb57dfbadbb6a8f72d5dc4305c",
+      "gpu_tokens": 8192,
+      "cpu_tokens": 8192,
+      "tokens_exact": true,
+      "text_exact": true,
+      "finish_reason_exact": true,
+      "gpu_finish_reason": "length",
+      "cpu_finish_reason": "length",
+      "first_token_divergence": null,
+      "matching_prefix_tokens": 8192,
+      "diagnostic_ground_truth_characters": 9599,
+      "gpu_diagnostic_edit_distance": 11190,
+      "cpu_diagnostic_edit_distance": 11190,
+      "gpu_diagnostic_cer": 1.1657464319199917,
+      "cpu_diagnostic_cer": 1.1657464319199917
+    }
+  ],
+  "qualification": "Independent free greedy output comparison; tensor parity, OCR accuracy qualification, and bare-metal performance are separate gates.",
+  "metric": "NFC+whitespace-normalized assembled-ground-truth character edit distance, diagnostic only, not official OmniDocBench scoring.",
+  "corpus_qualification": "Original deterministic numerical stress page; not natural-document OCR accuracy evidence. Measure actual EOS and budget truncation.",
+  "completed_output_parity_passed": true
+}

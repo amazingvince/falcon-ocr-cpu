@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": [
+    {
+      "name": "fresh_build_bound_inference",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "1/200 465b09aa350ba9b8: 1 tokens in 0.4s\n"
+    },
+    {
+      "name": "same_binary_resume",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "existing_output_requires_resume",
+      "passed": true,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: output already contains a run; use --resume or another output directory\n"
+    },
+    {
+      "name": "changed_contract_rejected",
+      "passed": true,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: resume contract changed: use another output directory\n"
+    },
+    {
+      "name": "different_build_binary_rejected",
+      "passed": true,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Error: build snapshot belongs to a different executable\n"
+    }
+  ],
+  "binary_sha256": "48f061c2492f38d02e885130ec401f33cc24d5ecdbe96e09dbaa1e2c095ef500",
+  "build_manifest_sha256": "b87b4a1ea7bce4fd9ca75d6566c479b0af6f86bd698e624307a87a622aad1329",
+  "script_sha256": "066125838bbb202571a1c4021705c2505df43ce86a8f60b72d47f5ff6e278296",
+  "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+  "original_run_record_sha256": "a07faf8e6d839f250c13dff46b1960148bcbc9c0c1b60140e0ebd0c0043788b9",
+  "run_record_unchanged_after_resume_and_rejections": true,
+  "invocations": [
+    {
+      "contract_sha256": "974aaa2d67c53327a47105d8b203e076b9b487b73c19d59661ede43349649852",
+      "failed_pages": 0,
+      "limit": 1,
+      "new_completed_pages": 1,
+      "planned_pages": 200,
+      "resume": false,
+      "resumed_completed_pages": 0,
+      "selected_pages": 1,
+      "status": "completed_selected_pages",
+      "verified_load_and_runner_ms": 1296.5207
+    },
+    {
+      "contract_sha256": "974aaa2d67c53327a47105d8b203e076b9b487b73c19d59661ede43349649852",
+      "failed_pages": 0,
+      "limit": 1,
+      "new_completed_pages": 0,
+      "planned_pages": 200,
+      "resume": true,
+      "resumed_completed_pages": 1,
+      "selected_pages": 1,
+      "status": "completed_selected_pages",
+      "verified_load_and_runner_ms": 1293.8914000000002
+    }
+  ],
+  "scope": "One CPU page at 256px and one output token; build/resume bookkeeping only, no quality or performance qualification."
+}

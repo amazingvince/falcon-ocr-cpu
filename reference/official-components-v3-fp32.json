@@ -1,0 +1,1248 @@
+{
+  "schema_version": 2,
+  "status": "complete",
+  "scope": "Official v1_5 component evaluation of all 200 selected pages in corpus-v3-evaluation-lock.json; no Overall score.",
+  "manifest": "reference/corpus-v3-evaluation-lock.json",
+  "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+  "pages": 200,
+  "category_counts": {
+    "degraded": 25,
+    "handwriting": 25,
+    "formulas": 30,
+    "tables": 30,
+    "tiny_text": 30,
+    "multi_column": 25,
+    "ordinary": 35
+  },
+  "evaluator_revision": "59b103c4b47d3a01fada83491585d6512a40c0bc",
+  "inference_contracts": {
+    "gpu": {
+      "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "max_new_tokens": 4096,
+      "max_dimension": 1536,
+      "min_dimension": 64,
+      "precision": "fp32",
+      "tf32": false,
+      "flex_float32_precision": "ieee",
+      "compiled_blocks": false
+    },
+    "cpu": {
+      "backend": "avx2",
+      "cpu_label": "Ryzen 9 7950X",
+      "environment_label": "native Windows functional corpus run; concurrent GPU/reference development; not performance measurement",
+      "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "options": {
+        "max_dimension": 1536,
+        "max_new_tokens": 4096,
+        "min_dimension": 64
+      },
+      "postprocessing_replay": {
+        "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+        "decoder_binary_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\redecode-corpus-v3-windows\\redecode_corpus.exe",
+        "decoder_binary_sha256": "d857bf74d3f7093bee62913e3122f781220f8d29aeaef4e6ae211f73b8859eac",
+        "decoder_source_path": "artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\decoder-source.rs",
+        "decoder_source_sha256": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+        "harness_source_sha256": "e091cc769f0a62ee40b706a59d65a18db497a224ac5b7bcaffaa6e06e20f15f5",
+        "policy": "Pinned Transformers 5.14.1 BPE decode without WordPiece cleanup; preserve special tokens, remove two EOS spellings, Python 3.12 outer strip",
+        "record_validator_sha256": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+        "schema_version": 1,
+        "scope": "Text-only Rust replay from original saved IDs; source_sha256 and timings describe original inference, not a new forward run",
+        "source_contract_sha256": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+        "source_run_path": "artifacts/cpu/corpus-v3-fp32-4096-original-snapshot-200\\run.json",
+        "source_run_sha256": "d00e1d4ee70d693caedc82b4951da924cc1370f85b99e5032ed3dae24a46d210",
+        "tokenizer_asset_sha256": {
+          "artifacts/model\\tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+          "artifacts/model\\tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26"
+        }
+      },
+      "precision": "fp32",
+      "source_sha256": {
+        "bf16_attention": "abfd6a5292fb9926efa22170914e70a5176b9531c2acd02c13bc8b02b33ebcdb",
+        "bf16_kernels": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+        "bf16_model": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+        "bf16_ops": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+        "bf16_runner": "431b101f6705c108225d64aa58875fcdd49ae51196544bc230c09f65fdc2bc31",
+        "config": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+        "harness": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+        "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+        "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+        "model": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+        "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+        "runner": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+        "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+      },
+      "threads": 16,
+      "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    }
+  },
+  "prediction_origins": {
+    "gpu": "original_free_running_inference",
+    "cpu": "saved_token_text_replay_original_inference_timings_retained"
+  },
+  "preparation_provenance_sha256": {
+    "gpu": "fb0800d727febd89e378442c7b57f4eabc956d3c5a18e4b4e4049ba350afe7c4",
+    "cpu": "1d5e9ebc6bece2eebb0108be5e99ad94dbde0e99a2a6e103dc451e36eaa6eccd"
+  },
+  "execution_audit_sha256": {
+    "gpu": "9324d11853d1b6a2d69bd693a177daf62dbaa52373d7d8f6205ef5967467986c",
+    "cpu": "26a05f96e29f1bf598f017c4e945e401a2885057f86b76b7b3e71975c532e388"
+  },
+  "evaluator_requirements_sha256": "a8891b60facd074ae65ad53a79216f7e475e7c37ace48a8940f45914827325e0",
+  "comparison_script_sha256": "c4ff51c5828237274b1d11b369d664716b81d54371ad8e1d7a2b208cda43df82",
+  "annotation_adaptation": {
+    "policy": "Drop dangling truncated relations only; retain all layout/text annotations unchanged.",
+    "explicitly_enabled": true,
+    "changes": [
+      {
+        "id": "omnidocbench:scihub_s00894-012-1568-z.pdf_2.jpg",
+        "removed_relation": {
+          "source_anno_id": 7,
+          "target_anno_id": 13,
+          "relation_type": "truncated"
+        },
+        "reason": "A merge endpoint does not exist among the page's annotation IDs."
+      },
+      {
+        "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+        "removed_relation": {
+          "source_anno_id": 3,
+          "target_anno_id": 5,
+          "relation_type": "truncated"
+        },
+        "reason": "A merge endpoint does not exist among the page's annotation IDs."
+      }
+    ]
+  },
+  "all_prediction_text_bytes_equal": true,
+  "all_evaluator_outputs_equal": true,
+  "component_scores": {
+    "gpu": {
+      "text_block": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.171930575366655,
+          "edit_whole": 0.24900191902213778,
+          "edit_sample_avg": 0.19667468855481876
+        }
+      },
+      "display_formula": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.28396640390160544,
+          "edit_whole": 0.40251078854452726,
+          "edit_sample_avg": 0.28891430790040273
+        }
+      },
+      "table": {
+        "TEDS": {
+          "all": 0.6698691772585724
+        },
+        "TEDS_structure_only": {
+          "all": 0.7502593216020016
+        },
+        "Edit_dist": {
+          "ALL_page_avg": 0.19170501450575517,
+          "edit_whole": 0.2809057381924892,
+          "edit_sample_avg": 0.27314694627246233
+        }
+      },
+      "reading_order": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.09567740909428865,
+          "edit_whole": 0.14860206817311375,
+          "edit_sample_avg": 0.09567740909428865
+        }
+      }
+    },
+    "cpu": {
+      "text_block": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.171930575366655,
+          "edit_whole": 0.24900191902213778,
+          "edit_sample_avg": 0.19667468855481876
+        }
+      },
+      "display_formula": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.28396640390160544,
+          "edit_whole": 0.40251078854452726,
+          "edit_sample_avg": 0.28891430790040273
+        }
+      },
+      "table": {
+        "TEDS": {
+          "all": 0.6698691772585724
+        },
+        "TEDS_structure_only": {
+          "all": 0.7502593216020016
+        },
+        "Edit_dist": {
+          "ALL_page_avg": 0.19170501450575517,
+          "edit_whole": 0.2809057381924892,
+          "edit_sample_avg": 0.27314694627246233
+        }
+      },
+      "reading_order": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.09567740909428865,
+          "edit_whole": 0.14860206817311375,
+          "edit_sample_avg": 0.09567740909428865
+        }
+      }
+    }
+  },
+  "component_coverage": {
+    "gpu": {
+      "text_block": {
+        "sample_count": 2583,
+        "page_count": 194,
+        "pages_without_component_score": [
+          "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+          "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "yanbaor2_yanbaoPPT_5877.jpg"
+        ]
+      },
+      "display_formula": {
+        "sample_count": 214,
+        "page_count": 44,
+        "pages_without_component_score": [
+          "PPT_Keuk Chan Narith_page_009.png",
+          "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+          "PPT_The Right Moves_page_024.png",
+          "PPT_english-studies-s6-on-the-road-resource-3_page_003.png",
+          "PPT_sociolinguistics_page_015.png",
+          "book_en_搬书匠-3289-The Successful Software Manager-2019-英文版_page_241.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第08讲第八课写作Part8训练_第八课写作Part8训练_page_003.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_020.png",
+          "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_081.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-60832903.pdf_88.jpg",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-63685611.pdf_222.jpg",
+          "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+          "docstructbench_enbook-zlib-o.O-21882649.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-ajhb.10190.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+          "docstructbench_llm-raw-scihub-o.O-chem.200701412.pdf_10.jpg",
+          "docstructbench_llm-raw-scihub-o.O-dneu.20833.pdf_13.jpg",
+          "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+          "docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.1445-2197.2003.02751.x.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ab.2008.05.027.pdf_7.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ergon.2003.12.002.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00128-007-9171-1.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00128-010-0006-0.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00396-003-0935-9.pdf_2.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Attitudes_Towards_Rainwater_Harvesting_1999.pdf_5.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Player%27s%20Options%20-%20Halflings.pdf_11.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+          "eastmoney_2dea7cdb5a3e018ffec3c80eb4435de524f2a14bd32735b78f563adc355272ab.pdf_6.jpg",
+          "eastmoney_7c25f92e2ab21d83e1eada0e40a68e3151e7c1c2d673ddb12b0242fa3ab931ab.pdf_13.jpg",
+          "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+          "eastmoney_fcc1c7940f94c7f36157a4aa9c1c804fe16e6b681ca1cef589af39c6d3e0cb90.pdf_0.jpg",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+          "exam_paper_2016年安徽省中考英语试题（解析）_page_015.png",
+          "jiaocai_P0-9.pdf_9.jpg",
+          "jiaocai_c1-cn-10-q-06-lys.pdf_2.jpg",
+          "jiaocaineedrop_2005_QP.pdf_5.jpg",
+          "jiaocaineedrop_bio-113065.pdf_213.jpg",
+          "jiaocaineedrop_chem-323236.pdf_183.jpg",
+          "jiaocaineedrop_chem-354334.pdf_20.jpg",
+          "jiaocaineedrop_eng_gls.pdf_6.jpg",
+          "jiaocaineedrop_geo-12644.pdf_353.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1141.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1249.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1271.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1303.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1349.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1920.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2360.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2893.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_3274.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_4065.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_458.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_467.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_620.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_769.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+          "magazine_TheEconomist.2023.12.16_page_062.png",
+          "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_11.jpg",
+          "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+          "newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_009.png",
+          "newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_003.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+          "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_009.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_011.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_021.png",
+          "newspaper_d7fe1132386670993aae3dabc6247bc9_2.jpg",
+          "newspaper_fe5ed29024932fad071afc53807b16ba_3.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_10.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_118.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_119.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_35.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_54.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_59.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_60.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_98.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_24.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_69.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_73.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_89.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_93.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_95.jpg",
+          "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+          "page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+          "page-2861127b-41a4-44d5-b026-2de9cb408347.png",
+          "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+          "page-49746735-505c-442d-b3f6-c55b1bf9e48b.png",
+          "page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+          "page-5ef91820-15a4-41af-b57f-36ec76879fee.png",
+          "page-7bfad9a4-c5b7-40f3-8600-be513d1b1aaa.png",
+          "page-82c2ab31-2cf0-47bb-bfb6-110770323718.png",
+          "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+          "page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+          "page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+          "page-c99421f9-4435-44a9-82f8-7b044bb0ee1d.png",
+          "page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+          "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+          "scihub_bloodadvances.2019030924.pdf_3.jpg",
+          "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg",
+          "scihub_j.ejcts.2011.04.042.pdf_3.jpg",
+          "scihub_j.jallcom.2003.09.015.pdf_1.jpg",
+          "scihub_j.jmb.2003.10.009.pdf_4.jpg",
+          "scihub_jb%2Fmvh022.pdf_1.jpg",
+          "scihub_jgh.13044.pdf_2.jpg",
+          "scihub_jps.21547.pdf_7.jpg",
+          "scihub_s00894-012-1568-z.pdf_2.jpg",
+          "yanbaopptmerge_46f23989f000d2a83058955c99cdcc1220d6649f16db4f5719d356aa5ced01bc.pdf_7.jpg",
+          "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg",
+          "yanbaopptmerge_yanbaoPPT_1735.jpg",
+          "yanbaopptmerge_yanbaoPPT_2400.jpg",
+          "yanbaopptmerge_yanbaoPPT_4095.jpg",
+          "yanbaopptmerge_yanbaoPPT_4275.jpg",
+          "yanbaopptmerge_yanbaoPPT_495.jpg",
+          "yanbaor2_0ef01b835238626f3589faa671abdfb832f2b98987eadad53cb2e35699dcc039.pdf_13.jpg",
+          "yanbaor2_6a016aa81b2fc8281a2a51bae6417769e4cae7fbe161cbc4351596b82e7002fa.pdf_8.jpg",
+          "yanbaor2_864cbd5f0adeb98dea6cf7105cc8dfb272a9be974757633b2db8cf3f9a11c92b.pdf_33.jpg",
+          "yanbaor2_965b491c51a8fcd511bcb12adcebca5836ab96fe8742a5d04d12669faec90531.pdf_2.jpg",
+          "yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+          "yanbaor2_bc193526614fd5857f7b5254e67bced76222cf3396b01e516303b92609a20075.pdf_14.jpg",
+          "yanbaor2_ey-digital-state-tax-article.pdf_0.jpg",
+          "yanbaor2_ey-financial-sustainability-whitepaper.pdf_17.jpg",
+          "yanbaor2_yanbaoPPT_2172.jpg",
+          "yanbaor2_yanbaoPPT_3745.jpg",
+          "yanbaor2_yanbaoPPT_469.jpg",
+          "yanbaor2_yanbaoPPT_5877.jpg",
+          "yanbaor2_yanbaoPPT_916.jpg"
+        ]
+      },
+      "table": {
+        "sample_count": 89,
+        "page_count": 62,
+        "pages_without_component_score": [
+          "PPT_Keuk Chan Narith_page_009.png",
+          "PPT_StewartCalcET7e_03_02_page_015.png",
+          "PPT_StewartCalcET7e_04_09_page_018.png",
+          "PPT_The Right Moves_page_024.png",
+          "PPT_ch7_page_034.png",
+          "PPT_english-studies-s6-on-the-road-resource-3_page_003.png",
+          "PPT_fundamental_theorem_of_calculus___page_006.png",
+          "PPT_linear-algebra primer_page_008.png",
+          "PPT_sociolinguistics_page_015.png",
+          "book_en_国外数学教材-An Excursion through Elementary Mathematics（初等数学漫游）-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0100.png",
+          "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0017.png",
+          "book_en_搬书匠-3289-The Successful Software Manager-2019-英文版_page_241.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第08讲第八课写作Part8训练_第八课写作Part8训练_page_003.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_020.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-60832903.pdf_88.jpg",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-63685611.pdf_222.jpg",
+          "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+          "docstructbench_enbook-zlib-o.O-21882649.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-ajhb.10190.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-chem.200701412.pdf_10.jpg",
+          "docstructbench_llm-raw-scihub-o.O-dneu.20833.pdf_13.jpg",
+          "docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.1445-2197.2003.02751.x.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ab.2008.05.027.pdf_7.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ergon.2003.12.002.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.snb.2004.05.025.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Attitudes_Towards_Rainwater_Harvesting_1999.pdf_5.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+          "exam_paper_2016年安徽省中考英语试题（解析）_page_015.png",
+          "exam_paper_en-file-putnam-archive_2000_Problems_2000_page_001.png",
+          "exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_001.png",
+          "exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_005.png",
+          "exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_001.png",
+          "exam_paper_en-file-putnam-archive_2010_Solutions_2010s_page_001.png",
+          "exam_paper_en-file-putnam-archive_2011_Solutions_2011s_page_003.png",
+          "exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+          "exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+          "jiaocai_P0-9.pdf_9.jpg",
+          "jiaocai_c1-cn-10-q-06-lys.pdf_2.jpg",
+          "jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg",
+          "jiaocaineedrop_bio-113065.pdf_213.jpg",
+          "jiaocaineedrop_eng_gls.pdf_6.jpg",
+          "jiaocaineedrop_geo-12644.pdf_353.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1249.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1276.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1303.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2718.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2893.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_620.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_769.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+          "magazine_TheEconomist.2023.12.16_page_062.png",
+          "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_11.jpg",
+          "newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_009.png",
+          "newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_003.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+          "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_009.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_011.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_021.png",
+          "newspaper_d7fe1132386670993aae3dabc6247bc9_2.jpg",
+          "newspaper_fe5ed29024932fad071afc53807b16ba_3.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_10.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_118.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_119.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_54.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_59.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_24.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_69.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_73.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_89.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_93.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_95.jpg",
+          "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+          "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+          "page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+          "page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+          "page-2861127b-41a4-44d5-b026-2de9cb408347.png",
+          "page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.png",
+          "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+          "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+          "page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+          "page-5ef91820-15a4-41af-b57f-36ec76879fee.png",
+          "page-82c2ab31-2cf0-47bb-bfb6-110770323718.png",
+          "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+          "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+          "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+          "page-a976a26e-4dbb-492a-a380-b923b87ed496.png",
+          "page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+          "page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png",
+          "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+          "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+          "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+          "page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+          "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+          "page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+          "page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png",
+          "page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+          "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+          "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg",
+          "yanbaopptmerge_yanbaoPPT_1735.jpg",
+          "yanbaopptmerge_yanbaoPPT_2400.jpg",
+          "yanbaopptmerge_yanbaoPPT_4095.jpg",
+          "yanbaopptmerge_yanbaoPPT_4710.jpg",
+          "yanbaopptmerge_yanbaoPPT_495.jpg",
+          "yanbaor2_0ef01b835238626f3589faa671abdfb832f2b98987eadad53cb2e35699dcc039.pdf_13.jpg",
+          "yanbaor2_864cbd5f0adeb98dea6cf7105cc8dfb272a9be974757633b2db8cf3f9a11c92b.pdf_33.jpg",
+          "yanbaor2_965b491c51a8fcd511bcb12adcebca5836ab96fe8742a5d04d12669faec90531.pdf_2.jpg",
+          "yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+          "yanbaor2_bc193526614fd5857f7b5254e67bced76222cf3396b01e516303b92609a20075.pdf_14.jpg",
+          "yanbaor2_ey-digital-state-tax-article.pdf_0.jpg",
+          "yanbaor2_ey-financial-sustainability-whitepaper.pdf_17.jpg",
+          "yanbaor2_yanbaoPPT_2172.jpg",
+          "yanbaor2_yanbaoPPT_3745.jpg",
+          "yanbaor2_yanbaoPPT_469.jpg"
+        ]
+      },
+      "reading_order": {
+        "sample_count": 194,
+        "page_count": 194,
+        "pages_without_component_score": [
+          "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+          "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "yanbaor2_yanbaoPPT_5877.jpg"
+        ]
+      }
+    },
+    "cpu": {
+      "text_block": {
+        "sample_count": 2583,
+        "page_count": 194,
+        "pages_without_component_score": [
+          "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+          "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "yanbaor2_yanbaoPPT_5877.jpg"
+        ]
+      },
+      "display_formula": {
+        "sample_count": 214,
+        "page_count": 44,
+        "pages_without_component_score": [
+          "PPT_Keuk Chan Narith_page_009.png",
+          "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+          "PPT_The Right Moves_page_024.png",
+          "PPT_english-studies-s6-on-the-road-resource-3_page_003.png",
+          "PPT_sociolinguistics_page_015.png",
+          "book_en_搬书匠-3289-The Successful Software Manager-2019-英文版_page_241.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第08讲第八课写作Part8训练_第八课写作Part8训练_page_003.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_020.png",
+          "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_081.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-60832903.pdf_88.jpg",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-63685611.pdf_222.jpg",
+          "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+          "docstructbench_enbook-zlib-o.O-21882649.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-ajhb.10190.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+          "docstructbench_llm-raw-scihub-o.O-chem.200701412.pdf_10.jpg",
+          "docstructbench_llm-raw-scihub-o.O-dneu.20833.pdf_13.jpg",
+          "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+          "docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.1445-2197.2003.02751.x.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ab.2008.05.027.pdf_7.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ergon.2003.12.002.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00128-007-9171-1.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00128-010-0006-0.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00396-003-0935-9.pdf_2.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Attitudes_Towards_Rainwater_Harvesting_1999.pdf_5.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Player%27s%20Options%20-%20Halflings.pdf_11.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+          "eastmoney_2dea7cdb5a3e018ffec3c80eb4435de524f2a14bd32735b78f563adc355272ab.pdf_6.jpg",
+          "eastmoney_7c25f92e2ab21d83e1eada0e40a68e3151e7c1c2d673ddb12b0242fa3ab931ab.pdf_13.jpg",
+          "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+          "eastmoney_fcc1c7940f94c7f36157a4aa9c1c804fe16e6b681ca1cef589af39c6d3e0cb90.pdf_0.jpg",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+          "exam_paper_2016年安徽省中考英语试题（解析）_page_015.png",
+          "jiaocai_P0-9.pdf_9.jpg",
+          "jiaocai_c1-cn-10-q-06-lys.pdf_2.jpg",
+          "jiaocaineedrop_2005_QP.pdf_5.jpg",
+          "jiaocaineedrop_bio-113065.pdf_213.jpg",
+          "jiaocaineedrop_chem-323236.pdf_183.jpg",
+          "jiaocaineedrop_chem-354334.pdf_20.jpg",
+          "jiaocaineedrop_eng_gls.pdf_6.jpg",
+          "jiaocaineedrop_geo-12644.pdf_353.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1141.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1249.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1271.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1303.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1349.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1920.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2360.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2893.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_3274.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_4065.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_458.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_467.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_620.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_769.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+          "magazine_TheEconomist.2023.12.16_page_062.png",
+          "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_11.jpg",
+          "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+          "newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_009.png",
+          "newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_003.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+          "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_009.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_011.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_021.png",
+          "newspaper_d7fe1132386670993aae3dabc6247bc9_2.jpg",
+          "newspaper_fe5ed29024932fad071afc53807b16ba_3.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_10.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_118.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_119.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_35.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_54.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_59.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_60.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_98.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_24.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_69.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_73.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_89.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_93.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_95.jpg",
+          "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+          "page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+          "page-2861127b-41a4-44d5-b026-2de9cb408347.png",
+          "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+          "page-49746735-505c-442d-b3f6-c55b1bf9e48b.png",
+          "page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+          "page-5ef91820-15a4-41af-b57f-36ec76879fee.png",
+          "page-7bfad9a4-c5b7-40f3-8600-be513d1b1aaa.png",
+          "page-82c2ab31-2cf0-47bb-bfb6-110770323718.png",
+          "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+          "page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+          "page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+          "page-c99421f9-4435-44a9-82f8-7b044bb0ee1d.png",
+          "page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+          "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+          "scihub_bloodadvances.2019030924.pdf_3.jpg",
+          "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg",
+          "scihub_j.ejcts.2011.04.042.pdf_3.jpg",
+          "scihub_j.jallcom.2003.09.015.pdf_1.jpg",
+          "scihub_j.jmb.2003.10.009.pdf_4.jpg",
+          "scihub_jb%2Fmvh022.pdf_1.jpg",
+          "scihub_jgh.13044.pdf_2.jpg",
+          "scihub_jps.21547.pdf_7.jpg",
+          "scihub_s00894-012-1568-z.pdf_2.jpg",
+          "yanbaopptmerge_46f23989f000d2a83058955c99cdcc1220d6649f16db4f5719d356aa5ced01bc.pdf_7.jpg",
+          "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg",
+          "yanbaopptmerge_yanbaoPPT_1735.jpg",
+          "yanbaopptmerge_yanbaoPPT_2400.jpg",
+          "yanbaopptmerge_yanbaoPPT_4095.jpg",
+          "yanbaopptmerge_yanbaoPPT_4275.jpg",
+          "yanbaopptmerge_yanbaoPPT_495.jpg",
+          "yanbaor2_0ef01b835238626f3589faa671abdfb832f2b98987eadad53cb2e35699dcc039.pdf_13.jpg",
+          "yanbaor2_6a016aa81b2fc8281a2a51bae6417769e4cae7fbe161cbc4351596b82e7002fa.pdf_8.jpg",
+          "yanbaor2_864cbd5f0adeb98dea6cf7105cc8dfb272a9be974757633b2db8cf3f9a11c92b.pdf_33.jpg",
+          "yanbaor2_965b491c51a8fcd511bcb12adcebca5836ab96fe8742a5d04d12669faec90531.pdf_2.jpg",
+          "yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+          "yanbaor2_bc193526614fd5857f7b5254e67bced76222cf3396b01e516303b92609a20075.pdf_14.jpg",
+          "yanbaor2_ey-digital-state-tax-article.pdf_0.jpg",
+          "yanbaor2_ey-financial-sustainability-whitepaper.pdf_17.jpg",
+          "yanbaor2_yanbaoPPT_2172.jpg",
+          "yanbaor2_yanbaoPPT_3745.jpg",
+          "yanbaor2_yanbaoPPT_469.jpg",
+          "yanbaor2_yanbaoPPT_5877.jpg",
+          "yanbaor2_yanbaoPPT_916.jpg"
+        ]
+      },
+      "table": {
+        "sample_count": 89,
+        "page_count": 62,
+        "pages_without_component_score": [
+          "PPT_Keuk Chan Narith_page_009.png",
+          "PPT_StewartCalcET7e_03_02_page_015.png",
+          "PPT_StewartCalcET7e_04_09_page_018.png",
+          "PPT_The Right Moves_page_024.png",
+          "PPT_ch7_page_034.png",
+          "PPT_english-studies-s6-on-the-road-resource-3_page_003.png",
+          "PPT_fundamental_theorem_of_calculus___page_006.png",
+          "PPT_linear-algebra primer_page_008.png",
+          "PPT_sociolinguistics_page_015.png",
+          "book_en_国外数学教材-An Excursion through Elementary Mathematics（初等数学漫游）-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0100.png",
+          "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0017.png",
+          "book_en_搬书匠-3289-The Successful Software Manager-2019-英文版_page_241.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第08讲第八课写作Part8训练_第八课写作Part8训练_page_003.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+          "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_020.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-60832903.pdf_88.jpg",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-63685611.pdf_222.jpg",
+          "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+          "docstructbench_enbook-zlib-o.O-21882649.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-ajhb.10190.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-chem.200701412.pdf_10.jpg",
+          "docstructbench_llm-raw-scihub-o.O-dneu.20833.pdf_13.jpg",
+          "docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.1445-2197.2003.02751.x.pdf_3.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ab.2008.05.027.pdf_7.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.ergon.2003.12.002.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-j.snb.2004.05.025.pdf_5.jpg",
+          "docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Attitudes_Towards_Rainwater_Harvesting_1999.pdf_5.jpg",
+          "docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+          "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+          "exam_paper_2016年安徽省中考英语试题（解析）_page_015.png",
+          "exam_paper_en-file-putnam-archive_2000_Problems_2000_page_001.png",
+          "exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_001.png",
+          "exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_005.png",
+          "exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_001.png",
+          "exam_paper_en-file-putnam-archive_2010_Solutions_2010s_page_001.png",
+          "exam_paper_en-file-putnam-archive_2011_Solutions_2011s_page_003.png",
+          "exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+          "exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+          "jiaocai_P0-9.pdf_9.jpg",
+          "jiaocai_c1-cn-10-q-06-lys.pdf_2.jpg",
+          "jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg",
+          "jiaocaineedrop_bio-113065.pdf_213.jpg",
+          "jiaocaineedrop_eng_gls.pdf_6.jpg",
+          "jiaocaineedrop_geo-12644.pdf_353.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1249.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1276.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1303.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2718.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_2893.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_620.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_769.jpg",
+          "jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+          "magazine_TheEconomist.2023.12.16_page_062.png",
+          "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_11.jpg",
+          "newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_009.png",
+          "newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_003.png",
+          "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+          "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_009.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_011.png",
+          "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+          "newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png",
+          "newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+          "newspaper_USAToday-2025-01-08@magazinesclubnew_page_021.png",
+          "newspaper_d7fe1132386670993aae3dabc6247bc9_2.jpg",
+          "newspaper_fe5ed29024932fad071afc53807b16ba_3.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_10.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_118.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_119.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_54.jpg",
+          "notes_1ba14cb325bc448f7201b20502ecf2b5_59.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_24.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_69.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_73.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_89.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_93.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+          "notes_f7f010b78016aeebd76e56d9283eb67f_95.jpg",
+          "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+          "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+          "page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+          "page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+          "page-2861127b-41a4-44d5-b026-2de9cb408347.png",
+          "page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.png",
+          "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+          "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+          "page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+          "page-5ef91820-15a4-41af-b57f-36ec76879fee.png",
+          "page-82c2ab31-2cf0-47bb-bfb6-110770323718.png",
+          "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+          "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+          "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+          "page-a976a26e-4dbb-492a-a380-b923b87ed496.png",
+          "page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+          "page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png",
+          "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+          "page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+          "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+          "page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+          "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+          "page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+          "page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png",
+          "page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+          "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+          "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg",
+          "yanbaopptmerge_yanbaoPPT_1735.jpg",
+          "yanbaopptmerge_yanbaoPPT_2400.jpg",
+          "yanbaopptmerge_yanbaoPPT_4095.jpg",
+          "yanbaopptmerge_yanbaoPPT_4710.jpg",
+          "yanbaopptmerge_yanbaoPPT_495.jpg",
+          "yanbaor2_0ef01b835238626f3589faa671abdfb832f2b98987eadad53cb2e35699dcc039.pdf_13.jpg",
+          "yanbaor2_864cbd5f0adeb98dea6cf7105cc8dfb272a9be974757633b2db8cf3f9a11c92b.pdf_33.jpg",
+          "yanbaor2_965b491c51a8fcd511bcb12adcebca5836ab96fe8742a5d04d12669faec90531.pdf_2.jpg",
+          "yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+          "yanbaor2_bc193526614fd5857f7b5254e67bced76222cf3396b01e516303b92609a20075.pdf_14.jpg",
+          "yanbaor2_ey-digital-state-tax-article.pdf_0.jpg",
+          "yanbaor2_ey-financial-sustainability-whitepaper.pdf_17.jpg",
+          "yanbaor2_yanbaoPPT_2172.jpg",
+          "yanbaor2_yanbaoPPT_3745.jpg",
+          "yanbaor2_yanbaoPPT_469.jpg"
+        ]
+      },
+      "reading_order": {
+        "sample_count": 194,
+        "page_count": 194,
+        "pages_without_component_score": [
+          "PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+          "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+          "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+          "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "page-92062914-ea02-4640-8f54-24623dba4388.png",
+          "yanbaor2_yanbaoPPT_5877.jpg"
+        ]
+      }
+    }
+  },
+  "by_category": {
+    "degraded": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 25,
+          "cpu": 25
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.1862884829714329,
+          "cpu": 0.1862884829714329
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 6,
+          "cpu": 6
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.5341297794910322,
+          "cpu": 0.5341297794910322
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 7,
+          "cpu": 7
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.02197274999792272,
+          "cpu": 0.02197274999792272
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 25,
+          "cpu": 25
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.08365768639962189,
+          "cpu": 0.08365768639962189
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "formulas": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 30,
+          "cpu": 30
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.07204228524786885,
+          "cpu": 0.07204228524786885
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 30,
+          "cpu": 30
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.25717709618536977,
+          "cpu": 0.25717709618536977
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.11418460147966016,
+          "cpu": 0.11418460147966016
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 30,
+          "cpu": 30
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.02,
+          "cpu": 0.02
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "handwriting": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 25,
+          "cpu": 25
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.4816228529857845,
+          "cpu": 0.4816228529857845
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 2,
+          "cpu": 2
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.169586406743941,
+          "cpu": 0.169586406743941
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 5,
+          "cpu": 5
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.35379620806787465,
+          "cpu": 0.35379620806787465
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 25,
+          "cpu": 25
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.17906978175885738,
+          "cpu": 0.17906978175885738
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "multi_column": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 25,
+          "cpu": 25
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.08780372881169614,
+          "cpu": 0.08780372881169614
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.230032836313826,
+          "cpu": 0.230032836313826
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 6,
+          "cpu": 6
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.1847909728256302,
+          "cpu": 0.1847909728256302
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 25,
+          "cpu": 25
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.12321978021978021,
+          "cpu": 0.12321978021978021
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "ordinary": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 35,
+          "cpu": 35
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.07901370835417136,
+          "cpu": 0.07901370835417136
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 35,
+          "cpu": 35
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.029918890633176348,
+          "cpu": 0.029918890633176348
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "tables": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 24,
+          "cpu": 24
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.1563740522512672,
+          "cpu": 0.1563740522512672
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 2,
+          "cpu": 2
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.15756302521008403,
+          "cpu": 0.15756302521008403
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 30,
+          "cpu": 30
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.20135072837816934,
+          "cpu": 0.20135072837816934
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 24,
+          "cpu": 24
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.10392628205128204,
+          "cpu": 0.10392628205128204
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "tiny_text": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 30,
+          "cpu": 30
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.1927309799348584,
+          "cpu": 0.1927309799348584
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 10,
+          "cpu": 10
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.23569145148144843,
+          "cpu": 0.23569145148144843
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 30,
+          "cpu": 30
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.1590448071147856,
+          "cpu": 0.1590448071147856
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    }
+  },
+  "result_files": {
+    "predictions_quick_match_display_formula_formula.json": {
+      "equal_json": true,
+      "gpu_sha256": "8c859231b8f6c285c570e5cc540314fb9dd1a1a604304bf5ff91365d2f257fc9",
+      "cpu_sha256": "8c859231b8f6c285c570e5cc540314fb9dd1a1a604304bf5ff91365d2f257fc9"
+    },
+    "predictions_quick_match_display_formula_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "4d2d15d6a37c4bd497f0e82ce44a36437718fd8e5f150b3f8b7aca4cbd8cab4f",
+      "cpu_sha256": "4d2d15d6a37c4bd497f0e82ce44a36437718fd8e5f150b3f8b7aca4cbd8cab4f"
+    },
+    "predictions_quick_match_display_formula_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "f6bb01651133397560026bb1edaf6a9172ee53adba44a03111a2f61e6424ad30",
+      "cpu_sha256": "f6bb01651133397560026bb1edaf6a9172ee53adba44a03111a2f61e6424ad30"
+    },
+    "predictions_quick_match_metric_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "50902eedae3a6897e36efc0f0d340ecc92426233e680cdd48531f32eaf1a4b03",
+      "cpu_sha256": "50902eedae3a6897e36efc0f0d340ecc92426233e680cdd48531f32eaf1a4b03"
+    },
+    "predictions_quick_match_reading_order_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "7d1e5f7a05263d0aeb59329d569eeab3684e825f7a2f32a37f5dd6316e61f34b",
+      "cpu_sha256": "7d1e5f7a05263d0aeb59329d569eeab3684e825f7a2f32a37f5dd6316e61f34b"
+    },
+    "predictions_quick_match_reading_order_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "60edbd2f0eec5a376fd161672d7791f702cdbed305228f45aaa15d8b82839183",
+      "cpu_sha256": "60edbd2f0eec5a376fd161672d7791f702cdbed305228f45aaa15d8b82839183"
+    },
+    "predictions_quick_match_table_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "049abaf2c22071667adbe19e043353d57babb8dc0385a27d93fe5e89871dc84c",
+      "cpu_sha256": "049abaf2c22071667adbe19e043353d57babb8dc0385a27d93fe5e89871dc84c"
+    },
+    "predictions_quick_match_table_per_table_TEDS.json": {
+      "equal_json": true,
+      "gpu_sha256": "8b25ff798e23740eea748fb28b42e457402ecd5eaa9ccd284d4e5255b4f901b9",
+      "cpu_sha256": "8b25ff798e23740eea748fb28b42e457402ecd5eaa9ccd284d4e5255b4f901b9"
+    },
+    "predictions_quick_match_table_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "bd9e185cdc451ae0b32a488cc561961a30313853d8830ebc5025e9c2ceb094dc",
+      "cpu_sha256": "bd9e185cdc451ae0b32a488cc561961a30313853d8830ebc5025e9c2ceb094dc"
+    },
+    "predictions_quick_match_text_block_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "5b90aa7865a320bf7014a6e5e5cdddcda5f11b8395fe7a4bbaab184db3ee9e01",
+      "cpu_sha256": "5b90aa7865a320bf7014a6e5e5cdddcda5f11b8395fe7a4bbaab184db3ee9e01"
+    },
+    "predictions_quick_match_text_block_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "fb86eb04cb2da25d0fb8105a233bff6661ef77b7d2cbb64976df9143297254d6",
+      "cpu_sha256": "fb86eb04cb2da25d0fb8105a233bff6661ef77b7d2cbb64976df9143297254d6"
+    }
+  },
+  "limitations": [
+    "CDM_plain exports formula pairs; rendered formula similarity and official Overall are not computed.",
+    "Annotation adaptations are explicit evaluator-input changes; frozen source annotations remain unchanged.",
+    "Component counts may differ because the official matcher can move formula content into text; missing components are reported, not assigned zero.",
+    "Completing this report does not by itself establish numerical tensor parity, independent corpus provenance, performance or an accuracy acceptance threshold."
+  ]
+}

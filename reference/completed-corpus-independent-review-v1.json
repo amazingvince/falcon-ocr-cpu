@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "status": "passed_independent_saved_evidence_review",
+  "started_utc": "2026-09-20T13:20:08.535982+00:00",
+  "completed_utc": "2026-09-20T13:20:12.863260+00:00",
+  "review_source": "scripts/review_completed_corpus_v1.py",
+  "review_source_sha256": "827569b0004012f060d6be307d40c8e7451e86e7ccea8d34930afb9b2b0b9264",
+  "checks_passed": 13603,
+  "input_files": 1250,
+  "inventory": "artifacts/reviews/completed-corpus-independent-v1/input-manifest.json",
+  "inventory_sha256": "100f637007653dc1b6079196883f636c5f4bce0d0f3015b72f30eee65fbd9a3b",
+  "all_input_hashes_unchanged_at_end": true,
+  "reviewed_reports": {
+    "reference/windows-rust-corpus-v3-fp32-redecoded-200.json": "a362b42625a5ee594212135ff4a0e36bb64cfcbb64296b91bc19a7712030f4d0",
+    "reference/windows-linux-corpus-v3-smoke-output-agreement-v1.json": "721620e5632fc0381433700a89722437767fbec75efab353c6696313e4ed489a"
+  },
+  "windows_full": {
+    "pages": 200,
+    "exact_ids": 275903,
+    "exact_texts": 200,
+    "exact_stops": 200,
+    "finish_reasons": {
+      "eos": 181,
+      "length": 19
+    },
+    "derived_text_changes": 12,
+    "all_original_ids_and_nontext_result_fields_inherited_exactly": true,
+    "all_inherited_float64_timing_bits_exact": true,
+    "original_run_and_records_match_completed_source_and_snapshot": true
+  },
+  "platform_subset": {
+    "pages": 24,
+    "exact_ids": 29205,
+    "exact_texts": 24,
+    "exact_stops": 24,
+    "windows_threads": 16,
+    "linux_threads": 4,
+    "same_selected_page_objects": true,
+    "same_binary_or_source_claim": false
+  },
+  "build_checks": {
+    "corrected_decoder_binary_and_archived_sources": true,
+    "fresh_linux_binary_and_archived_sources": true,
+    "original_windows_inference_build_independently_verified": false
+  },
+  "scope_limits": [
+    "Windows text is a saved-ID replay; all IDs, inference source fields and timing bits are inherited. No inference was reexecuted.",
+    "GPU startup records omit prompt/config digest/greedy tie policy. Windows inference startup omits prompt/config digest/greedy policy and has no supplied build archive verification.",
+    "GPU source ZIP is verified as an AFTER-launch preservation only; no retroactive startup attestation.",
+    "The corrected decoder build attests text replay, not original Windows inference. Builds are preserved artifacts, not hermetic rebuilds.",
+    "GPU processed width/height were not recorded; pixel/options/prefix identities are joined without inventing dimensions.",
+    "Canonical PNG and ground-truth file bytes were rehashed; raw RGB digests are joined to the frozen manifest, not freshly decoded here.",
+    "Checkpoint identity is recorded digest consistency, not a new 1 GB weight rehash.",
+    "WSL Linux and native Windows are separate functional runs with different threads/binaries/sources; no bare-metal performance qualification.",
+    "Output agreement does not qualify intermediate tensor parity, BF16, OCR accuracy, or quality scores. No official evaluator output was inspected."
+  ],
+  "inference_executed": false,
+  "gpu_work_executed": false,
+  "raw_ocr_text_in_receipt": false
+}

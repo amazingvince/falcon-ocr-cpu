@@ -1,0 +1,46 @@
+{
+  "kind": "fp32-crossover-preparation-build-summary-v1",
+  "status": "source_prepared_native_build_passed_segment_not_executed",
+  "host_tests": 5,
+  "host_tests_passed": 5,
+  "isolated_test_selected": "model::fp32_crossover::capture_cpu_state_crossover",
+  "prepared_directory": "artifacts/diagnostics/fp32-crossover-v1",
+  "plan_sha256": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c",
+  "preparation_sha256": "5afe1b3727d598388c3c14e5a417c122641d5d7ff4e9c310273cfab7ffe97a22",
+  "build_sha256": "2feccf83863200c7d16d0790ef2942d368e09082df07b922aea8b4d818c6fac8",
+  "binary_sha256": "e018880c33a197b6a75d6117782c5f6df2061ae9f770db011a03d37c75e4db52",
+  "source_archive_sha256": "3a476c6d4dc4fb3a7b8be27842454ab6067ea30310c0285a6191f7c7dfa15835",
+  "target_directory": "D:\\falcon-ocr-rust-builds\\fp32-crossover-v1",
+  "toolchain": {
+    "rustc": "rustc 1.92.0 (ded5c06cf 2025-12-08)\nbinary: rustc\ncommit-hash: ded5c06cf21d2b93bffd5d884aa6e96934ee4234\ncommit-date: 2025-12-08\nhost: x86_64-pc-windows-msvc\nrelease: 1.92.0\nLLVM version: 21.1.3\n",
+    "cargo": "cargo 1.92.0 (344c4567c 2025-10-21)\n"
+  },
+  "captured_source_and_input_closure_passed": true,
+  "cpu_segment_executed": false,
+  "gpu_segment_executed": false,
+  "source_and_evidence_sha256": {
+    "artifacts/diagnostics/fp32-crossover-v1/build.json": "2feccf83863200c7d16d0790ef2942d368e09082df07b922aea8b4d818c6fac8",
+    "artifacts/diagnostics/fp32-crossover-v1/build-start.json": "f9e1f287b81e6fabb7f6f6608b03766a5999e3d4b8ef53111695a8990f0ab8fc",
+    "artifacts/diagnostics/fp32-crossover-v1/build.log": "a7f11b479527c6b327814abf9c76db8093d78e00d62384c9b6594aac2df34a48",
+    "artifacts/diagnostics/fp32-crossover-v1/preparation.json": "5afe1b3727d598388c3c14e5a417c122641d5d7ff4e9c310273cfab7ffe97a22",
+    "artifacts/diagnostics/fp32-crossover-v1/plan.json": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c",
+    "artifacts/diagnostics/fp32-crossover-v1/source.zip": "3a476c6d4dc4fb3a7b8be27842454ab6067ea30310c0285a6191f7c7dfa15835",
+    "artifacts/diagnostics/fp32-crossover-v1/test-list.txt": "351c98d47d1d64edb1552ad181170e4f5df7eed5c288dcd1847f5963e6ced260",
+    "artifacts/diagnostics/fp32-crossover-v1/crossover-tests.exe": "e018880c33a197b6a75d6117782c5f6df2061ae9f770db011a03d37c75e4db52",
+    "artifacts/diagnostics/fp32-crossover-host-tests-v1/report.json": "177321959235d00b14fb69a29f274397c2851747731f2aaedad2b8cffff87870",
+    "artifacts/diagnostics/fp32-crossover-host-tests-v1/tests.log": "c3e640836fb0b6a8efe837f4c645c2ac56c30703426c52b0551ba21b26b6c949",
+    "experiments/fp32_crossover/adapter.py": "82bfb211ca531af64572331a0f75bbbfa8230671efe9fa12978ff8a8c42860f2",
+    "experiments/fp32_crossover/capture.py": "678c5be110f290c37cb4c04ec4943d8d275df8c99e3d6022656334dee9ecdad3",
+    "experiments/fp32_crossover/compare.py": "17eeee2ccbade3b4c9ff4d027c43277a44c13d6fe7a476054764c0f993c2b8c2",
+    "experiments/fp32_crossover/contract.py": "b848f1a2a135f56853817c2768d0ce7742c0517a7410d8873ac0442445240405",
+    "experiments/fp32_crossover/export_gpu.py": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b",
+    "experiments/fp32_crossover/README.md": "5a56c464b9b085021d501dc86821e15c527096aeaadb952b3f2140d21e176489",
+    "experiments/fp32_crossover/rust_arm.rs": "f88bf1cea465092819e67a860f9f82f91fd2eae5ac3151799f997039eadc45ed",
+    "experiments/fp32_crossover/SOURCE_REVIEW_NOTES.md": "644130035c09d362baf9db256646df861a433b32b1fbe37ffdc7661b2a7bb338",
+    "experiments/fp32_crossover/test_source.py": "2657e8d289f8a671eeab39a3152784d9437b21997f319cda44940d548f035ce8"
+  },
+  "limits": [
+    "Host tests and compile/list only; original CPU/GPU controls remain untested.",
+    "No output attribution, hidden-gate qualification, numerical-policy change or performance claim."
+  ]
+}

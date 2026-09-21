@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "kind": "realistic-fp32-benchmark-comparison",
+  "plan_sha256": "760250cf8bc62187d7e58d427c71a59bebd80ec4dcf7a0c465148866c87828f3",
+  "workload_sha256": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+  "build_manifest_sha256": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+  "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+  "source_archive_sha256": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+  "coverage": "selected_groups_only",
+  "host": {
+    "os": "windows",
+    "arch": "x86_64",
+    "logical_cpus": 32,
+    "cpu_label": "AMD Ryzen 9 7950X",
+    "environment_label": "Native Windows"
+  },
+  "quiet_attestation": "Codex verified all other project inference, scoring and compiler jobs had exited; agents confirmed idle, WSL had no project jobs, and the isolated RTX 4090 was idle. No concurrent project inference, scoring, tests, builds, profiling or bulk evidence hashing during this six-process bracket. Normal desktop background services remain.",
+  "default_promotion": false,
+  "groups": [
+    {
+      "profile": "fullpages",
+      "batch": 1,
+      "request_keys": [
+        "prose"
+      ],
+      "outputs_exact_across_all_modes_and_repetitions": true,
+      "output_lengths": [
+        1140
+      ],
+      "finish_reasons": [
+        "eos"
+      ],
+      "input_tokens": [
+        6544
+      ],
+      "control_drift_percent": {
+        "sequential": -0.5986940111428085,
+        "expanded": 0.7627506880251822
+      },
+      "control_stability_pass": true,
+      "candidates": {
+        "expanded-a": {
+          "latency_reduction_percent_vs_controls": {
+            "sequential-a": -0.38612247752090045,
+            "sequential-b": -0.9907480378317235
+          },
+          "throughput_multiplier_vs_controls": {
+            "sequential-a": 0.9961536269357613,
+            "sequential-b": 0.990189714829515
+          },
+          "meets_target_in_this_group": false,
+          "no_primary_regression_in_this_group": true
+        },
+        "expanded-b": {
+          "latency_reduction_percent_vs_controls": {
+            "sequential-a": -1.1518183174000107,
+            "sequential-b": -1.7610556633320673
+          },
+          "throughput_multiplier_vs_controls": {
+            "sequential-a": 0.988612974669563,
+            "sequential-b": 0.9826942079968355
+          },
+          "meets_target_in_this_group": false,
+          "no_primary_regression_in_this_group": true
+        },
+        "compact": {
+          "latency_reduction_percent_vs_controls": {
+            "expanded-a": 8.721444822499858,
+            "expanded-b": 9.412402346864635
+          },
+          "throughput_multiplier_vs_controls": {
+            "expanded-a": 1.0955475774735934,
+            "expanded-b": 1.1039038741584164
+          },
+          "meets_target_in_this_group": true,
+          "no_primary_regression_in_this_group": true
+        },
+        "phase-packed": {
+          "latency_reduction_percent_vs_controls": {
+            "expanded-a": -1.66767796315892,
+            "expanded-b": -0.8980771852244329
+          },
+          "throughput_multiplier_vs_controls": {
+            "expanded-a": 0.983596773364262,
+            "expanded-b": 0.9910991645204914
+          },
+          "meets_target_in_this_group": false,
+          "no_primary_regression_in_this_group": true
+        }
+      },
+      "modes": {
+        "sequential-a": {
+          "median_ms": 74023.7403,
+          "median_pages_per_second": 0.013509179567896002,
+          "sample_wall_ms": [
+            74461.16290000001,
+            74023.7403,
+            73240.2705
+          ],
+          "per_request_stage_medians_ms": [
+            {
+              "preprocessing_ms": 53.559000000000005,
+              "image_projection_ms": 7.224,
+              "transformer_prefill_ms": 12600.1847,
+              "prefill_ms": 12611.7361,
+              "decode_ms": 61319.0957,
+              "time_to_first_token_ms": 12667.6616,
+              "total_ms": 74023.73640000001
+            }
+          ],
+          "loaded_memory": {
+            "peak_private_commit_bytes": 25812992,
+            "peak_resident_bytes": 1099784192,
+            "private_commit_bytes": 16764928,
+            "resident_bytes": 1099726848
+          },
+          "process_memory_after": {
+            "peak_private_commit_bytes": 2449461248,
+            "peak_resident_bytes": 2973356032,
+            "private_commit_bytes": 67383296,
+            "resident_bytes": 1137856512
+          },
+          "read_decode_ms": 13.2925,
+          "verified_model_load_ms": 775.9279,
+          "packed_weight_bytes": 0,
+          "weight_packing_ms": 0.0
+        },
+        "expanded-a": {
+          "median_ms": 74309.5626,
+          "median_pages_per_second": 0.013457218223486084,
+          "sample_wall_ms": [
+            74995.73169999999,
+            74309.5626,
+            73949.671
+          ],
+          "per_request_stage_medians_ms": [
+            {
+              "preprocessing_ms": 61.2841,
+              "image_projection_ms": 7.1741,
+              "transformer_prefill_ms": 12580.883,
+              "prefill_ms": 12592.875100000001,
+              "decode_ms": 61600.8287,
+              "time_to_first_token_ms": 12660.7618,
+              "total_ms": 74309.55930000001
+            }
+          ],
+          "loaded_memory": {
+            "peak_private_commit_bytes": 25378816,
+            "peak_resident_bytes": 1099739136,
+            "private_commit_bytes": 16744448,
+            "resident_bytes": 1099677696
+          },
+          "process_memory_after": {
+            "peak_private_commit_bytes": 2449498112,
+            "peak_resident_bytes": 2973589504,
+            "private_commit_bytes": 67379200,
+            "resident_bytes": 1137831936
+          },
+          "read_decode_ms": 12.6575,
+          "verified_model_load_ms": 773.7827000000001,
+          "packed_weight_bytes": 0,
+          "weight_packing_ms": 0.0
+        },
+        "compact": {
+          "median_ms": 67828.69510000001,
+          "median_pages_per_second": 0.014743022824273673,
+          "sample_wall_ms": [
+            68249.65969999999,
+            67662.7647,
+            67828.69510000001
+          ],
+          "per_request_stage_medians_ms": [
+            {
+              "preprocessing_ms": 57.9406,
+              "image_projection_ms": 7.4376,
+              "transformer_prefill_ms": 12354.8798,
+              "prefill_ms": 12366.2268,
+              "decode_ms": 55363.2054,
+              "time_to_first_token_ms": 12434.9235,
+              "total_ms": 67828.6913
+            }
+          ],
+          "loaded_memory": {
+            "peak_private_commit_bytes": 25346048,
+            "peak_resident_bytes": 1099743232,
+            "private_commit_bytes": 16752640,
+            "resident_bytes": 1099681792
+          },
+          "process_memory_after": {
+            "peak_private_commit_bytes": 1784123392,
+            "peak_resident_bytes": 2576056320,
+            "private_commit_bytes": 67416064,
+            "resident_bytes": 1137860608
+          },
+          "read_decode_ms": 13.6314,
+          "verified_model_load_ms": 765.8419,
+          "packed_weight_bytes": 0,
+          "weight_packing_ms": 0.0
+        },
+        "phase-packed": {
+          "median_ms": 75548.80679999999,
+          "median_pages_per_second": 0.013236476423079657,
+          "sample_wall_ms": [
+            74271.0793,
+            75548.80679999999,
+            75734.5414
+          ],
+          "per_request_stage_medians_ms": [
+            {
+              "preprocessing_ms": 58.1944,
+              "image_projection_ms": 7.3556,
+              "transformer_prefill_ms": 12640.623399999999,
+              "prefill_ms": 12651.648099999999,
+              "decode_ms": 62822.0195,
+              "time_to_first_token_ms": 12709.842499999999,
+              "total_ms": 75548.80350000001
+            }
+          ],
+          "loaded_memory": {
+            "peak_private_commit_bytes": 25776128,
+            "peak_resident_bytes": 1099747328,
+            "private_commit_bytes": 16785408,
+            "resident_bytes": 1099710464
+          },
+          "process_memory_after": {
+            "peak_private_commit_bytes": 3327897600,
+            "peak_resident_bytes": 3850530816,
+            "private_commit_bytes": 945696768,
+            "resident_bytes": 2014507008
+          },
+          "read_decode_ms": 13.6654,
+          "verified_model_load_ms": 772.4679,
+          "packed_weight_bytes": 876085248,
+          "weight_packing_ms": 130.4174
+        },
+        "expanded-b": {
+          "median_ms": 74876.35930000001,
+          "median_pages_per_second": 0.013355350197962948,
+          "sample_wall_ms": [
+            75555.5258,
+            74876.35930000001,
+            73466.4538
+          ],
+          "per_request_stage_medians_ms": [
+            {
+              "preprocessing_ms": 57.414300000000004,
+              "image_projection_ms": 7.1511,
+              "transformer_prefill_ms": 12629.454600000001,
+              "prefill_ms": 12640.8326,
+              "decode_ms": 62128.3457,
+              "time_to_first_token_ms": 12694.4996,
+              "total_ms": 74876.3547
+            }
+          ],
+          "loaded_memory": {
+            "peak_private_commit_bytes": 25366528,
+            "peak_resident_bytes": 1099747328,
+            "private_commit_bytes": 16760832,
+            "resident_bytes": 1099685888
+          },
+          "process_memory_after": {
+            "peak_private_commit_bytes": 2449543168,
+            "peak_resident_bytes": 2973626368,
+            "private_commit_bytes": 67375104,
+            "resident_bytes": 1137790976
+          },
+          "read_decode_ms": 12.934,
+          "verified_model_load_ms": 788.7988,
+          "packed_weight_bytes": 0,
+          "weight_packing_ms": 0.0
+        },
+        "sequential-b": {
+          "median_ms": 73580.5646,
+          "median_pages_per_second": 0.013590545348982006,
+          "sample_wall_ms": [
+            73651.3388,
+            73580.5646,
+            73422.9385
+          ],
+          "per_request_stage_medians_ms": [
+            {
+              "preprocessing_ms": 55.506600000000006,
+              "image_projection_ms": 6.911,
+              "transformer_prefill_ms": 12583.8501,
+              "prefill_ms": 12595.398599999999,
+              "decode_ms": 60836.0421,
+              "time_to_first_token_ms": 12650.9052,
+              "total_ms": 73580.5619
+            }
+          ],
+          "loaded_memory": {
+            "peak_private_commit_bytes": 25759744,
+            "peak_resident_bytes": 1099739136,
+            "private_commit_bytes": 16773120,
+            "resident_bytes": 1099702272
+          },
+          "process_memory_after": {
+            "peak_private_commit_bytes": 2449715200,
+            "peak_resident_bytes": 2973790208,
+            "private_commit_bytes": 67571712,
+            "resident_bytes": 1137946624
+          },
+          "read_decode_ms": 13.9481,
+          "verified_model_load_ms": 791.1669,
+          "packed_weight_bytes": 0,
+          "weight_packing_ms": 0.0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Control stability and group-specific speed thresholds do not establish full-model numerical parity or OCR accuracy.",
+    "Joint decode_ms is elapsed shared decode time until that request finishes, not exclusive CPU time; never sum it across requests.",
+    "Joint TTFT/total include preceding prefills/shared work and use chunk start, while sequential request timings have different origins; batch wall time is the comparable primary metric.",
+    "Peak RSS/commit is a process-lifetime high-water mark including loading/warmup, even with one batch per process. Resident snapshots are not isolated KV allocation measurements.",
+    "Image projection and transformer prefill are subintervals of prefill_ms, not additive extra work. Their medians need not sum to the median enclosing time. No per-layer, memory-bandwidth, hardware-counter or device-energy measurement is available.",
+    "RGB read/decode, verified model load and one-time packing are separately reported; warm sample wall time includes preprocessing, prefill, decode and text decoding.",
+    "Native Windows, WSL and bare-metal Linux reports are separate environments; these results do not transfer between them."
+  ]
+}

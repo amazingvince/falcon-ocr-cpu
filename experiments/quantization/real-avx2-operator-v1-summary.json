@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "status": "independent_full_output_arithmetic_checks_passed",
+  "qualification": "Isolated real-weight/equal-input arithmetic only; saved synthetic diagnostic activations are not calibration or held-out quality data. No model integration, group/layer selection, OCR quality, GPU parity, or timing qualification.",
+  "timing": null,
+  "threads": 1,
+  "operator_cases": 28,
+  "matrix_group_cases": 56,
+  "operator_batch_cases": 176,
+  "outputs_per_backend": 1261568,
+  "candidate_output_channel_sampling": false,
+  "activation_row_selection": {
+    "1": [
+      0
+    ],
+    "2": [
+      0,
+      143
+    ],
+    "4": [
+      0,
+      47,
+      95,
+      143
+    ],
+    "8": [
+      0,
+      20,
+      40,
+      61,
+      81,
+      102,
+      122,
+      143
+    ]
+  },
+  "decode_rows": "B1 only; larger batches explicitly omitted, never replicated",
+  "math_fsum_cross_checks": 9240,
+  "max_bound_fraction": {
+    "scalar": 0.011216413476131143,
+    "avx2": 0.0033241377975072235
+  },
+  "rust_kernel_tests": 9,
+  "python_guard_tests": 4,
+  "actual_shapes": [
+    {
+      "operator": "qkv",
+      "n": 2048,
+      "k": 768
+    },
+    {
+      "operator": "wo",
+      "n": 768,
+      "k": 1024
+    },
+    {
+      "operator": "w13",
+      "n": 4608,
+      "k": 768
+    },
+    {
+      "operator": "w2",
+      "n": 768,
+      "k": 2304
+    }
+  ],
+  "evidence_sha256": {
+    "artifacts/quantization/q4-real-avx2-operator-v1/independent-check.json": "4be655fe1cb3ae10092c5cac9794ce669341e81e9b21b221b1c383958feea55f",
+    "artifacts/quantization/q4-real-avx2-operator-v1/build.json": "1f5b91bed30b1397b97e2275d464af5591b2065056f6d64b0a279834283ba694",
+    "artifacts/quantization/q4-real-avx2-operator-v1/plan.json": "c8c750770387ef4e5aaf7dc3e8bcafeb33fbd4fefb1fc318dc939bb4cde80c24",
+    "artifacts/quantization/q4-real-avx2-operator-v1/source.zip": "68caa1286802740337889b4196a970a25a67e30c9d9136ef77f85458975f494b",
+    "artifacts/quantization/q4-real-avx2-operator-v1/q4_real_avx2_probe.exe": "e3272fd2945fa9e8267673d97114ef4fb6452f2396812c59dc7d216fece69087",
+    "experiments/quantization/REAL-AVX2-RESULTS-V1.md": "3009ac57bbb56907c6e3faea2273684527745b76837eca9efaaa47b5df0b27b9"
+  },
+  "existing_source_unchanged": {
+    "experiments/quantization/q4_reference.rs": true,
+    "experiments/quantization/q4_avx2.rs": true,
+    "experiments/quantization/q4_avx2_probe.rs": true,
+    "experiments/quantization/q4_real_avx2_probe.rs": true,
+    "experiments/quantization/check_probe.py": true,
+    "experiments/quantization/capture_real_avx2_probe.py": true,
+    "experiments/quantization/test_real_avx2_probe.py": true,
+    "rust-toolchain.toml": true
+  },
+  "model_integration": false,
+  "quality_qualification": false,
+  "performance_qualification": false
+}

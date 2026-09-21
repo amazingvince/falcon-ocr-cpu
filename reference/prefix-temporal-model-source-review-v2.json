@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "status": "source_review_passed_before_model_execution",
+  "reviewer": "root, independent of preparation author",
+  "files_sha256": {
+    "reference/prefix-temporal-model-source-review-v1.json": "e8f073fbd1356b9f1c8e56fdc0fbd7863e35e3031b11e2ae8861efcaaba71330",
+    "reference/prefix-temporal-model-build-rejection-v1.json": "edb2710acfb9568d68345576ff68652601122992580ece105f9c5eb3ded9e4c8",
+    "experiments/cache_layout/capture_temporal_model_v2.py": "629be9702c587cb68dd66c22c7762ed96e2b1ff62bf475f78ab3795ce2082414",
+    "experiments/cache_layout/temporal_model_qualification.rs": "26759aeb8c2789a4522639a9a22e5a3dce0900fd7adac5fbf431dc42e18c5b74",
+    "experiments/cache_layout/test_temporal_model_capture_v2.py": "5014f5bfa189846581607f303a28df13d1892678b8df72a4edd206a4e13376e5",
+    "artifacts/diagnostics/prefix-temporal-model-review-v2/plan.json": "37136e77186727f7381a329a793e9a81753de4a76b7d2725fddeea85fa189d47",
+    "artifacts/diagnostics/prefix-temporal-model-review-v2/source.zip": "bb79d65c5615fd30dc50b6ecfdb683f892746ee810c83892a62cd8b305a38be9"
+  },
+  "unchanged_scope": "The exact Rust integration test, control/candidate source inventories, model inputs, runtime choices and five-process comparison gates from the first source review remain unchanged.",
+  "correction": "Preserve rejected shared-target v1 evidence; use two fresh distinct native target directories on D: for v2.",
+  "reviewed_guards": [
+    "Resolved build targets must match the fixed control/candidate children, remain distinct and nonnested, and not exist when the build starts.",
+    "Cargo project artifacts must report the requested source copy and manifest, fresh=false and output containment in that copy target.",
+    "Preserved control/candidate executable hashes must differ at build completion and execution entry.",
+    "Per-job process exit code is retained even on a model-test failure.",
+    "Root independently reran all9 host tests and full immutable plan validation; both passed."
+  ],
+  "execution_scope": "The frozen five-invocation Windows plan may execute after both preserved builds pass all corrected source/target/artifact checks. No source changes, failure overwrite, numerical tolerance change or production promotion.",
+  "qualification": "Source review, not inference qualification. CPU layout equivalence and warmed decode allocations only; no GPU hidden-stage parity, corpus-quality, RSS or timing claim."
+}

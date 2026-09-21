@@ -1,0 +1,8 @@
+test_copy_patch_scope_and_default (test_temporal_candidate.TemporalCopyTests) ... ok
+test_decode_arithmetic_body_is_exact_compact_copy (test_temporal_candidate.TemporalCopyTests) ... ok
+test_missing_or_duplicated_source_anchor_rejected (test_temporal_candidate.TemporalCopyTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.167s
+
+OK

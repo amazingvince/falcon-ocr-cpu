@@ -1,0 +1,499 @@
+{
+  "schema_version": 1,
+  "scope": "Diagnostic v1 subset; official v1_5 component matcher/metrics with explicit source-annotation adaptation.",
+  "pages": 24,
+  "evaluator_revision": "59b103c4b47d3a01fada83491585d6512a40c0bc",
+  "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+  "preparation_provenance_sha256": {
+    "gpu": "ecaf9603ec839d3c610fd9d9859410d338aa2faa4a0d5928655b702386d44bf9",
+    "cpu": "199afb69a18b9f9629efda93ab4ec91c749a542b653df6776dd85e7ffa18f672"
+  },
+  "evaluator_requirements_sha256": "a8891b60facd074ae65ad53a79216f7e475e7c37ace48a8940f45914827325e0",
+  "annotation_adaptation": {
+    "policy": "Drop dangling truncated relations only; retain all layout/text annotations unchanged.",
+    "explicitly_enabled": true,
+    "changes": [
+      {
+        "id": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg",
+        "removed_relation": {
+          "source_anno_id": 5,
+          "target_anno_id": 6,
+          "relation_type": "truncated"
+        },
+        "reason": "A merge endpoint does not exist among the page's annotation IDs."
+      },
+      {
+        "id": "omnidocbench:yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg",
+        "removed_relation": {
+          "source_anno_id": 6,
+          "target_anno_id": 7,
+          "relation_type": "truncated"
+        },
+        "reason": "A merge endpoint does not exist among the page's annotation IDs."
+      }
+    ]
+  },
+  "all_prediction_text_bytes_equal": true,
+  "all_evaluator_outputs_equal": true,
+  "component_scores": {
+    "gpu": {
+      "text_block": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.0852770563624102,
+          "edit_whole": 0.03351179853261947,
+          "edit_sample_avg": 0.0522365924688938
+        }
+      },
+      "display_formula": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.4758338003702289,
+          "edit_whole": 0.7487905393298692,
+          "edit_sample_avg": 0.5276174570893856
+        }
+      },
+      "table": {
+        "TEDS": {
+          "all": 0.8331005611499441
+        },
+        "TEDS_structure_only": {
+          "all": 0.8990052128317744
+        },
+        "Edit_dist": {
+          "ALL_page_avg": 0.12548487826420718,
+          "edit_whole": 0.10237727239272834,
+          "edit_sample_avg": 0.13865395326905713
+        }
+      },
+      "reading_order": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.035477133228257664,
+          "edit_whole": 0.0472972972972973,
+          "edit_sample_avg": 0.035477133228257664
+        }
+      }
+    },
+    "cpu": {
+      "text_block": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.0852770563624102,
+          "edit_whole": 0.03351179853261947,
+          "edit_sample_avg": 0.0522365924688938
+        }
+      },
+      "display_formula": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.4758338003702289,
+          "edit_whole": 0.7487905393298692,
+          "edit_sample_avg": 0.5276174570893856
+        }
+      },
+      "table": {
+        "TEDS": {
+          "all": 0.8331005611499441
+        },
+        "TEDS_structure_only": {
+          "all": 0.8990052128317744
+        },
+        "Edit_dist": {
+          "ALL_page_avg": 0.12548487826420718,
+          "edit_whole": 0.10237727239272834,
+          "edit_sample_avg": 0.13865395326905713
+        }
+      },
+      "reading_order": {
+        "Edit_dist": {
+          "ALL_page_avg": 0.035477133228257664,
+          "edit_whole": 0.0472972972972973,
+          "edit_sample_avg": 0.035477133228257664
+        }
+      }
+    }
+  },
+  "by_category": {
+    "degraded": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0839631335012892,
+          "cpu": 0.0839631335012892
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 1,
+          "cpu": 1
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.6447368421052632,
+          "cpu": 0.6447368421052632
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 1,
+          "cpu": 1
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0,
+          "cpu": 0.0
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0,
+          "cpu": 0.0
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "formulas": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.054408008738474,
+          "cpu": 0.054408008738474
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.4119414900290276,
+          "cpu": 0.4119414900290276
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 1,
+          "cpu": 1
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.05128205128205128,
+          "cpu": 0.05128205128205128
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0,
+          "cpu": 0.0
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "handwriting": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.3667699368904188,
+          "cpu": 0.3667699368904188
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 2,
+          "cpu": 2
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.37032200708260327,
+          "cpu": 0.37032200708260327
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0,
+          "cpu": 0.0
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "multi_column": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.07532088896208788,
+          "cpu": 0.07532088896208788
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.19999999999999998,
+          "cpu": 0.19999999999999998
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "ordinary": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0012345679012345679,
+          "cpu": 0.0012345679012345679
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 1,
+          "cpu": 1
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.5625,
+          "cpu": 0.5625
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 1,
+          "cpu": 1
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.02815884476534296,
+          "cpu": 0.02815884476534296
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0,
+          "cpu": 0.0
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "tables": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.04465046673627274,
+          "cpu": 0.04465046673627274
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.07731974854131592,
+          "cpu": 0.07731974854131592
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 3,
+          "cpu": 3
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.0,
+          "cpu": 0.0
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    },
+    "tiny_text": {
+      "text_block": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.00698081985190717,
+          "cpu": 0.00698081985190717
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      },
+      "display_formula": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "table": {
+        "page_counts": {
+          "gpu": 0,
+          "cpu": 0
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": null,
+          "cpu": null
+        },
+        "cpu_minus_gpu_percentage_points": null
+      },
+      "reading_order": {
+        "page_counts": {
+          "gpu": 4,
+          "cpu": 4
+        },
+        "mean_page_normalized_edit_distance": {
+          "gpu": 0.05399351606248158,
+          "cpu": 0.05399351606248158
+        },
+        "cpu_minus_gpu_percentage_points": 0.0
+      }
+    }
+  },
+  "result_files": {
+    "predictions_quick_match_display_formula_formula.json": {
+      "equal_json": true,
+      "gpu_sha256": "51040bd2cb9251bc387e73534fcf6c800f355862e9dca836b29bf1fb9cf32f9f",
+      "cpu_sha256": "51040bd2cb9251bc387e73534fcf6c800f355862e9dca836b29bf1fb9cf32f9f"
+    },
+    "predictions_quick_match_display_formula_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "6873acbe60474e7616ce612cd9f3e4259ec579c52953ce774d84e0b236996f5e",
+      "cpu_sha256": "6873acbe60474e7616ce612cd9f3e4259ec579c52953ce774d84e0b236996f5e"
+    },
+    "predictions_quick_match_display_formula_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "92e9321ac3c8ffdc2270eb42ae1a90f133954d013759841c28780261c79b0bad",
+      "cpu_sha256": "92e9321ac3c8ffdc2270eb42ae1a90f133954d013759841c28780261c79b0bad"
+    },
+    "predictions_quick_match_metric_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "5558415ac41f6721acd38ad49be108c6cce3e112c571e8d3db32a1c5480caf74",
+      "cpu_sha256": "5558415ac41f6721acd38ad49be108c6cce3e112c571e8d3db32a1c5480caf74"
+    },
+    "predictions_quick_match_reading_order_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "b4d56aca3c79168c2dfecd47aeb2f7d3db1e3930f966848eabf2df7b443fa413",
+      "cpu_sha256": "b4d56aca3c79168c2dfecd47aeb2f7d3db1e3930f966848eabf2df7b443fa413"
+    },
+    "predictions_quick_match_reading_order_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "90a0c25477431a84c6391d6e8421907cf04ac678141c38cb110ff99e1ae77275",
+      "cpu_sha256": "90a0c25477431a84c6391d6e8421907cf04ac678141c38cb110ff99e1ae77275"
+    },
+    "predictions_quick_match_table_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "b460e44715a7afc97325d7a9a978e178938cdb3e953b1f9915172e3a9c1321c9",
+      "cpu_sha256": "b460e44715a7afc97325d7a9a978e178938cdb3e953b1f9915172e3a9c1321c9"
+    },
+    "predictions_quick_match_table_per_table_TEDS.json": {
+      "equal_json": true,
+      "gpu_sha256": "17ba5a6439b9308a7cd6449a974cf9f6f63633ff2ebbdf14e075010ff8011dd0",
+      "cpu_sha256": "17ba5a6439b9308a7cd6449a974cf9f6f63633ff2ebbdf14e075010ff8011dd0"
+    },
+    "predictions_quick_match_table_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "f5001d5767094d0feab0981898e74c74cb0af1069fdaa22d2894de96caede8f9",
+      "cpu_sha256": "f5001d5767094d0feab0981898e74c74cb0af1069fdaa22d2894de96caede8f9"
+    },
+    "predictions_quick_match_text_block_per_page_edit.json": {
+      "equal_json": true,
+      "gpu_sha256": "af1fc4d1360e0093a6b46c8b4c003b7204521ee02e1069033590cdccb5aebdb9",
+      "cpu_sha256": "af1fc4d1360e0093a6b46c8b4c003b7204521ee02e1069033590cdccb5aebdb9"
+    },
+    "predictions_quick_match_text_block_result.json": {
+      "equal_json": true,
+      "gpu_sha256": "58232adccc88a0ee5d98619851b108fde5250cbae6cac98e4669180f9e4a7c80",
+      "cpu_sha256": "58232adccc88a0ee5d98619851b108fde5250cbae6cac98e4669180f9e4a7c80"
+    }
+  },
+  "limitations": [
+    "This subset does not close the corrected 200-page quality gate.",
+    "CDM_plain exports formula pairs, not rendered formula similarity; no official Overall score is claimed.",
+    "Dangling source merge links are dropped only in evaluator input. All original text/layout annotations and source locks are retained.",
+    "Component page counts can be smaller than category counts when that component is absent."
+  ]
+}

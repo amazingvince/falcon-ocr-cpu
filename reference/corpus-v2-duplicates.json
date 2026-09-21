@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "dataset": "opendatalab/OmniDocBench",
+  "revision": "aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec",
+  "corpus_manifest_sha256": "dd7911e3f7b8258fbc9cf9d45e46161aae9461baa7a28c99e3abc072ab0ed569",
+  "annotation_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "preparation_script_sha256": "bb2fe3b6059d96ff2f504424fe42723adba3f478c1892d563891061e3f2eb46d",
+  "ground_truth_script_sha256": "d90fa70851d9e1d0e331a8a920f7b6b35e3e9fafa52a2c950afcaed4c59fb423",
+  "pillow_version": "12.3.0",
+  "source_terms": "Research purposes only; not for commercial use. Do not redistribute source images in runner releases.",
+  "rgb_policy": "Pinned Pillow decode, then RGB conversion before upstream preprocessing; no EXIF auto-orientation.",
+  "ground_truth_policy": "Nonignored blocks with numeric order >= 0, sorted by order/index; text, HTML tables, LaTeX equations; NFC/LF, trim edges, join with two newlines.",
+  "metrics_note": "Assembled text supports diagnostic normalized CER only; retain original blocks for text/table/formula evaluation.",
+  "qualification": "Visual category review and duplicate-candidate review pending; no quality or performance acceptance claim.",
+  "page_count": 264,
+  "duplicate_candidates": [
+    {
+      "left": "omnidocbench:exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_001.png",
+      "right": "omnidocbench:exam_paper_en-file-putnam-archive_2011_Problems_2011_page_001.png",
+      "cross_split": true,
+      "exact_rgb": false,
+      "exact_normalized_ground_truth": false,
+      "difference_hash_hamming": 3
+    },
+    {
+      "left": "omnidocbench:yanbaor2_yanbaoPPT_5877.jpg",
+      "right": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_050.png",
+      "cross_split": true,
+      "exact_rgb": false,
+      "exact_normalized_ground_truth": false,
+      "difference_hash_hamming": 4
+    },
+    {
+      "left": "omnidocbench:docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+      "right": "omnidocbench:newspaper_5e266dfd9c498cab274e12a7b4a75755_1.jpg",
+      "cross_split": true,
+      "exact_rgb": false,
+      "exact_normalized_ground_truth": false,
+      "difference_hash_hamming": 1
+    },
+    {
+      "left": "omnidocbench:newspaper_d7fe1132386670993aae3dabc6247bc9_2.jpg",
+      "right": "omnidocbench:newspaper_5e266dfd9c498cab274e12a7b4a75755_1.jpg",
+      "cross_split": true,
+      "exact_rgb": false,
+      "exact_normalized_ground_truth": false,
+      "difference_hash_hamming": 2
+    }
+  ],
+  "exact_cross_split_matches": [],
+  "difference_hash_note": "64-bit horizontal gradient hash is a review heuristic; similar layout can create false positives and dissimilar scans can evade it."
+}

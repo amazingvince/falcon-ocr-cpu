@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "execution_order": [
+    "unpacked-a",
+    "packed-a",
+    "packed-b",
+    "unpacked-b"
+  ],
+  "configuration": {
+    "binary_sha256": "ee42b3f7cca973df4f33ee87f272f7c88a706ff42adfb267384f0f3768e7d5c8",
+    "source_sha256": {
+      "config": "77b89dd0b6505e3f20bd10c38eb0f772654e98ab83c6beb22087baea3ba34686",
+      "harness": "02f1e81ade1f592175db9cd63c5478bb66806931e98e9bfba460151f5c6953f6",
+      "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+      "lib": "ca5b036ed7be8463ee0d1aa8a1258d4f9173803001be8931df635b9e440a69b3",
+      "model": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+      "packed_kernels": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+      "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "runner": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+      "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f",
+      "trace": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0"
+    },
+    "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "images": [
+      {
+        "height": 128,
+        "path": "artifacts/reference/smoke-fp32/canonical-rgb.png",
+        "rgb_sha256": "6d8184a6b8ad1d1f2f524a67c1196d2de7accacf8679a764b7c0e8a337675880",
+        "sha256": "d62f8db10dca06c65c99ae4dde59e4a68b9548c56a42c76caa2bf7044ccca0db",
+        "width": 256
+      }
+    ],
+    "options": {
+      "max_dimension": 256,
+      "max_new_tokens": 128,
+      "min_dimension": 64
+    },
+    "threads": 16,
+    "backend": "avx2",
+    "precision": "fp32",
+    "warmup": 2,
+    "repetitions": 7,
+    "os": "windows",
+    "arch": "x86_64",
+    "cache_layout": "expanded"
+  },
+  "source_reports": {
+    "unpacked-a": {
+      "path": "artifacts/benchmarks/quiet-packed-unpacked-a.json",
+      "sha256": "9b4677b20984280d6ee0ba924d2bffa55fc2327c14a62b072371c213e110e197"
+    },
+    "packed-a": {
+      "path": "artifacts/benchmarks/quiet-packed-packed-a.json",
+      "sha256": "ef89e449b8578d21944d9f709b698374daef0fc0bcd12a0a9f286170b78b41c2"
+    },
+    "packed-b": {
+      "path": "artifacts/benchmarks/quiet-packed-packed-b.json",
+      "sha256": "d3fdf866ecdcf167ddcbe37819affcfdbe1d4aa2759535a9992c5238ccfd7417"
+    },
+    "unpacked-b": {
+      "path": "artifacts/benchmarks/quiet-packed-unpacked-b.json",
+      "sha256": "b6a352fdbbc4a7abf2fb1ae4713fa38d7aff9d8167386cbd77bcd97346ef9ae0"
+    }
+  },
+  "all_output_token_ids_match": true,
+  "controls_within_five_percent": true,
+  "cases": [
+    {
+      "batch_size": 1,
+      "control_medians_ms": [
+        488.07050000000004,
+        507.991
+      ],
+      "control_drift_percent": 4.081480032085527,
+      "candidates": {
+        "packed-a": {
+          "median_ms": 487.71229999999997,
+          "pages_per_second": 2.0503891331016257,
+          "latency_reduction_vs_controls_percent": [
+            0.07339103674572911,
+            3.991940802100824
+          ],
+          "throughput_ratio_vs_controls": [
+            1.0007344493874772,
+            1.041579226113428
+          ],
+          "minimum_sample_ms": 474.57779999999997,
+          "maximum_sample_ms": 497.6678
+        },
+        "packed-b": {
+          "median_ms": 490.1636,
+          "pages_per_second": 2.040135171195903,
+          "latency_reduction_vs_controls_percent": [
+            -0.42885197937592157,
+            3.509392882944784
+          ],
+          "throughput_ratio_vs_controls": [
+            0.99572979307317,
+            1.0363703057509779
+          ],
+          "minimum_sample_ms": 472.7235,
+          "maximum_sample_ms": 503.1201
+        }
+      }
+    },
+    {
+      "batch_size": 2,
+      "control_medians_ms": [
+        795.7867,
+        795.7312
+      ],
+      "control_drift_percent": -0.006974230657541547,
+      "candidates": {
+        "packed-a": {
+          "median_ms": 654.9662000000001,
+          "pages_per_second": 3.053592689210527,
+          "latency_reduction_vs_controls_percent": [
+            17.695759429002766,
+            17.69001894106953
+          ],
+          "throughput_ratio_vs_controls": [
+            1.2150042246454853,
+            1.2149194874483598
+          ],
+          "minimum_sample_ms": 607.3538000000001,
+          "maximum_sample_ms": 677.2064
+        },
+        "packed-b": {
+          "median_ms": 651.4147,
+          "pages_per_second": 3.0702408158735133,
+          "latency_reduction_vs_controls_percent": [
+            18.142047360178292,
+            18.136337999565676
+          ],
+          "throughput_ratio_vs_controls": [
+            1.2216284035346454,
+            1.2215432043520047
+          ],
+          "minimum_sample_ms": 647.7036,
+          "maximum_sample_ms": 654.3076
+        }
+      }
+    },
+    {
+      "batch_size": 4,
+      "control_medians_ms": [
+        1312.0681,
+        1301.0094
+      ],
+      "control_drift_percent": -0.8428449712328256,
+      "candidates": {
+        "packed-a": {
+          "median_ms": 921.7717,
+          "pages_per_second": 4.339469306770863,
+          "latency_reduction_vs_controls_percent": [
+            29.74665720475942,
+            29.149497305707396
+          ],
+          "throughput_ratio_vs_controls": [
+            1.4234198120857908,
+            1.411422589780094
+          ],
+          "minimum_sample_ms": 905.7373,
+          "maximum_sample_ms": 947.0429
+        },
+        "packed-b": {
+          "median_ms": 931.7927000000001,
+          "pages_per_second": 4.292800319212631,
+          "latency_reduction_vs_controls_percent": [
+            28.982901116184433,
+            28.379249219874957
+          ],
+          "throughput_ratio_vs_controls": [
+            1.4081115896271776,
+            1.3962433919046584
+          ],
+          "minimum_sample_ms": 924.2328,
+          "maximum_sample_ms": 1017.8119999999999
+        }
+      }
+    },
+    {
+      "batch_size": 8,
+      "control_medians_ms": [
+        2008.5921999999998,
+        1966.0309
+      ],
+      "control_drift_percent": -2.1189617285181095,
+      "candidates": {
+        "packed-a": {
+          "median_ms": 1525.0142,
+          "pages_per_second": 5.245852792714979,
+          "latency_reduction_vs_controls_percent": [
+            24.075469376013693,
+            22.43182953024797
+          ],
+          "throughput_ratio_vs_controls": [
+            1.3170973752244404,
+            1.2891885859161178
+          ],
+          "minimum_sample_ms": 1518.7455,
+          "maximum_sample_ms": 1540.729
+        },
+        "packed-b": {
+          "median_ms": 1558.9454,
+          "pages_per_second": 5.131674271594117,
+          "latency_reduction_vs_controls_percent": [
+            22.386166788858375,
+            20.705956350940358
+          ],
+          "throughput_ratio_vs_controls": [
+            1.288430114358078,
+            1.2611287733361283
+          ],
+          "minimum_sample_ms": 1533.7219,
+          "maximum_sample_ms": 1715.5129
+        }
+      }
+    }
+  ],
+  "mode_costs": {
+    "unpacked-a": {
+      "packed_weight_bytes": 0,
+      "weight_packing_ms": 0.0,
+      "process_peak_resident_bytes": 1359425536
+    },
+    "packed-a": {
+      "packed_weight_bytes": 876085248,
+      "weight_packing_ms": 131.1899,
+      "process_peak_resident_bytes": 2236149760
+    },
+    "packed-b": {
+      "packed_weight_bytes": 876085248,
+      "weight_packing_ms": 135.26940000000002,
+      "process_peak_resident_bytes": 2236084224
+    },
+    "unpacked-b": {
+      "packed_weight_bytes": 0,
+      "weight_packing_ms": 0.0,
+      "process_peak_resident_bytes": 1360109568
+    }
+  },
+  "limitations": [
+    "Repeated small image only; representative full-page and mixed-length benchmarks remain required.",
+    "Project CPU/GPU jobs paused; interactive applications remain open.",
+    "Controls bracket two candidate runs; samples retained, no statistical confidence interval claimed.",
+    "Peak memory is a whole-process high-water mark, not isolated per-case memory.",
+    "Packed is opt-in and adds a shared weight copy. This report alone does not promote it."
+  ]
+}

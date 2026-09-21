@@ -1,0 +1,47 @@
+{
+  "status": "prelaunch_checks_passed",
+  "recorded_utc": "2026-09-20T17:43:50.463376+00:00",
+  "plan_sha256": "c64443002031b9ea36dfcf02ca147598f5e3fd446dc824c4ab42e68cdf5abc36",
+  "prelaunch_source_sha256": "a2682a01d795f251ab989ba49fdcc028b5d0cbe0aec786d0f1aeb8954052f1cb",
+  "native_process_query": [
+    "powershell.exe",
+    "-NoProfile",
+    "-Command",
+    "Get-Process | Where-Object { $_.ProcessName -match '^(cargo|rustc|ocr_bench|falcon[-_].*|crossover-tests|operators|allocations|cli|llvm-pdbutil|llvm-objdump)$' } | Select-Object Id,ProcessName,CPU | ConvertTo-Json -Compress"
+  ],
+  "native_matching_processes": [],
+  "available_physical_bytes": 30265413632,
+  "minimum_available_physical_bytes": 12884901888,
+  "wsl_check": {
+    "distribution": "Ubuntu-24.04-CUDA",
+    "command": [
+      "wsl.exe",
+      "-d",
+      "Ubuntu-24.04-CUDA",
+      "--exec",
+      "/usr/bin/python3",
+      "-c",
+      "import json,os,pathlib\nnames=set(['cargo', 'rustc', 'falcon-ocr', 'ocr_bench', 'python', 'python3', 'cc1', 'cc1plus', 'ld', 'ninja', 'cmake'])\nfound=[]\nfor p in pathlib.Path('/proc').iterdir():\n    if not p.name.isdigit() or int(p.name)==os.getpid():continue\n    try:name=(p/'comm').read_text().strip()\n    except (FileNotFoundError,PermissionError,ProcessLookupError):continue\n    if name in names:found.append({'pid':int(p.name),'name':name})\nprint(json.dumps(found))\n"
+    ],
+    "matching_processes": [],
+    "process_names": [
+      "cargo",
+      "rustc",
+      "falcon-ocr",
+      "ocr_bench",
+      "python",
+      "python3",
+      "cc1",
+      "cc1plus",
+      "ld",
+      "ninja",
+      "cmake"
+    ],
+    "distro_stopped": false
+  },
+  "limits": [
+    "Point-in-time selected process and memory checks; normal desktop/WSL services remain.",
+    "Agent execution completion is separately confirmed by the coordinator.",
+    "No continuous frequency, thermal, bandwidth or hardware-counter assertion."
+  ]
+}

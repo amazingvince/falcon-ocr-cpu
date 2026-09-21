@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "passed_exact",
+  "checked_utc": "2026-09-20T11:05:38.301567+00:00",
+  "gpu_report_path": "artifacts\\reference\\rsqrt-canonical-table-fp32-v1\\report.json",
+  "gpu_report_sha256": "ae662d30fc8a82a20318114d98ebeba8fe619b7ed7359e736bced931e96315d2",
+  "gpu_exhaustive_arguments": 1266679808,
+  "gpu_result_mismatches": 0,
+  "gpu_bit_mapping_mismatches": 0,
+  "gpu_all151_exponents_checked": true,
+  "canonical_input_order_all16777216_verified": true,
+  "host_build_path": "artifacts\\diagnostics\\rsqrt-lookup-host-v2\\build.json",
+  "host_build_sha256": "af2fe6a45249974ba695ddd981a77563bb386050411155cc3f5e26231549e566",
+  "host_probe_sha256": "aa9f9fd65f9fc03830bc21a838a2ca86a0d6c842df6f6dfa818bac68e5a8a15b",
+  "command": [
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\rsqrt-lookup-host-v2\\lookup-probe.exe",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\rsqrt-canonical-table-fp32-v1\\rsqrt-table.f32le",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\rsqrt-canonical-table-fp32-v1\\boundary-pairs.u32le"
+  ],
+  "probe": {
+    "status": "observed_boundary_values_exact",
+    "table_entries": 16777216,
+    "boundary_pairs": 1057,
+    "gpu_work": false
+  },
+  "test_log_sha256": "ee3741f37c9f76625fbd95645c24d999782811950011feaeeb5556e6d58259aa",
+  "artifacts": {
+    "canonical-inputs.f32le": {
+      "bytes": 67108864,
+      "sha256": "1edbea27540acb6e151c093aeb6c7f98c2bb94cab2c0e422b34d7a5f8a5934c4"
+    },
+    "rsqrt-table.f32le": {
+      "bytes": 67108864,
+      "sha256": "218fc04d271773269367dedf4cff9ff719081b1218c3d67d248d8d6126040246"
+    },
+    "boundary-pairs.u32le": {
+      "bytes": 8456,
+      "sha256": "72a06c34cc75242f4837483c1488bb42562e0db2f7bea90602c403296ecb2329"
+    }
+  },
+  "source_sha256": {
+    "rsqrt_lookup.rs": "f5e5456df7e3ece723742de7bf700707ed7cd76c283f0c874a47aa31eca7ac37",
+    "rsqrt_lookup_probe.rs": "450a261449984bb9f4bd21d184744b3ead3f1c9d126114a7c3ad5ebe1b93c740"
+  },
+  "before_after_artifact_and_binary_hashes_match": true,
+  "gpu_work_by_reviewer": false,
+  "qualification": "Exhaustive observed GPU function rescaling plus independent host index/boundary checks. Rust runtime outputs were checked for1057 actual GPU boundary pairs, not all1,266,679,808 arguments. No model or performance qualification."
+}

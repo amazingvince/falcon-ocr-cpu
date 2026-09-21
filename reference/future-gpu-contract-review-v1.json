@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "status": "closed",
+  "reviewed_utc": "2026-09-20T10:35:12.216926+00:00",
+  "scope": "Only the three previously reported future-run contract defects; no broad audit",
+  "findings": {
+    "teacher_or_replay_resume_acceptance": "closed: strict explicit booleans and replay-marker rejection at configuration/run/page levels",
+    "unverified_cublas_workspace_claim": "closed: actual environment checked before preflight Torch import and rechecked/bound during identity capture",
+    "crash_left_temporary_blocks_resume": "closed: unique sibling temporary files, atomic replacement, handled-failure cleanup; interrupted leftovers do not block publication"
+  },
+  "tests_run": 18,
+  "test_failures": 0,
+  "test_errors": 0,
+  "host_only": true,
+  "model_inference_executed": false,
+  "cuda_called": false,
+  "source_before_sha256": {
+    "artifacts/reference-source-preparation-v2/preparation.json": "289d767524aaba2e61ef7d748a3e5055d53575c9631e5b86585ec1abee40e1f3",
+    "artifacts/reference-source-preparation-v2/reference_preflight.py": "735ae548eb942ec23f3cc2610efa2122f14b6d0f35ec0f1a8766109c31a1cb97",
+    "artifacts/reference-source-preparation-v2/run_corpus_reference.py": "066ac26a04569bfd5fbc726b6b012f9999d4e400a9ceabf260a60299eb8f2980",
+    "artifacts/reference-source-preparation-v2/run_reference.sh": "faf3ab9b6aea7c58fc8cd5c55ab5988fcacf7e79fa4ee9b60d6e7a3bab1c56f8",
+    "reference/future-gpu-contract-review-v1.py": "2effa728f1ac0cc4dad4e23ca6dc0ac153c1114a2f98d50194ca3a540be17aa4",
+    "scripts/reference_corpus_contract.py": "9c5d5139a5bcb4e0fe8228b8c192423a6f7871ce559a4fe249aeb9a66a0520ea",
+    "scripts/reference_preflight.py": "04a4429a16ea03d424739f744364dec0fc0ffa7e33035791f8c38ab77d3906bc",
+    "scripts/reference_run_identity.py": "74d49342bd2fc2d13b2703e853b8bd99a790a0ec691cbd92c43160c9782d9520",
+    "scripts/run_corpus_reference.py": "696616815f92024ca58cba048f0dedb99b837a773cfe0f067450af000da2bfc8",
+    "scripts/run_reference.sh": "9aafbc08de5f3b24a6787eadc5f74c509f068b045f59a4e323bbabd4a46d8ea0",
+    "scripts/test_reference_corpus_contract.py": "076dd1cced2c8bcfaa396bac817fd5ea6ae6d8b5b390db65ee46ec6dbe93ba8d",
+    "scripts/test_reference_run_identity.py": "3ad954a209aa530ae12a34ef4b71986735fd43474ea913d2260ab92ec1e4f62b",
+    "scripts/validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032"
+  },
+  "source_after_sha256": {
+    "artifacts/reference-source-preparation-v2/preparation.json": "289d767524aaba2e61ef7d748a3e5055d53575c9631e5b86585ec1abee40e1f3",
+    "artifacts/reference-source-preparation-v2/reference_preflight.py": "735ae548eb942ec23f3cc2610efa2122f14b6d0f35ec0f1a8766109c31a1cb97",
+    "artifacts/reference-source-preparation-v2/run_corpus_reference.py": "066ac26a04569bfd5fbc726b6b012f9999d4e400a9ceabf260a60299eb8f2980",
+    "artifacts/reference-source-preparation-v2/run_reference.sh": "faf3ab9b6aea7c58fc8cd5c55ab5988fcacf7e79fa4ee9b60d6e7a3bab1c56f8",
+    "reference/future-gpu-contract-review-v1.py": "2effa728f1ac0cc4dad4e23ca6dc0ac153c1114a2f98d50194ca3a540be17aa4",
+    "scripts/reference_corpus_contract.py": "9c5d5139a5bcb4e0fe8228b8c192423a6f7871ce559a4fe249aeb9a66a0520ea",
+    "scripts/reference_preflight.py": "04a4429a16ea03d424739f744364dec0fc0ffa7e33035791f8c38ab77d3906bc",
+    "scripts/reference_run_identity.py": "74d49342bd2fc2d13b2703e853b8bd99a790a0ec691cbd92c43160c9782d9520",
+    "scripts/run_corpus_reference.py": "696616815f92024ca58cba048f0dedb99b837a773cfe0f067450af000da2bfc8",
+    "scripts/run_reference.sh": "9aafbc08de5f3b24a6787eadc5f74c509f068b045f59a4e323bbabd4a46d8ea0",
+    "scripts/test_reference_corpus_contract.py": "076dd1cced2c8bcfaa396bac817fd5ea6ae6d8b5b390db65ee46ec6dbe93ba8d",
+    "scripts/test_reference_run_identity.py": "3ad954a209aa530ae12a34ef4b71986735fd43474ea913d2260ab92ec1e4f62b",
+    "scripts/validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032"
+  },
+  "source_unchanged": true,
+  "qualification": "Checks the held, unused staged source and host helpers. It does not attest historical GPU startup metadata or execute the candidate model/runtime path.",
+  "test_log_sha256": "178fd0dc4dd616b10dccf69ef3e0ca08773d58c5a6f9279307040d19c4aa06b4"
+}

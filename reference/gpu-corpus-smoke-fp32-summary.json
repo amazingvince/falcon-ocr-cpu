@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "manifest_sha256": "108f8bf7dcf0ad0679fff91e6662ba648f14f3a2fed6cc1b784c3982e62f9aef",
+    "max_new_tokens": 4096,
+    "max_dimension": 1536,
+    "min_dimension": 64,
+    "precision": "fp32",
+    "tf32": false,
+    "flex_float32_precision": "ieee",
+    "compiled_blocks": false
+  },
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "source_run": "artifacts\\reference\\corpus-smoke-fp32-4096\\summary.json",
+  "source_run_sha256": "32b38291f8fc5722df4eb47273fcba7930b8d0590fea08406d7468c1982c6e7b",
+  "pages": 24,
+  "generated_tokens": 28734,
+  "natural_max_output_tokens": 2567,
+  "over_2048_output_pages": 5,
+  "over_4096_output_pages": 0,
+  "finish_reasons": {
+    "eos": 24
+  },
+  "category_counts": {
+    "multi_column": 3,
+    "handwriting": 3,
+    "degraded": 3,
+    "tiny_text": 4,
+    "ordinary": 3,
+    "tables": 4,
+    "formulas": 4
+  },
+  "diagnostic_micro_cer": 0.18678227583806983,
+  "qualification": "Qualitative v1 smoke only: 24 pages, limited visual review, notebook-family calibration overlap. CER is assembled-ground-truth diagnostic, not official OmniDocBench scoring. No 8k-output qualification or standalone performance claim.",
+  "page_records": [
+    {
+      "sample_id": "4a221661204e2a92",
+      "category": "tables",
+      "output_tokens": 2567,
+      "prefix_tokens": 7024,
+      "finish_reason": "eos",
+      "record_sha256": "617bae8a1bca143ff238a41416baf91c5e05bbef3b83558a8054e841cb24ede7"
+    },
+    {
+      "sample_id": "bc2882dcec9a3e02",
+      "category": "tiny_text",
+      "output_tokens": 2428,
+      "prefix_tokens": 6928,
+      "finish_reason": "eos",
+      "record_sha256": "2a4f0cfa74aa2a7579b3adf63589aee117b371df77dcd0a766e1832fb0e2cf40"
+    },
+    {
+      "sample_id": "ebac2ad1cac11a99",
+      "category": "tiny_text",
+      "output_tokens": 2237,
+      "prefix_tokens": 6160,
+      "finish_reason": "eos",
+      "record_sha256": "299453b10ceb6029696d1a5b167df59e2ebedff9aad8207a6e4ecf0bc72a2078"
+    },
+    {
+      "sample_id": "7442dc2baaeb00ff",
+      "category": "formulas",
+      "output_tokens": 2215,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "832b86b7fa0b677bc556fe32c14d06cf972af2c40cc7bbd60658cf13d5eff04c"
+    },
+    {
+      "sample_id": "a1336e3bc391f255",
+      "category": "tables",
+      "output_tokens": 2195,
+      "prefix_tokens": 7024,
+      "finish_reason": "eos",
+      "record_sha256": "80f99a6044a3798e42fbd7c43643b344241a874120a1881ef20126badd2ae5dd"
+    },
+    {
+      "sample_id": "df13ca79dd59b21e",
+      "category": "multi_column",
+      "output_tokens": 1858,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "6a8b2899171bfabef410917c240427a41261e415b21417dc9811dc9012671008"
+    },
+    {
+      "sample_id": "d4f0b9ee4f7e19c1",
+      "category": "tiny_text",
+      "output_tokens": 1698,
+      "prefix_tokens": 4432,
+      "finish_reason": "eos",
+      "record_sha256": "8b3913cd894b608b319e995946c76957369f3c608afbc7ea9548ad6d9fe1b350"
+    },
+    {
+      "sample_id": "caa02ee83b64c5f8",
+      "category": "multi_column",
+      "output_tokens": 1454,
+      "prefix_tokens": 7024,
+      "finish_reason": "eos",
+      "record_sha256": "b108b9ae4736eb6b473dede38853866907fec767cf8ce114e5019c862e8a102c"
+    },
+    {
+      "sample_id": "8cdcdeb583b40cd4",
+      "category": "tables",
+      "output_tokens": 1420,
+      "prefix_tokens": 5200,
+      "finish_reason": "eos",
+      "record_sha256": "a49666189d469a8e322085282b36ba388662d5d0471f88da8cb8848add11b4c6"
+    },
+    {
+      "sample_id": "2481e823cf3d165a",
+      "category": "tiny_text",
+      "output_tokens": 1204,
+      "prefix_tokens": 7120,
+      "finish_reason": "eos",
+      "record_sha256": "02ed10fa17f0b06cd3de89a891a82f5c9da4e11576a292d6c38eb04f85796104"
+    },
+    {
+      "sample_id": "f49121f28edbfb30",
+      "category": "degraded",
+      "output_tokens": 1031,
+      "prefix_tokens": 4913,
+      "finish_reason": "eos",
+      "record_sha256": "9dcd1654cc944951086ef5adb628106db107ee0efbb486f747c29c16a16239d2"
+    },
+    {
+      "sample_id": "a5c0f5f013640adf",
+      "category": "formulas",
+      "output_tokens": 986,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "68d32ce3a220dcfdaea93d13e89287253aa7e7f31651a7791babcd951437fcb4"
+    },
+    {
+      "sample_id": "f19a8b1ef5c34f07",
+      "category": "tables",
+      "output_tokens": 883,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "747fba0c46f7c6313bdcacdc090ca63dd9e20eba691f90542820c09df990460a"
+    },
+    {
+      "sample_id": "f4d86abe06e3d7a4",
+      "category": "ordinary",
+      "output_tokens": 808,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "f3195b2fdedac85b7e51741c78dcd9d4a85a9bb59fd9b31b634fdd50bc168c37"
+    },
+    {
+      "sample_id": "a947debf6fed06e3",
+      "category": "ordinary",
+      "output_tokens": 775,
+      "prefix_tokens": 7120,
+      "finish_reason": "eos",
+      "record_sha256": "a70c0d22853a6ea01c9a4b86ccf3c46b8ae392f8bfe631af1cb99e9e3dfbee64"
+    },
+    {
+      "sample_id": "c3f6a9d3aabf90b3",
+      "category": "handwriting",
+      "output_tokens": 735,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "9e75356dc6dea14f8054030a4db18c664dd2389792c9744c654664ea8932cf99"
+    },
+    {
+      "sample_id": "23aab39cd5bf7391",
+      "category": "degraded",
+      "output_tokens": 724,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "900c14e2db1fab3ca1f85c99a7effce75e1a4bbd6287d577027ca2d42c7307a2"
+    },
+    {
+      "sample_id": "8f193e26d504d352",
+      "category": "formulas",
+      "output_tokens": 625,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "775e827cd16a6f28ab1e525d5022c8b9d972af114e26326c9da65a5991fdfea8"
+    },
+    {
+      "sample_id": "e9944e1b55e61e7c",
+      "category": "degraded",
+      "output_tokens": 621,
+      "prefix_tokens": 6640,
+      "finish_reason": "eos",
+      "record_sha256": "bae513743acb4a15b286ab127aea7b758c095d8c8f686e92997328b210e6f66a"
+    },
+    {
+      "sample_id": "4bf114e43e8dcfed",
+      "category": "formulas",
+      "output_tokens": 617,
+      "prefix_tokens": 1888,
+      "finish_reason": "eos",
+      "record_sha256": "06d6337efa1148e0aba502cd69fc6e6442bf9e02a89e8ca6f9fc1b1c48936d83"
+    },
+    {
+      "sample_id": "15ef968b6700f557",
+      "category": "handwriting",
+      "output_tokens": 538,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "218278782e1c9ffcd6156b2ad6103277db64ffa8d36746a355d3908f1698f713"
+    },
+    {
+      "sample_id": "844ccd0487b3e263",
+      "category": "handwriting",
+      "output_tokens": 420,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "6fe6eb0eceaa3142e32d36c2f880097210d880975182c34f59fa1f8b7e398903"
+    },
+    {
+      "sample_id": "417692fb6e2a625b",
+      "category": "ordinary",
+      "output_tokens": 385,
+      "prefix_tokens": 7504,
+      "finish_reason": "eos",
+      "record_sha256": "a0257634f66045c567e6d1bbce5c3757635f84d18d6c9ad1efd0d4d3463e308f"
+    },
+    {
+      "sample_id": "02efc5e800fa8102",
+      "category": "multi_column",
+      "output_tokens": 310,
+      "prefix_tokens": 6544,
+      "finish_reason": "eos",
+      "record_sha256": "27c2c0585a89dd58c2baa4668dca4ed94d91d6eb61990a3ded5da7196a13942e"
+    }
+  ]
+}

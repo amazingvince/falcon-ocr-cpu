@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "official_revision": "c457916c9974efbacfa91f0f6ecc2c49c6543e56",
+    "precision": "fp32",
+    "tf32": false,
+    "kernel_options": {
+      "FLOAT32_PRECISION": "'ieee'",
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "num_stages": 1
+    },
+    "cuda_graphs": false,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "max_seq_length": 16384,
+    "max_batch_size": 2,
+    "actual_requests_per_generate": 1,
+    "manifest_sha256": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+    "script_sha256": "0a027d06cc30fffd026a9756f37b002185583d6a1b92c3d86d11f7d8c7de348f",
+    "source_archive_sha256": {
+      "run_official_fullpages.py": "0a027d06cc30fffd026a9756f37b002185583d6a1b92c3d86d11f7d8c7de348f",
+      "reference_preflight.py": "735ae548eb942ec23f3cc2610efa2122f14b6d0f35ec0f1a8766109c31a1cb97",
+      "fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+      "validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032"
+    },
+    "source_capture_phase": "after input/model/device validation, before official model initialization"
+  },
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "torch_device_uuid": "2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "cublas_workspace_config": ":4096:8",
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "pages": [
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "sample_id": "3f294b5e60a0c2d4",
+      "category": "ordinary",
+      "input_sha256": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "golden_record_sha256": "353469cd07511817b62fe0eaa4d5e60b76563e26c2006fead8965a6689348be9",
+      "prefix_length": 6544,
+      "finish_reason": "eos",
+      "tokens_exact": true,
+      "text_exact": true,
+      "prefix_exact": true,
+      "finish_reason_exact": true,
+      "first_token_divergence": null,
+      "elapsed_seconds_including_compile": 136.01815425
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "sample_id": "2c243b31d36eb729",
+      "category": "tables",
+      "input_sha256": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e",
+      "golden_record_sha256": "5434fc7bd87510672eb81c7227412cb43f370977c99d8e4d3575612304e361d3",
+      "prefix_length": 7120,
+      "finish_reason": "eos",
+      "tokens_exact": true,
+      "text_exact": true,
+      "prefix_exact": true,
+      "finish_reason_exact": true,
+      "first_token_divergence": null,
+      "elapsed_seconds_including_compile": 241.58936639900003
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "sample_id": "f75c4a0b98e45ab3",
+      "category": "multi_column",
+      "input_sha256": "e900609f33a80d87830fd823ad2fd835628f3513ef63544e6d1571f9ecf11a2c",
+      "golden_record_sha256": "d603f7c72fee2f46adb8c878de9a0a2eb76de7837cb944e23bcfeda7a1c7cba8",
+      "prefix_length": 7120,
+      "finish_reason": "eos",
+      "tokens_exact": true,
+      "text_exact": true,
+      "prefix_exact": true,
+      "finish_reason_exact": true,
+      "first_token_divergence": null,
+      "elapsed_seconds_including_compile": 149.59437043599996
+    }
+  ],
+  "status": "complete",
+  "fullpages_passed": true,
+  "qualification": "Three actual single-request official plain-engine full pages. No pipeline, corpus-wide serving acceptance, tensor parity, or isolated performance claim."
+}

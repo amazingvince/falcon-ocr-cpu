@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T11:26:01.531770+00:00",
+  "purpose": "Preserve matching existing symbols for future Windows profiling of the frozen realistic benchmark executable; no rebuild or runtime measurement.",
+  "build_receipt": "artifacts\\builds\\ocr-bench-fullpages-v2-windows\\build.json",
+  "build_receipt_sha256": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+  "binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+  "source_archive_sha256": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+  "symbols": {
+    "path": "artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench.pdb",
+    "original_path": "target\\release\\examples\\ocr_bench.pdb",
+    "bytes": 16052224,
+    "sha256": "19d3058d9d409c526839ca6c3387e7fafbd9a4addaf1e870d6b19ed5f58e9879",
+    "guid": "{854FDA6B-CEA5-4CAD-BDD6-D8D27009373B}",
+    "age": 5,
+    "matches_executable_codeview_identity": true
+  },
+  "commands": {
+    "exe-debug": [
+      "C:\\Program Files\\LLVM\\bin\\llvm-readobj.EXE",
+      "--coff-debug-directory",
+      "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench.exe"
+    ],
+    "pdb-summary": [
+      "C:\\Program Files\\LLVM\\bin\\llvm-pdbutil.EXE",
+      "dump",
+      "-summary",
+      "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\target\\release\\examples\\ocr_bench.pdb"
+    ],
+    "recorder-profiles": [
+      "C:\\WINDOWS\\system32\\wpr.EXE",
+      "-profiles"
+    ],
+    "recorder-cpu-profile": [
+      "C:\\WINDOWS\\system32\\wpr.EXE",
+      "-profiledetails",
+      "CPU"
+    ],
+    "recorder-status": [
+      "C:\\WINDOWS\\system32\\wpr.EXE",
+      "-status"
+    ],
+    "recorder-counters": [
+      "C:\\WINDOWS\\system32\\wpr.EXE",
+      "-pmcsources"
+    ]
+  },
+  "tool_sha256": {
+    "C:\\Program Files\\LLVM\\bin\\llvm-readobj.EXE": "65bd2e6a3d786070c5df916fb9d3866d6192a2d4ee715a0792b491d0a78a3627",
+    "C:\\Program Files\\LLVM\\bin\\llvm-pdbutil.EXE": "db7affd1131dd766acd5d63809b2765840f94049c27f154a018194dfa7535ed9",
+    "C:\\WINDOWS\\system32\\wpr.EXE": "64f6d9f83a8b9f8c720870109a6374f650e3786f0ea3f6e3a6c02463257bbfc2"
+  },
+  "evidence_sha256": {
+    "artifacts\\diagnostics\\windows-profile-readiness-v1\\exe-debug.txt": "d93ccd8d888517772fd32887ca5265a31eac0349ade678054ba5deb1d241b007",
+    "artifacts\\diagnostics\\windows-profile-readiness-v1\\pdb-summary.txt": "b58ae28f9a4cfd5a94192c93fa9e6529b95a32272d948a6576b3278d45eb2dba",
+    "artifacts\\diagnostics\\windows-profile-readiness-v1\\recorder-profiles.txt": "8e814255cf58280660c36a6406fa7c4df1c2e6927942351292538c065b1f9529",
+    "artifacts\\diagnostics\\windows-profile-readiness-v1\\recorder-cpu-profile.txt": "d80e230f159011119dd35584b0121f3b0cef218061fd27bfa3265c110ee1d66a",
+    "artifacts\\diagnostics\\windows-profile-readiness-v1\\recorder-status.txt": "a77ba39043544bbf814bea3cb05b5ac87b89a8b56894548ab6ed3a07cf4b9ca3",
+    "artifacts\\diagnostics\\windows-profile-readiness-v1\\recorder-counters.txt": "aa7b6aae531878f5d3be2a9d7db56ce67f2d36c5b8320a1a8ae05881665edb14"
+  },
+  "recording_started": false,
+  "benchmark_executed": false,
+  "limitations": [
+    "Recorder inventory and counter enumeration do not establish permission to start recording or availability of working hardware counters.",
+    "WPA, xperf, and AMD uProf were not found on PATH; the standard Windows Performance Toolkit directory was absent. No analyzer was installed.",
+    "Collect a separate bounded diagnostic trace in a quiet window. Profiled latencies must not be used as the unprofiled performance results."
+  ]
+}

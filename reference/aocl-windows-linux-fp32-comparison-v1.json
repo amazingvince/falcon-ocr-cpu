@@ -1,0 +1,2085 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "scope": "Cross-platform functionality on 28 identical FP32 operator inputs; no performance or full-model parity claim.",
+  "report_paths": {
+    "windows": "reference\\aocl-windows-fp32-operator-probe-v2.json",
+    "linux": "reference\\aocl-linux-fp32-operator-probe-v1.json"
+  },
+  "report_sha256": {
+    "windows": "9e6d2b1a1b8f196414d1aa3d8bf95de7206d62465c55eff14f150abbc0983784",
+    "linux": "0feaa13cf57c025a66750713a83494c18b21f08fe471628fd4c8c5dbe42efdc0"
+  },
+  "libraries": {
+    "windows": {
+      "abi": "extern C; md_t=int64_t; order R, transa N, transb T; lda=k, ldb=k, ldc=n; normal-memory N,N; alpha=1 beta=0; metadata=null",
+      "expected_sha256": "f2ce2248710bdcc5feed97f73eead203733c8ebc6c1d759aa18ececd4e4cab1e",
+      "path": "\\\\?\\C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\aocl-dlp-build-windows-v2\\Release\\aocl-dlp.dll",
+      "sha256": "f2ce2248710bdcc5feed97f73eead203733c8ebc6c1d759aa18ececd4e4cab1e",
+      "symbol": "aocl_gemm_f32f32f32of32"
+    },
+    "linux": {
+      "abi": "extern C; md_t=int64_t; order R, transa N, transb T; lda=k, ldb=k, ldc=n; normal-memory N,N; alpha=1 beta=0; metadata=null",
+      "expected_sha256": "fb1b99d98da3311988370ca946a501fa5bef8d62d3dcd59e4e21b221a501a6e2",
+      "path": "/home/amazi/falcon-ocr-rust-reference/aocl-build-v1/libaocl-dlp.so",
+      "sha256": "fb1b99d98da3311988370ca946a501fa5bef8d62d3dcd59e4e21b221a501a6e2",
+      "symbol": "aocl_gemm_f32f32f32of32"
+    }
+  },
+  "reference": {
+    "config_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "fixture": "artifacts/reference/layer-operators-fp32.safetensors",
+    "fixture_sha256": "ce7345c219d8923182ff66e9aad2f4d6bad3c193a19c3445a850c2d3a90e5417",
+    "gpu_environment": {
+      "cuda_runtime": "13.0",
+      "driver": "591.86",
+      "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+      "free_memory_mib": 24096,
+      "gpu_name": "NVIDIA GeForce RTX 4090",
+      "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+      "packages": {
+        "einops": "0.8.1",
+        "numpy": "2.5.1",
+        "pillow": "12.3.0",
+        "safetensors": "0.8.0",
+        "tokenizers": "0.22.2",
+        "torch": "2.11.0+cu130",
+        "transformers": "5.14.1"
+      },
+      "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+      "python": "3.12.13",
+      "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+      "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622",
+      "wsl": true
+    },
+    "manifest": "reference/layer-operators-fp32-manifest.json",
+    "manifest_sha256": "148b9d4286bf413b7c9c693b920290298d5f46cd137449ac4e394430495a8962",
+    "source_trace_sha256": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "operator_count": 28,
+  "aocl_bit_exact_operators": 28,
+  "rust_bit_exact_operators": 28,
+  "aocl_vs_rust_error_to_same_gpu": {
+    "windows": {
+      "max_abs": {
+        "aocl_lower": 11,
+        "equal": 7,
+        "aocl_higher": 10
+      },
+      "rms_abs": {
+        "aocl_lower": 9,
+        "equal": 5,
+        "aocl_higher": 14
+      }
+    },
+    "linux": {
+      "max_abs": {
+        "aocl_lower": 11,
+        "equal": 7,
+        "aocl_higher": 10
+      },
+      "rms_abs": {
+        "aocl_lower": 9,
+        "equal": 5,
+        "aocl_higher": 14
+      }
+    }
+  },
+  "operators": [
+    {
+      "case": "decode.2.layer.21",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 1,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "56726ccdb8876a344c82a292bd7d71eb2f07b7db19c88d43876affd9bc030a89",
+          "gpu": "a4768e34244a96419e0ecddac41e95ec6fa1a2172df7a918f47ae52c841a88e6",
+          "rust": "1bb554cfd517c1ff11bbea64aed4e1acf0aa910e755edec05be5739f19f95b25"
+        },
+        "linux": {
+          "aocl": "56726ccdb8876a344c82a292bd7d71eb2f07b7db19c88d43876affd9bc030a89",
+          "gpu": "a4768e34244a96419e0ecddac41e95ec6fa1a2172df7a918f47ae52c841a88e6",
+          "rust": "1bb554cfd517c1ff11bbea64aed4e1acf0aa910e755edec05be5739f19f95b25"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 1201,
+          "different_values": 1201,
+          "elements": 2048,
+          "max_abs": 1.9073486328125e-06,
+          "reference_peak_abs": 12.4916410446167,
+          "rms_abs": 2.0231187308261163e-07,
+          "worst_actual": 1.7719793319702148,
+          "worst_expected": 1.7719812393188477,
+          "worst_index": 1679
+        },
+        "linux": {
+          "different_bit_patterns": 1201,
+          "different_values": 1201,
+          "elements": 2048,
+          "max_abs": 1.9073486328125e-06,
+          "reference_peak_abs": 12.4916410446167,
+          "rms_abs": 2.0231187308261163e-07,
+          "worst_actual": 1.7719793319702148,
+          "worst_expected": 1.7719812393188477,
+          "worst_index": 1679
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 1748,
+          "different_values": 1748,
+          "elements": 2048,
+          "max_abs": 3.814697265625e-06,
+          "reference_peak_abs": 12.4916410446167,
+          "rms_abs": 5.576356425357248e-07,
+          "worst_actual": 6.841963768005371,
+          "worst_expected": 6.841967582702637,
+          "worst_index": 1703
+        },
+        "linux": {
+          "different_bit_patterns": 1748,
+          "different_values": 1748,
+          "elements": 2048,
+          "max_abs": 3.814697265625e-06,
+          "reference_peak_abs": 12.4916410446167,
+          "rms_abs": 5.576356425357248e-07,
+          "worst_actual": 6.841963768005371,
+          "worst_expected": 6.841967582702637,
+          "worst_index": 1703
+        }
+      }
+    },
+    {
+      "case": "decode.2.layer.21",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 1,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "439019e0045253eb17a6d80c99df37567e61454aee5d91fcab0106d5e95e8a25",
+          "gpu": "ab196469f98a22a9c74567269e1a85266495dd39294b88c0f8564e6c9b552557",
+          "rust": "474f90cc00a4078e8066e192137e9121769e5e626ae01bd2e49166368cac4705"
+        },
+        "linux": {
+          "aocl": "439019e0045253eb17a6d80c99df37567e61454aee5d91fcab0106d5e95e8a25",
+          "gpu": "ab196469f98a22a9c74567269e1a85266495dd39294b88c0f8564e6c9b552557",
+          "rust": "474f90cc00a4078e8066e192137e9121769e5e626ae01bd2e49166368cac4705"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 3692,
+          "different_values": 3692,
+          "elements": 4608,
+          "max_abs": 1.430511474609375e-06,
+          "reference_peak_abs": 10.385407447814941,
+          "rms_abs": 3.0797790154763046e-07,
+          "worst_actual": -6.204642295837402,
+          "worst_expected": -6.204640865325928,
+          "worst_index": 1003
+        },
+        "linux": {
+          "different_bit_patterns": 3692,
+          "different_values": 3692,
+          "elements": 4608,
+          "max_abs": 1.430511474609375e-06,
+          "reference_peak_abs": 10.385407447814941,
+          "rms_abs": 3.0797790154763046e-07,
+          "worst_actual": -6.204642295837402,
+          "worst_expected": -6.204640865325928,
+          "worst_index": 1003
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 3814,
+          "different_values": 3814,
+          "elements": 4608,
+          "max_abs": 1.9073486328125e-06,
+          "reference_peak_abs": 10.385407447814941,
+          "rms_abs": 3.6256368121190673e-07,
+          "worst_actual": 8.527840614318848,
+          "worst_expected": 8.52784252166748,
+          "worst_index": 1761
+        },
+        "linux": {
+          "different_bit_patterns": 3814,
+          "different_values": 3814,
+          "elements": 4608,
+          "max_abs": 1.9073486328125e-06,
+          "reference_peak_abs": 10.385407447814941,
+          "rms_abs": 3.6256368121190673e-07,
+          "worst_actual": 8.527840614318848,
+          "worst_expected": 8.52784252166748,
+          "worst_index": 1761
+        }
+      }
+    },
+    {
+      "case": "decode.2.layer.21",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 1,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "fc24eb661c5f2c9f91331cffa766ae0b7ea80e728f2f4b101099306f5c7c8462",
+          "gpu": "f81f295999ad89960fd91433ea678cb976961cf6baff6fa6af43bb6ded91b441",
+          "rust": "8de773e24c43bcfe0ad04fc843a2866a963f2b3fb7deb69412cc609d65ac4420"
+        },
+        "linux": {
+          "aocl": "fc24eb661c5f2c9f91331cffa766ae0b7ea80e728f2f4b101099306f5c7c8462",
+          "gpu": "f81f295999ad89960fd91433ea678cb976961cf6baff6fa6af43bb6ded91b441",
+          "rust": "8de773e24c43bcfe0ad04fc843a2866a963f2b3fb7deb69412cc609d65ac4420"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 599,
+          "different_values": 599,
+          "elements": 768,
+          "max_abs": 0.0001220703125,
+          "reference_peak_abs": 1485.2796630859375,
+          "rms_abs": 1.6440692743087403e-05,
+          "worst_actual": 440.3543701171875,
+          "worst_expected": 440.354248046875,
+          "worst_index": 265
+        },
+        "linux": {
+          "different_bit_patterns": 599,
+          "different_values": 599,
+          "elements": 768,
+          "max_abs": 0.0001220703125,
+          "reference_peak_abs": 1485.2796630859375,
+          "rms_abs": 1.6440692743087403e-05,
+          "worst_actual": 440.3543701171875,
+          "worst_expected": 440.354248046875,
+          "worst_index": 265
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 415,
+          "different_values": 415,
+          "elements": 768,
+          "max_abs": 0.0001220703125,
+          "reference_peak_abs": 1485.2796630859375,
+          "rms_abs": 7.458781656122078e-06,
+          "worst_actual": -1485.279541015625,
+          "worst_expected": -1485.2796630859375,
+          "worst_index": 312
+        },
+        "linux": {
+          "different_bit_patterns": 415,
+          "different_values": 415,
+          "elements": 768,
+          "max_abs": 0.0001220703125,
+          "reference_peak_abs": 1485.2796630859375,
+          "rms_abs": 7.458781656122078e-06,
+          "worst_actual": -1485.279541015625,
+          "worst_expected": -1485.2796630859375,
+          "worst_index": 312
+        }
+      }
+    },
+    {
+      "case": "decode.2.layer.21",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 1,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "d33f18e1429b0f1b3617929839b7641ab8f35f7dbfafe53660c95b2927c759f1",
+          "gpu": "61ddfe9f3cb43495226b051dd558d7d69a0b862bb0f1982fc70df00c22134b0d",
+          "rust": "3da05fab7974439e5786057651ccf03086d31fb46beb3db0159430fa9e2d6e62"
+        },
+        "linux": {
+          "aocl": "d33f18e1429b0f1b3617929839b7641ab8f35f7dbfafe53660c95b2927c759f1",
+          "gpu": "61ddfe9f3cb43495226b051dd558d7d69a0b862bb0f1982fc70df00c22134b0d",
+          "rust": "3da05fab7974439e5786057651ccf03086d31fb46beb3db0159430fa9e2d6e62"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 655,
+          "different_values": 655,
+          "elements": 768,
+          "max_abs": 9.5367431640625e-06,
+          "reference_peak_abs": 53.83311080932617,
+          "rms_abs": 2.6825134021292545e-06,
+          "worst_actual": 3.1542577743530273,
+          "worst_expected": 3.1542482376098633,
+          "worst_index": 488
+        },
+        "linux": {
+          "different_bit_patterns": 655,
+          "different_values": 655,
+          "elements": 768,
+          "max_abs": 9.5367431640625e-06,
+          "reference_peak_abs": 53.83311080932617,
+          "rms_abs": 2.6825134021292545e-06,
+          "worst_actual": 3.1542577743530273,
+          "worst_expected": 3.1542482376098633,
+          "worst_index": 488
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 483,
+          "different_values": 483,
+          "elements": 768,
+          "max_abs": 7.62939453125e-06,
+          "reference_peak_abs": 53.83311080932617,
+          "rms_abs": 1.1260405022499476e-06,
+          "worst_actual": 53.8331184387207,
+          "worst_expected": 53.83311080932617,
+          "worst_index": 312
+        },
+        "linux": {
+          "different_bit_patterns": 483,
+          "different_values": 483,
+          "elements": 768,
+          "max_abs": 7.62939453125e-06,
+          "reference_peak_abs": 53.83311080932617,
+          "rms_abs": 1.1260405022499476e-06,
+          "worst_actual": 53.8331184387207,
+          "worst_expected": 53.83311080932617,
+          "worst_index": 312
+        }
+      }
+    },
+    {
+      "case": "decode.6.layer.19",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 1,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "f8768606c14b46771f9a223f6880839af02e63c7dc24d16bdfd7480efde6d44f",
+          "gpu": "0ad7d7653401a7e999bfccba3f2391a12176aa96d40da813a50b465dfeeaa5be",
+          "rust": "ffa4c3e78a81413559fe69af23055f045000961218c8c9ddc440cc50aa4776f8"
+        },
+        "linux": {
+          "aocl": "f8768606c14b46771f9a223f6880839af02e63c7dc24d16bdfd7480efde6d44f",
+          "gpu": "0ad7d7653401a7e999bfccba3f2391a12176aa96d40da813a50b465dfeeaa5be",
+          "rust": "ffa4c3e78a81413559fe69af23055f045000961218c8c9ddc440cc50aa4776f8"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 1135,
+          "different_values": 1135,
+          "elements": 2048,
+          "max_abs": 1.9073486328125e-06,
+          "reference_peak_abs": 21.71449851989746,
+          "rms_abs": 2.3043246273445448e-07,
+          "worst_actual": -16.20325469970703,
+          "worst_expected": -16.203256607055664,
+          "worst_index": 1551
+        },
+        "linux": {
+          "different_bit_patterns": 1135,
+          "different_values": 1135,
+          "elements": 2048,
+          "max_abs": 1.9073486328125e-06,
+          "reference_peak_abs": 21.71449851989746,
+          "rms_abs": 2.3043246273445448e-07,
+          "worst_actual": -16.20325469970703,
+          "worst_expected": -16.203256607055664,
+          "worst_index": 1551
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 1697,
+          "different_values": 1697,
+          "elements": 2048,
+          "max_abs": 3.814697265625e-06,
+          "reference_peak_abs": 21.71449851989746,
+          "rms_abs": 5.273906779360381e-07,
+          "worst_actual": -18.276287078857422,
+          "worst_expected": -18.276290893554688,
+          "worst_index": 1563
+        },
+        "linux": {
+          "different_bit_patterns": 1697,
+          "different_values": 1697,
+          "elements": 2048,
+          "max_abs": 3.814697265625e-06,
+          "reference_peak_abs": 21.71449851989746,
+          "rms_abs": 5.273906779360381e-07,
+          "worst_actual": -18.276287078857422,
+          "worst_expected": -18.276290893554688,
+          "worst_index": 1563
+        }
+      }
+    },
+    {
+      "case": "decode.6.layer.19",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 1,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "0c45818f4915927fbc0037bd54fa3c702ba2a750bded39b4f360205db936237a",
+          "gpu": "bbae18a4af796cbfd2e802f778a788b2a12e5efb10755cc0e769349ef776bd03",
+          "rust": "25d85167345b9aabc91e7d3f90603893081254a8a9b32db49c090f9b5fe7ea6c"
+        },
+        "linux": {
+          "aocl": "0c45818f4915927fbc0037bd54fa3c702ba2a750bded39b4f360205db936237a",
+          "gpu": "bbae18a4af796cbfd2e802f778a788b2a12e5efb10755cc0e769349ef776bd03",
+          "rust": "25d85167345b9aabc91e7d3f90603893081254a8a9b32db49c090f9b5fe7ea6c"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 3960,
+          "different_values": 3960,
+          "elements": 4608,
+          "max_abs": 1.430511474609375e-06,
+          "reference_peak_abs": 6.89412784576416,
+          "rms_abs": 2.781560299319264e-07,
+          "worst_actual": -0.42814862728118896,
+          "worst_expected": -0.42814719676971436,
+          "worst_index": 276
+        },
+        "linux": {
+          "different_bit_patterns": 3960,
+          "different_values": 3960,
+          "elements": 4608,
+          "max_abs": 1.430511474609375e-06,
+          "reference_peak_abs": 6.89412784576416,
+          "rms_abs": 2.781560299319264e-07,
+          "worst_actual": -0.42814862728118896,
+          "worst_expected": -0.42814719676971436,
+          "worst_index": 276
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 4036,
+          "different_values": 4036,
+          "elements": 4608,
+          "max_abs": 1.430511474609375e-06,
+          "reference_peak_abs": 6.89412784576416,
+          "rms_abs": 3.153576105364077e-07,
+          "worst_actual": -6.164141654968262,
+          "worst_expected": -6.164143085479736,
+          "worst_index": 4367
+        },
+        "linux": {
+          "different_bit_patterns": 4036,
+          "different_values": 4036,
+          "elements": 4608,
+          "max_abs": 1.430511474609375e-06,
+          "reference_peak_abs": 6.89412784576416,
+          "rms_abs": 3.153576105364077e-07,
+          "worst_actual": -6.164141654968262,
+          "worst_expected": -6.164143085479736,
+          "worst_index": 4367
+        }
+      }
+    },
+    {
+      "case": "decode.6.layer.19",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 1,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "df3626d5f7f0621de2b221f8d3ab5923df13410769e44d6de9ad0207a4ca50d1",
+          "gpu": "cd310b4b770243bfc199f26ca54044e5330e5ed097eb12d8c86592b760d161bb",
+          "rust": "e72de821c8cd2369850643927af14d959f5f0687f1fd435075f4281917bad946"
+        },
+        "linux": {
+          "aocl": "df3626d5f7f0621de2b221f8d3ab5923df13410769e44d6de9ad0207a4ca50d1",
+          "gpu": "cd310b4b770243bfc199f26ca54044e5330e5ed097eb12d8c86592b760d161bb",
+          "rust": "e72de821c8cd2369850643927af14d959f5f0687f1fd435075f4281917bad946"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 637,
+          "different_values": 637,
+          "elements": 768,
+          "max_abs": 8.344650268554688e-06,
+          "reference_peak_abs": 30.773265838623047,
+          "rms_abs": 1.7799664190110338e-06,
+          "worst_actual": -1.6458666324615479,
+          "worst_expected": -1.6458749771118164,
+          "worst_index": 114
+        },
+        "linux": {
+          "different_bit_patterns": 637,
+          "different_values": 637,
+          "elements": 768,
+          "max_abs": 8.344650268554688e-06,
+          "reference_peak_abs": 30.773265838623047,
+          "rms_abs": 1.7799664190110338e-06,
+          "worst_actual": -1.6458666324615479,
+          "worst_expected": -1.6458749771118164,
+          "worst_index": 114
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 462,
+          "different_values": 462,
+          "elements": 768,
+          "max_abs": 3.814697265625e-06,
+          "reference_peak_abs": 30.773265838623047,
+          "rms_abs": 7.988583718479873e-07,
+          "worst_actual": 23.053905487060547,
+          "worst_expected": 23.053909301757812,
+          "worst_index": 134
+        },
+        "linux": {
+          "different_bit_patterns": 462,
+          "different_values": 462,
+          "elements": 768,
+          "max_abs": 3.814697265625e-06,
+          "reference_peak_abs": 30.773265838623047,
+          "rms_abs": 7.988583718479873e-07,
+          "worst_actual": 23.053905487060547,
+          "worst_expected": 23.053909301757812,
+          "worst_index": 134
+        }
+      }
+    },
+    {
+      "case": "decode.6.layer.19",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 1,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "a66d53b7f632a6fadc3094870cbcff9b4fd0e924086c1dbbdf557fcdb0b7ffef",
+          "gpu": "329ea5f863ee74e934df4ee2625a0ccf656efe1f1605a73342603ec12beefec7",
+          "rust": "c3e7245c9d609ccc5956c1bdc441785ee16207479fa5ed161862badb651ddd35"
+        },
+        "linux": {
+          "aocl": "a66d53b7f632a6fadc3094870cbcff9b4fd0e924086c1dbbdf557fcdb0b7ffef",
+          "gpu": "329ea5f863ee74e934df4ee2625a0ccf656efe1f1605a73342603ec12beefec7",
+          "rust": "c3e7245c9d609ccc5956c1bdc441785ee16207479fa5ed161862badb651ddd35"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 622,
+          "different_values": 622,
+          "elements": 768,
+          "max_abs": 3.0517578125e-05,
+          "reference_peak_abs": 420.3045959472656,
+          "rms_abs": 4.159820019575533e-06,
+          "worst_actual": 420.3045654296875,
+          "worst_expected": 420.3045959472656,
+          "worst_index": 312
+        },
+        "linux": {
+          "different_bit_patterns": 622,
+          "different_values": 622,
+          "elements": 768,
+          "max_abs": 3.0517578125e-05,
+          "reference_peak_abs": 420.3045959472656,
+          "rms_abs": 4.159820019575533e-06,
+          "worst_actual": 420.3045654296875,
+          "worst_expected": 420.3045959472656,
+          "worst_index": 312
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 412,
+          "different_values": 412,
+          "elements": 768,
+          "max_abs": 7.62939453125e-06,
+          "reference_peak_abs": 420.3045959472656,
+          "rms_abs": 1.7223200619451886e-06,
+          "worst_actual": 82.67948150634766,
+          "worst_expected": 82.67947387695312,
+          "worst_index": 89
+        },
+        "linux": {
+          "different_bit_patterns": 412,
+          "different_values": 412,
+          "elements": 768,
+          "max_abs": 7.62939453125e-06,
+          "reference_peak_abs": 420.3045959472656,
+          "rms_abs": 1.7223200619451886e-06,
+          "worst_actual": 82.67948150634766,
+          "worst_expected": 82.67947387695312,
+          "worst_index": 89
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.12",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "e4b8e702af8e8440cd232827040f4a4fcb3c6a62c31edb7fede675a774f92e9b",
+          "gpu": "182c75e83121b47df16ac34d72ff043fe2ebfe42d14daf73bd057fbd44f9ecff",
+          "rust": "751a79ab6c73e527ae699de491d517af8863c59c6eba6a5481b54bfa81bfd37b"
+        },
+        "linux": {
+          "aocl": "e4b8e702af8e8440cd232827040f4a4fcb3c6a62c31edb7fede675a774f92e9b",
+          "gpu": "182c75e83121b47df16ac34d72ff043fe2ebfe42d14daf73bd057fbd44f9ecff",
+          "rust": "751a79ab6c73e527ae699de491d517af8863c59c6eba6a5481b54bfa81bfd37b"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274587,
+          "different_values": 274587,
+          "elements": 294912,
+          "max_abs": 3.0517578125e-05,
+          "reference_peak_abs": 47.7254753112793,
+          "rms_abs": 1.3516903958442031e-06,
+          "worst_actual": -32.206748962402344,
+          "worst_expected": -32.20671844482422,
+          "worst_index": 5346
+        },
+        "linux": {
+          "different_bit_patterns": 274587,
+          "different_values": 274587,
+          "elements": 294912,
+          "max_abs": 3.0517578125e-05,
+          "reference_peak_abs": 47.7254753112793,
+          "rms_abs": 1.3516903958442031e-06,
+          "worst_actual": -32.206748962402344,
+          "worst_expected": -32.20671844482422,
+          "worst_index": 5346
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274252,
+          "different_values": 274252,
+          "elements": 294912,
+          "max_abs": 1.9073486328125e-05,
+          "reference_peak_abs": 47.7254753112793,
+          "rms_abs": 1.2861466150418314e-06,
+          "worst_actual": -47.72545623779297,
+          "worst_expected": -47.7254753112793,
+          "worst_index": 5879
+        },
+        "linux": {
+          "different_bit_patterns": 274252,
+          "different_values": 274252,
+          "elements": 294912,
+          "max_abs": 1.9073486328125e-05,
+          "reference_peak_abs": 47.7254753112793,
+          "rms_abs": 1.2861466150418314e-06,
+          "worst_actual": -47.72545623779297,
+          "worst_expected": -47.7254753112793,
+          "worst_index": 5879
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.12",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "209cb0b4071d61778cc1e875e118eefde71f0d8e0501de768206486974a3d6b0",
+          "gpu": "b04cf382b00aee6b9db65e17f8650cba5ad66ee9951f4bcabca83ae542984692",
+          "rust": "b04cf382b00aee6b9db65e17f8650cba5ad66ee9951f4bcabca83ae542984692"
+        },
+        "linux": {
+          "aocl": "209cb0b4071d61778cc1e875e118eefde71f0d8e0501de768206486974a3d6b0",
+          "gpu": "b04cf382b00aee6b9db65e17f8650cba5ad66ee9951f4bcabca83ae542984692",
+          "rust": "b04cf382b00aee6b9db65e17f8650cba5ad66ee9951f4bcabca83ae542984692"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 598629,
+          "different_values": 598629,
+          "elements": 663552,
+          "max_abs": 1.52587890625e-05,
+          "reference_peak_abs": 42.32994079589844,
+          "rms_abs": 8.868017653727886e-07,
+          "worst_actual": 19.803030014038086,
+          "worst_expected": 19.80304527282715,
+          "worst_index": 603762
+        },
+        "linux": {
+          "different_bit_patterns": 598629,
+          "different_values": 598629,
+          "elements": 663552,
+          "max_abs": 1.52587890625e-05,
+          "reference_peak_abs": 42.32994079589844,
+          "rms_abs": 8.868017653727886e-07,
+          "worst_actual": 19.803030014038086,
+          "worst_expected": 19.80304527282715,
+          "worst_index": 603762
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 42.32994079589844,
+          "rms_abs": 0.0,
+          "worst_actual": 0.9685565829277039,
+          "worst_expected": 0.9685565829277039,
+          "worst_index": 0
+        },
+        "linux": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 42.32994079589844,
+          "rms_abs": 0.0,
+          "worst_actual": 0.9685565829277039,
+          "worst_expected": 0.9685565829277039,
+          "worst_index": 0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.12",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "19d096aec9acc0d4beacb1310ff22abde3823c86c67fa80a657605f3b576b8ed",
+          "gpu": "aa9c02dae08179baa18fe0bc90086d94a9e82b759c6eb398010f3a8e557c9698",
+          "rust": "4bd4decf96c59852f0b630c676a7b40fe2b3a8d8a2e2f160e57f912f5ddc03eb"
+        },
+        "linux": {
+          "aocl": "19d096aec9acc0d4beacb1310ff22abde3823c86c67fa80a657605f3b576b8ed",
+          "gpu": "aa9c02dae08179baa18fe0bc90086d94a9e82b759c6eb398010f3a8e557c9698",
+          "rust": "4bd4decf96c59852f0b630c676a7b40fe2b3a8d8a2e2f160e57f912f5ddc03eb"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 92223,
+          "different_values": 92223,
+          "elements": 110592,
+          "max_abs": 0.005859375,
+          "reference_peak_abs": 20310.267578125,
+          "rms_abs": 0.00013250712638587282,
+          "worst_actual": -17372.359375,
+          "worst_expected": -17372.353515625,
+          "worst_index": 102439
+        },
+        "linux": {
+          "different_bit_patterns": 92223,
+          "different_values": 92223,
+          "elements": 110592,
+          "max_abs": 0.005859375,
+          "reference_peak_abs": 20310.267578125,
+          "rms_abs": 0.00013250712638587282,
+          "worst_actual": -17372.359375,
+          "worst_expected": -17372.353515625,
+          "worst_index": 102439
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 98306,
+          "different_values": 98306,
+          "elements": 110592,
+          "max_abs": 0.00830078125,
+          "reference_peak_abs": 20310.267578125,
+          "rms_abs": 0.00019000314296714027,
+          "worst_actual": 7616.75830078125,
+          "worst_expected": 7616.7666015625,
+          "worst_index": 1770
+        },
+        "linux": {
+          "different_bit_patterns": 98306,
+          "different_values": 98306,
+          "elements": 110592,
+          "max_abs": 0.00830078125,
+          "reference_peak_abs": 20310.267578125,
+          "rms_abs": 0.00019000314296714027,
+          "worst_actual": 7616.75830078125,
+          "worst_expected": 7616.7666015625,
+          "worst_index": 1770
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.12",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "b1e2c121db8698d4cce71c65e466fd42ba58040994adcfc1770164ad7a21d0fe",
+          "gpu": "dc651ba8672afa6777c56776c08ccd26f7962fbfe58a691fe43b20c5c687d37c",
+          "rust": "b1e2c121db8698d4cce71c65e466fd42ba58040994adcfc1770164ad7a21d0fe"
+        },
+        "linux": {
+          "aocl": "b1e2c121db8698d4cce71c65e466fd42ba58040994adcfc1770164ad7a21d0fe",
+          "gpu": "dc651ba8672afa6777c56776c08ccd26f7962fbfe58a691fe43b20c5c687d37c",
+          "rust": "b1e2c121db8698d4cce71c65e466fd42ba58040994adcfc1770164ad7a21d0fe"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 99882,
+          "different_values": 99882,
+          "elements": 110592,
+          "max_abs": 7.2479248046875e-05,
+          "reference_peak_abs": 137.6647491455078,
+          "rms_abs": 9.616608601018081e-06,
+          "worst_actual": 53.35041809082031,
+          "worst_expected": 53.350345611572266,
+          "worst_index": 42780
+        },
+        "linux": {
+          "different_bit_patterns": 99882,
+          "different_values": 99882,
+          "elements": 110592,
+          "max_abs": 7.2479248046875e-05,
+          "reference_peak_abs": 137.6647491455078,
+          "rms_abs": 9.616608601018081e-06,
+          "worst_actual": 53.35041809082031,
+          "worst_expected": 53.350345611572266,
+          "worst_index": 42780
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 99882,
+          "different_values": 99882,
+          "elements": 110592,
+          "max_abs": 7.2479248046875e-05,
+          "reference_peak_abs": 137.6647491455078,
+          "rms_abs": 9.616608601018081e-06,
+          "worst_actual": 53.35041809082031,
+          "worst_expected": 53.350345611572266,
+          "worst_index": 42780
+        },
+        "linux": {
+          "different_bit_patterns": 99882,
+          "different_values": 99882,
+          "elements": 110592,
+          "max_abs": 7.2479248046875e-05,
+          "reference_peak_abs": 137.6647491455078,
+          "rms_abs": 9.616608601018081e-06,
+          "worst_actual": 53.35041809082031,
+          "worst_expected": 53.350345611572266,
+          "worst_index": 42780
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.13",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "3185f28b8b41d579cab0a94a2b96e5996ff3c7e6194722aacd6049d655e1d045",
+          "gpu": "c716dba04dbe32148652a0c9f8fea22a50668852972d66c28713c7c375b60a83",
+          "rust": "851194da96bbe7c8cedb486317338e0d8c7323cc5312b5552b1ce7667ba66d1b"
+        },
+        "linux": {
+          "aocl": "3185f28b8b41d579cab0a94a2b96e5996ff3c7e6194722aacd6049d655e1d045",
+          "gpu": "c716dba04dbe32148652a0c9f8fea22a50668852972d66c28713c7c375b60a83",
+          "rust": "851194da96bbe7c8cedb486317338e0d8c7323cc5312b5552b1ce7667ba66d1b"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 275902,
+          "different_values": 275902,
+          "elements": 294912,
+          "max_abs": 1.9073486328125e-05,
+          "reference_peak_abs": 36.120174407958984,
+          "rms_abs": 1.2716755602607658e-06,
+          "worst_actual": 24.55272674560547,
+          "worst_expected": 24.552745819091797,
+          "worst_index": 22175
+        },
+        "linux": {
+          "different_bit_patterns": 275902,
+          "different_values": 275902,
+          "elements": 294912,
+          "max_abs": 1.9073486328125e-05,
+          "reference_peak_abs": 36.120174407958984,
+          "rms_abs": 1.2716755602607658e-06,
+          "worst_actual": 24.55272674560547,
+          "worst_expected": 24.552745819091797,
+          "worst_index": 22175
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 275564,
+          "different_values": 275564,
+          "elements": 294912,
+          "max_abs": 2.3365020751953125e-05,
+          "reference_peak_abs": 36.120174407958984,
+          "rms_abs": 1.2377665169536245e-06,
+          "worst_actual": -2.444093704223633,
+          "worst_expected": -2.4441170692443848,
+          "worst_index": 245495
+        },
+        "linux": {
+          "different_bit_patterns": 275564,
+          "different_values": 275564,
+          "elements": 294912,
+          "max_abs": 2.3365020751953125e-05,
+          "reference_peak_abs": 36.120174407958984,
+          "rms_abs": 1.2377665169536245e-06,
+          "worst_actual": -2.444093704223633,
+          "worst_expected": -2.4441170692443848,
+          "worst_index": 245495
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.13",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "2131ca6962fbfd7c6da35d8b77bbd5aed64dfda5f1c8050928938aaf2c336fb2",
+          "gpu": "a960fc3db6c6f450d73d3e6376d10d4ab84e28d603b39172ea0b3976ab9cd201",
+          "rust": "a960fc3db6c6f450d73d3e6376d10d4ab84e28d603b39172ea0b3976ab9cd201"
+        },
+        "linux": {
+          "aocl": "2131ca6962fbfd7c6da35d8b77bbd5aed64dfda5f1c8050928938aaf2c336fb2",
+          "gpu": "a960fc3db6c6f450d73d3e6376d10d4ab84e28d603b39172ea0b3976ab9cd201",
+          "rust": "a960fc3db6c6f450d73d3e6376d10d4ab84e28d603b39172ea0b3976ab9cd201"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 601786,
+          "different_values": 601786,
+          "elements": 663552,
+          "max_abs": 1.239776611328125e-05,
+          "reference_peak_abs": 35.731773376464844,
+          "rms_abs": 8.023031796351997e-07,
+          "worst_actual": 14.477721214294434,
+          "worst_expected": 14.477733612060547,
+          "worst_index": 75240
+        },
+        "linux": {
+          "different_bit_patterns": 601786,
+          "different_values": 601786,
+          "elements": 663552,
+          "max_abs": 1.239776611328125e-05,
+          "reference_peak_abs": 35.731773376464844,
+          "rms_abs": 8.023031796351997e-07,
+          "worst_actual": 14.477721214294434,
+          "worst_expected": 14.477733612060547,
+          "worst_index": 75240
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 35.731773376464844,
+          "rms_abs": 0.0,
+          "worst_actual": -0.9382645487785339,
+          "worst_expected": -0.9382645487785339,
+          "worst_index": 0
+        },
+        "linux": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 35.731773376464844,
+          "rms_abs": 0.0,
+          "worst_actual": -0.9382645487785339,
+          "worst_expected": -0.9382645487785339,
+          "worst_index": 0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.13",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "8a1e4e7f93fde2c73779098feddc034aa0c8586644db37f08774154cf9c6869a",
+          "gpu": "9cef670375b7fd38b63872b891ef3005bfdfe72c7263d3dc0ff87f605e2ce8d5",
+          "rust": "a2a281019b118912f76aeef193e89ff20d6849068ec886b23df44d257c8e3f8b"
+        },
+        "linux": {
+          "aocl": "8a1e4e7f93fde2c73779098feddc034aa0c8586644db37f08774154cf9c6869a",
+          "gpu": "9cef670375b7fd38b63872b891ef3005bfdfe72c7263d3dc0ff87f605e2ce8d5",
+          "rust": "a2a281019b118912f76aeef193e89ff20d6849068ec886b23df44d257c8e3f8b"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 92099,
+          "different_values": 92099,
+          "elements": 110592,
+          "max_abs": 0.00390625,
+          "reference_peak_abs": 17188.4453125,
+          "rms_abs": 9.436980595807201e-05,
+          "worst_actual": -5470.0283203125,
+          "worst_expected": -5470.0244140625,
+          "worst_index": 39179
+        },
+        "linux": {
+          "different_bit_patterns": 92099,
+          "different_values": 92099,
+          "elements": 110592,
+          "max_abs": 0.00390625,
+          "reference_peak_abs": 17188.4453125,
+          "rms_abs": 9.436980595807201e-05,
+          "worst_actual": -5470.0283203125,
+          "worst_expected": -5470.0244140625,
+          "worst_index": 39179
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 97639,
+          "different_values": 97639,
+          "elements": 110592,
+          "max_abs": 0.005859375,
+          "reference_peak_abs": 17188.4453125,
+          "rms_abs": 0.00012490546689336826,
+          "worst_actual": -10641.5888671875,
+          "worst_expected": -10641.5947265625,
+          "worst_index": 39342
+        },
+        "linux": {
+          "different_bit_patterns": 97639,
+          "different_values": 97639,
+          "elements": 110592,
+          "max_abs": 0.005859375,
+          "reference_peak_abs": 17188.4453125,
+          "rms_abs": 0.00012490546689336826,
+          "worst_actual": -10641.5888671875,
+          "worst_expected": -10641.5947265625,
+          "worst_index": 39342
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.13",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "0f5770554ee466bde09aa329518457d7748a4b8e0da7dd52816edfa2d2f92c0c",
+          "gpu": "2d00f87b6a7529ece01912531886f1ea1b6b4aa3efd5edf45f12450577703e4e",
+          "rust": "0f5770554ee466bde09aa329518457d7748a4b8e0da7dd52816edfa2d2f92c0c"
+        },
+        "linux": {
+          "aocl": "0f5770554ee466bde09aa329518457d7748a4b8e0da7dd52816edfa2d2f92c0c",
+          "gpu": "2d00f87b6a7529ece01912531886f1ea1b6b4aa3efd5edf45f12450577703e4e",
+          "rust": "0f5770554ee466bde09aa329518457d7748a4b8e0da7dd52816edfa2d2f92c0c"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 102184,
+          "different_values": 102184,
+          "elements": 110592,
+          "max_abs": 5.7220458984375e-05,
+          "reference_peak_abs": 70.20626831054688,
+          "rms_abs": 3.709748691711964e-06,
+          "worst_actual": 63.34675979614258,
+          "worst_expected": 63.34681701660156,
+          "worst_index": 84024
+        },
+        "linux": {
+          "different_bit_patterns": 102184,
+          "different_values": 102184,
+          "elements": 110592,
+          "max_abs": 5.7220458984375e-05,
+          "reference_peak_abs": 70.20626831054688,
+          "rms_abs": 3.709748691711964e-06,
+          "worst_actual": 63.34675979614258,
+          "worst_expected": 63.34681701660156,
+          "worst_index": 84024
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 102184,
+          "different_values": 102184,
+          "elements": 110592,
+          "max_abs": 5.7220458984375e-05,
+          "reference_peak_abs": 70.20626831054688,
+          "rms_abs": 3.709748691711964e-06,
+          "worst_actual": 63.34675979614258,
+          "worst_expected": 63.34681701660156,
+          "worst_index": 84024
+        },
+        "linux": {
+          "different_bit_patterns": 102184,
+          "different_values": 102184,
+          "elements": 110592,
+          "max_abs": 5.7220458984375e-05,
+          "reference_peak_abs": 70.20626831054688,
+          "rms_abs": 3.709748691711964e-06,
+          "worst_actual": 63.34675979614258,
+          "worst_expected": 63.34681701660156,
+          "worst_index": 84024
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.17",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "acea094d22aa9198bf2ec55547a085604f02fb09df740bda7b3a319c7d390e4a",
+          "gpu": "e3eca3f7dcef9c49744dabcdca64b9335dec23a503d5f083bdf229d87aa7aec9",
+          "rust": "7fc3a2fcbe005ed098f7cbcfc94e3b357948c1bb192724475c2048f6acd07c50"
+        },
+        "linux": {
+          "aocl": "acea094d22aa9198bf2ec55547a085604f02fb09df740bda7b3a319c7d390e4a",
+          "gpu": "e3eca3f7dcef9c49744dabcdca64b9335dec23a503d5f083bdf229d87aa7aec9",
+          "rust": "7fc3a2fcbe005ed098f7cbcfc94e3b357948c1bb192724475c2048f6acd07c50"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274361,
+          "different_values": 274361,
+          "elements": 294912,
+          "max_abs": 2.288818359375e-05,
+          "reference_peak_abs": 42.14888381958008,
+          "rms_abs": 1.4282285334763078e-06,
+          "worst_actual": -32.598487854003906,
+          "worst_expected": -32.59846496582031,
+          "worst_index": 14234
+        },
+        "linux": {
+          "different_bit_patterns": 274361,
+          "different_values": 274361,
+          "elements": 294912,
+          "max_abs": 2.288818359375e-05,
+          "reference_peak_abs": 42.14888381958008,
+          "rms_abs": 1.4282285334763078e-06,
+          "worst_actual": -32.598487854003906,
+          "worst_expected": -32.59846496582031,
+          "worst_index": 14234
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 273944,
+          "different_values": 273944,
+          "elements": 294912,
+          "max_abs": 2.6702880859375e-05,
+          "reference_peak_abs": 42.14888381958008,
+          "rms_abs": 1.3636186828563346e-06,
+          "worst_actual": -39.87879943847656,
+          "worst_expected": -39.8787727355957,
+          "worst_index": 18330
+        },
+        "linux": {
+          "different_bit_patterns": 273944,
+          "different_values": 273944,
+          "elements": 294912,
+          "max_abs": 2.6702880859375e-05,
+          "reference_peak_abs": 42.14888381958008,
+          "rms_abs": 1.3636186828563346e-06,
+          "worst_actual": -39.87879943847656,
+          "worst_expected": -39.8787727355957,
+          "worst_index": 18330
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.17",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "ac032fca6f8f0c0a86127e853ed0ba109ca038fd0e582877195c2c7d4e59a5d1",
+          "gpu": "0ca8cccc32b6299f1bca199b15508315f0f87e767b9b83522dbeb81104b3a5ef",
+          "rust": "0ca8cccc32b6299f1bca199b15508315f0f87e767b9b83522dbeb81104b3a5ef"
+        },
+        "linux": {
+          "aocl": "ac032fca6f8f0c0a86127e853ed0ba109ca038fd0e582877195c2c7d4e59a5d1",
+          "gpu": "0ca8cccc32b6299f1bca199b15508315f0f87e767b9b83522dbeb81104b3a5ef",
+          "rust": "0ca8cccc32b6299f1bca199b15508315f0f87e767b9b83522dbeb81104b3a5ef"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 600973,
+          "different_values": 600973,
+          "elements": 663552,
+          "max_abs": 1.049041748046875e-05,
+          "reference_peak_abs": 25.61073112487793,
+          "rms_abs": 8.2494840481166e-07,
+          "worst_actual": 12.060521125793457,
+          "worst_expected": 12.060510635375977,
+          "worst_index": 418368
+        },
+        "linux": {
+          "different_bit_patterns": 600973,
+          "different_values": 600973,
+          "elements": 663552,
+          "max_abs": 1.049041748046875e-05,
+          "reference_peak_abs": 25.61073112487793,
+          "rms_abs": 8.2494840481166e-07,
+          "worst_actual": 12.060521125793457,
+          "worst_expected": 12.060510635375977,
+          "worst_index": 418368
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 25.61073112487793,
+          "rms_abs": 0.0,
+          "worst_actual": -0.7634639143943787,
+          "worst_expected": -0.7634639143943787,
+          "worst_index": 0
+        },
+        "linux": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 25.61073112487793,
+          "rms_abs": 0.0,
+          "worst_actual": -0.7634639143943787,
+          "worst_expected": -0.7634639143943787,
+          "worst_index": 0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.17",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "1c416234c1299c8cb5f7cccd8c965f3e52ad318e91ef2abdd6ce2225e5ca5187",
+          "gpu": "3080b0b9dbd1a741ad327a02bd1fc755fab84dcdb409f2fd509482e4a7909d31",
+          "rust": "3da585bf2514010fd32ac8d5a893bb7fdb213a9d8a455e390cc81911014ab8e7"
+        },
+        "linux": {
+          "aocl": "1c416234c1299c8cb5f7cccd8c965f3e52ad318e91ef2abdd6ce2225e5ca5187",
+          "gpu": "3080b0b9dbd1a741ad327a02bd1fc755fab84dcdb409f2fd509482e4a7909d31",
+          "rust": "3da585bf2514010fd32ac8d5a893bb7fdb213a9d8a455e390cc81911014ab8e7"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 92021,
+          "different_values": 92021,
+          "elements": 110592,
+          "max_abs": 0.000732421875,
+          "reference_peak_abs": 2434.1982421875,
+          "rms_abs": 3.1319816536471165e-05,
+          "worst_actual": 1487.226318359375,
+          "worst_expected": 1487.22705078125,
+          "worst_index": 18585
+        },
+        "linux": {
+          "different_bit_patterns": 92021,
+          "different_values": 92021,
+          "elements": 110592,
+          "max_abs": 0.000732421875,
+          "reference_peak_abs": 2434.1982421875,
+          "rms_abs": 3.1319816536471165e-05,
+          "worst_actual": 1487.226318359375,
+          "worst_expected": 1487.22705078125,
+          "worst_index": 18585
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 96097,
+          "different_values": 96097,
+          "elements": 110592,
+          "max_abs": 0.001220703125,
+          "reference_peak_abs": 2434.1982421875,
+          "rms_abs": 4.2324330047996e-05,
+          "worst_actual": -2271.798583984375,
+          "worst_expected": -2271.79736328125,
+          "worst_index": 18999
+        },
+        "linux": {
+          "different_bit_patterns": 96097,
+          "different_values": 96097,
+          "elements": 110592,
+          "max_abs": 0.001220703125,
+          "reference_peak_abs": 2434.1982421875,
+          "rms_abs": 4.2324330047996e-05,
+          "worst_actual": -2271.798583984375,
+          "worst_expected": -2271.79736328125,
+          "worst_index": 18999
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.17",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "6e547a2270c25361c311ffc93a03d21416030a3e960b151df138959470635947",
+          "gpu": "ef3cca70f2910e25cd9c42a31203f9cb980ea11efb0aa010a2d11442ac47568f",
+          "rust": "6e547a2270c25361c311ffc93a03d21416030a3e960b151df138959470635947"
+        },
+        "linux": {
+          "aocl": "6e547a2270c25361c311ffc93a03d21416030a3e960b151df138959470635947",
+          "gpu": "ef3cca70f2910e25cd9c42a31203f9cb980ea11efb0aa010a2d11442ac47568f",
+          "rust": "6e547a2270c25361c311ffc93a03d21416030a3e960b151df138959470635947"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 101607,
+          "different_values": 101607,
+          "elements": 110592,
+          "max_abs": 0.00018310546875,
+          "reference_peak_abs": 233.57301330566406,
+          "rms_abs": 7.85796947407098e-06,
+          "worst_actual": 220.36990356445312,
+          "worst_expected": 220.36972045898438,
+          "worst_index": 73272
+        },
+        "linux": {
+          "different_bit_patterns": 101607,
+          "different_values": 101607,
+          "elements": 110592,
+          "max_abs": 0.00018310546875,
+          "reference_peak_abs": 233.57301330566406,
+          "rms_abs": 7.85796947407098e-06,
+          "worst_actual": 220.36990356445312,
+          "worst_expected": 220.36972045898438,
+          "worst_index": 73272
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 101607,
+          "different_values": 101607,
+          "elements": 110592,
+          "max_abs": 0.00018310546875,
+          "reference_peak_abs": 233.57301330566406,
+          "rms_abs": 7.85796947407098e-06,
+          "worst_actual": 220.36990356445312,
+          "worst_expected": 220.36972045898438,
+          "worst_index": 73272
+        },
+        "linux": {
+          "different_bit_patterns": 101607,
+          "different_values": 101607,
+          "elements": 110592,
+          "max_abs": 0.00018310546875,
+          "reference_peak_abs": 233.57301330566406,
+          "rms_abs": 7.85796947407098e-06,
+          "worst_actual": 220.36990356445312,
+          "worst_expected": 220.36972045898438,
+          "worst_index": 73272
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.18",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "1abc45a97a26f9afaebb12da19c5b736f99e703c026da2fc5102643b591d8adb",
+          "gpu": "49ba4755ddb69081684fc8816fc7180ef6a8e861526cd0f6de14831ac1bbfc54",
+          "rust": "66b4f2cb4be0b41d9e871f73cd2b4226b779f3de13519dc9e4298939196df754"
+        },
+        "linux": {
+          "aocl": "1abc45a97a26f9afaebb12da19c5b736f99e703c026da2fc5102643b591d8adb",
+          "gpu": "49ba4755ddb69081684fc8816fc7180ef6a8e861526cd0f6de14831ac1bbfc54",
+          "rust": "66b4f2cb4be0b41d9e871f73cd2b4226b779f3de13519dc9e4298939196df754"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274874,
+          "different_values": 274874,
+          "elements": 294912,
+          "max_abs": 2.288818359375e-05,
+          "reference_peak_abs": 36.42015075683594,
+          "rms_abs": 1.4728825672225533e-06,
+          "worst_actual": 31.500194549560547,
+          "worst_expected": 31.50021743774414,
+          "worst_index": 77569
+        },
+        "linux": {
+          "different_bit_patterns": 274874,
+          "different_values": 274874,
+          "elements": 294912,
+          "max_abs": 2.288818359375e-05,
+          "reference_peak_abs": 36.42015075683594,
+          "rms_abs": 1.4728825672225533e-06,
+          "worst_actual": 31.500194549560547,
+          "worst_expected": 31.50021743774414,
+          "worst_index": 77569
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274304,
+          "different_values": 274304,
+          "elements": 294912,
+          "max_abs": 2.09808349609375e-05,
+          "reference_peak_abs": 36.42015075683594,
+          "rms_abs": 1.4212937421367236e-06,
+          "worst_actual": 29.205341339111328,
+          "worst_expected": 29.205320358276367,
+          "worst_index": 194335
+        },
+        "linux": {
+          "different_bit_patterns": 274304,
+          "different_values": 274304,
+          "elements": 294912,
+          "max_abs": 2.09808349609375e-05,
+          "reference_peak_abs": 36.42015075683594,
+          "rms_abs": 1.4212937421367236e-06,
+          "worst_actual": 29.205341339111328,
+          "worst_expected": 29.205320358276367,
+          "worst_index": 194335
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.18",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "c5274f973f12ce890621e45859dee4789dd97207b2a3757055f929d15c428423",
+          "gpu": "bbc63c0293ef8f91148d2a0320c641c29612f5d63202529dc40de47b44716b69",
+          "rust": "bbc63c0293ef8f91148d2a0320c641c29612f5d63202529dc40de47b44716b69"
+        },
+        "linux": {
+          "aocl": "c5274f973f12ce890621e45859dee4789dd97207b2a3757055f929d15c428423",
+          "gpu": "bbc63c0293ef8f91148d2a0320c641c29612f5d63202529dc40de47b44716b69",
+          "rust": "bbc63c0293ef8f91148d2a0320c641c29612f5d63202529dc40de47b44716b69"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 600872,
+          "different_values": 600872,
+          "elements": 663552,
+          "max_abs": 1.1444091796875e-05,
+          "reference_peak_abs": 23.779491424560547,
+          "rms_abs": 7.900962886998816e-07,
+          "worst_actual": 16.257644653320312,
+          "worst_expected": 16.25765609741211,
+          "worst_index": 478514
+        },
+        "linux": {
+          "different_bit_patterns": 600872,
+          "different_values": 600872,
+          "elements": 663552,
+          "max_abs": 1.1444091796875e-05,
+          "reference_peak_abs": 23.779491424560547,
+          "rms_abs": 7.900962886998816e-07,
+          "worst_actual": 16.257644653320312,
+          "worst_expected": 16.25765609741211,
+          "worst_index": 478514
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 23.779491424560547,
+          "rms_abs": 0.0,
+          "worst_actual": -0.9741329550743103,
+          "worst_expected": -0.9741329550743103,
+          "worst_index": 0
+        },
+        "linux": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 23.779491424560547,
+          "rms_abs": 0.0,
+          "worst_actual": -0.9741329550743103,
+          "worst_expected": -0.9741329550743103,
+          "worst_index": 0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.18",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "8c11baccdf9bb2f12708e255cdc46643ba69253fe9881914e9af6482ae5aa4d3",
+          "gpu": "2ac2c39311643c92f4326274b11f417029880a8e4a99f6adbd9dc7d785c92de0",
+          "rust": "7925498d8376aee5f709d7a507069e7205ead7a072b4ed06894fe0e6320cb495"
+        },
+        "linux": {
+          "aocl": "8c11baccdf9bb2f12708e255cdc46643ba69253fe9881914e9af6482ae5aa4d3",
+          "gpu": "2ac2c39311643c92f4326274b11f417029880a8e4a99f6adbd9dc7d785c92de0",
+          "rust": "7925498d8376aee5f709d7a507069e7205ead7a072b4ed06894fe0e6320cb495"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 89688,
+          "different_values": 89688,
+          "elements": 110592,
+          "max_abs": 0.00048828125,
+          "reference_peak_abs": 3505.844482421875,
+          "rms_abs": 2.305247062379913e-05,
+          "worst_actual": 2545.31591796875,
+          "worst_expected": 2545.31640625,
+          "worst_index": 11064
+        },
+        "linux": {
+          "different_bit_patterns": 89688,
+          "different_values": 89688,
+          "elements": 110592,
+          "max_abs": 0.00048828125,
+          "reference_peak_abs": 3505.844482421875,
+          "rms_abs": 2.305247062379913e-05,
+          "worst_actual": 2545.31591796875,
+          "worst_expected": 2545.31640625,
+          "worst_index": 11064
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 94691,
+          "different_values": 94691,
+          "elements": 110592,
+          "max_abs": 0.0006103515625,
+          "reference_peak_abs": 3505.844482421875,
+          "rms_abs": 2.8104262563807617e-05,
+          "worst_actual": -1103.6324462890625,
+          "worst_expected": -1103.6318359375,
+          "worst_index": 66229
+        },
+        "linux": {
+          "different_bit_patterns": 94691,
+          "different_values": 94691,
+          "elements": 110592,
+          "max_abs": 0.0006103515625,
+          "reference_peak_abs": 3505.844482421875,
+          "rms_abs": 2.8104262563807617e-05,
+          "worst_actual": -1103.6324462890625,
+          "worst_expected": -1103.6318359375,
+          "worst_index": 66229
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.18",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "fd903de9108c263baea489ca27c1153fc5585470d7b0acb3053314a29fb6d8b2",
+          "gpu": "cbc4c5568736edc8d76799305ec2ec139fedfb245944ed667e368b4c8833b619",
+          "rust": "fd903de9108c263baea489ca27c1153fc5585470d7b0acb3053314a29fb6d8b2"
+        },
+        "linux": {
+          "aocl": "fd903de9108c263baea489ca27c1153fc5585470d7b0acb3053314a29fb6d8b2",
+          "gpu": "cbc4c5568736edc8d76799305ec2ec139fedfb245944ed667e368b4c8833b619",
+          "rust": "fd903de9108c263baea489ca27c1153fc5585470d7b0acb3053314a29fb6d8b2"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 103064,
+          "different_values": 103064,
+          "elements": 110592,
+          "max_abs": 0.0001678466796875,
+          "reference_peak_abs": 209.28424072265625,
+          "rms_abs": 8.931887183046808e-06,
+          "worst_actual": 173.82826232910156,
+          "worst_expected": 173.82809448242188,
+          "worst_index": 49464
+        },
+        "linux": {
+          "different_bit_patterns": 103064,
+          "different_values": 103064,
+          "elements": 110592,
+          "max_abs": 0.0001678466796875,
+          "reference_peak_abs": 209.28424072265625,
+          "rms_abs": 8.931887183046808e-06,
+          "worst_actual": 173.82826232910156,
+          "worst_expected": 173.82809448242188,
+          "worst_index": 49464
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 103064,
+          "different_values": 103064,
+          "elements": 110592,
+          "max_abs": 0.0001678466796875,
+          "reference_peak_abs": 209.28424072265625,
+          "rms_abs": 8.931887183046808e-06,
+          "worst_actual": 173.82826232910156,
+          "worst_expected": 173.82809448242188,
+          "worst_index": 49464
+        },
+        "linux": {
+          "different_bit_patterns": 103064,
+          "different_values": 103064,
+          "elements": 110592,
+          "max_abs": 0.0001678466796875,
+          "reference_peak_abs": 209.28424072265625,
+          "rms_abs": 8.931887183046808e-06,
+          "worst_actual": 173.82826232910156,
+          "worst_expected": 173.82809448242188,
+          "worst_index": 49464
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.9",
+      "operator": "qkv",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 2048
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "5e8c876a5b6c527838898b3eaf8906fad2ab304c9a1cc60d98b54337957ff682",
+          "gpu": "4b82f651999fb6823f2ddf9a7d753531828494394c223ade0e24867d89974426",
+          "rust": "af8611af15586632e2cbe1ee39dbd8ccac0b873bbd16303a47dfc3c9ab06da22"
+        },
+        "linux": {
+          "aocl": "5e8c876a5b6c527838898b3eaf8906fad2ab304c9a1cc60d98b54337957ff682",
+          "gpu": "4b82f651999fb6823f2ddf9a7d753531828494394c223ade0e24867d89974426",
+          "rust": "af8611af15586632e2cbe1ee39dbd8ccac0b873bbd16303a47dfc3c9ab06da22"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274598,
+          "different_values": 274598,
+          "elements": 294912,
+          "max_abs": 4.57763671875e-05,
+          "reference_peak_abs": 72.69680786132812,
+          "rms_abs": 1.4125739179505653e-06,
+          "worst_actual": -70.58683776855469,
+          "worst_expected": -70.58688354492188,
+          "worst_index": 40898
+        },
+        "linux": {
+          "different_bit_patterns": 274598,
+          "different_values": 274598,
+          "elements": 294912,
+          "max_abs": 4.57763671875e-05,
+          "reference_peak_abs": 72.69680786132812,
+          "rms_abs": 1.4125739179505653e-06,
+          "worst_actual": -70.58683776855469,
+          "worst_expected": -70.58688354492188,
+          "worst_index": 40898
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 274249,
+          "different_values": 274249,
+          "elements": 294912,
+          "max_abs": 5.340576171875e-05,
+          "reference_peak_abs": 72.69680786132812,
+          "rms_abs": 1.3271906261001393e-06,
+          "worst_actual": -64.47562408447266,
+          "worst_expected": -64.47567749023438,
+          "worst_index": 270274
+        },
+        "linux": {
+          "different_bit_patterns": 274249,
+          "different_values": 274249,
+          "elements": 294912,
+          "max_abs": 5.340576171875e-05,
+          "reference_peak_abs": 72.69680786132812,
+          "rms_abs": 1.3271906261001393e-06,
+          "worst_actual": -64.47562408447266,
+          "worst_expected": -64.47567749023438,
+          "worst_index": 270274
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.9",
+      "operator": "w13",
+      "shape": {
+        "k": 768,
+        "m": 144,
+        "n": 4608
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "033bc0cf96a4f5921f06fb193553472aba566fed04909f344d33128459c48890",
+          "gpu": "62e69c8d061a1ebf4fc1f7f6b810d381c819518b292c9d19df759605f25e5ca3",
+          "rust": "62e69c8d061a1ebf4fc1f7f6b810d381c819518b292c9d19df759605f25e5ca3"
+        },
+        "linux": {
+          "aocl": "033bc0cf96a4f5921f06fb193553472aba566fed04909f344d33128459c48890",
+          "gpu": "62e69c8d061a1ebf4fc1f7f6b810d381c819518b292c9d19df759605f25e5ca3",
+          "rust": "62e69c8d061a1ebf4fc1f7f6b810d381c819518b292c9d19df759605f25e5ca3"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 612831,
+          "different_values": 612831,
+          "elements": 663552,
+          "max_abs": 1.1444091796875e-05,
+          "reference_peak_abs": 30.703384399414062,
+          "rms_abs": 6.703166299443483e-07,
+          "worst_actual": 16.953777313232422,
+          "worst_expected": 16.95378875732422,
+          "worst_index": 13706
+        },
+        "linux": {
+          "different_bit_patterns": 612831,
+          "different_values": 612831,
+          "elements": 663552,
+          "max_abs": 1.1444091796875e-05,
+          "reference_peak_abs": 30.703384399414062,
+          "rms_abs": 6.703166299443483e-07,
+          "worst_actual": 16.953777313232422,
+          "worst_expected": 16.95378875732422,
+          "worst_index": 13706
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 30.703384399414062,
+          "rms_abs": 0.0,
+          "worst_actual": 0.7922507524490356,
+          "worst_expected": 0.7922507524490356,
+          "worst_index": 0
+        },
+        "linux": {
+          "different_bit_patterns": 0,
+          "different_values": 0,
+          "elements": 663552,
+          "max_abs": 0.0,
+          "reference_peak_abs": 30.703384399414062,
+          "rms_abs": 0.0,
+          "worst_actual": 0.7922507524490356,
+          "worst_expected": 0.7922507524490356,
+          "worst_index": 0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.9",
+      "operator": "w2",
+      "shape": {
+        "k": 2304,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "57be7e35af0ce227051ae1450105e0e9ac618beb543ee2b6e3e213fa0b8206cb",
+          "gpu": "cbd67c9620d363a4e7d282de65d43c56b6327e5143757be29a77427341eacb19",
+          "rust": "c75226554dcd40c1d219734564e3f2604c8cfb1aafdcaeb02667828ed3910990"
+        },
+        "linux": {
+          "aocl": "57be7e35af0ce227051ae1450105e0e9ac618beb543ee2b6e3e213fa0b8206cb",
+          "gpu": "cbd67c9620d363a4e7d282de65d43c56b6327e5143757be29a77427341eacb19",
+          "rust": "c75226554dcd40c1d219734564e3f2604c8cfb1aafdcaeb02667828ed3910990"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 83367,
+          "different_values": 83367,
+          "elements": 110592,
+          "max_abs": 0.001953125,
+          "reference_peak_abs": 9192.6455078125,
+          "rms_abs": 3.998034037467798e-05,
+          "worst_actual": 6317.3330078125,
+          "worst_expected": 6317.3310546875,
+          "worst_index": 2116
+        },
+        "linux": {
+          "different_bit_patterns": 83367,
+          "different_values": 83367,
+          "elements": 110592,
+          "max_abs": 0.001953125,
+          "reference_peak_abs": 9192.6455078125,
+          "rms_abs": 3.998034037467798e-05,
+          "worst_actual": 6317.3330078125,
+          "worst_expected": 6317.3310546875,
+          "worst_index": 2116
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 92092,
+          "different_values": 92092,
+          "elements": 110592,
+          "max_abs": 0.00244140625,
+          "reference_peak_abs": 9192.6455078125,
+          "rms_abs": 4.7949567266578516e-05,
+          "worst_actual": 6477.494140625,
+          "worst_expected": 6477.49658203125,
+          "worst_index": 1591
+        },
+        "linux": {
+          "different_bit_patterns": 92092,
+          "different_values": 92092,
+          "elements": 110592,
+          "max_abs": 0.00244140625,
+          "reference_peak_abs": 9192.6455078125,
+          "rms_abs": 4.7949567266578516e-05,
+          "worst_actual": 6477.494140625,
+          "worst_expected": 6477.49658203125,
+          "worst_index": 1591
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.9",
+      "operator": "wo",
+      "shape": {
+        "k": 1024,
+        "m": 144,
+        "n": 768
+      },
+      "aocl_arrays_bit_exact": true,
+      "rust_arrays_bit_exact": true,
+      "output_sha256": {
+        "windows": {
+          "aocl": "fb5055e0f0e432c4540e2c41727dc4d916baa2c0f6c4f483a7104f8d1c408461",
+          "gpu": "cb27b0ab05fe277e958f87b3a33e8c13f98146bde0888fdaab9e3522e5368e1e",
+          "rust": "fb5055e0f0e432c4540e2c41727dc4d916baa2c0f6c4f483a7104f8d1c408461"
+        },
+        "linux": {
+          "aocl": "fb5055e0f0e432c4540e2c41727dc4d916baa2c0f6c4f483a7104f8d1c408461",
+          "gpu": "cb27b0ab05fe277e958f87b3a33e8c13f98146bde0888fdaab9e3522e5368e1e",
+          "rust": "fb5055e0f0e432c4540e2c41727dc4d916baa2c0f6c4f483a7104f8d1c408461"
+        }
+      },
+      "aocl_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 97550,
+          "different_values": 97550,
+          "elements": 110592,
+          "max_abs": 9.918212890625e-05,
+          "reference_peak_abs": 214.46762084960938,
+          "rms_abs": 8.149666157304416e-06,
+          "worst_actual": -125.49525451660156,
+          "worst_expected": -125.49515533447266,
+          "worst_index": 70137
+        },
+        "linux": {
+          "different_bit_patterns": 97550,
+          "different_values": 97550,
+          "elements": 110592,
+          "max_abs": 9.918212890625e-05,
+          "reference_peak_abs": 214.46762084960938,
+          "rms_abs": 8.149666157304416e-06,
+          "worst_actual": -125.49525451660156,
+          "worst_expected": -125.49515533447266,
+          "worst_index": 70137
+        }
+      },
+      "rust_vs_gpu": {
+        "windows": {
+          "different_bit_patterns": 97550,
+          "different_values": 97550,
+          "elements": 110592,
+          "max_abs": 9.918212890625e-05,
+          "reference_peak_abs": 214.46762084960938,
+          "rms_abs": 8.149666157304416e-06,
+          "worst_actual": -125.49525451660156,
+          "worst_expected": -125.49515533447266,
+          "worst_index": 70137
+        },
+        "linux": {
+          "different_bit_patterns": 97550,
+          "different_values": 97550,
+          "elements": 110592,
+          "max_abs": 9.918212890625e-05,
+          "reference_peak_abs": 214.46762084960938,
+          "rms_abs": 8.149666157304416e-06,
+          "worst_actual": -125.49525451660156,
+          "worst_expected": -125.49515533447266,
+          "worst_index": 70137
+        }
+      }
+    }
+  ],
+  "comparison_script_sha256": "01e57c6cf6f95607a18dd28eeefe535eeff4db15dc488e1d6beea0f3641ecea3",
+  "limitations": [
+    "Array SHA-256 equality tests exact FP32 byte identity; unequal hashes alone do not quantify cross-platform error magnitude. Each platform's full maximum/RMS errors to the identical GPU fixture are retained.",
+    "Windows and Linux compiler/ABI/library builds may choose different reductions or kernels.",
+    "Linux ran under WSL with concurrent functional jobs; neither platform run records throughput or latency."
+  ]
+}

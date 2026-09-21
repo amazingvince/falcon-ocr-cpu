@@ -1,0 +1,77 @@
+{
+  "inventory_sha256": "9994c4cf973c4c6c5c11c4c7e5cfe32ee3803d1177c3bb6e9334e08505ff3005",
+  "selected": {
+    "prefill": {
+      "source_sha256": "df8bf27f03ed01178889a917b328d377e3c797336d007e82a391d69c992cd5c7",
+      "source_copy": "artifacts/reference/bf16-flex-prefill-compiled.py",
+      "constants": {
+        "BLOCK_M": [
+          "128"
+        ],
+        "BLOCK_N": [
+          "64"
+        ],
+        "SPLIT_KV": [],
+        "Q_LEN": [
+          "ks0"
+        ],
+        "KV_LEN": [
+          "ks0"
+        ],
+        "SPARSE_Q_BLOCK_SIZE": [
+          "128"
+        ],
+        "SPARSE_KV_BLOCK_SIZE": [
+          "128"
+        ],
+        "PRESCALE_QK": [
+          "False"
+        ],
+        "FLOAT32_PRECISION": [
+          "'ieee'"
+        ],
+        "GQA_SHARED_HEADS": [
+          "1"
+        ]
+      }
+    },
+    "decode": {
+      "source_sha256": "3e174d0b9c11cbe9dbe62088928eaef45d19189f32b18de6322f513c36475a86",
+      "source_copy": "artifacts/reference/bf16-flex-decode-compiled.py",
+      "constants": {
+        "BLOCK_M": [
+          "16"
+        ],
+        "BLOCK_N": [
+          "64"
+        ],
+        "SPLIT_KV": [
+          "16"
+        ],
+        "Q_LEN": [
+          "1"
+        ],
+        "KV_LEN": [
+          "ks1"
+        ],
+        "SPARSE_Q_BLOCK_SIZE": [
+          "128"
+        ],
+        "SPARSE_KV_BLOCK_SIZE": [
+          "128"
+        ],
+        "PRESCALE_QK": [
+          "False"
+        ],
+        "FLOAT32_PRECISION": [
+          "'ieee'"
+        ],
+        "GQA_SHARED_HEADS": [
+          "1"
+        ]
+      }
+    }
+  },
+  "bf16_sources_found": 19,
+  "qualification": "Read from generated source after the BF16 reference run; no source was executed. All observed BF16 variants agree on block dimensions and split count."
+}

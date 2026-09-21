@@ -1,0 +1,15 @@
+{
+  "scope": "Actual v2 binary rejected altered layer mapping before quantized operator processing; unchanged fixture bytes retained.",
+  "probe_binary_sha256": "e404edb08748697440e866cce87c01ad7cdedbdb4d73b7aa37aa6224984e1ed8",
+  "fixture_sha256": "ce7345c219d8923182ff66e9aad2f4d6bad3c193a19c3445a850c2d3a90e5417",
+  "mutated_sidecar_sha256": "e1b82010f56159b3dbf4d6fb530fbd5a179613ffd4fc4635a2cf18a6d5d0a37f",
+  "mutation": {
+    "path": "cases[0].weight_prefix",
+    "before": "layers.9.",
+    "after": "layers.10."
+  },
+  "exit_code": 1,
+  "stderr": "Error: fixture sidecar identity mismatch before case/weight selection\n",
+  "operator_progress_emitted": false,
+  "report_written": false
+}

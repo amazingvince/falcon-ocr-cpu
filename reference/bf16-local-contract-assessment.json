@@ -1,0 +1,1515 @@
+{
+  "schema_version": 1,
+  "contract_sha256": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+  "bound_changes": false,
+  "matrix_fp32_accumulation": [
+    {
+      "report": "reference/bf16-isolated-probe-avx512.json",
+      "report_sha256": "2ceff36dd686fc10082fa028154d8e9feab21b2a1133ee74987346762bf5e0f5",
+      "backend": "Avx512Bf16",
+      "passed": true,
+      "checks": 80,
+      "worst_error_to_bound": 0.2842164444768801,
+      "cases": [
+        {
+          "operator": "prefill.layer.0.qkv.rows1",
+          "path": "direct",
+          "max_abs": 1.9073486328125e-06,
+          "bound": 7.044864469207823e-05,
+          "error_to_bound": 0.02707431265923241,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows1",
+          "path": "packed",
+          "max_abs": 1.9073486328125e-06,
+          "bound": 7.044864469207823e-05,
+          "error_to_bound": 0.02707431265923241,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows2",
+          "path": "direct",
+          "max_abs": 3.0517578125e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.2582190701339637,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows2",
+          "path": "packed",
+          "max_abs": 2.86102294921875e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.242080378250591,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows4",
+          "path": "direct",
+          "max_abs": 3.0517578125e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.2582190701339637,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows4",
+          "path": "packed",
+          "max_abs": 2.86102294921875e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.242080378250591,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows8",
+          "path": "direct",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.24895272292040693,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows8",
+          "path": "packed",
+          "max_abs": 5.340576171875e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.26810293237582283,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows32",
+          "path": "direct",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.24895272292040693,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows32",
+          "path": "packed",
+          "max_abs": 5.340576171875e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.26810293237582283,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows1",
+          "path": "direct",
+          "max_abs": 1.9073486328125e-06,
+          "bound": 0.00013705878518521786,
+          "error_to_bound": 0.013916281471741896,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows1",
+          "path": "packed",
+          "max_abs": 3.814697265625e-06,
+          "bound": 0.00013705878518521786,
+          "error_to_bound": 0.027832562943483793,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows2",
+          "path": "direct",
+          "max_abs": 0.000110626220703125,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.2525147924670091,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows2",
+          "path": "packed",
+          "max_abs": 0.000102996826171875,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.23509997919342226,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows4",
+          "path": "direct",
+          "max_abs": 0.000110626220703125,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.2525147924670091,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows4",
+          "path": "packed",
+          "max_abs": 0.000102996826171875,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.23509997919342226,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows8",
+          "path": "direct",
+          "max_abs": 0.000110626220703125,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.2525147924670091,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows8",
+          "path": "packed",
+          "max_abs": 0.000102996826171875,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.23509997919342226,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows32",
+          "path": "direct",
+          "max_abs": 1.9073486328125e-05,
+          "bound": 0.0001919325877679512,
+          "error_to_bound": 0.09937596606150632,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows32",
+          "path": "packed",
+          "max_abs": 2.09808349609375e-05,
+          "bound": 0.0001919325877679512,
+          "error_to_bound": 0.10931356266765695,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows1",
+          "path": "direct",
+          "max_abs": 4.0531158447265625e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.24638073452114945,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows1",
+          "path": "packed",
+          "max_abs": 4.0531158447265625e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.24638073452114945,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows2",
+          "path": "direct",
+          "max_abs": 4.0531158447265625e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.24638073452114945,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows2",
+          "path": "packed",
+          "max_abs": 4.0531158447265625e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.24638073452114945,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows4",
+          "path": "direct",
+          "max_abs": 5.245208740234375e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.26666666666666666,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows4",
+          "path": "packed",
+          "max_abs": 4.76837158203125e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.24242424242424243,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows8",
+          "path": "direct",
+          "max_abs": 5.245208740234375e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.26666666666666666,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows8",
+          "path": "packed",
+          "max_abs": 4.76837158203125e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.24242424242424243,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows32",
+          "path": "direct",
+          "max_abs": 7.152557373046875e-06,
+          "bound": 2.856327046174556e-05,
+          "error_to_bound": 0.2504110088733084,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows32",
+          "path": "packed",
+          "max_abs": 6.67572021484375e-06,
+          "bound": 2.856327046174556e-05,
+          "error_to_bound": 0.23371694161508783,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows1",
+          "path": "direct",
+          "max_abs": 6.854534149169922e-07,
+          "bound": 1.9601135136326775e-05,
+          "error_to_bound": 0.03497008770918791,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows1",
+          "path": "packed",
+          "max_abs": 1.430511474609375e-06,
+          "bound": 1.9601135136326775e-05,
+          "error_to_bound": 0.07298105261047912,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows2",
+          "path": "direct",
+          "max_abs": 3.814697265625e-06,
+          "bound": 3.864154132315889e-05,
+          "error_to_bound": 0.09872011143972541,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows2",
+          "path": "packed",
+          "max_abs": 5.7220458984375e-06,
+          "bound": 3.864154132315889e-05,
+          "error_to_bound": 0.1480801671595881,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows4",
+          "path": "direct",
+          "max_abs": 1.33514404296875e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.07193521828656624,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows4",
+          "path": "packed",
+          "max_abs": 4.1961669921875e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.22608211461492245,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows8",
+          "path": "direct",
+          "max_abs": 2.288818359375e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.12331751706268498,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows8",
+          "path": "packed",
+          "max_abs": 4.1961669921875e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.22608211461492245,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows32",
+          "path": "direct",
+          "max_abs": 3.4332275390625e-05,
+          "bound": 0.00018560359603725374,
+          "error_to_bound": 0.18497634810768396,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows32",
+          "path": "packed",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018560359603725374,
+          "error_to_bound": 0.2671880583777657,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows1",
+          "path": "direct",
+          "max_abs": 1.430511474609375e-06,
+          "bound": 4.503214586293325e-05,
+          "error_to_bound": 0.03176645143590313,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows1",
+          "path": "packed",
+          "max_abs": 1.6689300537109375e-06,
+          "bound": 4.503214586293325e-05,
+          "error_to_bound": 0.03706086000855365,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows2",
+          "path": "direct",
+          "max_abs": 4.1961669921875e-05,
+          "bound": 0.00017121895507443696,
+          "error_to_bound": 0.24507607760853511,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows2",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00017121895507443696,
+          "error_to_bound": 0.26735572102749283,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows4",
+          "path": "direct",
+          "max_abs": 8.7738037109375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.25569427857995874,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows4",
+          "path": "packed",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows8",
+          "path": "direct",
+          "max_abs": 8.7738037109375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.25569427857995874,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows8",
+          "path": "packed",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows32",
+          "path": "direct",
+          "max_abs": 8.7738037109375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.25569427857995874,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows32",
+          "path": "packed",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows1",
+          "path": "direct",
+          "max_abs": 1.9073486328125e-06,
+          "bound": 7.700824062339962e-05,
+          "error_to_bound": 0.024768110755057762,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows1",
+          "path": "packed",
+          "max_abs": 3.814697265625e-06,
+          "bound": 7.700824062339962e-05,
+          "error_to_bound": 0.049536221510115525,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows2",
+          "path": "direct",
+          "max_abs": 0.00012969970703125,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.24486236338317416,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows2",
+          "path": "packed",
+          "max_abs": 0.00012969970703125,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.24486236338317416,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows4",
+          "path": "direct",
+          "max_abs": 0.00012969970703125,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.24486236338317416,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows4",
+          "path": "packed",
+          "max_abs": 0.00012969970703125,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.24486236338317416,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows8",
+          "path": "direct",
+          "max_abs": 0.0002288818359375,
+          "bound": 0.0009016580879688263,
+          "error_to_bound": 0.2538454864338923,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows8",
+          "path": "packed",
+          "max_abs": 0.00023651123046875,
+          "bound": 0.0009016580879688263,
+          "error_to_bound": 0.26230700264835544,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows32",
+          "path": "direct",
+          "max_abs": 3.0517578125e-05,
+          "bound": 0.0005251573165878654,
+          "error_to_bound": 0.058111307147510775,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows32",
+          "path": "packed",
+          "max_abs": 3.814697265625e-05,
+          "bound": 0.0005251573165878654,
+          "error_to_bound": 0.07263913393438848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows1",
+          "path": "direct",
+          "max_abs": 7.62939453125e-06,
+          "bound": 5.1194925617892295e-05,
+          "error_to_bound": 0.14902638179795646,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows1",
+          "path": "packed",
+          "max_abs": 9.5367431640625e-06,
+          "bound": 5.1194925617892295e-05,
+          "error_to_bound": 0.1862829772474456,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows2",
+          "path": "direct",
+          "max_abs": 3.4332275390625e-05,
+          "bound": 0.00013478100299835205,
+          "error_to_bound": 0.25472636815920396,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows2",
+          "path": "packed",
+          "max_abs": 3.24249267578125e-05,
+          "bound": 0.00013478100299835205,
+          "error_to_bound": 0.24057490326147044,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows4",
+          "path": "direct",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.24439140811455848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows4",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.24439140811455848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows8",
+          "path": "direct",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.24439140811455848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows8",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.24439140811455848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows32",
+          "path": "direct",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.24439140811455848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows32",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.24439140811455848,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows1",
+          "path": "direct",
+          "max_abs": 9.5367431640625e-07,
+          "bound": 3.879805444739759e-05,
+          "error_to_bound": 0.02458046749996812,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows1",
+          "path": "packed",
+          "max_abs": 1.9073486328125e-06,
+          "bound": 3.879805444739759e-05,
+          "error_to_bound": 0.04916093499993624,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows2",
+          "path": "direct",
+          "max_abs": 0.001708984375,
+          "bound": 0.012473615817725658,
+          "error_to_bound": 0.13700793739145342,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows2",
+          "path": "packed",
+          "max_abs": 0.002197265625,
+          "bound": 0.012473615817725658,
+          "error_to_bound": 0.1761530623604401,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows4",
+          "path": "direct",
+          "max_abs": 0.005859375,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.10658114501222164,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows4",
+          "path": "packed",
+          "max_abs": 0.01171875,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.21316229002444328,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows8",
+          "path": "direct",
+          "max_abs": 0.005859375,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.10658114501222164,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows8",
+          "path": "packed",
+          "max_abs": 0.01171875,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.21316229002444328,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows32",
+          "path": "direct",
+          "max_abs": 0.0087890625,
+          "bound": 0.054975707083940506,
+          "error_to_bound": 0.15987175001824505,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows32",
+          "path": "packed",
+          "max_abs": 0.015625,
+          "bound": 0.054975707083940506,
+          "error_to_bound": 0.2842164444768801,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "report": "reference/bf16-isolated-probe-scalar.json",
+      "report_sha256": "9f102232258ed52ea0c98b3e843154c59e94a2d435dd1bfd13e0c050d95e3f61",
+      "backend": "Scalar",
+      "passed": true,
+      "checks": 80,
+      "worst_error_to_bound": 0.4521644064854497,
+      "cases": [
+        {
+          "operator": "prefill.layer.0.qkv.rows1",
+          "path": "direct",
+          "max_abs": 7.62939453125e-06,
+          "bound": 7.044864469207823e-05,
+          "error_to_bound": 0.10829725063692965,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows1",
+          "path": "packed",
+          "max_abs": 7.62939453125e-06,
+          "bound": 7.044864469207823e-05,
+          "error_to_bound": 0.10829725063692965,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows2",
+          "path": "direct",
+          "max_abs": 3.4332275390625e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.2904964539007092,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows2",
+          "path": "packed",
+          "max_abs": 3.4332275390625e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.2904964539007092,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows4",
+          "path": "direct",
+          "max_abs": 3.4332275390625e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.2904964539007092,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows4",
+          "path": "packed",
+          "max_abs": 3.4332275390625e-05,
+          "bound": 0.00011818483471870422,
+          "error_to_bound": 0.2904964539007092,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows8",
+          "path": "direct",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.22980251346499103,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows8",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.22980251346499103,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows32",
+          "path": "direct",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.22980251346499103,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.qkv.rows32",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.00019919872283935547,
+          "error_to_bound": 0.22980251346499103,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows1",
+          "path": "direct",
+          "max_abs": 9.059906005859375e-06,
+          "bound": 0.00013705878518521786,
+          "error_to_bound": 0.066102336990774,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows1",
+          "path": "packed",
+          "max_abs": 9.059906005859375e-06,
+          "bound": 0.00013705878518521786,
+          "error_to_bound": 0.066102336990774,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows2",
+          "path": "direct",
+          "max_abs": 9.5367431640625e-05,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.21768516591983542,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows2",
+          "path": "packed",
+          "max_abs": 9.5367431640625e-05,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.21768516591983542,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows4",
+          "path": "direct",
+          "max_abs": 9.5367431640625e-05,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.21768516591983542,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows4",
+          "path": "packed",
+          "max_abs": 9.5367431640625e-05,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.21768516591983542,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows8",
+          "path": "direct",
+          "max_abs": 0.000102996826171875,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.23509997919342226,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows8",
+          "path": "packed",
+          "max_abs": 0.000102996826171875,
+          "bound": 0.0004380979808047414,
+          "error_to_bound": 0.23509997919342226,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows32",
+          "path": "direct",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.0001919325877679512,
+          "error_to_bound": 0.23850231854761517,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.wo.rows32",
+          "path": "packed",
+          "max_abs": 4.57763671875e-05,
+          "bound": 0.0001919325877679512,
+          "error_to_bound": 0.23850231854761517,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows1",
+          "path": "direct",
+          "max_abs": 4.5299530029296875e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.2753667032883435,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows1",
+          "path": "packed",
+          "max_abs": 4.5299530029296875e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.2753667032883435,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows2",
+          "path": "direct",
+          "max_abs": 4.5299530029296875e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.2753667032883435,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows2",
+          "path": "packed",
+          "max_abs": 4.5299530029296875e-06,
+          "bound": 1.6450620023533702e-05,
+          "error_to_bound": 0.2753667032883435,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows4",
+          "path": "direct",
+          "max_abs": 5.7220458984375e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.2909090909090909,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows4",
+          "path": "packed",
+          "max_abs": 5.7220458984375e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.2909090909090909,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows8",
+          "path": "direct",
+          "max_abs": 5.7220458984375e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.2909090909090909,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows8",
+          "path": "packed",
+          "max_abs": 5.7220458984375e-06,
+          "bound": 1.9669532775878906e-05,
+          "error_to_bound": 0.2909090909090909,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows32",
+          "path": "direct",
+          "max_abs": 8.58306884765625e-06,
+          "bound": 2.856327046174556e-05,
+          "error_to_bound": 0.3004932106479701,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w13.rows32",
+          "path": "packed",
+          "max_abs": 8.58306884765625e-06,
+          "bound": 2.856327046174556e-05,
+          "error_to_bound": 0.3004932106479701,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows1",
+          "path": "direct",
+          "max_abs": 5.245208740234375e-06,
+          "bound": 1.9601135136326775e-05,
+          "error_to_bound": 0.2675971929050901,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows1",
+          "path": "packed",
+          "max_abs": 5.245208740234375e-06,
+          "bound": 1.9601135136326775e-05,
+          "error_to_bound": 0.2675971929050901,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows2",
+          "path": "direct",
+          "max_abs": 1.430511474609375e-05,
+          "bound": 3.864154132315889e-05,
+          "error_to_bound": 0.3702004178989703,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows2",
+          "path": "packed",
+          "max_abs": 1.430511474609375e-05,
+          "bound": 3.864154132315889e-05,
+          "error_to_bound": 0.3702004178989703,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows4",
+          "path": "direct",
+          "max_abs": 7.62939453125e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.4110583902089499,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows4",
+          "path": "packed",
+          "max_abs": 7.62939453125e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.4110583902089499,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows8",
+          "path": "direct",
+          "max_abs": 7.62939453125e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.4110583902089499,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows8",
+          "path": "packed",
+          "max_abs": 7.62939453125e-05,
+          "bound": 0.00018560366879682988,
+          "error_to_bound": 0.4110583902089499,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows32",
+          "path": "direct",
+          "max_abs": 8.392333984375e-05,
+          "bound": 0.00018560359603725374,
+          "error_to_bound": 0.4521644064854497,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.0.w2.rows32",
+          "path": "packed",
+          "max_abs": 8.392333984375e-05,
+          "bound": 0.00018560359603725374,
+          "error_to_bound": 0.4521644064854497,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows1",
+          "path": "direct",
+          "max_abs": 3.814697265625e-06,
+          "bound": 4.503214586293325e-05,
+          "error_to_bound": 0.08471053716240834,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows1",
+          "path": "packed",
+          "max_abs": 3.814697265625e-06,
+          "bound": 4.503214586293325e-05,
+          "error_to_bound": 0.08471053716240834,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows2",
+          "path": "direct",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00017121895507443696,
+          "error_to_bound": 0.2896353644464506,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows2",
+          "path": "packed",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00017121895507443696,
+          "error_to_bound": 0.2896353644464506,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows4",
+          "path": "direct",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows4",
+          "path": "packed",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows8",
+          "path": "direct",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows8",
+          "path": "packed",
+          "max_abs": 9.1552734375e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2668114211269135,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows32",
+          "path": "direct",
+          "max_abs": 9.5367431640625e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2779285636738682,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.qkv.rows32",
+          "path": "packed",
+          "max_abs": 9.5367431640625e-05,
+          "bound": 0.0003431364893913269,
+          "error_to_bound": 0.2779285636738682,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows1",
+          "path": "direct",
+          "max_abs": 1.1444091796875e-05,
+          "bound": 7.700824062339962e-05,
+          "error_to_bound": 0.14860866453034657,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows1",
+          "path": "packed",
+          "max_abs": 1.1444091796875e-05,
+          "bound": 7.700824062339962e-05,
+          "error_to_bound": 0.14860866453034657,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows2",
+          "path": "direct",
+          "max_abs": 0.00014495849609375,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.2736697002517829,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows2",
+          "path": "packed",
+          "max_abs": 0.00014495849609375,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.2736697002517829,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows4",
+          "path": "direct",
+          "max_abs": 0.00014495849609375,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.2736697002517829,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows4",
+          "path": "packed",
+          "max_abs": 0.00014495849609375,
+          "bound": 0.0005296841263771057,
+          "error_to_bound": 0.2736697002517829,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows8",
+          "path": "direct",
+          "max_abs": 0.000244140625,
+          "bound": 0.0009016580879688263,
+          "error_to_bound": 0.2707685188628185,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows8",
+          "path": "packed",
+          "max_abs": 0.000244140625,
+          "bound": 0.0009016580879688263,
+          "error_to_bound": 0.2707685188628185,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows32",
+          "path": "direct",
+          "max_abs": 0.00012969970703125,
+          "bound": 0.0005251573165878654,
+          "error_to_bound": 0.2469730553769208,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.wo.rows32",
+          "path": "packed",
+          "max_abs": 0.00012969970703125,
+          "bound": 0.0005251573165878654,
+          "error_to_bound": 0.2469730553769208,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows1",
+          "path": "direct",
+          "max_abs": 1.0013580322265625e-05,
+          "bound": 5.1194925617892295e-05,
+          "error_to_bound": 0.1955971261098179,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows1",
+          "path": "packed",
+          "max_abs": 1.0013580322265625e-05,
+          "bound": 5.1194925617892295e-05,
+          "error_to_bound": 0.1955971261098179,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows2",
+          "path": "direct",
+          "max_abs": 3.814697265625e-05,
+          "bound": 0.00013478100299835205,
+          "error_to_bound": 0.2830292979546711,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows2",
+          "path": "packed",
+          "max_abs": 3.814697265625e-05,
+          "bound": 0.00013478100299835205,
+          "error_to_bound": 0.2830292979546711,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows4",
+          "path": "direct",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.26475735879077167,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows4",
+          "path": "packed",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.26475735879077167,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows8",
+          "path": "direct",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.26475735879077167,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows8",
+          "path": "packed",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.26475735879077167,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows32",
+          "path": "direct",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.26475735879077167,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w13.rows32",
+          "path": "packed",
+          "max_abs": 4.9591064453125e-05,
+          "bound": 0.00018730759620666504,
+          "error_to_bound": 0.26475735879077167,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows1",
+          "path": "direct",
+          "max_abs": 4.76837158203125e-06,
+          "bound": 3.879805444739759e-05,
+          "error_to_bound": 0.1229023374998406,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows1",
+          "path": "packed",
+          "max_abs": 4.76837158203125e-06,
+          "bound": 3.879805444739759e-05,
+          "error_to_bound": 0.1229023374998406,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows2",
+          "path": "direct",
+          "max_abs": 0.00390625,
+          "bound": 0.012473615817725658,
+          "error_to_bound": 0.31316099975189354,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows2",
+          "path": "packed",
+          "max_abs": 0.00390625,
+          "bound": 0.012473615817725658,
+          "error_to_bound": 0.31316099975189354,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows4",
+          "path": "direct",
+          "max_abs": 0.0166015625,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.30197991086796133,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows4",
+          "path": "packed",
+          "max_abs": 0.0166015625,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.30197991086796133,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows8",
+          "path": "direct",
+          "max_abs": 0.0166015625,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.30197991086796133,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows8",
+          "path": "packed",
+          "max_abs": 0.0166015625,
+          "bound": 0.0549757182598114,
+          "error_to_bound": 0.30197991086796133,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows32",
+          "path": "direct",
+          "max_abs": 0.021484375,
+          "bound": 0.054975707083940506,
+          "error_to_bound": 0.3907976111557101,
+          "passed": true
+        },
+        {
+          "operator": "prefill.layer.12.w2.rows32",
+          "path": "packed",
+          "max_abs": 0.021484375,
+          "bound": 0.054975707083940506,
+          "error_to_bound": 0.3907976111557101,
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "rms_gate_report_sha256": "fcdf3cf61dfff876dc648049d2692103d538257ae9a530e4b1289bc2f0454144",
+  "rms_gate_cases": [
+    {
+      "operator": "rms.width768.actual",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 24576,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "rms.width64.actual",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 2048,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "rms.width768.small",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 768,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "rms.width64.small",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 64,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "gate.layer.0",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 73728,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "gate.layer.12",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 73728,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "prefill.final_norm",
+      "passed": true,
+      "evidence": {
+        "sole_differing_index": 40195,
+        "actual_max_error": 0.03125,
+        "frozen_element_bound": 0.125
+      },
+      "comparison": {
+        "different_bits": 1,
+        "elements": 110592,
+        "maximum_absolute_error": 0.03125,
+        "maximum_bf16_ulp_distance": 1,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": 40195
+      }
+    },
+    {
+      "operator": "decode.2.final_norm",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 768,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    },
+    {
+      "operator": "decode.6.final_norm",
+      "passed": true,
+      "evidence": "Exact GPU output bit equality",
+      "comparison": {
+        "different_bits": 0,
+        "elements": 768,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      }
+    }
+  ],
+  "completed_operator_checks_passed": false,
+  "local_contract_complete": false,
+  "pending": [
+    "Resolve recorded native BF16 local operator failures without widening bounds",
+    "Resolve same-prefix logit RMS failures without widening bounds",
+    "Corrected corpus and long-boundary BF16 output parity",
+    "RoPE/residual/image projector coverage beyond current named fixtures"
+  ],
+  "qualification": "FP32 accumulation and RMS/gate subchecks pass; native attention/packed-linear and same-prefix logit failures remain. BF16 path is experimental and unqualified. Bounds unchanged.",
+  "native_operator_assessments": [
+    {
+      "backend": "avx512",
+      "kind": "linear",
+      "report": "reference/bf16-native-linear-assessment-avx512.json",
+      "sha256": "3a51e7be583c2f990d3311418ed080c0d746ff5fc25474f07087cca5a480aa30",
+      "passed": false,
+      "checks": 80,
+      "failures": [
+        "prefill.layer.0.w2.rows32.packed"
+      ]
+    },
+    {
+      "backend": "avx512",
+      "kind": "attention",
+      "report": "reference/bf16-native-attention-assessment-avx512.json",
+      "sha256": "c4fdf09c04263e29b8e4bd1566cdc916466d4316f5bfd026f9018f200f5d5856",
+      "passed": false,
+      "checks": 18,
+      "failures": [
+        "prefill.layer.0.raw",
+        "prefill.layer.0.scaled",
+        "prefill.layer.17.raw",
+        "prefill.layer.17.scaled",
+        "prefill.layer.19.scaled"
+      ]
+    },
+    {
+      "backend": "scalar",
+      "kind": "linear",
+      "report": "reference/bf16-native-linear-assessment-scalar.json",
+      "sha256": "c502532dc5b788994db4565c5aceae3f3e288a9c01c44beecb8157b1275ec33c",
+      "passed": true,
+      "checks": 80,
+      "failures": []
+    },
+    {
+      "backend": "scalar",
+      "kind": "attention",
+      "report": "reference/bf16-native-attention-assessment-scalar.json",
+      "sha256": "e07335db20a9db26557b60b0caad3d78a5afd42253ebfd2f871989f83aea3415",
+      "passed": false,
+      "checks": 18,
+      "failures": [
+        "prefill.layer.0.raw",
+        "prefill.layer.0.scaled",
+        "prefill.layer.17.raw",
+        "prefill.layer.17.scaled",
+        "prefill.layer.19.raw",
+        "prefill.layer.19.scaled"
+      ]
+    }
+  ],
+  "same_prefix_output_assessments": [
+    {
+      "backend": "avx512",
+      "report": "reference/bf16-same-prefix-output-assessment-avx512.json",
+      "sha256": "fa269bb7f736606390c6b046639fde8ef29a7457bcd2d3635b926df283c09d29",
+      "passed": false,
+      "failures": [
+        "decode.14.logits"
+      ],
+      "all_argmax_match": true
+    },
+    {
+      "backend": "scalar",
+      "report": "reference/bf16-same-prefix-output-assessment-scalar.json",
+      "sha256": "9f995392034beda5e5dbfc8ee05bb85ff76898ad2f42ad9ad35d1ad1a4411d79",
+      "passed": false,
+      "failures": [
+        "decode.1.logits"
+      ],
+      "all_argmax_match": true
+    }
+  ]
+}

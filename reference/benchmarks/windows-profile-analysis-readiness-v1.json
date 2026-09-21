@@ -1,0 +1,44 @@
+{
+  "kind": "cpu-profile-offline-analysis-readiness-v1",
+  "recorded_utc": "2026-09-20T15:03:27.748299+00:00",
+  "status": "offline_checks_passed_real_trace_pending",
+  "stack_parser_checks": {
+    "command": "C:/Users/amazi/mambaforge/python.exe -m unittest discover -s experiments/profiling -p test_analyze_stacks.py -v",
+    "passed": 6,
+    "failed": 0,
+    "evidence": "Observed native command output, exit0; source identities below recorded afterward.",
+    "scope": [
+      "weighted inclusive/exclusive totals and time bins",
+      "repeated frame names not double counted",
+      "wrong PID rejected",
+      "rootless samples cannot hide among valid samples",
+      "ambiguous process roots rejected",
+      "cyclic stacks rejected",
+      "nonfinite sample metric rejected"
+    ]
+  },
+  "trace_audit_checks": {
+    "build": "artifacts/tools/trace-audit-build-v4/build.json",
+    "host_self_tests_passed": 20,
+    "change": "Descriptive zero-loss flag now uses the same loss/truncation predicate as acceptance; a benign zero-loss callback no longer incorrectly clears the flag.",
+    "prior_builds_preserved": true
+  },
+  "files_sha256": {
+    "experiments/profiling/analyze_stacks.py": "b786b34f0e21c49ebfc72ea3b6327c68b6201d4668982616b860dfead8ce89b2",
+    "experiments/profiling/test_analyze_stacks.py": "cce734fee5f0ffc5af5358db4a1f3f94954cd6ca4fc3cbedbe73391d5c9dd7f7",
+    "experiments/profiling/TraceAudit.cs": "311e5f451a7006c12ee5a53a6e4a6a8ffe6ec13480cc248d93207830e0b818b6",
+    "experiments/profiling/PROFILE_ACCEPTANCE.md": "f1f9bb773eb3ccd766cb4b013a86dc1ce54413b4f0b25c0c600b373fe140d86c",
+    "experiments/profiling/run_trace_audit.ps1": "19257861b251c761060cedfa56417272b81e66aa5af09b7552ce401637e02f35",
+    "artifacts/tools/trace-audit-build-v4/TraceAudit.exe": "930cace564616e131a94f1f9b871c73a2e2536e96692aa16149a0d8aa18a5a1e",
+    "artifacts/tools/trace-audit-build-v4/build.json": "1666d26d64f957c139dd9296a64f6d73ac0c094e4e9ee92c7b3097f0fa09e2ba"
+  },
+  "real_etl_read": false,
+  "recorder_started": false,
+  "model_run": false,
+  "hotspot_or_speedup_claim": false,
+  "limits": [
+    "Offline format and reporting checks do not establish a usable actual CPU trace.",
+    "Windows elevation retry is awaiting user response; no repeat or alternative privileged attempt occurred.",
+    "Numerical tolerances and production model arithmetic are unchanged."
+  ]
+}

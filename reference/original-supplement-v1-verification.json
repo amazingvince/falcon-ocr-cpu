@@ -1,0 +1,29 @@
+{
+  "manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+  "deterministic_rerender_all_artifact_bytes": true,
+  "independent_pixel_checks": [
+    {
+      "name": "rotation-inverse-90",
+      "pass": true
+    },
+    {
+      "name": "rotation-inverse-180",
+      "pass": true
+    },
+    {
+      "name": "rotation-inverse-270",
+      "pass": true
+    },
+    {
+      "name": "blank-white-uniform-and-empty",
+      "pass": true
+    },
+    {
+      "name": "blank-offwhite-uniform-and-empty",
+      "pass": true
+    }
+  ],
+  "inference_status": "not_run",
+  "natural_corpus_unchanged": true,
+  "natural_corpus_manifest_sha256": "cdec2de6243a61005463d6546e5d80cd1772bf362d126a62be7673316d6072ae"
+}

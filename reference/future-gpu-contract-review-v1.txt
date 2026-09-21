@@ -1,0 +1,23 @@
+test_accidental_overwrite_and_missing_resume_rejected (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_bad_selection_and_output_collisions (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_changed_configuration_rejected_before_archive (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_derived_or_teacher_forced_records_rejected_at_all_levels (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_exact_selected_order (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_malformed_record_cannot_resume_as_complete (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_nonfinite_json_does_not_replace_existing_record (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_resume_requires_identity_binding (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_stale_temporary_does_not_block_and_handled_failure_cleans_up (test_reference_corpus_contract.CorpusContractTests) ... ok
+test_new_run_and_identical_resume (test_reference_run_identity.StartupIdentityTests) ... ok
+test_new_source_identity_cannot_resume_old_run (test_reference_run_identity.StartupIdentityTests) ... ok
+test_old_run_without_archive_cannot_be_retrofitted (test_reference_run_identity.StartupIdentityTests) ... ok
+test_source_mutation_rejected (test_reference_run_identity.StartupIdentityTests) ... ok
+test_source_path_injection_rejected (test_reference_run_identity.StartupIdentityTests) ... ok
+test_unset_or_changed_actual_cublas_environment_rejected (test_reference_run_identity.StartupIdentityTests) ... ok
+test_captured_environment_cannot_disagree_with_actual (__main__.IndependentTargetedTests) ... ok
+test_interrupted_unique_temporary_does_not_block_next_publish (__main__.IndependentTargetedTests) ... ok
+test_staged_preflight_rejects_before_torch_import (__main__.IndependentTargetedTests) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.451s
+
+OK

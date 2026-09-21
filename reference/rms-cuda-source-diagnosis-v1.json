@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T10:42:08.484397+00:00",
+  "status": "source_structure_agrees_compiled_operations_unresolved",
+  "identity_path": "artifacts\\diagnostics\\rms-cuda-source-v1\\identity.json",
+  "identity_sha256": "ce5aad71feac3f87b83dd58f93038acc19a1e68f1ab00f39bef60bcd8d2b725b",
+  "note_path": "reference/rms-cuda-source-diagnosis-v1.md",
+  "note_sha256": "ef421cf81e003513612f963b6723b28fb8661beebe9d1e2198ec963c58155440",
+  "installed_headers_contain_exact_declared_revision_text": {
+    "include/c10/cuda/CUDAMathCompat.h": true,
+    "include/ATen/native/cuda/thread_constants.h": true,
+    "include/ATen/native/cuda/block_reduce.cuh": true,
+    "include/ATen/AccumulateType.h": true
+  },
+  "current_diagnostic_sources_unchanged": {
+    "experiments/rms_norm/rstd_probe.rs": true,
+    "experiments/rms_norm/capture_cuda_source_identity.py": true
+  },
+  "width": 768,
+  "threads": 128,
+  "warp_width": 32,
+  "values_per_vector": 4,
+  "reduction_tree": "warp offsets16,8,4,2,1; interwarp (w0+w2)+(w1+w3)",
+  "source_level_mismatches": [
+    "CUDA calls rsqrtf; neither Rust reciprocal-square-root variant guarantees the same result",
+    "CUDA expresses multiply/add while Rust explicitly uses fused mul_add; actual compiled contraction remains unobserved"
+  ],
+  "no_source_mismatch_found_in": [
+    "load index order",
+    "warp dependency tree",
+    "interwarp dependency tree",
+    "division rather than explicit reciprocal multiplication",
+    "implicit FP32 epsilon and addition position"
+  ],
+  "unresolved": [
+    "actual input/output alignment and native kernel symbol observed by queued export",
+    "emitted FMA instructions and device optimization flags",
+    "precise division lowering",
+    "rsqrtf instruction sequence and same-argument observed outputs"
+  ],
+  "gpu_work": false,
+  "candidate_sweeps": false,
+  "production_changes": false,
+  "tolerance_changes": false
+}

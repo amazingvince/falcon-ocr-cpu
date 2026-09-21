@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T12:49:22.637138+00:00",
+  "reviewer": "kernels",
+  "status": "three_reported_findings_closed_by_read_only_review",
+  "script": "scripts/join_cpu_platform_outputs.py",
+  "script_sha256": "cbb277fc14f38afa1b3f94eaf495116259d292eca90c69b47d2247d24dba3ec6",
+  "source_unchanged_during_review": true,
+  "host_check": {
+    "command": [
+      "C:\\Users\\amazi\\mambaforge\\python.exe",
+      "scripts\\join_cpu_platform_outputs.py",
+      "--help"
+    ],
+    "exit_code": 0,
+    "log": "reference/join-cpu-platform-outputs-source-review-v1-help.txt",
+    "log_sha256": "0fb44db7b799b92248123ab709e13c5c47d3a47c23d26b6f435d2a52baaf9485"
+  },
+  "findings": [
+    {
+      "name": "platform_and_origin_labels",
+      "closed": true,
+      "evidence": "Each run.os must equal its platform label. Windows requires the replay contract marker plus true replay flags in run and comparison. Linux requires no marker, false flags and a recorded environment label containing WSL. Teacher forcing is rejected."
+    },
+    {
+      "name": "executed_script_identity_window",
+      "closed": true,
+      "evidence": "The script digest is captured at entry before parsing or reading comparison inputs, seeded in bound, and rehashed in the final closure."
+    },
+    {
+      "name": "both_gpu_record_paths",
+      "closed": true,
+      "evidence": "Both Windows- and Linux-comparison GPU record paths are parsed/hashed against their identical recorded digests and retained in final closure, even when directories differ."
+    }
+  ],
+  "other_reviewed_guards": [
+    "Source comparisons must be complete, provenance-passing and exact, with no missing/failed pages.",
+    "Manifest IDs/order and complete selected page objects agree with the parent; source counts must be200 and24.",
+    "Both CPU actual records are compared across IDs/text/stops/dimensions/counts/backend/layout; token IDs/text/stops and prefix lengths are checked directly against GPU records.",
+    "Input JSON is parsed from the same bytes that are hashed; source report/run/record files are rehashed at closure; existing output is refused.",
+    "Historical startup gaps, Windows text replay, WSL execution and absent historical GPU dimensions remain explicit."
+  ],
+  "limits": [
+    "No full join invocation, corpus scan, synthetic comparison fixture or partial-report substitution was performed.",
+    "The review does not create completed Windows200 evidence. Actual join must wait for its completed strict comparison.",
+    "Existing comparison reports supply historical provenance qualifications; this join is saved-output agreement, not new inference, tensor parity, OCR accuracy or performance qualification."
+  ]
+}

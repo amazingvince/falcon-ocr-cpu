@@ -1,0 +1,49 @@
+{
+  "kind": "head-contiguous-prefix-compiled-manual-review-v1",
+  "status": "reviewed_no_compiled_dataflow_blocker",
+  "function": "falcon_ocr::kernels::head_prefix64::prefix_head",
+  "extent": {
+    "start": "0x1400b2c10",
+    "end_exclusive": "0x1400b35cf",
+    "bytes": 2495
+  },
+  "pe_codeview": {
+    "guid": "22152B33-7443-448F-BF90-DA9729B7B8C0",
+    "age": 1,
+    "original_path": "ocr_bench.pdb"
+  },
+  "input_sha256": {
+    "artifacts/diagnostics/head-contiguous-prefix-v1/benchmark-build/compiled-prefix-head/symbol-receipt.json": "20874cba1c991caeaee0cf1589e1b3a0c0d9a684b5ff3d180c9acf5543eebec2",
+    "artifacts/diagnostics/head-contiguous-prefix-v1/benchmark-build/compiled-prefix-head/prefix-head-disassembly.txt": "b0aca644ad714e83e2bc0aaf7e2a8fcce1315de3167c5776ee1cd1eb029f78ca",
+    "artifacts/diagnostics/head-contiguous-prefix-v1/benchmark-build/compiled-prefix-head/direct-call-targets.json": "141bbdf22ae99632988807a9da9feafef6edc3b8e68005a1bbd50f239015058c",
+    "artifacts/diagnostics/head-contiguous-prefix-v1/benchmark-build/compiled-prefix-head/prefix-head-symbol.txt": "a7ca598537b992eed50c7f9ac5c2da008ea84916a38c7e730341c0d05de8be45",
+    "artifacts/diagnostics/head-contiguous-prefix-v1/benchmark-build/compiled-prefix-head/pdb-summary.txt": "e53e1baa70bf8a64e1d8fa9bfce62b4aef2f01e01d421ff1185223a113186b8a"
+  },
+  "manual_note_sha256": "ba92049d86a2798b08a79fcab1f1fd950a11054aef710cd4b642f8c9fdb91d99",
+  "recorded_binary_sha256": "5695e415c58432305905d4e7f46cdf958118249ad880816434dd6fc75e2afe52",
+  "recorded_pdb_sha256": "ef0c1f723e723bb9b66ed111c4ee36c63aa05b9515c1c68be96c1a79d36c6893",
+  "large_binary_pdb_rehashed_by_this_review": false,
+  "parsed_instruction_count": 506,
+  "parsed_direct_call_count": 14,
+  "parsed_fma_count": 16,
+  "findings": {
+    "prefix_k": "(head*prefix_len+key)*64",
+    "prefix_v": "(kv_head*prefix_len+key)*64",
+    "generated_k_v": "(key-prefix_len)*kv_width+kv_head*64",
+    "shared_qk_body": "0x1400b2fc0",
+    "shared_axpy_pointer_join": "0x1400b3256",
+    "dot_four_accumulator_fma_history_and_reduction": "observed",
+    "global_absolute_128_tiles": "observed",
+    "separate_output_and_denominator_rescale": "observed",
+    "key_ordered_probability_denominator_axpy": "observed",
+    "original_sink_log_exp_and_divide_then_multiply": "observed",
+    "floating_accumulator_spill": "none_visible_in_reviewed_function",
+    "stack_logits": "deliberate_512_byte_array",
+    "xmm6_through_xmm10_stack_saves": "callee_save_prologue_epilogue"
+  },
+  "complete_decoded_byte_coverage": "unverified",
+  "inspector_save_to_final_hash_window": "known_original_receipt_preserved; this_review_binds_current_saved_text; supplemental_rerender_is_separate",
+  "new_build_test_model_symbol_scan_or_benchmark": false,
+  "performance_claim": false,
+  "reviewed_small_file_closure": true
+}

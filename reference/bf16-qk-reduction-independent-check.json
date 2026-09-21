@@ -1,0 +1,1826 @@
+{
+  "rust_and_python_assessments_match": true,
+  "bounds_changed": false,
+  "contract_sha256": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+  "tensor_export_sha256": "3649c0330b8c171ca0bd1aa0efe9eee029dfc22cca726518bc1d3c8d6e086f86",
+  "rust_report_sha256": "6076bab2700b6cb9acd197cc4361255358af7a1c310f5fc073be1ad3965cced4",
+  "verification_script_sha256": "9c3aceb32a5c6a5e8afc678d706ce1cd1d5bd3a9d9bb244e8ba69a69547839f5",
+  "assessment_script_sha256": "7a6162512ba59f9e1e304a438956b7b537ca2a94e8a6993cf4edd3102f265fef",
+  "candidates": [
+    {
+      "name": "avx512_baseline",
+      "passed_gates": 13,
+      "element_bound_violations": 11,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 44,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018924518832990622,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            13428
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 50,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010884131529212665,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            13428,
+            54797,
+            54843
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1142,
+          "max_abs": 2.86102294921875e-06,
+          "rms_abs": 6.699448943172839e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 19,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016332136736956862,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            55986,
+            127717,
+            127724
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 20,
+          "max_abs": 0.03125,
+          "rms_abs": 0.0001645836119264108,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            55986,
+            127717,
+            127724
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 488,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.4665810700128747e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 23,
+          "max_abs": 0.03125,
+          "rms_abs": 0.000163208948353797,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 23,
+          "max_abs": 0.03125,
+          "rms_abs": 0.000163208948353797,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            42422
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 652,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.6398710728806776e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 19,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00029155640818103644,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 19,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00029155640818103644,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 602,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.100332922603137e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 2,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.6656007498500226e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "sequential_f32",
+      "passed_gates": 12,
+      "element_bound_violations": 24,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 48,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018524069911872714,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            13428,
+            101826,
+            128116
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 56,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010979492888716277,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 4,
+          "first_violation_indices": [
+            13428,
+            44644,
+            101826,
+            128116
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1173,
+          "max_abs": 3.337860107421875e-06,
+          "rms_abs": 7.142892683445434e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 29,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00014205888712134863,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 30,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00014350158062217803,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 507,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.510697038193566e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 23,
+          "max_abs": 0.125,
+          "rms_abs": 0.0003898915656088065,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 2,
+          "first_violation_indices": [
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 22,
+          "max_abs": 0.125,
+          "rms_abs": 0.0003898915332103847,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 609,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.56556968983871e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 18,
+          "max_abs": 0.0625,
+          "rms_abs": 0.0003365214221627914,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 18,
+          "max_abs": 0.0625,
+          "rms_abs": 0.0003365214221627914,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 592,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.092763836395362e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 4,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.153981341200579e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 2,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.6656007498500226e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "k16_sequential",
+      "passed_gates": 13,
+      "element_bound_violations": 19,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 36,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018714643970189996,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 47,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010447605198054818,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            44644
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1146,
+          "max_abs": 2.86102294921875e-06,
+          "rms_abs": 6.660298622394297e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 30,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00014178548413550736,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 31,
+          "max_abs": 0.03125,
+          "rms_abs": 0.0001432309315142773,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 7,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            52982,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 494,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.504301600844767e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 22,
+          "max_abs": 0.125,
+          "rms_abs": 0.00035414827543317896,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 2,
+          "first_violation_indices": [
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 21,
+          "max_abs": 0.125,
+          "rms_abs": 0.00035414823976486604,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 628,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.6119737153645045e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 16,
+          "max_abs": 0.0625,
+          "rms_abs": 0.0002885209826545106,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 16,
+          "max_abs": 0.0625,
+          "rms_abs": 0.0002885209826545106,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 590,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.09036974714245e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 3,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.9200193199910854e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "k16_pair_tree",
+      "passed_gates": 13,
+      "element_bound_violations": 19,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 37,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018716371820140824,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 48,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010447653560684844,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            44644
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1161,
+          "max_abs": 2.384185791015625e-06,
+          "rms_abs": 6.467096328242539e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 31,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016348046311384412,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 32,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016473566113875992,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 7,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            52982,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 487,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.487993197911619e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 24,
+          "max_abs": 0.125,
+          "rms_abs": 0.00035474129961768987,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 2,
+          "first_violation_indices": [
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 23,
+          "max_abs": 0.125,
+          "rms_abs": 0.000354741264009004,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 629,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.6092404772013327e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 14,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00028846493693779845,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 14,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00028846493693779845,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 584,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.075966081100908e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 3,
+          "max_abs": 4.76837158203125e-07,
+          "rms_abs": 2.0647654623614278e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "k16_fragment_tree",
+      "passed_gates": 13,
+      "element_bound_violations": 21,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 36,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018714643970189996,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 49,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010448427332320825,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            44644
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1159,
+          "max_abs": 2.86102294921875e-06,
+          "rms_abs": 6.720774283243356e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 31,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016348046311384412,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 32,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016473566113875992,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 7,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            52982,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 482,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.4810420957688844e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 30,
+          "max_abs": 0.125,
+          "rms_abs": 0.0003639680173264537,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            76224,
+            76278,
+            91718
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 29,
+          "max_abs": 0.125,
+          "rms_abs": 0.00036396798262046073,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 4,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278,
+            91718
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 634,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.6252687416638384e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 15,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00028852028215024496,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 15,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00028852028215024496,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 581,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.075966081100908e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 3,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.9200193199910854e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "k16_fused_f64",
+      "passed_gates": 13,
+      "element_bound_violations": 18,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 36,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018688707051293775,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 47,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010447702678751816,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            44644
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1161,
+          "max_abs": 2.86102294921875e-06,
+          "rms_abs": 6.725911648992998e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 29,
+          "max_abs": 0.03125,
+          "rms_abs": 0.0001634803665283382,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 30,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016473562279893647,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 6,
+          "first_violation_indices": [
+            4825,
+            4828,
+            4836,
+            4850,
+            4862,
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 502,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.492451526779806e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 24,
+          "max_abs": 0.125,
+          "rms_abs": 0.0003448330427429128,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 2,
+          "first_violation_indices": [
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 23,
+          "max_abs": 0.125,
+          "rms_abs": 0.000344833004393947,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 638,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.598972346929073e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 13,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00023821615532089037,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 13,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00023821615532089037,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 577,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.056252015216184e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 2,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.6656007498500226e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "k8_fused_f64",
+      "passed_gates": 12,
+      "element_bound_violations": 11,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 42,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018763395599595139,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            128116
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 47,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010451183605987617,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            8240,
+            44644,
+            128116
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1179,
+          "max_abs": 2.86102294921875e-06,
+          "rms_abs": 6.83795725876213e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 12,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00013552776852320827,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 13,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00013704631065433466,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 1,
+          "first_violation_indices": [
+            55986
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 490,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.4454859147650344e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 24,
+          "max_abs": 0.125,
+          "rms_abs": 0.0005025915564057377,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 2,
+          "first_violation_indices": [
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 23,
+          "max_abs": 0.125,
+          "rms_abs": 0.0005025915312722649,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 624,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.613339559132499e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 12,
+          "max_abs": 0.0625,
+          "rms_abs": 0.0002849003038162313,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 12,
+          "max_abs": 0.0625,
+          "rms_abs": 0.0002849003038162313,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 577,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.0554446576495367e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 2,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.6656007498500226e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    },
+    {
+      "name": "whole_f64_control",
+      "passed_gates": 14,
+      "element_bound_violations": 11,
+      "checks": {
+        "prefill.layer.0.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 31,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00018243439387942065,
+          "rms_bound": 0.0005042331176809967,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 40,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00010447356565616798,
+          "rms_bound": 0.00016987661365419626,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.0.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 1144,
+          "max_abs": 2.86102294921875e-06,
+          "rms_abs": 6.682487352229015e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.17.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 19,
+          "max_abs": 0.03125,
+          "rms_abs": 0.00016332136736956862,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            55986,
+            127717,
+            127724
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 20,
+          "max_abs": 0.03125,
+          "rms_abs": 0.0001645836119264108,
+          "rms_bound": 0.00039506220491603017,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            55986,
+            127717,
+            127724
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.17.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 505,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 2.5038089674966653e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.19.raw": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 22,
+          "max_abs": 0.125,
+          "rms_abs": 0.0003452805377762943,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 2,
+          "first_violation_indices": [
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.scaled": {
+          "passed": false,
+          "elements": 147456,
+          "different_elements": 21,
+          "max_abs": 0.125,
+          "rms_abs": 0.0003452805011919226,
+          "rms_bound": 0.0002441547403577715,
+          "bound_violations": 3,
+          "first_violation_indices": [
+            42422,
+            76224,
+            76278
+          ],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.19.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 625,
+          "max_abs": 1.9073486328125e-06,
+          "rms_abs": 3.57558875139856e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "prefill.layer.21.raw": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 14,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00023822951773514746,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.scaled": {
+          "passed": true,
+          "elements": 147456,
+          "different_elements": 14,
+          "max_abs": 0.0625,
+          "rms_abs": 0.00023822951773514746,
+          "rms_bound": 0.000656113144941628,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "prefill.layer.21.lse": {
+          "passed": true,
+          "elements": 2304,
+          "different_elements": 590,
+          "max_abs": 1.430511474609375e-06,
+          "rms_abs": 3.071551488586328e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.2.layer.21.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 1,
+          "max_abs": 6.103515625e-05,
+          "rms_abs": 1.9073486328125e-06,
+          "rms_bound": 1.3172626495361328e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.2.layer.21.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 5,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 3.371747880871523e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        },
+        "decode.6.layer.19.raw": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.scaled": {
+          "passed": true,
+          "elements": 1024,
+          "different_elements": 0,
+          "max_abs": 0.0,
+          "rms_abs": 0.0,
+          "rms_bound": 4.00543212890625e-05,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": true
+        },
+        "decode.6.layer.19.lse": {
+          "passed": true,
+          "elements": 16,
+          "different_elements": 2,
+          "max_abs": 9.5367431640625e-07,
+          "rms_abs": 2.6656007498500226e-07,
+          "rms_bound": null,
+          "bound_violations": 0,
+          "first_violation_indices": [],
+          "represents_bf16_values": null
+        }
+      }
+    }
+  ]
+}

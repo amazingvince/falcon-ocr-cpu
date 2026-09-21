@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "policy": "reference\\tolerances-smoke-bf16-v1.json",
+  "policy_sha256": "98879badda8609c6eadf9ea95ce94bbe95d894afae015eba01f78226352ce62e",
+  "qualification_accepted": false,
+  "disposition": "Immutable diagnostic evidence only; must not qualify CPU BF16 model parity",
+  "reason": "Dense global softmax BF16 rounding and Flex block-local unnormalized exponential BF16 rounding are different numerical algorithms. Their accumulated full-graph difference approaches signal scale and produces uninformative acceptance bounds.",
+  "stages": 228,
+  "stages_with_tolerance_at_least_peak": 47,
+  "worst_stages": [
+    {
+      "stage": "layer.19.k",
+      "baseline_max_abs": 7.3125,
+      "reference_max_abs": 7.53125,
+      "absolute_tolerance": 29.25,
+      "observed_error_to_peak": 0.970954356846473,
+      "tolerance_to_peak": 3.883817427385892
+    },
+    {
+      "stage": "layer.18.q",
+      "baseline_max_abs": 4.234375,
+      "reference_max_abs": 4.40625,
+      "absolute_tolerance": 16.9375,
+      "observed_error_to_peak": 0.9609929078014184,
+      "tolerance_to_peak": 3.8439716312056738
+    },
+    {
+      "stage": "layer.12.q",
+      "baseline_max_abs": 5.359375,
+      "reference_max_abs": 5.65625,
+      "absolute_tolerance": 21.4375,
+      "observed_error_to_peak": 0.9475138121546961,
+      "tolerance_to_peak": 3.7900552486187844
+    },
+    {
+      "stage": "layer.16.k",
+      "baseline_max_abs": 6.109375,
+      "reference_max_abs": 6.5,
+      "absolute_tolerance": 24.4375,
+      "observed_error_to_peak": 0.9399038461538461,
+      "tolerance_to_peak": 3.7596153846153846
+    },
+    {
+      "stage": "layer.12.attention",
+      "baseline_max_abs": 41.412109375,
+      "reference_max_abs": 44.25,
+      "absolute_tolerance": 165.6484375,
+      "observed_error_to_peak": 0.9358668785310734,
+      "tolerance_to_peak": 3.7434675141242937
+    },
+    {
+      "stage": "layer.19.q",
+      "baseline_max_abs": 4.15625,
+      "reference_max_abs": 4.78125,
+      "absolute_tolerance": 16.625,
+      "observed_error_to_peak": 0.869281045751634,
+      "tolerance_to_peak": 3.477124183006536
+    },
+    {
+      "stage": "layer.15.k",
+      "baseline_max_abs": 5.71875,
+      "reference_max_abs": 6.59375,
+      "absolute_tolerance": 22.875,
+      "observed_error_to_peak": 0.8672985781990521,
+      "tolerance_to_peak": 3.4691943127962084
+    },
+    {
+      "stage": "layer.11.q",
+      "baseline_max_abs": 5.921875,
+      "reference_max_abs": 6.84375,
+      "absolute_tolerance": 23.6875,
+      "observed_error_to_peak": 0.865296803652968,
+      "tolerance_to_peak": 3.461187214611872
+    },
+    {
+      "stage": "layer.20.q",
+      "baseline_max_abs": 3.8203125,
+      "reference_max_abs": 4.4375,
+      "absolute_tolerance": 15.28125,
+      "observed_error_to_peak": 0.8609154929577465,
+      "tolerance_to_peak": 3.443661971830986
+    },
+    {
+      "stage": "layer.21.q",
+      "baseline_max_abs": 4.34375,
+      "reference_max_abs": 5.09375,
+      "absolute_tolerance": 17.375,
+      "observed_error_to_peak": 0.852760736196319,
+      "tolerance_to_peak": 3.411042944785276
+    },
+    {
+      "stage": "layer.13.q",
+      "baseline_max_abs": 4.3125,
+      "reference_max_abs": 5.0625,
+      "absolute_tolerance": 17.25,
+      "observed_error_to_peak": 0.8518518518518519,
+      "tolerance_to_peak": 3.4074074074074074
+    },
+    {
+      "stage": "layer.13.v",
+      "baseline_max_abs": 32.0625,
+      "reference_max_abs": 37.75,
+      "absolute_tolerance": 128.25,
+      "observed_error_to_peak": 0.8493377483443708,
+      "tolerance_to_peak": 3.3973509933774833
+    },
+    {
+      "stage": "layer.16.q",
+      "baseline_max_abs": 5.34375,
+      "reference_max_abs": 6.4375,
+      "absolute_tolerance": 21.375,
+      "observed_error_to_peak": 0.8300970873786407,
+      "tolerance_to_peak": 3.320388349514563
+    },
+    {
+      "stage": "layer.12.k",
+      "baseline_max_abs": 4.666015625,
+      "reference_max_abs": 6.09375,
+      "absolute_tolerance": 18.6640625,
+      "observed_error_to_peak": 0.7657051282051283,
+      "tolerance_to_peak": 3.062820512820513
+    },
+    {
+      "stage": "layer.13.k",
+      "baseline_max_abs": 5.234375,
+      "reference_max_abs": 6.875,
+      "absolute_tolerance": 20.9375,
+      "observed_error_to_peak": 0.7613636363636364,
+      "tolerance_to_peak": 3.0454545454545454
+    },
+    {
+      "stage": "layer.15.q",
+      "baseline_max_abs": 3.3515625,
+      "reference_max_abs": 4.46875,
+      "absolute_tolerance": 13.40625,
+      "observed_error_to_peak": 0.75,
+      "tolerance_to_peak": 3.0
+    },
+    {
+      "stage": "layer.17.q",
+      "baseline_max_abs": 3.921875,
+      "reference_max_abs": 5.34375,
+      "absolute_tolerance": 15.6875,
+      "observed_error_to_peak": 0.7339181286549707,
+      "tolerance_to_peak": 2.935672514619883
+    },
+    {
+      "stage": "layer.19.v",
+      "baseline_max_abs": 49.875,
+      "reference_max_abs": 69.0,
+      "absolute_tolerance": 199.5,
+      "observed_error_to_peak": 0.7228260869565217,
+      "tolerance_to_peak": 2.891304347826087
+    },
+    {
+      "stage": "layer.14.q",
+      "baseline_max_abs": 3.25,
+      "reference_max_abs": 4.5,
+      "absolute_tolerance": 13.0,
+      "observed_error_to_peak": 0.7222222222222222,
+      "tolerance_to_peak": 2.888888888888889
+    },
+    {
+      "stage": "layer.10.q",
+      "baseline_max_abs": 4.2578125,
+      "reference_max_abs": 6.40625,
+      "absolute_tolerance": 17.03125,
+      "observed_error_to_peak": 0.6646341463414634,
+      "tolerance_to_peak": 2.658536585365854
+    }
+  ],
+  "required_next_step": "Read actual compiled tile metadata; independently emulate block-local running max, rescale, exp2, BF16 probability cast, FP32 accumulation and denominator, final BF16 cast, then sink scaling. Validate equal-input isolated operators before considering a new policy.",
+  "scope": "No CPU BF16 candidate was used to set the rejected policy or this review. FP32 frozen policy is unchanged."
+}

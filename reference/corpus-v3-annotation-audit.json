@@ -1,0 +1,5440 @@
+{
+  "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+  "evaluator_revision": "59b103c4b47d3a01fada83491585d6512a40c0bc",
+  "script_sha256": "d30d01c60179c06c80f1bec5eb60cff20d4bbe238ba5092bc8b41348d31310f2",
+  "pages": 200,
+  "original_merger_failures": 2,
+  "adapted_merger_failures": 0,
+  "dangling_relations": 2,
+  "duplicate_annotation_id_pages": 0,
+  "records": [
+    {
+      "id": "omnidocbench:page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+      "annotation_page_sha256": "3a9321ede5fe1265543d5ec64eef055b6ee395eaef6d7772a7e8702382a9b817",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 11,
+          "figure": 1,
+          "figure_caption": 1,
+          "footer": 3,
+          "header": 1,
+          "page_number": 1,
+          "equation_isolated": 6,
+          "abandon": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 11,
+          "figure": 1,
+          "figure_caption": 1,
+          "footer": 3,
+          "header": 1,
+          "page_number": 1,
+          "equation_isolated": 6,
+          "abandon": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+      "annotation_page_sha256": "5abcd5cc573bf08c071560c08a429f348545abcd2ccaa408a2aa4ad78658bca4",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 30,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 30,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+      "annotation_page_sha256": "ae4067be1ae547b93e60b5fe66be7a8bfa53a259eda67926915d62772024bb9c",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "title": 4,
+          "equation_isolated": 8,
+          "page_number": 1,
+          "equation_semantic": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "title": 4,
+          "equation_isolated": 8,
+          "page_number": 1,
+          "equation_semantic": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2211.jpg",
+      "annotation_page_sha256": "20de44cd974e2deb7abadcaee1c2ecc5a49b92554adcef1bc2a36998b5c06a44",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 30,
+          "figure": 9,
+          "table": 1,
+          "equation_isolated": 1,
+          "abandon": 1,
+          "footer": 2,
+          "page_number": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 30,
+          "figure": 9,
+          "table": 1,
+          "equation_isolated": 1,
+          "abandon": 1,
+          "footer": 2,
+          "page_number": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_85.jpg",
+      "annotation_page_sha256": "895ec86a6ed37d52208511db10722fb25c026149190e7794e8d79d9fe679c1da",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "header": 1,
+          "table_mask": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "header": 1,
+          "table_mask": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2839.jpg",
+      "annotation_page_sha256": "fff7182fadffc9f5b38521d67887ec8d49cbede4511bf2d6a6eec246a8d831c7",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 20,
+          "table": 1,
+          "header": 2,
+          "page_number": 2,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 20,
+          "table": 1,
+          "header": 2,
+          "page_number": 2,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_2005_QP.pdf_5.jpg",
+      "annotation_page_sha256": "0bd8bddeb8ff1f5077376e60555ca63a43d97876d34afeaf96631ed933423a41",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "table_caption": 2,
+          "table": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "table_caption": 2,
+          "table": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_601.jpg",
+      "annotation_page_sha256": "132d526b731d00a30698c2e4c1ee207059b5fd911422bf3bfa5bb58550677d1e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "title": 6,
+          "figure": 2,
+          "figure_caption": 2,
+          "abandon": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "title": 6,
+          "figure": 2,
+          "figure_caption": 2,
+          "abandon": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_467.jpg",
+      "annotation_page_sha256": "0571f855e9cdca8a0b5ebe4196a363cea19feb7f93c87f9c12e094765379b8ef",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "title": 2,
+          "table_caption": 1,
+          "table": 1,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "title": 2,
+          "table_caption": 1,
+          "table": 1,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2825.jpg",
+      "annotation_page_sha256": "26397bd6d7e52f42cd4ba270d316216c48e1c662a1e6d47336385f96d4135f66",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 9,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "abandon": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 9,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "abandon": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+      "annotation_page_sha256": "f2d38e21907033d05ce96a07175f8f2d063d0431a1cb3bcf58c588a5060a420b",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 4,
+          "figure": 1,
+          "figure_caption": 1,
+          "table": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 4,
+          "figure": 1,
+          "figure_caption": 1,
+          "table": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "annotation_page_sha256": "b38c85c2b40a7d8c974781c20339bc188d605abb14f9ac81a920d6d1a5cced2c",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 9,
+          "title": 6,
+          "equation_isolated": 2,
+          "figure": 2,
+          "figure_caption": 2,
+          "abandon": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 9,
+          "title": 6,
+          "equation_isolated": 2,
+          "figure": 2,
+          "figure_caption": 2,
+          "abandon": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-b342f5e6-cc5a-4920-b1b5-83f96bc476d8.png",
+      "annotation_page_sha256": "c7e72b1d57d997a97b78ff04bf5f03733e8250da77ff03087a28aea95825d8e1",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "abandon": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "abandon": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+      "annotation_page_sha256": "d013977001af13279853eba839492666754554abb500976ae470705d1e54b7b5",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 16,
+          "title": 3,
+          "header": 2,
+          "page_number": 2,
+          "list_group": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 16,
+          "title": 3,
+          "header": 2,
+          "page_number": 2,
+          "list_group": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "annotation_page_sha256": "61425a371bf695c3e37b1def67d72f4fae21454d36df71f5c2b60dcdac605284",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 3,
+          "figure_caption": 3,
+          "text_block": 6,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 3,
+          "figure_caption": 3,
+          "text_block": 6,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1349.jpg",
+      "annotation_page_sha256": "d3d8c928ee2169ea2954b04f9b2ac709997501599960eabca79c6d722a0a6c1d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 18,
+          "table": 1,
+          "figure": 1,
+          "equation_isolated": 1,
+          "header": 2,
+          "abandon": 1,
+          "footer": 2,
+          "page_number": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 18,
+          "table": 1,
+          "figure": 1,
+          "equation_isolated": 1,
+          "header": 2,
+          "abandon": 1,
+          "footer": 2,
+          "page_number": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+      "annotation_page_sha256": "c76ae3436e4007f19394f1829135417023a73a5c49878b7fe6e659bfdc4c532c",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 7,
+          "header": 2,
+          "page_number": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 7,
+          "header": 2,
+          "page_number": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+      "annotation_page_sha256": "5e805423f8070dfcd4990035890d0bea03f8d57f3fd487c3947067bc27e29495",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 12,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 12,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-205e4273-5b94-43e5-bfaf-dc882416b067.png",
+      "annotation_page_sha256": "8ae080f6918f696b4298bcead3287b9c44670f9731e32dbab3e26fbef074d2ed",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 15,
+          "header": 2,
+          "page_number": 1,
+          "list_group": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 15,
+          "header": 2,
+          "page_number": 1,
+          "list_group": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+      "annotation_page_sha256": "7a67b2a7365ca88b9ad47cebe3ae29bc863935bb22918655decd0cabe3e897fe",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 23,
+          "equation_isolated": 11,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "list_group": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 23,
+          "equation_isolated": 11,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "list_group": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1141.jpg",
+      "annotation_page_sha256": "f67ad6d2e97f63b0d676779ddf3bf981a3827a1794796b0896497fec9e5f794c",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 3,
+          "figure": 1,
+          "table": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 3,
+          "figure": 1,
+          "table": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_1735.jpg",
+      "annotation_page_sha256": "008892f24d969d162e3e10922e1ee295f05cdfce8818f57f2f6a471956902bfa",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 1,
+          "text_block": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 1,
+          "text_block": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-b13fef06-6ae9-4b2d-a948-0340e03f97ce.png",
+      "annotation_page_sha256": "878738fa6ea6bd9c0cff48c12fe6b157d522f5f8078bf5637c76aa024c90b70e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 2,
+          "title": 1,
+          "text_block": 3,
+          "figure": 2,
+          "figure_caption": 3,
+          "header": 1,
+          "footer": 3,
+          "page_number": 1,
+          "abandon": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 2,
+          "title": 1,
+          "text_block": 3,
+          "figure": 2,
+          "figure_caption": 3,
+          "header": 1,
+          "footer": 3,
+          "page_number": 1,
+          "abandon": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "annotation_page_sha256": "c26d2756155a79644004a24ffb47882eeadd2e18ac1f6911a6f51bd54973eebe",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "figure": 1,
+          "figure_caption": 1,
+          "equation_isolated": 4,
+          "equation_caption": 3,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "figure": 1,
+          "figure_caption": 1,
+          "equation_isolated": 4,
+          "equation_caption": 3,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-d271a2ab-4523-44c4-94b5-303bf54b69e9.png",
+      "annotation_page_sha256": "500a3dec508114e3e27ee92bb8251d5703e052302d2990272e1d52bb93d79b19",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 21,
+          "page_number": 1,
+          "list_group": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 21,
+          "page_number": 1,
+          "list_group": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-21ad32ba-fd62-43e5-964a-f5e95c0e0441.png",
+      "annotation_page_sha256": "cecf4181f7b0bd0020f2eae11d095248a420201832f580cf0d1bc2140bb0dab0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 5,
+          "equation_isolated": 9,
+          "footer": 1,
+          "page_number": 1,
+          "header": 2,
+          "equation_semantic": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 5,
+          "equation_isolated": 9,
+          "footer": 1,
+          "page_number": 1,
+          "header": 2,
+          "equation_semantic": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+      "annotation_page_sha256": "bf81426b3bc89592a109009e2bb3688f2b8f669baf2561130fc4dbbf9b28dbd8",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "title": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "title": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_6.jpg",
+      "annotation_page_sha256": "091b64a048c94c8b0f06127a5404bf985deb01553e6fd0911db53ab3e6e45e5b",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_24.jpg",
+      "annotation_page_sha256": "6023d7575418d30eb8059ba94b0c6be281cef4728ab46e2a27a438edee07c5e3",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+      "annotation_page_sha256": "a61443db5556b6dfaa58ef5ab5b937c905e54fc0e327a4fad1f5c0aaefd712e7",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "title": 4,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "title": 4,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_35.jpg",
+      "annotation_page_sha256": "4b2ab57f40982639fbc669d14c16a35222e8519c1a853c2cd89fc928fac7f172",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "table_caption": 2,
+          "table": 2,
+          "text_block": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "table_caption": 2,
+          "table": 2,
+          "text_block": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_10.jpg",
+      "annotation_page_sha256": "87ea0c7252281573ea63ec7627b6d721bb936b4f5bba4e0984dd26ed656710f6",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "figure": 3,
+          "figure_caption": 3,
+          "title": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "figure": 3,
+          "figure_caption": 3,
+          "title": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_73.jpg",
+      "annotation_page_sha256": "63481ee8ee96b77a3e6930c6fd91ee17a9b8a3aafac55a876c2fb8eb1a507e7b",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 52,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 52,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_98.jpg",
+      "annotation_page_sha256": "c78e59cb00e5848bf0122d4ed596bce8eaf8d7ca7dbd376b6c2b16109a6c3788",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "table_caption": 1,
+          "table": 1,
+          "header": 1,
+          "abandon": 4,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "table_caption": 1,
+          "table": 1,
+          "header": 1,
+          "abandon": 4,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_118.jpg",
+      "annotation_page_sha256": "5b576180f46b9d27f7f78351bc4d070e838717ca523390641cc6c47924cf208f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "title": 2,
+          "header": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "title": 2,
+          "header": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_124.jpg",
+      "annotation_page_sha256": "f6ae4700fa8acea058555a9fffe3fc3a3d389037bcdb0e86ba97f2d2c5ce3cad",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "title": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "title": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_69.jpg",
+      "annotation_page_sha256": "fca715d44b47b8a19c45d12cbcfbb962ccec01b4d5a08f868d3187ffebb2d83f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 48,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 48,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_93.jpg",
+      "annotation_page_sha256": "0753975fc37f75aec1eb8ad06dd7aee88509be718dbefddeb13aec71d3feb62f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_54.jpg",
+      "annotation_page_sha256": "58e899217de1825585f6f939f95a16daa32c5a4cd81078e0e9b169966e16785a",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 2,
+          "header": 1,
+          "abandon": 4,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 2,
+          "header": 1,
+          "abandon": 4,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_67.jpg",
+      "annotation_page_sha256": "ba37b34c2770c77d2e0f149db874962de8abdf3ed96f27a3e7d5d6896f8d1298",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 12,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 12,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_59.jpg",
+      "annotation_page_sha256": "01a48cd24b9e5df21ba572e184688e6cb76fef1b2fb727ad4837f9102c73c544",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 3,
+          "header": 1,
+          "abandon": 5,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 3,
+          "header": 1,
+          "abandon": 5,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_53.jpg",
+      "annotation_page_sha256": "6debd797fd2266a53f1450c27557dc839568d58beea7ea4265d09beb50509800",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_32.jpg",
+      "annotation_page_sha256": "07c9209d7fd9e6ebe6e3edf84d578278597a4b107d1f5ba93809d53755daac77",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "title": 4,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "title": 4,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+      "annotation_page_sha256": "9bf4a964db94ccaf266283ed88072b2d4f3aa7f031034d4914c4b27681af3ef3",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 12,
+          "header": 3,
+          "equation_isolated": 3
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 12,
+          "header": 3,
+          "equation_isolated": 3
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_119.jpg",
+      "annotation_page_sha256": "bbc3684cd20fbe1ed2c921ed903d3ef2ffda6f663ebf9c04cdfeff7f2db324b6",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_89.jpg",
+      "annotation_page_sha256": "d46c8afb7549918f77112d0a507e7e926af63adc68d36400cd32c982a5a75d8a",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 5,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 5,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_95.jpg",
+      "annotation_page_sha256": "5269a3deb336a0fb63841b6bdeeb51cb4434fb1b7fcbe57d07c5396311719e5e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 5,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 5,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_3.jpg",
+      "annotation_page_sha256": "a8e445a5ab70e20cfeec71c7f77cf98ad6aee00fe1d725c1553d065a494286c7",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+      "annotation_page_sha256": "369ad4e46185a8a4cac3042bc9307e1d314ed80f1d6f71b324d2af2c077a2465",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "text_block": 2,
+          "title": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "text_block": 2,
+          "title": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_60.jpg",
+      "annotation_page_sha256": "a30e84799d0c23302d191439eb4888a1b248759e8b6f309dc6821c9a59ad8c86",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 4,
+          "table": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 4,
+          "table": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_001.png",
+      "annotation_page_sha256": "f75acc028ad7c98dbe9278cde78a2b3bd1f0dd95140032e0d198231383fdc49f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 16,
+          "equation_isolated": 7
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 16,
+          "equation_isolated": 7
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2718.jpg",
+      "annotation_page_sha256": "580af020e481f516f309d1714d5f96ca5edf2b14feb4c8d9e5d703b118d63f8a",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 4,
+          "text_block": 8,
+          "figure": 1,
+          "figure_caption": 1,
+          "title": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 4,
+          "text_block": 8,
+          "figure": 1,
+          "figure_caption": 1,
+          "title": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_StewartCalcET7e_04_09_page_018.png",
+      "annotation_page_sha256": "3676c51a2f58fbccc5604dec3d30f106602548496a3a57ab53511de0851db6b9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 3,
+          "equation_isolated": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 3,
+          "equation_isolated": 3,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1276.jpg",
+      "annotation_page_sha256": "d3df739ca2dffbdcc7de28444239d22e156173cbf7d010362d3f8d9a08f99ee6",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 9,
+          "figure": 3,
+          "equation_isolated": 2,
+          "page_number": 1,
+          "header": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 9,
+          "figure": 3,
+          "equation_isolated": 2,
+          "page_number": 1,
+          "header": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_fundamental_theorem_of_calculus___page_006.png",
+      "annotation_page_sha256": "dbe9e5f819f12ac4232f0d9acd0fe4a24f8390cfb15c6e3d8f037fda9a66a750",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "equation_isolated": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "equation_isolated": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_005.png",
+      "annotation_page_sha256": "662bd8e0c9c1645317b4a8167f882a06fc34ee6495000c6cddecae8660cc6f48",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_isolated": 4,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_isolated": 4,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+      "annotation_page_sha256": "5732ccb119941ec62c72471e6d301219bcee4f86add93e4c39537f00f6b3c0a0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 18,
+          "text_block": 6,
+          "page_footnote": 1,
+          "page_number": 1,
+          "equation_semantic": 4
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 18,
+          "text_block": 6,
+          "page_footnote": 1,
+          "page_number": 1,
+          "equation_semantic": 4
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+      "annotation_page_sha256": "36f6caf9845d48b21d4de36b94dbbc01e3c7d82067eca84f701d83800d4a0eab",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_isolated": 15,
+          "page_number": 1,
+          "equation_semantic": 4
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_isolated": 15,
+          "page_number": 1,
+          "equation_semantic": 4
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_4710.jpg",
+      "annotation_page_sha256": "c938438d24b1c2e2df8d1106f28ab7916efc97f986fc27f8e71381aacdc44a29",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "figure": 1,
+          "equation_isolated": 1,
+          "abandon": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "figure": 1,
+          "equation_isolated": 1,
+          "abandon": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_001.png",
+      "annotation_page_sha256": "8add2eddbd561f8ec57ea1d0fbbebff25639d87eaea7b1d90765bc3d41b46e98",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 17,
+          "equation_isolated": 11
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 17,
+          "equation_isolated": 11
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.snb.2004.05.025.pdf_5.jpg",
+      "annotation_page_sha256": "8981947c420eabf9f86cd22264698809dfe0d9403792748033f7b47aed47c6b9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 4,
+          "figure_caption": 4,
+          "equation_isolated": 2,
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 4,
+          "figure_caption": 4,
+          "equation_isolated": 2,
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+      "annotation_page_sha256": "aa45d87fd5de3688db1ab563aeded78b5f500904860778512bf776cd61f5f942",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 20,
+          "equation_isolated": 6
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 20,
+          "equation_isolated": 6
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_linear-algebra primer_page_008.png",
+      "annotation_page_sha256": "021950ec603dd6bd1c00e22e6db4e43bfaa9c4f2f399e48a9b9f7c814d966a0f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 6,
+          "figure": 2,
+          "equation_isolated": 1,
+          "page_number": 1,
+          "page_footnote": 2,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 6,
+          "figure": 2,
+          "equation_isolated": 1,
+          "page_number": 1,
+          "page_footnote": 2,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+      "annotation_page_sha256": "f872d6b568984c15db649d0120acaa9936f510bcbb2c0be62306ea252dd3c271",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "equation_isolated": 11,
+          "page_number": 1,
+          "equation_semantic": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "equation_isolated": 11,
+          "page_number": 1,
+          "equation_semantic": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+      "annotation_page_sha256": "03b79834bfe81d762dccb4bd6927ca54d9991153afc6172f1e4c170304a476d0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 7,
+          "text_block": 6,
+          "title": 1,
+          "page_number": 1,
+          "equation_semantic": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 7,
+          "text_block": 6,
+          "title": 1,
+          "page_number": 1,
+          "equation_semantic": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg",
+      "annotation_page_sha256": "d64ba43513e6f4b8c034681cab34cff66cef1fd237c33d860010406f40887958",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "equation_isolated": 5,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "equation_isolated": 5,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_ch7_page_034.png",
+      "annotation_page_sha256": "2ef01e3d8040f10d2adad9c8b3ab9ca616f81afa82c31ce8f0a5edf7f2c7d1aa",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_caption": 1,
+          "equation_isolated": 2,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_caption": 1,
+          "equation_isolated": 2,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2010_Solutions_2010s_page_001.png",
+      "annotation_page_sha256": "19fe6d55291dd2ad77bc0d359682f7e5109a443c6690a1f3e58e64c42856c9fa",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 24,
+          "equation_isolated": 8
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 24,
+          "equation_isolated": 8
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+      "annotation_page_sha256": "04e6dd8303984912b42be09417e19ce6c85ef54f5fdcce57a4fb6877bd4496bd",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_isolated": 2,
+          "code_txt": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "equation_isolated": 2,
+          "code_txt": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_999.jpg",
+      "annotation_page_sha256": "db17075c4e0a41dabfbd4e91c1e8ea9c9b48dbd4a4348fa68ce6a420b386038d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 25,
+          "table": 1,
+          "figure": 3,
+          "equation_isolated": 2,
+          "header": 3,
+          "abandon": 1,
+          "page_number": 2,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 25,
+          "table": 1,
+          "figure": 3,
+          "equation_isolated": 2,
+          "header": 3,
+          "abandon": 1,
+          "page_number": 2,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png",
+      "annotation_page_sha256": "df2e0a22d0b8010a5ba8d5c1f44cab762f4ac8c88becdc621ffcdf34c8c1f5f7",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 4,
+          "equation_isolated": 5,
+          "title": 1,
+          "page_number": 1,
+          "header": 4,
+          "equation_semantic": 1,
+          "abandon": 2,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 4,
+          "equation_isolated": 5,
+          "title": 1,
+          "page_number": 1,
+          "header": 4,
+          "equation_semantic": 1,
+          "abandon": 2,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png",
+      "annotation_page_sha256": "5e231fee5b2dc5dd3918690efcec819d80077a30234ad4daeada90358fa12a26",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 19,
+          "equation_isolated": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 19,
+          "equation_isolated": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_StewartCalcET7e_03_02_page_015.png",
+      "annotation_page_sha256": "3824a45a8d5b142b07697e3973554155dc77b3165515630fb5566abfc8ecf17e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 3,
+          "equation_isolated": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 3,
+          "equation_isolated": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:book_zh_DLT10902008_extracted_page_8.png",
+      "annotation_page_sha256": "4a39515c5379a536aa0871bc1e1040e6c95f37b7879c0b623e8079b382b97df0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "equation_isolated": 5,
+          "equation_caption": 5,
+          "title": 1,
+          "table_caption": 1,
+          "table_footnote": 1,
+          "table": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "equation_isolated": 5,
+          "equation_caption": 5,
+          "title": 1,
+          "table_caption": 1,
+          "table_footnote": 1,
+          "table": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_d4fc7cba428625974e93183edfccea73.pdf_89.jpg",
+      "annotation_page_sha256": "3cb4b6afc53047200bc3454a331c3189443a267e88281915da05cbe702cbbefe",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "table_caption": 1,
+          "text_block": 7,
+          "equation_isolated": 1,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "table_caption": 1,
+          "text_block": 7,
+          "equation_isolated": 1,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2000_Problems_2000_page_001.png",
+      "annotation_page_sha256": "8ef66b8f1859b37830cc96c31c081b954817e490015aca662b265b0a25336c98",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 15,
+          "equation_isolated": 3
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 15,
+          "equation_isolated": 3
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-a976a26e-4dbb-492a-a380-b923b87ed496.png",
+      "annotation_page_sha256": "9640537de9512af437f7a10516e3750cc3f6a31624fd78a3cecbbe2345d1f32d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "equation_isolated": 4,
+          "title": 1,
+          "page_number": 1,
+          "equation_semantic": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "equation_isolated": 4,
+          "title": 1,
+          "page_number": 1,
+          "equation_semantic": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.png",
+      "annotation_page_sha256": "f48887995900d1c9df18ee537cb85a69f02bdcede50bf48417115f9084f2ebb5",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 3,
+          "text_block": 14,
+          "page_number": 1,
+          "equation_semantic": 1,
+          "list_group": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 3,
+          "text_block": 14,
+          "page_number": 1,
+          "equation_semantic": 1,
+          "list_group": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0017.png",
+      "annotation_page_sha256": "36bdb86ea2cbb77c06c0e64710b3d4aa329e88db69b022655c37af848019c8de",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 7,
+          "equation_isolated": 4,
+          "equation_caption": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 7,
+          "equation_isolated": 4,
+          "equation_caption": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:book_en_国外数学教材-An Excursion through Elementary Mathematics（初等数学漫游）-An excursion through elementary mathematics, Vol.3 (Caminha Muniz Neto A)_0100.png",
+      "annotation_page_sha256": "c6f39f60297cadaaf5d524d58061ba862894fdae5e128901fc90cec39a4427d6",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 4,
+          "text_block": 10,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "equation_isolated": 4,
+          "text_block": 10,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+      "annotation_page_sha256": "1a507e5cfa7d3d172cae6caf4c95bda52f144b2cef1af832788da15fdad6f09e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 6,
+          "figure": 13,
+          "title": 11,
+          "table_caption": 17,
+          "table": 13,
+          "table_footnote": 4,
+          "text_block": 29,
+          "page_number": 1,
+          "text_mask": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 6,
+          "figure": 13,
+          "title": 11,
+          "table_caption": 17,
+          "table": 13,
+          "table_footnote": 4,
+          "text_block": 29,
+          "page_number": 1,
+          "text_mask": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00396-003-0935-9.pdf_2.jpg",
+      "annotation_page_sha256": "eb46304da5a0bfc5bd46a61a1128d99130b31ab3f8e3836df2b19a856962fa7e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 6,
+          "table_caption": 1,
+          "table": 1,
+          "page_number": 1,
+          "need_mask": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 6,
+          "table_caption": 1,
+          "table": 1,
+          "page_number": 1,
+          "need_mask": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_458.jpg",
+      "annotation_page_sha256": "918aac7f437260216ef6ed88b36ce536517a804338ecadfdde51fadb1dab8834",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 16,
+          "table_caption": 1,
+          "table": 1,
+          "figure": 2,
+          "figure_caption": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 16,
+          "table_caption": 1,
+          "table": 1,
+          "figure": 2,
+          "figure_caption": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Player%27s%20Options%20-%20Halflings.pdf_11.jpg",
+      "annotation_page_sha256": "5a955672c4bdc6910532f204756f890de342b04a0a8445a6b329de430cb6b8de",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 2,
+          "table": 2,
+          "text_block": 6,
+          "figure": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 2,
+          "table": 2,
+          "text_block": 6,
+          "figure": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_4275.jpg",
+      "annotation_page_sha256": "d12904f7de6929307ea22789de257d87f9919261951b7798d17d2f1a586881d6",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 1,
+          "title": 1,
+          "table": 1,
+          "text_block": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 1,
+          "title": 1,
+          "table": 1,
+          "text_block": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_916.jpg",
+      "annotation_page_sha256": "dd8804d052b51f88ba8732b4e98ce8d0796f27dfc99ffd23c94852d0dde4cd07",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "figure": 1,
+          "table_caption": 1,
+          "table": 1,
+          "header": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "figure": 1,
+          "table_caption": 1,
+          "table": 1,
+          "header": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-92062914-ea02-4640-8f54-24623dba4388.png",
+      "annotation_page_sha256": "8087210e1df9aeec0a5e76e0fc0ee3d3a1ac065e6751d4b98939770e65ccdb4a",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "page_number": 1,
+          "header": 2,
+          "abandon": 1,
+          "footer": 4
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "page_number": 1,
+          "header": 2,
+          "abandon": 1,
+          "footer": 4
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "annotation_page_sha256": "62e001c76c8a5d7978f156d2d9d5d1e1edd707e1529844f9eb117e6b08752147",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 2,
+          "page_number": 1,
+          "header": 1,
+          "page_footnote": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 2,
+          "page_number": 1,
+          "header": 1,
+          "page_footnote": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:color_textbook_教材全解1+1二年级下册英语上海牛津版_page_081.png",
+      "annotation_page_sha256": "5f0cd79d29765f05415d39ef16f3e456c1c3c183a29e8d92d2a9d3c0641b2aac",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "title": 3,
+          "table": 1,
+          "abandon": 4,
+          "footer": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "title": 3,
+          "table": 1,
+          "abandon": 4,
+          "footer": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:book_zh_CNASGL0262018_extracted_page_82.png",
+      "annotation_page_sha256": "c3f5371bd96245e2fb99a72285f4ddf15375ee40fb214adf0cf1cfece59d3d06",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "equation_isolated": 8,
+          "title": 1,
+          "table_caption": 1,
+          "table": 1,
+          "footer": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 7,
+          "equation_isolated": 8,
+          "title": 1,
+          "table_caption": 1,
+          "table": 1,
+          "footer": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:eastmoney_2dea7cdb5a3e018ffec3c80eb4435de524f2a14bd32735b78f563adc355272ab.pdf_6.jpg",
+      "annotation_page_sha256": "1504e81bd92915107a4d47217f584c2291c7e5e07da9415874b5e6eb9c3aed97",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 4,
+          "table": 4,
+          "table_footnote": 4,
+          "title": 1,
+          "header": 3,
+          "abandon": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 4,
+          "table": 4,
+          "table_footnote": 4,
+          "title": 1,
+          "header": 3,
+          "abandon": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-c99421f9-4435-44a9-82f8-7b044bb0ee1d.png",
+      "annotation_page_sha256": "e55982a74107447e80122d8802e40a109bad758e99dad87b2465fee8ee822118",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 1,
+          "table_caption": 1,
+          "table": 2,
+          "table_footnote": 1,
+          "header": 3,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 1,
+          "table_caption": 1,
+          "table": 2,
+          "table_footnote": 1,
+          "header": 3,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_chem-323236.pdf_183.jpg",
+      "annotation_page_sha256": "be629e054c8b4acf5dc9e11607ae3a1a9f60892e59f4f1c0390f118c5a9816d5",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 6,
+          "figure": 2,
+          "figure_caption": 2,
+          "table_caption": 1,
+          "table": 1,
+          "abandon": 2,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 6,
+          "figure": 2,
+          "figure_caption": 2,
+          "table_caption": 1,
+          "table": 1,
+          "abandon": 2,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3274.jpg",
+      "annotation_page_sha256": "010a24b428cca8c99b848b07cbcdf46a7b9b70e477e6b3098f27a6415481f3de",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 19,
+          "figure_caption": 1,
+          "figure": 6,
+          "table": 1,
+          "header": 1,
+          "abandon": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 19,
+          "figure_caption": 1,
+          "figure": 6,
+          "table": 1,
+          "header": 1,
+          "abandon": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_j.1528-1167.2008.01552.x.pdf_3.jpg",
+      "annotation_page_sha256": "c1233cacc7afc68d790a8cab59534348cc850e19039098e589889a98aad579cc",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "title": 3,
+          "text_block": 6,
+          "page_number": 1,
+          "header": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "title": 3,
+          "text_block": 6,
+          "page_number": 1,
+          "header": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "annotation_page_sha256": "310a441f8d59ea4aa2fed551ff27b4761db77c9d2f71aaf88ab3c9b0e2fff1fe",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "equation_isolated": 1,
+          "header": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "equation_isolated": 1,
+          "header": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+      "annotation_page_sha256": "d083ba9bf3b7310eeb1d1e008f889b0765665455fe72ee3e382acec786388915",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "header": 4,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "header": 4,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:eastmoney_fcc1c7940f94c7f36157a4aa9c1c804fe16e6b681ca1cef589af39c6d3e0cb90.pdf_0.jpg",
+      "annotation_page_sha256": "34a9205b1f34f0531bb4f83fdd3c4d80e26a82efa5658204b2e5eabe29f3f162",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 8,
+          "table_caption": 1,
+          "table": 1,
+          "figure_caption": 1,
+          "figure": 1,
+          "figure_footnote": 1,
+          "header": 5,
+          "abandon": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 8,
+          "table_caption": 1,
+          "table": 1,
+          "figure_caption": 1,
+          "figure": 1,
+          "figure_footnote": 1,
+          "header": 5,
+          "abandon": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:eastmoney_7c25f92e2ab21d83e1eada0e40a68e3151e7c1c2d673ddb12b0242fa3ab931ab.pdf_13.jpg",
+      "annotation_page_sha256": "e4f3a29d899470f583553e736e0922a297bf1214afd29da8f49f6eaf35b8c6fa",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 6,
+          "text_block": 7,
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "abandon": 1,
+          "header": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 6,
+          "text_block": 7,
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "abandon": 1,
+          "header": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1271.jpg",
+      "annotation_page_sha256": "3a1544f0b494cb027c7d97f328ce011e5996930221bb55b2b7257930dd226f64",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 12,
+          "figure": 1,
+          "table_caption": 1,
+          "table": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 12,
+          "figure": 1,
+          "table_caption": 1,
+          "table": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_4065.jpg",
+      "annotation_page_sha256": "3c3b537e8c3fba1bd8bf80c40bfc96493a531b9fed1bd9a246f5c3c75a2054be",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 9,
+          "table": 1,
+          "figure": 2,
+          "figure_caption": 2,
+          "page_number": 2,
+          "footer": 2,
+          "abandon": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 9,
+          "table": 1,
+          "figure": 2,
+          "figure_caption": 2,
+          "page_number": 2,
+          "footer": 2,
+          "abandon": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_jps.21547.pdf_7.jpg",
+      "annotation_page_sha256": "f9d1c45799773b8a57078e01e4905ba5184c41726361601076fe7643380d4851",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 5,
+          "title": 1,
+          "figure": 1,
+          "figure_caption": 1,
+          "page_number": 1,
+          "header": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 5,
+          "title": 1,
+          "figure": 1,
+          "figure_caption": 1,
+          "page_number": 1,
+          "header": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_46f23989f000d2a83058955c99cdcc1220d6649f16db4f5719d356aa5ced01bc.pdf_7.jpg",
+      "annotation_page_sha256": "ea8eb3c2753c273a2fab597f663d901d14d3bbd9ada553797d9ef315e2148eb3",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 1,
+          "abandon": 1,
+          "header": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 1,
+          "abandon": 1,
+          "header": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+      "annotation_page_sha256": "26d9285efd44b86c7203d54ca2eb2b7a8da17eb94f70bd5d21eee1ea80f2044f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 2,
+          "table": 1,
+          "header": 4,
+          "page_number": 1,
+          "abandon": 2,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 2,
+          "table": 1,
+          "header": 4,
+          "page_number": 1,
+          "abandon": 2,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_6a016aa81b2fc8281a2a51bae6417769e4cae7fbe161cbc4351596b82e7002fa.pdf_8.jpg",
+      "annotation_page_sha256": "251e217733cd41edff86878461ee4e2097f64ebfd9a3855f427c8c734945bee3",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "table_caption": 1,
+          "table": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "table_caption": 1,
+          "table": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+      "annotation_page_sha256": "623d68933df5137082bd905ec49ab02adb9914df4fd4cbfaba476e9094e2d509",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table_footnote": 1,
+          "table": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table_footnote": 1,
+          "table": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_chem-354334.pdf_20.jpg",
+      "annotation_page_sha256": "3a244278a8e2f16f54136e84a86c17cfb4dc9f517d0d09826c527f7e11d24fd9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 3,
+          "text_block": 5,
+          "table_caption": 2,
+          "table": 2,
+          "title": 1,
+          "abandon": 1,
+          "header": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 3,
+          "text_block": 5,
+          "table_caption": 2,
+          "table": 2,
+          "title": 1,
+          "abandon": 1,
+          "header": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_LEP power point presentation-English-FINAL-10-31-07_page_011.png",
+      "annotation_page_sha256": "b09968257b46031f1c59056e8ba0f71bc11410ebc24ff8c5bbb65ec62abf1105",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_5877.jpg",
+      "annotation_page_sha256": "7990be0a9179ab9e33cc52e128db9958f04ce8ca412b6ba29aabd405c9f0845b",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_s00894-012-1568-z.pdf_2.jpg",
+      "annotation_page_sha256": "a95e63d5e6728253aed30d7827a8b79a645b683038001f11178bc94de40de438",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [
+        {
+          "source_anno_id": 7,
+          "target_anno_id": 13,
+          "relation_type": "truncated"
+        }
+      ],
+      "original": {
+        "merger_passed": false,
+        "error_type": "TypeError",
+        "error": "string indices must be integers"
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 5,
+          "title": 1,
+          "figure": 2,
+          "figure_caption": 2,
+          "footer": 2,
+          "page_number": 1,
+          "abandon": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_j.jallcom.2003.09.015.pdf_1.jpg",
+      "annotation_page_sha256": "7e533ba00f42e2b6e4c86552396a92e13a70577ddffb390d4eb763e51fe97089",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 6,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 6,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_Daily Mail_2022-08-01@magazinesclubnew_page_009.png",
+      "annotation_page_sha256": "951df09962c44142c27df7f70af2ebe753d633f7897e1673bdcc61ca68b91d37",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 2,
+          "title": 3,
+          "text_block": 41,
+          "figure_caption": 1,
+          "header": 1,
+          "page_number": 1,
+          "page_footnote": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 2,
+          "title": 3,
+          "text_block": 41,
+          "figure_caption": 1,
+          "header": 1,
+          "page_number": 1,
+          "page_footnote": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.1445-2197.2003.02751.x.pdf_3.jpg",
+      "annotation_page_sha256": "df9d6cbcfc8c70a31eacf433b65e3602f1e02c861bc5c8d0d867a450720ebc70",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 2,
+          "reference": 7,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 2,
+          "reference": 7,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_jgh.13044.pdf_2.jpg",
+      "annotation_page_sha256": "f26a828e5d691cd64c2bdaf3fee6a2421003e2b0fee74de50c655478e23c2f63",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "figure": 1,
+          "figure_caption": 1,
+          "text_block": 2,
+          "title": 1,
+          "header": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "figure": 1,
+          "figure_caption": 1,
+          "text_block": 2,
+          "title": 1,
+          "header": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-ajhb.10190.pdf_5.jpg",
+      "annotation_page_sha256": "e79971883a3e32dd5ff7db5286a4c67e799960938a529e815f4267e0c3533d50",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 4,
+          "figure": 2,
+          "text_block": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 4,
+          "figure": 2,
+          "text_block": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_009.png",
+      "annotation_page_sha256": "9edff0d0a503a81e72d1ff48d5d2931bd160516fcedd3734c07d1fb9627676a1",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 16,
+          "figure": 2,
+          "text_block": 48,
+          "figure_caption": 1,
+          "header": 5,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 16,
+          "figure": 2,
+          "text_block": 48,
+          "figure_caption": 1,
+          "header": 5,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_USAToday-2025-01-08@magazinesclubnew_page_021.png",
+      "annotation_page_sha256": "5bf6791a27f0541d6c5ec79c2b5b813e7d1c38f0903bd9e7dd4cca00559e6fb8",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 10,
+          "figure": 5,
+          "figure_caption": 5,
+          "text_block": 26,
+          "header": 5,
+          "text_mask": 1,
+          "page_footnote": 1,
+          "abandon": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 10,
+          "figure": 5,
+          "figure_caption": 5,
+          "text_block": 26,
+          "header": 5,
+          "text_mask": 1,
+          "page_footnote": 1,
+          "abandon": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_TheWashingtonPost-2025-01-08@magazinesclubnew_page_042.png",
+      "annotation_page_sha256": "3a52641a89e1cf51b40b123e29a4a88f4c336bd78f0debcb34cb222876e9d503",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 51,
+          "text_block": 72,
+          "figure": 2,
+          "figure_footnote": 2,
+          "abandon": 2,
+          "header": 5,
+          "footer": 1,
+          "page_number": 1,
+          "text_mask": 4
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 51,
+          "text_block": 72,
+          "figure": 2,
+          "figure_footnote": 2,
+          "abandon": 2,
+          "header": 5,
+          "footer": 1,
+          "page_number": 1,
+          "text_mask": 4
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_Daily Mirror 2025-1-8@magazinesclubnew_page_058.png",
+      "annotation_page_sha256": "e462d9d375c7d95df7db6d3263b0dc4a836268d4cbc9632ea69d2559a83657bf",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 14,
+          "text_block": 25,
+          "figure": 6,
+          "figure_caption": 1,
+          "page_footnote": 1,
+          "text_mask": 8,
+          "abandon": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 14,
+          "text_block": 25,
+          "figure": 6,
+          "figure_caption": 1,
+          "page_footnote": 1,
+          "text_mask": 8,
+          "abandon": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.ab.2008.05.027.pdf_7.jpg",
+      "annotation_page_sha256": "912b65935f12fdffba7a51251f991041f4fa3629aef32fbf13ec662c0a923818",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 2,
+          "figure_caption": 2,
+          "text_block": 4,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 2,
+          "figure_caption": 2,
+          "text_block": 4,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_011.png",
+      "annotation_page_sha256": "81ad747666a0b501edf1bdae6ab30dbf5b667a77b5113f6dd18139844268d650",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 23,
+          "text_block": 48,
+          "figure": 2,
+          "figure_footnote": 2,
+          "figure_caption": 2,
+          "header": 3,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 23,
+          "text_block": 48,
+          "figure": 2,
+          "figure_footnote": 2,
+          "figure_caption": 2,
+          "header": 3,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_j.jmb.2003.10.009.pdf_4.jpg",
+      "annotation_page_sha256": "96a298bbc8a89058bd19109d67e2d3e6a439053aed5b2febe9bc2367493a4540",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 3,
+          "title": 2,
+          "page_number": 1,
+          "header": 1,
+          "page_footnote": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 3,
+          "title": 2,
+          "page_number": 1,
+          "header": 1,
+          "page_footnote": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_jb%2Fmvh022.pdf_1.jpg",
+      "annotation_page_sha256": "e6aefaf7f4b6fc91200fd60f24011307d488bb7aa26966260a4117d8f9b4b178",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 3,
+          "header": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 3,
+          "header": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+      "annotation_page_sha256": "d1c7ae497c5516c66d39d239b0eca8fe10831c9fe8e85bae5b92cdb891f6625d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 54,
+          "figure": 11,
+          "equation_isolated": 2,
+          "header": 1,
+          "page_number": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 54,
+          "figure": 11,
+          "equation_isolated": 2,
+          "header": 1,
+          "page_number": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+      "annotation_page_sha256": "8da644df0b318f55db5d4a115148b666cef1c0aa750e06b1b0d3676960c9f44f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "header": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "header": 2,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_003.png",
+      "annotation_page_sha256": "6598ca712bf25ea5a540c88dfb79a15419a3ed32dff6f3d10e2251e8f41d4ff1",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 20,
+          "figure": 2,
+          "figure_caption": 1,
+          "page_number": 1,
+          "header": 2,
+          "text_mask": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 20,
+          "figure": 2,
+          "figure_caption": 1,
+          "page_number": 1,
+          "header": 2,
+          "text_mask": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_027.png",
+      "annotation_page_sha256": "285ac80cce179eafa8aa3bc28f38aafa45ab4fdb31355abf3eb43712a7d4c33e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 2,
+          "figure": 2,
+          "title": 3,
+          "text_block": 36,
+          "header": 4,
+          "abandon": 2,
+          "text_mask": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure_caption": 2,
+          "figure": 2,
+          "title": 3,
+          "text_block": 36,
+          "header": 4,
+          "abandon": 2,
+          "text_mask": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+      "annotation_page_sha256": "76ccdd863287bc97b92a2490b1c440e1a3f805db5b00bc07336142f792b16032",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 52,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 52,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_3745.jpg",
+      "annotation_page_sha256": "d9c867f5e9534745fc6275471b39ffb9952697749d44f1e5aa0196e107b62111",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 1,
+          "figure_caption": 2,
+          "figure": 1,
+          "figure_footnote": 2,
+          "page_footnote": 4,
+          "page_number": 2,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 1,
+          "figure_caption": 2,
+          "figure": 1,
+          "figure_footnote": 2,
+          "page_footnote": 4,
+          "page_number": 2,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+      "annotation_page_sha256": "e8a62e1612a029c66a62ccdc01cee2785e565242e2d1fb1a41a83b31c1d763fc",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 2,
+          "table": 1,
+          "table_footnote": 4,
+          "text_block": 3,
+          "title": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 2,
+          "table": 1,
+          "table_footnote": 4,
+          "text_block": 3,
+          "title": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_bloodadvances.2019030924.pdf_3.jpg",
+      "annotation_page_sha256": "600211eba18a60337c2793ba78149f6abdb5fe66970dfd09a874b6d3f1af1931",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 3,
+          "text_block": 2,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 3,
+          "text_block": 2,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+      "annotation_page_sha256": "46927f95485c054450887e6dd46d863133aa4db437106a5885ae1543ca008e49",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [
+        {
+          "source_anno_id": 3,
+          "target_anno_id": 5,
+          "relation_type": "truncated"
+        }
+      ],
+      "original": {
+        "merger_passed": false,
+        "error_type": "TypeError",
+        "error": "string indices must be integers"
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 3,
+          "table": 3,
+          "table_footnote": 3,
+          "text_block": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_033.png",
+      "annotation_page_sha256": "aa6f10eece46e83a417d38c6504c58cbbe0817a01fb9c0b41f18662bdff8d03a",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 40,
+          "text_block": 43,
+          "figure": 4,
+          "figure_footnote": 2,
+          "figure_caption": 2,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 40,
+          "text_block": 43,
+          "figure": 4,
+          "figure_footnote": 2,
+          "figure_caption": 2,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00128-007-9171-1.pdf_3.jpg",
+      "annotation_page_sha256": "a30d075d72b0d5100bd4e171cb5e12e7256cfeaf72b3c2949f37e92ef21a977e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "text_block": 2,
+          "header": 1,
+          "page_number": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_2172.jpg",
+      "annotation_page_sha256": "980ba99ac391b3c020cff70e20261046cc3e6dbb6ea8cc538f23e5a8a19e1845",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 3,
+          "page_footnote": 8,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 4,
+          "text_block": 3,
+          "page_footnote": 8,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_469.jpg",
+      "annotation_page_sha256": "7316d51e17b2200e88edeb6c2e0cb20f165e1169e58902732b85ee34d3a912c9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "figure": 1,
+          "figure_footnote": 1,
+          "text_block": 3,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "figure": 1,
+          "figure_footnote": 1,
+          "text_block": 3,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_033.png",
+      "annotation_page_sha256": "913bece4c4b83f93aa98f80ec9c374500acd83fba4ffd6bcca1ff539699e718d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 23,
+          "figure": 2,
+          "figure_caption": 2,
+          "title": 2,
+          "page_number": 1,
+          "abandon": 2,
+          "page_footnote": 2,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 23,
+          "figure": 2,
+          "figure_caption": 2,
+          "title": 2,
+          "page_number": 1,
+          "abandon": 2,
+          "page_footnote": 2,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_TheGuardianUS-2025-1-8@magazinesclubnew_page_015.png",
+      "annotation_page_sha256": "08e2af6eef95ce612a2d6864cedad43d159d58b693f7c51604254dd75a905389",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 38,
+          "title": 7,
+          "figure": 1,
+          "figure_caption": 1,
+          "abandon": 2,
+          "header": 2,
+          "page_number": 1,
+          "text_mask": 1,
+          "page_footnote": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 38,
+          "title": 7,
+          "figure": 1,
+          "figure_caption": 1,
+          "abandon": 2,
+          "header": 2,
+          "page_number": 1,
+          "text_mask": 1,
+          "page_footnote": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00128-010-0006-0.pdf_5.jpg",
+      "annotation_page_sha256": "62296f7d2d7e361a1f85178825e6c084c75731297a008dcd4e0e6bb4a49ed193",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 3,
+          "title": 1,
+          "reference": 17,
+          "header": 1,
+          "page_number": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "text_block": 3,
+          "title": 1,
+          "reference": 17,
+          "header": 1,
+          "page_number": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "annotation_page_sha256": "ecdbe03c598d7d4e638c4d127802092392d83e89db9c58fa44b0372b9ccb075f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 4,
+          "table": 5,
+          "figure": 5,
+          "figure_caption": 5,
+          "figure_footnote": 4,
+          "title": 13,
+          "text_block": 19,
+          "page_number": 1,
+          "header": 1,
+          "text_mask": 13
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 4,
+          "table": 5,
+          "figure": 5,
+          "figure_caption": 5,
+          "figure_footnote": 4,
+          "title": 13,
+          "text_block": 19,
+          "page_number": 1,
+          "header": 1,
+          "text_mask": 13
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_020.png",
+      "annotation_page_sha256": "8a4bc5cf8ddf09e5f0609a5bcd9be8285389318f56cd328aff602bc8767fe300",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "title": 1,
+          "header": 2,
+          "footer": 3,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "title": 1,
+          "header": 2,
+          "footer": 3,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_bio-113065.pdf_213.jpg",
+      "annotation_page_sha256": "89430d2e68749abcec0c118f0ae2b1844ab7ae1e374af38f710c7a75f6809044",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 4,
+          "figure_caption": 4,
+          "title": 2,
+          "text_block": 2,
+          "abandon": 1,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "figure": 4,
+          "figure_caption": 4,
+          "title": 2,
+          "text_block": 2,
+          "abandon": 1,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg",
+      "annotation_page_sha256": "4787af955aed1ca4d22408e3744ee88d1e6b857d10f1bf5839fd2bae7f724c9b",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 3,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 3,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_42351289.pdf_1.jpg",
+      "annotation_page_sha256": "e9bb2ac30df2d1ca1722a71e4a03b2979d57a017087e69f8cd5e391648c7e214",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 19,
+          "figure": 7,
+          "equation_isolated": 2,
+          "figure_caption": 3,
+          "table": 1,
+          "title": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 19,
+          "figure": 7,
+          "equation_isolated": 2,
+          "figure_caption": 3,
+          "table": 1,
+          "title": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2893.jpg",
+      "annotation_page_sha256": "f5d412a721d629612a0c0e92ead7a3979bb32e59fdc8974a3c76b78114fe4560",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 10,
+          "figure": 9,
+          "figure_caption": 5,
+          "equation_isolated": 2,
+          "header": 2,
+          "page_number": 2,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 10,
+          "figure": 9,
+          "figure_caption": 5,
+          "equation_isolated": 2,
+          "header": 2,
+          "page_number": 2,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "annotation_page_sha256": "9250bb59307ab8361b92ef4607cd4787752a443b2ff71ea4c96e1662937ced04",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 25,
+          "title": 5,
+          "abandon": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 25,
+          "title": 5,
+          "abandon": 1,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:magazine_TheEconomist.2023.12.16_page_062.png",
+      "annotation_page_sha256": "b15a59ebf9a916b1a5a1e9b7bf4fa2226059b18a4aa695c57e6ede7ba3ceeb79",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "figure": 1,
+          "text_block": 10,
+          "page_number": 1,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "figure": 1,
+          "text_block": 10,
+          "page_number": 1,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+      "annotation_page_sha256": "ff708734cccee5b83a9f9a45e570b80617fdba5676a5871210d3a3408138b1a9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 4,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 4,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+      "annotation_page_sha256": "dcb4f024e103a83137e8a68a601e8e4ad5a6dd9b253eeb589c8779aff47c5d22",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "equation_isolated": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "equation_isolated": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-49746735-505c-442d-b3f6-c55b1bf9e48b.png",
+      "annotation_page_sha256": "d3e67d863a44c75213c6095250f2f333d1291f73b33b80abed8e3b871837e463",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "table_footnote": 1,
+          "table_caption": 1,
+          "text_block": 9,
+          "title": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table": 1,
+          "table_footnote": 1,
+          "table_caption": 1,
+          "text_block": 9,
+          "title": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2011_Solutions_2011s_page_003.png",
+      "annotation_page_sha256": "602aac406e56cec4849eacc7191f3f8ffb8ffecc50429869f09edc3549253aa3",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 24,
+          "equation_isolated": 12,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 24,
+          "equation_isolated": 12,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+      "annotation_page_sha256": "f4e0d78a0a6056e4f3c39afcba99260b4cf9793361c516e46946ef4af4ad57d4",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 16,
+          "equation_isolated": 17,
+          "title": 1,
+          "page_number": 1,
+          "equation_semantic": 4
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 16,
+          "equation_isolated": 17,
+          "title": 1,
+          "page_number": 1,
+          "equation_semantic": 4
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1920.jpg",
+      "annotation_page_sha256": "851233efe9526d270fc15789f62419f88de986c6f336121a99becc17e556d1e0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 7,
+          "table": 1,
+          "figure": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 7,
+          "table": 1,
+          "figure": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:scihub_j.ejcts.2011.04.042.pdf_3.jpg",
+      "annotation_page_sha256": "e5d769b861b609bb234d231e9848d54098866c555fb761b6606dfd126cc7e4a5",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "figure": 2,
+          "figure_caption": 2,
+          "text_block": 7,
+          "title": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "table_caption": 1,
+          "table": 1,
+          "table_footnote": 1,
+          "figure": 2,
+          "figure_caption": 2,
+          "text_block": 7,
+          "title": 2,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_769.jpg",
+      "annotation_page_sha256": "2d65b0d5d19232d87753eef867d076a5814ca8180c3557b0ce4eadd96b8ad78e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 10,
+          "text_block": 16,
+          "figure": 16,
+          "abandon": 4,
+          "header": 2,
+          "text_mask": 4,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 10,
+          "text_block": 16,
+          "figure": 16,
+          "abandon": 4,
+          "header": 2,
+          "text_mask": 4,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_2360.jpg",
+      "annotation_page_sha256": "aa3a52d6dab370047146161df098e9c81d49a902ee95f9be3cc6bd29f2617a94",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 13,
+          "table": 3,
+          "figure": 2,
+          "header": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 13,
+          "table": 3,
+          "figure": 2,
+          "header": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+      "annotation_page_sha256": "64101f9b541d29430e5320d05eb2b7ea30def8888d8d18bc82adfc30fe1b7a72",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "title": 1,
+          "header": 2,
+          "footer": 3,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "title": 1,
+          "header": 2,
+          "footer": 3,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-7bfad9a4-c5b7-40f3-8600-be513d1b1aaa.png",
+      "annotation_page_sha256": "f2cb99466c6ce1d3689ad1275d46b0b485e17ee42dee01e5f030f542d4d08941",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 10,
+          "text_block": 14,
+          "table": 1,
+          "table_footnote": 1,
+          "figure_caption": 1,
+          "chart_mask": 1,
+          "list_group": 1,
+          "header": 5,
+          "abandon": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 10,
+          "text_block": 14,
+          "table": 1,
+          "table_footnote": 1,
+          "figure_caption": 1,
+          "chart_mask": 1,
+          "list_group": 1,
+          "header": 5,
+          "abandon": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_ey-digital-state-tax-article.pdf_0.jpg",
+      "annotation_page_sha256": "0078618294fbbe40e6a13953df521888e8fee23a50e5f8b5fcc16bd238ef75cc",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 10,
+          "abandon": 1,
+          "header": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 10,
+          "abandon": 1,
+          "header": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_620.jpg",
+      "annotation_page_sha256": "7e9f0a97518ee2ddb00f8e3af871e713ca72d4cb5029bf3c76607880928e4ff2",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 15,
+          "text_block": 13,
+          "figure": 1,
+          "header": 3,
+          "abandon": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 15,
+          "text_block": 13,
+          "figure": 1,
+          "header": 3,
+          "abandon": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_ey-financial-sustainability-whitepaper.pdf_17.jpg",
+      "annotation_page_sha256": "4ceff8cb963537cd6db95a9c93a2647d2a8319f8dd523c3f9a203bf5de15a178",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 10,
+          "abandon": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 10,
+          "abandon": 2,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_d7fe1132386670993aae3dabc6247bc9_2.jpg",
+      "annotation_page_sha256": "b7318044a8489b38197d997e9986fec8a525e1b4f4ceac20ad40d1dec7a4b366",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 35,
+          "title": 9,
+          "header": 2,
+          "page_footnote": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 35,
+          "title": 9,
+          "header": 2,
+          "page_footnote": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第08讲第八课写作Part8训练_第八课写作Part8训练_page_003.png",
+      "annotation_page_sha256": "311ea2af8b87f250dae7d3479e615644556ee54f78045c168dd9d16850b0f2c0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "figure": 1,
+          "header": 4,
+          "text_mask": 4,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "figure": 1,
+          "header": 4,
+          "text_mask": 4,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_11.jpg",
+      "annotation_page_sha256": "a57f1397e1f290a6047419cea761274b8e88bbac9940c18d8755fcb3c72c7de1",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 15,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 15,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_eng_gls.pdf_6.jpg",
+      "annotation_page_sha256": "76b2423d1b98976cbf43c97e1660848ce6660a6f625cc83929eb684d63a72f6d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "title": 1,
+          "header": 2,
+          "footer": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "title": 1,
+          "header": 2,
+          "footer": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocai_P0-9.pdf_9.jpg",
+      "annotation_page_sha256": "af7dc0897d62939215ac2489bc83480850d5e5300b6b547b480e43a996b6fa36",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 5,
+          "figure": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 5,
+          "figure": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_fe5ed29024932fad071afc53807b16ba_3.jpg",
+      "annotation_page_sha256": "5ada684a642870ffa3d1be42ac98573402e13380efda4c56bb41d73453a8f390",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 14,
+          "title": 1,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 14,
+          "title": 1,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocai_c1-cn-10-q-06-lys.pdf_2.jpg",
+      "annotation_page_sha256": "de5bf88d7aad0df35f8010f1b1b81b1ed162a62892de33180c691e4573af7192",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "title": 2,
+          "abandon": 1,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "title": 2,
+          "abandon": 1,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_enbook-zlib-o.O-21882649.pdf_3.jpg",
+      "annotation_page_sha256": "62dbdf6707eb8be06ce46f4e904ea302b4e7b0a592d5dbf489faa4b8adb73fcf",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "figure_caption": 5,
+          "figure": 5,
+          "text_block": 5,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "figure_caption": 5,
+          "figure": 5,
+          "text_block": 5,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_965b491c51a8fcd511bcb12adcebca5836ab96fe8742a5d04d12669faec90531.pdf_2.jpg",
+      "annotation_page_sha256": "2b6dd189bfd311b9610e11f1b7e63c6121e24556d6d0b7ffe9f4a4d1515fca78",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 3,
+          "figure": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 3,
+          "figure": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-63685611.pdf_222.jpg",
+      "annotation_page_sha256": "19d9617f13a05f46b8db2a2fd54cbe57383801ca1029da64323dd0fbc24b73ce",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_english-studies-s6-on-the-road-resource-3_page_003.png",
+      "annotation_page_sha256": "40ecc68988647a8b971ca3bd06e5b3fabf8201580362bab59a6f5dcbaa1e4aa8",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_864cbd5f0adeb98dea6cf7105cc8dfb272a9be974757633b2db8cf3f9a11c92b.pdf_33.jpg",
+      "annotation_page_sha256": "6fda0bf46435cd96fc178929aa5e1f2047ae4a9e28e3701c906b74c52c8c1a9f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 6,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 6,
+          "figure": 1,
+          "figure_caption": 1,
+          "header": 1,
+          "abandon": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+      "annotation_page_sha256": "a58dfc9ae1656b29022c14fcf1f7bed03b333d0e66de9f6c3c07c2e8a221998d",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "list_group": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "list_group": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Attitudes_Towards_Rainwater_Harvesting_1999.pdf_5.jpg",
+      "annotation_page_sha256": "0d6883a4d289fcb1d4001644aacb1895b7ef2d59985fe20d8e3b5cec80ec4fab",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 8,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 2,
+          "text_block": 8,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-2861127b-41a4-44d5-b026-2de9cb408347.png",
+      "annotation_page_sha256": "2e76f3a64cd53f2b28f466e9170e77539cb4756caf067e0791e28d26c5370bd0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 11,
+          "title": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 11,
+          "title": 1,
+          "header": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-dneu.20833.pdf_13.jpg",
+      "annotation_page_sha256": "5dda07d5a06ed618e50106c3cdde0592a4b7055f4bce7c203d71d18280fc9035",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 1,
+          "reference": 2,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "title": 1,
+          "reference": 2,
+          "header": 1,
+          "page_number": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_4095.jpg",
+      "annotation_page_sha256": "9b9710cbc8bc3ba21abe74cb0e37a7f19bcaa6efc89e20ee9784c2998e02291b",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1249.jpg",
+      "annotation_page_sha256": "410ce16404937f056cec7766a34d28e5766c1785271271a413c8d10c7a989ab9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 2,
+          "title": 1,
+          "header": 1,
+          "page_number": 1,
+          "abandon": 1,
+          "footer": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_2400.jpg",
+      "annotation_page_sha256": "ac70690704ffd93a97112d418dcc1cdb3be4182f42f7bcee38c8e915a4d7b689",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 7,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 7,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_sociolinguistics_page_015.png",
+      "annotation_page_sha256": "4f8138efcaace3779092a0b2a5e93a093d38ac46805f3139d0aa223e53eb67bb",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaopptmerge_yanbaoPPT_495.jpg",
+      "annotation_page_sha256": "134bdf19e17626be9b089700181d7c48bed34275120b5d524d3a9cc921eaa127",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 6,
+          "figure": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 7,
+          "text_block": 6,
+          "figure": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.apcata.2006.05.010.pdf_2.jpg",
+      "annotation_page_sha256": "bf69cf0d9e3588d6216581b151d1681315aa3bea8016b76829ceeee64a102696",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "title": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 8,
+          "title": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-60832903.pdf_88.jpg",
+      "annotation_page_sha256": "f347a6b3c2953a62c96965f32974a5402eb21e5d184cbf0cf8e7e61717e3b7a7",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "figure": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 5,
+          "figure": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_bc193526614fd5857f7b5254e67bced76222cf3396b01e516303b92609a20075.pdf_14.jpg",
+      "annotation_page_sha256": "18122c5d7ef328658ad33add83688cec7210e15642edb75a9d4c22f666d61188",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 3
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 3
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+      "annotation_page_sha256": "d1994f2d925c2be3960ae5f56a9ba65a3129649c5e9e410ebf0c1ab5f53c2ee3",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 9,
+          "title": 5,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 9,
+          "title": 5,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_geo-12644.pdf_353.jpg",
+      "annotation_page_sha256": "8c99bde56cb89ecdab62148f6cd20dd6488ff8bd2d51d15702e3f55a9746b1e9",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 9,
+          "title": 4,
+          "figure": 1,
+          "abandon": 1,
+          "header": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 9,
+          "title": 4,
+          "figure": 1,
+          "abandon": 1,
+          "header": 1,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:book_en_搬书匠-3289-The Successful Software Manager-2019-英文版_page_241.png",
+      "annotation_page_sha256": "434a38a485e84b014052a1b351880a1fefdee43d69dcd2c78d2cf82ca715745f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 9,
+          "page_number": 1,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 9,
+          "page_number": 1,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "annotation_page_sha256": "a637b900253066471e9ce04d2ff0f7f0a7d9492440c60b274607411a8ed48291",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 6,
+          "title": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1303.jpg",
+      "annotation_page_sha256": "3cf2c2bf16980bc3ad6ef1d9615c305998dfd5d8b5902c3643fee8a58cbf3277",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 5,
+          "figure": 1,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 5,
+          "text_block": 5,
+          "figure": 1,
+          "header": 1,
+          "footer": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_The Right Moves_page_024.png",
+      "annotation_page_sha256": "fc4542fff40216c318f5cbac6403e78567ff8a563300a86a91eca750ccfc9cb5",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 1,
+          "page_number": 1,
+          "header": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+      "annotation_page_sha256": "1991a8e9bc9ac1d5641cd4800b9937e000f3ba7ea2b33f3ef3749b3e31b88fd2",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "header": 1,
+          "title": 1,
+          "text_block": 3,
+          "page_number": 1,
+          "abandon": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "header": 1,
+          "title": 1,
+          "text_block": 3,
+          "page_number": 1,
+          "abandon": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_0ef01b835238626f3589faa671abdfb832f2b98987eadad53cb2e35699dcc039.pdf_13.jpg",
+      "annotation_page_sha256": "75d936c4d07b825e8462c7165c06960f35d8795726ec5397d0cca70a683dc907",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 8,
+          "footer": 1,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 8,
+          "footer": 1,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "annotation_page_sha256": "eef28102565cc3a50ba68fee31d0016e7ac3452d63e04a014c8bbf5cc3501dae",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 7,
+          "header": 1,
+          "page_footnote": 1,
+          "footer": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 3,
+          "text_block": 7,
+          "header": 1,
+          "page_footnote": 1,
+          "footer": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_2016年安徽省中考英语试题（解析）_page_015.png",
+      "annotation_page_sha256": "8d56874403dd4cd654496a8991c19cb7cefa155c084c1e88fd053962fcc42989",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 11,
+          "title": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 11,
+          "title": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-chem.200701412.pdf_10.jpg",
+      "annotation_page_sha256": "c253db08e62b0fdd19c909e7aea1915f9954906b1fbcd52cbdac1559e420f5f0",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 14,
+          "title": 2,
+          "header": 2,
+          "footer": 4
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 14,
+          "title": 2,
+          "header": 2,
+          "footer": 4
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-j.ergon.2003.12.002.pdf_5.jpg",
+      "annotation_page_sha256": "473da568898311fcd567c4b5f3d5ca931657a556e104bfa64a8e0111cf1dbe2e",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "title": 8,
+          "header": 2
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 10,
+          "title": 8,
+          "header": 2
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-82c2ab31-2cf0-47bb-bfb6-110770323718.png",
+      "annotation_page_sha256": "438fb64e8919749b480dd52ddbd57bb4cf242f8a5ec32ab70f398bac4438d028",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "header": 2,
+          "page_number": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 3,
+          "header": 2,
+          "page_number": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_Keuk Chan Narith_page_009.png",
+      "annotation_page_sha256": "2dd167ef5716b6843d5a54563c8a5262e17cbee48b7fabc665be3fd76276871f",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "title": 1,
+          "text_block": 1
+        }
+      }
+    },
+    {
+      "id": "omnidocbench:page-5ef91820-15a4-41af-b57f-36ec76879fee.png",
+      "annotation_page_sha256": "9c757ab41374ded1bc689b30b1aa5b5ebf2d54c4986cd4a75142422d10fa0958",
+      "duplicate_annotation_ids": false,
+      "dangling_truncated_relations": [],
+      "original": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "page_footnote": 3,
+          "page_number": 1,
+          "header": 2,
+          "list_group": 1
+        }
+      },
+      "adapted": {
+        "merger_passed": true,
+        "element_counts": {
+          "text_block": 4,
+          "page_footnote": 3,
+          "page_number": 1,
+          "header": 2,
+          "list_group": 1
+        }
+      }
+    }
+  ],
+  "scope": "Annotation-merger compatibility only; no predictions, OCR scores or source annotations changed."
+}

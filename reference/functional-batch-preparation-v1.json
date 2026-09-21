@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "prepared_not_executed",
+  "created_utc": "2026-09-20T09:47:27.950866+00:00",
+  "file_sha256": {
+    "scripts/capture_functional_cli.py": "e498182dbdf18e8626393707aacadbbf32dc59580afbd13f5360f09cf0f5ca89",
+    "scripts/functional_batch_regression.py": "6a4a2253f10c713842c9dd8fd1e37d84ca5db6dd81de9b6a9d9c0fd67d0845a2",
+    "tests/test_functional_batch_regression.py": "3ce5e22a490aa3a329349fdae14771ae7c36194b58a5f6ad0021b653dc248bac",
+    "docs/FUNCTIONAL_BATCH_REGRESSION.md": "76eab8256634c525cbbfe4281975923f25a5991449ad4864544e2a3078fc33b6",
+    "reference/functional-batch-v1-lock.json": "c9ba1bcbadb7ffe8865aa8a149a75fb239053fb79955d86083c7a28b4de3fb72",
+    "reference/functional-batch-independent-review-v1.json": "5dd39d7e21fa8688b9e33c463bfbe2012cca108ddf3cb712456bf8c802ab1d05",
+    "artifacts/builds/functional-cli-v1-windows/build.json": "618c9701442ef61aa0a66f8e6d4915feaad8b43e4f6526ebe5fc1767a0c9364c",
+    "artifacts/builds/functional-cli-v1-windows/source.zip": "91b8c0b2e99d82c281a3b1999dce89a08ceda016e176a7d573a23cb032589009",
+    "artifacts/functional-batch/mixed-b4-v1/plan.json": "25572beea457125589fd55aee13fb228e3547b7b6697d1a752719d8f3bc466df"
+  },
+  "binary": {
+    "path": "artifacts/builds/functional-cli-v1-windows/falcon-ocr.exe",
+    "sha256": "61753235a0d419fbd43774118d506b0a8a270bdead43357a650a1332f9825fd5",
+    "bytes": 7149056
+  },
+  "validation": {
+    "synthetic_tests_passed": 14,
+    "independent_synthetic_tests_passed": 14,
+    "source_unchanged_during_build": true,
+    "captured_source_files": 33,
+    "plan_created_and_existing_plan_validation_passed": true,
+    "all_input_source_membership_bytes_rgb_and_model_assets_verified": true,
+    "inference_executed": false
+  },
+  "run_command": [
+    "C:/Users/amazi/mambaforge/python.exe",
+    "scripts/functional_batch_regression.py",
+    "--plan",
+    "artifacts/functional-batch/mixed-b4-v1/plan.json",
+    "--run"
+  ],
+  "scope": "Initial b4 functional stress only: prose, blank-white, sparse-room, receipt-cafe; four threads; min64/max1536/cap4096; fresh same-binary sequential control then all four expanded/compact and unpacked/phase-packed combinations. No performance or corpus quality claim.",
+  "remaining": [
+    "Parent launches only when coordinated and memory guard permits.",
+    "Actual exact-output and mixed-completion coverage remain untested until execution.",
+    "b2/b8 require later separately frozen work."
+  ]
+}

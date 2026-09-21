@@ -1,0 +1,15 @@
+test_complete_coverage_and_exact_bf16_unpack (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_exactly_four_approved_static_stores_removed (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_insertions_only_write_observer_state_or_global_copy (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_machine_inventory_gate_function_unchanged (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_machine_inventory_is_sensitive_to_opcode_and_immediate (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_missing_unexpected_and_overflow_writes_rejected (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_mma_coordinate_bijection (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_restore_and_frozen_scope (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_unavailable_arguments_have_masks_and_no_inferred_values (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+test_unchanged_abi_with_only_observer_scratch_pointer (test_bf16_ptx_observer_v2.ObserverTests) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 3.607s
+
+OK

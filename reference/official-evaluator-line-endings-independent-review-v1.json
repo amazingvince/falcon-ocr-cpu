@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T13:18:23.194133+00:00",
+  "status": "no_concrete_blocker_in_bounded_read_only_review",
+  "bound_files": {
+    "scripts/audit_evaluator_line_endings.py": "8061b83ba88c8b0b589de161b74935b47cb82da7790e1f80adb327a5a890269e",
+    "reference/official-evaluator-line-endings-v1.json": "3b9912e3b9ba232a3400ac1a9255d513f2ec65a635fe234061c2e176fd21940b",
+    "scripts/prepare_official_evaluation.py": "7b575e419b9b94a4dda24743b687dcabab98548fef62a5288eef153ebfa68692",
+    "scripts/run_official_evaluation.py": "003a8955bd799f9d4b4b46dff0c5ea2de0b9a409d04497530a469327cbca920f",
+    "scripts/run_evaluation_checked.py": "d1317f0284c90e5f80890e76c54a75870977c9ac18db924ecc122f702734a867",
+    "artifacts/OmniDocBench-eval/.git/config": "ac892f0cee45b59dcf15dcffe7a30e098759ab5402760e6bb88fd6fdd6ad0583"
+  },
+  "scope": "Method review plus independent rehash of all 122 recorded materialized working files; no evaluation, inference, checkout/config mutation, or source edit. Root performed the pinned Git blob comparison.",
+  "observations": {
+    "materialized_tracked_files": 122,
+    "crlf_only": 117,
+    "exact_blob_bytes": 5,
+    "absent_skip_worktree_paths": 84,
+    "native_git_status_clean": true,
+    "native_effective_core_autocrlf": "true from system config",
+    "native_check_attr_all_for_materialized_files": "empty",
+    "per_process_git_override": [
+      "GIT_CONFIG_COUNT=1",
+      "GIT_CONFIG_KEY_0=core.autocrlf",
+      "GIT_CONFIG_VALUE_0=true"
+    ],
+    "override_executed_by_reviewer": false
+  },
+  "review": [
+    "The audit pins HEAD, compares each materialized regular file directly with its Git blob, allows only literal CRLF-to-LF replacement for NUL-free content, and records both raw working and Git blob SHA256.",
+    "The audit explicitly lists absent skip-worktree paths, disables lazy fetching, rechecks all working hashes and absence inventory, and rechecks tree/revision/script identity before writing.",
+    "The process-local Git setting changes normalized status comparison without rewriting evaluator files. Both preparation and execution retain their pinned-revision and tracked-dirty rejection, and inherit the environment.",
+    "Sparse materialization and normalized-content equality must remain explicit; this does not establish literal raw-byte identity of all repository paths."
+  ],
+  "execution_receipt_requirements": [
+    "Preserve the initial failed preflight log and record the new invocation plus effective process-local Git value.",
+    "Bind this audit and its script digest before scoring and rehash its 122 working files after evaluation; the current checked evaluator wrapper does not itself record the Git override or perform that raw-source closure.",
+    "Do not reset, renormalize, change Git local config, weaken revision checks, or suppress general tracked modifications."
+  ],
+  "primary_sources": [
+    "https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreautocrlf",
+    "https://git-scm.com/docs/git-config#Documentation/git-config.txt-GITCONFIGCOUNT"
+  ],
+  "limitations": [
+    "No WSL process was run by this reviewer; effective WSL status and execution evidence belong to the parent run receipt.",
+    "No claim of evaluation result correctness or scoring completion follows from this preflight review."
+  ]
+}

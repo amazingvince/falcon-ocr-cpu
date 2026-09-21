@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "status": "independent_scale_review_passed",
+  "captures": [
+    {
+      "report": "artifacts/diagnostics/rms-scales-windows-v1/report.json",
+      "report_sha256": "9dca1f5a3e236eae60bd9aabb4370dd11a8b70cad5ad05bdff43f111a541e848",
+      "compiler_version": "rustc 1.92.0 (ded5c06cf 2025-12-08)\nbinary: rustc\ncommit-hash: ded5c06cf21d2b93bffd5d884aa6e96934ee4234\ncommit-date: 2025-12-08\nhost: x86_64-pc-windows-msvc\nrelease: 1.92.0\nLLVM version: 21.1.3\n",
+      "artifact_sha256": {
+        "input.bin": "8eb164de348fdc672a7902910679fa21fdff7e61e17f253fa23d3d41ef9a074b",
+        "expected.bin": "7abe1c5fb4c98243eafd4120829417e0b43f8ba1b4f8ca4db661c61dd7a88feb",
+        "scales.bin": "efa596e69a69dd7ffddb6baae14a4a4927e230c66bcd594c762df5565355c962",
+        "rstd_probe.exe": "c5f9a052710ca84ccab5957d1d063465e6db2f16cd1eb4ea78d07cbdf7ffab4a"
+      }
+    },
+    {
+      "report": "artifacts/diagnostics/rms-scales-wsl-v1/report.json",
+      "report_sha256": "dbb5d078bea1417d87c95a425b67ca3047b6249155dcf284069d3c2892c0e667",
+      "compiler_version": "rustc 1.92.0 (ded5c06cf 2025-12-08)\nbinary: rustc\ncommit-hash: ded5c06cf21d2b93bffd5d884aa6e96934ee4234\ncommit-date: 2025-12-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.92.0\nLLVM version: 21.1.3\n",
+      "artifact_sha256": {
+        "input.bin": "8eb164de348fdc672a7902910679fa21fdff7e61e17f253fa23d3d41ef9a074b",
+        "expected.bin": "7abe1c5fb4c98243eafd4120829417e0b43f8ba1b4f8ca4db661c61dd7a88feb",
+        "scales.bin": "efa596e69a69dd7ffddb6baae14a4a4927e230c66bcd594c762df5565355c962",
+        "rstd_probe": "7dc69c134092f1b78c302a3dd730a30aa341a0574d2290890de6908ea70e68f8"
+      }
+    }
+  ],
+  "checked_sha256": {
+    "experiments/rms_norm/capture_scales.py": "0bc02a7805056e6100aa4670eb80ed3a4b3df4f03185bd930526886a75d41de7",
+    "experiments/rms_norm/rstd_probe.rs": "c643e0b97303368c12e70823c57894b0bb703e96ea81da1496d9cbe288ef8977",
+    "experiments/rms_norm/test_capture_scales.py": "c4b467664995292cb8f34bf7c9a47fb95a32173641b81325bcc16ccb6b1987cf",
+    "experiments/rms_norm/review_saved_scales.py": "925e021a11d591ad8b9102a7ba562370be565e16dbb915482fdaf77615a316ef",
+    "artifacts/diagnostics/rms-scales-windows-v1/report.json": "9dca1f5a3e236eae60bd9aabb4370dd11a8b70cad5ad05bdff43f111a541e848",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "artifacts/reference/layer-operators-fp32.safetensors": "ce7345c219d8923182ff66e9aad2f4d6bad3c193a19c3445a850c2d3a90e5417",
+    "artifacts/reference/layer-operators-fp32.json": "148b9d4286bf413b7c9c693b920290298d5f46cd137449ac4e394430495a8962",
+    "artifacts/diagnostics/rms-scales-windows-v1/sources/experiments/rms_norm/capture_scales.py": "0bc02a7805056e6100aa4670eb80ed3a4b3df4f03185bd930526886a75d41de7",
+    "artifacts/diagnostics/rms-scales-windows-v1/sources/experiments/rms_norm/rstd_probe.rs": "c643e0b97303368c12e70823c57894b0bb703e96ea81da1496d9cbe288ef8977",
+    "artifacts/diagnostics/rms-scales-windows-v1/sources/src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/diagnostics/rms-scales-windows-v1/sources/src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "artifacts/diagnostics/rms-scales-windows-v1/input.bin": "8eb164de348fdc672a7902910679fa21fdff7e61e17f253fa23d3d41ef9a074b",
+    "artifacts/diagnostics/rms-scales-windows-v1/expected.bin": "7abe1c5fb4c98243eafd4120829417e0b43f8ba1b4f8ca4db661c61dd7a88feb",
+    "artifacts/diagnostics/rms-scales-windows-v1/scales.bin": "efa596e69a69dd7ffddb6baae14a4a4927e230c66bcd594c762df5565355c962",
+    "artifacts/diagnostics/rms-scales-windows-v1/rstd_probe.exe": "c5f9a052710ca84ccab5957d1d063465e6db2f16cd1eb4ea78d07cbdf7ffab4a",
+    "artifacts/diagnostics/rms-scales-windows-v1/sources/experiments/rms_norm/production_pairwise.rs": "a6b2fb8f279b080a078acb73b710815784007feccf0d771fc11f2d4b907b60b4",
+    "artifacts/diagnostics/rms-scales-wsl-v1/report.json": "dbb5d078bea1417d87c95a425b67ca3047b6249155dcf284069d3c2892c0e667",
+    "artifacts/diagnostics/rms-scales-wsl-v1/sources/experiments/rms_norm/capture_scales.py": "0bc02a7805056e6100aa4670eb80ed3a4b3df4f03185bd930526886a75d41de7",
+    "artifacts/diagnostics/rms-scales-wsl-v1/sources/experiments/rms_norm/rstd_probe.rs": "c643e0b97303368c12e70823c57894b0bb703e96ea81da1496d9cbe288ef8977",
+    "artifacts/diagnostics/rms-scales-wsl-v1/sources/src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/diagnostics/rms-scales-wsl-v1/sources/src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "artifacts/diagnostics/rms-scales-wsl-v1/input.bin": "8eb164de348fdc672a7902910679fa21fdff7e61e17f253fa23d3d41ef9a074b",
+    "artifacts/diagnostics/rms-scales-wsl-v1/expected.bin": "7abe1c5fb4c98243eafd4120829417e0b43f8ba1b4f8ca4db661c61dd7a88feb",
+    "artifacts/diagnostics/rms-scales-wsl-v1/scales.bin": "efa596e69a69dd7ffddb6baae14a4a4927e230c66bcd594c762df5565355c962",
+    "artifacts/diagnostics/rms-scales-wsl-v1/rstd_probe": "7dc69c134092f1b78c302a3dd730a30aa341a0574d2290890de6908ea70e68f8",
+    "artifacts/diagnostics/rms-scales-wsl-v1/sources/experiments/rms_norm/production_pairwise.rs": "a6b2fb8f279b080a078acb73b710815784007feccf0d771fc11f2d4b907b60b4"
+  },
+  "independent_integer_oracle_rows": 1444,
+  "candidate_output_bits_checked": 1231104,
+  "cross_platform_scale_triples_equal": 5776,
+  "consistent_scale_count_histogram": {
+    "1": 1444
+  },
+  "cpu_variants": {
+    "production": {
+      "output_consistent_rows": 862,
+      "different_output_elements": 397810,
+      "max_abs": 9.5367431640625e-07
+    },
+    "production_rounded_rsqrt": {
+      "output_consistent_rows": 994,
+      "different_output_elements": 307455,
+      "max_abs": 9.5367431640625e-07
+    },
+    "cuda_shaped": {
+      "output_consistent_rows": 959,
+      "different_output_elements": 326741,
+      "max_abs": 9.5367431640625e-07
+    },
+    "cuda_shaped_rounded_rsqrt": {
+      "output_consistent_rows": 1138,
+      "different_output_elements": 207616,
+      "max_abs": 9.5367431640625e-07
+    }
+  },
+  "synthetic_tests": {
+    "passed": 7,
+    "log": "test_exact_oracle_known_rounding_and_signed_zero (__main__.ScaleSearchTests) ... ok\ntest_inconsistent_output_and_signed_zero_are_rejected (__main__.ScaleSearchTests) ... ok\ntest_normal_random_rows_and_power_of_two_boundaries (__main__.ScaleSearchTests) ... ok\ntest_smallest_positive_scale_with_normal_anchor (__main__.ScaleSearchTests) ... ok\ntest_subnormal_products_with_normal_anchor (__main__.ScaleSearchTests) ... ok\ntest_ties_even_and_odd_normal_outputs (__main__.ScaleSearchTests) ... ok\ntest_unsupported_anchor_fails_closed (__main__.ScaleSearchTests) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.189s\n\nOK\n"
+  },
+  "confirmed_arithmetic_defects": [],
+  "qualification": "The positive finite FP32 scale search is complete for the accepted normal anchors in these pinned rows under one FP32 RNE multiplication. The exact-integer oracle independently checks all anchor intervals and every candidate against all768 output bits. No actual CUDA rstd or variance is inferred as observed; the queued CUDA capture is required. No inference, new probe execution, or timing measurements occurred during this review.",
+  "provenance_limits": [
+    "Original capture source/input hashes and preserved source copies are verified; source/function/operand/scale bytes agree across platforms. This review is after-the-run evidence, not retroactive startup attestation.",
+    "The original capture records compiler version/command and final executable hash, not a hermetic compiler/linker dependency closure or an executable pre-run hash.",
+    "The f64 sqrt/reciprocal then F32 cast variant is an explicit CPU numerical candidate, not a proof of correctly rounded mathematical reciprocal square root or CUDA rsqrt behavior."
+  ]
+}

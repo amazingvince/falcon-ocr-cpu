@@ -1,0 +1,16 @@
+{
+  "kind": "native-profile-elevation-attempt-v1",
+  "recorded_utc": "2026-09-20T15:00:23.606435+00:00",
+  "status": "not_started_windows_elevation_canceled",
+  "windows_error": "The operation was canceled by the user.",
+  "automatic_approval_rejected": false,
+  "recorder_started": false,
+  "model_started": false,
+  "elevated_child_pid": null,
+  "dispatch_receipt": "artifacts\\diagnostics\\fullpage-profile-dispatch-v2.json",
+  "dispatch_receipt_sha256": "cf8ab397fc4c3ef35e8adbf6ae4a4afc5926a15e19957ef50bc4ec53a8eeeebf",
+  "plan_path": "D:/falcon-ocr-rust-builds/profiles/fullpage-expanded-v2/plan.json",
+  "plan_sha256": "f44883243e8d681d737319b517f215b1c179db12cb8659f7cca4453f00ae6733",
+  "source_plan_remains_prepared": true,
+  "next_step": "Await user response before requesting elevation again. No alternate privileged route attempted."
+}

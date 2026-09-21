@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "kind": "windows-attention64-staged-fullpage-independent-review-v1",
+  "status": "passed_saved_result_review",
+  "plan_sha256": "45730ca2ed26fe63facd1dafb004701711ace5cc50e8a8b0c4d92fb37ab0d6b0",
+  "checks": 606,
+  "bound_file_count": 27,
+  "inputs_sha256": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\attention64_staged\\review_fullpage.py": "c097459bbc963f9f343fe05fd195f2284c3bab4702d5c553d56f333ad0d956fa",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\plan.json": "45730ca2ed26fe63facd1dafb004701711ace5cc50e8a8b0c4d92fb37ab0d6b0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\comparison.json": "7ab775eb2dd34b78c760d22a9f67796da5ccfd6ec6e45c450e86a13c6c839ab0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\benchmark_compact_candidate.py": "e863fe08fd116664f9f20511b441c69a159c6a98f7d706c242ee9418e940ac0c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\scripts\\realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\protocol-source.zip": "541e23510de1fb495d7656fbc8ade457ac5f7cde5355149a3f4a773915dbced5",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-compact-fullpage-window-v1\\candidate.json": "de250d2ad37db564503762952fa8557c05dde24c48d2f4d659af136a7752fa91",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\build.json": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-staged-v1\\benchmark-build\\build.json": "9d45b164cc8c24301e95b820f2e9c6edaabd939481a4a0cf1628e09679b3a6b9",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\ocr_bench.exe": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\source.zip": "f39d1f4641237aa82dc318d9bc14d5a28c71c292c27fdd497d39253c257ac4d3",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-staged-v1\\benchmark-build\\ocr_bench.exe": "9414183c6a7989c1899c042edacd018e52ca990f30e7099238833b5f1873e5d9",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-staged-v1\\benchmark-build\\source.zip": "75e457330ef8d7ad74950012e6ab14f82b9cd10a929c32979bca22aa8022694d",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\execution-start.json": "6c87a79c5744e2f2fa005beb4dfd09a69c155df76da4c5297b84c7cc263afaeb",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-before.json": "71af24ced3fc125439211da8a6663409b2d0c65103234d7363e0962b9ec79aa1",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-before.execution.json": "2f20dce01ac9062695a00f704a443378d6f3c164ee87c7a210b67e28c215c0c0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-before.start.json": "e023f10bca8b5d117c14d61f7f5495236db32578d42d73ca17563cdfd04d6876",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-before.log": "2baddb78bbd5166d12b6bdfbae1833a479b8b3bba006bebccebaca61a941ad09",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\candidate.json": "e1299646de79c38217d37d9be11c6c940ee2664194f0ae21a5f74ff80fe154dd",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\candidate.execution.json": "e3c7d2d8855639ac84af8ec0670924c3868b2efdc7dd2c7c0dadf6177b25c992",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\candidate.start.json": "9919fe8b149852a2abcd87a221b89db659f519a64806b29702d15d0f02c066a4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\candidate.log": "93adf81359df3ba232685747251bfc4f3214342dc074e47cfe2212fcf440500d",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-after.json": "ce14542f8e58a807899855ec88477e7399e890abf73d2f38b48a3cdbbdf78a44",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-after.execution.json": "13220535e18f4f9f54ad923c4714eae4c67c99d1eda5456b93770817888bf6cd",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-after.start.json": "4bc51463cec5c7dca9e449f3d1773d93f66333afee7b01f9fe449dd1955afee9",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-staged-fullpage-window-v1\\control-after.log": "4800a08fd1f725f026310ba8aa56d34bea036bc8ac333f0c55482d56b161d220"
+  },
+  "all_bound_files_unchanged": true,
+  "measured_outputs_checked": 9,
+  "output_tokens_each": 1140,
+  "exact_literal_text_stops_counts_dimensions": true,
+  "exact_token_vector_per_case": true,
+  "token_ids_storage": "One stored vector per case; the bound compiled harness asserts every measured repetition equals that vector. Literal text/stop/count/dimensions are independently stored and checked for all9 repetitions.",
+  "source_changes": [
+    "src/kernels.rs"
+  ],
+  "compiler_and_selected_build_environment_match_except_target": true,
+  "protocol_archive_verified": true,
+  "three_processes_exit_zero_without_overlap": true,
+  "results": [
+    {
+      "name": "control-before",
+      "median_ms": 62695.9167,
+      "samples_ms": [
+        62851.622800000005,
+        62695.9167,
+        62607.5069
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 51.218399999999995,
+        "prefill_ms": 10085.401600000001,
+        "decode_ms": 52508.2577,
+        "total_ms": 62695.9084
+      },
+      "pid": 11672
+    },
+    {
+      "name": "candidate",
+      "median_ms": 63972.498199999995,
+      "samples_ms": [
+        64019.930400000005,
+        63972.498199999995,
+        63916.5802
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 51.5237,
+        "prefill_ms": 9966.7908,
+        "decode_ms": 53912.7577,
+        "total_ms": 63972.493200000004
+      },
+      "pid": 86936
+    },
+    {
+      "name": "control-after",
+      "median_ms": 62708.959200000005,
+      "samples_ms": [
+        62936.1869,
+        62708.959200000005,
+        62677.2906
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 52.4401,
+        "prefill_ms": 10075.0298,
+        "decode_ms": 52528.6967,
+        "total_ms": 62708.9544
+      },
+      "pid": 59136
+    }
+  ],
+  "control_drift_percent": 0.020802790175977748,
+  "candidate_latency_reduction_percent": {
+    "control_before": -2.036147754419848,
+    "control_after": -2.0149258034567907
+  },
+  "whole_page_stability_pass": true,
+  "target_met_in_this_page": false,
+  "control_stage_drift_percent": {
+    "prefill_ms": -0.10283973223238485,
+    "decode_ms": 0.03892530602858102
+  },
+  "stage_timings_are_nonisolated_wall_intervals": true,
+  "default_promotion": false,
+  "limitations": [
+    "One page, one control/candidate/control bracket and three measured repetitions per process; this does not establish broad workload, batch or platform promotion.",
+    "All three processes use joint/compact/unpacked B1; the archived Runner uses its single-page fallback, so this is not a joint multirow performance claim.",
+    "The candidate stages tile probabilities before a key-ordered PV loop, retaining the compact layout; this bracket compares only that staged candidate with the frozen combined fixed64 compact control. Its result is not additive with earlier candidate brackets.",
+    "Stage timings are descriptive wall intervals with control variation, not isolated kernel measurements or causal phase attribution.",
+    "Selected compiler versions, flags and captured source match except the kernel candidate and isolated target; neither build is claimed hermetic.",
+    "Stage medians need not sum to the median of total time because different repetitions can supply each median.",
+    "Two warmups per process are unmeasured and not independently exported.",
+    "Model/image bytes were not rehashed in this bounded review; their frozen metadata joins and the completed capture's existing input validation are retained.",
+    "No inference, ETL scan, tests or builds were run. Only small metadata/source/archive and explicit executable identities were read and hashed."
+  ]
+}

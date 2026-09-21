@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "kind": "independent-benchmark-planning-review",
+  "status": "passed_planning_only",
+  "created_utc": "2026-09-20T14:35:10.897317+00:00",
+  "plan_path": "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/plan.json",
+  "plan_sha256": "18a4b1a2ffa7b9d58ee7003ec3ec0ee9e65e8abd21e6dadb3a13f97b31a84c4f",
+  "findings": [],
+  "inference_or_benchmark_executed": false,
+  "quiet_window_established": false,
+  "default_promotion": false,
+  "checks_passed": 353,
+  "inputs_in_exact_order": [
+    {
+      "key": "sparse-room",
+      "id": "original-supplement-v1:sparse-room",
+      "category": "sparse",
+      "original_dimensions": [
+        1024,
+        768
+      ],
+      "frozen_prepared_dimensions": [
+        1024,
+        768
+      ],
+      "prefix_tokens": 3088,
+      "reserved_context_rows": 7184,
+      "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "source_page_canonical_json_sha256": "8a87cc07c480557f9835422bb8905f2755903658ad1d5770edd413b870913f3c",
+      "requested_kv_payload_bytes": {
+        "expanded": 1294729216,
+        "compact": 786497536
+      }
+    },
+    {
+      "key": "table",
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "category": "tables",
+      "original_dimensions": [
+        1575,
+        2048
+      ],
+      "frozen_prepared_dimensions": [
+        1184,
+        1536
+      ],
+      "prefix_tokens": 7120,
+      "reserved_context_rows": 11216,
+      "canonical_png_sha256": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e",
+      "source_lock": "reference/serving-fullpages-v1-lock.json",
+      "source_page_canonical_json_sha256": "deff37252d3d553330a2b1ab4af0eac644cf809c4b6425aed05552bb21420713",
+      "requested_kv_payload_bytes": {
+        "expanded": 2021392384,
+        "compact": 1331494912
+      }
+    }
+  ],
+  "runtime": {
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 16,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "warmup": 2
+  },
+  "repetitions": 3,
+  "ordered_modes": [
+    {
+      "name": "sequential-a",
+      "execution": "sequential",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "expanded-a",
+      "execution": "joint",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "compact",
+      "execution": "joint",
+      "cache_layout": "compact",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "phase-packed",
+      "execution": "joint",
+      "cache_layout": "expanded",
+      "weight_layout": "phase-packed"
+    },
+    {
+      "name": "expanded-b",
+      "execution": "joint",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "sequential-b",
+      "execution": "sequential",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    }
+  ],
+  "coverage": "selected_groups_only",
+  "memory_estimate": {
+    "kind": "requested_FP32_KV_payload_reservation_only",
+    "n_layers": 22,
+    "query_width": 1024,
+    "kv_width": 512,
+    "bytes_per_scalar": 4,
+    "generated_rows_reserved_per_request": 4096,
+    "formula_expanded_bytes": "22 * 4 * 2 * 1024 * (P + 4096)",
+    "formula_compact_bytes": "22 * 4 * (1024*P + 512*4096 + 512*(P+4096))",
+    "joint_two_request_bytes": {
+      "expanded": 3316121600,
+      "compact": 2117992448
+    },
+    "joint_two_request_GiB": {
+      "expanded": 3.08837890625,
+      "compact": 1.9725341796875
+    },
+    "sequential_one_live_request_max_bytes": 2021392384,
+    "sequential_one_live_request_max_GiB": 1.882568359375,
+    "phase_packed_extra_weight_payload_bytes_separate_from_KV": 876085248,
+    "limits": [
+      "Prefixes are the frozen input geometry/prompt counts, not observations from a future run.",
+      "try_reserve_exact requests this element capacity; allocator overhead or excess capacity is excluded.",
+      "Both sessions are reserved in the joint chunk even if sparse content reaches EOS early; early EOS does not reduce initial requested capacity.",
+      "These are storage-request calculations, not process peak RSS, physical committed bytes, available-memory assurance or a runtime forecast.",
+      "Model weights, packed weights, prefill/decode scratch, image buffers, stacks and allocator metadata are excluded from KV totals."
+    ]
+  },
+  "closure": {
+    "same_build_and_binary_as_completed_fullpage_B1": true,
+    "same_schedule_and_protocol_sources": true,
+    "build_archive_members": 29,
+    "protocol_archive_members": 6,
+    "checked_file_count": 50,
+    "checked_files_sha256": {
+      "artifacts/benchmarks/mixed-sparse-first-b2-planning-review-v1/review.py": "2f37d00f78cb73e4c2ffaab9c0895a0c54a03bd8efce44a328e836dfdda43761",
+      "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/plan.json": "18a4b1a2ffa7b9d58ee7003ec3ec0ee9e65e8abd21e6dadb3a13f97b31a84c4f",
+      "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/commands.json": "8d24f17402e5f39a93520a88cfeb7eca26f8b12d3bd2ee77b5e72257f8154015",
+      "artifacts/benchmarks/fullpages-b1-window-v1/plan.json": "760250cf8bc62187d7e58d427c71a59bebd80ec4dcf7a0c465148866c87828f3",
+      "reference/benchmarks/realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+      "artifacts/builds/ocr-bench-fullpages-v2-windows/build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+      "artifacts/builds/ocr-bench-fullpages-v2-windows/ocr_bench.exe": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+      "artifacts/builds/ocr-bench-fullpages-v2-windows/source.zip": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+      "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+      "examples/ocr_bench.rs": "748d231586bf3b3481a74cdce08ebcefd8827ba35cb43a889b71e125e7ed7c91",
+      "examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+      "examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+      "examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+      "examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+      "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+      "scripts/build_linux.sh": "25203d4275f25a786bc91531f36d1ebe25ae77736d0dd59b7af1832b0f759e76",
+      "scripts/build_windows.ps1": "36e034617ffe5de1848a538f4a6fd3c80f822f47cdc6053ea21a515c9282d992",
+      "scripts/capture_rust_build.py": "f346902d34e4a813b7b2000ba08a6dfc15f129f8b7c1c97ebbc72f8041c79738",
+      "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+      "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+      "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+      "src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+      "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+      "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+      "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+      "src/lib.rs": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+      "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+      "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+      "src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+      "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+      "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+      "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+      "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+      "src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+      "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/protocol-source.zip": "f9a54538a941a784a5844d1d6a912431a37fe3bfefc66d0604a58104bc9225a5",
+      "scripts/realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+      "scripts/compare_realistic_benchmarks.py": "63085cc599261a092991858ddc68fbf1fd9ac79ee3426c35da507fdee5a166f5",
+      "reference/serving-fullpages-v1-lock.json": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+      "reference/original-supplement-v1-lock.json": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+      "reference/original-supplement-v1-visual-review.json": "4a79273aff01f7c01cf340690b38856d702cf2f64d035d6a86327239b9de2c31",
+      "artifacts/model/model.safetensors": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "artifacts/model/config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "artifacts/model/tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+      "artifacts/model/tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+      "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "artifacts/corpus/v3/2c243b31d36eb729/source.jpg": "e334e4f823c20f95d0edf976f798cd899cae9327fa2d38c7f1ca77bb03c1b5f1",
+      "artifacts/corpus/v3/2c243b31d36eb729/canonical-rgb.png": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e"
+    },
+    "final_identity_window_passed": true
+  },
+  "limitations": [
+    "Planning validation only; no tests, builds, model import, inference or benchmark execution.",
+    "The protocol ZIP container digest differs from the B1 ZIP; all six member names and byte digests are identical.",
+    "No warmups, repetitions, controls, input ordering or candidate definitions were changed.",
+    "A future quiet-window authorization and normal execution preflight remain separate; concurrent GPU diagnostics are not treated as a quiet window.",
+    "Source and binary binding does not constitute a hermetic build attestation."
+  ]
+}

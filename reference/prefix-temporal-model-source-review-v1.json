@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "status": "source_review_passed_before_model_execution",
+  "reviewer": "root, independent of preparation author",
+  "files_sha256": {
+    "experiments/cache_layout/capture_temporal_model.py": "ab943ff1c87da1866dbb2a7f3a17bdd724e07994ccfcc7a9120aedab8a849f59",
+    "experiments/cache_layout/temporal_model_qualification.rs": "26759aeb8c2789a4522639a9a22e5a3dce0900fd7adac5fbf431dc42e18c5b74",
+    "experiments/cache_layout/test_temporal_model_capture.py": "e4962d21b69a5f125e2d5e0812238d1184e673674d403714d66eb0a876618853",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/plan.json": "756200e2563eb0b61ad4f99bc7dab7071a7cd5cb4d13266a9c440fcb36a2824d",
+    "artifacts/diagnostics/prefix-temporal-model-review-v1/source.zip": "7b829a548f4d562edf80275d7437dfc3681a107f59ff8e221f4bec89d67ef102"
+  },
+  "checks": [
+    "Genuine original control source and exact already-tested candidate source; only identical integration test added.",
+    "Public Runner API exercised with fixed model/input assets, FP32 AVX2, four threads, unpacked weights.",
+    "Canonical1904 tensor names/dtypes/shapes/raw F32 bytes compared, with17 actual argmaxes bound to saved GPU decisions.",
+    "Three independent free single outputs compared with mixed generation; captured logits/request indices reconstruct all emitted IDs; active rows3 to2 to1.",
+    "Warmed single/mixed decode intervals count all-thread allocation calls/bytes; zero required, with disabled tensor tracing.",
+    "Five-process expanded/compact-before, candidate, compact/expanded-after order; immutable code/archive/binary/input and result closure checks.",
+    "Root independently reran all7 host guards and validated the frozen plan; both passed."
+  ],
+  "review_fixes": [
+    "Token-ID range corrected to verified65536 vocabulary.",
+    "Archive mutation test name narrowed to changes actually exercised."
+  ],
+  "execution_scope": "May execute only the frozen five-invocation Windows plan after the two preserved no-run builds complete and their artifact identities validate. Preserve failures; do not mutate source for an in-place retry.",
+  "qualification": "Bounded CPU layout equivalence and warmed decode allocation evidence only. No GPU intermediate gate, corpus quality, memory RSS, speed claim or production promotion."
+}

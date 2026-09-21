@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "configuration": {
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "manifest_sha256": "1893aa0f116ce9a50f4d2703047f02cc752853ef470d026e493acbbaf2effec5",
+    "max_new_tokens": 8192,
+    "max_dimension": 1536,
+    "min_dimension": 64,
+    "precision": "fp32",
+    "tf32": false,
+    "flex_float32_precision": "ieee",
+    "compiled_blocks": false
+  },
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "id": "original:long-numeric-v1",
+  "source_record_sha256": "b5ab8ee6e581f0317579f5cba0cee276d176da5b0068aeafd5ec85174ddbf5bf",
+  "source_summary_sha256": "aa4a067966a74c57186a4418fee791cd3d2c8031a61aac8c9054432acdb0aa8e",
+  "canonical_rgb_sha256": "77984d552c8db40cbfddc409a9d4f6316d063092742798b6bdb9f9ff21c6da75",
+  "prefix_tokens": 8100,
+  "output_tokens": 8192,
+  "total_prompt_and_output_tokens": 16292,
+  "allocated_cache_capacity": 16384,
+  "finish_reason": "length",
+  "diagnostic_cer": 1.1657464319199917,
+  "peak_gpu_allocated_bytes": 6337524736,
+  "elapsed_seconds_including_compile_and_diagnostics": 194.00593095399995,
+  "qualification": "Actual 8192-output-cap / near-16k-context GPU execution on an original deterministic numerical stress page. It truncated by length, not EOS. Poor transcription and synthetic data make this boundary evidence only, not natural OCR quality or a performance claim. CPU parity remains separate."
+}

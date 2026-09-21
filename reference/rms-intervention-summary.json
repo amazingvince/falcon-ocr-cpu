@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "conclusion": "The CUDA-shaped RMS reduction increased full-model threshold failures despite modestly closer equal-input norm outputs. Production arithmetic is unchanged; no tolerance was widened. All same-prefix argmax decisions still match.",
+  "platform": "native Windows",
+  "backend": "AVX2",
+  "threads": 4,
+  "scope": "Test-only interventions on one canonical fixture; not runtime qualification",
+  "source_reference": "https://raw.githubusercontent.com/pytorch/pytorch/v2.11.0/aten/src/ATen/native/cuda/layer_norm_kernel.cu",
+  "diagnostic_selector": "Per-pool Rayon worker thread-local state; other tests and production libraries are unaffected",
+  "diagnostic_source_sha256": "a7239a0c333f178ade65b401901b4d62f0e1f31002638d230dc0822aaf49e464",
+  "variants": [
+    {
+      "variant": "production",
+      "unchanged_after_pool_isolation": true,
+      "trace_sha256": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+      "report": "reference/rms-intervention-production.json",
+      "report_sha256": "d8c208caa88e3878094efd7b4279f64c1296f75d31ebd7d6922e6535e6f9cbc8",
+      "compared_tensors": 1904,
+      "failed_tensors": 10,
+      "all_argmax_match": true,
+      "prefill_logits": {
+        "max_abs": 7.104873657226562E-05,
+        "rms_abs": 2.616277851302731E-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "final_prefill_hidden": {
+        "max_abs": 4.0791015625,
+        "rms_abs": 0.10458479008825908,
+        "reference_max_abs": 71137.046875
+      }
+    },
+    {
+      "variant": "cuda_rms",
+      "unchanged_after_pool_isolation": true,
+      "trace_sha256": "cbcff1b5d20f4de9e7e6d83a11821d4298934ae20618bcd47b56cdf5cd606085",
+      "report": "reference/rms-intervention-cuda_rms.json",
+      "report_sha256": "18c8b4fb9d5dd82015b0a3a56717733b450f1edfa4cea3838c406b0211d76e64",
+      "compared_tensors": 1904,
+      "failed_tensors": 24,
+      "all_argmax_match": true,
+      "prefill_logits": {
+        "max_abs": 8.106231689453125E-05,
+        "rms_abs": 2.728120752245786E-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "final_prefill_hidden": {
+        "max_abs": 4.3564453125,
+        "rms_abs": 0.11068186589337152,
+        "reference_max_abs": 71137.046875
+      }
+    },
+    {
+      "variant": "cuda_rms_rounded_rsqrt",
+      "unchanged_after_pool_isolation": true,
+      "trace_sha256": "e6b3842ec9d12e60b86a7d37ef9345e97a451a79a1cd7576b62978243b06b303",
+      "report": "reference/rms-intervention-cuda_rms_rounded_rsqrt.json",
+      "report_sha256": "fe455b7c6a0c55ab427e6309f5457d02a7a6e9af5ed74d7e922133648637a973",
+      "compared_tensors": 1904,
+      "failed_tensors": 60,
+      "all_argmax_match": true,
+      "prefill_logits": {
+        "max_abs": 8.20159912109375E-05,
+        "rms_abs": 2.2892087626810597E-05,
+        "reference_max_abs": 34.260162353515625
+      },
+      "final_prefill_hidden": {
+        "max_abs": 4.8818359375,
+        "rms_abs": 0.12855668683751317,
+        "reference_max_abs": 71137.046875
+      }
+    }
+  ]
+}

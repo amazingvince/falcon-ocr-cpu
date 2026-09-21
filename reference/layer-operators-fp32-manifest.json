@@ -1,0 +1,115 @@
+{
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "source_trace_sha256": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+  "output_sha256": "ce7345c219d8923182ff66e9aad2f4d6bad3c193a19c3445a850c2d3a90e5417",
+  "cases": [
+    {
+      "name": "prefill.layer.9",
+      "layer": 9,
+      "decode_step": null,
+      "query_offset": 0,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 144,
+      "weight_prefix": "layers.9.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.9.attention.sinks"
+    },
+    {
+      "name": "prefill.layer.12",
+      "layer": 12,
+      "decode_step": null,
+      "query_offset": 0,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 144,
+      "weight_prefix": "layers.12.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.12.attention.sinks"
+    },
+    {
+      "name": "prefill.layer.13",
+      "layer": 13,
+      "decode_step": null,
+      "query_offset": 0,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 144,
+      "weight_prefix": "layers.13.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.13.attention.sinks"
+    },
+    {
+      "name": "prefill.layer.17",
+      "layer": 17,
+      "decode_step": null,
+      "query_offset": 0,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 144,
+      "weight_prefix": "layers.17.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.17.attention.sinks"
+    },
+    {
+      "name": "prefill.layer.18",
+      "layer": 18,
+      "decode_step": null,
+      "query_offset": 0,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 144,
+      "weight_prefix": "layers.18.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.18.attention.sinks"
+    },
+    {
+      "name": "decode.2.layer.21",
+      "layer": 21,
+      "decode_step": 2,
+      "query_offset": 146,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 1,
+      "weight_prefix": "layers.21.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.21.attention.sinks"
+    },
+    {
+      "name": "decode.6.layer.19",
+      "layer": 19,
+      "decode_step": 6,
+      "query_offset": 150,
+      "source_hidden_bit_exact": true,
+      "source_hidden_max_abs": 0.0,
+      "rows": 1,
+      "weight_prefix": "layers.19.",
+      "norm_epsilon": 1.1920928955078125e-07,
+      "attention_sink_weight_key": "layers.19.attention.sinks"
+    }
+  ],
+  "all_source_hidden_bit_exact": true,
+  "schema": "Each <case>.input is the fixed original previous-layer hidden; substage tensors come from actual module hooks, not reconstructed CPU arithmetic. Attention K/V include the fixed original reference cache for decode. Shared weights remain in the pinned checkpoint.",
+  "qualification": "Equal-input strict FP32 block/substage references for locating drift; no frozen tolerance change."
+}

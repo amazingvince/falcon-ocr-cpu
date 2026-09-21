@@ -1,0 +1,9 @@
+test_actual_teacher_length_semantics_and_free_eos_pass (test_temporal_model_saved_v1.SavedTemporalTests) ... ok
+test_only_teacher_stop_validator_changes (test_temporal_model_saved_v1.SavedTemporalTests) ... ok
+test_tensor_argmax_and_allocation_guards_unchanged (test_temporal_model_saved_v1.SavedTemporalTests) ... ok
+test_wrong_teacher_stop_length_or_free_stop_rejected (test_temporal_model_saved_v1.SavedTemporalTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.420s
+
+OK

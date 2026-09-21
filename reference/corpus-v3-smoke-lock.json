@@ -1,0 +1,929 @@
+{
+  "schema_version": 2,
+  "dataset": "opendatalab/OmniDocBench",
+  "revision": "aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec",
+  "corpus_manifest_sha256": "cdec2de6243a61005463d6546e5d80cd1772bf362d126a62be7673316d6072ae",
+  "annotation_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "preparation_script_sha256": "6da04962a91488b1488fb91344c1b89fbfb5b2a9e92641396f8897b449d89eb9",
+  "ground_truth_script_sha256": "d90fa70851d9e1d0e331a8a920f7b6b35e3e9fafa52a2c950afcaed4c59fb423",
+  "pillow_version": "12.3.0",
+  "source_terms": "Research purposes only; not for commercial use. Do not redistribute source images in runner releases.",
+  "rgb_policy": "Pinned Pillow decode, then RGB conversion before upstream preprocessing; no EXIF auto-orientation.",
+  "ground_truth_policy": "Nonignored blocks with numeric order >= 0, sorted by order/index; text, HTML tables, LaTeX equations; NFC/LF, trim edges, join with two newlines.",
+  "metrics_note": "Assembled text supports diagnostic normalized CER only; retain original blocks for text/table/formula evaluation.",
+  "qualification": "Pixel/annotation freeze only. Visual category evidence belongs to the selection manifest/review report; newly found duplicate candidates require review. No quality or performance acceptance claim.",
+  "selection": "smoke",
+  "pages": [
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "category": "degraded",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "source_path": "artifacts/corpus/v3/8b12f8b2f5f2304b/source.jpg",
+      "source_sha256": "c36659172450ef5954e7b4d9797cd13b870f22aacb2d889a6a692f6213f85980",
+      "source_bytes": 281622,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/8b12f8b2f5f2304b/canonical-rgb.png",
+      "canonical_png_sha256": "5f921070456e8785d59e1c5bb3c2c086bb2a8f157e0cc8976f7bb2cb9ea635ce",
+      "rgb_sha256": "e73e6df2c12bd2a764a4f5688dae40ec454cc4f92e3b254a52cefd2d2564e6fe",
+      "width": 1355,
+      "height": 1936,
+      "difference_hash_64": "ce86b2c6969691b6",
+      "ground_truth_path": "artifacts/corpus/v3/8b12f8b2f5f2304b/ground-truth.txt",
+      "ground_truth_sha256": "83ddf8e068ba69815497acdeadf64a9fbc54adf3d83a110ae96db540aa897f6d",
+      "normalized_ground_truth_sha256": "71d79e4ef80f8909c5993647d0c9b3f60bb2e9508db3b92bd429569a8f75fd47",
+      "annotation_path": "artifacts/corpus/v3/8b12f8b2f5f2304b/annotation.json",
+      "annotation_page_sha256": "b38c85c2b40a7d8c974781c20339bc188d605abb14f9ac81a920d6d1a5cced2c",
+      "attributes": {
+        "data_source": "colorful_textbook",
+        "language": "simplified_chinese",
+        "layout": "double_column",
+        "special_issue": [
+          "fuzzy_scan",
+          "colorful_backgroud"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E007",
+        "status": "supported",
+        "evidence": "Chinese battery textbook page has soft, uneven text, blue labels and overlapping marginal illustrations.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "category": "degraded",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "source_path": "artifacts/corpus/v3/02efc5e800fa8102/source.jpg",
+      "source_sha256": "b4ea92c0ed9f88dcdf28c6e29762d76f4cbecb21df1c4c9132499e637985dd72",
+      "source_bytes": 205044,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/02efc5e800fa8102/canonical-rgb.png",
+      "canonical_png_sha256": "97f53f4f2cb599322a6b6a2affc5fe57fd44dbbff0a8f293971c00048da99489",
+      "rgb_sha256": "a8b32ad3a09e0af4efb58ef19d4830c62989c40de1871e2ead3ded0c5bd15920",
+      "width": 1653,
+      "height": 2339,
+      "difference_hash_64": "939090b490e0c492",
+      "ground_truth_path": "artifacts/corpus/v3/02efc5e800fa8102/ground-truth.txt",
+      "ground_truth_sha256": "5e3e5a1a5c3fa48ecac37ab3475094c82e4182c0b2cc09a1f7a00a4b3e28660c",
+      "normalized_ground_truth_sha256": "c5daf705ffb257a4649788ce47b08915fbe3e04884c2eb8045b599c6c5c8eabf",
+      "annotation_path": "artifacts/corpus/v3/02efc5e800fa8102/annotation.json",
+      "annotation_page_sha256": "61425a371bf695c3e37b1def67d72f4fae21454d36df71f5c2b60dcdac605284",
+      "attributes": {
+        "data_source": "colorful_textbook",
+        "language": "simplified_chinese",
+        "layout": "double_column",
+        "special_issue": [
+          "fuzzy_scan",
+          "colorful_backgroud"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E024",
+        "status": "supported",
+        "evidence": "Chinese technical drawing textbook page has washed-out text, pale blue panels and a faint horizontal watermark.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "category": "degraded",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "source_path": "artifacts/corpus/v3/23aab39cd5bf7391/source.jpg",
+      "source_sha256": "8d23a504cfb3440387ad9110eba26a4993929cad35bf5cd024719a14ad238ac6",
+      "source_bytes": 329824,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/23aab39cd5bf7391/canonical-rgb.png",
+      "canonical_png_sha256": "d0fe501eadfb93ebb1e9c3ed28dc7b26210f49050f2ce8a5eaf1bb7611a022d5",
+      "rgb_sha256": "fad2fbe1557a9eb08733269b570ebc06ac28a414c16ae944bb0172f60ed42ef4",
+      "width": 1653,
+      "height": 2339,
+      "difference_hash_64": "e8c0d2e2f2ccf600",
+      "ground_truth_path": "artifacts/corpus/v3/23aab39cd5bf7391/ground-truth.txt",
+      "ground_truth_sha256": "1d6db280a5f1903e77b3457b5f340daa4304fe44e2dffd48df2bba4b0358e424",
+      "normalized_ground_truth_sha256": "baa6b396e29e1f92c8de7a29a28f06b99c789ac844cf561c796af34aebd49f83",
+      "annotation_path": "artifacts/corpus/v3/23aab39cd5bf7391/annotation.json",
+      "annotation_page_sha256": "c26d2756155a79644004a24ffb47882eeadd2e18ac1f6911a6f51bd54973eebe",
+      "attributes": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "other_layout",
+        "special_issue": [
+          "fuzzy_scan"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E017",
+        "status": "supported",
+        "evidence": "Mechanics textbook scan has thick, rough-edged Chinese print, equations and a small diagram.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+      "category": "handwriting",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "notes_f7f010b78016aeebd76e56d9283eb67f",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+      "source_path": "artifacts/corpus/v3/4859de1c4651176f/source.jpg",
+      "source_sha256": "4949cdeb8431826a84008dfcf2ceb27c525ea977eefd44be910d65264d29bdb9",
+      "source_bytes": 337462,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/4859de1c4651176f/canonical-rgb.png",
+      "canonical_png_sha256": "b070fc929c67495734d573fb905c30540b70851f59541dbe14b278f9532d391e",
+      "rgb_sha256": "cd378235880ca48bacebed2f473cf7c4675cc7435dbf640117b288774a326953",
+      "width": 1434,
+      "height": 2026,
+      "difference_hash_64": "b69cc0c08cca8ac0",
+      "ground_truth_path": "artifacts/corpus/v3/4859de1c4651176f/ground-truth.txt",
+      "ground_truth_sha256": "2c44953417461693066ed33c0ebf83aee063b6cdf82e44a85bb282e491703ae3",
+      "normalized_ground_truth_sha256": "8e0f2811b61dba81cca7009611ae461d07e6971ffb4916043d1a49ec76108702",
+      "annotation_path": "artifacts/corpus/v3/4859de1c4651176f/annotation.json",
+      "annotation_page_sha256": "a61443db5556b6dfaa58ef5ab5b937c905e54fc0e327a4fad1f5c0aaefd712e7",
+      "attributes": {
+        "data_source": "note",
+        "language": "en_ch_mixed",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E050",
+        "status": "supported",
+        "evidence": "Handwritten Chinese study notes include an English narrative sample and yellow section marks.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+      "category": "handwriting",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+      "source_path": "artifacts/corpus/v3/23af6bf2d434c78e/source.png",
+      "source_sha256": "f86e61c9703b928d321311a91e50f462cd6e4c629d2309efd86de553c1fa73d5",
+      "source_bytes": 401992,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/23af6bf2d434c78e/canonical-rgb.png",
+      "canonical_png_sha256": "1be1c2e808830c1e772a9af192e69ea105ddc4f7765fa4cc2c424913db5631cc",
+      "rgb_sha256": "5d730aa082ffe95c5961dcbb21adad6cedf6513a7d466ca61c41295a00120957",
+      "width": 1654,
+      "height": 2339,
+      "difference_hash_64": "8190ecc0ececcad0",
+      "ground_truth_path": "artifacts/corpus/v3/23af6bf2d434c78e/ground-truth.txt",
+      "ground_truth_sha256": "c385209a46f3f3e72f95f9ec92a645636060d9a59f83b2a8fb71863438da87d7",
+      "normalized_ground_truth_sha256": "1935445e5fd6c14abdc2def483f5bf3371919d3b828be091fc22caa239ce7158",
+      "annotation_path": "artifacts/corpus/v3/23af6bf2d434c78e/annotation.json",
+      "annotation_page_sha256": "9bf4a964db94ccaf266283ed88072b2d4f3aa7f031034d4914c4b27681af3ef3",
+      "attributes": {
+        "data_source": "note",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [
+          "handwriting"
+        ],
+        "subset": "equation_hard"
+      },
+      "visual_review": {
+        "review_id": "E029",
+        "status": "supported",
+        "evidence": "Chinese mathematics worksheet is covered with handwritten black and colored equation working and corrections.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+      "category": "handwriting",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "notes_1ba14cb325bc448f7201b20502ecf2b5",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+      "source_path": "artifacts/corpus/v3/93c5005040ffbf60/source.jpg",
+      "source_sha256": "8cf799dfaeebab43a9dfe5400c45bc13c8cecefc4215ba2bb0b59d0b27dca963",
+      "source_bytes": 286304,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/93c5005040ffbf60/canonical-rgb.png",
+      "canonical_png_sha256": "ac8d956ea1496f421e1c25c19ecbfdd08a5d9d0fd11fcc9d0292231236de927c",
+      "rgb_sha256": "cdd73591d3e173ea3100628f11061bf441ca41df733372991b268412359e69d0",
+      "width": 1434,
+      "height": 2026,
+      "difference_hash_64": "a288c8c0c080c2d0",
+      "ground_truth_path": "artifacts/corpus/v3/93c5005040ffbf60/ground-truth.txt",
+      "ground_truth_sha256": "76107a93112c5abbe52fcf3c66487268b0cf9b666e6c967cead07d684db109d7",
+      "normalized_ground_truth_sha256": "7c3c0922fa4e775d40988d64c78eaafd13118ee9f0f76da29e896f8ad71fbe2f",
+      "annotation_path": "artifacts/corpus/v3/93c5005040ffbf60/annotation.json",
+      "annotation_page_sha256": "369ad4e46185a8a4cac3042bc9307e1d314ed80f1d6f71b324d2af2c077a2465",
+      "attributes": {
+        "data_source": "note",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E037",
+        "status": "supported",
+        "evidence": "Handwritten Chinese notes contain a small hand-ruled table, numbered points and highlighting.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+      "category": "formulas",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "publication:putnam-archive",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+      "source_path": "artifacts/corpus/v3/e8b834cd8934c2b9/source.png",
+      "source_sha256": "ca4008e8f1155b1149d488e0aea377f31cf18c15e9d73f000bb724072162ceca",
+      "source_bytes": 384668,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/e8b834cd8934c2b9/canonical-rgb.png",
+      "canonical_png_sha256": "baeefc7d965cbaa8bfcdd377d51a05e613f68cbcc3426fad8b01c277621472bd",
+      "rgb_sha256": "c464cc2cc2a0902c525aecffa46f006eac52e5d933d6f3d71de0704e7d4e297e",
+      "width": 1654,
+      "height": 2339,
+      "difference_hash_64": "f0c8c8ccccccc004",
+      "ground_truth_path": "artifacts/corpus/v3/e8b834cd8934c2b9/ground-truth.txt",
+      "ground_truth_sha256": "3dcef8ddd4e040789f0169845b386a6fcbedee04c7de2cd64047fe7fb69fc273",
+      "normalized_ground_truth_sha256": "b15d75a8546a2dac9a7835a65039a6dfc3637f969b29e2c853d4b0e6160dd775",
+      "annotation_path": "artifacts/corpus/v3/e8b834cd8934c2b9/annotation.json",
+      "annotation_page_sha256": "aa45d87fd5de3688db1ab563aeded78b5f500904860778512bf776cd61f5f942",
+      "attributes": {
+        "data_source": "exam_paper",
+        "language": "english",
+        "layout": "1andmore_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E063",
+        "status": "supported",
+        "evidence": "Two-column Putnam problem sheet includes products, matrices and displayed inequalities.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+      "category": "formulas",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+      "source_path": "artifacts/corpus/v3/d1c3b57fcf3b34d0/source.png",
+      "source_sha256": "d52f93b74e0eede84192412bd3f15dc21adae5cdc235cecada1d662f4c8e6e9f",
+      "source_bytes": 504046,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/d1c3b57fcf3b34d0/canonical-rgb.png",
+      "canonical_png_sha256": "82c0c757ba29255e9934b9ccbaa7283e23e4ed455e909eaef426f56d69c93d69",
+      "rgb_sha256": "381bb091c3225df6909960ab2eb23ed76dabea1932765fc6d2e9c90e7625d64c",
+      "width": 1654,
+      "height": 2339,
+      "difference_hash_64": "20d0f870e0d0d8cc",
+      "ground_truth_path": "artifacts/corpus/v3/d1c3b57fcf3b34d0/ground-truth.txt",
+      "ground_truth_sha256": "a7b81f255934f7e9f141d0528b81868dc8590021545d1773ab5a8aea3b9bfae9",
+      "normalized_ground_truth_sha256": "b122e0d467f756aec93dc143b88b69abb879f1130e0c89e6202d7a63e919c5f0",
+      "annotation_path": "artifacts/corpus/v3/d1c3b57fcf3b34d0/annotation.json",
+      "annotation_page_sha256": "03b79834bfe81d762dccb4bd6927ca54d9991153afc6172f1e4c170304a476d0",
+      "attributes": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      },
+      "visual_review": {
+        "review_id": "E057",
+        "status": "supported",
+        "evidence": "Chinese thermodynamics page contains integrals, logarithms and numbered equation displays.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+      "category": "formulas",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+      "source_path": "artifacts/corpus/v3/c436f01d5ffc71a8/source.png",
+      "source_sha256": "525cdbe61c2fcc21d7eaebf6c67bafc0e5260381ce1dd0c92b1b338912a386f3",
+      "source_bytes": 300261,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/c436f01d5ffc71a8/canonical-rgb.png",
+      "canonical_png_sha256": "2b3ed853efa328ae90f399b9ccbf1f0d149e7d8c46a8e85f473975d6c94d3967",
+      "rgb_sha256": "cfd6728ec2632a133f698695ee14ef51595445198c015c2e0ef25a7bb965e450",
+      "width": 1653,
+      "height": 2339,
+      "difference_hash_64": "c0e8e8e4e8e0e400",
+      "ground_truth_path": "artifacts/corpus/v3/c436f01d5ffc71a8/ground-truth.txt",
+      "ground_truth_sha256": "0a8461f90c8336cbda86ed3171382ac9b40d2520e2f588d85acd80b672f9960d",
+      "normalized_ground_truth_sha256": "d8d32b4c8d87ccfd5683d4feebcd4f5c904273384a665ea85535b448af1612e0",
+      "annotation_path": "artifacts/corpus/v3/c436f01d5ffc71a8/annotation.json",
+      "annotation_page_sha256": "04e6dd8303984912b42be09417e19ce6c85ef54f5fdcce57a4fb6877bd4496bd",
+      "attributes": {
+        "data_source": "academic_literature",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [],
+        "subset": "equation_hard"
+      },
+      "visual_review": {
+        "review_id": "E076",
+        "status": "supported",
+        "evidence": "English linear-algebra textbook page shows two large matrices and determinant/factor expressions.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_StewartCalcET7e_03_02_page_015.png",
+      "category": "formulas",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "PPT_StewartCalcET7e_03_02",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/PPT_StewartCalcET7e_03_02_page_015.png",
+      "source_path": "artifacts/corpus/v3/2fb1bc11117c0816/source.png",
+      "source_sha256": "3b1d702df81e16691e0995291e5b1f800c303c07c96bca3c4dbe80433f09c05a",
+      "source_bytes": 175917,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/2fb1bc11117c0816/canonical-rgb.png",
+      "canonical_png_sha256": "9b9096c22914da1992f8e632ff4da1f65c778477756f78b83656fa901e929a41",
+      "rgb_sha256": "1a6791116449a6ddbf8d897494b9db3f8241bb6e6a60aec316dc5e98a858e21a",
+      "width": 2000,
+      "height": 1500,
+      "difference_hash_64": "240618e4a680e0b5",
+      "ground_truth_path": "artifacts/corpus/v3/2fb1bc11117c0816/ground-truth.txt",
+      "ground_truth_sha256": "31416ca118c66abe25a19a619e486a76f6b5bc64043291e3a73b87287a5fb9f6",
+      "normalized_ground_truth_sha256": "8e3751863b80e93920a5316ac4ed25e6d303cf53c7b0d768ffb2591b2b31e945",
+      "annotation_path": "artifacts/corpus/v3/2fb1bc11117c0816/annotation.json",
+      "annotation_page_sha256": "3824a45a8d5b142b07697e3973554155dc77b3165515630fb5566abfc8ecf17e",
+      "attributes": {
+        "data_source": "PPT2PDF",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E054",
+        "status": "supported",
+        "evidence": "Calculus slide explains the quotient rule using stacked derivative and limit fractions.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:page-92062914-ea02-4640-8f54-24623dba4388.png",
+      "category": "tables",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "page-92062914-ea02-4640-8f54-24623dba4388.png",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/page-92062914-ea02-4640-8f54-24623dba4388.png",
+      "source_path": "artifacts/corpus/v3/7f5fe0454161473c/source.png",
+      "source_sha256": "e98325e2d826db5de20a0c7a8db0a9d1290a2f2aeb33abb6d2d9d6eea897d95b",
+      "source_bytes": 457898,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/7f5fe0454161473c/canonical-rgb.png",
+      "canonical_png_sha256": "e98325e2d826db5de20a0c7a8db0a9d1290a2f2aeb33abb6d2d9d6eea897d95b",
+      "rgb_sha256": "5f832da0aa430d545658946bc946910233a3f27e17ef43a57695c51547fb1689",
+      "width": 1701,
+      "height": 2292,
+      "difference_hash_64": "b0f0e8f0f0e8e8e4",
+      "ground_truth_path": "artifacts/corpus/v3/7f5fe0454161473c/ground-truth.txt",
+      "ground_truth_sha256": "a9d4a84de2652993c8291dcbbb10d2812584a76fa81673569cd78878aafc9b72",
+      "normalized_ground_truth_sha256": "be559954cbdb0466ff2df0c945fd6ceb0875e1eb044e4983e256675ccaad4089",
+      "annotation_path": "artifacts/corpus/v3/7f5fe0454161473c/annotation.json",
+      "annotation_page_sha256": "8087210e1df9aeec0a5e76e0fc0ee3d3a1ac065e6751d4b98939770e65ccdb4a",
+      "attributes": {
+        "data_source": "magazine",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [
+          "with_watermark"
+        ],
+        "subset": "table_hard"
+      },
+      "visual_review": {
+        "review_id": "E108",
+        "status": "supported",
+        "evidence": "Chinese academic page contains a full-height shaded numeric table with many narrow columns.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "category": "tables",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "source_path": "artifacts/corpus/v3/a5c0f5f013640adf/source.jpg",
+      "source_sha256": "031f6e65cad2347b3a7bcd0ce9e4b44fcb22db4612e84998359feca3c5b0f5d6",
+      "source_bytes": 234587,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/a5c0f5f013640adf/canonical-rgb.png",
+      "canonical_png_sha256": "7e2cf589e17a15d9cae7f02d951f04040b7d50c6b6e9c5d7871ea75bf7f13816",
+      "rgb_sha256": "a7150490f6cfb788983498a27a23df56278a48b8a7ca0597150b82590bf11695",
+      "width": 1465,
+      "height": 2052,
+      "difference_hash_64": "dc9498cac0d29090",
+      "ground_truth_path": "artifacts/corpus/v3/a5c0f5f013640adf/ground-truth.txt",
+      "ground_truth_sha256": "ab05b5a9ba8cd282331bff16465b4c36e8acdde29b8bb8218c8f4e732a715a87",
+      "normalized_ground_truth_sha256": "db211b6fbe6b0715a06e8ed253a52661527ada8b6cc9cf87101ed3e4c6889256",
+      "annotation_path": "artifacts/corpus/v3/a5c0f5f013640adf/annotation.json",
+      "annotation_page_sha256": "310a441f8d59ea4aa2fed551ff27b4761db77c9d2f71aaf88ab3c9b0e2fff1fe",
+      "attributes": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [
+          "table_fewer_line",
+          "table_horizontal"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E092",
+        "status": "supported",
+        "evidence": "Chinese technical procedure page has a centered numeric table with horizontal rules among prose and formulas.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+      "category": "tables",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+      "source_path": "artifacts/corpus/v3/9aead3a40a262f8d/source.jpg",
+      "source_sha256": "2afc6106c5fd71b4a9bba7651dad18a827381629d269d65b464c6c1ff48e22d2",
+      "source_bytes": 372429,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/9aead3a40a262f8d/canonical-rgb.png",
+      "canonical_png_sha256": "a891042d8063a22a8bb03f67cb42bcf132500b2d3705c1d2f5df419937cb7ddb",
+      "rgb_sha256": "1454f5a930b5e8d4486ec0105e8eb79fdd5ac205446388a38bd56b3878835aec",
+      "width": 1496,
+      "height": 2024,
+      "difference_hash_64": "c0fae2f0b8d0a4a0",
+      "ground_truth_path": "artifacts/corpus/v3/9aead3a40a262f8d/ground-truth.txt",
+      "ground_truth_sha256": "99ba030395aaba03ead41916c3ddf0826eff4ef734b5b589e53e31429ab4070f",
+      "normalized_ground_truth_sha256": "af49170ddcef9f221d84121022a55df74b20b8c4b83a2ee3ff5202accd5e74d0",
+      "annotation_path": "artifacts/corpus/v3/9aead3a40a262f8d/annotation.json",
+      "annotation_page_sha256": "623d68933df5137082bd905ec49ab02adb9914df4fd4cbfaba476e9094e2d509",
+      "attributes": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "single_column",
+        "special_issue": [
+          "table_full_line",
+          "table_horizontal",
+          "table_span"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E088",
+        "status": "supported",
+        "evidence": "Chinese school evaluation form is a large ruled table with merged cells and text-heavy entries.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_chem-354334.pdf_20.jpg",
+      "category": "tables",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "jiaocaineedrop_chem-354334.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/jiaocaineedrop_chem-354334.pdf_20.jpg",
+      "source_path": "artifacts/corpus/v3/50d2711a3bd0781f/source.jpg",
+      "source_sha256": "953201d28e72fb7b6f345e0ce4defcfee7403761d9f3c80398dec8367f8d5acf",
+      "source_bytes": 364265,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/50d2711a3bd0781f/canonical-rgb.png",
+      "canonical_png_sha256": "b98452105e964c6e504a5973e4a323fec3a8a05204220e05d4dda700ed67371d",
+      "rgb_sha256": "b49ec32f992298a5c21276fa233fc9b10ba7ba32ab4ce2d2e4ecec09d8f00077",
+      "width": 1700,
+      "height": 2200,
+      "difference_hash_64": "92a0aca288b2a0a8",
+      "ground_truth_path": "artifacts/corpus/v3/50d2711a3bd0781f/ground-truth.txt",
+      "ground_truth_sha256": "35f0d86da5bcd55de82b2894beb88f4472b99e507ee59380bc3a4b89a10e308e",
+      "normalized_ground_truth_sha256": "99a57e1474c15272e4b74a5dc3aeb83c77c5e3c47491ebc2c19665002dc6ff04",
+      "annotation_path": "artifacts/corpus/v3/50d2711a3bd0781f/annotation.json",
+      "annotation_page_sha256": "3a244278a8e2f16f54136e84a86c17cfb4dc9f517d0d09826c527f7e11d24fd9",
+      "attributes": {
+        "data_source": "colorful_textbook",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [
+          "table_horizontal",
+          "table_full_line",
+          "colorful_backgroud"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E107",
+        "status": "supported",
+        "evidence": "English chemistry lesson includes two small striped rule tables between reaction diagrams.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+      "category": "tiny_text",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+      "source_path": "artifacts/corpus/v3/7e622597f347e27b/source.jpg",
+      "source_sha256": "b6e3b6208b7f17ed2badca88a2ffc33b0e7a5acc98ce8293ff46d4f42fea2ce3",
+      "source_bytes": 348257,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/7e622597f347e27b/canonical-rgb.png",
+      "canonical_png_sha256": "5cc8337e735ffa2f121b2855574a2808a18f1f152aa277dadf1e2dd8d80323e2",
+      "rgb_sha256": "3eb086835d4f37c865e57ea5333a7690a9cab0e01dd65d8309f8680ecb187456",
+      "width": 2339,
+      "height": 1654,
+      "difference_hash_64": "04d4a09490e4848c",
+      "ground_truth_path": "artifacts/corpus/v3/7e622597f347e27b/ground-truth.txt",
+      "ground_truth_sha256": "d2c43056036b75dffe8f97575ee7f7f5595a54c8d873fd7bd681a7381a2024a9",
+      "normalized_ground_truth_sha256": "91e23c733848d4b2891cf33273bdd67eb2835502e2510d57f7051f013737092e",
+      "annotation_path": "artifacts/corpus/v3/7e622597f347e27b/annotation.json",
+      "annotation_page_sha256": "d1c7ae497c5516c66d39d239b0eca8fe10831c9fe8e85bae5b92cdb891f6625d",
+      "attributes": {
+        "data_source": "exam_paper",
+        "language": "simplified_chinese",
+        "layout": "other_layout",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E136",
+        "status": "supported",
+        "evidence": "Chinese exercise spread contains three narrow content columns with very fine question text and graph labels.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+      "category": "tiny_text",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "newspaper_USAToday-2025-01-08@magazinesclubnew",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/newspaper_USAToday-2025-01-08%40magazinesclubnew_page_012.png",
+      "source_path": "artifacts/corpus/v3/5e0d7be91a9e94a2/source.png",
+      "source_sha256": "9e9881983412a83922be1f9d964ea737f0ea4b2a59241831c7bf9a5fa1675b9b",
+      "source_bytes": 3153808,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/5e0d7be91a9e94a2/canonical-rgb.png",
+      "canonical_png_sha256": "59c0c8270af34ab82fc227c7c5da8741a8fab3e1c338de72b7fe20b9ec0edc55",
+      "rgb_sha256": "8464e65ece6fc09087df0f297c113a8d9facfe647c3951c986082ce93e7cd626",
+      "width": 2200,
+      "height": 4250,
+      "difference_hash_64": "a2e0aaaaaaaaaaaa",
+      "ground_truth_path": "artifacts/corpus/v3/5e0d7be91a9e94a2/ground-truth.txt",
+      "ground_truth_sha256": "f15e840d4c74d5281bac0f08b0f5faefac2000ae71d2cdb8ab45f82e845b6db3",
+      "normalized_ground_truth_sha256": "0e69ba9e569796be957b9edbe7ad14f1bb8a06153d08e746fff593ecca79441a",
+      "annotation_path": "artifacts/corpus/v3/5e0d7be91a9e94a2/annotation.json",
+      "annotation_page_sha256": "76ccdd863287bc97b92a2490b1c440e1a3f805db5b00bc07336142f792b16032",
+      "attributes": {
+        "data_source": "newspaper",
+        "language": "english",
+        "layout": "other_layout",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E125",
+        "status": "supported",
+        "evidence": "News roundup page is packed with many small paragraphs in five narrow columns.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_3745.jpg",
+      "category": "tiny_text",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "yanbaor2_yanbaoPPT_3745.jpg",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/yanbaor2_yanbaoPPT_3745.jpg",
+      "source_path": "artifacts/corpus/v3/c5252697867efc37/source.jpg",
+      "source_sha256": "c220ceb97a0a5184305995929feb0dd0a789d5b9fb5481f302a02e105c8ca28e",
+      "source_bytes": 541235,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/c5252697867efc37/canonical-rgb.png",
+      "canonical_png_sha256": "cd91bf82523ca3078deb2e1ecc682c568722dbbbf972360726a0155bbf7b3744",
+      "rgb_sha256": "cebe4017fa226fc5d59e2b21585aa093450bfd5bf2ef3bca9ed916218e5e93ce",
+      "width": 3308,
+      "height": 2339,
+      "difference_hash_64": "8a8cac8c8c2c0c8c",
+      "ground_truth_path": "artifacts/corpus/v3/c5252697867efc37/ground-truth.txt",
+      "ground_truth_sha256": "d3997774ceeacda22fec54d9976af03cd64698205159899c3f1fd8aa44f0723d",
+      "normalized_ground_truth_sha256": "75e27341d58fb1b44dad48a6b7411c8968d41e39b99806d153708a6034b4bb7d",
+      "annotation_path": "artifacts/corpus/v3/c5252697867efc37/annotation.json",
+      "annotation_page_sha256": "d9c867f5e9534745fc6275471b39ffb9952697749d44f1e5aa0196e107b62111",
+      "attributes": {
+        "data_source": "magazine",
+        "language": "english",
+        "layout": "other_layout",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E117",
+        "status": "supported",
+        "evidence": "Landscape two-page report spread reduces prose, captions and chart labels to very small text relative to the image.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_469.jpg",
+      "category": "tiny_text",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "yanbaor2_yanbaoPPT_469.jpg",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/yanbaor2_yanbaoPPT_469.jpg",
+      "source_path": "artifacts/corpus/v3/3463b9514056e178/source.jpg",
+      "source_sha256": "835478748f763bb18fda857d89ab784c62913588e3f49b79272ef77036325ada",
+      "source_bytes": 219298,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/3463b9514056e178/canonical-rgb.png",
+      "canonical_png_sha256": "05d2568afa6849c003241a8abcf734583784781eff6036b2aa33b29abd408fdc",
+      "rgb_sha256": "74ea6c3842fc20c42589e7153af5b51dea24c5064845f7d5f12a5cc3c70d9fe3",
+      "width": 1400,
+      "height": 1900,
+      "difference_hash_64": "60644c586c646464",
+      "ground_truth_path": "artifacts/corpus/v3/3463b9514056e178/ground-truth.txt",
+      "ground_truth_sha256": "586e33b12a21c473645b19fb364f707a72097cb828f9b5ccf8d400f40368efad",
+      "normalized_ground_truth_sha256": "6cd89e79eef529f94bcb1e8a3ad77cce9e8c5f070236453ac6ee070f8af52442",
+      "annotation_path": "artifacts/corpus/v3/3463b9514056e178/annotation.json",
+      "annotation_page_sha256": "7316d51e17b2200e88edeb6c2e0cb20f165e1169e58902732b85ee34d3a912c9",
+      "attributes": {
+        "data_source": "book",
+        "language": "english",
+        "layout": "1andmore_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E115",
+        "status": "supported",
+        "evidence": "English report page uses small chart annotations and footnotes, with relatively small two-column prose below.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "category": "multi_column",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_llm-raw-the-eye-o.O-Team%2520Bravo%2520-%2520System%2520Error.pdf_9.jpg",
+      "source_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/source.jpg",
+      "source_sha256": "2b7c8c3b12421bcae6561572bd8409b9bb013e8ed8ddc25e33dc23c298748d54",
+      "source_bytes": 606473,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/canonical-rgb.png",
+      "canonical_png_sha256": "e900609f33a80d87830fd823ad2fd835628f3513ef63544e6d1571f9ecf11a2c",
+      "rgb_sha256": "882800899ed638b5cbba0e941bea78b25d3b3c5e1c80fc67328cd40661eb7a19",
+      "width": 1700,
+      "height": 2200,
+      "difference_hash_64": "ccc8c9c5c0c9dcfc",
+      "ground_truth_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/ground-truth.txt",
+      "ground_truth_sha256": "49e6d106c7e42b18105018487b1335edaeddcffeb23ca46c78f3c47518ae623d",
+      "normalized_ground_truth_sha256": "0e1c0919fe68e244bf1ae4ff3907c5786539d95da9606a06ce491b3bec7a86fd",
+      "annotation_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/annotation.json",
+      "annotation_page_sha256": "9250bb59307ab8361b92ef4607cd4787752a443b2ff71ea4c96e1662937ced04",
+      "attributes": {
+        "data_source": "magazine",
+        "language": "english",
+        "layout": "double_column",
+        "special_issue": [
+          "colorful_backgroud"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E141",
+        "status": "supported",
+        "evidence": "English game manual has two clear parallel prose columns with colored headings and side decoration.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+      "category": "multi_column",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+      "source_path": "artifacts/corpus/v3/95928a9b09ccac9e/source.jpg",
+      "source_sha256": "f34cb56d4d4c7afd06651ab676737de94ed92ca72b0dde413eb867a32fe336fe",
+      "source_bytes": 427990,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/95928a9b09ccac9e/canonical-rgb.png",
+      "canonical_png_sha256": "e2aab3bfaa5a39c6946cda9744fa5f9c8aa020ac76dba82af668fc9eaf21e8cf",
+      "rgb_sha256": "eaded8a5e10392946f9448391e5517a1f035a5ffa3460d3605c1e846b00fb7d6",
+      "width": 1654,
+      "height": 2339,
+      "difference_hash_64": "80b098989898e2d5",
+      "ground_truth_path": "artifacts/corpus/v3/95928a9b09ccac9e/ground-truth.txt",
+      "ground_truth_sha256": "367184fdf4dc992aed4ec56c6ef2cd09711c1a8f67a09fa573b3cd380bad1a1f",
+      "normalized_ground_truth_sha256": "b408ead196b8c65164a52c9836ace13d4c6db2e91c95034a3be2648eeb85726d",
+      "annotation_path": "artifacts/corpus/v3/95928a9b09ccac9e/annotation.json",
+      "annotation_page_sha256": "ff708734cccee5b83a9f9a45e570b80617fdba5676a5871210d3a3408138b1a9",
+      "attributes": {
+        "data_source": "book",
+        "language": "simplified_chinese",
+        "layout": "1andmore_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E161",
+        "status": "supported",
+        "evidence": "Chinese report page has two aligned body-text columns below its section heading.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+      "category": "multi_column",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "publication:putnam-archive",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+      "source_path": "artifacts/corpus/v3/f63cadd85b7b8464/source.png",
+      "source_sha256": "5bf98977353643999616d974a9fe3168b56dc770a60181bc2aa8d849b464d91d",
+      "source_bytes": 173261,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/f63cadd85b7b8464/canonical-rgb.png",
+      "canonical_png_sha256": "740c5dd98be23d701a732e704b8331ab03caeeee8b09b3428de9afe1a9ee3181",
+      "rgb_sha256": "0c110c2e89a59f1d256d798c93f8bb061e04f55d3be145e837c67963070fbac2",
+      "width": 1700,
+      "height": 2200,
+      "difference_hash_64": "88cccc8000000000",
+      "ground_truth_path": "artifacts/corpus/v3/f63cadd85b7b8464/ground-truth.txt",
+      "ground_truth_sha256": "407fcbec39c453da0c88c866cc86915847621ffd99180688786cf25e88015a59",
+      "normalized_ground_truth_sha256": "376a13c32b33d1b90341020750d25e1494a43ed4dae91145d27233a31345f2e0",
+      "annotation_path": "artifacts/corpus/v3/f63cadd85b7b8464/annotation.json",
+      "annotation_page_sha256": "dcb4f024e103a83137e8a68a601e8e4ad5a6dd9b253eeb589c8779aff47c5d22",
+      "attributes": {
+        "data_source": "exam_paper",
+        "language": "english",
+        "layout": "double_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "E149",
+        "status": "supported",
+        "evidence": "Sparse Putnam continuation page has distinct left and right mathematics columns in its upper portion.",
+        "source": "reference/corpus-v2-visual-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "category": "ordinary",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "source_path": "artifacts/corpus/v3/caa02ee83b64c5f8/source.jpg",
+      "source_sha256": "9d1b2e1844fe4c514f66ab19b0a6c3983da87147f73c79553156552d9fd5ebec",
+      "source_bytes": 1221518,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/caa02ee83b64c5f8/canonical-rgb.png",
+      "canonical_png_sha256": "978d20f27117033481c078dbc697803a6bc71f0ccbdab2a1145e83739d5ab7ad",
+      "rgb_sha256": "150518686c75f854249268b9c350a86b88850e2b4d1b2fa9ecaef9bfa0fb92c2",
+      "width": 1654,
+      "height": 2182,
+      "difference_hash_64": "a2aa8c88aa8a8888",
+      "ground_truth_path": "artifacts/corpus/v3/caa02ee83b64c5f8/ground-truth.txt",
+      "ground_truth_sha256": "434da4c6ef9fcfbb243715f3ef4f75250e9054d2b55343e6b0946288b6da8101",
+      "normalized_ground_truth_sha256": "c6c68ada75989e07bb821ba903386daf382ef171209430580a8278a6af745ca1",
+      "annotation_path": "artifacts/corpus/v3/caa02ee83b64c5f8/annotation.json",
+      "annotation_page_sha256": "a637b900253066471e9ce04d2ff0f7f0a7d9492440c60b274607411a8ed48291",
+      "attributes": {
+        "data_source": "academic_literature",
+        "language": "english",
+        "layout": "double_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "T051",
+        "status": "supported",
+        "evidence": "Scientific article contains two sustained prose columns with citations and incidental variables/measurements; no meaningful displayed equations, tables, code or infographic.",
+        "source": "reference/corpus-v3-candidate-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_The Right Moves_page_024.png",
+      "category": "ordinary",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "PPT_The Right Moves",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/PPT_The%20Right%20Moves_page_024.png",
+      "source_path": "artifacts/corpus/v3/f66ef24218a58f8c/source.png",
+      "source_sha256": "bc8edadf9e33dbe714c64fad46079abcdd02ce2dfeb47f20e7a8da290c914e9a",
+      "source_bytes": 385990,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/f66ef24218a58f8c/canonical-rgb.png",
+      "canonical_png_sha256": "521d8648c6a7e30c9b658e31b6e933bae5730ff337d4f19e0fa705cebd4cca5f",
+      "rgb_sha256": "e99e58ddec623c047ec1bba7fa59486013cfaad6c57f6a2ab7cb4b4b466883f4",
+      "width": 2000,
+      "height": 1500,
+      "difference_hash_64": "59d28c988c848629",
+      "ground_truth_path": "artifacts/corpus/v3/f66ef24218a58f8c/ground-truth.txt",
+      "ground_truth_sha256": "55271fb580fb8ba7054dfc7afb3abe8e98f810b744fcfaa5e2048e5f018228b5",
+      "normalized_ground_truth_sha256": "7e9193a1478b87a0fdf2c9ac8b4601f0bbb905ebb1363748d1a3aadfc10cdf9c",
+      "annotation_path": "artifacts/corpus/v3/f66ef24218a58f8c/annotation.json",
+      "annotation_page_sha256": "fc4542fff40216c318f5cbac6403e78567ff8a563300a86a91eca750ccfc9cb5",
+      "attributes": {
+        "data_source": "PPT2PDF",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [
+          "None"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "S021",
+        "status": "supported",
+        "evidence": "Text-only course-support slide has a sustained explanatory prose paragraph and two complete-sentence bullets; same source presentation as S019.",
+        "source": "reference/corpus-v3-candidate-review.json"
+      }
+    },
+    {
+      "id": "omnidocbench:PPT_Keuk Chan Narith_page_009.png",
+      "category": "ordinary",
+      "split": "evaluation",
+      "smoke": true,
+      "source_family": "PPT_Keuk Chan Narith",
+      "source_url": "https://huggingface.co/datasets/opendatalab/OmniDocBench/resolve/aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec/images/PPT_Keuk%20Chan%20Narith_page_009.png",
+      "source_path": "artifacts/corpus/v3/7946549063bb5784/source.png",
+      "source_sha256": "0d1ca678a3c06a76dc0ee2e88f717fca0b005fd77f6c397f7048e89e6949087a",
+      "source_bytes": 797016,
+      "source_mode": "RGB",
+      "canonical_path": "artifacts/corpus/v3/7946549063bb5784/canonical-rgb.png",
+      "canonical_png_sha256": "366a3baa4c516006516e0a5252ee1a33d33757b9e973b3b8b66729cce91c5d1e",
+      "rgb_sha256": "ed47eb5429537829c892ba035826d7370765a16107a7f2b7ac0b65e2ac7d6292",
+      "width": 2000,
+      "height": 1500,
+      "difference_hash_64": "0b1353530b5f4f4b",
+      "ground_truth_path": "artifacts/corpus/v3/7946549063bb5784/ground-truth.txt",
+      "ground_truth_sha256": "080368f7d2566933bca3fbbda3299494a48d09cda1c3447c6a322037811b4638",
+      "normalized_ground_truth_sha256": "b8aa39ef0147ec0224a5ef56357b122bfc03228ad0daee2e9b17e57d4112516d",
+      "annotation_path": "artifacts/corpus/v3/7946549063bb5784/annotation.json",
+      "annotation_page_sha256": "2dd167ef5716b6843d5a54563c8a5262e17cbee48b7fabc665be3fd76276871f",
+      "attributes": {
+        "data_source": "PPT2PDF",
+        "language": "english",
+        "layout": "single_column",
+        "special_issue": [
+          "colorful_backgroud"
+        ],
+        "subset": "v1.5"
+      },
+      "visual_review": {
+        "review_id": "S002",
+        "status": "supported",
+        "evidence": "Text-only slide contains one complete quoted prose paragraph about language learning; the shorter 300-character candidate policy is explicit.",
+        "source": "reference/corpus-v3-candidate-review.json"
+      }
+    }
+  ]
+}

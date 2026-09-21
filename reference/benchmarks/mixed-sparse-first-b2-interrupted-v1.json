@@ -1,0 +1,24 @@
+{
+  "kind": "benchmark-interruption-record-v1",
+  "recorded_utc": "2026-09-20T14:44:40.095857+00:00",
+  "status": "intentionally_incomplete_after_user_priority_change",
+  "reason": "User requested the main effort shift immediately to single-page CPU profiling and isolated optimization; the complete batch matrix is not a blocker. Root stopped the first control process after confirming its exact executable path. No result is accepted or used as a speed comparison.",
+  "stopped_project_pid": 108056,
+  "runner_exit_code": 1,
+  "child_exit_code": 4294967295,
+  "plan_sha256": "18a4b1a2ffa7b9d58ee7003ec3ec0ee9e65e8abd21e6dadb3a13f97b31a84c4f",
+  "execution_start_sha256": "0d78c19a209a53c3bf47e1eb375a696947169b64a7574f7b67b1fb6e1cb4d17b",
+  "completed_bracket": false,
+  "default_promotion": false,
+  "resume_allowed": false,
+  "preserve_artifacts": true,
+  "future_batch_run": "If resumed later, create a fresh complete six-process plan rather than reuse this partial attempt.",
+  "files_sha256": {
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/commands.json": "8d24f17402e5f39a93520a88cfeb7eca26f8b12d3bd2ee77b5e72257f8154015",
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/execution-start.json": "0d78c19a209a53c3bf47e1eb375a696947169b64a7574f7b67b1fb6e1cb4d17b",
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/mixed-sparse-first-b2-sequential-a.command.json": "1fb82fa94f446c66fbf93f2c6ca7fb271e5a2e241e5803ffdc08172dadf7a261",
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/mixed-sparse-first-b2-sequential-a.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/plan.json": "18a4b1a2ffa7b9d58ee7003ec3ec0ee9e65e8abd21e6dadb3a13f97b31a84c4f",
+    "artifacts/benchmarks/mixed-sparse-first-b2-window-v1/protocol-source.zip": "f9a54538a941a784a5844d1d6a912431a37fe3bfefc66d0604a58104bc9225a5"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "qualification": "One native Windows concurrent functional mixed batch of four inputs. No timing, quality, memory measurement, GPU tensor qualification, or default promotion. Batches2/8 and other orders remain outside this result.",
+  "plan_sha256": "25572beea457125589fd55aee13fb228e3547b7b6697d1a752719d8f3bc466df",
+  "report_sha256": "7eeea54dfe47f6452239f516645d225b464c6dbe82fabc18136cbb6157bfbb77",
+  "execution_final_sha256": "6b03d17bd3411db8930ad38833e102a6fbc90f8e9f926390fc503765b287643f",
+  "build_manifest_sha256": "618c9701442ef61aa0a66f8e6d4915feaad8b43e4f6526ebe5fc1767a0c9364c",
+  "binary_sha256": "61753235a0d419fbd43774118d506b0a8a270bdead43357a650a1332f9825fd5",
+  "case": "mixed-b4",
+  "threads": 4,
+  "maximum_image_side": 1536,
+  "output_cap": 4096,
+  "input_tokens": [
+    6544,
+    5136,
+    3088,
+    2416
+  ],
+  "output_tokens": [
+    1140,
+    2,
+    6,
+    94
+  ],
+  "stop_reasons": [
+    "eos",
+    "eos",
+    "eos",
+    "eos"
+  ],
+  "requests_per_layout": 4,
+  "layouts": [
+    {
+      "id": "joint-expanded",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "id": "joint-compact",
+      "cache_layout": "compact",
+      "weight_layout": "unpacked"
+    },
+    {
+      "id": "joint-phase-packed-expanded",
+      "cache_layout": "expanded",
+      "weight_layout": "phase-packed"
+    },
+    {
+      "id": "joint-phase-packed-compact",
+      "cache_layout": "compact",
+      "weight_layout": "phase-packed"
+    }
+  ],
+  "candidate_outputs_compared": 16,
+  "candidate_token_ids_compared": 4968,
+  "all_tokens_text_stops_counts_dimensions_exact": true,
+  "mixed_eos_completion_observed": true,
+  "source_build_input_closure_revalidation_after_execution": "passed through frozen plan validator; no inference rerun",
+  "raw_artifact_hashes_rechecked": 20,
+  "actual_layout_results_and_receipts": "artifacts\\functional-batch\\mixed-b4-v1"
+}

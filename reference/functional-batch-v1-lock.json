@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "name": "functional-batch-v1",
+  "selection_policy": "Keep the original benchmark's content-selected prose3f294b5e60a0c2d4 and named existing blank-white, sparse-room, receipt-cafe fixtures. No substitution based on existing output agreement, length, speed or available baseline. Root selected initial mixed-b4 only; all four require fresh same-binary sequential baselines at the exact runtime contract.",
+  "selection_manifest": {
+    "path": "reference/benchmarks/realistic-fp32-v1-workloads.json",
+    "sha256": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c"
+  },
+  "source_locks": {
+    "reference/serving-fullpages-v1-lock.json": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+    "reference/original-supplement-v1-lock.json": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf"
+  },
+  "model": {
+    "directory": "artifacts/model",
+    "revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "assets": {
+      "model.safetensors": {
+        "sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "bytes": 1079789464
+      },
+      "config.json": {
+        "sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+        "bytes": 747
+      },
+      "tokenizer.json": {
+        "sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+        "bytes": 5063163
+      },
+      "tokenizer_config.json": {
+        "sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+        "bytes": 4352
+      }
+    }
+  },
+  "runtime": {
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 4,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "minimum_available_physical_bytes": 12884901888,
+    "initial_case": "mixed-b4"
+  },
+  "inputs": {
+    "prose": {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "category": "ordinary",
+      "source_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/source.jpg",
+      "source_sha256": "6c34770354f7cbcdab3fb611e7364d72c1f44bfb042ebe35c12e90fdc95db37f",
+      "canonical_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png",
+      "canonical_png_sha256": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "rgb_sha256": "093521696d923ee8d30cb5aec22bc635c0ad8e73aa5f40c85c2cf168cae87af2",
+      "width": 1653,
+      "height": 2339,
+      "ground_truth_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/ground-truth.txt",
+      "ground_truth_sha256": "fbeea42cc365d6cf5b6fcb409bfddd6a05d466b4cd0d7d22b6c233e8489883a3",
+      "source_lock": "reference/serving-fullpages-v1-lock.json",
+      "source_page_sha256": "f914653c1dea942c7df3d5b7df90dae59396b752e300677968c48f4a7c736171",
+      "prepared_dimensions_expected": [
+        1088,
+        1536
+      ],
+      "input_tokens_expected": 6544,
+      "selection_evidence": {
+        "review_id": "P003",
+        "status": "supported",
+        "evidence": "Single-column journal opening page has a substantial abstract and introduction in ordinary prose, without a table, displayed equation or code block.",
+        "source": "reference/corpus-v3-candidate-review.json"
+      },
+      "new_sequential_baseline_required": true
+    },
+    "blank-white": {
+      "id": "original-supplement-v1:blank-white",
+      "category": "blank",
+      "source_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "source_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "canonical_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "rgb_sha256": "88c8b8894136213781d61b7cd1a7c63c6ccc8501e83fff6cd1982f2e7ca48341",
+      "width": 1024,
+      "height": 1280,
+      "ground_truth_path": "artifacts/supplement/original-v1/blank-white/ground-truth.txt",
+      "ground_truth_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "source_page_sha256": "f3d77a5e4f8c9ff7267d49e2e56119cec32d5dce6c5b046059893202c1f32a86",
+      "prepared_dimensions_expected": [
+        1024,
+        1280
+      ],
+      "input_tokens_expected": 5136,
+      "selection_evidence": {
+        "id": "original-supplement-v1:blank-white",
+        "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "Uniform white page with no visible labels or marks; the displayed contact-sheet label lies outside the source image.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "new_sequential_baseline_required": true,
+      "historical_context_only": {
+        "run_path": "artifacts/cpu/original-supplement-fp32-512-redecoded/run.json",
+        "run_sha256": "92b75fbf9afa1f3ed35ca30e34060890a95efd72fa9f5af11122b124fa89509e",
+        "record_path": "artifacts/cpu/original-supplement-fp32-512-redecoded/blank-white.json",
+        "record_sha256": "670b5ba785cd95abfb6d47863b8b6f1dbc9b77fb34476dcf658d03fe197ba1d7",
+        "source_manifest": "reference/original-supplement-v1-lock.json",
+        "source_manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+        "max_new_tokens": 512,
+        "output_tokens": 2,
+        "finish_reason": "eos",
+        "eligible_as_new_baseline": false,
+        "reason": "Output cap512 and historical binary/source differ from the new same-binary cap4096 experiment. Early EOS does not waive exact contract checks."
+      }
+    },
+    "sparse-room": {
+      "id": "original-supplement-v1:sparse-room",
+      "category": "sparse",
+      "source_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "source_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "canonical_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "rgb_sha256": "807169bad826b3ac123db467b40dc664a33217d7365559f67d7d86561fd3f316",
+      "width": 1024,
+      "height": 768,
+      "ground_truth_path": "artifacts/supplement/original-v1/sparse-room/ground-truth.txt",
+      "ground_truth_sha256": "14e7c925cf8a3f8885a90445d6ce6153d0b48c0439c387be40235aa5b62b6503",
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "source_page_sha256": "8a87cc07c480557f9835422bb8905f2755903658ad1d5770edd413b870913f3c",
+      "prepared_dimensions_expected": [
+        1024,
+        768
+      ],
+      "input_tokens_expected": 3088,
+      "selection_evidence": {
+        "id": "original-supplement-v1:sparse-room",
+        "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "One small line reading Room 204 near the center of an otherwise empty page.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "new_sequential_baseline_required": true,
+      "historical_context_only": {
+        "run_path": "artifacts/cpu/original-supplement-fp32-512-redecoded/run.json",
+        "run_sha256": "92b75fbf9afa1f3ed35ca30e34060890a95efd72fa9f5af11122b124fa89509e",
+        "record_path": "artifacts/cpu/original-supplement-fp32-512-redecoded/sparse-room.json",
+        "record_sha256": "b1a004110973b544b10c30a0ba666b6e200a14653f3e28ac56ae068e4e830f93",
+        "source_manifest": "reference/original-supplement-v1-lock.json",
+        "source_manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+        "max_new_tokens": 512,
+        "output_tokens": 6,
+        "finish_reason": "eos",
+        "eligible_as_new_baseline": false,
+        "reason": "Output cap512 and historical binary/source differ from the new same-binary cap4096 experiment. Early EOS does not waive exact contract checks."
+      }
+    },
+    "receipt-cafe": {
+      "id": "original-supplement-v1:receipt-cafe",
+      "category": "receipts",
+      "source_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "source_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "rgb_sha256": "4e0762711ef89570934412f2cc35a9f694c8b72b02e875dd62108f6535066066",
+      "width": 640,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/receipt-cafe/ground-truth.txt",
+      "ground_truth_sha256": "9cd70e6338bb29b63f6729c4eaffdbce1d5d910d4e3ff6167f540c14bcf556d0",
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "source_page_sha256": "f3f1e2c52dd55c244e85ec0bbe045e7433926185c50209b61ddd154ccf1b7355",
+      "prepared_dimensions_expected": [
+        640,
+        960
+      ],
+      "input_tokens_expected": 2416,
+      "selection_evidence": {
+        "id": "original-supplement-v1:receipt-cafe",
+        "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "Second narrow receipt has a different short item layout, explicit USD amounts, and consistent subtotal/tax/total, without clipped text.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "new_sequential_baseline_required": true,
+      "historical_context_only": {
+        "run_path": "artifacts/cpu/original-supplement-fp32-512-redecoded/run.json",
+        "run_sha256": "92b75fbf9afa1f3ed35ca30e34060890a95efd72fa9f5af11122b124fa89509e",
+        "record_path": "artifacts/cpu/original-supplement-fp32-512-redecoded/receipt-cafe.json",
+        "record_sha256": "509c7608234709e989f1c6dcf64e6830396c0a20a54d0da9cf5080b619e39153",
+        "source_manifest": "reference/original-supplement-v1-lock.json",
+        "source_manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+        "max_new_tokens": 512,
+        "output_tokens": 94,
+        "finish_reason": "eos",
+        "eligible_as_new_baseline": false,
+        "reason": "Output cap512 and historical binary/source differ from the new same-binary cap4096 experiment. Early EOS does not waive exact contract checks."
+      }
+    }
+  },
+  "cases": {
+    "mixed-b4": [
+      "prose",
+      "blank-white",
+      "sparse-room",
+      "receipt-cafe"
+    ]
+  },
+  "baseline_policy": {
+    "mode": "new_same_binary_sequential_required",
+    "all_input_keys": [
+      "prose",
+      "blank-white",
+      "sparse-room",
+      "receipt-cafe"
+    ],
+    "execution": "sequential",
+    "cache_layout": "expanded",
+    "weight_layout": "unpacked",
+    "required_equal_fields": [
+      "token_ids",
+      "text",
+      "finish_reason",
+      "output_tokens",
+      "input_tokens",
+      "width",
+      "height",
+      "precision",
+      "teacher_forced"
+    ],
+    "output_text_policy": "Literal text from each actual run; no postprocessing replay or normalization substitutes.",
+    "historical_cap512_reuse": false,
+    "historical_other_binary_reuse": false,
+    "inference_started_by_selection": false
+  },
+  "memory_estimates": {
+    "method": "Analytic FP32 payload estimates from22 layers, query width1024, KV width512, hidden768, FFN2304. Session capacity is prefix+4096 exactly, not a128-token round-up.",
+    "source_sha256": {
+      "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+      "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+      "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee"
+    },
+    "per_input": {
+      "prose": {
+        "prefix_tokens": 6544,
+        "requested_output_cap": 4096,
+        "capacity_tokens": 10640,
+        "expanded_kv_reserved_payload_bytes": 1917583360,
+        "compact_kv_reserved_payload_bytes": 1253638144,
+        "expanded_live_prefill_kv_payload_bytes": 1179385856,
+        "compact_live_prefill_kv_payload_bytes": 884539392,
+        "prepared_f32_patch_payload_bytes": 20054016
+      },
+      "blank-white": {
+        "prefix_tokens": 5136,
+        "requested_output_cap": 4096,
+        "capacity_tokens": 9232,
+        "expanded_kv_reserved_payload_bytes": 1663827968,
+        "compact_kv_reserved_payload_bytes": 1063321600,
+        "expanded_live_prefill_kv_payload_bytes": 925630464,
+        "compact_live_prefill_kv_payload_bytes": 694222848,
+        "prepared_f32_patch_payload_bytes": 15728640
+      },
+      "sparse-room": {
+        "prefix_tokens": 3088,
+        "requested_output_cap": 4096,
+        "capacity_tokens": 7184,
+        "expanded_kv_reserved_payload_bytes": 1294729216,
+        "compact_kv_reserved_payload_bytes": 786497536,
+        "expanded_live_prefill_kv_payload_bytes": 556531712,
+        "compact_live_prefill_kv_payload_bytes": 417398784,
+        "prepared_f32_patch_payload_bytes": 9437184
+      },
+      "receipt-cafe": {
+        "prefix_tokens": 2416,
+        "requested_output_cap": 4096,
+        "capacity_tokens": 6512,
+        "expanded_kv_reserved_payload_bytes": 1173618688,
+        "compact_kv_reserved_payload_bytes": 695664640,
+        "expanded_live_prefill_kv_payload_bytes": 435421184,
+        "compact_live_prefill_kv_payload_bytes": 326565888,
+        "prepared_f32_patch_payload_bytes": 7372800
+      }
+    },
+    "mixed_b4": {
+      "expanded_kv_reserved_payload_bytes": 6049759232,
+      "compact_kv_reserved_payload_bytes": 3799121920,
+      "expanded_live_prefill_kv_payload_bytes": 3096969216,
+      "compact_live_prefill_kv_payload_bytes": 2322726912,
+      "prepared_f32_patch_payload_bytes": 52592640
+    },
+    "largest_shared_prefill_workspace_payload_bytes": 381960192,
+    "largest_hidden_payload_bytes": 20103168,
+    "model_checkpoint_file_bytes": 1079789464,
+    "exclusions": [
+      "Allocator overhead/rounding, native GEMM scratch, thread stacks, logits/RoPE/positions, decoded images, tokenizer, mapped-vs-owned weight residency, and optional packed weight copies.",
+      "Reservation is not measured resident/peak memory; early EOS still does not remove the planned capacity reservation. Shared prefill scratch is retained once, then released before joint decode.",
+      "The12GiB free-physical-memory preflight is a conservative execution guard, not a proof of maximum RSS or performance qualification."
+    ],
+    "performance_measurement": false
+  },
+  "historical_context_validation": {
+    "checks_passed": 225,
+    "scope": "Existing cap512 supplement replay lineage/results verified for shape/context only; not used as a4096 baseline."
+  },
+  "limitations": [
+    "One natural prose page and three authored diagnostic pages are functional stress inputs, not a quality corpus or representative production mixture.",
+    "No timings, speed selection, quality acceptance, tensor parity or new inference are claimed.",
+    "The natural page retains OmniDocBench research/noncommercial source restrictions. Source media/text remain in artifacts; this lock stores identities/hashes only."
+  ]
+}

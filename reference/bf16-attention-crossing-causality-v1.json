@@ -1,0 +1,2053 @@
+{
+  "schema_version": 1,
+  "scope": "Saved independent GPU tile oracle plus CPU-only exp2 interventions; no fused GPU intermediate capture or kernel change",
+  "gpu_execution": false,
+  "bounds_changed": false,
+  "discarded_qk_candidates_retested": false,
+  "input_sha256": {
+    "artifacts\\reference\\bf16-attention-tiles.safetensors": "1de7df7665034a58e2647c9ac840decad24e9aca11c81ff6d4e4101189440e23",
+    "artifacts\\reference\\bf16-attention-tiles.json": "0a6ae2ebb91414144fbd5b184a5c2291fb7d584ebc1cfff892e30ec1c7913931",
+    "artifacts\\reference\\attention-operators-bf16.safetensors": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+    "artifacts\\cpu\\bf16-attention-tiles-avx512.safetensors": "8d3502339ae1d474fbec2f4997d03ceff09d9f84ee7cf9e5484ed26bc5650452",
+    "artifacts\\cpu\\bf16-attention-tiles-scalar.safetensors": "674b5b696ca3d416e667c2ba3a5330418b35605f8a18793d19f175f03adf265f"
+  },
+  "source_sha256": {
+    "analysis": "7f3c1de2d5f50b2041523e99dfa48d11ce206fe7845958fcba802e0991aaec29",
+    "exp2_probe": "934dd15b066c1956694f12e7ad003e02801fcba15d539bb633e4b7239b41476c"
+  },
+  "rust_exp2_binary_sha256": "be6aeebf8dc2fe258cbc31de972c0130f4dab772b76d6d06bb5c0ec00dbd669e",
+  "rustc": "rustc 1.92.0 (ded5c06cf 2025-12-08)\nbinary: rustc\ncommit-hash: ded5c06cf21d2b93bffd5d884aa6e96934ee4234\ncommit-date: 2025-12-08\nhost: x86_64-pc-windows-msvc\nrelease: 1.92.0\nLLVM version: 21.1.3\n",
+  "rust_exp2_distinct_arguments": 1876,
+  "records": [
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row13.head1",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": -0.9302880167961121,
+      "cpu_maximum": -0.9302881956100464,
+      "gpu_max_keys": [
+        129
+      ],
+      "cpu_max_keys": [
+        129
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row13.head1",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        5,
+        7,
+        8,
+        9,
+        11,
+        14,
+        17,
+        18,
+        20,
+        21,
+        24,
+        25,
+        26,
+        27,
+        30,
+        31,
+        32,
+        35,
+        36,
+        37,
+        41,
+        43,
+        45,
+        46,
+        49,
+        52,
+        53,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 6.029975891113281,
+      "cpu_maximum": 6.029977321624756,
+      "gpu_max_keys": [
+        1
+      ],
+      "cpu_max_keys": [
+        1
+      ],
+      "crossings": [
+        {
+          "lane": 63,
+          "key": 63,
+          "f64_qk": 5.009633459150791,
+          "gpu_qk": 5.009633541107178,
+          "cpu_qk": 5.0096330642700195,
+          "gpu_score": 0.9034217000007629,
+          "cpu_score": 0.9034215807914734,
+          "gpu_probability_f32": 0.028625523671507835,
+          "cpu_probability_f32": 0.02862548828125,
+          "gpu_probability_bf16": 0.0286865234375,
+          "cpu_probability_bf16": 0.028564453125,
+          "bf16_midpoint": 0.02862548828125,
+          "gpu_exp2_minus_midpoint": 3.5390257835388184e-08,
+          "cpu_exp2_minus_midpoint": 0.0,
+          "maximum_anchors": {
+            "gpu": [
+              {
+                "key": 1,
+                "qk": 33.437286376953125,
+                "f64_qk": 33.43729133158922,
+                "score_log2": 6.029975891113281
+              }
+            ],
+            "cpu": [
+              {
+                "key": 1,
+                "qk": 33.437294006347656,
+                "f64_qk": 33.43729133158922,
+                "score_log2": 6.029977321624756
+              }
+            ]
+          },
+          "counterfactuals": {
+            "gpu_score_gpu_max": {
+              "argument": -5.126554012298584,
+              "argument_bits": "c0a40cbb",
+              "rust_exp2": 0.028625525534152985,
+              "rust_bf16": 0.0286865234375,
+              "exp2_minus_midpoint": 3.725290298461914e-08,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_cpu_max": {
+              "argument": -5.126555919647217,
+              "argument_bits": "c0a40cbf",
+              "rust_exp2": 0.02862548828125,
+              "rust_bf16": 0.028564453125,
+              "exp2_minus_midpoint": 0.0,
+              "matches_saved_gpu_bf16": false
+            },
+            "gpu_score_cpu_max": {
+              "argument": -5.126555442810059,
+              "argument_bits": "c0a40cbe",
+              "rust_exp2": 0.028625497594475746,
+              "rust_bf16": 0.0286865234375,
+              "exp2_minus_midpoint": 9.313225746154785e-09,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_gpu_max": {
+              "argument": -5.126554489135742,
+              "argument_bits": "c0a40cbc",
+              "rust_exp2": 0.02862551622092724,
+              "rust_bf16": 0.0286865234375,
+              "exp2_minus_midpoint": 2.7939677238464355e-08,
+              "matches_saved_gpu_bf16": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row13.head1",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        3,
+        6,
+        8,
+        10,
+        11,
+        12,
+        14,
+        20,
+        22,
+        24,
+        27,
+        30,
+        31,
+        33,
+        37,
+        38,
+        39,
+        41,
+        43,
+        45,
+        47,
+        48,
+        49,
+        50,
+        52,
+        53,
+        55,
+        57,
+        60,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 6.029975891113281,
+      "cpu_maximum": 6.029977321624756,
+      "gpu_max_keys": [
+        1
+      ],
+      "cpu_max_keys": [
+        1
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row13.head2",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        1,
+        2,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 5.693047523498535,
+      "cpu_maximum": 5.693048000335693,
+      "gpu_max_keys": [
+        128
+      ],
+      "cpu_max_keys": [
+        128
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row13.head2",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        16,
+        17,
+        18,
+        19,
+        21,
+        23,
+        27,
+        28,
+        29,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        48,
+        49,
+        50,
+        51,
+        52,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        62,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 11.1488618850708,
+      "cpu_maximum": 11.148863792419434,
+      "gpu_max_keys": [
+        0
+      ],
+      "cpu_max_keys": [
+        0
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row13.head2",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        2,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        33,
+        36,
+        37,
+        38,
+        41,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        52,
+        54,
+        55,
+        56,
+        57,
+        59,
+        61
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 11.1488618850708,
+      "cpu_maximum": 11.148863792419434,
+      "gpu_max_keys": [
+        0
+      ],
+      "cpu_max_keys": [
+        0
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row53.head8",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 0.8827834725379944,
+      "cpu_maximum": 0.8827834725379944,
+      "gpu_max_keys": [
+        131
+      ],
+      "cpu_max_keys": [
+        131
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row53.head8",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        11,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        24,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35,
+        39,
+        40,
+        41,
+        44,
+        45,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.8281314373016357,
+      "cpu_maximum": 2.8281314373016357,
+      "gpu_max_keys": [
+        23
+      ],
+      "cpu_max_keys": [
+        23
+      ],
+      "crossings": [
+        {
+          "lane": 43,
+          "key": 43,
+          "f64_qk": 1.1024854183197021,
+          "gpu_qk": 1.1024854183197021,
+          "cpu_qk": 1.1024856567382812,
+          "gpu_score": 0.19881877303123474,
+          "cpu_score": 0.19881881773471832,
+          "gpu_probability_f32": 0.1616210788488388,
+          "cpu_probability_f32": 0.1616211086511612,
+          "gpu_probability_bf16": 0.1611328125,
+          "cpu_probability_bf16": 0.162109375,
+          "bf16_midpoint": 0.16162109375,
+          "gpu_exp2_minus_midpoint": -1.4901161193847656e-08,
+          "cpu_exp2_minus_midpoint": 1.4901161193847656e-08,
+          "maximum_anchors": {
+            "gpu": [
+              {
+                "key": 23,
+                "qk": 15.682491302490234,
+                "f64_qk": 15.682491064071655,
+                "score_log2": 2.8281314373016357
+              }
+            ],
+            "cpu": [
+              {
+                "key": 23,
+                "qk": 15.682491302490234,
+                "f64_qk": 15.682491064071655,
+                "score_log2": 2.8281314373016357
+              }
+            ]
+          },
+          "counterfactuals": {
+            "gpu_score_gpu_max": {
+              "argument": -2.629312753677368,
+              "argument_bits": "c02846a9",
+              "rust_exp2": 0.1616210788488388,
+              "rust_bf16": 0.1611328125,
+              "exp2_minus_midpoint": -1.4901161193847656e-08,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_cpu_max": {
+              "argument": -2.629312515258789,
+              "argument_bits": "c02846a8",
+              "rust_exp2": 0.1616211086511612,
+              "rust_bf16": 0.162109375,
+              "exp2_minus_midpoint": 1.4901161193847656e-08,
+              "matches_saved_gpu_bf16": false
+            },
+            "gpu_score_cpu_max": {
+              "argument": -2.629312753677368,
+              "argument_bits": "c02846a9",
+              "rust_exp2": 0.1616210788488388,
+              "rust_bf16": 0.1611328125,
+              "exp2_minus_midpoint": -1.4901161193847656e-08,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_gpu_max": {
+              "argument": -2.629312515258789,
+              "argument_bits": "c02846a8",
+              "rust_exp2": 0.1616211086511612,
+              "rust_bf16": 0.162109375,
+              "exp2_minus_midpoint": 1.4901161193847656e-08,
+              "matches_saved_gpu_bf16": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.0.row53.head8",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        9,
+        10,
+        11,
+        12,
+        15,
+        16,
+        19,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        43,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        60,
+        61
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.8281314373016357,
+      "cpu_maximum": 2.8281314373016357,
+      "gpu_max_keys": [
+        23
+      ],
+      "cpu_max_keys": [
+        23
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.17.row54.head10",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        1,
+        3,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": -1.4454556703567505,
+      "cpu_maximum": -1.4454556703567505,
+      "gpu_max_keys": [
+        130
+      ],
+      "cpu_max_keys": [
+        130
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.17.row54.head10",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        9,
+        10,
+        12,
+        15,
+        16,
+        18,
+        21,
+        23,
+        24,
+        25,
+        26,
+        27,
+        29,
+        31,
+        36,
+        37,
+        38,
+        39,
+        40,
+        42,
+        44,
+        45,
+        46,
+        47,
+        49,
+        50,
+        51,
+        53,
+        54,
+        56,
+        58,
+        60,
+        62,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.7751986980438232,
+      "cpu_maximum": 2.7751989364624023,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": [
+        {
+          "lane": 22,
+          "key": 22,
+          "f64_qk": -19.524001598358154,
+          "gpu_qk": -19.523998260498047,
+          "cpu_qk": -19.524002075195312,
+          "gpu_score": -3.5208969116210938,
+          "cpu_score": -3.520897626876831,
+          "gpu_probability_f32": 0.012725834734737873,
+          "cpu_probability_f32": 0.012725826352834702,
+          "gpu_probability_bf16": 0.01275634765625,
+          "cpu_probability_bf16": 0.0126953125,
+          "bf16_midpoint": 0.012725830078125,
+          "gpu_exp2_minus_midpoint": 4.6566128730773926e-09,
+          "cpu_exp2_minus_midpoint": -3.725290298461914e-09,
+          "maximum_anchors": {
+            "gpu": [
+              {
+                "key": 2,
+                "qk": 15.388969421386719,
+                "f64_qk": 15.388971030712128,
+                "score_log2": 2.7751986980438232
+              }
+            ],
+            "cpu": [
+              {
+                "key": 2,
+                "qk": 15.388971328735352,
+                "f64_qk": 15.388971030712128,
+                "score_log2": 2.7751989364624023
+              }
+            ]
+          },
+          "counterfactuals": {
+            "gpu_score_gpu_max": {
+              "argument": -6.296095848083496,
+              "argument_bits": "c0c9799e",
+              "rust_exp2": 0.012725834734737873,
+              "rust_bf16": 0.01275634765625,
+              "exp2_minus_midpoint": 4.6566128730773926e-09,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_cpu_max": {
+              "argument": -6.2960968017578125,
+              "argument_bits": "c0c979a0",
+              "rust_exp2": 0.012725826352834702,
+              "rust_bf16": 0.0126953125,
+              "exp2_minus_midpoint": -3.725290298461914e-09,
+              "matches_saved_gpu_bf16": false
+            },
+            "gpu_score_cpu_max": {
+              "argument": -6.296095848083496,
+              "argument_bits": "c0c9799e",
+              "rust_exp2": 0.012725834734737873,
+              "rust_bf16": 0.01275634765625,
+              "exp2_minus_midpoint": 4.6566128730773926e-09,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_gpu_max": {
+              "argument": -6.296096324920654,
+              "argument_bits": "c0c9799f",
+              "rust_exp2": 0.012725831009447575,
+              "rust_bf16": 0.01275634765625,
+              "exp2_minus_midpoint": 9.313225746154785e-10,
+              "matches_saved_gpu_bf16": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.17.row54.head10",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        2,
+        3,
+        8,
+        9,
+        11,
+        13,
+        14,
+        15,
+        16,
+        19,
+        20,
+        21,
+        23,
+        24,
+        25,
+        28,
+        29,
+        30,
+        31,
+        33,
+        36,
+        37,
+        38,
+        40,
+        41,
+        43,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        54,
+        55,
+        56,
+        59,
+        61,
+        62
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.7751986980438232,
+      "cpu_maximum": 2.7751989364624023,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.17.row124.head11",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2,
+        3,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.4023213386535645,
+      "cpu_maximum": 2.4023213386535645,
+      "gpu_max_keys": [
+        129
+      ],
+      "cpu_max_keys": [
+        129
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.17.row124.head11",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        1,
+        3,
+        4,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        17,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        29,
+        31,
+        32,
+        33,
+        36,
+        37,
+        38,
+        39,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        56,
+        57,
+        58,
+        59,
+        60,
+        62,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 3.1338367462158203,
+      "cpu_maximum": 3.1338372230529785,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": [
+        {
+          "lane": 23,
+          "key": 23,
+          "f64_qk": -0.9768661856651306,
+          "gpu_qk": -0.9768662452697754,
+          "cpu_qk": -0.9768662452697754,
+          "gpu_score": -0.17616501450538635,
+          "cpu_score": -0.17616501450538635,
+          "gpu_probability_f32": 0.1008300855755806,
+          "cpu_probability_f32": 0.10083005577325821,
+          "gpu_probability_bf16": 0.10107421875,
+          "cpu_probability_bf16": 0.1005859375,
+          "bf16_midpoint": 0.100830078125,
+          "gpu_exp2_minus_midpoint": 7.450580596923828e-09,
+          "cpu_exp2_minus_midpoint": -2.2351741790771484e-08,
+          "maximum_anchors": {
+            "gpu": [
+              {
+                "key": 2,
+                "qk": 17.377681732177734,
+                "f64_qk": 17.37768280506134,
+                "score_log2": 3.1338367462158203
+              }
+            ],
+            "cpu": [
+              {
+                "key": 2,
+                "qk": 17.377683639526367,
+                "f64_qk": 17.37768280506134,
+                "score_log2": 3.1338372230529785
+              }
+            ]
+          },
+          "counterfactuals": {
+            "gpu_score_gpu_max": {
+              "argument": -3.310001850128174,
+              "argument_bits": "c053d712",
+              "rust_exp2": 0.1008300930261612,
+              "rust_bf16": 0.10107421875,
+              "exp2_minus_midpoint": 1.4901161193847656e-08,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_cpu_max": {
+              "argument": -3.310002326965332,
+              "argument_bits": "c053d714",
+              "rust_exp2": 0.10083005577325821,
+              "rust_bf16": 0.1005859375,
+              "exp2_minus_midpoint": -2.2351741790771484e-08,
+              "matches_saved_gpu_bf16": false
+            },
+            "gpu_score_cpu_max": {
+              "argument": -3.310002326965332,
+              "argument_bits": "c053d714",
+              "rust_exp2": 0.10083005577325821,
+              "rust_bf16": 0.1005859375,
+              "exp2_minus_midpoint": -2.2351741790771484e-08,
+              "matches_saved_gpu_bf16": false
+            },
+            "cpu_score_gpu_max": {
+              "argument": -3.310001850128174,
+              "argument_bits": "c053d712",
+              "rust_exp2": 0.1008300930261612,
+              "rust_bf16": 0.10107421875,
+              "exp2_minus_midpoint": 1.4901161193847656e-08,
+              "matches_saved_gpu_bf16": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "avx512",
+      "probe": "prefill.layer.17.row124.head11",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        1,
+        4,
+        5,
+        7,
+        12,
+        14,
+        15,
+        16,
+        20,
+        21,
+        22,
+        25,
+        28,
+        29,
+        30,
+        34,
+        37,
+        38,
+        41,
+        42,
+        43,
+        44,
+        47,
+        49,
+        52,
+        53,
+        54,
+        58,
+        59,
+        60
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 3.1338367462158203,
+      "cpu_maximum": 3.1338372230529785,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row13.head1",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": -0.9302880167961121,
+      "cpu_maximum": -0.9302880167961121,
+      "gpu_max_keys": [
+        129
+      ],
+      "cpu_max_keys": [
+        129
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row13.head1",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        5,
+        7,
+        8,
+        9,
+        11,
+        14,
+        17,
+        18,
+        20,
+        21,
+        24,
+        25,
+        26,
+        27,
+        30,
+        31,
+        32,
+        35,
+        36,
+        37,
+        41,
+        43,
+        45,
+        46,
+        49,
+        52,
+        53,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 6.029975891113281,
+      "cpu_maximum": 6.029977798461914,
+      "gpu_max_keys": [
+        1
+      ],
+      "cpu_max_keys": [
+        1
+      ],
+      "crossings": [
+        {
+          "lane": 63,
+          "key": 63,
+          "f64_qk": 5.009633459150791,
+          "gpu_qk": 5.009633541107178,
+          "cpu_qk": 5.009633541107178,
+          "gpu_score": 0.9034217000007629,
+          "cpu_score": 0.9034217000007629,
+          "gpu_probability_f32": 0.028625523671507835,
+          "cpu_probability_f32": 0.02862548828125,
+          "gpu_probability_bf16": 0.0286865234375,
+          "cpu_probability_bf16": 0.028564453125,
+          "bf16_midpoint": 0.02862548828125,
+          "gpu_exp2_minus_midpoint": 3.5390257835388184e-08,
+          "cpu_exp2_minus_midpoint": 0.0,
+          "maximum_anchors": {
+            "gpu": [
+              {
+                "key": 1,
+                "qk": 33.437286376953125,
+                "f64_qk": 33.43729133158922,
+                "score_log2": 6.029975891113281
+              }
+            ],
+            "cpu": [
+              {
+                "key": 1,
+                "qk": 33.43729782104492,
+                "f64_qk": 33.43729133158922,
+                "score_log2": 6.029977798461914
+              }
+            ]
+          },
+          "counterfactuals": {
+            "gpu_score_gpu_max": {
+              "argument": -5.126554012298584,
+              "argument_bits": "c0a40cbb",
+              "rust_exp2": 0.028625525534152985,
+              "rust_bf16": 0.0286865234375,
+              "exp2_minus_midpoint": 3.725290298461914e-08,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_cpu_max": {
+              "argument": -5.126555919647217,
+              "argument_bits": "c0a40cbf",
+              "rust_exp2": 0.02862548828125,
+              "rust_bf16": 0.028564453125,
+              "exp2_minus_midpoint": 0.0,
+              "matches_saved_gpu_bf16": false
+            },
+            "gpu_score_cpu_max": {
+              "argument": -5.126555919647217,
+              "argument_bits": "c0a40cbf",
+              "rust_exp2": 0.02862548828125,
+              "rust_bf16": 0.028564453125,
+              "exp2_minus_midpoint": 0.0,
+              "matches_saved_gpu_bf16": false
+            },
+            "cpu_score_gpu_max": {
+              "argument": -5.126554012298584,
+              "argument_bits": "c0a40cbb",
+              "rust_exp2": 0.028625525534152985,
+              "rust_bf16": 0.0286865234375,
+              "exp2_minus_midpoint": 3.725290298461914e-08,
+              "matches_saved_gpu_bf16": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row13.head1",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        3,
+        6,
+        8,
+        10,
+        11,
+        12,
+        14,
+        20,
+        22,
+        24,
+        27,
+        30,
+        31,
+        33,
+        37,
+        38,
+        39,
+        41,
+        43,
+        45,
+        47,
+        48,
+        49,
+        50,
+        52,
+        53,
+        55,
+        57,
+        60,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 6.029975891113281,
+      "cpu_maximum": 6.029977798461914,
+      "gpu_max_keys": [
+        1
+      ],
+      "cpu_max_keys": [
+        1
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row13.head2",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        1,
+        2,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 5.693047523498535,
+      "cpu_maximum": 5.693048000335693,
+      "gpu_max_keys": [
+        128
+      ],
+      "cpu_max_keys": [
+        128
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row13.head2",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        16,
+        17,
+        18,
+        19,
+        21,
+        23,
+        27,
+        28,
+        29,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        48,
+        49,
+        50,
+        51,
+        52,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        62,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 11.1488618850708,
+      "cpu_maximum": 11.14886474609375,
+      "gpu_max_keys": [
+        0
+      ],
+      "cpu_max_keys": [
+        0
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row13.head2",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        2,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        33,
+        36,
+        37,
+        38,
+        41,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        52,
+        54,
+        55,
+        56,
+        57,
+        59,
+        61
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 11.1488618850708,
+      "cpu_maximum": 11.14886474609375,
+      "gpu_max_keys": [
+        0
+      ],
+      "cpu_max_keys": [
+        0
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row53.head8",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 0.8827834725379944,
+      "cpu_maximum": 0.8827835917472839,
+      "gpu_max_keys": [
+        131
+      ],
+      "cpu_max_keys": [
+        131
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row53.head8",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        4,
+        5,
+        7,
+        8,
+        9,
+        11,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        24,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35,
+        39,
+        40,
+        41,
+        44,
+        45,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.8281314373016357,
+      "cpu_maximum": 2.8281314373016357,
+      "gpu_max_keys": [
+        23
+      ],
+      "cpu_max_keys": [
+        23
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.0.row53.head8",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        9,
+        10,
+        11,
+        12,
+        15,
+        16,
+        19,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        43,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        60,
+        61
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.8281314373016357,
+      "cpu_maximum": 2.8281314373016357,
+      "gpu_max_keys": [
+        23
+      ],
+      "cpu_max_keys": [
+        23
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.17.row54.head10",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        1,
+        3,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": -1.4454556703567505,
+      "cpu_maximum": -1.4454556703567505,
+      "gpu_max_keys": [
+        130
+      ],
+      "cpu_max_keys": [
+        130
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.17.row54.head10",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        9,
+        10,
+        12,
+        15,
+        16,
+        18,
+        21,
+        23,
+        24,
+        25,
+        26,
+        27,
+        29,
+        31,
+        36,
+        37,
+        38,
+        39,
+        40,
+        42,
+        44,
+        45,
+        46,
+        47,
+        49,
+        50,
+        51,
+        53,
+        54,
+        56,
+        58,
+        60,
+        62,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.7751986980438232,
+      "cpu_maximum": 2.7751989364624023,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": [
+        {
+          "lane": 22,
+          "key": 22,
+          "f64_qk": -19.524001598358154,
+          "gpu_qk": -19.523998260498047,
+          "cpu_qk": -19.524003982543945,
+          "gpu_score": -3.5208969116210938,
+          "cpu_score": -3.52089786529541,
+          "gpu_probability_f32": 0.012725834734737873,
+          "cpu_probability_f32": 0.012725826352834702,
+          "gpu_probability_bf16": 0.01275634765625,
+          "cpu_probability_bf16": 0.0126953125,
+          "bf16_midpoint": 0.012725830078125,
+          "gpu_exp2_minus_midpoint": 4.6566128730773926e-09,
+          "cpu_exp2_minus_midpoint": -3.725290298461914e-09,
+          "maximum_anchors": {
+            "gpu": [
+              {
+                "key": 2,
+                "qk": 15.388969421386719,
+                "f64_qk": 15.388971030712128,
+                "score_log2": 2.7751986980438232
+              }
+            ],
+            "cpu": [
+              {
+                "key": 2,
+                "qk": 15.388971328735352,
+                "f64_qk": 15.388971030712128,
+                "score_log2": 2.7751989364624023
+              }
+            ]
+          },
+          "counterfactuals": {
+            "gpu_score_gpu_max": {
+              "argument": -6.296095848083496,
+              "argument_bits": "c0c9799e",
+              "rust_exp2": 0.012725834734737873,
+              "rust_bf16": 0.01275634765625,
+              "exp2_minus_midpoint": 4.6566128730773926e-09,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_cpu_max": {
+              "argument": -6.2960968017578125,
+              "argument_bits": "c0c979a0",
+              "rust_exp2": 0.012725826352834702,
+              "rust_bf16": 0.0126953125,
+              "exp2_minus_midpoint": -3.725290298461914e-09,
+              "matches_saved_gpu_bf16": false
+            },
+            "gpu_score_cpu_max": {
+              "argument": -6.296095848083496,
+              "argument_bits": "c0c9799e",
+              "rust_exp2": 0.012725834734737873,
+              "rust_bf16": 0.01275634765625,
+              "exp2_minus_midpoint": 4.6566128730773926e-09,
+              "matches_saved_gpu_bf16": true
+            },
+            "cpu_score_gpu_max": {
+              "argument": -6.2960968017578125,
+              "argument_bits": "c0c979a0",
+              "rust_exp2": 0.012725826352834702,
+              "rust_bf16": 0.0126953125,
+              "exp2_minus_midpoint": -3.725290298461914e-09,
+              "matches_saved_gpu_bf16": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.17.row54.head10",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        2,
+        3,
+        8,
+        9,
+        11,
+        13,
+        14,
+        15,
+        16,
+        19,
+        20,
+        21,
+        23,
+        24,
+        25,
+        28,
+        29,
+        30,
+        31,
+        33,
+        36,
+        37,
+        38,
+        40,
+        41,
+        43,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        54,
+        55,
+        56,
+        59,
+        61,
+        62
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.7751986980438232,
+      "cpu_maximum": 2.7751989364624023,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.17.row124.head11",
+      "tile": {
+        "index": 0,
+        "key_start": 128,
+        "valid_keys": 16,
+        "full": false
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 5,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        2,
+        3,
+        4
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 2.4023213386535645,
+      "cpu_maximum": 2.4023213386535645,
+      "gpu_max_keys": [
+        129
+      ],
+      "cpu_max_keys": [
+        129
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.17.row124.head11",
+      "tile": {
+        "index": 1,
+        "key_start": 0,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        1,
+        3,
+        4,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16,
+        17,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        29,
+        31,
+        32,
+        33,
+        36,
+        37,
+        38,
+        39,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        56,
+        57,
+        58,
+        59,
+        60,
+        62,
+        63
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 3.1338367462158203,
+      "cpu_maximum": 3.1338367462158203,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": []
+    },
+    {
+      "backend": "scalar",
+      "probe": "prefill.layer.17.row124.head11",
+      "tile": {
+        "index": 2,
+        "key_start": 64,
+        "valid_keys": 64,
+        "full": true
+      },
+      "online_max_reproduced_exactly": true,
+      "scores_reproduced_exactly": true,
+      "rust_exp2_reproduces_saved_cpu_exactly": true,
+      "unmasked_probability_count": 64,
+      "gpu_same_argument_rust_exp2_different_lanes": [
+        0,
+        1,
+        4,
+        5,
+        7,
+        12,
+        14,
+        15,
+        16,
+        20,
+        21,
+        22,
+        25,
+        28,
+        29,
+        30,
+        34,
+        37,
+        38,
+        41,
+        42,
+        43,
+        44,
+        47,
+        49,
+        52,
+        53,
+        54,
+        58,
+        59,
+        60
+      ],
+      "gpu_same_argument_rust_bf16_different_lanes": [],
+      "gpu_maximum": 3.1338367462158203,
+      "cpu_maximum": 3.1338367462158203,
+      "gpu_max_keys": [
+        2
+      ],
+      "cpu_max_keys": [
+        2
+      ],
+      "crossings": []
+    }
+  ],
+  "limitations": [
+    "Saved GPU tile intermediates came from independent torch.bmm/torch.exp2. Their final selected head vectors match Flex but internal tensors are not proven equal to fused Flex.",
+    "The independent tail QK/PV used16 live keys, while compiled Flex uses64 keys with masking. Counterfactuals establish causes within the saved oracle comparison only.",
+    "GPU exp2 behavior cannot be inferred from CPU same-argument replay; fused ex2.approx.ftz requires a hardware substage capture.",
+    "No GPU numerical acceptance policy, production arithmetic, sampling scope or old evidence was changed."
+  ]
+}

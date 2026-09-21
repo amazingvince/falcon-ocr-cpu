@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "passed_bounded_planning_review",
+  "created_utc": "2026-09-20T16:42:50.888268+00:00",
+  "plan_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-compact-mixed-b2-window-v1\\plan.json",
+  "plan_sha256": "904841b075f91c3f2109b00db07f4a697fadbb35bfef0a5345f8956e081407cc",
+  "source_review_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\attention64-compact-mixed-b2-source-review-v1.json",
+  "source_review_sha256": "c01a2870c38711d284ded6441c869b4c737f9498bcf0838218b06710762d09f4",
+  "inputs": [
+    "sparse-room",
+    "table"
+  ],
+  "expected_tokens": [
+    6,
+    2280
+  ],
+  "expected_stops": [
+    "eos",
+    "eos"
+  ],
+  "runtime": {
+    "execution": "joint",
+    "cache_layout": "compact",
+    "weight_layout": "unpacked",
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 16,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096
+  },
+  "warmups": 2,
+  "repetitions": 3,
+  "processes": 3,
+  "process_order": [
+    "control-before",
+    "candidate",
+    "control-after"
+  ],
+  "max_process_seconds": 1800,
+  "protocol_archive_and_gpu_signature_bindings_pass": true,
+  "exact_expected_bound_inventory": true,
+  "build_metadata_pins": {
+    "control": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+    "candidate": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac"
+  },
+  "only_source_delta": "src/kernels.rs",
+  "default_promotion": false,
+  "bound_small_files_before_after": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-compact-mixed-b2-window-v1\\plan.json": "904841b075f91c3f2109b00db07f4a697fadbb35bfef0a5345f8956e081407cc",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\attention64-compact-mixed-b2-source-review-v1.json": "c01a2870c38711d284ded6441c869b4c737f9498bcf0838218b06710762d09f4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\benchmark_mixed_compact_candidate.py": "c7913c5b185de96006ffb1b6d94e40806bc2a1055e6726d86d944b8c99be809c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\scripts\\realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-compact-mixed-b2-window-v1\\protocol-source.zip": "e1ac76cfb09c459b605d9853824f43b5f764b458a5952ed9147378e23594db06",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\functional-originals-fp32-4096\\sparse-room.json": "a9a77300c5f25f03d420603b2172eeeb4f35c09b215bf0d793aadca44148dd0c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\corpus-v3-fp32-4096\\2c243b31d36eb729.json": "5434fc7bd87510672eb81c7227412cb43f370977c99d8e4d3575612304e361d3",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\build.json": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0"
+  },
+  "scope": "Metadata/source/protocol archive checks only. No inference/test/build/import, model/image/executable/build-archive bulk hashing or full runtime preflight. Existing source review and completed compact B1 review bind the same build identities. No execution-start receipt existed at this check."
+}

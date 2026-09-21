@@ -1,0 +1,570 @@
+{
+  "schema_version": 1,
+  "status": "complete_selected_platform_output_agreement",
+  "pages": 24,
+  "matching_token_ids": 29205,
+  "compared_cpu_result_fields": [
+    "token_ids",
+    "text",
+    "finish_reason",
+    "width",
+    "height",
+    "input_tokens",
+    "output_tokens",
+    "teacher_forced",
+    "precision",
+    "backend",
+    "cache_layout",
+    "weight_layout",
+    "packed_weight_bytes"
+  ],
+  "finish_reasons": {
+    "eos": 23,
+    "length": 1
+  },
+  "windows_text_replay": true,
+  "linux_text_replay": false,
+  "startup_semantic_fields_complete": {
+    "windows": false,
+    "linux": false
+  },
+  "inference_contracts": {
+    "windows": {
+      "backend": "avx2",
+      "cpu_label": "Ryzen 9 7950X",
+      "environment_label": "native Windows functional corpus run; concurrent GPU/reference development; not performance measurement",
+      "manifest_sha256": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+      "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "options": {
+        "max_dimension": 1536,
+        "max_new_tokens": 4096,
+        "min_dimension": 64
+      },
+      "postprocessing_replay": {
+        "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+        "decoder_binary_path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\redecode-corpus-v3-windows\\redecode_corpus.exe",
+        "decoder_binary_sha256": "d857bf74d3f7093bee62913e3122f781220f8d29aeaef4e6ae211f73b8859eac",
+        "decoder_source_path": "artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\decoder-source.rs",
+        "decoder_source_sha256": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+        "harness_source_sha256": "e091cc769f0a62ee40b706a59d65a18db497a224ac5b7bcaffaa6e06e20f15f5",
+        "policy": "Pinned Transformers 5.14.1 BPE decode without WordPiece cleanup; preserve special tokens, remove two EOS spellings, Python 3.12 outer strip",
+        "record_validator_sha256": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+        "schema_version": 1,
+        "scope": "Text-only Rust replay from original saved IDs; source_sha256 and timings describe original inference, not a new forward run",
+        "source_contract_sha256": "e1d51187072612ef0644db40028fbc0c25f0c4ea93ec21d75311a5fd265df136",
+        "source_run_path": "artifacts/cpu/corpus-v3-fp32-4096-original-snapshot-200\\run.json",
+        "source_run_sha256": "d00e1d4ee70d693caedc82b4951da924cc1370f85b99e5032ed3dae24a46d210",
+        "tokenizer_asset_sha256": {
+          "artifacts/model\\tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+          "artifacts/model\\tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26"
+        }
+      },
+      "precision": "fp32",
+      "source_sha256": {
+        "bf16_attention": "abfd6a5292fb9926efa22170914e70a5176b9531c2acd02c13bc8b02b33ebcdb",
+        "bf16_kernels": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+        "bf16_model": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+        "bf16_ops": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+        "bf16_runner": "431b101f6705c108225d64aa58875fcdd49ae51196544bc230c09f65fdc2bc31",
+        "config": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+        "harness": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+        "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+        "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+        "model": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+        "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+        "runner": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+        "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+      },
+      "threads": 16,
+      "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    },
+    "linux": {
+      "arch": "x86_64",
+      "backend": "avx2",
+      "binary_sha256": "e625cf706103e17d480f3538d16cf45094497f1162d413eeaa7cc91550244057",
+      "build_manifest_sha256": "f6f6d0a500ff3f3cc3d351c1bde6b1cc9d324f38c5f1dc079d77c42bc2eabd9b",
+      "config_sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+      "cpu_label": "AMD Ryzen 9 7950X",
+      "environment_label": "WSL 2 Ubuntu 24.04; functional comparison with concurrent Windows/GPU work; not a performance measurement",
+      "greedy_policy": "first token index attaining the maximum finite logit",
+      "manifest_sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+      "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+      "options": {
+        "max_dimension": 1536,
+        "max_new_tokens": 4096,
+        "min_dimension": 64
+      },
+      "os": "linux",
+      "precision": "fp32",
+      "prompt": "<|image|>Extract the text content from this image.\n<|OCR_PLAIN|>",
+      "source_sha256": {
+        "bf16_attention": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+        "bf16_kernels": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+        "bf16_model": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+        "bf16_ops": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+        "bf16_runner": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+        "cargo_manifest": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+        "config": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+        "corpus_record": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+        "harness": "4d6aace0e60e9b09af71cd19083da79fa79082f46704edbe4c3b66ba78271cbb",
+        "kernels": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+        "lib": "f6a853cbe67e1ce0bef47dcc61afe709d347cd855b4bab266f48d89760c469c7",
+        "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+        "model": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+        "packed_kernels": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+        "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+        "runner": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+        "tokenizer": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+        "toolchain": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+        "trace": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0"
+      },
+      "threads": 4,
+      "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+    }
+  },
+  "source_sha256": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\scripts\\join_cpu_platform_outputs.py": "cbb277fc14f38afa1b3f94eaf495116259d292eca90c69b47d2247d24dba3ec6",
+    "reference\\windows-rust-corpus-v3-fp32-redecoded-200.json": "a362b42625a5ee594212135ff4a0e36bb64cfcbb64296b91bc19a7712030f4d0",
+    "reference\\corpus-v3-evaluation-lock.json": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\run.json": "1801a4ae0fa77b686b5eb9a214c757f904fe12ff7169a33a3a105df63cfb7712",
+    "artifacts\\cpu\\linux-v3-gpu-comparison-complete-v1.json": "037a18a6f7a0b85ae0b7e633cfbc325277701f2e4d32a2bf7c21f160552ef7e7",
+    "reference\\corpus-v3-smoke-lock.json": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\run.json": "142eb402460ef0e703e41ebcacc971ecd76f0df599acb40a7d9f2d6420b51326",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\run.json": "df82a180adf9d901d893331835b74d140e3efee9d5931d16988fe23fdd88fd88",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\8b12f8b2f5f2304b.json": "9d489373c8c0fd04ebe3672bf9c843c829a8bb432eb448b3c94e0b10c0d7d8b7",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\8b12f8b2f5f2304b.json": "23fbbe25d0a35cf10594336c65daec99f0136b7c2a5a76afd828b37e30d49cae",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\8b12f8b2f5f2304b.json": "9eb7aed8afbdabfab039eb32007f26fa3b4d514834a07e4fc76544d2e8554b7c",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\02efc5e800fa8102.json": "8a1a0562a3335cd32a04ab1ded373916ca79d0ad752a8887f11a11bdf04d0f20",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\02efc5e800fa8102.json": "c8b72d7ba99cf0fd3d66609a03b0a095f2bab1ebdb0a705c839db6c905f6e5e1",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\02efc5e800fa8102.json": "be9d9382dfee42384f32943257c9b426f4881c13278f8924cefbe34accc4c0c1",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\23aab39cd5bf7391.json": "350a0a53d6b3c6c456edb1233a56ce48cbf5bb26b7c2a3fd110a24fe02177a08",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\23aab39cd5bf7391.json": "6a5e2c3ab6c4f16da0818b35e120dd92bca7f471003c2f18b677ee7e7bd5f336",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\23aab39cd5bf7391.json": "a51988ac3c46afa6e1c92b9cea29879e5158bfb0c295b3f26ad733145b4aa309",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\4859de1c4651176f.json": "7d1c36b4222f461b26a109c23131f1c01ea6f7639ff5d32fa662acfca277465c",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\4859de1c4651176f.json": "ef468122ce32aaf2b5704dfce222f265ffce9aa3dac920b453fe0200f376f1f4",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\4859de1c4651176f.json": "b52938fccfa7f81c770b65a30ff73e0ca2be3927b9f46bcc4bed06c6e2cfb021",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\23af6bf2d434c78e.json": "64aa2a3a01174a64124d48d355e44d711d9e0d884e5a3f3453e85cb9f7e9c0be",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\23af6bf2d434c78e.json": "5fce7f1c616fa99e01def897876a472f14bca7ead562ac9706b1afa68ea48199",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\23af6bf2d434c78e.json": "495077b35534ed6bc198f5325efc1dbbf3e80854e59a7e28b9b13ba22ae8e050",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\93c5005040ffbf60.json": "b47ca1d57bd187ea03a4983e04b015e93b5e6d721f4de52db855fa28ed264b9c",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\93c5005040ffbf60.json": "66f5fc2199dc0144d5a3f9ae0cfda391b24a22edbf5185b69bd9b6615225c4e6",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\93c5005040ffbf60.json": "f5b5fc007c2eaa64cec5be65b0bc2067d16a8196d8ef1dbc5253dfd2e0fa3393",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\e8b834cd8934c2b9.json": "aa633980c56a4c8d659412d6b955619aa4eff16469287655d32afd34252bcafc",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\e8b834cd8934c2b9.json": "78a9bf2d7e93b375bca12e9c1353f70ee1b01056dc9e1185df8bd2a006260917",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\e8b834cd8934c2b9.json": "f4b437fba348ee8472654dce41b8f596c3d97a6c4537faa42c2852906ad7a902",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\d1c3b57fcf3b34d0.json": "699d021ef944d4493f622dfb643f400e6a55c9875ba57adbc3b65d06faf28c84",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\d1c3b57fcf3b34d0.json": "5e8319cb0b8da6145a4afd2738a09be7e3808316b5d390f8251e60154aa781aa",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\d1c3b57fcf3b34d0.json": "f2a05d83c4dda7c06e41b9549be75c7b55fac517027516572afce3634e148542",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\c436f01d5ffc71a8.json": "c64d4a81b9a312b51380df1068d9a3c779ec9debbe8f253f4d1739a7c42be7a2",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\c436f01d5ffc71a8.json": "7a34aee6b88c56cb7b62868542b9e5fb55eca50ac602a1815bc64e349a8c62ea",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\c436f01d5ffc71a8.json": "375e6dd2be0194fdede13f1fd57b9596eb923ec8906e4e417239974df5f3197e",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\2fb1bc11117c0816.json": "1fc8abe87554a1c7c09596fe0446bea351f9a50a273ddc7f8abdde8bf2dbae60",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\2fb1bc11117c0816.json": "6e07cbe0acfc50b0ea0408e315fef3c32f1018f0f520e780d078def54deb0f08",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\2fb1bc11117c0816.json": "7a8672fc7600a22a6911022be480d7a897f3e6e6c6270eed44878683ef8809cd",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\7f5fe0454161473c.json": "3ba5c7514993a1353821851b4bb1f5a5a1e9bea3a6d440a27db0d9e3a4773868",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\7f5fe0454161473c.json": "ad196fba68b6c3f540a4bd0ac04475bc361ea231ac06457260f78467b21f5e7d",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\7f5fe0454161473c.json": "bf8d1184096e20e3b1fd915b53b61e843864beeedf7a8eeb53a7b5e3ac69df1a",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\a5c0f5f013640adf.json": "135518e0d4fa3a36100953c10aad7c64fbe115c219c5bdcc44d2c07ecfb2f729",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\a5c0f5f013640adf.json": "854741c4c2e4d1bdc52c718589832fc70da97cc78b060f683cf9ef070d8a1802",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\a5c0f5f013640adf.json": "56eaa04e04015e5f2a38813f616d43ea9c73a13ab464779d41a5dc7cc3dc2a89",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\9aead3a40a262f8d.json": "1e60a4248209741b194d231d0a933124294588652be6a945303130ac7533ec9e",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\9aead3a40a262f8d.json": "19e7685453e87fb03f549ba29d42b496f7adcc20d2e9449d037107b514feb626",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\9aead3a40a262f8d.json": "ecaf6c660dd426bc73534daaa0781bb055ec4d5e10f68a309bf4686881794cd0",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\50d2711a3bd0781f.json": "dc18b401ad556d0c9665f0229a9ca13057c6ce5406b52e55c8db83ba576a94bc",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\50d2711a3bd0781f.json": "dc8993f46471daa91f6682330740134f231b3a910fd5eee5cba8b23b4c2fdd9c",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\50d2711a3bd0781f.json": "c048259e46ec4dfaaa0b361183b9cd7868b0f201d8204112e525f9a7eeccf9ad",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\7e622597f347e27b.json": "f086e9ac0167c44093535870c503d67758f3bca8f74c774321f5817aab918436",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\7e622597f347e27b.json": "f6a57f19e6d49d2d441623e6254e787eb2639db5bc0090c3a68dd0510ef84314",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\7e622597f347e27b.json": "3515f713be4d3ee08c083a30da20d09452f00fd7c2d69398a791a304a7004c3d",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\5e0d7be91a9e94a2.json": "9bb9e7aaafa451e61ac9ee285b3596c376d516f8e4e66a8505cf13f395aee251",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\5e0d7be91a9e94a2.json": "fc9cfe3edc240590e1cad65ee5689c413efe90220eca3c99c44f74ada9c06476",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\5e0d7be91a9e94a2.json": "83862a9dfe28d399bb6e01006321e55d90075f0039c4e752988f3cf3bcbd564b",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\c5252697867efc37.json": "65609187398076bc9c98aa88e689b375047dd23b0ccd2485b009d91320affe8b",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\c5252697867efc37.json": "2b3660b18202195f85cdd9fbca9a9faf06a4b740f989500de5ffc0edc28d7438",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\c5252697867efc37.json": "a6d2e50e5789b128ea3eb5499f79ed77da40a037fdc3e72b84e0201710347778",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\3463b9514056e178.json": "b7eacdc116ba2f076e78e990e8d97dea7dd908eecb8e84ad894d29b492673a62",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\3463b9514056e178.json": "cdaaab46886e95becc0efa5e3ddfa77032b1a93db281057603428e38a3be3933",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\3463b9514056e178.json": "64412dc24cee07f1633e55a09d2b961efb58b5a8106722f2fe9b52d962ea449d",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\f75c4a0b98e45ab3.json": "1ff57b5c335db4a2560f935cddfbdb157dd09f28e36c6cbf9ad75f67f4aa7d74",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\f75c4a0b98e45ab3.json": "fc9ef8fd84c190231d41f8e671982dc800cad9c316848d2ce411cb22ff2c07fe",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\f75c4a0b98e45ab3.json": "d603f7c72fee2f46adb8c878de9a0a2eb76de7837cb944e23bcfeda7a1c7cba8",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\95928a9b09ccac9e.json": "25972c8f25c5f5c23a6dcbda0a6f881019d5490964297676b1429d33e0b9fd56",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\95928a9b09ccac9e.json": "0177d1c2a5369fbe514deec92b7cb6327d63abc31a129f2775b0a5e9c3e2efbe",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\95928a9b09ccac9e.json": "6299256c436ea576c9f097b27aa6d4c595247a1a7c1ee83082e34be4f78dbc2e",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\f63cadd85b7b8464.json": "dac60ef750e44903a57cd047827a2dac7da029c8e1993b90436073c3492c6110",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\f63cadd85b7b8464.json": "b14dffdb0d7c214613cb5b1166a9e02d7eab022116a6830a1d796de3d8ae5c40",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\f63cadd85b7b8464.json": "49ccebebe14376c7bea2be2ac1a497bb2761385b8c453cd7be3e257b7e6c72e3",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\caa02ee83b64c5f8.json": "e9363f0c715d2e674ef679359ac2da629b78b1e2de2de129994b227d3ef5590d",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\caa02ee83b64c5f8.json": "9a5fe71391603962ccfc8a8c34adc918c953585faba845c618f2348d9e72f30e",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\caa02ee83b64c5f8.json": "c7ace6a2e92ea1f7dd9a0da680f641309f9f30262aa86c179db4cb424a3e2e66",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\f66ef24218a58f8c.json": "9160e5582cf7f4d558ee24a9c012f6fe9feabc2a59371906d32c26be31469fee",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\f66ef24218a58f8c.json": "ceaa33d081a137bde976fbc989aa31e090aabb5420fe435ee8e4151e9759a67a",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\f66ef24218a58f8c.json": "b91c6abf117b05b0135b9810c5b58214d0b8aa25dabbb870b7a73d3596e28cef",
+    "artifacts\\cpu\\corpus-v3-fp32-4096-redecoded-v2-snapshot-200\\7946549063bb5784.json": "6be3bdf8bc6a7364f7761f562839307b4922e468a7a5d9ad503a39ebf8fa4ff6",
+    "artifacts\\cpu\\linux-corpus-v3-smoke-fp32-4096\\7946549063bb5784.json": "4e4b034cf38d8808d52827e85732f65e34650eeae66aa18f16652c52abd9cdab",
+    "artifacts\\reference\\corpus-v3-fp32-4096\\7946549063bb5784.json": "3213e3d6a9dddd7fcef76b77e00153e1aa691d6b55cf9fc5e9f5c8ebf423d417"
+  },
+  "records": [
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_250.jpg",
+      "sample_id": "8b12f8b2f5f2304b",
+      "category": "degraded",
+      "generated_ids": 441,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1072,
+        1536
+      ],
+      "prefix_tokens": 6448,
+      "windows_record_sha256": "9d489373c8c0fd04ebe3672bf9c843c829a8bb432eb448b3c94e0b10c0d7d8b7",
+      "linux_record_sha256": "23fbbe25d0a35cf10594336c65daec99f0136b7c2a5a76afd828b37e30d49cae",
+      "gpu_record_sha256": "9eb7aed8afbdabfab039eb32007f26fa3b4d514834a07e4fc76544d2e8554b7c"
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1523.jpg",
+      "sample_id": "02efc5e800fa8102",
+      "category": "degraded",
+      "generated_ids": 310,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "8a1a0562a3335cd32a04ab1ded373916ca79d0ad752a8887f11a11bdf04d0f20",
+      "linux_record_sha256": "c8b72d7ba99cf0fd3d66609a03b0a095f2bab1ebdb0a705c839db6c905f6e5e1",
+      "gpu_record_sha256": "be9d9382dfee42384f32943257c9b426f4881c13278f8924cefbe34accc4c0c1"
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_3009.jpg",
+      "sample_id": "23aab39cd5bf7391",
+      "category": "degraded",
+      "generated_ids": 724,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "350a0a53d6b3c6c456edb1233a56ce48cbf5bb26b7c2a3fd110a24fe02177a08",
+      "linux_record_sha256": "6a5e2c3ab6c4f16da0818b35e120dd92bca7f471003c2f18b677ee7e7bd5f336",
+      "gpu_record_sha256": "a51988ac3c46afa6e1c92b9cea29879e5158bfb0c295b3f26ad733145b4aa309"
+    },
+    {
+      "id": "omnidocbench:notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+      "sample_id": "4859de1c4651176f",
+      "category": "handwriting",
+      "generated_ids": 446,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "7d1c36b4222f461b26a109c23131f1c01ea6f7639ff5d32fa662acfca277465c",
+      "linux_record_sha256": "ef468122ce32aaf2b5704dfce222f265ffce9aa3dac920b453fe0200f376f1f4",
+      "gpu_record_sha256": "b52938fccfa7f81c770b65a30ff73e0ca2be3927b9f46bcc4bed06c6e2cfb021"
+    },
+    {
+      "id": "omnidocbench:page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+      "sample_id": "23af6bf2d434c78e",
+      "category": "handwriting",
+      "generated_ids": 607,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "64aa2a3a01174a64124d48d355e44d711d9e0d884e5a3f3453e85cb9f7e9c0be",
+      "linux_record_sha256": "5fce7f1c616fa99e01def897876a472f14bca7ead562ac9706b1afa68ea48199",
+      "gpu_record_sha256": "495077b35534ed6bc198f5325efc1dbbf3e80854e59a7e28b9b13ba22ae8e050"
+    },
+    {
+      "id": "omnidocbench:notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+      "sample_id": "93c5005040ffbf60",
+      "category": "handwriting",
+      "generated_ids": 556,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "b47ca1d57bd187ea03a4983e04b015e93b5e6d721f4de52db855fa28ed264b9c",
+      "linux_record_sha256": "66f5fc2199dc0144d5a3f9ae0cfda391b24a22edbf5185b69bd9b6615225c4e6",
+      "gpu_record_sha256": "f5b5fc007c2eaa64cec5be65b0bc2067d16a8196d8ef1dbc5253dfd2e0fa3393"
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+      "sample_id": "e8b834cd8934c2b9",
+      "category": "formulas",
+      "generated_ids": 1352,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "aa633980c56a4c8d659412d6b955619aa4eff16469287655d32afd34252bcafc",
+      "linux_record_sha256": "78a9bf2d7e93b375bca12e9c1353f70ee1b01056dc9e1185df8bd2a006260917",
+      "gpu_record_sha256": "f4b437fba348ee8472654dce41b8f596c3d97a6c4537faa42c2852906ad7a902"
+    },
+    {
+      "id": "omnidocbench:page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+      "sample_id": "d1c3b57fcf3b34d0",
+      "category": "formulas",
+      "generated_ids": 873,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "699d021ef944d4493f622dfb643f400e6a55c9875ba57adbc3b65d06faf28c84",
+      "linux_record_sha256": "5e8319cb0b8da6145a4afd2738a09be7e3808316b5d390f8251e60154aa781aa",
+      "gpu_record_sha256": "f2a05d83c4dda7c06e41b9549be75c7b55fac517027516572afce3634e148542"
+    },
+    {
+      "id": "omnidocbench:page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+      "sample_id": "c436f01d5ffc71a8",
+      "category": "formulas",
+      "generated_ids": 866,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "c64d4a81b9a312b51380df1068d9a3c779ec9debbe8f253f4d1739a7c42be7a2",
+      "linux_record_sha256": "7a34aee6b88c56cb7b62868542b9e5fb55eca50ac602a1815bc64e349a8c62ea",
+      "gpu_record_sha256": "375e6dd2be0194fdede13f1fd57b9596eb923ec8906e4e417239974df5f3197e"
+    },
+    {
+      "id": "omnidocbench:PPT_StewartCalcET7e_03_02_page_015.png",
+      "sample_id": "2fb1bc11117c0816",
+      "category": "formulas",
+      "generated_ids": 276,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1536,
+        1152
+      ],
+      "prefix_tokens": 6928,
+      "windows_record_sha256": "1fc8abe87554a1c7c09596fe0446bea351f9a50a273ddc7f8abdde8bf2dbae60",
+      "linux_record_sha256": "6e07cbe0acfc50b0ea0408e315fef3c32f1018f0f520e780d078def54deb0f08",
+      "gpu_record_sha256": "7a8672fc7600a22a6911022be480d7a897f3e6e6c6270eed44878683ef8809cd"
+    },
+    {
+      "id": "omnidocbench:page-92062914-ea02-4640-8f54-24623dba4388.png",
+      "sample_id": "7f5fe0454161473c",
+      "category": "tables",
+      "generated_ids": 2543,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1136,
+        1536
+      ],
+      "prefix_tokens": 6832,
+      "windows_record_sha256": "3ba5c7514993a1353821851b4bb1f5a5a1e9bea3a6d440a27db0d9e3a4773868",
+      "linux_record_sha256": "ad196fba68b6c3f540a4bd0ac04475bc361ea231ac06457260f78467b21f5e7d",
+      "gpu_record_sha256": "bf8d1184096e20e3b1fd915b53b61e843864beeedf7a8eeb53a7b5e3ac69df1a"
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61569751.pdf_155.jpg",
+      "sample_id": "a5c0f5f013640adf",
+      "category": "tables",
+      "generated_ids": 986,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "135518e0d4fa3a36100953c10aad7c64fbe115c219c5bdcc44d2c07ecfb2f729",
+      "linux_record_sha256": "854741c4c2e4d1bdc52c718589832fc70da97cc78b060f683cf9ef070d8a1802",
+      "gpu_record_sha256": "56eaa04e04015e5f2a38813f616d43ea9c73a13ab464779d41a5dc7cc3dc2a89"
+    },
+    {
+      "id": "omnidocbench:docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+      "sample_id": "9aead3a40a262f8d",
+      "category": "tables",
+      "generated_ids": 4096,
+      "finish_reason": "length",
+      "cpu_dimensions": [
+        1136,
+        1536
+      ],
+      "prefix_tokens": 6832,
+      "windows_record_sha256": "1e60a4248209741b194d231d0a933124294588652be6a945303130ac7533ec9e",
+      "linux_record_sha256": "19e7685453e87fb03f549ba29d42b496f7adcc20d2e9449d037107b514feb626",
+      "gpu_record_sha256": "ecaf6c660dd426bc73534daaa0781bb055ec4d5e10f68a309bf4686881794cd0"
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_chem-354334.pdf_20.jpg",
+      "sample_id": "50d2711a3bd0781f",
+      "category": "tables",
+      "generated_ids": 745,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1184,
+        1536
+      ],
+      "prefix_tokens": 7120,
+      "windows_record_sha256": "dc18b401ad556d0c9665f0229a9ca13057c6ce5406b52e55c8db83ba576a94bc",
+      "linux_record_sha256": "dc8993f46471daa91f6682330740134f231b3a910fd5eee5cba8b23b4c2fdd9c",
+      "gpu_record_sha256": "c048259e46ec4dfaaa0b361183b9cd7868b0f201d8204112e525f9a7eeccf9ad"
+    },
+    {
+      "id": "omnidocbench:jiaocaineedrop_jiaocai_needrop_en_1290.jpg",
+      "sample_id": "7e622597f347e27b",
+      "category": "tiny_text",
+      "generated_ids": 3628,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1536,
+        1088
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "f086e9ac0167c44093535870c503d67758f3bca8f74c774321f5817aab918436",
+      "linux_record_sha256": "f6a57f19e6d49d2d441623e6254e787eb2639db5bc0090c3a68dd0510ef84314",
+      "gpu_record_sha256": "3515f713be4d3ee08c083a30da20d09452f00fd7c2d69398a791a304a7004c3d"
+    },
+    {
+      "id": "omnidocbench:newspaper_USAToday-2025-01-08@magazinesclubnew_page_012.png",
+      "sample_id": "5e0d7be91a9e94a2",
+      "category": "tiny_text",
+      "generated_ids": 3632,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        800,
+        1536
+      ],
+      "prefix_tokens": 4816,
+      "windows_record_sha256": "9bb9e7aaafa451e61ac9ee285b3596c376d516f8e4e66a8505cf13f395aee251",
+      "linux_record_sha256": "fc9cfe3edc240590e1cad65ee5689c413efe90220eca3c99c44f74ada9c06476",
+      "gpu_record_sha256": "83862a9dfe28d399bb6e01006321e55d90075f0039c4e752988f3cf3bcbd564b"
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_3745.jpg",
+      "sample_id": "c5252697867efc37",
+      "category": "tiny_text",
+      "generated_ids": 883,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1536,
+        1088
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "65609187398076bc9c98aa88e689b375047dd23b0ccd2485b009d91320affe8b",
+      "linux_record_sha256": "2b3660b18202195f85cdd9fbca9a9faf06a4b740f989500de5ffc0edc28d7438",
+      "gpu_record_sha256": "a6d2e50e5789b128ea3eb5499f79ed77da40a037fdc3e72b84e0201710347778"
+    },
+    {
+      "id": "omnidocbench:yanbaor2_yanbaoPPT_469.jpg",
+      "sample_id": "3463b9514056e178",
+      "category": "tiny_text",
+      "generated_ids": 379,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1136,
+        1536
+      ],
+      "prefix_tokens": 6832,
+      "windows_record_sha256": "b7eacdc116ba2f076e78e990e8d97dea7dd908eecb8e84ad894d29b492673a62",
+      "linux_record_sha256": "cdaaab46886e95becc0efa5e3ddfa77032b1a93db281057603428e38a3be3933",
+      "gpu_record_sha256": "64412dc24cee07f1633e55a09d2b961efb58b5a8106722f2fe9b52d962ea449d"
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "sample_id": "f75c4a0b98e45ab3",
+      "category": "multi_column",
+      "generated_ids": 1461,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1184,
+        1536
+      ],
+      "prefix_tokens": 7120,
+      "windows_record_sha256": "1ff57b5c335db4a2560f935cddfbdb157dd09f28e36c6cbf9ad75f67f4aa7d74",
+      "linux_record_sha256": "fc9ef8fd84c190231d41f8e671982dc800cad9c316848d2ce411cb22ff2c07fe",
+      "gpu_record_sha256": "d603f7c72fee2f46adb8c878de9a0a2eb76de7837cb944e23bcfeda7a1c7cba8"
+    },
+    {
+      "id": "omnidocbench:yanbaor2_a6b1184da1f8167144544b92fff11726f5218e5ca106c86dc00436c14725d7b9.pdf_5.jpg",
+      "sample_id": "95928a9b09ccac9e",
+      "category": "multi_column",
+      "generated_ids": 2232,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1088,
+        1536
+      ],
+      "prefix_tokens": 6544,
+      "windows_record_sha256": "25972c8f25c5f5c23a6dcbda0a6f881019d5490964297676b1429d33e0b9fd56",
+      "linux_record_sha256": "0177d1c2a5369fbe514deec92b7cb6327d63abc31a129f2775b0a5e9c3e2efbe",
+      "gpu_record_sha256": "6299256c436ea576c9f097b27aa6d4c595247a1a7c1ee83082e34be4f78dbc2e"
+    },
+    {
+      "id": "omnidocbench:exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+      "sample_id": "f63cadd85b7b8464",
+      "category": "multi_column",
+      "generated_ids": 554,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1184,
+        1536
+      ],
+      "prefix_tokens": 7120,
+      "windows_record_sha256": "dac60ef750e44903a57cd047827a2dac7da029c8e1993b90436073c3492c6110",
+      "linux_record_sha256": "b14dffdb0d7c214613cb5b1166a9e02d7eab022116a6830a1d796de3d8ae5c40",
+      "gpu_record_sha256": "49ccebebe14376c7bea2be2ac1a497bb2761385b8c453cd7be3e257b7e6c72e3"
+    },
+    {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-s00348-006-0169-y.pdf_2.jpg",
+      "sample_id": "caa02ee83b64c5f8",
+      "category": "ordinary",
+      "generated_ids": 1454,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1168,
+        1536
+      ],
+      "prefix_tokens": 7024,
+      "windows_record_sha256": "e9363f0c715d2e674ef679359ac2da629b78b1e2de2de129994b227d3ef5590d",
+      "linux_record_sha256": "9a5fe71391603962ccfc8a8c34adc918c953585faba845c618f2348d9e72f30e",
+      "gpu_record_sha256": "c7ace6a2e92ea1f7dd9a0da680f641309f9f30262aa86c179db4cb424a3e2e66"
+    },
+    {
+      "id": "omnidocbench:PPT_The Right Moves_page_024.png",
+      "sample_id": "f66ef24218a58f8c",
+      "category": "ordinary",
+      "generated_ids": 85,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1536,
+        1152
+      ],
+      "prefix_tokens": 6928,
+      "windows_record_sha256": "9160e5582cf7f4d558ee24a9c012f6fe9feabc2a59371906d32c26be31469fee",
+      "linux_record_sha256": "ceaa33d081a137bde976fbc989aa31e090aabb5420fe435ee8e4151e9759a67a",
+      "gpu_record_sha256": "b91c6abf117b05b0135b9810c5b58214d0b8aa25dabbb870b7a73d3596e28cef"
+    },
+    {
+      "id": "omnidocbench:PPT_Keuk Chan Narith_page_009.png",
+      "sample_id": "7946549063bb5784",
+      "category": "ordinary",
+      "generated_ids": 76,
+      "finish_reason": "eos",
+      "cpu_dimensions": [
+        1536,
+        1152
+      ],
+      "prefix_tokens": 6928,
+      "windows_record_sha256": "6be3bdf8bc6a7364f7761f562839307b4922e468a7a5d9ad503a39ebf8fa4ff6",
+      "linux_record_sha256": "4e4b034cf38d8808d52827e85732f65e34650eeae66aa18f16652c52abd9cdab",
+      "gpu_record_sha256": "3213e3d6a9dddd7fcef76b77e00153e1aa691d6b55cf9fc5e9f5c8ebf423d417"
+    }
+  ],
+  "qualification": "Direct equality of saved outputs on the fixed24-page subset of the200-page corpus. Windows inference plus separately validated text replay is compared with fresh Linux-under-WSL inference and the identical strict FP32 GPU records. Existing comparison provenance qualifications remain in force. No inference, tensor comparison, fresh startup attestation, absolute OCR accuracy, throughput or bare-metal Linux measurement is performed. Historical GPU records do not contain processed width/height; only CPU dimensions and GPU prefix lengths are compared."
+}

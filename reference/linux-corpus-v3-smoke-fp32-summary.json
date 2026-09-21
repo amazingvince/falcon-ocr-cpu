@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "status": "complete_selected_24_page_output_parity",
+  "comparison": "artifacts/cpu/linux-v3-gpu-comparison-complete-v1.json",
+  "comparison_sha256": "037a18a6f7a0b85ae0b7e633cfbc325277701f2e4d32a2bf7c21f160552ef7e7",
+  "comparison_command": [
+    "scripts/compare_corpus.py",
+    "--manifest",
+    "reference/corpus-v3-smoke-lock.json",
+    "--gpu",
+    "artifacts/reference/corpus-v3-fp32-4096",
+    "--gpu-manifest",
+    "reference/corpus-v3-evaluation-lock.json",
+    "--cpu",
+    "artifacts/cpu/linux-corpus-v3-smoke-fp32-4096",
+    "--cpu-build",
+    "artifacts/builds/corpus-eval-v7-linux/build.json",
+    "--output",
+    "artifacts/cpu/linux-v3-gpu-comparison-complete-v1.json"
+  ],
+  "comparison_exit_code": 0,
+  "inference_process_exit_code": 0,
+  "pages": 24,
+  "matching_token_ids": 29205,
+  "literal_text_all_exact": true,
+  "stops_all_exact": true,
+  "finish_reasons": {
+    "eos": 23,
+    "length": 1
+  },
+  "maximum_output_tokens": 4096,
+  "by_category": {
+    "degraded": {
+      "pages": 3,
+      "generated_ids": 1475
+    },
+    "handwriting": {
+      "pages": 3,
+      "generated_ids": 1609
+    },
+    "formulas": {
+      "pages": 4,
+      "generated_ids": 3367
+    },
+    "tables": {
+      "pages": 4,
+      "generated_ids": 8370
+    },
+    "tiny_text": {
+      "pages": 4,
+      "generated_ids": 8522
+    },
+    "multi_column": {
+      "pages": 3,
+      "generated_ids": 4247
+    },
+    "ordinary": {
+      "pages": 3,
+      "generated_ids": 1615
+    }
+  },
+  "checks_passed": 2589,
+  "cpu_build": {
+    "path": "artifacts/builds/corpus-eval-v7-linux/build.json",
+    "sha256": "f6f6d0a500ff3f3cc3d351c1bde6b1cc9d324f38c5f1dc079d77c42bc2eabd9b",
+    "source_archive_sha256": "024c15af8770b9be2fc4b7c0788afab463cd092b532c685a1dee62ac80e9e794",
+    "binary_sha256": "e625cf706103e17d480f3538d16cf45094497f1162d413eeaa7cc91550244057",
+    "qualification": "Recorded startup build identity checked against preserved binary and archived sources; not a hermetic rebuild."
+  },
+  "cpu_run_sha256": "142eb402460ef0e703e41ebcacc971ecd76f0df599acb40a7d9f2d6420b51326",
+  "gpu_run_sha256": "df82a180adf9d901d893331835b74d140e3efee9d5931d16988fe23fdd88fd88",
+  "selected_manifest_sha256": "765d183fa8c441cb3a1a4528531e07f8b80fc14f3250c53625abae51fe5b405b",
+  "derived_text_replay": false,
+  "gpu_contract_qualification": {
+    "missing_startup_fields": [
+      "prompt",
+      "config_sha256",
+      "greedy_tie_rule"
+    ],
+    "qualification": "Missing fields are not filled into old records. Available source evidence and checked assets are reported separately; output comparison is not complete startup attestation."
+  },
+  "qualification": "Fresh free-running Linux-under-WSL FP32/AVX2 selected-smoke inference, four threads, maximum side1536 and cap4096, under concurrent project load. All48 selected record hashes rechecked after comparison. This is not bare-metal Linux performance, complete200-page quality, full Windows/Linux selected-smoke agreement, or a closed intermediate-tensor gate. GPU prepared dimensions were not recorded; CPU dimensions and GPU prefix counts remain separately reported."
+}

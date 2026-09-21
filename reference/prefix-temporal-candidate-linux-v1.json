@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "status": "same_frozen_candidate_passes_native_and_linux_operator_storage_tests",
+  "scope": "The exact native copied-project archive was extracted and tested under WSL/Linux. No production edit, full-model inference, or performance qualification.",
+  "native_report": "reference/prefix-temporal-candidate-windows-v1.json",
+  "native_source_archive_sha256": "3c56404aa7a996b0e29b93916a71d50b75cfa033dc33ca8bc12480e51a574176",
+  "identical_candidate_source_inventory": {
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "examples/support/aocl_dynamic.rs": "b738f07347fab079917840db4447a3b9f50ac90a9f6438f5bd892d72926600ec",
+    "examples/support/bf16_qk_attention.rs": "fdfb7609fc9aa49697f6ec761b1a48ec59ce68d88b476886f2a0ef2b21044035",
+    "examples/support/bf16_qk_candidates.rs": "e2b4b0a4a83b007d962fa36f064d78dae0425923f3fba6246cb8da350436f01b",
+    "examples/support/corpus_record.rs": "7a157ce7faa9993e4419a9df41d019816c50edacc5e241870702684d310a1bec",
+    "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82",
+    "src/bf16_attention.rs": "113b20aa2c2685a5dcd3b1521899c23853ffd6e33f4ac59bf348f65e76f124c3",
+    "src/bf16_attention_diagnostics.rs": "699c867b407914ac0e6d3fc72c122f8b874172a9c734e511de700ad0ed5f2372",
+    "src/bf16_kernels.rs": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "src/bf16_model.rs": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "src/bf16_ops.rs": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "src/bf16_runner.rs": "c19114e1765f998f08097ceb2e3e85bde060d70354fa118b1329b29f6289b483",
+    "src/config.rs": "066a468f76e1b572b2015be9770148b89fe116ae1c3a734d5f724aceeb864d8c",
+    "src/kernels.rs": "34cc384f62b81347a108658f57017ff0e34bfc49c12ae09d4aebd5a24d355cbc",
+    "src/lib.rs": "a4241ad039e9a2a48afca4728b6de7306ba2fbb268ba367b241638486187c662",
+    "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "src/model.rs": "a30c0c332e876ff15c302828b49b72c8b13394f4160116c0f01fb63f86d3cd37",
+    "src/model_diagnostics.rs": "f4655cc506aeccdc63f8da2ebc597b78cdec1f2260ebb9a638b48a3d4681fbb5",
+    "src/numerical_diagnostics.rs": "6940798d3ea11379be1a973385d98cf647bc209ad616c57bb906f49add49aa26",
+    "src/packed_kernels.rs": "28c685fd14c0916654e3f879a416562aa38c7923914896f2dfb7ab66516b9e11",
+    "src/preprocess.rs": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "src/temporal_candidate.rs": "d636e7fb065b50fde80bf905cf245a69fe60d2b2a8e45361ad6eed3bed1f7fc8",
+    "src/temporal_model_tests.rs": "51c7fe618cbb2760fcc3efd1ba329d36a107b7888ce7fdcafdb75bc5c12cbfc2",
+    "src/tokenizer.rs": "cfbefe4a2dc7dd4ca2e8fd9c1ece80db76e183c37b9aa63f53960dd7a9077dd2",
+    "src/trace.rs": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0",
+    "tests/fixtures/decode.json": "f5b491e99b89273d16a7d0fe5b4b458505adf1dc70a5c2dd37a5a228d06ba37e",
+    "tests/fixtures/model-config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "tests/fixtures/preprocess.json": "c3a3dca3a5ba9cd746123dc5ed96fa962517f656bf474dabbafa03a9f58e9878"
+  },
+  "candidate_source_files": 30,
+  "linux_platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "rustc_version": "rustc 1.92.0 (ded5c06cf 2025-12-08)\nbinary: rustc\ncommit-hash: ded5c06cf21d2b93bffd5d884aa6e96934ee4234\ncommit-date: 2025-12-08\nhost: x86_64-unknown-linux-gnu\nrelease: 1.92.0\nLLVM version: 21.1.3\n",
+  "cargo_version": "cargo 1.92.0 (344c4567c 2025-10-21)\n",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "CARGO_TARGET_DIR": "/home/amazi/falcon-ocr-rust-reference/rust-target",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "validation": {
+    "rust_tests_passed": 8,
+    "test_names": [
+      "model::temporal_candidate_tests::model_cache_dispatch_prefill_decode_matches_compact",
+      "model::temporal_candidate_tests::model_candidate_is_explicit_default_unchanged",
+      "temporal_candidate::tests::decode_masks_key_tiles_long_tails_and_extreme_sinks",
+      "temporal_candidate::tests::invalid_duplicate_rejected_before_mutation",
+      "temporal_candidate::tests::reserved_owned_payload_and_append_capacity_stability",
+      "temporal_candidate::tests::storage_bits_including_signed_zero_and_nan_payload",
+      "temporal_candidate::tests::unchanged_prefill_and_single_decode_all_supported_backends",
+      "temporal_candidate::tests::unsupported_dimensions_partial_prefix_continuation_and_capacity"
+    ],
+    "same_tests_actually_executed": true,
+    "backends": [
+      "Scalar",
+      "Auto",
+      "Avx2",
+      "Avx512"
+    ],
+    "compiler_jobs": 2,
+    "compute_threads": 4,
+    "test_harness_threads": 1,
+    "gpu_visibility_disabled": true,
+    "native_inputs_and_source_archives_rehashed_afterward": true,
+    "both_platform_attention_equality": "Each candidate matches its own platform compact attention oracle bit for bit.",
+    "cross_platform_output_tensor_comparison": false,
+    "owned_capacity_reports_byte_identical": true,
+    "host_extraction_guard_tests_passed": 2
+  },
+  "owned_capacity_memory": {
+    "buffer_addresses_unchanged_through_full_append": true,
+    "candidate_analytic_payload_bytes": 806912,
+    "candidate_buffer_capacities": [
+      36864,
+      73728,
+      8704,
+      82432
+    ],
+    "candidate_buffer_lengths": [
+      36864,
+      73728,
+      8704,
+      82432
+    ],
+    "candidate_struct_bytes": 120,
+    "compact_analytic_payload_bytes": 954368,
+    "compact_buffer_capacities": [
+      147456,
+      8704,
+      82432
+    ],
+    "frozen_b4_22layer_analytic_candidate_bytes": 3412000768,
+    "frozen_b4_22layer_analytic_compact_bytes": 3799121920,
+    "frozen_b4_analytic_saving_bytes": 387121152,
+    "generated_reserved": 17,
+    "measured_candidate_buffer_capacity_bytes": 806912,
+    "measured_compact_buffer_capacity_bytes": 954368,
+    "prefix": 144,
+    "schema": 1,
+    "scope": "owned Vec capacities only; excludes allocator metadata, transient workspace, weights and RSS",
+    "supported_test_backends": [
+      "Scalar",
+      "Auto",
+      "Avx2",
+      "Avx512"
+    ]
+  },
+  "model_inference_executed": false,
+  "performance_benchmark_executed": false,
+  "live_source_modified": false,
+  "native_evidence_modified": false,
+  "build_artifact_directory_bytes": 34632981,
+  "limits": [
+    "No separately exported cross-platform attention tensor comparison.",
+    "Vec-reported capacity payload excludes allocator overhead, heap/RSS peak, weights and workspace.",
+    "Mixed-b4 full-size savings remain analytic.",
+    "Full-model traces, free outputs, full-runner allocation behavior and performance are pending."
+  ],
+  "evidence_sha256": {
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/build.json": "2534f704758d52a5099b94adf4e037e34b77c88a49355e3536e21f5c46c192da",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/execution.json": "dbc38c414a05b25f46a289de63ebf25690e3f86e063b9686bfc1f81d14186761",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/build-start.json": "911ecc4ebc6cd6aa4ea4ae084d492369a2b7bba7deffdb4f99bc32561b506080",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/build.log": "c89c5b45a4bcf2d465ff473a3bd9c3b53840689574c3408f4e7797fb815af6b3",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/test.log": "595842fa2ad73c72c0d0b566ba75c29b465d69c3821bb0d3b89b61694083aedb",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/test-list.txt": "6e29b983b8434f066dd8a01ac01891be84243ec16dc76da12c5d2654cfd02738",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/owned-memory.json": "6d5543abe1612846e24f1ae3e3971ba733ba1312ca23c249be5db73645147d67",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/native-source.zip": "3c56404aa7a996b0e29b93916a71d50b75cfa033dc33ca8bc12480e51a574176",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/linux-capture-source.zip": "1b64fdba21b7a394023300f8bc6153e7159cf010eba7f62368b69979f7a59739",
+    "artifacts/diagnostics/prefix-temporal-candidate-linux-v1/temporal-candidate-tests": "5b9dd0da4253439d29b1b304d390a8caeeafba39581b13d33b70f70b05892de5",
+    "reference/prefix-temporal-candidate-windows-v1.json": "d5cda80c9eee15fab3347484e38fdf7c391f6c39279763d586b33004f20b0e93",
+    "reference/prefix-temporal-linux-wrapper-independent-review-v1.json": "618a94dce83abb6d823e5b79826952afe7396a5f81c597e5d198bc6858ca6d4e"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "started_utc": "2026-09-20T09:58:38.674835+00:00",
+  "source_sha256": {
+    "scripts/prepare_official_evaluation.py": "7b575e419b9b94a4dda24743b687dcabab98548fef62a5288eef153ebfa68692",
+    "scripts/report_quality_regression.py": "6e5f09a0fc10cd5e30d9e72588bf729cb33f6e2209cd603292fe7a8b3ebea299",
+    "scripts/compare_official_evaluation.py": "01bcb9a81ecb7935508639bde67f38a0d39fc1e8e6fade747366293a7c3a5562",
+    "scripts/corpus_comparison.py": "0ccfbc9077c2e0aa9656e4310eba37d2f1517a3810a99231c71fad0db7a4f8ee",
+    "scripts/validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032",
+    "scripts/validate_text_replay.py": "0589094ba226a5049457664e08f93543619b14ea98e1e4b85979ecc793865e2d",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "tests/test_official_evaluation_workflow.py": "55b13182f84a2a622fde3001fcf9966c40464725af2f637839993f8a31697280",
+    "tests/test_quality_regression.py": "89bdff0cb77efd75e8b7cbbb5bafdfb9fe645d789c327d791636546d175dba87",
+    "reference/reporting-fixes-independent-tests-v1.py": "c3fde9cec09e7a920e86475c80566bf011c24cf6cf21a8ce64f71373deccfba2"
+  }
+}

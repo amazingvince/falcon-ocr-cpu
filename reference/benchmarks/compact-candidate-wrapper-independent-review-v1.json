@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "compact-candidate-benchmark-wrapper-delta-review",
+  "created_utc": "2026-09-20T16:02:03.585951+00:00",
+  "status": "no_concrete_delta_issue_found",
+  "scope": "Source-only independent delta review and small saved metadata reads; no imports of benchmark code, tests, builds, model calls, plan execution, binary/model/archive hashing or benchmark reruns. Parent owns plan validation and execution.",
+  "exact_delta_exhaustively_accounted_for": [
+    "module description",
+    "fixed job mode sequential/expanded -> joint/compact; unpacked retained",
+    "distinct compact plan kind in preparation and validation",
+    "one-page compact/singleton limitation wording"
+  ],
+  "otherwise_source_identical_after_these_replacements": true,
+  "ast_identical_functions": [
+    "baseline_signatures",
+    "run",
+    "main"
+  ],
+  "preserved_checks": [
+    "two warmups from the frozen workload and three measured repetitions",
+    "control-before, candidate, control-after using control binary twice",
+    "caller-supplied exact plan SHA checked before plan parsing/input work",
+    "bound workload/build/binary/archive/source inventory at validation and after the measured bracket",
+    "900-second per-process timeout and scoped child kill/reap on timeout/interruption/start-receipt failure",
+    "historical literal text/token/count/stop/dimension signatures and free-running FP32 repetition checks",
+    "five-percent control drift and latency-target thresholds; default_promotion remains false"
+  ],
+  "historical_baseline": {
+    "path": "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-compact.json",
+    "sha256": "6428d02a71874ab68d2dc9021bab95601a72b03fc0fee15d4c0ac57e8052a13d",
+    "recorded_binary_sha256": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+    "mode": {
+      "execution": "independent_prefill_joint_decode",
+      "batch_size": 1,
+      "active_batch_size": 1,
+      "cache_layout": "compact",
+      "weight_layout": "unpacked"
+    },
+    "runtime": {
+      "threads": 16,
+      "backend": "avx2",
+      "precision": "fp32",
+      "warmup": 2,
+      "repetitions": 3,
+      "max_dimension": 1536,
+      "max_new_tokens": 4096,
+      "min_dimension": 64
+    },
+    "output_tokens": 1140,
+    "finish_reason": "eos",
+    "matching_mode_checked_without_executing_validator": true
+  },
+  "single_page_limit": "The joint API receives one image and follows Runner.recognize_batch_with_trace singleton -> recognize_with_trace; runner and benchmark example source hashes match the saved control build. This is no evidence of multirow joint-decode performance.",
+  "tests": {
+    "rerun_by_reviewer": false,
+    "parent_reported_passed": 8,
+    "source_inspected_new_test": "test_real_compact_baseline_and_wrong_cache_rejection verifies actual compact baseline then rejects cache_layout=expanded"
+  },
+  "bound_small_files_before_after": {
+    "experiments/profiling/benchmark_candidate.py": "1b534d3cb35f66e66a94a1627390b10b08fa09bee773cd6cda6841dbb531f2fe",
+    "experiments/profiling/benchmark_compact_candidate.py": "e863fe08fd116664f9f20511b441c69a159c6a98f7d706c242ee9418e940ac0c",
+    "experiments/profiling/test_benchmark_compact_candidate.py": "81610a5c364d7fe3ac8a8cb1b8d61697c6e30e9ca1fbf10af63c4d77d8c1c60e",
+    "scripts/realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "src/runner.rs": "65dd2d38b42a7333f90a86e6f16aa922e976a2590f4bb8aef169727918b6ac49",
+    "examples/ocr_bench.rs": "748d231586bf3b3481a74cdce08ebcefd8827ba35cb43a889b71e125e7ed7c91",
+    "reference/benchmarks/realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "artifacts/builds/ocr-bench-fullpages-v2-windows/build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+    "artifacts/benchmarks/fullpages-b1-window-v1/fullpages-b1-compact.json": "6428d02a71874ab68d2dc9021bab95601a72b03fc0fee15d4c0ac57e8052a13d"
+  },
+  "performance_claim": false,
+  "new_plan_reviewed": false
+}

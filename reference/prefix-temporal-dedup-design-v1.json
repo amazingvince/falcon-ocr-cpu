@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "source_review_only_not_implemented",
+  "created_utc": "2026-09-20T09:50:56.601915+00:00",
+  "sources": {
+    "src/config.rs": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "src/model.rs": "a048d6d618fc800c8331cb1d8eae51ced65d813d93784391b65c77c02cfd2fe6",
+    "src/kernels.rs": "19f1f18e164fffcab63dd1d747aae76f3a4a75dfcc15edebacd46b5dc32f7f16",
+    "artifacts/model/modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+    "artifacts/model/rope.py": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+    "reference/functional-batch-v1-lock.json": "c9ba1bcbadb7ffe8865aa8a149a75fb239053fb79955d86083c7a28b4de3fb72",
+    "reference/prefix-temporal-dedup-design-v1.md": "69d8a554838a4dfd7daa8fbb9eb7971c3cc99e23927bdd29ef39d02e8bfde181"
+  },
+  "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+  "dimensions": {
+    "query_heads": 16,
+    "kv_heads": 8,
+    "head_dim": 64,
+    "temporal_channels": 32,
+    "spatial_channels": 32,
+    "layers": 22
+  },
+  "source_conclusion": "Paired key heads retain identical temporal halves after width64 RMS and head-independent temporal RoPE; spatial halves must remain query-head-specific. Parent byte audit also confirms bit-exact reconstruction for the pinned saved smoke trace.",
+  "arithmetic_contract": "Preserve the original selected dot64 accumulator topology, one final scaling, all softmax/PV/sink ordering; do not add independent dot32 or GEMM-K32 outputs.",
+  "prefill_design": "Borrow existing expanded work.k for unchanged compact attention during full-prefix prefill, storing only split persistent K; generic continuation would need separately verified bounded complete-key gathering.",
+  "analytic_bytes": {
+    "per_prefix_per_layer_current": 6144,
+    "per_prefix_per_layer_candidate": 5120,
+    "mixed_b4_prefix_tokens": 17184,
+    "mixed_b4_reserved_generated_tokens": 16384,
+    "mixed_b4_current_compact": 3799121920,
+    "mixed_b4_candidate": 3412000768,
+    "mixed_b4_saving": 387121152
+  },
+  "implementation_changed": false,
+  "inference_executed": false,
+  "timing_executed": false,
+  "limits": [
+    "Source-derived invariant only; no candidate exists yet.",
+    "No measured peak memory, allocation, latency or bandwidth claim.",
+    "No BF16 implementation or GPU tolerance qualification."
+  ],
+  "independently_reviewed_byte_audit": {
+    "report": "reference/prefix-temporal-sharing-byte-audit-v2.json",
+    "report_sha256": "a63f7afa98369db4ce8dc0640fba41f910620997b0fd62ef74c54753411c44c0",
+    "all_recorded_file_hashes_revalidated": true,
+    "tensors": 748,
+    "prefix_rows": 144,
+    "decode_steps": 16,
+    "distinct_spatial_halves": 22528,
+    "review": "Reconstruction source and record inventory inspected; all v2 source/input bindings independently rehashed. No new kernel or inference run. Author fixed the reported Python -O assertion bypass with an explicit optimized-interpreter rejection and preserved v1 evidence."
+  }
+}

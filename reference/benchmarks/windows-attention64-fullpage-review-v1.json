@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "windows-attention64-fullpage-independent-review-v1",
+  "status": "passed_saved_result_review",
+  "plan_sha256": "38d1fa812e0cf2d78a05355593f6d236fafdc018d5398754e8c9bb0674e63c28",
+  "checks": 584,
+  "bound_file_count": 27,
+  "inputs_sha256": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\review_candidate_results.py": "558b2c05bb520fe4c871ca09b5a54e73ed2ce344a32403ce30b7b91899a3d958",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\plan.json": "38d1fa812e0cf2d78a05355593f6d236fafdc018d5398754e8c9bb0674e63c28",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\comparison.json": "213984ecbc284b9c8d907a46ca724e138b1695afc0feab52f1077356acd8a742",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\benchmark_candidate.py": "1b534d3cb35f66e66a94a1627390b10b08fa09bee773cd6cda6841dbb531f2fe",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\scripts\\realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\protocol-source.zip": "053605e3a86191d2cd841d306e1695b9dbf72a361e221b87d65149f04df67ad5",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\fullpages-b1-window-v1\\fullpages-b1-sequential-a.json": "00c0fbeb6910bd20b3cd76276fe93048eee699808d2731cf13e08623477e299e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-v2\\benchmark-build\\build.json": "cde63eeebb2eebad095425a5b7a1c3a94eef7b20ac7bef540366b84e4f030d6c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench.exe": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\source.zip": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-v2\\benchmark-build\\ocr_bench.exe": "bcfa0134f33ff8fa75459a16c8f00f62618d6e069ed57e6f533da8cc12d4c1f1",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-v2\\benchmark-build\\source.zip": "8f2b18a22462f9caf8b6f8919365f967f250f83b7cba943a6e23c74e64b604d0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\execution-start.json": "ab6db4d510937ad26502a5b9c604dee75da3d8e60c397021235cb9c636a771c8",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-before.json": "35cd696004ed95783e1ccc1c296a03aefd819fd5f499803c731bfbd06df605d8",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-before.execution.json": "c713cc603963256ec40b43b71805f3ba19b134dc27725a05aac659e577393f1d",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-before.start.json": "88f51b4daee38f66c245ad312c68ad55733c36e5fb79906f26c337cf7d14cd4b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-before.log": "b22dcc46a4e98e1bd2ebded878259860b12597f3c199d67c290f0bf32a508ff4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\candidate.json": "1162c7c02b6408d9a403e0fe885d589af84e4e09fbedb7d0d702332dabdb22b4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\candidate.execution.json": "84a7e124e7b8929ada67383aa6111b7c8770edeb10014b5e8268bf7c2292a873",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\candidate.start.json": "b050a45c8ccace91e9101adafbc4b5d9c5c4a95d53a03ac3abb18428dafd15b6",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\candidate.log": "acf61d34180e9dcaaf4387ee344725194c6efe7e3f8406b7feeea62bd6984acd",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-after.json": "0ff10ea03001ffa575d0eefc8471a7740e0dbd6d38db934416374f0596f12f7b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-after.execution.json": "d82c92ecbb46c654cf297ad3ec07506d4d003387b270f5f0f24c3d07b7f0aa3c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-after.start.json": "d1dee4806e0d1743e447b8f936d0cd6709918756fb1044a5ca1fabb1f90cf0c3",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-fullpage-window-v1\\control-after.log": "ffc831cd5d53c9de05ecf8865f5243d924c29e55372ba97a02cfa8812ff6a9ad"
+  },
+  "all_bound_files_unchanged": true,
+  "measured_outputs_checked": 9,
+  "output_tokens_each": 1140,
+  "exact_literal_text_stops_counts_dimensions": true,
+  "exact_token_vector_per_case": true,
+  "token_ids_storage": "One stored vector per case; the bound compiled harness asserts every measured repetition equals that vector. Literal text/stop/count/dimensions are independently stored and checked for all9 repetitions.",
+  "source_changes": [
+    "src/kernels.rs"
+  ],
+  "compiler_and_selected_build_environment_match_except_target": true,
+  "protocol_archive_verified": true,
+  "three_processes_exit_zero_without_overlap": true,
+  "results": [
+    {
+      "name": "control-before",
+      "median_ms": 75570.4038,
+      "samples_ms": [
+        75494.9575,
+        75726.6889,
+        75570.4038
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 54.546499999999995,
+        "prefill_ms": 10697.6131,
+        "decode_ms": 64754.48009999999,
+        "total_ms": 75570.3953
+      },
+      "pid": 118288
+    },
+    {
+      "name": "candidate",
+      "median_ms": 68444.3414,
+      "samples_ms": [
+        68544.8441,
+        68334.44110000001,
+        68444.3414
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 54.5674,
+        "prefill_ms": 12707.2777,
+        "decode_ms": 55617.4894,
+        "total_ms": 68444.3367
+      },
+      "pid": 137552
+    },
+    {
+      "name": "control-after",
+      "median_ms": 72931.0142,
+      "samples_ms": [
+        72931.0142,
+        73017.58510000001,
+        72724.7132
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 56.7886,
+        "prefill_ms": 12564.226200000001,
+        "decode_ms": 60276.5088,
+        "total_ms": 72931.0051
+      },
+      "pid": 7836
+    }
+  ],
+  "control_drift_percent": -3.4926233912752958,
+  "candidate_latency_reduction_percent": {
+    "control_before": 9.429700043497713,
+    "control_after": 6.151940774738329
+  },
+  "whole_page_stability_pass": true,
+  "target_met_in_this_page": true,
+  "control_stage_drift_percent": {
+    "prefill_ms": 17.44887464662561,
+    "decode_ms": -6.915307316319552
+  },
+  "phase_instability_retained": true,
+  "default_promotion": false,
+  "limitations": [
+    "One page, one control/candidate/control bracket and three measured repetitions per process; this does not establish broad workload, batch or platform promotion.",
+    "Control prefill rises from10.6976s to12.5642s while decode falls from64.7545s to60.2765s. Whole-page drift passes but phase timing is unstable; candidate prefill12.7073s/decode55.6175s cannot support clean phase-isolated causal attribution.",
+    "Stage medians need not sum to the median of total time because different repetitions can supply each median.",
+    "Two warmups per process are unmeasured and not independently exported.",
+    "Model/image bytes were not rehashed in this bounded review; their frozen metadata joins and the completed capture's existing input validation are retained.",
+    "No inference, ETL scan, tests or builds were run. Only small metadata/source/archive and explicit executable identities were read and hashed."
+  ]
+}

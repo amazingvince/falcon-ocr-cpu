@@ -1,0 +1,71 @@
+{
+  "recorded_utc": "2026-09-20T13:43:19.047408+00:00",
+  "sample_seconds": 10,
+  "system_cpu_percent": 4.0,
+  "logical_cpus": 32,
+  "available_physical_bytes": 34100912128,
+  "c_drive_free_bytes": 8415744000,
+  "top_cpu_processes": [
+    {
+      "pid": 0,
+      "name": "System Idle Process",
+      "cpu_seconds_between_process_snapshots": 446.046875
+    },
+    {
+      "pid": 116944,
+      "name": "python.exe",
+      "cpu_seconds_between_process_snapshots": 4.65625
+    },
+    {
+      "pid": 29068,
+      "name": "cam_helper.exe",
+      "cpu_seconds_between_process_snapshots": 2.34375
+    },
+    {
+      "pid": 134256,
+      "name": "ChatGPT.exe",
+      "cpu_seconds_between_process_snapshots": 1.953125
+    },
+    {
+      "pid": 34708,
+      "name": "dwm.exe",
+      "cpu_seconds_between_process_snapshots": 1.828125
+    },
+    {
+      "pid": 48084,
+      "name": "Taskmgr.exe",
+      "cpu_seconds_between_process_snapshots": 1.796875
+    },
+    {
+      "pid": 125616,
+      "name": "RuneLite.exe",
+      "cpu_seconds_between_process_snapshots": 1.4375
+    },
+    {
+      "pid": 68920,
+      "name": "ChatGPT.exe",
+      "cpu_seconds_between_process_snapshots": 1.203125
+    },
+    {
+      "pid": 4,
+      "name": "System",
+      "cpu_seconds_between_process_snapshots": 1.0
+    },
+    {
+      "pid": 29304,
+      "name": "Discord.exe",
+      "cpu_seconds_between_process_snapshots": 0.734375
+    },
+    {
+      "pid": 40860,
+      "name": "Spotify.exe",
+      "cpu_seconds_between_process_snapshots": 0.4375
+    },
+    {
+      "pid": 102252,
+      "name": "firefox.exe",
+      "cpu_seconds_between_process_snapshots": 0.40625
+    }
+  ],
+  "scope": "Read-only preliminary prelaunch host sample while the lightweight quality evidence review was finishing. System CPU percentage uses psutil interval=10; per-process CPU deltas span both enumeration passes as well and are not exactly a ten-second rate. No process terminated or system setting changed. This does not establish absence of interference during the benchmark."
+}

@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "status": "read_only_diagnosis_of_preserved_prelaunch_rejection",
+  "input_sha256": {
+    "artifacts\\reference\\bf16-ptx-observer-v1\\observer.sass": "4b8211636e01795a316ec33514351c659d97c1f9818b0c8dd914787b037f58dc",
+    "artifacts\\reference\\bf16-ptx-observer-v1\\original.sass": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d",
+    "artifacts\\reference\\bf16-ptx-observer-v1\\observer.ptx": "46fa0c3e0586e71d7a26f3dede80da363adceeddd4875101bfd114972f7317c2",
+    "artifacts\\reference\\bf16-ptx-observer-v1\\restored-original.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "artifacts\\reference\\bf16-ptx-observer-v1\\report.json": "c0f06b09d76daa5e34bcda6a5c0d5a6811873d79440ab0eb4a719fad9b35a501",
+    "artifacts\\reference\\bf16-ptx-observer-v1\\mapping.json": "f73894756d9e69623b23a768de937ef38d933552db062d12bd9cb7afb3b299fd"
+  },
+  "fadd_source_location_delta": [
+    {
+      "source_location": "//## File \"/home/amazi/falcon-ocr-rust-reference/cache/torchinductor/z6/cz65pr36p6kwo32xlxrgntnqfy4k3a3bkqcpwbspasdxmv2e5ncz.py\", line 416",
+      "original": 128,
+      "observer": 129
+    }
+  ],
+  "instructions": [
+    {
+      "address_hex": "1c360",
+      "line_1based": 45842,
+      "instruction": "/*1c360*/                   FSEL R62, R62, -INF , P4 ;"
+    },
+    {
+      "address_hex": "1db40",
+      "line_1based": 46415,
+      "instruction": "/*1db40*/                   FSEL R228, R146, RZ, P3 ;"
+    },
+    {
+      "address_hex": "1de30",
+      "line_1based": 46473,
+      "instruction": "/*1de30*/               @P6 STG.E.64 [R28.64+0x1440], R228 ;"
+    },
+    {
+      "address_hex": "1e390",
+      "line_1based": 46563,
+      "instruction": "/*1e390*/                   FADD R146, R62, -R228.reuse ;"
+    },
+    {
+      "address_hex": "1e400",
+      "line_1based": 46570,
+      "instruction": "/*1e400*/                   MUFU.EX2 R146, R146 ;"
+    },
+    {
+      "address_hex": "1e4a0",
+      "line_1based": 46581,
+      "instruction": "/*1e4a0*/                   FADD R11, R146, R152 ;"
+    },
+    {
+      "address_hex": "1e840",
+      "line_1based": 46676,
+      "instruction": "/*1e840*/                   FADD R110, R62, -R228 ;"
+    },
+    {
+      "address_hex": "1ed20",
+      "line_1based": 46775,
+      "instruction": "/*1ed20*/                   IMAD.MOV.U32 R56, RZ, RZ, R110 ;"
+    },
+    {
+      "address_hex": "1ee50",
+      "line_1based": 46794,
+      "instruction": "/*1ee50*/               @P1 STG.E.64 [R26.64+0x9c40], R56 ;"
+    },
+    {
+      "address_hex": "1eec0",
+      "line_1based": 46801,
+      "instruction": "/*1eec0*/                   IMAD.MOV.U32 R56, RZ, RZ, R40 ;"
+    },
+    {
+      "address_hex": "1fc70",
+      "line_1based": 47020,
+      "instruction": "/*1fc70*/               @P0 STG.E.64 [R26.64+0x240], R62 ;"
+    },
+    {
+      "address_hex": "1fd60",
+      "line_1based": 47035,
+      "instruction": "/*1fd60*/               @P0 STG.E.64 [R26.64+0x440], R110 ;"
+    },
+    {
+      "address_hex": "1fff0",
+      "line_1based": 47076,
+      "instruction": "/*1fff0*/                   IMAD.MOV.U32 R51, RZ, RZ, R110 ;"
+    },
+    {
+      "address_hex": "20060",
+      "line_1based": 47083,
+      "instruction": "/*20060*/                   MOV R120, R51 ;"
+    },
+    {
+      "address_hex": "201b0",
+      "line_1based": 47104,
+      "instruction": "/*201b0*/                   LDL.LU.64 R110, [R1+0x968] ;"
+    },
+    {
+      "address_hex": "202c0",
+      "line_1based": 47121,
+      "instruction": "/*202c0*/                   IMAD.MOV.U32 R64, RZ, RZ, R51 ;"
+    },
+    {
+      "address_hex": "20390",
+      "line_1based": 47134,
+      "instruction": "/*20390*/               @P5 STG.E.64 [R26.64+0x2fc40], R120 ;"
+    },
+    {
+      "address_hex": "203d0",
+      "line_1based": 47138,
+      "instruction": "/*203d0*/               @P6 STG.E.64 [R26.64+0x39440], R64 ;"
+    },
+    {
+      "address_hex": "20400",
+      "line_1based": 47141,
+      "instruction": "/*20400*/                   IMAD.MOV.U32 R120, RZ, RZ, R41 ;"
+    },
+    {
+      "address_hex": "20450",
+      "line_1based": 47146,
+      "instruction": "/*20450*/                   IMAD.MOV.U32 R64, RZ, RZ, R41 ;"
+    },
+    {
+      "address_hex": "22160",
+      "line_1based": 47677,
+      "instruction": "/*22160*/               @P0 IMAD.MOV.U32 R51, RZ, RZ, 0x1 ;"
+    }
+  ],
+  "same_operand_producers": {
+    "R62": "FSEL at0x1c360; value copied to observer post_mod_log2 field at0x1fc70/+0x240",
+    "R228": "FSEL at0x1db40; value copied to observer maximum_masked field at0x1de30/+0x1440",
+    "unchanged_between_duplicate_adds": true,
+    "intervening_control_transfer": false
+  },
+  "unambiguous_original_ptx_mapping": {
+    "post_mod_log2": "%r1795",
+    "masked_maximum": "%r2086",
+    "subtraction": "sub.f32 %r2099, %r1795, %r2086",
+    "native_exp2": "ex2.approx.ftz.f32 %r2163, %r2099",
+    "native_reduction_first_pair": "add.f32 %r2226, %r2163, %r2164",
+    "duplicate_debug_store_offsets": [
+      1088,
+      40000,
+      195648,
+      234560
+    ],
+    "field": "masked-loop exp2_argument_f32",
+    "probes": [
+      [
+        0,
+        13,
+        1
+      ],
+      [
+        0,
+        13,
+        2
+      ],
+      [
+        19,
+        41,
+        6
+      ],
+      [
+        19,
+        41,
+        5
+      ]
+    ],
+    "columns": [
+      0,
+      2,
+      4,
+      6
+    ]
+  },
+  "candidate_native_consumer": "0x1e390 FADD R146,R62,-R228 feeds0x1e400 MUFU.EX2 R146,R146, then0x1e4a0 native reduction FADD. The virtual argument is overwritten in that machine register by its native exp2 result.",
+  "candidate_duplicate_consumer": "0x1e840 repeats FADD R110,R62,-R228 with the same unchanged source definitions and instruction modifiers. Its live value feeds four observer STG.E.64 writes, directly at+0x440 and through integer copies at+0x9c40,+0x2fc40,+0x39440; no floating-point use of this duplicated result was found before its aliases are overwritten.",
+  "conclusion": "The single additional FADD is compiler rematerialization of the observed subtraction for debug-store consumers. This localized evidence does not show a changed original denominator recurrence. It does not prove all candidate machine dependencies are identical and does not overturn the failed frozen inventory gate.",
+  "limits": [
+    "No observer kernel was launched and no runtime output/intermediate acceptance exists.",
+    "Cross-allocation physical register matching of the entire original and candidate SASS was not established; the mapped original operation is identified through restored PTX and exact observer field offsets.",
+    "Same source operands and one extra FADD explain this inventory difference only; other machine scheduling/spill changes are not qualified by this local analysis."
+  ],
+  "possible_future_action_if_separately_authorized": "A narrowly reduced prospective observation could omit only masked-loop debug stores of virtual register%r2099, explicitly making those four columns unavailable at the four affected probes. That may remove this rematerialization pressure, but no success is predicted: new register allocation can differ. Any future candidate must retain the unchanged inventory/full-output gates and receive fresh independent review. No such candidate was prepared, assembled or executed.",
+  "no_new_candidate": true,
+  "no_new_assembler_or_gpu_calls": true,
+  "input_window_unchanged": {
+    "artifacts\\reference\\bf16-ptx-observer-v1\\observer.sass": true,
+    "artifacts\\reference\\bf16-ptx-observer-v1\\original.sass": true,
+    "artifacts\\reference\\bf16-ptx-observer-v1\\observer.ptx": true,
+    "artifacts\\reference\\bf16-ptx-observer-v1\\restored-original.ptx": true,
+    "artifacts\\reference\\bf16-ptx-observer-v1\\report.json": true,
+    "artifacts\\reference\\bf16-ptx-observer-v1\\mapping.json": true
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "prepared_reviewed_released_to_gpu_owner_not_executed_by_author",
+  "created_utc": "2026-09-20T11:26:40.116254+00:00",
+  "source_hashes": {
+    "experiments/linear/export_owned_workspace.py": "d64cbeb733fcae1583cabffe5e1925cff379a26fbea178dce9a555633958d6ad",
+    "experiments/linear/workspace_observation.py": "ff7bdf48c3b1d534043989932771bfa6139f8bd9094388d00681d913e5cfc380",
+    "experiments/linear/test_workspace_observation.py": "e06a67524cd99b2e63cc9cc970b1d5999da48dfde3730793ffe552e705393d0e",
+    "experiments/linear/OWNED-WORKSPACE.md": "92f20e9d16c2f5b89004318dcca6a7b57367cf5692ed239cacb8915ecc533aee"
+  },
+  "host_tests": {
+    "command": "python -m unittest discover -s experiments/linear -p test_workspace_observation.py -v",
+    "tests": 13,
+    "passed": true,
+    "gpu_import_or_execution": false
+  },
+  "independent_review": {
+    "reviewer": "preprocessing",
+    "read_only": true,
+    "independent_native_host_tests": 13,
+    "all_passed": true,
+    "source_hashes_unchanged": true,
+    "finding_closed": "Preserve the exact validated worker/log/artifact digests through final closure; regression rejects mutation immediately after the gate."
+  },
+  "target": "prefill.layer.12.w2",
+  "workspace_bytes": 33554432,
+  "canary_byte": 165,
+  "ordered_modes": [
+    "control with 3 warmups and 1 profiled original call",
+    "coded basis 0",
+    "coded basis 1",
+    "coded basis 2"
+  ],
+  "prospective_refinement": "Before GPU execution, unit weights were replaced with one nonzero exact channel code j+1; input row r remains constant r+1. Exact output (r+1)*(j+1), maximum110592. Three groups still cover every K index0..2303.",
+  "gates": [
+    "exact real or analytic output bits",
+    "same actual logged SGEMM/configuration/workspace/alignment",
+    "same ordered kernel names/grids/blocks",
+    "same pinned loaded libraries",
+    "finalized logs before next worker",
+    "complete fixed-layout agreement before conditional K membership"
+  ],
+  "interpretation": "Only offset0 little-endian F32 [14,144,768] is tested. Failure is preserved; no alternative layout/split search. Product-code collisions and no accumulation-order evidence remain explicit.",
+  "invocation": "scripts/run_reference.sh --owned-linear-workspace --output artifacts/reference/linear-owned-workspace-fp32-v1",
+  "gpu_execution_owner": "gpu_reference",
+  "production_changes": false,
+  "gpu_calls_by_author": false
+}

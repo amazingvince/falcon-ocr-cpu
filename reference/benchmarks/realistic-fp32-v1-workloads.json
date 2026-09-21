@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "name": "realistic-fp32-v1",
+  "selection_policy": "Frozen from visual content and source dimensions, without consulting model-output lengths, agreement or timings. Expected short/long text is a workload hypothesis; report observed lengths and stops without dropping outliers.",
+  "source_locks": {
+    "reference/serving-fullpages-v1-lock.json": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+    "reference/original-supplement-v1-lock.json": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+    "reference/original-supplement-v1-visual-review.json": "4a79273aff01f7c01cf340690b38856d702cf2f64d035d6a86327239b9de2c31"
+  },
+  "model": {
+    "directory": "artifacts/model",
+    "revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "assets": {
+      "model.safetensors": {
+        "sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+        "bytes": 1079789464
+      },
+      "config.json": {
+        "sha256": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+        "bytes": 747
+      },
+      "tokenizer.json": {
+        "sha256": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+        "bytes": 5063163
+      },
+      "tokenizer_config.json": {
+        "sha256": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+        "bytes": 4352
+      }
+    }
+  },
+  "runtime": {
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 16,
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "warmup": 2,
+    "minimum_repetitions": 3,
+    "recommended_repetitions": 7,
+    "batches": [
+      1,
+      2,
+      4,
+      8
+    ]
+  },
+  "inputs": {
+    "prose": {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hyp.1092.pdf_1.jpg",
+      "category": "ordinary",
+      "source_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/source.jpg",
+      "source_sha256": "6c34770354f7cbcdab3fb611e7364d72c1f44bfb042ebe35c12e90fdc95db37f",
+      "canonical_path": "artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png",
+      "canonical_png_sha256": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "rgb_sha256": "093521696d923ee8d30cb5aec22bc635c0ad8e73aa5f40c85c2cf168cae87af2",
+      "width": 1653,
+      "height": 2339,
+      "selection_evidence": {
+        "review_id": "P003",
+        "status": "supported",
+        "evidence": "Single-column journal opening page has a substantial abstract and introduction in ordinary prose, without a table, displayed equation or code block.",
+        "source": "reference/corpus-v3-candidate-review.json"
+      },
+      "source_lock": "reference/serving-fullpages-v1-lock.json",
+      "prepared_dimensions_expected": [
+        1088,
+        1536
+      ],
+      "input_tokens_expected": 6544
+    },
+    "table": {
+      "id": "omnidocbench:docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "category": "tables",
+      "source_path": "artifacts/corpus/v3/2c243b31d36eb729/source.jpg",
+      "source_sha256": "e334e4f823c20f95d0edf976f798cd899cae9327fa2d38c7f1ca77bb03c1b5f1",
+      "canonical_path": "artifacts/corpus/v3/2c243b31d36eb729/canonical-rgb.png",
+      "canonical_png_sha256": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e",
+      "rgb_sha256": "86ad1eb5e4fceab0e8ea5acf2c992351c765ccecbeb9053cca804c050fbfa44c",
+      "width": 1575,
+      "height": 2048,
+      "selection_evidence": {
+        "review_id": "E102",
+        "status": "supported",
+        "evidence": "English scientific article is dominated by a long numeric comparison table above two short prose columns.",
+        "source": "reference/corpus-v2-visual-review.json"
+      },
+      "source_lock": "reference/serving-fullpages-v1-lock.json",
+      "prepared_dimensions_expected": [
+        1184,
+        1536
+      ],
+      "input_tokens_expected": 7120
+    },
+    "columns": {
+      "id": "omnidocbench:docstructbench_llm-raw-the-eye-o.O-Team%20Bravo%20-%20System%20Error.pdf_9.jpg",
+      "category": "multi_column",
+      "source_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/source.jpg",
+      "source_sha256": "2b7c8c3b12421bcae6561572bd8409b9bb013e8ed8ddc25e33dc23c298748d54",
+      "canonical_path": "artifacts/corpus/v3/f75c4a0b98e45ab3/canonical-rgb.png",
+      "canonical_png_sha256": "e900609f33a80d87830fd823ad2fd835628f3513ef63544e6d1571f9ecf11a2c",
+      "rgb_sha256": "882800899ed638b5cbba0e941bea78b25d3b3c5e1c80fc67328cd40661eb7a19",
+      "width": 1700,
+      "height": 2200,
+      "selection_evidence": {
+        "review_id": "E141",
+        "status": "supported",
+        "evidence": "English game manual has two clear parallel prose columns with colored headings and side decoration.",
+        "source": "reference/corpus-v2-visual-review.json"
+      },
+      "source_lock": "reference/serving-fullpages-v1-lock.json",
+      "prepared_dimensions_expected": [
+        1184,
+        1536
+      ],
+      "input_tokens_expected": 7120
+    },
+    "sparse-room": {
+      "id": "original-supplement-v1:sparse-room",
+      "category": "sparse",
+      "source_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "source_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "canonical_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "rgb_sha256": "807169bad826b3ac123db467b40dc664a33217d7365559f67d7d86561fd3f316",
+      "width": 1024,
+      "height": 768,
+      "selection_evidence": {
+        "id": "original-supplement-v1:sparse-room",
+        "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "One small line reading Room 204 near the center of an otherwise empty page.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "prepared_dimensions_expected": [
+        1024,
+        768
+      ],
+      "input_tokens_expected": 3088
+    },
+    "receipt-cafe": {
+      "id": "original-supplement-v1:receipt-cafe",
+      "category": "receipts",
+      "source_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "source_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "rgb_sha256": "4e0762711ef89570934412f2cc35a9f694c8b72b02e875dd62108f6535066066",
+      "width": 640,
+      "height": 960,
+      "selection_evidence": {
+        "id": "original-supplement-v1:receipt-cafe",
+        "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "Second narrow receipt has a different short item layout, explicit USD amounts, and consistent subtotal/tax/total, without clipped text.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "prepared_dimensions_expected": [
+        640,
+        960
+      ],
+      "input_tokens_expected": 2416
+    },
+    "blank-white": {
+      "id": "original-supplement-v1:blank-white",
+      "category": "blank",
+      "source_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "source_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "canonical_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "rgb_sha256": "88c8b8894136213781d61b7cd1a7c63c6ccc8501e83fff6cd1982f2e7ca48341",
+      "width": 1024,
+      "height": 1280,
+      "selection_evidence": {
+        "id": "original-supplement-v1:blank-white",
+        "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "Uniform white page with no visible labels or marks; the displayed contact-sheet label lies outside the source image.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "prepared_dimensions_expected": [
+        1024,
+        1280
+      ],
+      "input_tokens_expected": 5136
+    },
+    "receipt-market-clean": {
+      "id": "original-supplement-v1:receipt-market-clean",
+      "category": "receipts",
+      "source_path": "artifacts/supplement/original-v1/receipt-market-clean/canonical-rgb.png",
+      "source_sha256": "92dff18218e6dfcdfb546a8499bf38d5190733f32028db49946b959dbf8219e6",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-market-clean/canonical-rgb.png",
+      "canonical_png_sha256": "92dff18218e6dfcdfb546a8499bf38d5190733f32028db49946b959dbf8219e6",
+      "rgb_sha256": "7edcfef6178bad1d803e08b721e8502232dc2ef37900bbc98990d8634747c10e",
+      "width": 640,
+      "height": 1024,
+      "selection_evidence": {
+        "id": "original-supplement-v1:receipt-market-clean",
+        "canonical_png_sha256": "92dff18218e6dfcdfb546a8499bf38d5190733f32028db49946b959dbf8219e6",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "Narrow receipt with aligned item/quantity/amount columns, subtotal, tax, total, payment and change; all text is inside the page.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "prepared_dimensions_expected": [
+        640,
+        1024
+      ],
+      "input_tokens_expected": 2576
+    },
+    "rotation-090": {
+      "id": "original-supplement-v1:rotation-090",
+      "category": "rotation",
+      "source_path": "artifacts/supplement/original-v1/rotation-090/canonical-rgb.png",
+      "source_sha256": "0989c8fff8ecd943080155e8435312eef336c7d6f99dfc00c43396d81f3f3b92",
+      "canonical_path": "artifacts/supplement/original-v1/rotation-090/canonical-rgb.png",
+      "canonical_png_sha256": "0989c8fff8ecd943080155e8435312eef336c7d6f99dfc00c43396d81f3f3b92",
+      "rgb_sha256": "08b69343e8d725be00403b364a437dcf4c54cd5084e33d83b24f4636caf87d58",
+      "width": 960,
+      "height": 1280,
+      "selection_evidence": {
+        "id": "original-supplement-v1:rotation-090",
+        "canonical_png_sha256": "0989c8fff8ecd943080155e8435312eef336c7d6f99dfc00c43396d81f3f3b92",
+        "verdict": "approved_for_synthetic_diagnostics",
+        "evidence": "The complete upright note is rotated counterclockwise by 90 degrees; all lines remain inside the transposed page.",
+        "inspection": [
+          "contact_sheet"
+        ]
+      },
+      "source_lock": "reference/original-supplement-v1-lock.json",
+      "prepared_dimensions_expected": [
+        960,
+        1280
+      ],
+      "input_tokens_expected": 4816
+    }
+  },
+  "profiles": [
+    {
+      "name": "fullpages",
+      "order": [
+        "prose",
+        "table",
+        "columns"
+      ],
+      "selection_reason": "Three previously visually reviewed natural pages; batch1 is the full journal opening page. Higher batches cycle this fixed three-page order."
+    },
+    {
+      "name": "mixed-sparse-first",
+      "order": [
+        "sparse-room",
+        "table",
+        "receipt-cafe",
+        "prose",
+        "blank-white",
+        "columns",
+        "receipt-market-clean",
+        "rotation-090"
+      ],
+      "selection_reason": "Start with the smallest selected sparse context then a dense full page; add narrow receipts, blank content and a rotated page as batch grows."
+    },
+    {
+      "name": "mixed-page-first",
+      "order": [
+        "table",
+        "sparse-room",
+        "prose",
+        "receipt-cafe",
+        "columns",
+        "blank-white",
+        "rotation-090",
+        "receipt-market-clean"
+      ],
+      "selection_reason": "Same eight inputs reordered before measurement to place long-content pages first, exercising request order and unequal completion lengths."
+    }
+  ],
+  "schedule": [
+    {
+      "name": "sequential-a",
+      "execution": "sequential",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "expanded-a",
+      "execution": "joint",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "compact",
+      "execution": "joint",
+      "cache_layout": "compact",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "phase-packed",
+      "execution": "joint",
+      "cache_layout": "expanded",
+      "weight_layout": "phase-packed"
+    },
+    {
+      "name": "expanded-b",
+      "execution": "joint",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    },
+    {
+      "name": "sequential-b",
+      "execution": "sequential",
+      "cache_layout": "expanded",
+      "weight_layout": "unpacked"
+    }
+  ],
+  "comparison": {
+    "maximum_absolute_control_drift_percent": 5,
+    "minimum_target_latency_reduction_percent": 5,
+    "maximum_primary_latency_regression_percent": 5,
+    "required_output_match": [
+      "token_ids",
+      "text",
+      "finish_reason",
+      "output_tokens",
+      "input_tokens",
+      "width",
+      "height"
+    ],
+    "text_policy": "Literal benchmark decoder text in every measured sample; no replayed or inferred text equivalence."
+  },
+  "limitations": [
+    "Selection includes synthetic diagnostic pages and three natural pages; not a corpus accuracy or representative production-mixture claim.",
+    "The output cap can truncate pages; length stops are retained and compared, never treated as EOS.",
+    "No timings are recorded by this manifest; a source-bound fresh binary and explicit quiet execution are required."
+  ]
+}

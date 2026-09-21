@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "gpu_execution": false,
+  "kernel_records": [
+    {
+      "cache_key": "DFQ7SOOKEVMW4ZDWRYRCN7HK4BXCKWGDN6JK7QY4D5QFYJ4KOYRA",
+      "original_ptx": "/home/amazi/falcon-ocr-rust-reference/cache/triton/DFQ7SOOKEVMW4ZDWRYRCN7HK4BXCKWGDN6JK7QY4D5QFYJ4KOYRA/triton_tem_fused_flex_attention_0.ptx",
+      "ptx_copy": "artifacts/reference/bf16-mma-ptx/DFQ7SOOKEVMW4ZDWRYRCN7HK4BXCKWGDN6JK7QY4D5QFYJ4KOYRA.ptx",
+      "ptx_sha256": "d05139c56a808316777b0f0af409f67c988573bee2fef02249e4231d69d58d60",
+      "target": {
+        "backend": "cuda",
+        "arch": 89,
+        "warp_size": 32
+      },
+      "triton_version": "3.6.0",
+      "num_warps": 2,
+      "opcodes": {
+        "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 64
+      },
+      "first_accumulator_chain": [
+        {
+          "line": 832,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r338, %r339, %r340, %r341",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r338, %r339, %r340, %r341 }, { %r326, %r327, %r328, %r329 }, { %r330, %r331 }, { %r338, %r339, %r340, %r341 };"
+        },
+        {
+          "line": 856,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r338, %r339, %r340, %r341",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r338, %r339, %r340, %r341 }, { %r342, %r343, %r344, %r345 }, { %r346, %r347 }, { %r338, %r339, %r340, %r341 };"
+        },
+        {
+          "line": 868,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r338, %r339, %r340, %r341",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r338, %r339, %r340, %r341 }, { %r366, %r367, %r368, %r369 }, { %r370, %r371 }, { %r338, %r339, %r340, %r341 };"
+        },
+        {
+          "line": 880,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r338, %r339, %r340, %r341",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r338, %r339, %r340, %r341 }, { %r378, %r379, %r380, %r381 }, { %r382, %r383 }, { %r338, %r339, %r340, %r341 };"
+        }
+      ]
+    },
+    {
+      "cache_key": "FUO54TKCDVFRKAWX6ZKL5V74LBTXCFBF4DBDYNI64DGVKFZP77JQ",
+      "original_ptx": "/home/amazi/falcon-ocr-rust-reference/cache/triton/FUO54TKCDVFRKAWX6ZKL5V74LBTXCFBF4DBDYNI64DGVKFZP77JQ/triton_tem_fused_flex_attention_0.ptx",
+      "ptx_copy": "artifacts/reference/bf16-mma-ptx/FUO54TKCDVFRKAWX6ZKL5V74LBTXCFBF4DBDYNI64DGVKFZP77JQ.ptx",
+      "ptx_sha256": "32c7423c11ec30d8c9bb1c43f1106b2d1372254fa0432a49b0f45b1d54181221",
+      "target": {
+        "backend": "cuda",
+        "arch": 89,
+        "warp_size": 32
+      },
+      "triton_version": "3.6.0",
+      "num_warps": 2,
+      "opcodes": {
+        "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 64
+      },
+      "first_accumulator_chain": [
+        {
+          "line": 1351,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r320, %r321, %r322, %r323",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r320, %r321, %r322, %r323 }, { %r308, %r309, %r310, %r311 }, { %r312, %r313 }, { %r320, %r321, %r322, %r323 };"
+        },
+        {
+          "line": 1375,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r320, %r321, %r322, %r323",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r320, %r321, %r322, %r323 }, { %r324, %r325, %r326, %r327 }, { %r328, %r329 }, { %r320, %r321, %r322, %r323 };"
+        },
+        {
+          "line": 1387,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r320, %r321, %r322, %r323",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r320, %r321, %r322, %r323 }, { %r348, %r349, %r350, %r351 }, { %r352, %r353 }, { %r320, %r321, %r322, %r323 };"
+        },
+        {
+          "line": 1399,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r320, %r321, %r322, %r323",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r320, %r321, %r322, %r323 }, { %r360, %r361, %r362, %r363 }, { %r364, %r365 }, { %r320, %r321, %r322, %r323 };"
+        }
+      ]
+    },
+    {
+      "cache_key": "NUMXHWI6FORGSZJOV2LELDJQQ3KZBBRVQ3VZCPH25KZHKSJEJKIQ",
+      "original_ptx": "/home/amazi/falcon-ocr-rust-reference/cache/triton/NUMXHWI6FORGSZJOV2LELDJQQ3KZBBRVQ3VZCPH25KZHKSJEJKIQ/triton_tem_fused_flex_attention_0.ptx",
+      "ptx_copy": "artifacts/reference/bf16-mma-ptx/NUMXHWI6FORGSZJOV2LELDJQQ3KZBBRVQ3VZCPH25KZHKSJEJKIQ.ptx",
+      "ptx_sha256": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+      "target": {
+        "backend": "cuda",
+        "arch": 89,
+        "warp_size": 32
+      },
+      "triton_version": "3.6.0",
+      "num_warps": 4,
+      "opcodes": {
+        "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32": 256
+      },
+      "first_accumulator_chain": [
+        {
+          "line": 3521,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r824, %r825, %r826, %r827",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r824, %r825, %r826, %r827 }, { %r800, %r801, %r802, %r803 }, { %r808, %r809 }, { %r824, %r825, %r826, %r827 };"
+        },
+        {
+          "line": 3628,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r824, %r825, %r826, %r827",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r824, %r825, %r826, %r827 }, { %r828, %r829, %r830, %r831 }, { %r868, %r869 }, { %r824, %r825, %r826, %r827 };"
+        },
+        {
+          "line": 3676,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r824, %r825, %r826, %r827",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r824, %r825, %r826, %r827 }, { %r912, %r913, %r914, %r915 }, { %r920, %r921 }, { %r824, %r825, %r826, %r827 };"
+        },
+        {
+          "line": 3724,
+          "opcode": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32",
+          "destination": "%r824, %r825, %r826, %r827",
+          "text": "mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32 { %r824, %r825, %r826, %r827 }, { %r936, %r937, %r938, %r939 }, { %r944, %r945 }, { %r824, %r825, %r826, %r827 };"
+        }
+      ]
+    }
+  ],
+  "interpretation": "Cached BF16 Flex kernels target sm89 and use dense m16n8k16 BF16-to-F32 MMA with four chained instructions per 64-wide dot. PTX does not expose the internal sum order or rounding of each MMA instruction."
+}

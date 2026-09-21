@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "independent-saved-native-profile-capture-review",
+  "status": "passed_bounded_capture_review",
+  "created_utc": "2026-09-20T15:14:48.988666+00:00",
+  "capture_sha256": "5407d1cba6aa08e8ec4a5fa4afe0cd5126b5c07acf3c733bd1a92c7185f1a13b",
+  "plan_sha256": "f44883243e8d681d737319b517f215b1c179db12cb8659f7cca4453f00ae6733",
+  "checks_passed": 382,
+  "findings_blocking_capture": [],
+  "model_pid": 121604,
+  "output_checks": {
+    "completed_outputs": 3,
+    "literal_signatures_match_frozen_baseline": true,
+    "output_tokens_each": 1140,
+    "finish_reason": "eos",
+    "input_tokens": 6544,
+    "prepared_dimensions": [
+      1088,
+      1536
+    ],
+    "text_utf8_sha256": "ba5fda3411a50c6b9c578e4e6f39b03c1f4936ec6f2303651c2a9e2987287aa5",
+    "token_ids_canonical_json_sha256": "59714f21d4cfbfa690e22a52888a794a1b56cc7debcf1cc4b391b9df94bf7ad3",
+    "token_repetition_evidence": "Captured benchmark stores one sequence and rejects any differing measured repetition before writing; all three sample text/stop/dimensions/counts are independently compared."
+  },
+  "recorder_checks": {
+    "same_unique_instance": "FalconOcrCpu-c843f8c919cf4ccebfe813b69b6762a5",
+    "all_seven_tool_exit_codes": 0,
+    "owned_stop_saved": true,
+    "cancel_used": false,
+    "final_scoped_status_not_recording": true,
+    "no_watchdog_error": true,
+    "process_elapsed_seconds_diagnostic_only": 232.60975419986062,
+    "maximum_observed_folder_bytes": 733015236,
+    "collector_cap_bytes": 2147483648,
+    "loss_counters": {
+      "status-started": [
+        {
+          "field": "Dropped event",
+          "count": 0
+        },
+        {
+          "field": "Events Lost",
+          "count": 0
+        }
+      ],
+      "status-before-stop": [
+        {
+          "field": "Dropped event",
+          "count": 0
+        },
+        {
+          "field": "Events Lost",
+          "count": 0
+        }
+      ]
+    },
+    "separate_buffers_lost_counter_observed": false
+  },
+  "elevated_launch": {
+    "uac_dispatch_pid": 138572,
+    "python_child_pid": 95628,
+    "model_exit_code_observed": 0,
+    "launcher_recorded_exit_code": null,
+    "launcher_error": null,
+    "launcher_final_stdout_capture_digest_matches": true,
+    "limitation": "Launcher receipt records null exit_code; this review does not turn it into an observed zero. Model and all WPR tool exits are explicitly zero, and final stdout binds the completed capture."
+  },
+  "independently_checked_small_files_sha256": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\fullpage-profile-capture-v2-review.py": "62cccfd941b4eebbf9bfe60332388c3f6712a2c272555f09e56fceff67137a75",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\capture.json": "5407d1cba6aa08e8ec4a5fa4afe0cd5126b5c07acf3c733bd1a92c7185f1a13b",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\plan.json": "f44883243e8d681d737319b517f215b1c179db12cb8659f7cca4453f00ae6733",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\build.json": "e8009a665752b3b592c98022218daf5eb52ceba2fa9336c3b02c8f1cffe7ac56",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench.exe": "e9e625b51b8e6172f35907fdd22181f89ac5d95b6caff4ba388b8849a914a0db",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench.pdb": "19d3058d9d409c526839ca6c3387e7fafbd9a4addaf1e870d6b19ed5f58e9879",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\source.zip": "a085056d700e3db091716f7bb48665a806ee9afee019aa4dc4dc2482fa70da56",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\windows-fullpages-symbols-v1.json": "7e8398aabc236ba83cef03487b85553cffab0aeb63c2d2452da50f131699bc60",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\tools\\perfview-3.2.6\\PerfView.exe": "84b8523f7fb4783fd0baae6b080adb1b5aac388192145ad713e504c69954556d",
+    "C:\\Windows\\System32\\wpr.exe": "64f6d9f83a8b9f8c720870109a6374f650e3786f0ea3f6e3a6c02463257bbfc2",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\fullpages-b1-window-v1\\fullpages-b1-sequential-a.json": "00c0fbeb6910bd20b3cd76276fe93048eee699808d2731cf13e08623477e299e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\corpus\\v3\\3f294b5e60a0c2d4\\canonical-rgb.png": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\capture_windows.py": "f76706c35918ffef86a1273230783ef17503393dae10f97cb8a0236a093ea51b",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\protocol-source\\capture_windows.py": "f76706c35918ffef86a1273230783ef17503393dae10f97cb8a0236a093ea51b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\FalconOcrCpu.wprp": "e07559bb48cb15f3114dc11dfc93f6e22d4f64c513134f5ad4d1fa8dcc3f71be",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\protocol-source\\FalconOcrCpu.wprp": "e07559bb48cb15f3114dc11dfc93f6e22d4f64c513134f5ad4d1fa8dcc3f71be",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\README.md": "63abc599fc8c314710817c9e4520c825a10293df0a37d5ea38c6dc229f6c6f2b",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\protocol-source\\README.md": "63abc599fc8c314710817c9e4520c825a10293df0a37d5ea38c6dc229f6c6f2b",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\protocol-source.zip": "8d7287f7949aa4d4681e7ab03fb2a15ac4c517a126b8faf04b8163ddfde5d4f9",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\benchmark-process-start.json": "57d2066da5149fc6338a319f66ec71c92e2263c6411e627617c399e84160b544",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\benchmark.json": "9bf4d8ad97190911ec1e079654089cd9bebfdc49a3143d6dd62f70b44405d8f6",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\benchmark.log": "509b282d5fe8b215f9119a52351a70013fcdeecb91d97761975efcac0e032e7c",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\capture-start.json": "4fc18b24dc0ac7be58b09d6750a01b0f028ac69c526a7a713108a5032a09cf86",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\profile-details.command.json": "570a874cb24f435c578e3f8d1263a19b9e0f5d54bc051b3a84e5a1878fae6678",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\profile-details.log": "ca67f41abb8c0917e7efe750fd99a1b4e45e754291ca69651516787e1bb1678a",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\start.command.json": "4f33ccaed453da01bc816b0382f59a90fbaf22820b9dcdc669143019dc137183",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\start.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-after-stop.command.json": "879707378a6c0ce582e22090d172eed0e2b31317de9850604693651e3f3e4920",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-after-stop.log": "a77ba39043544bbf814bea3cb05b5ac87b89a8b56894548ab6ed3a07cf4b9ca3",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-before-stop.command.json": "c640f7ee2c3a5a862888dfc3d32f851cca9553a65a6013a5c8b5d98f54bd1336",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-before-stop.log": "b79c66315ae7c9638afe96c880c5a5f82a37e00337f770b75734a8dcb0a9766a",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-before.command.json": "b29a9ee272e590a406fd58de98dea1a1cab1da8facea93c0da36cbfc162ad8fb",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-before.log": "a77ba39043544bbf814bea3cb05b5ac87b89a8b56894548ab6ed3a07cf4b9ca3",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-started.command.json": "92f443c4c66897a438adb64f5e3eb25e8dbfd6674448051742ab6368524bcd37",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\status-started.log": "ee907721299ba216bd202b9ecf86161169957b380dfe3d35738f5983c4b966f7",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\stop-owned.command.json": "1d5e3f5e2e043a6a3b4ab2b6dad4e367bc4166ffbad8dc147ad1dfe4bedfdd00",
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\stop-owned.log": "56f7594e4d60953c950db6c9a06253129b7d11f145d55c129ff61fe31f466486",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\fullpage-profile-launch-v2\\launch.json": "15a13f106bc04f741907bf387306215172d8122bb74465af9313fe94be064237",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\fullpage-profile-dispatch-v2-retry1.json": "7df5da841d53d18e91356de00d792c89829adcf400edce1ddbd22f4bab574fb8",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\fullpage-profile-dispatch-v2.json": "cf8ab397fc4c3ef35e8adbf6ae4a4afc5926a15e19957ef50bc4ec53a8eeeebf",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\launch_elevated.ps1": "655387d16bd4f965b14053308dafdee2ae0f821bff434ab5682d78d90ce7b242",
+    "C:\\Users\\amazi\\mambaforge\\python.exe": "fe1aefef7d0942cccaa30df2a4aaea70ca8c56391f8fa2d91f35e1b8043e03b6",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\fullpage-profile-launch-v2\\stdout.log": "4c4aede8e8d16b39fdb57df85c8c2cdfe8f12273d746eb3fefc0e732912024f8",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\fullpage-profile-launch-v2\\stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "recorded_large_file_identities_not_rehashed_here": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\model.safetensors": {
+      "sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+      "independently_rehashed": false,
+      "reason": "Large pinned model file already checked by capture; bounded metadata review only."
+    },
+    "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\cpu.etl": {
+      "sha256": "3d6dd82b9f0e74fa36aa5f7a5dbcaf43d521c7532b57a810db3d8390cf41f03e",
+      "bytes_observed_by_stat_only": 803209216,
+      "independently_rehashed": false,
+      "reason": "Recorded capture hash inherited; actual trace hash/parsing delegated to root/TraceAudit."
+    }
+  },
+  "analysis_accepted_by_this_review": false,
+  "scope_limits": [
+    "No recorder, model, build, test, profile export or external tool was rerun.",
+    "ETL bytes were not opened or hashed in this review; only its existence/size and hash recorded by capture are bound. Root/TraceAudit owns actual ETL identity, exact PID/start/end and sample/loss coverage checks.",
+    "Model weights were not rehashed here; captured fixed model digest is inherited. Binary, PDB, small model assets, baseline, source archives and lifecycle/launch records were rehashed.",
+    "Zero live Dropped event/Events Lost counters do not independently establish zero missing stacks or buffers. Separate BuffersLost field was not recorded.",
+    "Resolved project symbols, unique ETW process selection, full actual trace lifetime and prospective >=99% attached-stack quality remain the separate analyzer gates.",
+    "No latency speedup, exact phase-boundary, numerical-parity or corpus-quality claim."
+  ]
+}

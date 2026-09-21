@@ -1,0 +1,1552 @@
+{
+  "schema_version": 1,
+  "dataset": "original-supplement-v1",
+  "page_count": 15,
+  "parent_count": 11,
+  "category_counts": {
+    "receipts": 3,
+    "blank": 2,
+    "sparse": 1,
+    "rotation": 4,
+    "multilingual": 5
+  },
+  "provenance": "Original short text and deterministic page recipes authored for this project; no external document images or passages, no model output used to select content.",
+  "source_terms": "Original fixture text and recipes may be used and redistributed with this project. DejaVu font license notice retained; font binaries are not copied into the artifact set.",
+  "font_license": {
+    "name": "Bitstream Vera license; DejaVu changes public domain",
+    "path": "artifacts/supplement/original-v1/FONT-LICENSE.txt",
+    "sha256": "3cecd09fa1d86ccf37802d0e67ac92e6d03ad46f40df522e8a664927273d039c"
+  },
+  "runtime": {
+    "pillow": "12.3.0",
+    "freetype2": "2.14.3",
+    "raqm": "0.10.5",
+    "harfbuzz": "14.2.1",
+    "fribidi": "1.0.13"
+  },
+  "fonts": {
+    "sans": {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    "mono": {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+      "sha256": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88"
+    }
+  },
+  "generator_sha256": "ab445ccc70f7753275157b22e3be1c2cad4dccf60c8f95d735f13b9874b2a3bf",
+  "rgb_policy": "Typeset directly into RGB; no EXIF; orthogonal variants use exact pixel transposes.",
+  "ground_truth_policy": "Exact authored logical Unicode text, NFC, LF between lines, trimmed outer whitespace. Empty files are intentional for truly blank pages. Spaces within receipt lines are retained.",
+  "comparison_policy": "Report separately from the 200 natural pages. Compare GPU/CPU discrete tokens and EOS independently of authored-text quality. For blank pages report exact empty/nonempty output and hallucinated character count, not CER with a zero denominator. Group derived variants by parent.",
+  "qualification": "Generated source/pixel/text freeze; visual review and GPU/CPU inference qualification are separate. Synthetic printed pages do not establish real scanned receipt robustness or broad multilingual accuracy.",
+  "limitations": [
+    "One typeface per layout; clear typesetting rather than real scans",
+    "Three orthogonal rotated variants share one upright text parent",
+    "Faint receipt shares its clean parent",
+    "Five non-English scripts/languages do not cover all scripts or fonts",
+    "No long-output, handwriting or arbitrary-angle rotation claim",
+    "No calibration split; diagnostic evaluation only"
+  ],
+  "pages": [
+    {
+      "id": "original-supplement-v1:receipt-market-clean",
+      "split": "supplemental_diagnostic",
+      "category": "receipts",
+      "source_family": "original-supplement-v1:receipt-market",
+      "parent_id": "original-supplement-v1:receipt-market",
+      "source_path": "artifacts/supplement/original-v1/receipt-market-clean/canonical-rgb.png",
+      "source_sha256": "92dff18218e6dfcdfb546a8499bf38d5190733f32028db49946b959dbf8219e6",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-market-clean/canonical-rgb.png",
+      "canonical_png_sha256": "92dff18218e6dfcdfb546a8499bf38d5190733f32028db49946b959dbf8219e6",
+      "rgb_sha256": "7edcfef6178bad1d803e08b721e8502232dc2ef37900bbc98990d8634747c10e",
+      "width": 640,
+      "height": 1024,
+      "ground_truth_path": "artifacts/supplement/original-v1/receipt-market-clean/ground-truth.txt",
+      "ground_truth_sha256": "0418a08445c20d86b142d140375fa613d2d45a7a0986e16f552a67c64efc21b9",
+      "expected_text": "PARKSIDE MARKET\nORIGINAL TEST RECEIPT\n20 SEP 2026  10:45\n\nITEM             QTY    AMOUNT\nAPPLES            2       3.00\nBREAD             1       2.40\nTEA               1       4.60\n\nSUBTOTAL                 10.00\nTAX                       0.80\nTOTAL                    10.80\nCASH                     20.00\nCHANGE                    9.20\n\nTHANK YOU",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "mono",
+        "font_size_px": 26,
+        "line_step_px": 51,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "PARKSIDE MARKET",
+            "bbox_xyxy": [
+              64,
+              70,
+              299,
+              89
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "ORIGINAL TEST RECEIPT",
+            "bbox_xyxy": [
+              64,
+              121,
+              393,
+              140
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "20 SEP 2026  10:45",
+            "bbox_xyxy": [
+              64,
+              172,
+              346,
+              191
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "ITEM             QTY    AMOUNT",
+            "bbox_xyxy": [
+              64,
+              274,
+              534,
+              296
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "APPLES            2       3.00",
+            "bbox_xyxy": [
+              64,
+              325,
+              534,
+              344
+            ]
+          },
+          {
+            "line_index": 6,
+            "text": "BREAD             1       2.40",
+            "bbox_xyxy": [
+              64,
+              376,
+              534,
+              395
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "TEA               1       4.60",
+            "bbox_xyxy": [
+              64,
+              427,
+              534,
+              446
+            ]
+          },
+          {
+            "line_index": 9,
+            "text": "SUBTOTAL                 10.00",
+            "bbox_xyxy": [
+              64,
+              529,
+              534,
+              548
+            ]
+          },
+          {
+            "line_index": 10,
+            "text": "TAX                       0.80",
+            "bbox_xyxy": [
+              64,
+              580,
+              534,
+              599
+            ]
+          },
+          {
+            "line_index": 11,
+            "text": "TOTAL                    10.80",
+            "bbox_xyxy": [
+              64,
+              631,
+              534,
+              650
+            ]
+          },
+          {
+            "line_index": 12,
+            "text": "CASH                     20.00",
+            "bbox_xyxy": [
+              64,
+              682,
+              534,
+              701
+            ]
+          },
+          {
+            "line_index": 13,
+            "text": "CHANGE                    9.20",
+            "bbox_xyxy": [
+              64,
+              733,
+              534,
+              752
+            ]
+          },
+          {
+            "line_index": 15,
+            "text": "THANK YOU",
+            "bbox_xyxy": [
+              64,
+              835,
+              205,
+              854
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:receipt-market-faint",
+      "split": "supplemental_diagnostic",
+      "category": "receipts",
+      "source_family": "original-supplement-v1:receipt-market",
+      "parent_id": "original-supplement-v1:receipt-market",
+      "source_path": "artifacts/supplement/original-v1/receipt-market-faint/canonical-rgb.png",
+      "source_sha256": "c30ab21d7a4bf183b133d026118b7ff437962f8b625c14d40d5a92b904b7f297",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-market-faint/canonical-rgb.png",
+      "canonical_png_sha256": "c30ab21d7a4bf183b133d026118b7ff437962f8b625c14d40d5a92b904b7f297",
+      "rgb_sha256": "a753d4002c5a6a594e8b353aa27258a46ff4edbc8ee9f4c07e8b590a31d9eb2a",
+      "width": 640,
+      "height": 1024,
+      "ground_truth_path": "artifacts/supplement/original-v1/receipt-market-faint/ground-truth.txt",
+      "ground_truth_sha256": "0418a08445c20d86b142d140375fa613d2d45a7a0986e16f552a67c64efc21b9",
+      "expected_text": "PARKSIDE MARKET\nORIGINAL TEST RECEIPT\n20 SEP 2026  10:45\n\nITEM             QTY    AMOUNT\nAPPLES            2       3.00\nBREAD             1       2.40\nTEA               1       4.60\n\nSUBTOTAL                 10.00\nTAX                       0.80\nTOTAL                    10.80\nCASH                     20.00\nCHANGE                    9.20\n\nTHANK YOU",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "mono",
+        "font_size_px": 26,
+        "line_step_px": 51,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          164,
+          164,
+          164
+        ],
+        "background_rgb": [
+          249,
+          249,
+          249
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "PARKSIDE MARKET",
+            "bbox_xyxy": [
+              64,
+              70,
+              299,
+              89
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "ORIGINAL TEST RECEIPT",
+            "bbox_xyxy": [
+              64,
+              121,
+              393,
+              140
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "20 SEP 2026  10:45",
+            "bbox_xyxy": [
+              64,
+              172,
+              346,
+              191
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "ITEM             QTY    AMOUNT",
+            "bbox_xyxy": [
+              64,
+              274,
+              534,
+              296
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "APPLES            2       3.00",
+            "bbox_xyxy": [
+              64,
+              325,
+              534,
+              344
+            ]
+          },
+          {
+            "line_index": 6,
+            "text": "BREAD             1       2.40",
+            "bbox_xyxy": [
+              64,
+              376,
+              534,
+              395
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "TEA               1       4.60",
+            "bbox_xyxy": [
+              64,
+              427,
+              534,
+              446
+            ]
+          },
+          {
+            "line_index": 9,
+            "text": "SUBTOTAL                 10.00",
+            "bbox_xyxy": [
+              64,
+              529,
+              534,
+              548
+            ]
+          },
+          {
+            "line_index": 10,
+            "text": "TAX                       0.80",
+            "bbox_xyxy": [
+              64,
+              580,
+              534,
+              599
+            ]
+          },
+          {
+            "line_index": 11,
+            "text": "TOTAL                    10.80",
+            "bbox_xyxy": [
+              64,
+              631,
+              534,
+              650
+            ]
+          },
+          {
+            "line_index": 12,
+            "text": "CASH                     20.00",
+            "bbox_xyxy": [
+              64,
+              682,
+              534,
+              701
+            ]
+          },
+          {
+            "line_index": 13,
+            "text": "CHANGE                    9.20",
+            "bbox_xyxy": [
+              64,
+              733,
+              534,
+              752
+            ]
+          },
+          {
+            "line_index": 15,
+            "text": "THANK YOU",
+            "bbox_xyxy": [
+              64,
+              835,
+              205,
+              854
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:receipt-cafe",
+      "split": "supplemental_diagnostic",
+      "category": "receipts",
+      "source_family": "original-supplement-v1:receipt-cafe",
+      "parent_id": "original-supplement-v1:receipt-cafe",
+      "source_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "source_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "rgb_sha256": "4e0762711ef89570934412f2cc35a9f694c8b72b02e875dd62108f6535066066",
+      "width": 640,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/receipt-cafe/ground-truth.txt",
+      "ground_truth_sha256": "9cd70e6338bb29b63f6729c4eaffdbce1d5d910d4e3ff6167f540c14bcf556d0",
+      "expected_text": "RIVER CAFE\nORIGINAL TEST RECEIPT\nORDER 018\n\nCOFFEE x2          USD  6.00\nSANDWICH           USD  7.50\n\nSUBTOTAL           USD 13.50\nTAX                USD  1.08\nTOTAL              USD 14.58\n\nPAID BY CARD\nPLEASE KEEP THIS COPY",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "mono",
+        "font_size_px": 26,
+        "line_step_px": 55,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "RIVER CAFE",
+            "bbox_xyxy": [
+              64,
+              70,
+              221,
+              89
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "ORIGINAL TEST RECEIPT",
+            "bbox_xyxy": [
+              64,
+              125,
+              393,
+              144
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "ORDER 018",
+            "bbox_xyxy": [
+              64,
+              180,
+              205,
+              199
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "COFFEE x2          USD  6.00",
+            "bbox_xyxy": [
+              64,
+              290,
+              502,
+              309
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "SANDWICH           USD  7.50",
+            "bbox_xyxy": [
+              64,
+              345,
+              502,
+              364
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "SUBTOTAL           USD 13.50",
+            "bbox_xyxy": [
+              64,
+              455,
+              502,
+              474
+            ]
+          },
+          {
+            "line_index": 8,
+            "text": "TAX                USD  1.08",
+            "bbox_xyxy": [
+              64,
+              510,
+              502,
+              529
+            ]
+          },
+          {
+            "line_index": 9,
+            "text": "TOTAL              USD 14.58",
+            "bbox_xyxy": [
+              64,
+              565,
+              502,
+              584
+            ]
+          },
+          {
+            "line_index": 11,
+            "text": "PAID BY CARD",
+            "bbox_xyxy": [
+              64,
+              675,
+              252,
+              694
+            ]
+          },
+          {
+            "line_index": 12,
+            "text": "PLEASE KEEP THIS COPY",
+            "bbox_xyxy": [
+              64,
+              730,
+              393,
+              749
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:blank-white",
+      "split": "supplemental_diagnostic",
+      "category": "blank",
+      "source_family": "original-supplement-v1:blank-white",
+      "parent_id": "original-supplement-v1:blank-white",
+      "source_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "source_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "canonical_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "rgb_sha256": "88c8b8894136213781d61b7cd1a7c63c6ccc8501e83fff6cd1982f2e7ca48341",
+      "width": 1024,
+      "height": 1280,
+      "ground_truth_path": "artifacts/supplement/original-v1/blank-white/ground-truth.txt",
+      "ground_truth_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_text": "",
+      "expected_empty_output": true,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Uniform RGB fill",
+        "rgb": [
+          255,
+          255,
+          255
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:blank-offwhite",
+      "split": "supplemental_diagnostic",
+      "category": "blank",
+      "source_family": "original-supplement-v1:blank-offwhite",
+      "parent_id": "original-supplement-v1:blank-offwhite",
+      "source_path": "artifacts/supplement/original-v1/blank-offwhite/canonical-rgb.png",
+      "source_sha256": "973635514016ab54abc91052496d3bf1b584dff74357fd5328f21bce13d3dc09",
+      "canonical_path": "artifacts/supplement/original-v1/blank-offwhite/canonical-rgb.png",
+      "canonical_png_sha256": "973635514016ab54abc91052496d3bf1b584dff74357fd5328f21bce13d3dc09",
+      "rgb_sha256": "e2e1f8a76d92de9a784db6adf355cf148e4c287d37d75e6cf333d3699c41929c",
+      "width": 1280,
+      "height": 1024,
+      "ground_truth_path": "artifacts/supplement/original-v1/blank-offwhite/ground-truth.txt",
+      "ground_truth_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_text": "",
+      "expected_empty_output": true,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Uniform RGB fill",
+        "rgb": [
+          247,
+          247,
+          247
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:sparse-room",
+      "split": "supplemental_diagnostic",
+      "category": "sparse",
+      "source_family": "original-supplement-v1:sparse-room",
+      "parent_id": "original-supplement-v1:sparse-room",
+      "source_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "source_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "canonical_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "rgb_sha256": "807169bad826b3ac123db467b40dc664a33217d7365559f67d7d86561fd3f316",
+      "width": 1024,
+      "height": 768,
+      "ground_truth_path": "artifacts/supplement/original-v1/sparse-room/ground-truth.txt",
+      "ground_truth_sha256": "14e7c925cf8a3f8885a90445d6ce6153d0b48c0439c387be40235aa5b62b6503",
+      "expected_text": "Room 204",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 34,
+        "line_step_px": 72,
+        "margin_px": 400,
+        "top_px": 350,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "Room 204",
+            "bbox_xyxy": [
+              400,
+              350,
+              573,
+              375
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:rotation-000",
+      "split": "supplemental_diagnostic",
+      "category": "rotation",
+      "source_family": "original-supplement-v1:rotation-library",
+      "parent_id": "original-supplement-v1:rotation-library",
+      "source_path": "artifacts/supplement/original-v1/rotation-000/canonical-rgb.png",
+      "source_sha256": "8309ced897e184bd9d6220b03c32532cc719a5378ebea4367d187e60d758ff01",
+      "canonical_path": "artifacts/supplement/original-v1/rotation-000/canonical-rgb.png",
+      "canonical_png_sha256": "8309ced897e184bd9d6220b03c32532cc719a5378ebea4367d187e60d758ff01",
+      "rgb_sha256": "26a0a0ea6134e185e319697f4bcdf2134edabc715d626333e82eda9cac7bad52",
+      "width": 1280,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/rotation-000/ground-truth.txt",
+      "ground_truth_sha256": "590a495a7d30970e4d7793b7c7e8eeebffcddda6849e35cd1ce6871583c83ff0",
+      "expected_text": "A note from the neighborhood library\n\nThe reading room opens at nine each morning.\nPlease return each book to its shelf after reading.\nQuiet conversation is welcome near the entrance.\nThe garden closes at six in the evening.\n\nThank you for keeping this shared space tidy.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 82,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "A note from the neighborhood library",
+            "bbox_xyxy": [
+              64,
+              70,
+              735,
+              104
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "The reading room opens at nine each morning.",
+            "bbox_xyxy": [
+              63,
+              234,
+              911,
+              268
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Please return each book to its shelf after reading.",
+            "bbox_xyxy": [
+              64,
+              316,
+              956,
+              350
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "Quiet conversation is welcome near the entrance.",
+            "bbox_xyxy": [
+              64,
+              398,
+              965,
+              430
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "The garden closes at six in the evening.",
+            "bbox_xyxy": [
+              63,
+              480,
+              783,
+              514
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "Thank you for keeping this shared space tidy.",
+            "bbox_xyxy": [
+              63,
+              644,
+              881,
+              678
+            ]
+          }
+        ],
+        "rotation_method": "Exact orthogonal pixel transpose; no interpolation",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:rotation-090",
+      "split": "supplemental_diagnostic",
+      "category": "rotation",
+      "source_family": "original-supplement-v1:rotation-library",
+      "parent_id": "original-supplement-v1:rotation-library",
+      "source_path": "artifacts/supplement/original-v1/rotation-090/canonical-rgb.png",
+      "source_sha256": "0989c8fff8ecd943080155e8435312eef336c7d6f99dfc00c43396d81f3f3b92",
+      "canonical_path": "artifacts/supplement/original-v1/rotation-090/canonical-rgb.png",
+      "canonical_png_sha256": "0989c8fff8ecd943080155e8435312eef336c7d6f99dfc00c43396d81f3f3b92",
+      "rgb_sha256": "08b69343e8d725be00403b364a437dcf4c54cd5084e33d83b24f4636caf87d58",
+      "width": 960,
+      "height": 1280,
+      "ground_truth_path": "artifacts/supplement/original-v1/rotation-090/ground-truth.txt",
+      "ground_truth_sha256": "590a495a7d30970e4d7793b7c7e8eeebffcddda6849e35cd1ce6871583c83ff0",
+      "expected_text": "A note from the neighborhood library\n\nThe reading room opens at nine each morning.\nPlease return each book to its shelf after reading.\nQuiet conversation is welcome near the entrance.\nThe garden closes at six in the evening.\n\nThank you for keeping this shared space tidy.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 90
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 82,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "A note from the neighborhood library",
+            "bbox_xyxy": [
+              64,
+              70,
+              735,
+              104
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "The reading room opens at nine each morning.",
+            "bbox_xyxy": [
+              63,
+              234,
+              911,
+              268
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Please return each book to its shelf after reading.",
+            "bbox_xyxy": [
+              64,
+              316,
+              956,
+              350
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "Quiet conversation is welcome near the entrance.",
+            "bbox_xyxy": [
+              64,
+              398,
+              965,
+              430
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "The garden closes at six in the evening.",
+            "bbox_xyxy": [
+              63,
+              480,
+              783,
+              514
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "Thank you for keeping this shared space tidy.",
+            "bbox_xyxy": [
+              63,
+              644,
+              881,
+              678
+            ]
+          }
+        ],
+        "rotation_method": "Exact orthogonal pixel transpose; no interpolation",
+        "rotation_counterclockwise_degrees": 90
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:rotation-180",
+      "split": "supplemental_diagnostic",
+      "category": "rotation",
+      "source_family": "original-supplement-v1:rotation-library",
+      "parent_id": "original-supplement-v1:rotation-library",
+      "source_path": "artifacts/supplement/original-v1/rotation-180/canonical-rgb.png",
+      "source_sha256": "5d4855b8f4832f854cde53dbdebae4d18f1e89f613310abdc8ba22e94b305d5c",
+      "canonical_path": "artifacts/supplement/original-v1/rotation-180/canonical-rgb.png",
+      "canonical_png_sha256": "5d4855b8f4832f854cde53dbdebae4d18f1e89f613310abdc8ba22e94b305d5c",
+      "rgb_sha256": "38cdbaa033f15e2b122de16deca349b37fe199cb432215f481b99bb36502e935",
+      "width": 1280,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/rotation-180/ground-truth.txt",
+      "ground_truth_sha256": "590a495a7d30970e4d7793b7c7e8eeebffcddda6849e35cd1ce6871583c83ff0",
+      "expected_text": "A note from the neighborhood library\n\nThe reading room opens at nine each morning.\nPlease return each book to its shelf after reading.\nQuiet conversation is welcome near the entrance.\nThe garden closes at six in the evening.\n\nThank you for keeping this shared space tidy.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 180
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 82,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "A note from the neighborhood library",
+            "bbox_xyxy": [
+              64,
+              70,
+              735,
+              104
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "The reading room opens at nine each morning.",
+            "bbox_xyxy": [
+              63,
+              234,
+              911,
+              268
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Please return each book to its shelf after reading.",
+            "bbox_xyxy": [
+              64,
+              316,
+              956,
+              350
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "Quiet conversation is welcome near the entrance.",
+            "bbox_xyxy": [
+              64,
+              398,
+              965,
+              430
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "The garden closes at six in the evening.",
+            "bbox_xyxy": [
+              63,
+              480,
+              783,
+              514
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "Thank you for keeping this shared space tidy.",
+            "bbox_xyxy": [
+              63,
+              644,
+              881,
+              678
+            ]
+          }
+        ],
+        "rotation_method": "Exact orthogonal pixel transpose; no interpolation",
+        "rotation_counterclockwise_degrees": 180
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:rotation-270",
+      "split": "supplemental_diagnostic",
+      "category": "rotation",
+      "source_family": "original-supplement-v1:rotation-library",
+      "parent_id": "original-supplement-v1:rotation-library",
+      "source_path": "artifacts/supplement/original-v1/rotation-270/canonical-rgb.png",
+      "source_sha256": "4f4ede248e4f0bfcf60d8fedb0606613fcaa0fa1af529c5a9810ff29545d667b",
+      "canonical_path": "artifacts/supplement/original-v1/rotation-270/canonical-rgb.png",
+      "canonical_png_sha256": "4f4ede248e4f0bfcf60d8fedb0606613fcaa0fa1af529c5a9810ff29545d667b",
+      "rgb_sha256": "b5bd1f0baca49f1307c7b24740d4a5525541456f0e05437362be60af72c4cb26",
+      "width": 960,
+      "height": 1280,
+      "ground_truth_path": "artifacts/supplement/original-v1/rotation-270/ground-truth.txt",
+      "ground_truth_sha256": "590a495a7d30970e4d7793b7c7e8eeebffcddda6849e35cd1ce6871583c83ff0",
+      "expected_text": "A note from the neighborhood library\n\nThe reading room opens at nine each morning.\nPlease return each book to its shelf after reading.\nQuiet conversation is welcome near the entrance.\nThe garden closes at six in the evening.\n\nThank you for keeping this shared space tidy.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 270
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 82,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "A note from the neighborhood library",
+            "bbox_xyxy": [
+              64,
+              70,
+              735,
+              104
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "The reading room opens at nine each morning.",
+            "bbox_xyxy": [
+              63,
+              234,
+              911,
+              268
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Please return each book to its shelf after reading.",
+            "bbox_xyxy": [
+              64,
+              316,
+              956,
+              350
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "Quiet conversation is welcome near the entrance.",
+            "bbox_xyxy": [
+              64,
+              398,
+              965,
+              430
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "The garden closes at six in the evening.",
+            "bbox_xyxy": [
+              63,
+              480,
+              783,
+              514
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "Thank you for keeping this shared space tidy.",
+            "bbox_xyxy": [
+              63,
+              644,
+              881,
+              678
+            ]
+          }
+        ],
+        "rotation_method": "Exact orthogonal pixel transpose; no interpolation",
+        "rotation_counterclockwise_degrees": 270
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:script-russian",
+      "split": "supplemental_diagnostic",
+      "category": "multilingual",
+      "source_family": "original-supplement-v1:script-russian",
+      "parent_id": "original-supplement-v1:script-russian",
+      "source_path": "artifacts/supplement/original-v1/script-russian/canonical-rgb.png",
+      "source_sha256": "2722749fe7ea873e27822162be6f0cff2cf667c1f5f70359f20cb8a964036d78",
+      "canonical_path": "artifacts/supplement/original-v1/script-russian/canonical-rgb.png",
+      "canonical_png_sha256": "2722749fe7ea873e27822162be6f0cff2cf667c1f5f70359f20cb8a964036d78",
+      "rgb_sha256": "fc2fe36751e949ccab1ec6ab86b58b2d1adca5c632e2876a23b9172f0250beac",
+      "width": 1440,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/script-russian/ground-truth.txt",
+      "ground_truth_sha256": "4a206434a5447585c40955ea82057442682e79c07babc5d85d1dc48044c4eb19",
+      "expected_text": "Библиотека у парка\nСегодня читальный зал открыт до шести часов.\nПожалуйста, верните книгу на полку после чтения.\nСпасибо за внимательное отношение к книгам.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "russian",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 100,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "ru",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "Библиотека у парка",
+            "bbox_xyxy": [
+              64,
+              70,
+              446,
+              105
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "Сегодня читальный зал открыт до шести часов.",
+            "bbox_xyxy": [
+              64,
+              170,
+              983,
+              205
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "Пожалуйста, верните книгу на полку после чтения.",
+            "bbox_xyxy": [
+              64,
+              270,
+              1056,
+              305
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Спасибо за внимательное отношение к книгам.",
+            "bbox_xyxy": [
+              64,
+              370,
+              976,
+              398
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:script-greek",
+      "split": "supplemental_diagnostic",
+      "category": "multilingual",
+      "source_family": "original-supplement-v1:script-greek",
+      "parent_id": "original-supplement-v1:script-greek",
+      "source_path": "artifacts/supplement/original-v1/script-greek/canonical-rgb.png",
+      "source_sha256": "1c27d411134abd78afde45aca9e6882d0535a33cb5a8d6b68b81773473df6e43",
+      "canonical_path": "artifacts/supplement/original-v1/script-greek/canonical-rgb.png",
+      "canonical_png_sha256": "1c27d411134abd78afde45aca9e6882d0535a33cb5a8d6b68b81773473df6e43",
+      "rgb_sha256": "92ace553c6b10b832dd8bf4cf4303a62211f222f5126c6ab9a315c5df91af392",
+      "width": 1440,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/script-greek/ground-truth.txt",
+      "ground_truth_sha256": "92cc006f53e789cbf6293fbf6b62e5868a2427f46849ac9d1623bf44e0e5ed06",
+      "expected_text": "Η βιβλιοθήκη της γειτονιάς\nΗ αίθουσα ανάγνωσης ανοίγει κάθε πρωί.\nΠαρακαλούμε να επιστρέφετε τα βιβλία στο ράφι.\nΕυχαριστούμε για την επίσκεψή σας.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "greek",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 100,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "el",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "Η βιβλιοθήκη της γειτονιάς",
+            "bbox_xyxy": [
+              64,
+              70,
+              567,
+              106
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "Η αίθουσα ανάγνωσης ανοίγει κάθε πρωί.",
+            "bbox_xyxy": [
+              64,
+              170,
+              817,
+              206
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "Παρακαλούμε να επιστρέφετε τα βιβλία στο ράφι.",
+            "bbox_xyxy": [
+              64,
+              270,
+              971,
+              306
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Ευχαριστούμε για την επίσκεψή σας.",
+            "bbox_xyxy": [
+              64,
+              370,
+              727,
+              406
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:script-arabic",
+      "split": "supplemental_diagnostic",
+      "category": "multilingual",
+      "source_family": "original-supplement-v1:script-arabic",
+      "parent_id": "original-supplement-v1:script-arabic",
+      "source_path": "artifacts/supplement/original-v1/script-arabic/canonical-rgb.png",
+      "source_sha256": "c6061329583b2bb75af769566f2d8bb8242e9f595f9a43d3acaafd28a21d95ed",
+      "canonical_path": "artifacts/supplement/original-v1/script-arabic/canonical-rgb.png",
+      "canonical_png_sha256": "c6061329583b2bb75af769566f2d8bb8242e9f595f9a43d3acaafd28a21d95ed",
+      "rgb_sha256": "48bea7a4d7ad5fa3bf412195151aa58766a6035aed1d1f607c57811f31966bfa",
+      "width": 1440,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/script-arabic/ground-truth.txt",
+      "ground_truth_sha256": "9c1c3fc0e35ee72718f1d640c21960f25024a512cf5a2ed5050ccc8691c739a8",
+      "expected_text": "مكتبة الحي\nتفتح المكتبة أبوابها في الساعة التاسعة صباحا.\nيمكن للزوار قراءة الكتب في قاعة هادئة.\nيرجى إعادة الكتاب إلى الرف بعد القراءة.\nشكرا لزيارتكم.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "arabic",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 100,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "rtl",
+        "language": "ar",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "مكتبة الحي",
+            "bbox_xyxy": [
+              1210,
+              70,
+              1376,
+              107
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "تفتح المكتبة أبوابها في الساعة التاسعة صباحا.",
+            "bbox_xyxy": [
+              697,
+              170,
+              1376,
+              216
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "يمكن للزوار قراءة الكتب في قاعة هادئة.",
+            "bbox_xyxy": [
+              769,
+              270,
+              1376,
+              307
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "يرجى إعادة الكتاب إلى الرف بعد القراءة.",
+            "bbox_xyxy": [
+              760,
+              370,
+              1376,
+              407
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "شكرا لزيارتكم.",
+            "bbox_xyxy": [
+              1150,
+              470,
+              1376,
+              507
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:script-hebrew",
+      "split": "supplemental_diagnostic",
+      "category": "multilingual",
+      "source_family": "original-supplement-v1:script-hebrew",
+      "parent_id": "original-supplement-v1:script-hebrew",
+      "source_path": "artifacts/supplement/original-v1/script-hebrew/canonical-rgb.png",
+      "source_sha256": "c12dbb9e66072d62839be1a49f748aa40b87e226e5b8c54525aa010f29cf2ba5",
+      "canonical_path": "artifacts/supplement/original-v1/script-hebrew/canonical-rgb.png",
+      "canonical_png_sha256": "c12dbb9e66072d62839be1a49f748aa40b87e226e5b8c54525aa010f29cf2ba5",
+      "rgb_sha256": "7e573d3f59ff1d940965d37a3dc653308514d01841b952706afd05e77b274227",
+      "width": 1440,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/script-hebrew/ground-truth.txt",
+      "ground_truth_sha256": "73b0bedcf13d00c6366e153b9620f0a4d04c4276e2f292b6a419096143bf38c0",
+      "expected_text": "ספריית השכונה\nהספרייה פתוחה בכל בוקר.\nאפשר לקרוא ספרים בחדר השקט.\nיש להחזיר את הספר למדף לאחר הקריאה.\nתודה על הביקור.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "hebrew",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 100,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "rtl",
+        "language": "he",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "ספריית השכונה",
+            "bbox_xyxy": [
+              1143,
+              70,
+              1376,
+              91
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "הספרייה פתוחה בכל בוקר.",
+            "bbox_xyxy": [
+              961,
+              170,
+              1376,
+              204
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "אפשר לקרוא ספרים בחדר השקט.",
+            "bbox_xyxy": [
+              846,
+              270,
+              1376,
+              304
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "יש להחזיר את הספר למדף לאחר הקריאה.",
+            "bbox_xyxy": [
+              716,
+              370,
+              1376,
+              404
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "תודה על הביקור.",
+            "bbox_xyxy": [
+              1114,
+              470,
+              1376,
+              504
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:script-vietnamese",
+      "split": "supplemental_diagnostic",
+      "category": "multilingual",
+      "source_family": "original-supplement-v1:script-vietnamese",
+      "parent_id": "original-supplement-v1:script-vietnamese",
+      "source_path": "artifacts/supplement/original-v1/script-vietnamese/canonical-rgb.png",
+      "source_sha256": "200a29069ccac5d8da7c57e790aa1ebb54f75a1f6928adc31eb0996b72d5a51c",
+      "canonical_path": "artifacts/supplement/original-v1/script-vietnamese/canonical-rgb.png",
+      "canonical_png_sha256": "200a29069ccac5d8da7c57e790aa1ebb54f75a1f6928adc31eb0996b72d5a51c",
+      "rgb_sha256": "da597122c32034f61317b41657974733ef39d8680f4042a9d0e3a15f6ca2aa58",
+      "width": 1440,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/script-vietnamese/ground-truth.txt",
+      "ground_truth_sha256": "2b3d1647d79f0828b0f9593dc6197a555c15ab4af8569d8a8c38f07881a76240",
+      "expected_text": "Thư viện khu phố\nPhòng đọc mở cửa vào mỗi buổi sáng.\nVui lòng trả sách về kệ sau khi đọc.\nCảm ơn bạn đã giữ gìn không gian chung.",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "vietnamese",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 36,
+        "line_step_px": 100,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "vi",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "Thư viện khu phố",
+            "bbox_xyxy": [
+              63,
+              70,
+              376,
+              107
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "Phòng đọc mở cửa vào mỗi buổi sáng.",
+            "bbox_xyxy": [
+              64,
+              170,
+              751,
+              208
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "Vui lòng trả sách về kệ sau khi đọc.",
+            "bbox_xyxy": [
+              64,
+              270,
+              702,
+              307
+            ]
+          },
+          {
+            "line_index": 3,
+            "text": "Cảm ơn bạn đã giữ gìn không gian chung.",
+            "bbox_xyxy": [
+              64,
+              370,
+              818,
+              406
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    }
+  ]
+}

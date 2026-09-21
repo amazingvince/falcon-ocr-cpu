@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "status": "bounded_review_passed",
+  "finished_utc": "2026-09-20T10:00:41.664238+00:00",
+  "started_utc": "2026-09-20T09:58:38.674835+00:00",
+  "reviewed_source_sha256": {
+    "scripts/prepare_official_evaluation.py": "7b575e419b9b94a4dda24743b687dcabab98548fef62a5288eef153ebfa68692",
+    "scripts/report_quality_regression.py": "6e5f09a0fc10cd5e30d9e72588bf729cb33f6e2209cd603292fe7a8b3ebea299",
+    "scripts/compare_official_evaluation.py": "01bcb9a81ecb7935508639bde67f38a0d39fc1e8e6fade747366293a7c3a5562",
+    "scripts/corpus_comparison.py": "0ccfbc9077c2e0aa9656e4310eba37d2f1517a3810a99231c71fad0db7a4f8ee",
+    "scripts/validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032",
+    "scripts/validate_text_replay.py": "0589094ba226a5049457664e08f93543619b14ea98e1e4b85979ecc793865e2d",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "tests/test_official_evaluation_workflow.py": "55b13182f84a2a622fde3001fcf9966c40464725af2f637839993f8a31697280",
+    "tests/test_quality_regression.py": "89bdff0cb77efd75e8b7cbbb5bafdfb9fe645d789c327d791636546d175dba87",
+    "reference/reporting-fixes-independent-tests-v1.py": "c3fde9cec09e7a920e86475c80566bf011c24cf6cf21a8ce64f71373deccfba2"
+  },
+  "source_unchanged_during_validation": true,
+  "evidence_sha256": {
+    "reference/reporting-fixes-independent-review-v1.md": "f5fc2dfc409d2a2774f2042905001651c5944c5ce8757f8a746eae119aeac099",
+    "reference/reporting-fixes-independent-review-v1-start.json": "ab50ced19b17aca0c2f243e2d9d6232f56ffa955d8ef5012c786d5f0e5178663",
+    "reference/reporting-fixes-independent-official-native-v1.txt": "8c31f99d2f841e9b12423baa82bcffa6063de00abf6c0a9c03ca16e7a9769544",
+    "reference/reporting-fixes-independent-quality-wsl-v1.txt": "a98b056339645d7dfad535432d44fc5815f76665a23d94572249315dfef0e0cd",
+    "reference/reporting-fixes-independent-late-binding-wsl-v1.txt": "88103f6dc5f2dd639c45a06dbccf49c812938767ec01539acfb9dcc584cfcf38"
+  },
+  "tests": [
+    {
+      "command": [
+        "C:/Users/amazi/mambaforge/python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_official_evaluation_workflow.py",
+        "-v"
+      ],
+      "platform": "native Windows",
+      "tests": 16,
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_quality_regression.py",
+        "-v"
+      ],
+      "platform": "WSL Ubuntu-24.04-CUDA",
+      "tests": 20,
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+        "reference/reporting-fixes-independent-tests-v1.py"
+      ],
+      "platform": "WSL Ubuntu-24.04-CUDA",
+      "tests": 1,
+      "subcases": 4,
+      "exit_code": 0
+    }
+  ],
+  "resolved_during_review": [
+    "Reject explicit inference_reexecuted=false for GPU run/configuration/page provenance; historical absence remains accepted.",
+    "Correct the new duplicate-record mutation test to use copy.deepcopy."
+  ],
+  "remaining_concrete_findings": [],
+  "historical_compatibility_scope": "Synthetic historical record acceptance independently tested; the reporting agent separately owns actual24-record/artifact compatibility checks, not duplicated here.",
+  "inference_executed": false,
+  "evaluator_executed": false,
+  "captured_functional_or_production_sources_changed": false,
+  "qualification": "Independent bounded reporting correctness/provenance review, not numerical parity, new accuracy results, full-corpus completion, or a performance claim."
+}

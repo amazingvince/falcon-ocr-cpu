@@ -1,0 +1,112 @@
+{
+  "affine_fixture": "artifacts/reference/attention-operators-bf16.safetensors",
+  "affine_fixture_sha256": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+  "fixture": "artifacts/reference/bf16-operators.safetensors",
+  "fixture_sha256": "7f601a9110396dcef738c554d70be2ae8d6d0262c6064c5b1c74e4c374ef74cd",
+  "harness_sha256": "b574a71a768feba5a539738d58adc418e86cb4b6571fc535418e00bd4a997433",
+  "operators": [
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 24576,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "rms.width768.actual"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 2048,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "rms.width64.actual"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 768,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "rms.width768.small"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 64,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "rms.width64.small"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 73728,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "gate.layer.0"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 73728,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "gate.layer.12"
+    },
+    {
+      "comparison": {
+        "different_bits": 1,
+        "elements": 110592,
+        "maximum_absolute_error": 0.03125,
+        "maximum_bf16_ulp_distance": 1,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": 40195
+      },
+      "operator": "prefill.final_norm"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 768,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "decode.2.final_norm"
+    },
+    {
+      "comparison": {
+        "different_bits": 0,
+        "elements": 768,
+        "maximum_absolute_error": 0.0,
+        "maximum_bf16_ulp_distance": 0,
+        "nonfinite_pairs": 0,
+        "worst_ulp_index": null
+      },
+      "operator": "decode.6.final_norm"
+    }
+  ],
+  "platform": "windows",
+  "qualification": "Isolated RMSNorm and gate semantics only; no full-model numerical or performance qualification.",
+  "source_sha256": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+  "threads": 2
+}

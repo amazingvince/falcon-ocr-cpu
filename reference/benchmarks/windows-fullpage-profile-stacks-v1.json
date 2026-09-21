@@ -1,0 +1,4660 @@
+{
+  "kind": "perfview-cpu-stack-summary-v1",
+  "status": "export_parsed_requires_capture_audit",
+  "input": "D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\cpu.perfView.xml.zip",
+  "input_sha256": "18facb2cda667464e12332009052b8bc9d124551dbd10d12a77bf1acff70d671",
+  "expected_pid": 121604,
+  "xml_member": "cpu.perfView.xml",
+  "frame_count": 227,
+  "stack_count": 315837,
+  "sample_count": 3118232,
+  "sampled_cpu_metric_total": 3118232.0,
+  "first_sample_relative_ms": 944.641,
+  "last_sample_relative_ms": 233437.362,
+  "process_roots": {
+    "Process64 ocr_bench (121604) Args: --model C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model --threads 16 --backend avx2 --execution sequential --cache-layout expanded --weight-layout unpacked --batches 1 --warmup 0 --repetitions 3 --min-dimension 64 --max-dimension 1536 --max-new-tokens 4096 --cpu-label \"AMD Ryzen 9 7950X\" --environment-label \"Native Windows; WPR profiled diagnostic\" --output D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\benchmark.json C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\corpus\\v3\\3f294b5e60a0c2d4\\canonical-rgb.png": 3118232.0
+  },
+  "empty_stack_metric": 0.0,
+  "project_resolved_leaf_metric": 2851259.0,
+  "project_unresolved_leaf_metric": 0.0,
+  "exclusive_by_name": [
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::x86::dot_avx2",
+      "sampled_cpu_metric": 1443650.0,
+      "percent_of_export_metric": 46.297068338725275
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::x86::axpy_avx2",
+      "sampled_cpu_metric": 800052.0,
+      "percent_of_export_metric": 25.65723140548875
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::x2x6",
+      "sampled_cpu_metric": 172545.0,
+      "percent_of_export_metric": 5.533424068510618
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_epoch::default::with_handle<crossbeam_epoch::default::pin::closure_env$0,crossbeam_epoch::guard::Guard>",
+      "sampled_cpu_metric": 108196.0,
+      "percent_of_export_metric": 3.469786725298182
+    },
+    {
+      "name": "c:\\windows\\system32\\ucrtbase!?",
+      "sampled_cpu_metric": 93440.0,
+      "percent_of_export_metric": 2.9965698511207632
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::simd::x86::impl$20::vectorize::imp_fastcall<gemm_common::pack_operands::pack_lhs::closure_env$0<f32,8,16,gemm_common::simd::x86::V3> >",
+      "sampled_cpu_metric": 81888.0,
+      "percent_of_export_metric": 2.626103509937683
+    },
+    {
+      "name": "c:\\windows\\system32\\ntdll!?",
+      "sampled_cpu_metric": 80922.0,
+      "percent_of_export_metric": 2.5951244166566183
+    },
+    {
+      "name": "c:\\windows\\system32\\ntoskrnl!?",
+      "sampled_cpu_metric": 79046.0,
+      "percent_of_export_metric": 2.5349621195600585
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> >",
+      "sampled_cpu_metric": 59674.0,
+      "percent_of_export_metric": 1.9137126422921706
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> >",
+      "sampled_cpu_metric": 29554.0,
+      "percent_of_export_metric": 0.9477806654540137
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::WorkerThread::find_work",
+      "sampled_cpu_metric": 16223.0,
+      "percent_of_export_metric": 0.5202627642843766
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::x2x2",
+      "sampled_cpu_metric": 12199.0,
+      "percent_of_export_metric": 0.3912152784013505
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::WorkerThread::take_local_job",
+      "sampled_cpu_metric": 11994.0,
+      "percent_of_export_metric": 0.38464104017917844
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_deque::deque::Stealer::steal<rayon_core::job::JobRef>",
+      "sampled_cpu_metric": 10326.0,
+      "percent_of_export_metric": 0.3311491896690176
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::sync::mutex::futex::Mutex::lock_contended",
+      "sampled_cpu_metric": 10315.0,
+      "percent_of_export_metric": 0.33079642566685225
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> >",
+      "sampled_cpu_metric": 9119.0,
+      "percent_of_export_metric": 0.2924413577950582
+    },
+    {
+      "name": "c:\\windows\\system32\\driverstore\\filerepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvlddmkm.sys!?",
+      "sampled_cpu_metric": 8310.0,
+      "percent_of_export_metric": 0.26649716890853536
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 8227.0,
+      "percent_of_export_metric": 0.26383540416492424
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 8082.0,
+      "percent_of_export_metric": 0.2591853332272903
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_epoch::internal::Global::try_advance",
+      "sampled_cpu_metric": 7849.0,
+      "percent_of_export_metric": 0.2517131502723338
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!expf",
+      "sampled_cpu_metric": 7765.0,
+      "percent_of_export_metric": 0.2490193160739804
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 7420.0,
+      "percent_of_export_metric": 0.23795535418788596
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::sleep::Sleep::wake_specific_thread",
+      "sampled_cpu_metric": 6638.0,
+      "percent_of_export_metric": 0.21287704057940526
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::WorkerThread::wait_until_cold",
+      "sampled_cpu_metric": 6514.0,
+      "percent_of_export_metric": 0.20890042819135973
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ops::function::FnOnce::call_once<falcon_ocr::kernels::axpy_kernel::closure_env$0,tuple$<f32,ref$<slice2$<f32> >,ref_mut$<slice2$<f32> > > >",
+      "sampled_cpu_metric": 5524.0,
+      "percent_of_export_metric": 0.17715166799648005
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::gemm::gemm_basic_generic::closure$4<gemm_common::simd::x86::V3,f32,8,16,6,2,2,2,gemm_f32::gemm::f32::fma::gemm_basic::closure_env$0>",
+      "sampled_cpu_metric": 5266.0,
+      "percent_of_export_metric": 0.16887774867296595
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> >",
+      "sampled_cpu_metric": 4849.0,
+      "percent_of_export_metric": 0.15550478604542575
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::sum_squares_pairwise",
+      "sampled_cpu_metric": 3775.0,
+      "percent_of_export_metric": 0.12106219165219265
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::sleep::Sleep::sleep<rayon_core::registry::impl$10::wait_until_cold::closure_env$0>",
+      "sampled_cpu_metric": 3196.0,
+      "percent_of_export_metric": 0.1024939773563994
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\dxgmms2.sys!?",
+      "sampled_cpu_metric": 2209.0,
+      "percent_of_export_metric": 0.07084142552574664
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ops::function::FnOnce::call_once<falcon_ocr::kernels::dot_kernel::closure_env$0,tuple$<ref$<slice2$<f32> >,ref$<slice2$<f32> > > >",
+      "sampled_cpu_metric": 1681.0,
+      "percent_of_export_metric": 0.05390875342181082
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::gemm::f32::fma::gemm_basic",
+      "sampled_cpu_metric": 1472.0,
+      "percent_of_export_metric": 0.047206237380669556
+    },
+    {
+      "name": "c:\\windows\\system32\\vcruntime140!?",
+      "sampled_cpu_metric": 1241.0,
+      "percent_of_export_metric": 0.039798193335197636
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::Model::forward",
+      "sampled_cpu_metric": 1180.0,
+      "percent_of_export_metric": 0.03784195659591717
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> >",
+      "sampled_cpu_metric": 987.0,
+      "percent_of_export_metric": 0.031652551830652756
+    },
+    {
+      "name": "c:\\windows\\system32\\kernelbase!?",
+      "sampled_cpu_metric": 900.0,
+      "percent_of_export_metric": 0.02886250926807242
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 892.0,
+      "percent_of_export_metric": 0.028605953630134
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::simd::x86::impl$20::vectorize::imp_fastcall<gemm_common::pack_operands::pack_rhs::closure_env$0<f32,1,6,gemm_common::simd::x86::V3> >",
+      "sampled_cpu_metric": 601.0,
+      "percent_of_export_metric": 0.019273742300123915
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 579.0,
+      "percent_of_export_metric": 0.018568214295793257
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!sha2::sha256::x86::digest_blocks",
+      "sampled_cpu_metric": 561.0,
+      "percent_of_export_metric": 0.017990964110431808
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 238.0,
+      "percent_of_export_metric": 0.0076325302286680404
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::sleep::Sleep::wake_any_threads",
+      "sampled_cpu_metric": 236.0,
+      "percent_of_export_metric": 0.007568391319183435
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 235.0,
+      "percent_of_export_metric": 0.007536321864441132
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 234.0,
+      "percent_of_export_metric": 0.007504252409698829
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!dyn_stack::MemStack::split_buffer",
+      "sampled_cpu_metric": 188.0,
+      "percent_of_export_metric": 0.006029057491552906
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\hdaudbus.sys!?",
+      "sampled_cpu_metric": 170.0,
+      "percent_of_export_metric": 0.005451807306191457
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\amdppm.sys!?",
+      "sampled_cpu_metric": 159.0,
+      "percent_of_export_metric": 0.005099043304026127
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::thread_pool::impl$0::install::closure$0<falcon_ocr::runner::impl$0::run_prepared_scoped::closure_env$0,enum2$<core::result::Result<falcon_ocr::runner::OcrResult,anyhow::Error> > >",
+      "sampled_cpu_metric": 157.0,
+      "percent_of_export_metric": 0.0050349043945415225
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\dxgkrnl.sys!?",
+      "sampled_cpu_metric": 142.0,
+      "percent_of_export_metric": 0.004553862573406982
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::x2x4",
+      "sampled_cpu_metric": 140.0,
+      "percent_of_export_metric": 0.004489723663922376
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::preprocess::resize_bicubic",
+      "sampled_cpu_metric": 139.0,
+      "percent_of_export_metric": 0.004457654209180074
+    },
+    {
+      "name": "c:\\windows\\system32\\kernel32!?",
+      "sampled_cpu_metric": 135.0,
+      "percent_of_export_metric": 0.004329376390210863
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::thread::local::LocalKey::with<core::cell::RefCell<dyn_stack::mem::MemBuffer<dyn_stack::alloc::Global> >,gemm_common::gemm::gemm_basic_generic::closure$6::closure_env$0<gemm_common::simd::x86::V3,f32,8,16,6,2,2,2,gemm_f32::gemm::f32::fma::gemm_basic::closure_env$0>,tuple$<> >",
+      "sampled_cpu_metric": 124.0,
+      "percent_of_export_metric": 0.003976612388045533
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::alloc::windows::process_heap_alloc",
+      "sampled_cpu_metric": 116.0,
+      "percent_of_export_metric": 0.003720056750107112
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_epoch::internal::Global::collect",
+      "sampled_cpu_metric": 115.0,
+      "percent_of_export_metric": 0.003687987295364809
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::cache::kernel_params",
+      "sampled_cpu_metric": 112.0,
+      "percent_of_export_metric": 0.003591778931137901
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::hx2x2",
+      "sampled_cpu_metric": 107.0,
+      "percent_of_export_metric": 0.0034314316574263876
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\watchdog.sys!?",
+      "sampled_cpu_metric": 88.0,
+      "percent_of_export_metric": 0.0028221120173226367
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!__chkstk",
+      "sampled_cpu_metric": 45.0,
+      "percent_of_export_metric": 0.001443125463403621
+    },
+    {
+      "name": "?!?",
+      "sampled_cpu_metric": 33.0,
+      "percent_of_export_metric": 0.0010582920064959888
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ndis.sys!?",
+      "sampled_cpu_metric": 26.0,
+      "percent_of_export_metric": 0.00083380582329987
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::hx1x2",
+      "sampled_cpu_metric": 23.0,
+      "percent_of_export_metric": 0.0007375974590729618
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::error::Error::cause<alloc::boxed::convert::impl$19::from::StringError>",
+      "sampled_cpu_metric": 21.0,
+      "percent_of_export_metric": 0.0006734585495883565
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::rotary_factors",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!memset",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::rms_norm",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\mtkwl6ex.sys!?",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\storport.sys!?",
+      "sampled_cpu_metric": 17.0,
+      "percent_of_export_metric": 0.0005451807306191457
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\netio.sys!?",
+      "sampled_cpu_metric": 16.0,
+      "percent_of_export_metric": 0.0005131112758768431
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::linear_with_simd",
+      "sampled_cpu_metric": 16.0,
+      "percent_of_export_metric": 0.0005131112758768431
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::attention_with_simd",
+      "sampled_cpu_metric": 16.0,
+      "percent_of_export_metric": 0.0005131112758768431
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wdf01000.sys!?",
+      "sampled_cpu_metric": 15.0,
+      "percent_of_export_metric": 0.00048104182113454033
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wpprecorder.sys!?",
+      "sampled_cpu_metric": 15.0,
+      "percent_of_export_metric": 0.00048104182113454033
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\tcpip.sys!?",
+      "sampled_cpu_metric": 12.0,
+      "percent_of_export_metric": 0.0003848334569076323
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::LayerCache::append",
+      "sampled_cpu_metric": 12.0,
+      "percent_of_export_metric": 0.0003848334569076323
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::content::impl$41::deserialize_any<serde_json::error::Error,serde_json::value::de::impl$0::deserialize::ValueVisitor>",
+      "sampled_cpu_metric": 11.0,
+      "percent_of_export_metric": 0.0003527640021653296
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::Simd::resolved",
+      "sampled_cpu_metric": 11.0,
+      "percent_of_export_metric": 0.0003527640021653296
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::preprocess::prepare_rgb",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::pack_operands::pack_lhs<f32,8,16,gemm_common::simd::x86::V3>",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::trace::impl$2::enabled",
+      "sampled_cpu_metric": 9.0,
+      "percent_of_export_metric": 0.0002886250926807242
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_core::de::Deserializer::__deserialize_content_v1<enum2$<serde_json::value::Value>,serde::private::de::content::ContentVisitor>",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!memcpy",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\usbxhci.sys!?",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\cng.sys!?",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\stornvme.sys!?",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\hidclass.sys!?",
+      "sampled_cpu_metric": 6.0,
+      "percent_of_export_metric": 0.00019241672845381614
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\classpnp.sys!?",
+      "sampled_cpu_metric": 5.0,
+      "percent_of_export_metric": 0.00016034727371151344
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_json::de::impl$7::deserialize_any<serde_json::read::SliceRead,serde::private::de::content::ContentVisitor>",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::content::content_clone",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<enum2$<serde_core::private::content::Content> >",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_core::de::impl$7::next_value<serde_json::value::de::MapDeserializer,ahash::hash_map::AHashMap<alloc::string::String,u32,ahash::random_state::RandomState> >",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::LayerCache::attention",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!fdeflate::decompress::Decompressor::read",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::models::bpe::model::BpeBuilder::build",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::fmt::write",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\afd.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > > >,tuple$<> >",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\partmgr.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\nwifi.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ndu.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\usbccgp.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::Model::embed",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<enum2$<tokenizers::models::ModelWrapper> >",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!png::filter::unfilter",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::temporal_factors",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_json::read::impl$7::parse_str",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::collections::btree::map::BTreeMap::insert<alloc::string::String,enum2$<serde_json::value::Value>,alloc::alloc::Global>",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\hidusb.sys!?",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\volsnap.sys!?",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\bthport.sys!?",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::hash::random::impl$4::write",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::tokenizer::serialization::impl$2::visit_map<enum2$<tokenizers::models::ModelWrapper>,enum2$<tokenizers::normalizers::NormalizerWrapper>,enum2$<tokenizers::pre_tokenizers::PreTokenizerWrapper>,enum2$<tokenizers::processors::PostProcessorWrapper>,enum2$<tokenizers::decoders::DecoderWrapper>,serde_json::de::MapAccess<serde_json::read::SliceRead> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::str::converts::from_utf8",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_core::de::impls::impl$8::deserialize<serde::private::de::content::ContentRefDeserializer<serde_json::error::Error> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::raw_vec::RawVecInner::finish_grow<alloc::alloc::Global>",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::content::impl$41::deserialize_seq<serde_json::error::Error,serde_core::de::impls::impl$19::deserialize::VecVisitor<tuple$<alloc::string::String,alloc::string::String> > >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::fmt::Formatter::pad",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!hashbrown::raw::RawTable::reserve_rehash<tuple$<tuple$<u32,u32>,tuple$<u32,u32> >,alloc::alloc::Global,hashbrown::map::make_hasher::closure_env$0<tuple$<u32,u32>,tuple$<u32,u32>,ahash::random_state::RandomState> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::boxed::convert::impl$19::from::impl$1::fmt",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::string::impl$60::write_str",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::hash::BuildHasher::hash_one<ahash::random_state::RandomState,ref$<tokenizers::tokenizer::added_vocabulary::AddedToken> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ucx01000.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!cosf",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\vmswitch.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::Workspace::resize",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\usbhub3.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!ocr_bench::main",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!sinf",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wfplwfs.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::runner::argmax",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wdiwifi.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    }
+  ],
+  "inclusive_by_name": [
+    {
+      "name": "Process64 ocr_bench (121604) Args: --model C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model --threads 16 --backend avx2 --execution sequential --cache-layout expanded --weight-layout unpacked --batches 1 --warmup 0 --repetitions 3 --min-dimension 64 --max-dimension 1536 --max-new-tokens 4096 --cpu-label \"AMD Ryzen 9 7950X\" --environment-label \"Native Windows; WPR profiled diagnostic\" --output D:\\falcon-ocr-rust-builds\\profiles\\fullpage-expanded-v2\\benchmark.json C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\corpus\\v3\\3f294b5e60a0c2d4\\canonical-rgb.png",
+      "sampled_cpu_metric": 3118232.0,
+      "percent_of_export_metric": 100.0
+    },
+    {
+      "name": "c:\\windows\\system32\\ntdll!?",
+      "sampled_cpu_metric": 3115519.0,
+      "percent_of_export_metric": 99.91299556928413
+    },
+    {
+      "name": "c:\\windows\\system32\\kernel32!?",
+      "sampled_cpu_metric": 3115519.0,
+      "percent_of_export_metric": 99.91299556928413
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::thread::windows::impl$0::new::thread_start",
+      "sampled_cpu_metric": 3114326.0,
+      "percent_of_export_metric": 99.87473670977657
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::WorkerThread::wait_until_cold",
+      "sampled_cpu_metric": 3114326.0,
+      "percent_of_export_metric": 99.87473670977657
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::ThreadBuilder::run",
+      "sampled_cpu_metric": 3114326.0,
+      "percent_of_export_metric": 99.87473670977657
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ops::function::FnOnce::call_once<std::thread::impl$0::spawn_unchecked_::closure_env$1<rayon_core::registry::impl$2::spawn::closure_env$0,tuple$<> >,tuple$<> >",
+      "sampled_cpu_metric": 3114326.0,
+      "percent_of_export_metric": 99.87473670977657
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::backtrace::__rust_begin_short_backtrace<rayon_core::registry::impl$2::spawn::closure_env$0,tuple$<> >",
+      "sampled_cpu_metric": 3114326.0,
+      "percent_of_export_metric": 99.87473670977657
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> >",
+      "sampled_cpu_metric": 1616186.0,
+      "percent_of_export_metric": 51.830203782143215
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 1511877.0,
+      "percent_of_export_metric": 48.48507102742836
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::x86::dot_avx2",
+      "sampled_cpu_metric": 1462792.0,
+      "percent_of_export_metric": 46.91094184140243
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> >",
+      "sampled_cpu_metric": 829046.0,
+      "percent_of_export_metric": 26.587053176287075
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_with_simd::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 813470.0,
+      "percent_of_export_metric": 26.087539349220968
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::x86::axpy_avx2",
+      "sampled_cpu_metric": 809757.0,
+      "percent_of_export_metric": 25.968465463762797
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 794184.0,
+      "percent_of_export_metric": 25.46904784506092
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::len::MinLenProducer<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> > >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::linear_with_simd::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 726843.0,
+      "percent_of_export_metric": 23.309458693259515
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> >",
+      "sampled_cpu_metric": 364329.0,
+      "percent_of_export_metric": 11.683832376808397
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 360145.0,
+      "percent_of_export_metric": 11.549653778166602
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::chunks::ChunksMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::attention_gemm::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 353743.0,
+      "percent_of_export_metric": 11.34434512890638
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::gemm::f32::fma::gemm_basic",
+      "sampled_cpu_metric": 238740.0,
+      "percent_of_export_metric": 7.656261625177344
+    },
+    {
+      "name": "Thread (54020) CPU=202372ms",
+      "sampled_cpu_metric": 202372.0,
+      "percent_of_export_metric": 6.48995969510928
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::LatchRef<rayon_core::latch::LockLatch>,rayon_core::registry::impl$6::in_worker_cold::closure$0::closure_env$0<rayon_core::thread_pool::impl$0::install::closure_env$0<falcon_ocr::runner::impl$0::run_prepared_scoped::closure_env$0,enum2$<core::result::Result<falcon_ocr::runner::OcrResult,anyhow::Error> > >,enum2$<core::result::Result<falcon_ocr::runner::OcrResult,anyhow::Error> > >,enum2$<core::result::Result<falcon_ocr::runner::OcrResult,anyhow::Error> > >",
+      "sampled_cpu_metric": 202211.0,
+      "percent_of_export_metric": 6.484796512895769
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::thread_pool::impl$0::install::closure$0<falcon_ocr::runner::impl$0::run_prepared_scoped::closure_env$0,enum2$<core::result::Result<falcon_ocr::runner::OcrResult,anyhow::Error> > >",
+      "sampled_cpu_metric": 202211.0,
+      "percent_of_export_metric": 6.484796512895769
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::Model::forward",
+      "sampled_cpu_metric": 201855.0,
+      "percent_of_export_metric": 6.473379787007509
+    },
+    {
+      "name": "Thread (98572) CPU=198846ms",
+      "sampled_cpu_metric": 198846.0,
+      "percent_of_export_metric": 6.37688279768792
+    },
+    {
+      "name": "Thread (80828) CPU=197695ms",
+      "sampled_cpu_metric": 197695.0,
+      "percent_of_export_metric": 6.33997085527953
+    },
+    {
+      "name": "Thread (117684) CPU=196614ms",
+      "sampled_cpu_metric": 196614.0,
+      "percent_of_export_metric": 6.305303774703101
+    },
+    {
+      "name": "Thread (68352) CPU=196367ms",
+      "sampled_cpu_metric": 196367.0,
+      "percent_of_export_metric": 6.297382619381752
+    },
+    {
+      "name": "Thread (94268) CPU=195349ms",
+      "sampled_cpu_metric": 195349.0,
+      "percent_of_export_metric": 6.264735914454088
+    },
+    {
+      "name": "Thread (125124) CPU=194896ms",
+      "sampled_cpu_metric": 194896.0,
+      "percent_of_export_metric": 6.250208451455825
+    },
+    {
+      "name": "Thread (77676) CPU=194701ms",
+      "sampled_cpu_metric": 194701.0,
+      "percent_of_export_metric": 6.243954907781076
+    },
+    {
+      "name": "Thread (57264) CPU=193439ms",
+      "sampled_cpu_metric": 193439.0,
+      "percent_of_export_metric": 6.20348325589629
+    },
+    {
+      "name": "Thread (111548) CPU=193415ms",
+      "sampled_cpu_metric": 193415.0,
+      "percent_of_export_metric": 6.2027135889824745
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::gemm::gemm_basic_generic::closure$4<gemm_common::simd::x86::V3,f32,8,16,6,2,2,2,gemm_f32::gemm::f32::fma::gemm_basic::closure_env$0>",
+      "sampled_cpu_metric": 192954.0,
+      "percent_of_export_metric": 6.187929570346273
+    },
+    {
+      "name": "Thread (72552) CPU=192849ms",
+      "sampled_cpu_metric": 192849.0,
+      "percent_of_export_metric": 6.1845622775983315
+    },
+    {
+      "name": "Thread (69048) CPU=192634ms",
+      "sampled_cpu_metric": 192634.0,
+      "percent_of_export_metric": 6.177667344828737
+    },
+    {
+      "name": "Thread (56780) CPU=192262ms",
+      "sampled_cpu_metric": 192262.0,
+      "percent_of_export_metric": 6.165737507664599
+    },
+    {
+      "name": "Thread (87228) CPU=191983ms",
+      "sampled_cpu_metric": 191983.0,
+      "percent_of_export_metric": 6.1567901297914975
+    },
+    {
+      "name": "Thread (118352) CPU=191853ms",
+      "sampled_cpu_metric": 191853.0,
+      "percent_of_export_metric": 6.152621100674998
+    },
+    {
+      "name": "Thread (24272) CPU=191764ms",
+      "sampled_cpu_metric": 191764.0,
+      "percent_of_export_metric": 6.149766919202933
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::x2x6",
+      "sampled_cpu_metric": 173947.0,
+      "percent_of_export_metric": 5.578385444059326
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::thread::local::LocalKey::with<core::cell::RefCell<dyn_stack::mem::MemBuffer<dyn_stack::alloc::Global> >,gemm_common::gemm::gemm_basic_generic::closure$6::closure_env$0<gemm_common::simd::x86::V3,f32,8,16,6,2,2,2,gemm_f32::gemm::f32::fma::gemm_basic::closure_env$0>,tuple$<> >",
+      "sampled_cpu_metric": 145397.0,
+      "percent_of_export_metric": 4.662802511166584
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::WorkerThread::find_work",
+      "sampled_cpu_metric": 137767.0,
+      "percent_of_export_metric": 4.418112571482815
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::LayerCache::attention",
+      "sampled_cpu_metric": 127948.0,
+      "percent_of_export_metric": 4.103222595368145
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::attention_with_simd",
+      "sampled_cpu_metric": 127944.0,
+      "percent_of_export_metric": 4.103094317549175
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_epoch::default::with_handle<crossbeam_epoch::default::pin::closure_env$0,crossbeam_epoch::guard::Guard>",
+      "sampled_cpu_metric": 117577.0,
+      "percent_of_export_metric": 3.770630280235723
+    },
+    {
+      "name": "c:\\windows\\system32\\kernelbase!?",
+      "sampled_cpu_metric": 94608.0,
+      "percent_of_export_metric": 3.0340269742597727
+    },
+    {
+      "name": "c:\\windows\\system32\\ucrtbase!?",
+      "sampled_cpu_metric": 94301.0,
+      "percent_of_export_metric": 3.024181651653886
+    },
+    {
+      "name": "c:\\windows\\system32\\ntoskrnl!?",
+      "sampled_cpu_metric": 83152.0,
+      "percent_of_export_metric": 2.666639300731953
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::pack_operands::pack_lhs<f32,8,16,gemm_common::simd::x86::V3>",
+      "sampled_cpu_metric": 82683.0,
+      "percent_of_export_metric": 2.6515987264578134
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::simd::x86::impl$20::vectorize::imp_fastcall<gemm_common::pack_operands::pack_lhs::closure_env$0<f32,8,16,gemm_common::simd::x86::V3> >",
+      "sampled_cpu_metric": 82680.0,
+      "percent_of_export_metric": 2.6515025180935865
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::linear_with_simd",
+      "sampled_cpu_metric": 66509.0,
+      "percent_of_export_metric": 2.1329073654558095
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_deque::deque::Stealer::steal<rayon_core::job::JobRef>",
+      "sampled_cpu_metric": 64641.0,
+      "percent_of_export_metric": 2.0730016239971882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > >",
+      "sampled_cpu_metric": 64508.0,
+      "percent_of_export_metric": 2.068736386516462
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ops::function::FnOnce::call_once<gemm_common::gemm::gemm_basic_generic::closure_env$6<gemm_common::simd::x86::V3,f32,8,16,6,2,2,2,gemm_f32::gemm::f32::fma::gemm_basic::closure_env$0>,tuple$<usize> >",
+      "sampled_cpu_metric": 63407.0,
+      "percent_of_export_metric": 2.0334279168451865
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > > >,tuple$<> >",
+      "sampled_cpu_metric": 60275.0,
+      "percent_of_export_metric": 1.9329863845922945
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::sleep::Sleep::wake_specific_thread",
+      "sampled_cpu_metric": 48902.0,
+      "percent_of_export_metric": 1.568260475808086
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::sleep::Sleep::wake_any_threads",
+      "sampled_cpu_metric": 47465.0,
+      "percent_of_export_metric": 1.5221766693433971
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::registry::WorkerThread::take_local_job",
+      "sampled_cpu_metric": 33837.0,
+      "percent_of_export_metric": 1.085134140115296
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::range::IterProducer<usize>,rayon::iter::for_each::ForEachConsumer<ref$<dyn$<core::ops::function::Fn<tuple$<usize>,assoc$<Output,tuple$<> > >,core::marker::Send,core::marker::Sync> > > >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 32414.0,
+      "percent_of_export_metric": 1.0394993060169995
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> >",
+      "sampled_cpu_metric": 31886.0,
+      "percent_of_export_metric": 1.0225666339130635
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 31847.0,
+      "percent_of_export_metric": 1.0213159251781136
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::enumerate::EnumerateProducer<rayon::slice::IterMutProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::squared_relu_gate::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 30961.0,
+      "percent_of_export_metric": 0.9929023882764336
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::sync::mutex::futex::Mutex::lock_contended",
+      "sampled_cpu_metric": 24823.0,
+      "percent_of_export_metric": 0.7960600750681797
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::sleep::Sleep::sleep<rayon_core::registry::impl$10::wait_until_cold::closure_env$0>",
+      "sampled_cpu_metric": 17823.0,
+      "percent_of_export_metric": 0.5715738918720609
+    },
+    {
+      "name": "c:\\windows\\system32\\driverstore\\filerepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvlddmkm.sys!?",
+      "sampled_cpu_metric": 13698.0,
+      "percent_of_export_metric": 0.43928739106006226
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::x2x2",
+      "sampled_cpu_metric": 12277.0,
+      "percent_of_export_metric": 0.39371669587125013
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon::iter::plumbing::bridge_producer_consumer::helper<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> >",
+      "sampled_cpu_metric": 10298.0,
+      "percent_of_export_metric": 0.3302512449362331
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::join::join_context::closure$0<rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> >,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> >,tuple$<>,tuple$<> >",
+      "sampled_cpu_metric": 9979.0,
+      "percent_of_export_metric": 0.32002108887343855
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!rayon_core::job::impl$4::execute<rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0<tuple$<>,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1<rayon::iter::zip::ZipProducer<rayon::slice::chunks::ChunksMutProducer<f32>,rayon::slice::chunks::ChunksProducer<f32> >,rayon::iter::for_each::ForEachConsumer<falcon_ocr::kernels::rms_norm::closure_env$0> > >,tuple$<> >",
+      "sampled_cpu_metric": 8673.0,
+      "percent_of_export_metric": 0.2781383809799912
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_epoch::internal::Global::collect",
+      "sampled_cpu_metric": 8098.0,
+      "percent_of_export_metric": 0.2596984445031672
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!crossbeam_epoch::internal::Global::try_advance",
+      "sampled_cpu_metric": 7931.0,
+      "percent_of_export_metric": 0.2543428455612026
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!expf",
+      "sampled_cpu_metric": 7839.0,
+      "percent_of_export_metric": 0.25139245572491076
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\dxgkrnl.sys!?",
+      "sampled_cpu_metric": 5757.0,
+      "percent_of_export_metric": 0.18462385095143657
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ops::function::FnOnce::call_once<falcon_ocr::kernels::axpy_kernel::closure_env$0,tuple$<f32,ref$<slice2$<f32> >,ref_mut$<slice2$<f32> > > >",
+      "sampled_cpu_metric": 5587.0,
+      "percent_of_export_metric": 0.17917204364524514
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::sum_squares_pairwise",
+      "sampled_cpu_metric": 3828.0,
+      "percent_of_export_metric": 0.1227618727535347
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\dxgmms2.sys!?",
+      "sampled_cpu_metric": 3624.0,
+      "percent_of_export_metric": 0.11621970398610494
+    },
+    {
+      "name": "BROKEN",
+      "sampled_cpu_metric": 2557.0,
+      "percent_of_export_metric": 0.08200159577606797
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::rms_norm",
+      "sampled_cpu_metric": 2172.0,
+      "percent_of_export_metric": 0.06965485570028145
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ops::function::FnOnce::call_once<falcon_ocr::kernels::dot_kernel::closure_env$0,tuple$<ref$<slice2$<f32> >,ref$<slice2$<f32> > > >",
+      "sampled_cpu_metric": 1701.0,
+      "percent_of_export_metric": 0.05455014251665687
+    },
+    {
+      "name": "c:\\windows\\system32\\vcruntime140!?",
+      "sampled_cpu_metric": 1537.0,
+      "percent_of_export_metric": 0.049290751938919235
+    },
+    {
+      "name": "Thread (99888) CPU=1193ms (Startup Thread)",
+      "sampled_cpu_metric": 1193.0,
+      "percent_of_export_metric": 0.038258859507567106
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!ocr_bench::main",
+      "sampled_cpu_metric": 1190.0,
+      "percent_of_export_metric": 0.0381626511433402
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!main",
+      "sampled_cpu_metric": 1190.0,
+      "percent_of_export_metric": 0.0381626511433402
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::backtrace::__rust_begin_short_backtrace<enum2$<core::result::Result<tuple$<>,anyhow::Error> > (*)(),enum2$<core::result::Result<tuple$<>,anyhow::Error> > >",
+      "sampled_cpu_metric": 1190.0,
+      "percent_of_export_metric": 0.0381626511433402
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::rt::lang_start::closure$0<enum2$<core::result::Result<tuple$<>,anyhow::Error> > >",
+      "sampled_cpu_metric": 1190.0,
+      "percent_of_export_metric": 0.0381626511433402
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::rt::lang_start_internal",
+      "sampled_cpu_metric": 1190.0,
+      "percent_of_export_metric": 0.0381626511433402
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!__scrt_common_main_seh",
+      "sampled_cpu_metric": 1190.0,
+      "percent_of_export_metric": 0.0381626511433402
+    },
+    {
+      "name": "?!?",
+      "sampled_cpu_metric": 1000.0,
+      "percent_of_export_metric": 0.03206945474230269
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::pack_operands::pack_rhs<f32,1,6,gemm_common::simd::x86::V3>",
+      "sampled_cpu_metric": 904.0,
+      "percent_of_export_metric": 0.02899078708704163
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::simd::x86::impl$20::vectorize::imp_fastcall<gemm_common::pack_operands::pack_rhs::closure_env$0<f32,1,6,gemm_common::simd::x86::V3> >",
+      "sampled_cpu_metric": 903.0,
+      "percent_of_export_metric": 0.02895871763229933
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::gemm::gemm_basic_generic::closure$3<gemm_common::simd::x86::V3,f32,8,16,6,2,2,2,gemm_f32::gemm::f32::fma::gemm_basic::closure_env$0>",
+      "sampled_cpu_metric": 903.0,
+      "percent_of_export_metric": 0.02895871763229933
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!sha2::sha256::x86::digest_blocks",
+      "sampled_cpu_metric": 766.0,
+      "percent_of_export_metric": 0.02456520233260386
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::LayerCache::append",
+      "sampled_cpu_metric": 566.0,
+      "percent_of_export_metric": 0.01815131138414332
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\hdaudbus.sys!?",
+      "sampled_cpu_metric": 309.0,
+      "percent_of_export_metric": 0.009909461515371532
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!dyn_stack::MemStack::split_buffer",
+      "sampled_cpu_metric": 189.0,
+      "percent_of_export_metric": 0.006061126946295208
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\amdppm.sys!?",
+      "sampled_cpu_metric": 173.0,
+      "percent_of_export_metric": 0.005548015670418366
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::alloc::windows::process_heap_alloc",
+      "sampled_cpu_metric": 165.0,
+      "percent_of_export_metric": 0.005291460032479944
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::runner::Runner::recognize_with_trace",
+      "sampled_cpu_metric": 160.0,
+      "percent_of_export_metric": 0.00513111275876843
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::preprocess::prepare_rgb",
+      "sampled_cpu_metric": 160.0,
+      "percent_of_export_metric": 0.00513111275876843
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::runner::Runner::recognize_batch_with_trace",
+      "sampled_cpu_metric": 160.0,
+      "percent_of_export_metric": 0.00513111275876843
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ndis.sys!?",
+      "sampled_cpu_metric": 154.0,
+      "percent_of_export_metric": 0.004938696030314614
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::preprocess::resize_bicubic",
+      "sampled_cpu_metric": 145.0,
+      "percent_of_export_metric": 0.00465007093763389
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::x2x4",
+      "sampled_cpu_metric": 141.0,
+      "percent_of_export_metric": 0.004521793118664679
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<falcon_ocr::model::Session>",
+      "sampled_cpu_metric": 128.0,
+      "percent_of_export_metric": 0.004104890207014745
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<falcon_ocr::model::Model>",
+      "sampled_cpu_metric": 121.0,
+      "percent_of_export_metric": 0.0038804040238186255
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::sync::Arc::drop_slow<falcon_ocr::model::Model,alloc::alloc::Global>",
+      "sampled_cpu_metric": 121.0,
+      "percent_of_export_metric": 0.0038804040238186255
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::tokenizer::OcrTokenizer::load",
+      "sampled_cpu_metric": 117.0,
+      "percent_of_export_metric": 0.0037521262048494145
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::tokenizer::serialization::impl$2::visit_map<enum2$<tokenizers::models::ModelWrapper>,enum2$<tokenizers::normalizers::NormalizerWrapper>,enum2$<tokenizers::pre_tokenizers::PreTokenizerWrapper>,enum2$<tokenizers::processors::PostProcessorWrapper>,enum2$<tokenizers::decoders::DecoderWrapper>,serde_json::de::MapAccess<serde_json::read::SliceRead> >",
+      "sampled_cpu_metric": 113.0,
+      "percent_of_export_metric": 0.003623848385880204
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_common::cache::kernel_params",
+      "sampled_cpu_metric": 112.0,
+      "percent_of_export_metric": 0.003591778931137901
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::models::impl$2::deserialize<ref_mut$<serde_json::de::Deserializer<serde_json::read::SliceRead> > >",
+      "sampled_cpu_metric": 111.0,
+      "percent_of_export_metric": 0.0035597094763955986
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::hx2x2",
+      "sampled_cpu_metric": 107.0,
+      "percent_of_export_metric": 0.0034314316574263876
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::Workspace::resize",
+      "sampled_cpu_metric": 96.0,
+      "percent_of_export_metric": 0.0030786676552610583
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wdf01000.sys!?",
+      "sampled_cpu_metric": 90.0,
+      "percent_of_export_metric": 0.002886250926807242
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\watchdog.sys!?",
+      "sampled_cpu_metric": 89.0,
+      "percent_of_export_metric": 0.0028541814720649396
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\usbxhci.sys!?",
+      "sampled_cpu_metric": 87.0,
+      "percent_of_export_metric": 0.002790042562580334
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::rotary_factors",
+      "sampled_cpu_metric": 69.0,
+      "percent_of_export_metric": 0.002212792377218886
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<enum2$<falcon_ocr::model::LayerCache> >",
+      "sampled_cpu_metric": 64.0,
+      "percent_of_export_metric": 0.0020524451035073723
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!__chkstk",
+      "sampled_cpu_metric": 50.0,
+      "percent_of_export_metric": 0.0016034727371151344
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\storport.sys!?",
+      "sampled_cpu_metric": 46.0,
+      "percent_of_export_metric": 0.0014751949181459236
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\tcpip.sys!?",
+      "sampled_cpu_metric": 45.0,
+      "percent_of_export_metric": 0.001443125463403621
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::Model::embed",
+      "sampled_cpu_metric": 35.0,
+      "percent_of_export_metric": 0.001122430915980594
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\classpnp.sys!?",
+      "sampled_cpu_metric": 34.0,
+      "percent_of_export_metric": 0.0010903614612382915
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::content::impl$41::deserialize_any<serde_json::error::Error,serde_json::value::de::impl$0::deserialize::ValueVisitor>",
+      "sampled_cpu_metric": 29.0,
+      "percent_of_export_metric": 0.000930014187526778
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::impl$8::deserialize_map<serde_json::error::Error,serde_json::value::de::impl$0::deserialize::ValueVisitor>",
+      "sampled_cpu_metric": 29.0,
+      "percent_of_export_metric": 0.000930014187526778
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\hidclass.sys!?",
+      "sampled_cpu_metric": 29.0,
+      "percent_of_export_metric": 0.000930014187526778
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::models::bpe::model::BpeBuilder::build",
+      "sampled_cpu_metric": 26.0,
+      "percent_of_export_metric": 0.00083380582329987
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\mtkwl6ex.sys!?",
+      "sampled_cpu_metric": 25.0,
+      "percent_of_export_metric": 0.0008017363685575672
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!gemm_f32::microkernel::fma::f32::hx1x2",
+      "sampled_cpu_metric": 23.0,
+      "percent_of_export_metric": 0.0007375974590729618
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\stornvme.sys!?",
+      "sampled_cpu_metric": 21.0,
+      "percent_of_export_metric": 0.0006734585495883565
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::error::Error::cause<alloc::boxed::convert::impl$19::from::StringError>",
+      "sampled_cpu_metric": 21.0,
+      "percent_of_export_metric": 0.0006734585495883565
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<falcon_ocr::model::Workspace>",
+      "sampled_cpu_metric": 21.0,
+      "percent_of_export_metric": 0.0006734585495883565
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\netio.sys!?",
+      "sampled_cpu_metric": 19.0,
+      "percent_of_export_metric": 0.0006093196401037511
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!memset",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\hidusb.sys!?",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ucx01000.sys!?",
+      "sampled_cpu_metric": 18.0,
+      "percent_of_export_metric": 0.0005772501853614484
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\afd.sys!?",
+      "sampled_cpu_metric": 16.0,
+      "percent_of_export_metric": 0.0005131112758768431
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\usbccgp.sys!?",
+      "sampled_cpu_metric": 16.0,
+      "percent_of_export_metric": 0.0005131112758768431
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\usbhub3.sys!?",
+      "sampled_cpu_metric": 16.0,
+      "percent_of_export_metric": 0.0005131112758768431
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!??_ZN8gemm_f3211microkernel3fma3f329U32_MASKS17h750cf6ee1e766e27E",
+      "sampled_cpu_metric": 15.0,
+      "percent_of_export_metric": 0.00048104182113454033
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wpprecorder.sys!?",
+      "sampled_cpu_metric": 15.0,
+      "percent_of_export_metric": 0.00048104182113454033
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_json::de::impl$7::deserialize_any<serde_json::read::SliceRead,serde::private::de::content::ContentVisitor>",
+      "sampled_cpu_metric": 13.0,
+      "percent_of_export_metric": 0.000416902911649935
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<enum2$<serde_core::private::content::Content> >",
+      "sampled_cpu_metric": 12.0,
+      "percent_of_export_metric": 0.0003848334569076323
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::kernels::Simd::resolved",
+      "sampled_cpu_metric": 11.0,
+      "percent_of_export_metric": 0.0003527640021653296
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::collections::btree::map::BTreeMap::insert<alloc::string::String,enum2$<serde_json::value::Value>,alloc::alloc::Global>",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_core::de::impls::impl$8::deserialize<serde::private::de::content::ContentRefDeserializer<serde_json::error::Error> >",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\windows\\system32\\symcryptk!?",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\cng.sys!?",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::trace::impl$2::enabled",
+      "sampled_cpu_metric": 10.0,
+      "percent_of_export_metric": 0.0003206945474230269
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_core::de::Deserializer::__deserialize_content_v1<enum2$<serde_json::value::Value>,serde::private::de::content::ContentVisitor>",
+      "sampled_cpu_metric": 9.0,
+      "percent_of_export_metric": 0.0002886250926807242
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!??_ZN11gemm_common5cache18CACHE_INFO_DEFAULT17h2f8a26adb2a0b7ecE",
+      "sampled_cpu_metric": 9.0,
+      "percent_of_export_metric": 0.0002886250926807242
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!ocr_bench::hash",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::raw_vec::RawVecInner::finish_grow<alloc::alloc::Global>",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_core::de::impl$7::next_value<serde_json::value::de::MapDeserializer,ahash::hash_map::AHashMap<alloc::string::String,u32,ahash::random_state::RandomState> >",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::fmt::format::format_inner",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::fmt::write",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!memcpy",
+      "sampled_cpu_metric": 8.0,
+      "percent_of_export_metric": 0.00025655563793842154
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ntfs.sys!?",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::content::content_clone",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde::private::de::content::impl$41::deserialize_seq<serde_json::error::Error,serde_core::de::impls::impl$19::deserialize::VecVisitor<tuple$<alloc::string::String,alloc::string::String> > >",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<enum2$<tokenizers::models::ModelWrapper> >",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<falcon_ocr::runner::Runner>",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<falcon_ocr::tokenizer::OcrTokenizer>",
+      "sampled_cpu_metric": 7.0,
+      "percent_of_export_metric": 0.00022448618319611882
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::model::temporal_factors",
+      "sampled_cpu_metric": 6.0,
+      "percent_of_export_metric": 0.00019241672845381614
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!image::codecs::png::impl$1::read_image_boxed<std::io::cursor::Cursor<ref$<slice2$<u8> > > >",
+      "sampled_cpu_metric": 5.0,
+      "percent_of_export_metric": 0.00016034727371151344
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!png::decoder::Reader::next_interlaced_row_impl<std::io::cursor::Cursor<ref$<slice2$<u8> > > >",
+      "sampled_cpu_metric": 5.0,
+      "percent_of_export_metric": 0.00016034727371151344
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!image::images::dynimage::load_from_memory",
+      "sampled_cpu_metric": 5.0,
+      "percent_of_export_metric": 0.00016034727371151344
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!image::io::free_functions::decoder_to_vec<u8,alloc::boxed::Box<dyn$<image::io::decoder::ImageDecoder>,alloc::alloc::Global> >",
+      "sampled_cpu_metric": 5.0,
+      "percent_of_export_metric": 0.00016034727371151344
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::raw_vec::RawVec::grow_one<zune_jpeg::decoder::ICCChunk,alloc::alloc::Global>",
+      "sampled_cpu_metric": 5.0,
+      "percent_of_export_metric": 0.00016034727371151344
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\fltmgr.sys!?",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::fs::read::inner",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\bthport.sys!?",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\bthusb.sys!?",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!fdeflate::decompress::Decompressor::read",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!png::decoder::stream::StreamingDecoder::update",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::tokenizer::pinned_file",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!serde_json::read::impl$7::parse_str",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<alloc::vec::Vec<enum2$<core::option::Option<tuple$<enum2$<serde_core::private::content::Content>,enum2$<serde_core::private::content::Content> > > >,alloc::alloc::Global> >",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::collections::btree::map::IntoIter::dying_next<alloc::string::String,enum2$<serde_json::value::Value>,alloc::alloc::Global>",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::raw_vec::impl$4::reserve::do_reserve_and_handle<alloc::alloc::Global>",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::string::impl$60::write_str",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\partmgr.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wfplwfs.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\nwifi.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\ndu.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\wdiwifi.sys!?",
+      "sampled_cpu_metric": 3.0,
+      "percent_of_export_metric": 9.620836422690807e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!png::decoder::unfiltering_buffer::UnfilteringBuffer::unfilter_curr_row_in_place",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!png::filter::unfilter",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!hashbrown::raw::RawTable::reserve_rehash<tuple$<tokenizers::tokenizer::added_vocabulary::AddedToken,tuple$<> >,alloc::alloc::Global,hashbrown::map::make_hasher::closure_env$0<tokenizers::tokenizer::added_vocabulary::AddedToken,tuple$<>,ahash::random_state::RandomState> >",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!hashbrown::map::HashMap::insert<alloc::string::String,u32,ahash::random_state::RandomState,alloc::alloc::Global>",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!hashbrown::raw::RawTable::reserve_rehash<tuple$<tuple$<u32,u32>,tuple$<u32,u32> >,alloc::alloc::Global,hashbrown::map::make_hasher::closure_env$0<tuple$<u32,u32>,tuple$<u32,u32>,ahash::random_state::RandomState> >",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::preprocess::coefficients",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\vmswitch.sys!?",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\volsnap.sys!?",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\nordlwf.sys!?",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::models::impl$3::id_to_token",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::tokenizer::OcrTokenizer::decode",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::iter::adapters::filter_map::impl$2::next<alloc::string::String,core::slice::iter::Iter<u32>,tokenizers::tokenizer::impl$20::decode::closure_env$0<enum2$<tokenizers::models::ModelWrapper>,enum2$<tokenizers::normalizers::NormalizerWrapper>,enum2$<tokenizers::pre_tokenizers::PreTokenizerWrapper>,enum2$<tokenizers::processors::PostProcessorWrapper>,enum2$<tokenizers::decoders::DecoderWrapper> > >",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::ptr::drop_in_place<tokenizers::decoders::ctc::CTC>",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::fs::read<std::path::PathBuf>",
+      "sampled_cpu_metric": 2.0,
+      "percent_of_export_metric": 6.413890948460539e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\condrv.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!safetensors::tensor::SafeTensors::deserialize",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!safetensors::tensor::SafeTensors::read_metadata",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::hash::random::impl$4::write",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::hash::BuildHasher::hash_one<std::hash::random::RandomState,ref$<alloc::string::String> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::str::converts::from_utf8",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::collections::btree::node::Handle::split<alloc::string::String,enum2$<serde_json::value::Value>,alloc::alloc::Global>",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::fmt::Formatter::pad",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::boxed::convert::impl$19::from::impl$1::fmt",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!core::hash::BuildHasher::hash_one<ahash::random_state::RandomState,ref$<tokenizers::tokenizer::added_vocabulary::AddedToken> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!tokenizers::tokenizer::added_vocabulary::AddedVocabulary::add_tokens<enum2$<tokenizers::normalizers::NormalizerWrapper>,enum2$<tokenizers::models::ModelWrapper> >",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!cosf",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\pacer.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\fvevol.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\mtkbtfilterx.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!sinf",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!falcon_ocr::runner::argmax",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\fse.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\acpi.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::fs::DirBuilder::create_dir_all",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!std::sys::fs::windows::DirBuilder::mkdir",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\windows\\system32\\drivers\\bfs.sys!?",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    },
+    {
+      "name": "c:\\users\\amazi\\documents\\chatgpt\\falcon-ocr\\artifacts\\builds\\ocr-bench-fullpages-v2-windows\\ocr_bench!alloc::collections::btree::map::impl$0::drop<alloc::string::String,enum2$<serde_json::value::Value>,alloc::alloc::Global>",
+      "sampled_cpu_metric": 1.0,
+      "percent_of_export_metric": 3.206945474230269e-05
+    }
+  ],
+  "exclusive_call_path_categories": [
+    {
+      "name": "attention_call_path",
+      "sampled_cpu_metric": 1617133.0,
+      "percent_of_export_metric": 51.86057355578418
+    },
+    {
+      "name": "linear_call_path",
+      "sampled_cpu_metric": 837371.0,
+      "percent_of_export_metric": 26.854031387016747
+    },
+    {
+      "name": "attention_gemm_call_path",
+      "sampled_cpu_metric": 364329.0,
+      "percent_of_export_metric": 11.683832376808397
+    },
+    {
+      "name": "rayon_without_resolved_operator_caller",
+      "sampled_cpu_metric": 192753.0,
+      "percent_of_export_metric": 6.18148360994307
+    },
+    {
+      "name": "gemm_call_path",
+      "sampled_cpu_metric": 60565.0,
+      "percent_of_export_metric": 1.9422865264675624
+    },
+    {
+      "name": "gate_call_path",
+      "sampled_cpu_metric": 32107.0,
+      "percent_of_export_metric": 1.0296539834111125
+    },
+    {
+      "name": "normalization_call_path",
+      "sampled_cpu_metric": 10569.0,
+      "percent_of_export_metric": 0.33894206717139713
+    },
+    {
+      "name": "other_or_unresolved",
+      "sampled_cpu_metric": 2848.0,
+      "percent_of_export_metric": 0.09133380710607807
+    },
+    {
+      "name": "axpy_without_resolved_operator_caller",
+      "sampled_cpu_metric": 553.0,
+      "percent_of_export_metric": 0.01773440847249339
+    },
+    {
+      "name": "dot_without_resolved_operator_caller",
+      "sampled_cpu_metric": 4.0,
+      "percent_of_export_metric": 0.00012827781896921077
+    }
+  ],
+  "one_second_bins": [
+    {
+      "trace_second": 0,
+      "categories": {
+        "other_or_unresolved": 44.0
+      }
+    },
+    {
+      "trace_second": 1,
+      "categories": {
+        "other_or_unresolved": 904.0,
+        "gemm_call_path": 249.0,
+        "linear_call_path": 19.0,
+        "rayon_without_resolved_operator_caller": 76.0,
+        "normalization_call_path": 50.0
+      }
+    },
+    {
+      "trace_second": 2,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 78.0,
+        "attention_gemm_call_path": 11407.0,
+        "gemm_call_path": 1841.0,
+        "other_or_unresolved": 2.0,
+        "linear_call_path": 121.0,
+        "normalization_call_path": 140.0,
+        "gate_call_path": 135.0
+      }
+    },
+    {
+      "trace_second": 3,
+      "categories": {
+        "attention_gemm_call_path": 11763.0,
+        "gemm_call_path": 1774.0,
+        "rayon_without_resolved_operator_caller": 72.0,
+        "linear_call_path": 123.0,
+        "normalization_call_path": 143.0,
+        "other_or_unresolved": 2.0,
+        "gate_call_path": 132.0
+      }
+    },
+    {
+      "trace_second": 4,
+      "categories": {
+        "attention_gemm_call_path": 11534.0,
+        "gemm_call_path": 1806.0,
+        "rayon_without_resolved_operator_caller": 64.0,
+        "linear_call_path": 122.0,
+        "normalization_call_path": 149.0,
+        "gate_call_path": 140.0
+      }
+    },
+    {
+      "trace_second": 5,
+      "categories": {
+        "attention_gemm_call_path": 11664.0,
+        "gemm_call_path": 1781.0,
+        "rayon_without_resolved_operator_caller": 69.0,
+        "linear_call_path": 127.0,
+        "normalization_call_path": 147.0,
+        "gate_call_path": 130.0
+      }
+    },
+    {
+      "trace_second": 6,
+      "categories": {
+        "attention_gemm_call_path": 11677.0,
+        "gemm_call_path": 1786.0,
+        "linear_call_path": 133.0,
+        "rayon_without_resolved_operator_caller": 79.0,
+        "normalization_call_path": 146.0,
+        "gate_call_path": 133.0
+      }
+    },
+    {
+      "trace_second": 7,
+      "categories": {
+        "attention_gemm_call_path": 11546.0,
+        "gemm_call_path": 1844.0,
+        "linear_call_path": 136.0,
+        "rayon_without_resolved_operator_caller": 72.0,
+        "normalization_call_path": 145.0,
+        "gate_call_path": 143.0
+      }
+    },
+    {
+      "trace_second": 8,
+      "categories": {
+        "attention_gemm_call_path": 11340.0,
+        "gemm_call_path": 1960.0,
+        "rayon_without_resolved_operator_caller": 76.0,
+        "linear_call_path": 129.0,
+        "normalization_call_path": 138.0,
+        "gate_call_path": 147.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 9,
+      "categories": {
+        "attention_gemm_call_path": 11431.0,
+        "gemm_call_path": 1924.0,
+        "rayon_without_resolved_operator_caller": 79.0,
+        "linear_call_path": 140.0,
+        "normalization_call_path": 147.0,
+        "other_or_unresolved": 3.0,
+        "gate_call_path": 141.0
+      }
+    },
+    {
+      "trace_second": 10,
+      "categories": {
+        "attention_gemm_call_path": 11508.0,
+        "gemm_call_path": 1810.0,
+        "linear_call_path": 137.0,
+        "rayon_without_resolved_operator_caller": 70.0,
+        "normalization_call_path": 149.0,
+        "gate_call_path": 143.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 11,
+      "categories": {
+        "attention_gemm_call_path": 11221.0,
+        "gemm_call_path": 1778.0,
+        "linear_call_path": 126.0,
+        "rayon_without_resolved_operator_caller": 71.0,
+        "normalization_call_path": 152.0,
+        "gate_call_path": 128.0
+      }
+    },
+    {
+      "trace_second": 12,
+      "categories": {
+        "attention_gemm_call_path": 5495.0,
+        "gemm_call_path": 1706.0,
+        "linear_call_path": 2005.0,
+        "rayon_without_resolved_operator_caller": 464.0,
+        "normalization_call_path": 96.0,
+        "gate_call_path": 205.0,
+        "attention_call_path": 3356.0,
+        "other_or_unresolved": 3.0
+      }
+    },
+    {
+      "trace_second": 13,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 1021.0,
+        "attention_call_path": 7858.0,
+        "linear_call_path": 4401.0,
+        "gate_call_path": 149.0,
+        "normalization_call_path": 23.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 14,
+      "categories": {
+        "linear_call_path": 4404.0,
+        "rayon_without_resolved_operator_caller": 1020.0,
+        "attention_call_path": 7843.0,
+        "gate_call_path": 157.0,
+        "other_or_unresolved": 6.0,
+        "normalization_call_path": 24.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 15,
+      "categories": {
+        "attention_call_path": 7850.0,
+        "rayon_without_resolved_operator_caller": 948.0,
+        "linear_call_path": 4499.0,
+        "gate_call_path": 131.0,
+        "normalization_call_path": 31.0,
+        "axpy_without_resolved_operator_caller": 5.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 16,
+      "categories": {
+        "linear_call_path": 4465.0,
+        "rayon_without_resolved_operator_caller": 1005.0,
+        "attention_call_path": 7885.0,
+        "gate_call_path": 160.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 9.0
+      }
+    },
+    {
+      "trace_second": 17,
+      "categories": {
+        "attention_call_path": 7955.0,
+        "linear_call_path": 4336.0,
+        "rayon_without_resolved_operator_caller": 1027.0,
+        "gate_call_path": 143.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 18,
+      "categories": {
+        "attention_call_path": 7913.0,
+        "linear_call_path": 4346.0,
+        "gate_call_path": 132.0,
+        "rayon_without_resolved_operator_caller": 970.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 36.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 19,
+      "categories": {
+        "attention_call_path": 7875.0,
+        "axpy_without_resolved_operator_caller": 4.0,
+        "gate_call_path": 146.0,
+        "rayon_without_resolved_operator_caller": 978.0,
+        "linear_call_path": 4354.0,
+        "normalization_call_path": 35.0,
+        "other_or_unresolved": 17.0,
+        "dot_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 20,
+      "categories": {
+        "attention_call_path": 7919.0,
+        "rayon_without_resolved_operator_caller": 1050.0,
+        "linear_call_path": 4257.0,
+        "gate_call_path": 126.0,
+        "normalization_call_path": 42.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 21,
+      "categories": {
+        "linear_call_path": 4361.0,
+        "normalization_call_path": 35.0,
+        "attention_call_path": 7988.0,
+        "rayon_without_resolved_operator_caller": 960.0,
+        "gate_call_path": 144.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 22,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 990.0,
+        "linear_call_path": 4317.0,
+        "attention_call_path": 8026.0,
+        "normalization_call_path": 16.0,
+        "gate_call_path": 137.0,
+        "axpy_without_resolved_operator_caller": 5.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 23,
+      "categories": {
+        "linear_call_path": 4434.0,
+        "gate_call_path": 178.0,
+        "attention_call_path": 7963.0,
+        "rayon_without_resolved_operator_caller": 970.0,
+        "normalization_call_path": 23.0,
+        "other_or_unresolved": 13.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 24,
+      "categories": {
+        "linear_call_path": 4343.0,
+        "rayon_without_resolved_operator_caller": 954.0,
+        "attention_call_path": 8016.0,
+        "gate_call_path": 145.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "normalization_call_path": 27.0
+      }
+    },
+    {
+      "trace_second": 25,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 945.0,
+        "linear_call_path": 4388.0,
+        "gate_call_path": 132.0,
+        "attention_call_path": 7993.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 6.0
+      }
+    },
+    {
+      "trace_second": 26,
+      "categories": {
+        "attention_call_path": 7919.0,
+        "linear_call_path": 4325.0,
+        "rayon_without_resolved_operator_caller": 1006.0,
+        "gate_call_path": 134.0,
+        "normalization_call_path": 26.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 27,
+      "categories": {
+        "linear_call_path": 4217.0,
+        "gate_call_path": 122.0,
+        "rayon_without_resolved_operator_caller": 1009.0,
+        "attention_call_path": 7986.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 28,
+      "categories": {
+        "attention_call_path": 7966.0,
+        "linear_call_path": 4248.0,
+        "rayon_without_resolved_operator_caller": 969.0,
+        "gate_call_path": 134.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 29,
+      "categories": {
+        "attention_call_path": 8086.0,
+        "rayon_without_resolved_operator_caller": 969.0,
+        "linear_call_path": 4192.0,
+        "gate_call_path": 145.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 30,
+      "categories": {
+        "linear_call_path": 4285.0,
+        "gate_call_path": 118.0,
+        "rayon_without_resolved_operator_caller": 1024.0,
+        "attention_call_path": 8020.0,
+        "normalization_call_path": 37.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 31,
+      "categories": {
+        "attention_call_path": 8036.0,
+        "rayon_without_resolved_operator_caller": 909.0,
+        "linear_call_path": 4310.0,
+        "gate_call_path": 141.0,
+        "normalization_call_path": 35.0,
+        "other_or_unresolved": 13.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 32,
+      "categories": {
+        "attention_call_path": 8038.0,
+        "linear_call_path": 4170.0,
+        "rayon_without_resolved_operator_caller": 995.0,
+        "normalization_call_path": 32.0,
+        "gate_call_path": 146.0,
+        "other_or_unresolved": 16.0,
+        "axpy_without_resolved_operator_caller": 8.0
+      }
+    },
+    {
+      "trace_second": 33,
+      "categories": {
+        "linear_call_path": 4395.0,
+        "rayon_without_resolved_operator_caller": 945.0,
+        "attention_call_path": 7958.0,
+        "gate_call_path": 133.0,
+        "other_or_unresolved": 9.0,
+        "normalization_call_path": 28.0,
+        "axpy_without_resolved_operator_caller": 6.0
+      }
+    },
+    {
+      "trace_second": 34,
+      "categories": {
+        "attention_call_path": 8045.0,
+        "linear_call_path": 4235.0,
+        "gate_call_path": 155.0,
+        "rayon_without_resolved_operator_caller": 947.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 35,
+      "categories": {
+        "linear_call_path": 4214.0,
+        "attention_call_path": 8037.0,
+        "rayon_without_resolved_operator_caller": 988.0,
+        "gate_call_path": 106.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 36,
+      "categories": {
+        "attention_call_path": 8109.0,
+        "linear_call_path": 4269.0,
+        "rayon_without_resolved_operator_caller": 928.0,
+        "gate_call_path": 142.0,
+        "normalization_call_path": 28.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 37,
+      "categories": {
+        "linear_call_path": 4243.0,
+        "attention_call_path": 8130.0,
+        "rayon_without_resolved_operator_caller": 912.0,
+        "gate_call_path": 136.0,
+        "normalization_call_path": 24.0,
+        "other_or_unresolved": 5.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 38,
+      "categories": {
+        "linear_call_path": 4138.0,
+        "rayon_without_resolved_operator_caller": 877.0,
+        "attention_call_path": 8228.0,
+        "gate_call_path": 138.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 39,
+      "categories": {
+        "attention_call_path": 8167.0,
+        "linear_call_path": 4172.0,
+        "rayon_without_resolved_operator_caller": 990.0,
+        "gate_call_path": 157.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 40,
+      "categories": {
+        "linear_call_path": 4216.0,
+        "rayon_without_resolved_operator_caller": 979.0,
+        "attention_call_path": 8043.0,
+        "gate_call_path": 132.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 41,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 927.0,
+        "attention_call_path": 8146.0,
+        "linear_call_path": 4251.0,
+        "gate_call_path": 117.0,
+        "normalization_call_path": 22.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 42,
+      "categories": {
+        "attention_call_path": 8189.0,
+        "rayon_without_resolved_operator_caller": 948.0,
+        "linear_call_path": 4238.0,
+        "gate_call_path": 141.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 43,
+      "categories": {
+        "attention_call_path": 8060.0,
+        "linear_call_path": 4178.0,
+        "rayon_without_resolved_operator_caller": 982.0,
+        "gate_call_path": 151.0,
+        "other_or_unresolved": 5.0,
+        "normalization_call_path": 19.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 44,
+      "categories": {
+        "attention_call_path": 8211.0,
+        "rayon_without_resolved_operator_caller": 961.0,
+        "linear_call_path": 4123.0,
+        "gate_call_path": 136.0,
+        "normalization_call_path": 37.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 45,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 999.0,
+        "attention_call_path": 8169.0,
+        "linear_call_path": 4223.0,
+        "gate_call_path": 139.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 12.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 46,
+      "categories": {
+        "linear_call_path": 4240.0,
+        "rayon_without_resolved_operator_caller": 983.0,
+        "attention_call_path": 8217.0,
+        "gate_call_path": 134.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 25.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 47,
+      "categories": {
+        "attention_call_path": 8202.0,
+        "linear_call_path": 4173.0,
+        "rayon_without_resolved_operator_caller": 985.0,
+        "gate_call_path": 147.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 5.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 48,
+      "categories": {
+        "attention_call_path": 8204.0,
+        "rayon_without_resolved_operator_caller": 991.0,
+        "linear_call_path": 4049.0,
+        "gate_call_path": 126.0,
+        "other_or_unresolved": 12.0,
+        "normalization_call_path": 17.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 49,
+      "categories": {
+        "linear_call_path": 4086.0,
+        "rayon_without_resolved_operator_caller": 983.0,
+        "attention_call_path": 8138.0,
+        "gate_call_path": 137.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 7.0
+      }
+    },
+    {
+      "trace_second": 50,
+      "categories": {
+        "attention_call_path": 8157.0,
+        "linear_call_path": 4165.0,
+        "gate_call_path": 134.0,
+        "rayon_without_resolved_operator_caller": 1001.0,
+        "other_or_unresolved": 6.0,
+        "normalization_call_path": 24.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 51,
+      "categories": {
+        "attention_call_path": 8189.0,
+        "linear_call_path": 4159.0,
+        "rayon_without_resolved_operator_caller": 941.0,
+        "gate_call_path": 146.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 52,
+      "categories": {
+        "attention_call_path": 8264.0,
+        "linear_call_path": 4096.0,
+        "rayon_without_resolved_operator_caller": 1004.0,
+        "gate_call_path": 135.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 53,
+      "categories": {
+        "attention_call_path": 8223.0,
+        "rayon_without_resolved_operator_caller": 931.0,
+        "linear_call_path": 4178.0,
+        "gate_call_path": 155.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 33.0,
+        "axpy_without_resolved_operator_caller": 6.0
+      }
+    },
+    {
+      "trace_second": 54,
+      "categories": {
+        "linear_call_path": 4152.0,
+        "gate_call_path": 138.0,
+        "attention_call_path": 8147.0,
+        "rayon_without_resolved_operator_caller": 998.0,
+        "normalization_call_path": 33.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 55,
+      "categories": {
+        "attention_call_path": 8142.0,
+        "rayon_without_resolved_operator_caller": 903.0,
+        "linear_call_path": 4142.0,
+        "gate_call_path": 148.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 56,
+      "categories": {
+        "attention_call_path": 8252.0,
+        "rayon_without_resolved_operator_caller": 919.0,
+        "linear_call_path": 4183.0,
+        "gate_call_path": 145.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 57,
+      "categories": {
+        "linear_call_path": 4110.0,
+        "attention_call_path": 8314.0,
+        "rayon_without_resolved_operator_caller": 935.0,
+        "gate_call_path": 129.0,
+        "other_or_unresolved": 7.0,
+        "normalization_call_path": 20.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 58,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 962.0,
+        "linear_call_path": 4042.0,
+        "attention_call_path": 8299.0,
+        "gate_call_path": 130.0,
+        "normalization_call_path": 28.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 59,
+      "categories": {
+        "attention_call_path": 8210.0,
+        "linear_call_path": 4088.0,
+        "gate_call_path": 148.0,
+        "normalization_call_path": 24.0,
+        "rayon_without_resolved_operator_caller": 906.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 60,
+      "categories": {
+        "attention_call_path": 8284.0,
+        "rayon_without_resolved_operator_caller": 927.0,
+        "linear_call_path": 4164.0,
+        "gate_call_path": 143.0,
+        "normalization_call_path": 34.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 61,
+      "categories": {
+        "attention_call_path": 8282.0,
+        "rayon_without_resolved_operator_caller": 927.0,
+        "linear_call_path": 4116.0,
+        "gate_call_path": 142.0,
+        "normalization_call_path": 41.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 62,
+      "categories": {
+        "linear_call_path": 4096.0,
+        "rayon_without_resolved_operator_caller": 934.0,
+        "attention_call_path": 8257.0,
+        "gate_call_path": 185.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 28.0
+      }
+    },
+    {
+      "trace_second": 63,
+      "categories": {
+        "attention_call_path": 8329.0,
+        "linear_call_path": 4058.0,
+        "rayon_without_resolved_operator_caller": 919.0,
+        "gate_call_path": 137.0,
+        "other_or_unresolved": 13.0,
+        "normalization_call_path": 33.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 64,
+      "categories": {
+        "attention_call_path": 8311.0,
+        "linear_call_path": 4117.0,
+        "gate_call_path": 135.0,
+        "rayon_without_resolved_operator_caller": 981.0,
+        "normalization_call_path": 25.0,
+        "other_or_unresolved": 3.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 65,
+      "categories": {
+        "attention_call_path": 8278.0,
+        "rayon_without_resolved_operator_caller": 930.0,
+        "linear_call_path": 4049.0,
+        "gate_call_path": 130.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 7.0
+      }
+    },
+    {
+      "trace_second": 66,
+      "categories": {
+        "attention_call_path": 8221.0,
+        "rayon_without_resolved_operator_caller": 961.0,
+        "linear_call_path": 3994.0,
+        "gate_call_path": 138.0,
+        "other_or_unresolved": 10.0,
+        "normalization_call_path": 32.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 67,
+      "categories": {
+        "attention_call_path": 8270.0,
+        "rayon_without_resolved_operator_caller": 939.0,
+        "other_or_unresolved": 7.0,
+        "linear_call_path": 4097.0,
+        "gate_call_path": 140.0,
+        "normalization_call_path": 31.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 68,
+      "categories": {
+        "attention_call_path": 8279.0,
+        "rayon_without_resolved_operator_caller": 934.0,
+        "linear_call_path": 4040.0,
+        "gate_call_path": 124.0,
+        "normalization_call_path": 36.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 69,
+      "categories": {
+        "linear_call_path": 4112.0,
+        "attention_call_path": 8251.0,
+        "rayon_without_resolved_operator_caller": 942.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "gate_call_path": 128.0,
+        "normalization_call_path": 39.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 70,
+      "categories": {
+        "attention_call_path": 8323.0,
+        "rayon_without_resolved_operator_caller": 963.0,
+        "linear_call_path": 4056.0,
+        "gate_call_path": 146.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 24.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 71,
+      "categories": {
+        "linear_call_path": 4065.0,
+        "attention_call_path": 8264.0,
+        "rayon_without_resolved_operator_caller": 942.0,
+        "gate_call_path": 122.0,
+        "normalization_call_path": 43.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 72,
+      "categories": {
+        "attention_call_path": 8271.0,
+        "linear_call_path": 4057.0,
+        "rayon_without_resolved_operator_caller": 917.0,
+        "gate_call_path": 117.0,
+        "normalization_call_path": 29.0,
+        "axpy_without_resolved_operator_caller": 5.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 73,
+      "categories": {
+        "attention_call_path": 8362.0,
+        "linear_call_path": 4019.0,
+        "gate_call_path": 132.0,
+        "rayon_without_resolved_operator_caller": 925.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 9.0
+      }
+    },
+    {
+      "trace_second": 74,
+      "categories": {
+        "linear_call_path": 4041.0,
+        "attention_call_path": 8223.0,
+        "rayon_without_resolved_operator_caller": 873.0,
+        "gate_call_path": 138.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 7.0
+      }
+    },
+    {
+      "trace_second": 75,
+      "categories": {
+        "attention_call_path": 8405.0,
+        "linear_call_path": 4010.0,
+        "rayon_without_resolved_operator_caller": 892.0,
+        "gate_call_path": 137.0,
+        "normalization_call_path": 41.0,
+        "other_or_unresolved": 8.0,
+        "dot_without_resolved_operator_caller": 1.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 76,
+      "categories": {
+        "linear_call_path": 4060.0,
+        "attention_call_path": 8402.0,
+        "rayon_without_resolved_operator_caller": 884.0,
+        "gate_call_path": 139.0,
+        "normalization_call_path": 26.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 77,
+      "categories": {
+        "attention_call_path": 8276.0,
+        "rayon_without_resolved_operator_caller": 901.0,
+        "linear_call_path": 4117.0,
+        "gate_call_path": 116.0,
+        "other_or_unresolved": 11.0,
+        "normalization_call_path": 28.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 78,
+      "categories": {
+        "other_or_unresolved": 57.0,
+        "linear_call_path": 2955.0,
+        "attention_call_path": 5967.0,
+        "rayon_without_resolved_operator_caller": 734.0,
+        "gate_call_path": 108.0,
+        "normalization_call_path": 74.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "gemm_call_path": 262.0,
+        "attention_gemm_call_path": 1246.0
+      }
+    },
+    {
+      "trace_second": 79,
+      "categories": {
+        "attention_gemm_call_path": 11657.0,
+        "gemm_call_path": 1781.0,
+        "other_or_unresolved": 2.0,
+        "linear_call_path": 119.0,
+        "rayon_without_resolved_operator_caller": 72.0,
+        "normalization_call_path": 153.0,
+        "gate_call_path": 144.0
+      }
+    },
+    {
+      "trace_second": 80,
+      "categories": {
+        "attention_gemm_call_path": 11748.0,
+        "gemm_call_path": 1838.0,
+        "rayon_without_resolved_operator_caller": 66.0,
+        "linear_call_path": 137.0,
+        "normalization_call_path": 144.0,
+        "gate_call_path": 133.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 81,
+      "categories": {
+        "attention_gemm_call_path": 11662.0,
+        "gemm_call_path": 1829.0,
+        "rayon_without_resolved_operator_caller": 71.0,
+        "linear_call_path": 121.0,
+        "normalization_call_path": 149.0,
+        "gate_call_path": 132.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 82,
+      "categories": {
+        "attention_gemm_call_path": 11513.0,
+        "gemm_call_path": 1819.0,
+        "linear_call_path": 138.0,
+        "rayon_without_resolved_operator_caller": 68.0,
+        "normalization_call_path": 140.0,
+        "gate_call_path": 135.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 83,
+      "categories": {
+        "attention_gemm_call_path": 11493.0,
+        "gemm_call_path": 1828.0,
+        "linear_call_path": 127.0,
+        "rayon_without_resolved_operator_caller": 70.0,
+        "normalization_call_path": 150.0,
+        "gate_call_path": 134.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 84,
+      "categories": {
+        "attention_gemm_call_path": 11160.0,
+        "gemm_call_path": 1875.0,
+        "linear_call_path": 141.0,
+        "rayon_without_resolved_operator_caller": 77.0,
+        "normalization_call_path": 144.0,
+        "gate_call_path": 151.0
+      }
+    },
+    {
+      "trace_second": 85,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 91.0,
+        "gemm_call_path": 2137.0,
+        "linear_call_path": 152.0,
+        "normalization_call_path": 158.0,
+        "gate_call_path": 133.0,
+        "attention_gemm_call_path": 11189.0
+      }
+    },
+    {
+      "trace_second": 86,
+      "categories": {
+        "gemm_call_path": 1937.0,
+        "linear_call_path": 140.0,
+        "rayon_without_resolved_operator_caller": 74.0,
+        "gate_call_path": 212.0,
+        "normalization_call_path": 143.0,
+        "attention_gemm_call_path": 11373.0,
+        "other_or_unresolved": 3.0
+      }
+    },
+    {
+      "trace_second": 87,
+      "categories": {
+        "gemm_call_path": 2145.0,
+        "linear_call_path": 130.0,
+        "rayon_without_resolved_operator_caller": 83.0,
+        "normalization_call_path": 163.0,
+        "attention_gemm_call_path": 11033.0,
+        "gate_call_path": 136.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 88,
+      "categories": {
+        "gemm_call_path": 1878.0,
+        "linear_call_path": 141.0,
+        "rayon_without_resolved_operator_caller": 101.0,
+        "normalization_call_path": 188.0,
+        "attention_gemm_call_path": 11072.0,
+        "gate_call_path": 139.0
+      }
+    },
+    {
+      "trace_second": 89,
+      "categories": {
+        "attention_gemm_call_path": 5494.0,
+        "gemm_call_path": 731.0,
+        "rayon_without_resolved_operator_caller": 540.0,
+        "linear_call_path": 2565.0,
+        "normalization_call_path": 26.0,
+        "gate_call_path": 139.0,
+        "attention_call_path": 4391.0,
+        "other_or_unresolved": 5.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 90,
+      "categories": {
+        "linear_call_path": 4407.0,
+        "rayon_without_resolved_operator_caller": 990.0,
+        "attention_call_path": 7952.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "gate_call_path": 144.0,
+        "other_or_unresolved": 10.0,
+        "normalization_call_path": 33.0
+      }
+    },
+    {
+      "trace_second": 91,
+      "categories": {
+        "attention_call_path": 7865.0,
+        "linear_call_path": 4422.0,
+        "rayon_without_resolved_operator_caller": 987.0,
+        "gate_call_path": 158.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 92,
+      "categories": {
+        "attention_call_path": 7899.0,
+        "linear_call_path": 4360.0,
+        "rayon_without_resolved_operator_caller": 993.0,
+        "gate_call_path": 157.0,
+        "other_or_unresolved": 19.0,
+        "axpy_without_resolved_operator_caller": 5.0,
+        "normalization_call_path": 20.0
+      }
+    },
+    {
+      "trace_second": 93,
+      "categories": {
+        "linear_call_path": 4483.0,
+        "rayon_without_resolved_operator_caller": 956.0,
+        "attention_call_path": 7928.0,
+        "gate_call_path": 131.0,
+        "other_or_unresolved": 10.0,
+        "normalization_call_path": 27.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 94,
+      "categories": {
+        "linear_call_path": 4302.0,
+        "rayon_without_resolved_operator_caller": 1006.0,
+        "attention_call_path": 7865.0,
+        "gate_call_path": 153.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 95,
+      "categories": {
+        "attention_call_path": 7941.0,
+        "rayon_without_resolved_operator_caller": 984.0,
+        "linear_call_path": 4383.0,
+        "gate_call_path": 142.0,
+        "normalization_call_path": 32.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 96,
+      "categories": {
+        "attention_call_path": 8015.0,
+        "linear_call_path": 4358.0,
+        "rayon_without_resolved_operator_caller": 988.0,
+        "gate_call_path": 150.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 97,
+      "categories": {
+        "attention_call_path": 8057.0,
+        "rayon_without_resolved_operator_caller": 973.0,
+        "linear_call_path": 4342.0,
+        "gate_call_path": 131.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "normalization_call_path": 23.0,
+        "dot_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 98,
+      "categories": {
+        "attention_call_path": 7892.0,
+        "linear_call_path": 4366.0,
+        "rayon_without_resolved_operator_caller": 992.0,
+        "gate_call_path": 144.0,
+        "other_or_unresolved": 18.0,
+        "normalization_call_path": 37.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 99,
+      "categories": {
+        "attention_call_path": 8098.0,
+        "linear_call_path": 4314.0,
+        "gate_call_path": 148.0,
+        "rayon_without_resolved_operator_caller": 962.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 100,
+      "categories": {
+        "linear_call_path": 4380.0,
+        "attention_call_path": 7946.0,
+        "rayon_without_resolved_operator_caller": 960.0,
+        "gate_call_path": 153.0,
+        "normalization_call_path": 32.0,
+        "other_or_unresolved": 3.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 101,
+      "categories": {
+        "attention_call_path": 7896.0,
+        "linear_call_path": 4343.0,
+        "rayon_without_resolved_operator_caller": 986.0,
+        "normalization_call_path": 29.0,
+        "gate_call_path": 130.0,
+        "other_or_unresolved": 12.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 102,
+      "categories": {
+        "gate_call_path": 141.0,
+        "linear_call_path": 4216.0,
+        "rayon_without_resolved_operator_caller": 1014.0,
+        "attention_call_path": 8018.0,
+        "other_or_unresolved": 5.0,
+        "normalization_call_path": 39.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 103,
+      "categories": {
+        "attention_call_path": 7929.0,
+        "rayon_without_resolved_operator_caller": 982.0,
+        "linear_call_path": 4213.0,
+        "gate_call_path": 132.0,
+        "normalization_call_path": 22.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 104,
+      "categories": {
+        "linear_call_path": 4239.0,
+        "rayon_without_resolved_operator_caller": 1008.0,
+        "attention_call_path": 7941.0,
+        "normalization_call_path": 28.0,
+        "gate_call_path": 136.0,
+        "axpy_without_resolved_operator_caller": 7.0,
+        "other_or_unresolved": 10.0
+      }
+    },
+    {
+      "trace_second": 105,
+      "categories": {
+        "attention_call_path": 7918.0,
+        "rayon_without_resolved_operator_caller": 970.0,
+        "linear_call_path": 4407.0,
+        "gate_call_path": 152.0,
+        "normalization_call_path": 37.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 106,
+      "categories": {
+        "attention_call_path": 8046.0,
+        "linear_call_path": 4299.0,
+        "gate_call_path": 141.0,
+        "rayon_without_resolved_operator_caller": 952.0,
+        "normalization_call_path": 34.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 107,
+      "categories": {
+        "attention_call_path": 8070.0,
+        "rayon_without_resolved_operator_caller": 944.0,
+        "linear_call_path": 4285.0,
+        "normalization_call_path": 29.0,
+        "gate_call_path": 145.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 108,
+      "categories": {
+        "attention_call_path": 8065.0,
+        "rayon_without_resolved_operator_caller": 962.0,
+        "linear_call_path": 4405.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "gate_call_path": 151.0,
+        "normalization_call_path": 25.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 109,
+      "categories": {
+        "attention_call_path": 8024.0,
+        "linear_call_path": 4247.0,
+        "gate_call_path": 155.0,
+        "rayon_without_resolved_operator_caller": 971.0,
+        "other_or_unresolved": 9.0,
+        "normalization_call_path": 26.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 110,
+      "categories": {
+        "attention_call_path": 8058.0,
+        "rayon_without_resolved_operator_caller": 956.0,
+        "linear_call_path": 4240.0,
+        "gate_call_path": 141.0,
+        "normalization_call_path": 21.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 111,
+      "categories": {
+        "attention_call_path": 8071.0,
+        "linear_call_path": 4313.0,
+        "rayon_without_resolved_operator_caller": 931.0,
+        "gate_call_path": 126.0,
+        "normalization_call_path": 36.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 112,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 1013.0,
+        "attention_call_path": 8220.0,
+        "linear_call_path": 4203.0,
+        "gate_call_path": 134.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 113,
+      "categories": {
+        "attention_call_path": 7976.0,
+        "linear_call_path": 4326.0,
+        "rayon_without_resolved_operator_caller": 888.0,
+        "axpy_without_resolved_operator_caller": 4.0,
+        "gate_call_path": 121.0,
+        "normalization_call_path": 42.0,
+        "other_or_unresolved": 4.0
+      }
+    },
+    {
+      "trace_second": 114,
+      "categories": {
+        "attention_call_path": 8148.0,
+        "rayon_without_resolved_operator_caller": 905.0,
+        "linear_call_path": 4291.0,
+        "gate_call_path": 131.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 115,
+      "categories": {
+        "linear_call_path": 4260.0,
+        "attention_call_path": 8102.0,
+        "rayon_without_resolved_operator_caller": 941.0,
+        "gate_call_path": 149.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 116,
+      "categories": {
+        "linear_call_path": 4193.0,
+        "attention_call_path": 8014.0,
+        "rayon_without_resolved_operator_caller": 941.0,
+        "gate_call_path": 142.0,
+        "other_or_unresolved": 9.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 7.0
+      }
+    },
+    {
+      "trace_second": 117,
+      "categories": {
+        "attention_call_path": 8073.0,
+        "linear_call_path": 4213.0,
+        "rayon_without_resolved_operator_caller": 940.0,
+        "gate_call_path": 147.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 5.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 118,
+      "categories": {
+        "attention_call_path": 8105.0,
+        "rayon_without_resolved_operator_caller": 946.0,
+        "linear_call_path": 4178.0,
+        "normalization_call_path": 27.0,
+        "gate_call_path": 120.0,
+        "axpy_without_resolved_operator_caller": 5.0,
+        "other_or_unresolved": 9.0
+      }
+    },
+    {
+      "trace_second": 119,
+      "categories": {
+        "attention_call_path": 8053.0,
+        "rayon_without_resolved_operator_caller": 931.0,
+        "linear_call_path": 4124.0,
+        "gate_call_path": 132.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 120,
+      "categories": {
+        "attention_call_path": 8091.0,
+        "rayon_without_resolved_operator_caller": 982.0,
+        "linear_call_path": 4184.0,
+        "gate_call_path": 122.0,
+        "other_or_unresolved": 7.0,
+        "normalization_call_path": 33.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 121,
+      "categories": {
+        "linear_call_path": 4181.0,
+        "attention_call_path": 8104.0,
+        "rayon_without_resolved_operator_caller": 968.0,
+        "normalization_call_path": 22.0,
+        "gate_call_path": 122.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "other_or_unresolved": 9.0
+      }
+    },
+    {
+      "trace_second": 122,
+      "categories": {
+        "attention_call_path": 8117.0,
+        "rayon_without_resolved_operator_caller": 969.0,
+        "linear_call_path": 4140.0,
+        "normalization_call_path": 33.0,
+        "gate_call_path": 136.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 123,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 998.0,
+        "linear_call_path": 4122.0,
+        "attention_call_path": 8109.0,
+        "gate_call_path": 129.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 14.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 124,
+      "categories": {
+        "linear_call_path": 4225.0,
+        "attention_call_path": 8235.0,
+        "rayon_without_resolved_operator_caller": 893.0,
+        "gate_call_path": 141.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 125,
+      "categories": {
+        "attention_call_path": 8161.0,
+        "linear_call_path": 4116.0,
+        "gate_call_path": 135.0,
+        "rayon_without_resolved_operator_caller": 1039.0,
+        "normalization_call_path": 28.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 126,
+      "categories": {
+        "linear_call_path": 4213.0,
+        "rayon_without_resolved_operator_caller": 977.0,
+        "attention_call_path": 8093.0,
+        "gate_call_path": 131.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 127,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 911.0,
+        "linear_call_path": 4225.0,
+        "attention_call_path": 8198.0,
+        "gate_call_path": 147.0,
+        "normalization_call_path": 18.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "other_or_unresolved": 9.0
+      }
+    },
+    {
+      "trace_second": 128,
+      "categories": {
+        "linear_call_path": 4205.0,
+        "attention_call_path": 8097.0,
+        "rayon_without_resolved_operator_caller": 951.0,
+        "gate_call_path": 145.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 14.0
+      }
+    },
+    {
+      "trace_second": 129,
+      "categories": {
+        "linear_call_path": 4154.0,
+        "gate_call_path": 156.0,
+        "rayon_without_resolved_operator_caller": 928.0,
+        "attention_call_path": 8190.0,
+        "normalization_call_path": 23.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 130,
+      "categories": {
+        "attention_call_path": 8193.0,
+        "rayon_without_resolved_operator_caller": 949.0,
+        "linear_call_path": 4126.0,
+        "gate_call_path": 144.0,
+        "normalization_call_path": 35.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 6.0
+      }
+    },
+    {
+      "trace_second": 131,
+      "categories": {
+        "attention_call_path": 8262.0,
+        "linear_call_path": 4215.0,
+        "rayon_without_resolved_operator_caller": 930.0,
+        "gate_call_path": 119.0,
+        "normalization_call_path": 33.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 132,
+      "categories": {
+        "linear_call_path": 4259.0,
+        "rayon_without_resolved_operator_caller": 929.0,
+        "attention_call_path": 8175.0,
+        "gate_call_path": 127.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 133,
+      "categories": {
+        "linear_call_path": 4171.0,
+        "rayon_without_resolved_operator_caller": 934.0,
+        "attention_call_path": 8205.0,
+        "normalization_call_path": 23.0,
+        "gate_call_path": 127.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 134,
+      "categories": {
+        "attention_call_path": 8202.0,
+        "rayon_without_resolved_operator_caller": 934.0,
+        "linear_call_path": 4102.0,
+        "gate_call_path": 129.0,
+        "normalization_call_path": 25.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 135,
+      "categories": {
+        "linear_call_path": 4077.0,
+        "other_or_unresolved": 11.0,
+        "attention_call_path": 8239.0,
+        "rayon_without_resolved_operator_caller": 923.0,
+        "gate_call_path": 150.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 8.0
+      }
+    },
+    {
+      "trace_second": 136,
+      "categories": {
+        "attention_call_path": 8236.0,
+        "rayon_without_resolved_operator_caller": 946.0,
+        "linear_call_path": 4089.0,
+        "gate_call_path": 118.0,
+        "normalization_call_path": 36.0,
+        "other_or_unresolved": 5.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 137,
+      "categories": {
+        "attention_call_path": 8186.0,
+        "rayon_without_resolved_operator_caller": 972.0,
+        "linear_call_path": 3990.0,
+        "gate_call_path": 155.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 138,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 921.0,
+        "linear_call_path": 4190.0,
+        "attention_call_path": 8148.0,
+        "normalization_call_path": 35.0,
+        "gate_call_path": 120.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 139,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 958.0,
+        "linear_call_path": 4040.0,
+        "attention_call_path": 8289.0,
+        "gate_call_path": 143.0,
+        "normalization_call_path": 36.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 140,
+      "categories": {
+        "attention_call_path": 8375.0,
+        "rayon_without_resolved_operator_caller": 986.0,
+        "linear_call_path": 3928.0,
+        "other_or_unresolved": 8.0,
+        "gate_call_path": 149.0,
+        "normalization_call_path": 25.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 141,
+      "categories": {
+        "attention_call_path": 8316.0,
+        "rayon_without_resolved_operator_caller": 934.0,
+        "linear_call_path": 4158.0,
+        "gate_call_path": 133.0,
+        "normalization_call_path": 17.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 142,
+      "categories": {
+        "linear_call_path": 4056.0,
+        "rayon_without_resolved_operator_caller": 953.0,
+        "attention_call_path": 8301.0,
+        "normalization_call_path": 17.0,
+        "gate_call_path": 134.0,
+        "other_or_unresolved": 11.0
+      }
+    },
+    {
+      "trace_second": 143,
+      "categories": {
+        "attention_call_path": 8258.0,
+        "rayon_without_resolved_operator_caller": 883.0,
+        "linear_call_path": 4157.0,
+        "gate_call_path": 148.0,
+        "other_or_unresolved": 14.0,
+        "normalization_call_path": 23.0
+      }
+    },
+    {
+      "trace_second": 144,
+      "categories": {
+        "linear_call_path": 4041.0,
+        "attention_call_path": 8270.0,
+        "rayon_without_resolved_operator_caller": 948.0,
+        "gate_call_path": 154.0,
+        "normalization_call_path": 26.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 145,
+      "categories": {
+        "gate_call_path": 128.0,
+        "linear_call_path": 4136.0,
+        "attention_call_path": 8172.0,
+        "rayon_without_resolved_operator_caller": 964.0,
+        "normalization_call_path": 35.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 3.0
+      }
+    },
+    {
+      "trace_second": 146,
+      "categories": {
+        "attention_call_path": 8302.0,
+        "rayon_without_resolved_operator_caller": 872.0,
+        "linear_call_path": 4038.0,
+        "gate_call_path": 146.0,
+        "other_or_unresolved": 10.0,
+        "normalization_call_path": 31.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 147,
+      "categories": {
+        "attention_call_path": 8221.0,
+        "rayon_without_resolved_operator_caller": 941.0,
+        "linear_call_path": 4006.0,
+        "gate_call_path": 144.0,
+        "normalization_call_path": 41.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 148,
+      "categories": {
+        "linear_call_path": 4070.0,
+        "rayon_without_resolved_operator_caller": 919.0,
+        "attention_call_path": 8307.0,
+        "gate_call_path": 141.0,
+        "normalization_call_path": 47.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 149,
+      "categories": {
+        "linear_call_path": 3975.0,
+        "attention_call_path": 8418.0,
+        "rayon_without_resolved_operator_caller": 904.0,
+        "gate_call_path": 123.0,
+        "normalization_call_path": 31.0,
+        "axpy_without_resolved_operator_caller": 4.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 150,
+      "categories": {
+        "attention_call_path": 8265.0,
+        "rayon_without_resolved_operator_caller": 914.0,
+        "linear_call_path": 4085.0,
+        "gate_call_path": 133.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "normalization_call_path": 16.0,
+        "other_or_unresolved": 4.0
+      }
+    },
+    {
+      "trace_second": 151,
+      "categories": {
+        "attention_call_path": 8367.0,
+        "rayon_without_resolved_operator_caller": 923.0,
+        "linear_call_path": 3923.0,
+        "gate_call_path": 156.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 152,
+      "categories": {
+        "attention_call_path": 8344.0,
+        "linear_call_path": 4033.0,
+        "rayon_without_resolved_operator_caller": 878.0,
+        "gate_call_path": 153.0,
+        "other_or_unresolved": 10.0,
+        "normalization_call_path": 22.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 153,
+      "categories": {
+        "linear_call_path": 4044.0,
+        "gate_call_path": 146.0,
+        "rayon_without_resolved_operator_caller": 941.0,
+        "attention_call_path": 8273.0,
+        "other_or_unresolved": 7.0,
+        "normalization_call_path": 21.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 154,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 863.0,
+        "linear_call_path": 4012.0,
+        "attention_call_path": 8373.0,
+        "gate_call_path": 131.0,
+        "normalization_call_path": 26.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 155,
+      "categories": {
+        "attention_call_path": 4861.0,
+        "rayon_without_resolved_operator_caller": 682.0,
+        "linear_call_path": 2386.0,
+        "gate_call_path": 86.0,
+        "other_or_unresolved": 57.0,
+        "normalization_call_path": 64.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "gemm_call_path": 235.0,
+        "attention_gemm_call_path": 3119.0
+      }
+    },
+    {
+      "trace_second": 156,
+      "categories": {
+        "attention_gemm_call_path": 11617.0,
+        "gemm_call_path": 1817.0,
+        "linear_call_path": 113.0,
+        "rayon_without_resolved_operator_caller": 70.0,
+        "normalization_call_path": 151.0,
+        "gate_call_path": 138.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 157,
+      "categories": {
+        "attention_gemm_call_path": 11651.0,
+        "gemm_call_path": 1797.0,
+        "rayon_without_resolved_operator_caller": 78.0,
+        "linear_call_path": 124.0,
+        "normalization_call_path": 141.0,
+        "gate_call_path": 134.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 158,
+      "categories": {
+        "attention_gemm_call_path": 11563.0,
+        "gemm_call_path": 1819.0,
+        "rayon_without_resolved_operator_caller": 65.0,
+        "linear_call_path": 128.0,
+        "normalization_call_path": 147.0,
+        "gate_call_path": 140.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 159,
+      "categories": {
+        "attention_gemm_call_path": 11546.0,
+        "gemm_call_path": 1847.0,
+        "other_or_unresolved": 1.0,
+        "linear_call_path": 132.0,
+        "rayon_without_resolved_operator_caller": 70.0,
+        "normalization_call_path": 134.0,
+        "gate_call_path": 136.0
+      }
+    },
+    {
+      "trace_second": 160,
+      "categories": {
+        "attention_gemm_call_path": 11379.0,
+        "other_or_unresolved": 1.0,
+        "gemm_call_path": 1824.0,
+        "rayon_without_resolved_operator_caller": 72.0,
+        "linear_call_path": 135.0,
+        "normalization_call_path": 140.0,
+        "gate_call_path": 140.0
+      }
+    },
+    {
+      "trace_second": 161,
+      "categories": {
+        "attention_gemm_call_path": 11430.0,
+        "gemm_call_path": 1878.0,
+        "linear_call_path": 132.0,
+        "rayon_without_resolved_operator_caller": 66.0,
+        "normalization_call_path": 141.0,
+        "gate_call_path": 141.0,
+        "other_or_unresolved": 3.0
+      }
+    },
+    {
+      "trace_second": 162,
+      "categories": {
+        "attention_gemm_call_path": 11500.0,
+        "gemm_call_path": 1851.0,
+        "linear_call_path": 140.0,
+        "rayon_without_resolved_operator_caller": 66.0,
+        "normalization_call_path": 154.0,
+        "gate_call_path": 138.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 163,
+      "categories": {
+        "gemm_call_path": 1912.0,
+        "linear_call_path": 148.0,
+        "rayon_without_resolved_operator_caller": 65.0,
+        "normalization_call_path": 151.0,
+        "gate_call_path": 135.0,
+        "attention_gemm_call_path": 11586.0,
+        "other_or_unresolved": 1.0
+      }
+    },
+    {
+      "trace_second": 164,
+      "categories": {
+        "attention_gemm_call_path": 11143.0,
+        "rayon_without_resolved_operator_caller": 72.0,
+        "gemm_call_path": 2064.0,
+        "linear_call_path": 136.0,
+        "normalization_call_path": 159.0,
+        "gate_call_path": 138.0
+      }
+    },
+    {
+      "trace_second": 165,
+      "categories": {
+        "gemm_call_path": 2049.0,
+        "linear_call_path": 139.0,
+        "rayon_without_resolved_operator_caller": 70.0,
+        "gate_call_path": 129.0,
+        "normalization_call_path": 147.0,
+        "attention_gemm_call_path": 11121.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 166,
+      "categories": {
+        "gemm_call_path": 1153.0,
+        "gate_call_path": 212.0,
+        "rayon_without_resolved_operator_caller": 497.0,
+        "linear_call_path": 2266.0,
+        "normalization_call_path": 88.0,
+        "attention_gemm_call_path": 5448.0,
+        "attention_call_path": 3793.0
+      }
+    },
+    {
+      "trace_second": 167,
+      "categories": {
+        "linear_call_path": 4336.0,
+        "rayon_without_resolved_operator_caller": 1025.0,
+        "attention_call_path": 7908.0,
+        "gate_call_path": 156.0,
+        "other_or_unresolved": 12.0,
+        "normalization_call_path": 25.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 168,
+      "categories": {
+        "linear_call_path": 4224.0,
+        "rayon_without_resolved_operator_caller": 1011.0,
+        "attention_call_path": 7927.0,
+        "gate_call_path": 120.0,
+        "normalization_call_path": 39.0,
+        "other_or_unresolved": 13.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 169,
+      "categories": {
+        "attention_call_path": 7889.0,
+        "rayon_without_resolved_operator_caller": 988.0,
+        "linear_call_path": 4303.0,
+        "gate_call_path": 140.0,
+        "other_or_unresolved": 7.0,
+        "normalization_call_path": 37.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 170,
+      "categories": {
+        "attention_call_path": 7885.0,
+        "rayon_without_resolved_operator_caller": 1039.0,
+        "linear_call_path": 4305.0,
+        "gate_call_path": 136.0,
+        "normalization_call_path": 42.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 171,
+      "categories": {
+        "linear_call_path": 4303.0,
+        "rayon_without_resolved_operator_caller": 1043.0,
+        "attention_call_path": 7965.0,
+        "gate_call_path": 138.0,
+        "normalization_call_path": 35.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 172,
+      "categories": {
+        "linear_call_path": 4395.0,
+        "rayon_without_resolved_operator_caller": 973.0,
+        "attention_call_path": 7894.0,
+        "gate_call_path": 162.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 13.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 173,
+      "categories": {
+        "attention_call_path": 7950.0,
+        "rayon_without_resolved_operator_caller": 1007.0,
+        "linear_call_path": 4377.0,
+        "gate_call_path": 126.0,
+        "normalization_call_path": 28.0,
+        "other_or_unresolved": 12.0
+      }
+    },
+    {
+      "trace_second": 174,
+      "categories": {
+        "attention_call_path": 7942.0,
+        "linear_call_path": 4325.0,
+        "rayon_without_resolved_operator_caller": 997.0,
+        "gate_call_path": 127.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 175,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 951.0,
+        "linear_call_path": 4363.0,
+        "attention_call_path": 7948.0,
+        "gate_call_path": 173.0,
+        "normalization_call_path": 27.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 7.0
+      }
+    },
+    {
+      "trace_second": 176,
+      "categories": {
+        "attention_call_path": 7875.0,
+        "linear_call_path": 4286.0,
+        "rayon_without_resolved_operator_caller": 1010.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "gate_call_path": 145.0,
+        "normalization_call_path": 36.0,
+        "other_or_unresolved": 9.0
+      }
+    },
+    {
+      "trace_second": 177,
+      "categories": {
+        "attention_call_path": 7918.0,
+        "rayon_without_resolved_operator_caller": 997.0,
+        "linear_call_path": 4340.0,
+        "normalization_call_path": 39.0,
+        "gate_call_path": 150.0,
+        "other_or_unresolved": 11.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 178,
+      "categories": {
+        "attention_call_path": 7959.0,
+        "linear_call_path": 4342.0,
+        "gate_call_path": 143.0,
+        "rayon_without_resolved_operator_caller": 970.0,
+        "normalization_call_path": 22.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "other_or_unresolved": 11.0
+      }
+    },
+    {
+      "trace_second": 179,
+      "categories": {
+        "attention_call_path": 7982.0,
+        "rayon_without_resolved_operator_caller": 951.0,
+        "linear_call_path": 4306.0,
+        "gate_call_path": 147.0,
+        "normalization_call_path": 37.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 180,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 987.0,
+        "linear_call_path": 4258.0,
+        "attention_call_path": 7984.0,
+        "gate_call_path": 150.0,
+        "other_or_unresolved": 11.0,
+        "normalization_call_path": 38.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 181,
+      "categories": {
+        "attention_call_path": 7994.0,
+        "linear_call_path": 4282.0,
+        "gate_call_path": 135.0,
+        "rayon_without_resolved_operator_caller": 927.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 5.0,
+        "dot_without_resolved_operator_caller": 1.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 182,
+      "categories": {
+        "linear_call_path": 4369.0,
+        "rayon_without_resolved_operator_caller": 950.0,
+        "attention_call_path": 7928.0,
+        "gate_call_path": 126.0,
+        "normalization_call_path": 28.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 183,
+      "categories": {
+        "linear_call_path": 4279.0,
+        "rayon_without_resolved_operator_caller": 969.0,
+        "attention_call_path": 7934.0,
+        "gate_call_path": 139.0,
+        "normalization_call_path": 23.0,
+        "other_or_unresolved": 12.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 184,
+      "categories": {
+        "linear_call_path": 4272.0,
+        "attention_call_path": 8086.0,
+        "rayon_without_resolved_operator_caller": 944.0,
+        "gate_call_path": 157.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 185,
+      "categories": {
+        "attention_call_path": 7977.0,
+        "linear_call_path": 4220.0,
+        "rayon_without_resolved_operator_caller": 1007.0,
+        "gate_call_path": 161.0,
+        "normalization_call_path": 30.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 186,
+      "categories": {
+        "attention_call_path": 8022.0,
+        "linear_call_path": 4259.0,
+        "rayon_without_resolved_operator_caller": 951.0,
+        "gate_call_path": 136.0,
+        "normalization_call_path": 25.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 187,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 978.0,
+        "linear_call_path": 4276.0,
+        "attention_call_path": 7990.0,
+        "gate_call_path": 133.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 188,
+      "categories": {
+        "attention_call_path": 8008.0,
+        "linear_call_path": 4232.0,
+        "gate_call_path": 148.0,
+        "rayon_without_resolved_operator_caller": 1038.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 189,
+      "categories": {
+        "linear_call_path": 4296.0,
+        "rayon_without_resolved_operator_caller": 907.0,
+        "attention_call_path": 7983.0,
+        "gate_call_path": 139.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 15.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 190,
+      "categories": {
+        "linear_call_path": 4263.0,
+        "rayon_without_resolved_operator_caller": 930.0,
+        "attention_call_path": 8048.0,
+        "gate_call_path": 129.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 191,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 964.0,
+        "linear_call_path": 4270.0,
+        "attention_call_path": 7994.0,
+        "gate_call_path": 151.0,
+        "normalization_call_path": 37.0,
+        "axpy_without_resolved_operator_caller": 6.0,
+        "other_or_unresolved": 8.0
+      }
+    },
+    {
+      "trace_second": 192,
+      "categories": {
+        "attention_call_path": 8111.0,
+        "rayon_without_resolved_operator_caller": 938.0,
+        "linear_call_path": 4204.0,
+        "gate_call_path": 153.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 9.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 193,
+      "categories": {
+        "attention_call_path": 8111.0,
+        "linear_call_path": 4177.0,
+        "rayon_without_resolved_operator_caller": 965.0,
+        "gate_call_path": 150.0,
+        "other_or_unresolved": 9.0,
+        "normalization_call_path": 22.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 194,
+      "categories": {
+        "linear_call_path": 4080.0,
+        "gate_call_path": 138.0,
+        "rayon_without_resolved_operator_caller": 1045.0,
+        "attention_call_path": 8071.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 13.0,
+        "normalization_call_path": 20.0
+      }
+    },
+    {
+      "trace_second": 195,
+      "categories": {
+        "attention_call_path": 8110.0,
+        "linear_call_path": 4181.0,
+        "gate_call_path": 128.0,
+        "rayon_without_resolved_operator_caller": 967.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 196,
+      "categories": {
+        "attention_call_path": 8125.0,
+        "linear_call_path": 4271.0,
+        "rayon_without_resolved_operator_caller": 934.0,
+        "gate_call_path": 116.0,
+        "normalization_call_path": 22.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 197,
+      "categories": {
+        "attention_call_path": 8130.0,
+        "linear_call_path": 4124.0,
+        "gate_call_path": 153.0,
+        "rayon_without_resolved_operator_caller": 958.0,
+        "axpy_without_resolved_operator_caller": 4.0,
+        "other_or_unresolved": 9.0,
+        "normalization_call_path": 24.0
+      }
+    },
+    {
+      "trace_second": 198,
+      "categories": {
+        "attention_call_path": 8137.0,
+        "rayon_without_resolved_operator_caller": 959.0,
+        "linear_call_path": 4196.0,
+        "gate_call_path": 122.0,
+        "normalization_call_path": 37.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 199,
+      "categories": {
+        "attention_call_path": 8171.0,
+        "rayon_without_resolved_operator_caller": 941.0,
+        "linear_call_path": 4160.0,
+        "gate_call_path": 151.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 200,
+      "categories": {
+        "attention_call_path": 8078.0,
+        "linear_call_path": 4166.0,
+        "rayon_without_resolved_operator_caller": 957.0,
+        "gate_call_path": 139.0,
+        "other_or_unresolved": 12.0,
+        "normalization_call_path": 17.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 201,
+      "categories": {
+        "linear_call_path": 4175.0,
+        "rayon_without_resolved_operator_caller": 940.0,
+        "attention_call_path": 8101.0,
+        "gate_call_path": 144.0,
+        "normalization_call_path": 27.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 7.0
+      }
+    },
+    {
+      "trace_second": 202,
+      "categories": {
+        "linear_call_path": 4080.0,
+        "rayon_without_resolved_operator_caller": 962.0,
+        "attention_call_path": 8111.0,
+        "normalization_call_path": 21.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 10.0,
+        "gate_call_path": 130.0
+      }
+    },
+    {
+      "trace_second": 203,
+      "categories": {
+        "linear_call_path": 4170.0,
+        "attention_call_path": 8121.0,
+        "rayon_without_resolved_operator_caller": 966.0,
+        "gate_call_path": 144.0,
+        "other_or_unresolved": 10.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 204,
+      "categories": {
+        "attention_call_path": 8029.0,
+        "rayon_without_resolved_operator_caller": 980.0,
+        "linear_call_path": 4193.0,
+        "gate_call_path": 137.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 5.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 205,
+      "categories": {
+        "linear_call_path": 4132.0,
+        "gate_call_path": 141.0,
+        "rayon_without_resolved_operator_caller": 995.0,
+        "attention_call_path": 8072.0,
+        "normalization_call_path": 27.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 4.0
+      }
+    },
+    {
+      "trace_second": 206,
+      "categories": {
+        "linear_call_path": 4170.0,
+        "rayon_without_resolved_operator_caller": 931.0,
+        "attention_call_path": 8196.0,
+        "gate_call_path": 141.0,
+        "normalization_call_path": 35.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 207,
+      "categories": {
+        "attention_call_path": 8134.0,
+        "rayon_without_resolved_operator_caller": 949.0,
+        "linear_call_path": 4142.0,
+        "gate_call_path": 157.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 208,
+      "categories": {
+        "attention_call_path": 8172.0,
+        "linear_call_path": 4132.0,
+        "rayon_without_resolved_operator_caller": 920.0,
+        "gate_call_path": 132.0,
+        "other_or_unresolved": 12.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 209,
+      "categories": {
+        "attention_call_path": 8148.0,
+        "linear_call_path": 4088.0,
+        "rayon_without_resolved_operator_caller": 929.0,
+        "gate_call_path": 136.0,
+        "normalization_call_path": 38.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 210,
+      "categories": {
+        "attention_call_path": 8249.0,
+        "rayon_without_resolved_operator_caller": 952.0,
+        "linear_call_path": 4074.0,
+        "gate_call_path": 136.0,
+        "normalization_call_path": 25.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 211,
+      "categories": {
+        "linear_call_path": 4124.0,
+        "rayon_without_resolved_operator_caller": 985.0,
+        "attention_call_path": 8113.0,
+        "gate_call_path": 120.0,
+        "other_or_unresolved": 4.0,
+        "normalization_call_path": 24.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 212,
+      "categories": {
+        "attention_call_path": 8219.0,
+        "linear_call_path": 4167.0,
+        "rayon_without_resolved_operator_caller": 921.0,
+        "normalization_call_path": 33.0,
+        "axpy_without_resolved_operator_caller": 7.0,
+        "gate_call_path": 114.0,
+        "other_or_unresolved": 3.0
+      }
+    },
+    {
+      "trace_second": 213,
+      "categories": {
+        "attention_call_path": 8218.0,
+        "rayon_without_resolved_operator_caller": 913.0,
+        "linear_call_path": 4122.0,
+        "other_or_unresolved": 11.0,
+        "normalization_call_path": 23.0,
+        "gate_call_path": 114.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 214,
+      "categories": {
+        "attention_call_path": 8167.0,
+        "rayon_without_resolved_operator_caller": 912.0,
+        "linear_call_path": 4119.0,
+        "gate_call_path": 137.0,
+        "other_or_unresolved": 6.0,
+        "normalization_call_path": 22.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 215,
+      "categories": {
+        "linear_call_path": 4025.0,
+        "gate_call_path": 146.0,
+        "attention_call_path": 8274.0,
+        "rayon_without_resolved_operator_caller": 983.0,
+        "axpy_without_resolved_operator_caller": 4.0,
+        "normalization_call_path": 27.0,
+        "other_or_unresolved": 2.0
+      }
+    },
+    {
+      "trace_second": 216,
+      "categories": {
+        "linear_call_path": 3974.0,
+        "attention_call_path": 8269.0,
+        "rayon_without_resolved_operator_caller": 966.0,
+        "gate_call_path": 132.0,
+        "other_or_unresolved": 7.0,
+        "normalization_call_path": 21.0,
+        "axpy_without_resolved_operator_caller": 3.0
+      }
+    },
+    {
+      "trace_second": 217,
+      "categories": {
+        "attention_call_path": 8385.0,
+        "linear_call_path": 3878.0,
+        "rayon_without_resolved_operator_caller": 1012.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 27.0,
+        "gate_call_path": 132.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 218,
+      "categories": {
+        "attention_call_path": 8271.0,
+        "linear_call_path": 4026.0,
+        "rayon_without_resolved_operator_caller": 962.0,
+        "normalization_call_path": 38.0,
+        "gate_call_path": 120.0,
+        "axpy_without_resolved_operator_caller": 2.0,
+        "other_or_unresolved": 7.0
+      }
+    },
+    {
+      "trace_second": 219,
+      "categories": {
+        "attention_call_path": 8352.0,
+        "rayon_without_resolved_operator_caller": 953.0,
+        "linear_call_path": 3974.0,
+        "gate_call_path": 161.0,
+        "normalization_call_path": 36.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 220,
+      "categories": {
+        "linear_call_path": 4039.0,
+        "rayon_without_resolved_operator_caller": 974.0,
+        "attention_call_path": 8168.0,
+        "gate_call_path": 127.0,
+        "normalization_call_path": 30.0,
+        "other_or_unresolved": 10.0,
+        "axpy_without_resolved_operator_caller": 5.0
+      }
+    },
+    {
+      "trace_second": 221,
+      "categories": {
+        "linear_call_path": 3806.0,
+        "attention_call_path": 8358.0,
+        "rayon_without_resolved_operator_caller": 968.0,
+        "gate_call_path": 116.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 8.0,
+        "normalization_call_path": 31.0
+      }
+    },
+    {
+      "trace_second": 222,
+      "categories": {
+        "linear_call_path": 4072.0,
+        "attention_call_path": 8228.0,
+        "rayon_without_resolved_operator_caller": 875.0,
+        "gate_call_path": 133.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 8.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 223,
+      "categories": {
+        "attention_call_path": 8304.0,
+        "linear_call_path": 4024.0,
+        "rayon_without_resolved_operator_caller": 884.0,
+        "gate_call_path": 139.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "normalization_call_path": 23.0,
+        "other_or_unresolved": 5.0
+      }
+    },
+    {
+      "trace_second": 224,
+      "categories": {
+        "gate_call_path": 144.0,
+        "linear_call_path": 4031.0,
+        "rayon_without_resolved_operator_caller": 976.0,
+        "attention_call_path": 8233.0,
+        "other_or_unresolved": 6.0,
+        "axpy_without_resolved_operator_caller": 1.0,
+        "normalization_call_path": 23.0
+      }
+    },
+    {
+      "trace_second": 225,
+      "categories": {
+        "attention_call_path": 8380.0,
+        "linear_call_path": 3942.0,
+        "gate_call_path": 114.0,
+        "rayon_without_resolved_operator_caller": 925.0,
+        "normalization_call_path": 23.0,
+        "axpy_without_resolved_operator_caller": 4.0,
+        "other_or_unresolved": 11.0
+      }
+    },
+    {
+      "trace_second": 226,
+      "categories": {
+        "attention_call_path": 8216.0,
+        "rayon_without_resolved_operator_caller": 947.0,
+        "linear_call_path": 3924.0,
+        "gate_call_path": 139.0,
+        "normalization_call_path": 33.0,
+        "other_or_unresolved": 6.0
+      }
+    },
+    {
+      "trace_second": 227,
+      "categories": {
+        "attention_call_path": 8286.0,
+        "rayon_without_resolved_operator_caller": 877.0,
+        "linear_call_path": 3976.0,
+        "gate_call_path": 142.0,
+        "normalization_call_path": 31.0,
+        "other_or_unresolved": 7.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 228,
+      "categories": {
+        "attention_call_path": 8236.0,
+        "linear_call_path": 4098.0,
+        "rayon_without_resolved_operator_caller": 916.0,
+        "gate_call_path": 118.0,
+        "normalization_call_path": 40.0,
+        "other_or_unresolved": 4.0,
+        "axpy_without_resolved_operator_caller": 4.0
+      }
+    },
+    {
+      "trace_second": 229,
+      "categories": {
+        "rayon_without_resolved_operator_caller": 934.0,
+        "attention_call_path": 8394.0,
+        "linear_call_path": 3946.0,
+        "gate_call_path": 108.0,
+        "axpy_without_resolved_operator_caller": 3.0,
+        "other_or_unresolved": 7.0,
+        "normalization_call_path": 31.0
+      }
+    },
+    {
+      "trace_second": 230,
+      "categories": {
+        "attention_call_path": 8316.0,
+        "rayon_without_resolved_operator_caller": 903.0,
+        "linear_call_path": 4069.0,
+        "gate_call_path": 144.0,
+        "other_or_unresolved": 4.0,
+        "normalization_call_path": 28.0,
+        "axpy_without_resolved_operator_caller": 1.0
+      }
+    },
+    {
+      "trace_second": 231,
+      "categories": {
+        "attention_call_path": 8455.0,
+        "rayon_without_resolved_operator_caller": 883.0,
+        "linear_call_path": 3957.0,
+        "gate_call_path": 138.0,
+        "normalization_call_path": 20.0,
+        "other_or_unresolved": 11.0
+      }
+    },
+    {
+      "trace_second": 232,
+      "categories": {
+        "linear_call_path": 4015.0,
+        "rayon_without_resolved_operator_caller": 891.0,
+        "attention_call_path": 8336.0,
+        "gate_call_path": 126.0,
+        "normalization_call_path": 29.0,
+        "other_or_unresolved": 3.0,
+        "axpy_without_resolved_operator_caller": 2.0
+      }
+    },
+    {
+      "trace_second": 233,
+      "categories": {
+        "linear_call_path": 1028.0,
+        "rayon_without_resolved_operator_caller": 259.0,
+        "attention_call_path": 2070.0,
+        "gate_call_path": 32.0,
+        "other_or_unresolved": 138.0,
+        "normalization_call_path": 8.0
+      }
+    }
+  ],
+  "limits": [
+    "CPU sample metrics are not page wall time or hardware bandwidth counters.",
+    "Whole-process export includes loading, image work, prefill and decode; no exact phase markers are inferred.",
+    "Caller categories are best-effort symbol-name attribution; unresolved/inlined callers remain explicit.",
+    "Inclusive names overlap and must not be added as exclusive percentages.",
+    "Independent exact-PID ETL loss/lifetime/stack audit and model output comparison are required.",
+    "Profiled latency cannot replace the quiet unprofiled baseline."
+  ],
+  "analyzer_sha256": "5d0a61151b6a8a44301bc4334a6322258ce4ed6da017f9c53ec84010a100d6e4"
+}

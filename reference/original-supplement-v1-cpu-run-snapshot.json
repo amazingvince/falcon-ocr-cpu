@@ -1,0 +1,66 @@
+{
+  "binary_path": "artifacts/cpu/corpus-eval-v3.exe",
+  "binary_sha256": "befd29f70f27ced1ff5289b34b28112c36f712e213ac774f3587c690fe0c08d5",
+  "binary_bytes": 6955008,
+  "captured_utc": "2026-09-20T07:16:08.743641+00:00",
+  "qualification": "Native Windows functional execution under concurrent CPU/GPU load; not a performance benchmark",
+  "expected_manifest": "reference/original-supplement-v1-lock.json",
+  "expected_manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+  "options": {
+    "precision": "fp32",
+    "backend": "avx2",
+    "threads": 4,
+    "max_dimension": 1536,
+    "max_new_tokens": 512,
+    "min_dimension": 64
+  },
+  "contract_sha256": "81e8b0a1d7b7e9223d0cfe73dc3f001b3d7b3df198e250fb3c196bffce037b71",
+  "embedded_source_sha256": {
+    "bf16_attention": "abfd6a5292fb9926efa22170914e70a5176b9531c2acd02c13bc8b02b33ebcdb",
+    "bf16_kernels": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+    "bf16_model": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+    "bf16_ops": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+    "bf16_runner": "431b101f6705c108225d64aa58875fcdd49ae51196544bc230c09f65fdc2bc31",
+    "config": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+    "harness": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+    "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+    "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "model": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+    "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+    "runner": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+    "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+  },
+  "contract": {
+    "backend": "avx2",
+    "cpu_label": "Ryzen 9 7950X",
+    "environment_label": "native Windows functional concurrent load; not a performance benchmark",
+    "manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "options": {
+      "max_dimension": 1536,
+      "max_new_tokens": 512,
+      "min_dimension": 64
+    },
+    "precision": "fp32",
+    "source_sha256": {
+      "bf16_attention": "abfd6a5292fb9926efa22170914e70a5176b9531c2acd02c13bc8b02b33ebcdb",
+      "bf16_kernels": "729cb1fde3f273a924b47d3c31a1dc38ac5efddfe46bf556a353e72e8b2123b3",
+      "bf16_model": "048da40dcb51f6f1cf59e461faa987c9a6e0f82fe60b52091d8754555a1622e3",
+      "bf16_ops": "90440d1f8e7fb75463b0bccc3037c4668bb7333710a2920f8937334381edf659",
+      "bf16_runner": "431b101f6705c108225d64aa58875fcdd49ae51196544bc230c09f65fdc2bc31",
+      "config": "aaa40cc566e4f3d585beef097b560831d8f38f17490d6038f6d605954cf1d1ee",
+      "harness": "a410ad280130a2e4e0d8024cdfdf7a23b4fca434e36f1dd51fc01f4b124b4a34",
+      "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+      "lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+      "model": "082e878cb56238d137eb6a46e2de92a2941e69d4e821d2be524580abeadc860b",
+      "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "runner": "00c77bdca04d4c9ec6533f57fe56867c58dfe2e7238383fb50b776ef55a1dce5",
+      "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f"
+    },
+    "threads": 4,
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "binary_sha256_after_run": "befd29f70f27ced1ff5289b34b28112c36f712e213ac774f3587c690fe0c08d5",
+  "exit_code": 0,
+  "completed_utc": "2026-09-20T07:28:03.896818+00:00"
+}

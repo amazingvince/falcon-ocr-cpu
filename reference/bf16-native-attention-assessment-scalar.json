@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "kind": "attention",
+  "passed": false,
+  "contract_sha256": "43106ccc50516c492e7180b726526fede13b19c4d04b0397bb5b7679446083d1",
+  "candidate_sha256": "adf136738a12d63d59319632ef173680f1d8fce55983abafce58ee41a835fe31",
+  "candidate_metadata_sha256": "6aa0a154ff791b646b77329dcb23ea742dd154211ffc55cd5afe612116c3e5d5",
+  "failures": [
+    "prefill.layer.0.raw",
+    "prefill.layer.0.scaled",
+    "prefill.layer.17.raw",
+    "prefill.layer.17.scaled",
+    "prefill.layer.19.raw",
+    "prefill.layer.19.scaled"
+  ],
+  "checks": {
+    "prefill.layer.0.raw": {
+      "passed": false,
+      "elements": 147456,
+      "different_elements": 52,
+      "max_abs": 0.03125,
+      "rms_abs": 0.00018965707981101576,
+      "rms_bound": 0.0005042331176809967,
+      "bound_violations": 3,
+      "first_violation_indices": [
+        13428,
+        101826,
+        128116
+      ],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.0.scaled": {
+      "passed": false,
+      "elements": 147456,
+      "different_elements": 60,
+      "max_abs": 0.03125,
+      "rms_abs": 0.00010980229193357291,
+      "rms_bound": 0.00016987661365419626,
+      "bound_violations": 5,
+      "first_violation_indices": [
+        13428,
+        44644,
+        101826,
+        124410,
+        128116
+      ],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.0.lse": {
+      "passed": true,
+      "elements": 2304,
+      "different_elements": 1173,
+      "max_abs": 3.337860107421875e-06,
+      "rms_abs": 7.142892683445434e-07,
+      "rms_bound": null,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": null
+    },
+    "prefill.layer.17.raw": {
+      "passed": false,
+      "elements": 147456,
+      "different_elements": 29,
+      "max_abs": 0.03125,
+      "rms_abs": 0.0001420815599023801,
+      "rms_bound": 0.00039506220491603017,
+      "bound_violations": 6,
+      "first_violation_indices": [
+        4825,
+        4828,
+        4836,
+        4850,
+        4862,
+        55986
+      ],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.17.scaled": {
+      "passed": false,
+      "elements": 147456,
+      "different_elements": 30,
+      "max_abs": 0.03125,
+      "rms_abs": 0.00014352409150734,
+      "rms_bound": 0.00039506220491603017,
+      "bound_violations": 6,
+      "first_violation_indices": [
+        4825,
+        4828,
+        4836,
+        4850,
+        4862,
+        55986
+      ],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.17.lse": {
+      "passed": true,
+      "elements": 2304,
+      "different_elements": 507,
+      "max_abs": 1.430511474609375e-06,
+      "rms_abs": 2.510697038193566e-07,
+      "rms_bound": null,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": null
+    },
+    "prefill.layer.19.raw": {
+      "passed": false,
+      "elements": 147456,
+      "different_elements": 22,
+      "max_abs": 0.125,
+      "rms_abs": 0.00038989155750920125,
+      "rms_bound": 0.0002441547403577715,
+      "bound_violations": 2,
+      "first_violation_indices": [
+        76224,
+        76278
+      ],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.19.scaled": {
+      "passed": false,
+      "elements": 147456,
+      "different_elements": 21,
+      "max_abs": 0.125,
+      "rms_abs": 0.0003898915251107788,
+      "rms_bound": 0.0002441547403577715,
+      "bound_violations": 2,
+      "first_violation_indices": [
+        76224,
+        76278
+      ],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.19.lse": {
+      "passed": true,
+      "elements": 2304,
+      "different_elements": 609,
+      "max_abs": 1.9073486328125e-06,
+      "rms_abs": 3.56556968983871e-07,
+      "rms_bound": null,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": null
+    },
+    "prefill.layer.21.raw": {
+      "passed": true,
+      "elements": 147456,
+      "different_elements": 19,
+      "max_abs": 0.0625,
+      "rms_abs": 0.00033652142217195554,
+      "rms_bound": 0.000656113144941628,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.21.scaled": {
+      "passed": true,
+      "elements": 147456,
+      "different_elements": 19,
+      "max_abs": 0.0625,
+      "rms_abs": 0.00033652142217195554,
+      "rms_bound": 0.000656113144941628,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": true
+    },
+    "prefill.layer.21.lse": {
+      "passed": true,
+      "elements": 2304,
+      "different_elements": 592,
+      "max_abs": 1.430511474609375e-06,
+      "rms_abs": 3.092763836395362e-07,
+      "rms_bound": null,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": null
+    },
+    "decode.2.layer.21.raw": {
+      "passed": true,
+      "elements": 1024,
+      "different_elements": 1,
+      "max_abs": 6.103515625e-05,
+      "rms_abs": 1.9073486328125e-06,
+      "rms_bound": 1.3172626495361328e-05,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": true
+    },
+    "decode.2.layer.21.scaled": {
+      "passed": true,
+      "elements": 1024,
+      "different_elements": 1,
+      "max_abs": 6.103515625e-05,
+      "rms_abs": 1.9073486328125e-06,
+      "rms_bound": 1.3172626495361328e-05,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": true
+    },
+    "decode.2.layer.21.lse": {
+      "passed": true,
+      "elements": 16,
+      "different_elements": 4,
+      "max_abs": 9.5367431640625e-07,
+      "rms_abs": 3.153981341200579e-07,
+      "rms_bound": null,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": null
+    },
+    "decode.6.layer.19.raw": {
+      "passed": true,
+      "elements": 1024,
+      "different_elements": 0,
+      "max_abs": 0.0,
+      "rms_abs": 0.0,
+      "rms_bound": 4.00543212890625e-05,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": true
+    },
+    "decode.6.layer.19.scaled": {
+      "passed": true,
+      "elements": 1024,
+      "different_elements": 0,
+      "max_abs": 0.0,
+      "rms_abs": 0.0,
+      "rms_bound": 4.00543212890625e-05,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": true
+    },
+    "decode.6.layer.19.lse": {
+      "passed": true,
+      "elements": 16,
+      "different_elements": 2,
+      "max_abs": 9.5367431640625e-07,
+      "rms_abs": 2.6656007498500226e-07,
+      "rms_bound": null,
+      "bound_violations": 0,
+      "first_violation_indices": [],
+      "represents_bf16_values": null
+    }
+  },
+  "qualification": "Named equal-input BF16 operators only; does not qualify full-model output or corpus parity"
+}

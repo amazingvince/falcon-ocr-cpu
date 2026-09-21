@@ -1,0 +1,1145 @@
+{
+  "schema_version": 1,
+  "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+  "script_sha256": "4b730a09f4e7461181145a536ed2c30ffcf76a8d4007f2e397ac52d612bb2358",
+  "numpy_version": "1.26.4",
+  "method": "A finite FP32 bit pattern is exactly representable by BF16 widening iff its lower 16 bits are zero. No rounding or quantization is performed.",
+  "tensor_count": 115,
+  "values": 269944416,
+  "not_bit_exact_bf16": 269940284,
+  "nonfinite": 0,
+  "entirely_exact_tensor_count": 0,
+  "tensors": [
+    {
+      "tensor": "freqs_cis_golden",
+      "shape": [
+        16,
+        16,
+        2
+      ],
+      "values": 512,
+      "not_bit_exact_bf16": 512,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "img_projector.weight",
+      "shape": [
+        768,
+        768
+      ],
+      "values": 589824,
+      "not_bit_exact_bf16": 589813,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.0.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.0.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786422,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.0.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572840,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.0.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538884,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.0.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769446,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.1.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.1.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786422,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.1.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572847,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.1.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538885,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.1.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769449,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.10.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.10.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786422,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.10.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572845,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.10.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538893,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.10.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769445,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.11.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.11.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786417,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.11.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572836,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.11.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538899,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.11.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769438,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.12.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.12.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786420,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.12.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572839,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.12.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538898,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.12.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769443,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.13.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.13.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786421,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.13.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572834,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.13.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538889,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.13.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769442,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.14.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.14.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786418,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.14.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572846,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.14.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538888,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.14.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769445,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.15.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.15.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786419,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.15.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572846,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.15.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538889,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.15.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769447,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.16.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.16.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786424,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.16.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572838,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.16.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538898,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.16.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769451,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.17.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.17.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786422,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.17.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572843,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.17.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538894,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.17.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769444,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.18.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.18.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786423,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.18.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572841,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.18.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538906,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.18.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769439,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.19.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.19.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786419,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.19.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572842,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.19.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538891,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.19.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769446,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.2.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.2.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786418,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.2.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572844,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.2.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538904,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.2.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769449,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.20.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.20.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786421,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.20.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572838,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.20.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538877,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.20.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769437,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.21.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.21.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786419,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.21.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572841,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.21.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538892,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.21.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769441,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.3.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.3.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786422,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.3.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572834,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.3.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538888,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.3.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769449,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.4.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.4.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786419,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.4.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572836,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.4.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538884,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.4.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769439,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.5.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.5.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786419,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.5.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572838,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.5.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538894,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.5.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769439,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.6.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.6.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786418,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.6.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572842,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.6.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538891,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.6.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769449,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.7.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.7.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786414,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.7.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572842,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.7.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538882,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.7.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769452,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.8.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.8.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786416,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.8.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572842,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.8.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538888,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.8.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769446,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.9.attention.sinks",
+      "shape": [
+        16
+      ],
+      "values": 16,
+      "not_bit_exact_bf16": 16,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.9.attention.wo.weight",
+      "shape": [
+        768,
+        1024
+      ],
+      "values": 786432,
+      "not_bit_exact_bf16": 786423,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.9.attention.wqkv.weight",
+      "shape": [
+        2048,
+        768
+      ],
+      "values": 1572864,
+      "not_bit_exact_bf16": 1572843,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.9.feed_forward.w13.weight",
+      "shape": [
+        4608,
+        768
+      ],
+      "values": 3538944,
+      "not_bit_exact_bf16": 3538894,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "layers.9.feed_forward.w2.weight",
+      "shape": [
+        768,
+        2304
+      ],
+      "values": 1769472,
+      "not_bit_exact_bf16": 1769440,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "norm.weight",
+      "shape": [
+        768
+      ],
+      "values": 768,
+      "not_bit_exact_bf16": 768,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "output.weight",
+      "shape": [
+        65536,
+        768
+      ],
+      "values": 50331648,
+      "not_bit_exact_bf16": 50330874,
+      "nonfinite": 0
+    },
+    {
+      "tensor": "tok_embeddings.weight",
+      "shape": [
+        65536,
+        768
+      ],
+      "values": 50331648,
+      "not_bit_exact_bf16": 50330846,
+      "nonfinite": 0
+    }
+  ],
+  "inference_executed": false,
+  "performance_measured": false,
+  "scope": "Storage feasibility only. BF16 conversion of these FP32 weights is a numerical change; no quality or speed conclusion."
+}

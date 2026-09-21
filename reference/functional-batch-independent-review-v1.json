@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "review": "functional-batch-independent-review-v1",
+  "created_utc": "2026-09-20T09:46:42.625047+00:00",
+  "status": "no_remaining_concrete_defect_found_in_bounded_review",
+  "scope": "Read-only independent review of the functional orchestrator and CLI capture against the frozen four-input v1 lock; review-only reference artifacts added.",
+  "source_sha256": {
+    "scripts/functional_batch_regression.py": "6a4a2253f10c713842c9dd8fd1e37d84ca5db6dd81de9b6a9d9c0fd67d0845a2",
+    "scripts/capture_functional_cli.py": "e498182dbdf18e8626393707aacadbbf32dc59580afbd13f5360f09cf0f5ca89",
+    "tests/test_functional_batch_regression.py": "3ce5e22a490aa3a329349fdae14771ae7c36194b58a5f6ad0021b653dc248bac",
+    "scripts/corpus_comparison.py": "0ccfbc9077c2e0aa9656e4310eba37d2f1517a3810a99231c71fad0db7a4f8ee",
+    "scripts/validate_text_replay.py": "0589094ba226a5049457664e08f93543619b14ea98e1e4b85979ecc793865e2d",
+    "scripts/fetch_reference.py": "ecebc5ef07f61edfffce415aa8fe0a1c3ee52c22703de84bc368f68d152d7eea",
+    "scripts/capture_rust_build.py": "f346902d34e4a813b7b2000ba08a6dfc15f129f8b7c1c97ebbc72f8041c79738",
+    "scripts/build_windows.ps1": "36e034617ffe5de1848a538f4a6fd3c80f822f47cdc6053ea21a515c9282d992",
+    "scripts/build_linux.sh": "25203d4275f25a786bc91531f36d1ebe25ae77736d0dd59b7af1832b0f759e76",
+    "docs/FUNCTIONAL_BATCH_REGRESSION.md": "76eab8256634c525cbbfe4281975923f25a5991449ad4864544e2a3078fc33b6",
+    "reference/functional-batch-v1-lock.json": "c9ba1bcbadb7ffe8865aa8a149a75fb239053fb79955d86083c7a28b4de3fb72",
+    "reference/functional-batch-v1-selection.md": "3bf57e31c215bf53b3da260c6d1c8f41d94af978128a4964dffc914086c0f0e3",
+    "src/main.rs": "0b734856ab4c63e620bc56a7772a9fbe9ec843a8331d26008c25b4f489078a89",
+    "Cargo.toml": "80fc44b114c7d8386535b323286df4512a449a35559f9a5ee9e344e6361445cc",
+    "Cargo.lock": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "rust-toolchain.toml": "d0c46cd3a68028a2d8bad683c5016ddafb0218922f8b2bb09e7fbae0ee73cf82"
+  },
+  "source_unchanged_during_tests": true,
+  "tests": {
+    "command": [
+      "C:\\Users\\amazi\\mambaforge\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_functional_batch_regression.py",
+      "-v"
+    ],
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "python_executable_sha256": "fe1aefef7d0942cccaa30df2a4aaea70ca8c56391f8fa2d91f35e1b8043e03b6",
+    "exit_code": 0,
+    "count": 14,
+    "log": "reference/functional-batch-independent-review-v1-tests.txt",
+    "log_sha256": "7bd116e2693671bbb27b5bea0875d39e9cbf9ebeef3ef93a79308d3033e6d3b3",
+    "inference_executed": false
+  },
+  "reviewed_properties": [
+    "The complete canonical v1 selection is independently pinned; source-lock page membership, source/canonical/RGB hashes, model revision and all four model asset hashes are checked.",
+    "The capture records startup source bytes, Cargo release/locked command, target directory, compiler identities and environment overrides; it preserves the Cargo-emitted executable and rejects changed source at build completion.",
+    "The execution validates archived and current source closure, fresh same-binary expanded/unpacked sequential controls for all four inputs, exact min64/max1536/cap4096/four-thread FP32 AVX2 options, and the four joint layout modes.",
+    "Result validation rejects missing/extra requests, malformed IDs/counts/stops, tokens after EOS, replay markers, teacher forcing, wrong precision/backend/layout, malformed packing metadata and nonfinite timings. Literal text is not normalized.",
+    "Per-request order, IDs, text, finish reason, output/input counts and dimensions are compared with sequential controls. Mixed EOS completion, multiple requests eligible for decode and long-input coverage must be observed independently of exact output equality.",
+    "A native physical-memory availability check requires at least 12 GiB before every process. Plan and binary hashes are checked before launch.",
+    "Startup plan identity and saved JSONL, stderr, invocation, comparison and execution artifacts are rechecked before acceptance. Source/build/input closure and Python/binary identity are checked at completion.",
+    "A failed process, missing output, low memory, changed artifact or incomplete coverage cannot produce an accepted final execution receipt. Existing execution/output paths are not overwritten or resumed.",
+    "Timing fields are retained solely as diagnostics; the report does not aggregate timings, claim quiet conditions, promote a default or qualify quality/performance."
+  ],
+  "review_findings_resolved": [
+    "Added missing CARGO_BUILD_RUSTFLAGS and CMAKE_GENERATOR capture metadata.",
+    "Pinned the complete canonical workload to prevent self-consistent selection/order substitutions.",
+    "Bound execution to the startup plan hash and rejected replay markers.",
+    "Added final raw-artifact closure and mutation tests for build/source/binary and late evidence changes."
+  ],
+  "limitations": [
+    "No CLI build or inference was executed by this review, and no passing actual functional batch result is claimed.",
+    "Synthetic subprocesses and small synthetic archives exercise failure handling; they do not establish model arithmetic, OCR quality, allocation behavior, performance or peak memory.",
+    "Captured builds explicitly remain nonhermetic and may reuse Cargo/native dependency objects.",
+    "The 12 GiB preflight is an execution guard, not a memory-usage bound.",
+    "The v1 scope is one fixed batch of four; batches two/eight, reordered cases and other input mixtures are not qualified."
+  ]
+}

@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "source_reports": {
+    "sequential-a": {
+      "path": "artifacts/benchmarks/quiet-modes-sequential-a.json",
+      "sha256": "58e6fbaf9880b8129ee0a40444858c7317b0cc0daed703383f42c9112cb03410"
+    },
+    "joint-expanded": {
+      "path": "artifacts/benchmarks/quiet-modes-joint-expanded.json",
+      "sha256": "874419d1e7e3e51318015ccaa1c660c13e22c38806c4612818736d650760c577"
+    },
+    "joint-compact": {
+      "path": "artifacts/benchmarks/quiet-modes-joint-compact.json",
+      "sha256": "e3006a97ee7ecfa8d52f062c8be1d6ea817e56bf384db17da6b883485ddc9889"
+    },
+    "sequential-b": {
+      "path": "artifacts/benchmarks/quiet-modes-sequential-b.json",
+      "sha256": "dd9cc1876673e6677c1aaf6c37676d99cd92606844743d780eacb0543e3be30e"
+    }
+  },
+  "execution_order": [
+    "sequential-a",
+    "joint-expanded",
+    "joint-compact",
+    "sequential-b"
+  ],
+  "configuration": {
+    "binary_sha256": "5538ee4fc3b8f6ab99de33bc7ca2688f2ecd66ba4ded32158ae3d2669b8b9bf9",
+    "source_sha256": {
+      "config": "59abb57842547390810dcbc8adf46fe2b28914acc3264faae729330faeb32edf",
+      "harness": "63a34d6854e4950715a5ef0d503708d802b0d798e6aaff983b53945d68e52f56",
+      "kernels": "d2900414e082a5509fd7a21032e264bfb28ae1de77cee324335a28b91f60b87e",
+      "lib": "9d6c7552c5d037238d7c1702769b79d9927c04908c3303256a1eb0fdbb271ab8",
+      "model": "a918ec444032dc34f301c9b8d675035e64add42b3bbba2fbadd841d3bccf3ae9",
+      "preprocess": "18b7d787f7027655254c5b4c2ab67ceed377c38d2ef1e89f30daa66bbb6f71cc",
+      "runner": "02ae905fcfb83caef549be3f7c706709d7abc1cbacc38d56202d8c0a3e039cc9",
+      "tokenizer": "01e8b678055dd7eb33f7705bf6d41fad2d668e0ee67cff745b1beee1e3d4f71f",
+      "trace": "3ce3081261526517f7048e9b2be0b7265127c0bb673b7873e64613843a9eaca0"
+    },
+    "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+    "model_revision": "fe757d59ecd79d4d68760162306a70a015761ad9",
+    "weights_sha256": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16",
+    "images": [
+      {
+        "height": 128,
+        "path": "artifacts/reference/smoke-fp32/canonical-rgb.png",
+        "rgb_sha256": "6d8184a6b8ad1d1f2f524a67c1196d2de7accacf8679a764b7c0e8a337675880",
+        "sha256": "d62f8db10dca06c65c99ae4dde59e4a68b9548c56a42c76caa2bf7044ccca0db",
+        "width": 256
+      }
+    ],
+    "options": {
+      "max_dimension": 256,
+      "max_new_tokens": 128,
+      "min_dimension": 64
+    },
+    "threads": 16,
+    "backend": "avx2",
+    "precision": "fp32",
+    "warmup": 2,
+    "repetitions": 7,
+    "os": "windows",
+    "arch": "x86_64"
+  },
+  "cpu_label": "Ryzen 9 7950X",
+  "environment_label": "native Windows; project CPU/GPU jobs paused",
+  "sample_count_per_case": 7,
+  "all_output_token_ids_match": true,
+  "all_controls_within_five_percent": true,
+  "cases": [
+    {
+      "batch_size": 1,
+      "control_a_median_ms": 486.0679,
+      "control_b_median_ms": 492.2526,
+      "control_drift_percent": 1.2723942477995243,
+      "controls_within_five_percent": true,
+      "candidates": {
+        "joint-expanded": {
+          "median_ms": 498.1843,
+          "minimum_sample_ms": 495.114,
+          "maximum_sample_ms": 503.634,
+          "pages_per_second": 2.0072892702560075,
+          "latency_reduction_vs_controls_percent": [
+            -2.4927381544841865,
+            -1.2050114108081988
+          ],
+          "throughput_ratio_vs_controls": [
+            0.9756788802858701,
+            0.9880933622356224
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 102236160,
+            "peak_resident_bytes": 1152667648,
+            "private_commit_bytes": 41312256,
+            "resident_bytes": 1111773184
+          }
+        },
+        "joint-compact": {
+          "median_ms": 472.7536,
+          "minimum_sample_ms": 461.505,
+          "maximum_sample_ms": 482.2023,
+          "pages_per_second": 2.1152668112945094,
+          "latency_reduction_vs_controls_percent": [
+            2.7391852043716525,
+            3.961177655537007
+          ],
+          "throughput_ratio_vs_controls": [
+            1.0281632969056185,
+            1.0412455875534317
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 85114880,
+            "peak_resident_bytes": 1143992320,
+            "private_commit_bytes": 41431040,
+            "resident_bytes": 1111838720
+          }
+        }
+      },
+      "compact_latency_reduction_vs_expanded_percent": 5.104677124509949
+    },
+    {
+      "batch_size": 2,
+      "control_a_median_ms": 988.4253,
+      "control_b_median_ms": 982.8316,
+      "control_drift_percent": -0.5659203583720518,
+      "controls_within_five_percent": true,
+      "candidates": {
+        "joint-expanded": {
+          "median_ms": 812.8762,
+          "minimum_sample_ms": 791.1392999999999,
+          "maximum_sample_ms": 832.3095999999999,
+          "pages_per_second": 2.460399258829327,
+          "latency_reduction_vs_controls_percent": [
+            17.76048225394473,
+            17.29242323913882
+          ],
+          "throughput_ratio_vs_controls": [
+            1.2159604377640776,
+            1.2090790700970209
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 154456064,
+            "peak_resident_bytes": 1178664960,
+            "private_commit_bytes": 41959424,
+            "resident_bytes": 1112260608
+          }
+        },
+        "joint-compact": {
+          "median_ms": 786.4289,
+          "minimum_sample_ms": 774.226,
+          "maximum_sample_ms": 800.6591,
+          "pages_per_second": 2.5431415351088953,
+          "latency_reduction_vs_controls_percent": [
+            20.436182683709127,
+            19.98335218362942
+          ],
+          "throughput_ratio_vs_controls": [
+            1.2568527173912352,
+            1.2497399319887659
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 118407168,
+            "peak_resident_bytes": 1164976128,
+            "private_commit_bytes": 42143744,
+            "resident_bytes": 1112354816
+          }
+        }
+      },
+      "compact_latency_reduction_vs_expanded_percent": 3.2535458659018524
+    },
+    {
+      "batch_size": 4,
+      "control_a_median_ms": 1933.7465,
+      "control_b_median_ms": 1931.9992,
+      "control_drift_percent": -0.09035827602015267,
+      "controls_within_five_percent": true,
+      "candidates": {
+        "joint-expanded": {
+          "median_ms": 1263.9269,
+          "minimum_sample_ms": 1248.9136999999998,
+          "maximum_sample_ms": 1296.7576000000001,
+          "pages_per_second": 3.164739986149516,
+          "latency_reduction_vs_controls_percent": [
+            34.638438906030345,
+            34.57932591276436
+          ],
+          "throughput_ratio_vs_controls": [
+            1.5299512179066685,
+            1.5285687803622188
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 250830848,
+            "peak_resident_bytes": 1236193280,
+            "private_commit_bytes": 43319296,
+            "resident_bytes": 1113509888
+          }
+        },
+        "joint-compact": {
+          "median_ms": 1249.2658999999999,
+          "minimum_sample_ms": 1236.8341,
+          "maximum_sample_ms": 1259.8644000000002,
+          "pages_per_second": 3.2018804003215013,
+          "latency_reduction_vs_controls_percent": [
+            35.396604467028126,
+            35.338177158665495
+          ],
+          "throughput_ratio_vs_controls": [
+            1.5479062543850755,
+            1.546507592979205
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 184688640,
+            "peak_resident_bytes": 1209376768,
+            "private_commit_bytes": 43151360,
+            "resident_bytes": 1113309184
+          }
+        }
+      },
+      "compact_latency_reduction_vs_expanded_percent": 1.159956323423461
+    },
+    {
+      "batch_size": 8,
+      "control_a_median_ms": 3865.0238,
+      "control_b_median_ms": 3859.9914000000003,
+      "control_drift_percent": -0.1302035966764148,
+      "controls_within_five_percent": true,
+      "candidates": {
+        "joint-expanded": {
+          "median_ms": 1995.2935,
+          "minimum_sample_ms": 1959.8693,
+          "maximum_sample_ms": 2040.4529999999997,
+          "pages_per_second": 4.009435203392383,
+          "latency_reduction_vs_controls_percent": [
+            48.37564777738238,
+            48.30834338128318
+          ],
+          "throughput_ratio_vs_controls": [
+            1.937070310708675,
+            1.9345481754939813
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 449257472,
+            "peak_resident_bytes": 1359351808,
+            "private_commit_bytes": 44486656,
+            "resident_bytes": 1114378240
+          }
+        },
+        "joint-compact": {
+          "median_ms": 1979.9588999999999,
+          "minimum_sample_ms": 1971.8572000000001,
+          "maximum_sample_ms": 2088.8526,
+          "pages_per_second": 4.040487911137954,
+          "latency_reduction_vs_controls_percent": [
+            48.77240083230535,
+            48.70561369644503
+          ],
+          "throughput_ratio_vs_controls": [
+            1.9520727425200595,
+            1.9495310735995584
+          ],
+          "process_lifetime_memory_after": {
+            "peak_private_commit_bytes": 313704448,
+            "peak_resident_bytes": 1305243648,
+            "private_commit_bytes": 44797952,
+            "resident_bytes": 1114574848
+          }
+        }
+      },
+      "compact_latency_reduction_vs_expanded_percent": 0.7685385633742658
+    }
+  ],
+  "limitations": [
+    "A small repeated-image fixture measures this workload only; real full-page/mixed-length benchmarks remain required.",
+    "Project CPU/GPU jobs were paused. Other interactive applications were not controlled, so this is not a dedicated host measurement.",
+    "Candidate modes run between repeated controls; retained samples and control drift expose some temporal variation but do not establish a statistical confidence interval.",
+    "Memory counters are process-lifetime high-water marks, not isolated per-case peaks.",
+    "Compact is still opt-in; this report alone does not promote a backend or establish the full performance acceptance gate."
+  ]
+}

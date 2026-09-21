@@ -1,0 +1,14 @@
+{
+  "wrong_library_digest_rejected": true,
+  "wrong_digest_output_created": false,
+  "elf_needed": [
+    "libstdc++.so.6",
+    "libm.so.6",
+    "libgcc_s.so.1",
+    "libc.so.6",
+    "ld-linux-x86-64.so.2"
+  ],
+  "openmp_elf_dependency_present": false,
+  "library_sha256": "fb1b99d98da3311988370ca946a501fa5bef8d62d3dcd59e4e21b221a501a6e2",
+  "probe_binary_sha256": "ad550a535405b128c78b500471426b4f3a1500d4480c0326977d15bd188d8a37"
+}

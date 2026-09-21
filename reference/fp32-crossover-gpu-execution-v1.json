@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "fp32-frozen-state-crossover-gpu-execution-v1",
+  "scope": "One released native GPU diagnostic, not full-model qualification or performance measurement.",
+  "exit_code": 0,
+  "attempts": 1,
+  "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+  "plan": {
+    "path": "artifacts/diagnostics/fp32-crossover-v1/plan.json",
+    "sha256": "63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c"
+  },
+  "cpu_execution": {
+    "path": "artifacts/diagnostics/fp32-crossover-v1/execution.json",
+    "sha256": "8e122d4df988da03bafca42278b6f443ff8d38c040b06af61a13b17732ce8f87"
+  },
+  "gpu_report": {
+    "path": "artifacts/diagnostics/fp32-crossover-gpu-v1/report.json",
+    "sha256": "72d577e05c7eb91d9d32890ef8e789fa988cdd80397a3e5b48cb4969a1e398ed"
+  },
+  "tensors": {
+    "path": "artifacts/diagnostics/fp32-crossover-gpu-v1/tensors.safetensors",
+    "sha256": "de8b170d0d9b9688c40fe0848fc77f8a4a1f62ce0f10ba3f76a109f887c88fcf",
+    "count": 34
+  },
+  "source": {
+    "path": "experiments/fp32_crossover/export_gpu.py",
+    "sha256": "9ce5cc6f1356770e3c8cb600074134495d2e0d2924b81c9148ed7d228d672e2b"
+  },
+  "logs": [
+    {
+      "path": "artifacts/diagnostics/fp32-crossover-gpu-v1.stdout.log",
+      "sha256": "69f3e18447c7f3ce23bdc7e6730ac115c544086d8f718a8fb710d80dec3b8de1"
+    },
+    {
+      "path": "artifacts/diagnostics/fp32-crossover-gpu-v1.stderr.log",
+      "sha256": "03c7a6c4e69367ba8d1ddf305ae18c5d90970f25a544be33fc81ea562c84a9ec"
+    }
+  ],
+  "invocation": "wsl.exe -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- env CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58 CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=8 MKL_NUM_THREADS=8 FOCR_MIN_FREE_MIB=4096 HF_HOME=/home/amazi/falcon-ocr-rust-reference/cache/huggingface TRITON_CACHE_DIR=/home/amazi/falcon-ocr-rust-reference/cache/triton TORCHINDUCTOR_CACHE_DIR=/home/amazi/falcon-ocr-rust-reference/cache/torchinductor /home/amazi/falcon-ocr-rust-reference/.venv/bin/python experiments/fp32_crossover/export_gpu.py --plan artifacts/diagnostics/fp32-crossover-v1/plan.json --plan-sha256 63890f3c3c2f229db6f3d20a4f3aba6b15bf9fa7c080b5005dcc0b6bad1e435c --output artifacts/diagnostics/fp32-crossover-gpu-v1 --execute-reviewed-plan",
+  "results": {
+    "status": "gpu_arm_control_passed_crossover_captured",
+    "bit_exact_controls": 6,
+    "control_mismatched_elements": 0,
+    "control_stages": [
+      "layer.8.q",
+      "layer.8.k",
+      "layer.8.v",
+      "layer.8.attention",
+      "layer.8.hidden",
+      "layer.9.v"
+    ],
+    "native_layer8_calls": 2,
+    "native_layer9_qkv_calls": 2,
+    "crossover_executed": true,
+    "source_and_input_closure": true
+  },
+  "effective_settings": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu130",
+    "torch_git_version": "70d99e998b4955e0049d13a98d77ae1b14db1f45",
+    "cuda_runtime": "13.0",
+    "driver": "591.86",
+    "float32_matmul_precision": "highest",
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "allow_fp16_reduced_precision_reduction": false,
+    "allow_bf16_reduced_precision_reduction": false,
+    "compiled_blocks": false,
+    "OMP_NUM_THREADS": 8,
+    "MKL_NUM_THREADS": 8,
+    "torch_num_threads": 8,
+    "torch_num_interop_threads": 32,
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+  },
+  "idle_after": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "utilization_percent": 0,
+    "memory_used_mib": 42,
+    "memory_free_mib": 24096
+  },
+  "limits": [
+    "Only the two fixed layer8/layer9-QKV segments executed. No additional GPU or BF16 work was run.",
+    "Original historical startup/build provenance gaps remain as stated in the GPU report; this current capture does not repair them.",
+    "PyTorch emitted its complex-to-real model conversion warning; the native buffer setup and all six original bit-exact controls passed.",
+    "Offline three-arm comparison is root-owned and was not run in this task.",
+    "RTX5090 was not exposed to the process or modified."
+  ]
+}

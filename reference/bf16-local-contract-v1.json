@@ -1,0 +1,714 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T06:35:25.619928+00:00",
+  "qualification_kind": "Local equal-input operators plus same-prefix output checks; NOT full hidden-trajectory parity",
+  "calibration_inputs": "Only pinned GPU operators, CPU FP64 mathematical oracle on exact BF16 operands, and independent GPU blockwise attention. No Rust candidate measurements were read.",
+  "environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "sources": {
+    "artifacts/reference/bf16-operators.safetensors": "7f601a9110396dcef738c554d70be2ae8d6d0262c6064c5b1c74e4c374ef74cd",
+    "artifacts/reference/attention-operators-bf16.safetensors": "78abfc0eba2a276d047b300518a3a19d0a098ffc875c81f009569092c7a08462",
+    "artifacts/reference/attention-blockwise-bf16.safetensors": "0e1e0354cd67318841f73c7d9a1f9902768c2f2c5884bb08e4d419165c0d7979",
+    "reference/gpu-blockwise-smoke-bf16.json": "0547ce3890e885af641e6b8cffe41e026cb14352dd70627e58f4273f7818e459",
+    "artifacts/reference/bf16-local-contract-v1.safetensors": "6bb2adae8f97e6dad4c0a3ef2f29102e1ce310588eaab64c1804a64bf527f185",
+    "reference/bf16-flex-kernel-metadata.json": "0de30f4fe14bc1e025a6cc0e54b093d116df7d8328158ca23b3c5d9337eaab06"
+  },
+  "bound_rule": "BF16 element bounds=max(4*GPU-vs-independent-oracle absolute error, one BF16 ULP at reference magnitude); attention also requires a tight calibrated RMS bound. FP32 operator/logit bounds=max(4*observed error,32*FP32eps*max(1,peak)); RMS floor=8*FP32eps*max(1,peak).",
+  "cast_contract": {
+    "model_weights": "All BF16, including image projector, embedding, linears, sinks, learned final norm and golden spatial frequencies",
+    "image_input": "Upstream RGB/resize/normalization FP32; cast valid normalized patches to BF16 before projection; projector output BF16 replaces embedding rows",
+    "linears": "BF16 inputs/weights, FP32 accumulation, BF16 native output; FP32 accumulation output tested separately",
+    "rms": "Hidden-width768 and Q/K-width64 normalize in FP32 with implicit epsilon=FP32epsilon; single BF16 final output round",
+    "final_norm": "epsilon1e-5; multiply BF16-promoted learned weights in FP32 before single final BF16 output round",
+    "rope": "Temporal complex64 table is regenerated after model conversion. Spatial golden frequencies are BF16 then promoted FP32; positions FP32; theta FP32, polar complex64. Promote Q/K BF16 to FP32 for rotation and round each rotated half back to BF16; nonvisual spatial half unchanged.",
+    "attention": "Observed prefill128x64 tiles, partial sparse blocks then full; decode16x64 tiles with16KV splits and reverse full-block assignment. Local unnormalized exp2 weights round BF16 before FP32 P*V; denominator staysFP32; raw outputBF16, LSEFP32; sigmoid(LSE-promotedBF16sink)FP32; final scaled outputBF16",
+    "residual": "Each attention and FFN residual addition rounds BF16 before the next operation",
+    "gate": "Packed gate/up interleaved0::2/1::2; ReLU square rounds BF16 before BF16 multiply, whose output rounds BF16",
+    "kv_and_logits": "Post-RoPE K and raw V stored BF16; final logits BF16"
+  },
+  "linear_cases": [
+    {
+      "name": "prefill.layer.0.qkv.rows1",
+      "weight_key": "weights.layers.0.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 7.044864469207823e-05,
+      "gpu_fp32_vs_f64_max_abs": 1.092907041311264e-06,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.qkv.rows1.native_expected",
+      "native_bound_key": "prefill.layer.0.qkv.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.qkv.rows2",
+      "weight_key": "weights.layers.0.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.00011818483471870422,
+      "gpu_fp32_vs_f64_max_abs": 2.9546208679676056e-05,
+      "native_bf16_vs_rounded_f64_different": 1,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.qkv.rows2.native_expected",
+      "native_bound_key": "prefill.layer.0.qkv.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.qkv.rows4",
+      "weight_key": "weights.layers.0.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.00011818483471870422,
+      "gpu_fp32_vs_f64_max_abs": 2.9546208679676056e-05,
+      "native_bf16_vs_rounded_f64_different": 3,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.qkv.rows4.native_expected",
+      "native_bound_key": "prefill.layer.0.qkv.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.qkv.rows8",
+      "weight_key": "weights.layers.0.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.00019919872283935547,
+      "gpu_fp32_vs_f64_max_abs": 4.979968070983887e-05,
+      "native_bf16_vs_rounded_f64_different": 9,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.qkv.rows8.native_expected",
+      "native_bound_key": "prefill.layer.0.qkv.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.qkv.rows32",
+      "weight_key": "weights.layers.0.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.00019919872283935547,
+      "gpu_fp32_vs_f64_max_abs": 4.979968070983887e-05,
+      "native_bf16_vs_rounded_f64_different": 41,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.qkv.rows32.native_expected",
+      "native_bound_key": "prefill.layer.0.qkv.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.wo.rows1",
+      "weight_key": "weights.layers.0.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.00013705878518521786,
+      "gpu_fp32_vs_f64_max_abs": 1.1416414054110646e-06,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.wo.rows1.native_expected",
+      "native_bound_key": "prefill.layer.0.wo.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.wo.rows2",
+      "weight_key": "weights.layers.0.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0004380979808047414,
+      "gpu_fp32_vs_f64_max_abs": 0.00010952449520118535,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.wo.rows2.native_expected",
+      "native_bound_key": "prefill.layer.0.wo.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.wo.rows4",
+      "weight_key": "weights.layers.0.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0004380979808047414,
+      "gpu_fp32_vs_f64_max_abs": 0.00010952449520118535,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.wo.rows4.native_expected",
+      "native_bound_key": "prefill.layer.0.wo.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.wo.rows8",
+      "weight_key": "weights.layers.0.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0004380979808047414,
+      "gpu_fp32_vs_f64_max_abs": 0.00010952449520118535,
+      "native_bf16_vs_rounded_f64_different": 1,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.wo.rows8.native_expected",
+      "native_bound_key": "prefill.layer.0.wo.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.wo.rows32",
+      "weight_key": "weights.layers.0.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0001919325877679512,
+      "gpu_fp32_vs_f64_max_abs": 1.7971760826185346e-05,
+      "native_bf16_vs_rounded_f64_different": 2,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.wo.rows32.native_expected",
+      "native_bound_key": "prefill.layer.0.wo.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w13.rows1",
+      "weight_key": "weights.layers.0.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 1.6450620023533702e-05,
+      "gpu_fp32_vs_f64_max_abs": 4.1126550058834255e-06,
+      "native_bf16_vs_rounded_f64_different": 6,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w13.rows1.native_expected",
+      "native_bound_key": "prefill.layer.0.w13.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w13.rows2",
+      "weight_key": "weights.layers.0.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 1.6450620023533702e-05,
+      "gpu_fp32_vs_f64_max_abs": 4.1126550058834255e-06,
+      "native_bf16_vs_rounded_f64_different": 17,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w13.rows2.native_expected",
+      "native_bound_key": "prefill.layer.0.w13.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w13.rows4",
+      "weight_key": "weights.layers.0.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 1.9669532775878906e-05,
+      "gpu_fp32_vs_f64_max_abs": 4.9173831939697266e-06,
+      "native_bf16_vs_rounded_f64_different": 28,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w13.rows4.native_expected",
+      "native_bound_key": "prefill.layer.0.w13.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w13.rows8",
+      "weight_key": "weights.layers.0.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 1.9669532775878906e-05,
+      "gpu_fp32_vs_f64_max_abs": 4.9173831939697266e-06,
+      "native_bf16_vs_rounded_f64_different": 67,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w13.rows8.native_expected",
+      "native_bound_key": "prefill.layer.0.w13.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w13.rows32",
+      "weight_key": "weights.layers.0.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 2.856327046174556e-05,
+      "gpu_fp32_vs_f64_max_abs": 6.610061973333359e-06,
+      "native_bf16_vs_rounded_f64_different": 221,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w13.rows32.native_expected",
+      "native_bound_key": "prefill.layer.0.w13.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w2.rows1",
+      "weight_key": "weights.layers.0.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 1.9601135136326775e-05,
+      "gpu_fp32_vs_f64_max_abs": 6.768168532289565e-07,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w2.rows1.native_expected",
+      "native_bound_key": "prefill.layer.0.w2.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w2.rows2",
+      "weight_key": "weights.layers.0.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 3.864154132315889e-05,
+      "gpu_fp32_vs_f64_max_abs": 4.185883996754569e-06,
+      "native_bf16_vs_rounded_f64_different": 1,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w2.rows2.native_expected",
+      "native_bound_key": "prefill.layer.0.w2.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w2.rows4",
+      "weight_key": "weights.layers.0.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.00018560366879682988,
+      "gpu_fp32_vs_f64_max_abs": 1.4236829883884639e-05,
+      "native_bf16_vs_rounded_f64_different": 3,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w2.rows4.native_expected",
+      "native_bound_key": "prefill.layer.0.w2.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w2.rows8",
+      "weight_key": "weights.layers.0.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.00018560366879682988,
+      "gpu_fp32_vs_f64_max_abs": 2.205665805377066e-05,
+      "native_bf16_vs_rounded_f64_different": 3,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w2.rows8.native_expected",
+      "native_bound_key": "prefill.layer.0.w2.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.0.w2.rows32",
+      "weight_key": "weights.layers.0.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.00018560359603725374,
+      "gpu_fp32_vs_f64_max_abs": 3.350074985064566e-05,
+      "native_bf16_vs_rounded_f64_different": 7,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.0.w2.rows32.native_expected",
+      "native_bound_key": "prefill.layer.0.w2.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.qkv.rows1",
+      "weight_key": "weights.layers.12.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 4.503214586293325e-05,
+      "gpu_fp32_vs_f64_max_abs": 9.872019290924072e-07,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.qkv.rows1.native_expected",
+      "native_bound_key": "prefill.layer.12.qkv.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.qkv.rows2",
+      "weight_key": "weights.layers.12.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.00017121895507443696,
+      "gpu_fp32_vs_f64_max_abs": 4.26596961915493e-05,
+      "native_bf16_vs_rounded_f64_different": 3,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.qkv.rows2.native_expected",
+      "native_bound_key": "prefill.layer.12.qkv.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.qkv.rows4",
+      "weight_key": "weights.layers.12.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.0003431364893913269,
+      "gpu_fp32_vs_f64_max_abs": 8.578412234783173e-05,
+      "native_bf16_vs_rounded_f64_different": 7,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.qkv.rows4.native_expected",
+      "native_bound_key": "prefill.layer.12.qkv.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.qkv.rows8",
+      "weight_key": "weights.layers.12.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.0003431364893913269,
+      "gpu_fp32_vs_f64_max_abs": 8.578412234783173e-05,
+      "native_bf16_vs_rounded_f64_different": 17,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.qkv.rows8.native_expected",
+      "native_bound_key": "prefill.layer.12.qkv.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.qkv.rows32",
+      "weight_key": "weights.layers.12.attention.wqkv.weight",
+      "fp32_accumulation_max_abs_bound": 0.0003431364893913269,
+      "gpu_fp32_vs_f64_max_abs": 8.578412234783173e-05,
+      "native_bf16_vs_rounded_f64_different": 40,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.qkv.rows32.native_expected",
+      "native_bound_key": "prefill.layer.12.qkv.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.wo.rows1",
+      "weight_key": "weights.layers.12.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 7.700824062339962e-05,
+      "gpu_fp32_vs_f64_max_abs": 2.0954757928848267e-06,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.wo.rows1.native_expected",
+      "native_bound_key": "prefill.layer.12.wo.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.wo.rows2",
+      "weight_key": "weights.layers.12.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0005296841263771057,
+      "gpu_fp32_vs_f64_max_abs": 0.00013242103159427643,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.wo.rows2.native_expected",
+      "native_bound_key": "prefill.layer.12.wo.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.wo.rows4",
+      "weight_key": "weights.layers.12.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0005296841263771057,
+      "gpu_fp32_vs_f64_max_abs": 0.00013242103159427643,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.wo.rows4.native_expected",
+      "native_bound_key": "prefill.layer.12.wo.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.wo.rows8",
+      "weight_key": "weights.layers.12.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0009016580879688263,
+      "gpu_fp32_vs_f64_max_abs": 0.00022541452199220657,
+      "native_bf16_vs_rounded_f64_different": 2,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.wo.rows8.native_expected",
+      "native_bound_key": "prefill.layer.12.wo.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.wo.rows32",
+      "weight_key": "weights.layers.12.attention.wo.weight",
+      "fp32_accumulation_max_abs_bound": 0.0005251573165878654,
+      "gpu_fp32_vs_f64_max_abs": 3.347545862197876e-05,
+      "native_bf16_vs_rounded_f64_different": 4,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.wo.rows32.native_expected",
+      "native_bound_key": "prefill.layer.12.wo.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w13.rows1",
+      "weight_key": "weights.layers.12.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 5.1194925617892295e-05,
+      "gpu_fp32_vs_f64_max_abs": 9.008217602968216e-06,
+      "native_bf16_vs_rounded_f64_different": 2,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w13.rows1.native_expected",
+      "native_bound_key": "prefill.layer.12.w13.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w13.rows2",
+      "weight_key": "weights.layers.12.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 0.00013478100299835205,
+      "gpu_fp32_vs_f64_max_abs": 3.369525074958801e-05,
+      "native_bf16_vs_rounded_f64_different": 6,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w13.rows2.native_expected",
+      "native_bound_key": "prefill.layer.12.w13.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w13.rows4",
+      "weight_key": "weights.layers.12.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 0.00018730759620666504,
+      "gpu_fp32_vs_f64_max_abs": 4.682689905166626e-05,
+      "native_bf16_vs_rounded_f64_different": 8,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w13.rows4.native_expected",
+      "native_bound_key": "prefill.layer.12.w13.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w13.rows8",
+      "weight_key": "weights.layers.12.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 0.00018730759620666504,
+      "gpu_fp32_vs_f64_max_abs": 4.682689905166626e-05,
+      "native_bf16_vs_rounded_f64_different": 19,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w13.rows8.native_expected",
+      "native_bound_key": "prefill.layer.12.w13.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w13.rows32",
+      "weight_key": "weights.layers.12.feed_forward.w13.weight",
+      "fp32_accumulation_max_abs_bound": 0.00018730759620666504,
+      "gpu_fp32_vs_f64_max_abs": 4.682689905166626e-05,
+      "native_bf16_vs_rounded_f64_different": 66,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w13.rows32.native_expected",
+      "native_bound_key": "prefill.layer.12.w13.rows32.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w2.rows1",
+      "weight_key": "weights.layers.12.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 3.879805444739759e-05,
+      "gpu_fp32_vs_f64_max_abs": 9.596507730691428e-07,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w2.rows1.native_expected",
+      "native_bound_key": "prefill.layer.12.w2.rows1.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w2.rows2",
+      "weight_key": "weights.layers.12.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.012473615817725658,
+      "gpu_fp32_vs_f64_max_abs": 0.0017881020744425768,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w2.rows2.native_expected",
+      "native_bound_key": "prefill.layer.12.w2.rows2.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w2.rows4",
+      "weight_key": "weights.layers.12.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.0549757182598114,
+      "gpu_fp32_vs_f64_max_abs": 0.006291233465162804,
+      "native_bf16_vs_rounded_f64_different": 0,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w2.rows4.native_expected",
+      "native_bound_key": "prefill.layer.12.w2.rows4.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w2.rows8",
+      "weight_key": "weights.layers.12.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.0549757182598114,
+      "gpu_fp32_vs_f64_max_abs": 0.006291233465162804,
+      "native_bf16_vs_rounded_f64_different": 1,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w2.rows8.native_expected",
+      "native_bound_key": "prefill.layer.12.w2.rows8.native_bound"
+    },
+    {
+      "name": "prefill.layer.12.w2.rows32",
+      "weight_key": "weights.layers.12.feed_forward.w2.weight",
+      "fp32_accumulation_max_abs_bound": 0.054975707083940506,
+      "gpu_fp32_vs_f64_max_abs": 0.009470549370234949,
+      "native_bf16_vs_rounded_f64_different": 8,
+      "native_bf16_equals_round_gpu_fp32": true,
+      "native_expected_key": "prefill.layer.12.w2.rows32.native_expected",
+      "native_bound_key": "prefill.layer.12.w2.rows32.native_bound"
+    }
+  ],
+  "rms_cases": [
+    {
+      "name": "rms.width768.actual",
+      "expected_source": "bf16-operators",
+      "expected_key": "rms.width768.actual.implicit",
+      "bound_key": "rms.width768.actual.bound"
+    },
+    {
+      "name": "rms.width64.actual",
+      "expected_source": "bf16-operators",
+      "expected_key": "rms.width64.actual.implicit",
+      "bound_key": "rms.width64.actual.bound"
+    },
+    {
+      "name": "rms.width768.small",
+      "expected_source": "bf16-operators",
+      "expected_key": "rms.width768.small.implicit",
+      "bound_key": "rms.width768.small.bound"
+    },
+    {
+      "name": "rms.width64.small",
+      "expected_source": "bf16-operators",
+      "expected_key": "rms.width64.small.implicit",
+      "bound_key": "rms.width64.small.bound"
+    },
+    {
+      "name": "prefill.final_norm",
+      "expected_source": "attention-operators-bf16",
+      "expected_key": "prefill.final_norm.expected",
+      "bound_key": "prefill.final_norm.bound"
+    },
+    {
+      "name": "decode.2.final_norm",
+      "expected_source": "attention-operators-bf16",
+      "expected_key": "decode.2.final_norm.expected",
+      "bound_key": "decode.2.final_norm.bound"
+    },
+    {
+      "name": "decode.6.final_norm",
+      "expected_source": "attention-operators-bf16",
+      "expected_key": "decode.6.final_norm.expected",
+      "bound_key": "decode.6.final_norm.bound"
+    }
+  ],
+  "attention_cases": [
+    {
+      "name": "prefill.layer.0",
+      "raw": {
+        "expected_key": "prefill.layer.0.sink_free_expected",
+        "bound_key": "prefill.layer.0.raw.bound",
+        "rms_bound": 0.0005042331176809967
+      },
+      "scaled": {
+        "expected_key": "prefill.layer.0.expected",
+        "bound_key": "prefill.layer.0.scaled.bound",
+        "rms_bound": 0.00016987661365419626
+      },
+      "lse_max_abs_bound": 3.777108577196486e-05
+    },
+    {
+      "name": "prefill.layer.17",
+      "raw": {
+        "expected_key": "prefill.layer.17.sink_free_expected",
+        "bound_key": "prefill.layer.17.raw.bound",
+        "rms_bound": 0.00039506220491603017
+      },
+      "scaled": {
+        "expected_key": "prefill.layer.17.expected",
+        "bound_key": "prefill.layer.17.scaled.bound",
+        "rms_bound": 0.00039506220491603017
+      },
+      "lse_max_abs_bound": 2.9114044082234614e-05
+    },
+    {
+      "name": "prefill.layer.19",
+      "raw": {
+        "expected_key": "prefill.layer.19.sink_free_expected",
+        "bound_key": "prefill.layer.19.raw.bound",
+        "rms_bound": 0.0002441547403577715
+      },
+      "scaled": {
+        "expected_key": "prefill.layer.19.expected",
+        "bound_key": "prefill.layer.19.scaled.bound",
+        "rms_bound": 0.0002441547403577715
+      },
+      "lse_max_abs_bound": 3.690257290145382e-05
+    },
+    {
+      "name": "prefill.layer.21",
+      "raw": {
+        "expected_key": "prefill.layer.21.sink_free_expected",
+        "bound_key": "prefill.layer.21.raw.bound",
+        "rms_bound": 0.000656113144941628
+      },
+      "scaled": {
+        "expected_key": "prefill.layer.21.expected",
+        "bound_key": "prefill.layer.21.scaled.bound",
+        "rms_bound": 0.000656113144941628
+      },
+      "lse_max_abs_bound": 3.0154582418617792e-05
+    },
+    {
+      "name": "decode.2.layer.21",
+      "raw": {
+        "expected_key": "decode.2.layer.21.sink_free_expected",
+        "bound_key": "decode.2.layer.21.raw.bound",
+        "rms_bound": 1.3172626495361328e-05
+      },
+      "scaled": {
+        "expected_key": "decode.2.layer.21.expected",
+        "bound_key": "decode.2.layer.21.scaled.bound",
+        "rms_bound": 1.3172626495361328e-05
+      },
+      "lse_max_abs_bound": 3.194968667230569e-05
+    },
+    {
+      "name": "decode.6.layer.19",
+      "raw": {
+        "expected_key": "decode.6.layer.19.sink_free_expected",
+        "bound_key": "decode.6.layer.19.raw.bound",
+        "rms_bound": 4.00543212890625e-05
+      },
+      "scaled": {
+        "expected_key": "decode.6.layer.19.expected",
+        "bound_key": "decode.6.layer.19.scaled.bound",
+        "rms_bound": 4.00543212890625e-05
+      },
+      "lse_max_abs_bound": 2.619962651806418e-05
+    }
+  ],
+  "exact_cases": [
+    {
+      "name": "gate.layer.0",
+      "source": "bf16-operators",
+      "expected_key": "gate.layer.0.expected"
+    },
+    {
+      "name": "gate.layer.12",
+      "source": "bf16-operators",
+      "expected_key": "gate.layer.12.expected"
+    }
+  ],
+  "same_prefix_logits": {
+    "decode.0.logits": {
+      "max_abs_bound": 2.0,
+      "rms_bound": 0.47478840554167673,
+      "required_argmax": 791,
+      "gpu_winner_margin": 12.625
+    },
+    "decode.1.logits": {
+      "max_abs_bound": 1.25,
+      "rms_bound": 0.26220514989154653,
+      "required_argmax": 1169,
+      "gpu_winner_margin": 12.375
+    },
+    "decode.10.logits": {
+      "max_abs_bound": 2.5,
+      "rms_bound": 0.8435563112399175,
+      "required_argmax": 540,
+      "gpu_winner_margin": 10.25
+    },
+    "decode.11.logits": {
+      "max_abs_bound": 3.25,
+      "rms_bound": 1.790037846625065,
+      "required_argmax": 541,
+      "gpu_winner_margin": 14.125
+    },
+    "decode.12.logits": {
+      "max_abs_bound": 1.9375,
+      "rms_bound": 0.5718249776941806,
+      "required_argmax": 542,
+      "gpu_winner_margin": 9.625
+    },
+    "decode.13.logits": {
+      "max_abs_bound": 1.8515625,
+      "rms_bound": 0.3306306729579685,
+      "required_argmax": 543,
+      "gpu_winner_margin": 15.5
+    },
+    "decode.14.logits": {
+      "max_abs_bound": 1.75,
+      "rms_bound": 0.30275229476180726,
+      "required_argmax": 544,
+      "gpu_winner_margin": 14.875
+    },
+    "decode.15.logits": {
+      "max_abs_bound": 1.25,
+      "rms_bound": 0.3035813727675524,
+      "required_argmax": 263,
+      "gpu_winner_margin": 8.875
+    },
+    "decode.2.logits": {
+      "max_abs_bound": 2.125,
+      "rms_bound": 0.38718317238962435,
+      "required_argmax": 1135,
+      "gpu_winner_margin": 10.0
+    },
+    "decode.3.logits": {
+      "max_abs_bound": 1.375,
+      "rms_bound": 0.3147650561797322,
+      "required_argmax": 6830,
+      "gpu_winner_margin": 12.875
+    },
+    "decode.4.logits": {
+      "max_abs_bound": 1.25,
+      "rms_bound": 0.2706739011455099,
+      "required_argmax": 864,
+      "gpu_winner_margin": 2.375
+    },
+    "decode.5.logits": {
+      "max_abs_bound": 1.625,
+      "rms_bound": 0.3498825134147205,
+      "required_argmax": 18974,
+      "gpu_winner_margin": 9.0
+    },
+    "decode.6.logits": {
+      "max_abs_bound": 2.5,
+      "rms_bound": 0.9719022873241566,
+      "required_argmax": 535,
+      "gpu_winner_margin": 14.0625
+    },
+    "decode.7.logits": {
+      "max_abs_bound": 3.0,
+      "rms_bound": 1.072993120103486,
+      "required_argmax": 3358,
+      "gpu_winner_margin": 11.0625
+    },
+    "decode.8.logits": {
+      "max_abs_bound": 2.1875,
+      "rms_bound": 0.5972309525078684,
+      "required_argmax": 524,
+      "gpu_winner_margin": 11.375
+    },
+    "decode.9.logits": {
+      "max_abs_bound": 2.0,
+      "rms_bound": 1.016108890545068,
+      "required_argmax": 864,
+      "gpu_winner_margin": 7.0
+    },
+    "logits": {
+      "max_abs_bound": 1.25,
+      "rms_bound": 0.28155289340381073,
+      "required_argmax": 561,
+      "gpu_winner_margin": 3.375
+    }
+  },
+  "same_prefix_rules": [
+    "All tensors finite and shapes/inputs identical",
+    "Every named logit tensor must satisfy max-absolute AND RMS bounds",
+    "All17 fixture argmax IDs must match exactly; near-tie labels do not waive this fixture gate"
+  ],
+  "corpus_gates": {
+    "primary": "Corrected, frozen evaluation corpus; separate calibration split. Same pins, canonical pixels, prompt, image limits and token budgets on CPU and BF16 GPU.",
+    "strict_output_parity": "Every evaluation page must have exactly matching generated token IDs, decoded text and stopping reason against BF16 GPU. Report missing pages and any divergent page as failed strict parity, even if quality is similar.",
+    "ground_truth": "Compute diagnostic normalized CER and per-stratum aggregates for CPU BF16 and GPU BF16; require equality for a strict-parity claim. Structured/layout scores and BF16-versus-FP32 quality deltas must be reported separately; this contract does not authorize a general OCR-quality claim from diagnostic CER.",
+    "long_context": "Also require the explicit8192-output boundary fixture to match BF16 GPU tokens/text/stop with context<=16384; a capped run is not natural-EOS evidence.",
+    "failure_handling": "Do not widen this policy after observing CPU failures. Diagnose local operators or label the path experimental and qualification incomplete."
+  },
+  "limitations": [
+    "Existing dense BF16 trajectory policy is rejected and preserved unchanged",
+    "Blockwise oracle also showed signal-scale accumulated hidden drift; no full-hidden-trajectory acceptance threshold is defined",
+    "Local bounds apply only to named fixtures and must be extended before claiming additional shapes/context coverage"
+  ]
+}

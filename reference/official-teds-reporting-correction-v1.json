@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "status": "implemented_tests_passed_independent_review_pending",
+  "recorded_utc": "2026-09-20T13:28:04.527622+00:00",
+  "change": "Reporting validation accepts finite TEDS and TEDS_structure_only in [-1,1] at sample, per-table copy and mean levels. Values and aggregation are unchanged.",
+  "old_validator_sha256": "01bcb9a81ecb7935508639bde67f38a0d39fc1e8e6fade747366293a7c3a5562",
+  "upstream_evidence": "reference/official-teds-negative-diagnosis-v1.json",
+  "regression": {
+    "actual_negative_TEDS": -0.14607442454664676,
+    "actual_negative_hex": "-0x1.2b291161adcf0p-3",
+    "actual_structure_only": 0.37037037037037035,
+    "mixed_positive_table_mean_preserves_negative": true,
+    "clamped_or_excluded_mean_rejected": true,
+    "both_metric_endpoints_accepted": true,
+    "out_of_range_nonfinite_nonnumeric_cases": 48,
+    "includes_nextafter_outside_bounds": true,
+    "validation_does_not_mutate_result_files": true
+  },
+  "tests": [
+    {
+      "command": "C:/Users/amazi/mambaforge/python.exe -m unittest discover -s tests -p test_official_evaluation_workflow.py -v",
+      "passed": 19,
+      "failed": 0,
+      "exit_code": 0
+    },
+    {
+      "command": "wsl -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- env CUDA_VISIBLE_DEVICES=-1 /home/amazi/falcon-ocr-evaluation/.venv/bin/python -m unittest discover -s tests -p test_quality_regression.py -v",
+      "passed": 20,
+      "failed": 0,
+      "exit_code": 0
+    }
+  ],
+  "saved_result_validation": {
+    "directory": "artifacts/evaluation/v3-checked-fp32-v1/gpu",
+    "validated_result_files": 11,
+    "result_provenance_log_audit_files_unchanged": 14,
+    "historical_execution_audit_status": "failed",
+    "historical_audit_not_rewritten": true,
+    "not_an_accepted_scoring_run": true
+  },
+  "source_and_evidence_sha256": {
+    "reference\\official-evaluator-git-interop-v1-completion.json": "a6b2bbe81b9fc860bdca02d42ca5dff12b98d8a7e182bdef1d53b15404b9066b",
+    "artifacts\\evaluation\\v3-checked-fp32-v1-reporting-source-after-failure.zip": "f4bad562e875ab5b9966374f4622af11cd8df5d2b7f32004ad518998be80704d",
+    "scripts/compare_official_evaluation.py": "c4ff51c5828237274b1d11b369d664716b81d54371ad8e1d7a2b208cda43df82",
+    "tests/test_official_evaluation_workflow.py": "140d31b813e3b7cadb45dc381624f5f87032ee12a76fa3895ebcdcc85d7b862b",
+    "tests/test_quality_regression.py": "89bdff0cb77efd75e8b7cbbb5bafdfb9fe645d789c327d791636546d175dba87",
+    "reference/official-teds-negative-diagnosis-v1.json": "0b8499ff97ee6e7a8aa376b5b280a74a8a9706904955db3d95250a9236ab70b1",
+    "artifacts\\evaluation\\v3-checked-fp32-v1-gitinterop.log": "9637fd8904d64a92452bbf67c8d02c6fa6bd3b18e23ca17a82eb11b3c0bfea96",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\execution-audit.json": "dd6983ba0c86352580f8d121bc811d024385df0f3bce22ba533e9dcd2ad9ce80",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\execution.log": "71719c5d47d9efe26982de1a1425fdc610e6dc4931daddce376ac7dbb90f47d0",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_display_formula_formula.json": "8c859231b8f6c285c570e5cc540314fb9dd1a1a604304bf5ff91365d2f257fc9",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_display_formula_per_page_edit.json": "4d2d15d6a37c4bd497f0e82ce44a36437718fd8e5f150b3f8b7aca4cbd8cab4f",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_display_formula_result.json": "f6bb01651133397560026bb1edaf6a9172ee53adba44a03111a2f61e6424ad30",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_metric_result.json": "50902eedae3a6897e36efc0f0d340ecc92426233e680cdd48531f32eaf1a4b03",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_reading_order_per_page_edit.json": "7d1e5f7a05263d0aeb59329d569eeab3684e825f7a2f32a37f5dd6316e61f34b",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_reading_order_result.json": "60edbd2f0eec5a376fd161672d7791f702cdbed305228f45aaa15d8b82839183",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_table_per_page_edit.json": "049abaf2c22071667adbe19e043353d57babb8dc0385a27d93fe5e89871dc84c",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_table_per_table_TEDS.json": "8b25ff798e23740eea748fb28b42e457402ecd5eaa9ccd284d4e5255b4f901b9",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_table_result.json": "bd9e185cdc451ae0b32a488cc561961a30313853d8830ebc5025e9c2ceb094dc",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_text_block_per_page_edit.json": "5b90aa7865a320bf7014a6e5e5cdddcda5f11b8395fe7a4bbaab184db3ee9e01",
+    "artifacts\\evaluation\\v3-checked-fp32-v1\\gpu\\result\\predictions_quick_match_text_block_result.json": "fb86eb04cb2da25d0fb8105a233bff6661ef77b7d2cbb64976df9143297254d6",
+    "scripts\\run_evaluation_checked.py": "d1317f0284c90e5f80890e76c54a75870977c9ac18db924ecc122f702734a867",
+    "scripts\\prepare_official_evaluation.py": "7b575e419b9b94a4dda24743b687dcabab98548fef62a5288eef153ebfa68692",
+    "scripts\\run_official_evaluation.py": "003a8955bd799f9d4b4b46dff0c5ea2de0b9a409d04497530a469327cbca920f",
+    "scripts\\report_quality_regression.py": "6e5f09a0fc10cd5e30d9e72588bf729cb33f6e2209cd603292fe7a8b3ebea299"
+  },
+  "all_bound_hashes_unchanged_at_end": true,
+  "evaluator_arithmetic_edited": false,
+  "aggregation_changed": false,
+  "clamping_or_exclusion": false,
+  "metric_tolerance_or_quality_budget_changed": false,
+  "scorer_rerun": false,
+  "model_inference": false,
+  "scope": "Only two reporting/test files changed. Historical failed reports and source archive remain preserved. Root owns fresh official200 scoring after independent review."
+}

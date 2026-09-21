@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "status": "actual_cuda_rstd_confirms_all_inferred_scales",
+  "evidence_sha256": {
+    "artifacts/reference/rms-rstd-fp32.json": "0c7c058b7448d8201bfd128371afb6a82090d14241694f95fce05cede503ecbe",
+    "artifacts/reference/rms-rstd-fp32.safetensors": "be4b3c78fc81b9d04d8082a796d57827dda758f9faf6191d88c181d836f4a948",
+    "artifacts/reference/rms-rstd-fp32.source.py": "0789bcc0177171bd2175a1cc77d6c202bccadc9b6ef86db34e6eae7b3ad62fe4",
+    "artifacts/reference/rms-rstd-fp32.inferred-scales.json": "9dca1f5a3e236eae60bd9aabb4370dd11a8b70cad5ad05bdff43f111a541e848",
+    "artifacts/reference/layer-operators-fp32.safetensors": "ce7345c219d8923182ff66e9aad2f4d6bad3c193a19c3445a850c2d3a90e5417",
+    "artifacts/reference/layer-operators-fp32.json": "148b9d4286bf413b7c9c693b920290298d5f46cd137449ac4e394430495a8962",
+    "reference/rms-scales-independent-review-v1.json": "8380c45053945d7ad5ecd9274b77792a7a08459ca7601345fcbb655faf2b849b"
+  },
+  "operator": "aten::_fused_rms_norm(Tensor input, int[] normalized_shape, Tensor? weight, float? eps) -> (Tensor, Tensor)",
+  "epsilon": 1.1920928955078125e-07,
+  "cases": 14,
+  "observed_scale_rows": 1444,
+  "original_fused_output_bits_all_match": true,
+  "inferred_and_observed_scale_bits_all_match": true,
+  "cpu_variant_scales_matching_observed_gpu": {
+    "production": 862,
+    "production_rounded_rsqrt": 994,
+    "cuda_shaped": 959,
+    "cuda_shaped_rounded_rsqrt": 1138
+  },
+  "width": 768,
+  "production_changed": false,
+  "qualification": "Actual fused CUDA RMSNorm output and FP32 reciprocal standard deviations on the frozen equal-input cases. The earlier independently checked scale inference is confirmed, but GPU variance and reduction intermediates were not observed. This does not close the full-graph numerical gate or qualify any RMS candidate. Performance was not measured."
+}

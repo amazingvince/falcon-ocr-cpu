@@ -1,0 +1,159 @@
+{
+  "kind": "fp32-crossover-downstream-completion-v1",
+  "status": "one_valid_downstream_decomposition_completed",
+  "completed_utc": "2026-09-20T17:38:56.519616+00:00",
+  "artifact_sha256": {
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/plan.json": "89d79b4717157f9d66c43092c9c83acd80880e0f823550e2a34111dafc6e7c36",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/preparation.json": "3766465c98732d401f9a3a6d0e1c7c8be9707c9002a90231f3df669c960008a5",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/host-validation.json": "6f6453c1f0aebaff277905431bf2fe41bcaeb5723c62a75278bca802f5c645ed",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-launch.py": "cc1e2584f879e1a76cf4b93ae070cd11ba13e3dd00c5c2842edd912b3c72571a",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-launch-start.json": "e5eab3571bf4d3ee8ac7f415398ab3cb272770ebb277db3d23fbe117d1625fd1",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-launch-completion.json": "8826a3f606cff9cd797089a258545729b872a99d9cc8b3459748a96548709a73",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu-process.json": "7d619454d2e960ac019e0a663f0ee6b3b9b2cd005309d145de687b2aeee37a8c",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu.stdout.log": "6feef44f4776c91a223fc395b728c672b5e9acf3afd9debcac22b49abba05940",
+    "artifacts/diagnostics/fp32-crossover-downstream-plan-v1/gpu.stderr.log": "62442423ed02f7d2a10fc4d0cbd5c751c16399bd965e785a6be42401154cdf3a",
+    "artifacts/diagnostics/fp32-crossover-downstream-gpu-v1/report.json": "9d14800ac47f217afeb0f390e9cf96271fbb8e8d4765cdfb424d75eea43fbd78",
+    "artifacts/diagnostics/fp32-crossover-downstream-gpu-v1/tensors.safetensors": "37ef2f78a224032d7193de5504ae4087259827fd23d4dfabcd60ade8649467a3",
+    "reference/fp32-crossover-downstream-decomposition-v1.json": "32d15683c8d226f4d0ea9163147cb6cee1d19b823a8d3c89fc5ec1861e792806"
+  },
+  "execution": {
+    "export_exit_code": 0,
+    "comparison_exit_code": 0,
+    "numerical_attempts": 1,
+    "control_branches": 1,
+    "new_substitution_branches": 1,
+    "native_layer8_calls": 2,
+    "native_layer9_pre_attention_qkv_calls": 2,
+    "rust_layer7_or_fullmodel_rerun": false,
+    "tolerance_or_production_changes": false,
+    "owned_processes_exited": true
+  },
+  "verification": {
+    "fresh_control_stage_count": 17,
+    "fresh_control_stages_bit_exact": true,
+    "new_full_entry_states_exact": 2,
+    "new_payloads_checked": 34,
+    "historical_payloads_checked": 93,
+    "historical_original_control_count": 22,
+    "historical_state_joins_exact": 8,
+    "source_and_input_closure": true,
+    "maximum_fp64_telescoping_residual": 0.0
+  },
+  "fixed_endpoint": {
+    "stage": "layer.9.v",
+    "coordinate": [
+      112,
+      14,
+      2
+    ],
+    "original_absolute_bound": 0.005096435546875,
+    "A": -19.037837982177734,
+    "B": -19.031208038330078,
+    "C": -19.031253814697266,
+    "D": -19.03121566772461,
+    "D_minus_A_original": 0.006622314453125,
+    "D_minus_C_downstream_accumulated_engine": 3.814697265625e-05,
+    "C_minus_B_layer7_engine_propagated": -4.57763671875e-05,
+    "B_minus_A_earlier_state_propagated": 0.00662994384765625,
+    "signed_fractions_of_original_total": {
+      "downstream_engine": 0.00576036866359447,
+      "layer7_engine_propagated": -0.0069124423963133645,
+      "earlier_state_propagated": 1.0011520737327189
+    },
+    "fp64_telescoping_residual": 0.0,
+    "B_minus_A_exceeds_original_bound_descriptive_only": true
+  },
+  "layer9_v_global": {
+    "D_minus_A_original": {
+      "max_abs": 0.006622314453125,
+      "rms": 0.00010810784355556972,
+      "signed_mean": 1.5528555902872338e-07
+    },
+    "D_minus_C_downstream_accumulated_engine": {
+      "max_abs": 6.103515625e-05,
+      "rms": 5.652412524300419e-06,
+      "signed_mean": -5.064733462252965e-08
+    },
+    "C_minus_B_layer7_engine_propagated": {
+      "max_abs": 9.1552734375e-05,
+      "rms": 6.36576446180227e-06,
+      "signed_mean": 1.4432215620116848e-08
+    },
+    "B_minus_A_earlier_state_propagated": {
+      "max_abs": 0.00662994384765625,
+      "rms": 0.00010854459441299701,
+      "signed_mean": 1.9150067803113618e-07
+    }
+  },
+  "effective_torch_math": {
+    "torch_version": "2.11.0+cu130",
+    "torch_git_version": "70d99e998b4955e0049d13a98d77ae1b14db1f45",
+    "cuda_runtime": "13.0",
+    "float32_matmul_precision": "highest",
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "allow_fp16_reduced_precision_reduction": false,
+    "allow_bf16_reduced_precision_reduction": false
+  },
+  "effective_threads": {
+    "torch_num_threads": 8,
+    "torch_num_interop_threads": 32,
+    "environment": {
+      "OMP_NUM_THREADS": "8",
+      "OMP_DYNAMIC": null,
+      "OMP_PROC_BIND": null,
+      "OMP_PLACES": null,
+      "MKL_NUM_THREADS": "8",
+      "MKL_DYNAMIC": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null,
+      "VECLIB_MAXIMUM_THREADS": null,
+      "TORCHINDUCTOR_COMPILE_THREADS": null,
+      "PYTHONHASHSEED": null,
+      "CUDA_VISIBLE_DEVICES": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+      "CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+      "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+    }
+  },
+  "gpu_environment": {
+    "gpu_uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "free_memory_mib": 24096,
+    "torch_device_uuid": "2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "cublas_workspace_config": ":4096:8",
+    "driver": "591.86",
+    "cuda_runtime": "13.0",
+    "packages": {
+      "torch": "2.11.0+cu130",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "safetensors": "0.8.0",
+      "einops": "0.8.1",
+      "pillow": "12.3.0",
+      "numpy": "2.5.1"
+    },
+    "python": "3.12.13",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "environment": "/home/amazi/falcon-ocr-rust-reference/.venv",
+    "python_executable": "/home/amazi/falcon-ocr-rust-reference/.venv/bin/python",
+    "wsl": true,
+    "requirements_sha256": "9e1c393e581094481fb70addef124daebb91a057721ddff4ff5242d5278cc622"
+  },
+  "idle_observation": {
+    "source": "UUID-specific nvidia-smi query after export and offline comparison exited",
+    "uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "gpu_utilization_percent": 0,
+    "memory_used_mib": 42,
+    "other_gpu_used": false
+  },
+  "limits": [
+    "D-C is an accumulated downstream path difference, not an isolated kernel error.",
+    "C-B and B-A are conditional substitutions through a nonlinear suffix; the order is fixed, not a unique allocation of interactions.",
+    "Signed fractions can be negative or exceed one; maxima/RMS are not additive attribution.",
+    "Original startup gaps and altered allocation/observation history remain.",
+    "The original bound is reused descriptively; no policy relaxation, production fix or full-model qualification.",
+    "Stop after this decomposition; no further layer, sweep or inference is implied.",
+    "Fresh same-input control establishes this recorded replay; it is not a universal proof of machine arithmetic identity.",
+    "The earlier-state term remains above the original fixed bound at the original target. This diagnostic does not close the original numerical failure or identify the earlier creating operator."
+  ]
+}

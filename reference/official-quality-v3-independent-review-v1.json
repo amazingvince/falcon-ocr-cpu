@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "status": "passed_bounded_saved_report_review",
+  "recorded_utc": "2026-09-20T13:45:17.234504+00:00",
+  "checks": 4951,
+  "bound_files": 661,
+  "all_bound_files_unchanged_at_end": true,
+  "review_source": "artifacts/reviews/official-quality-independent-v1/review.py",
+  "review_source_sha256": "962685029f42d5d6219ffab140a826d0c1054915fd033f52e3d8e75ec2050747",
+  "inventory": "artifacts/reviews/official-quality-independent-v1/inputs.json",
+  "inventory_sha256": "d96ab2e8742db0dbb0b41f5495ef80f60dd982dbf25cd121e33f72155cbb39f4",
+  "official_report_sha256": "57852a32f071ea81d3fe1490e9f4f5314d4f07fa0e2339f76545d5c6c09c8359",
+  "quality_report_sha256": "339c8d557b23ecc58fe06c2863033de3f032a235ec3462f7f030752f3fcfb201",
+  "completion_receipt_sha256": "c4196bbc54bb09a038f7542a281bc92318e613262fc9d1c55f7cb1e90f36e947",
+  "audits": {
+    "gpu": {
+      "status": "complete",
+      "entered_pages": 200,
+      "completed_pages": 200,
+      "exit_code": 0
+    },
+    "cpu": {
+      "status": "complete",
+      "entered_pages": 200,
+      "completed_pages": 200,
+      "exit_code": 0
+    }
+  },
+  "equal_result_files": 11,
+  "exact_prediction_byte_hashes": 200,
+  "component_coverage": {
+    "text_block": {
+      "sample_count": 2583,
+      "page_count": 194
+    },
+    "display_formula": {
+      "sample_count": 214,
+      "page_count": 44
+    },
+    "table": {
+      "sample_count": 89,
+      "page_count": 62
+    },
+    "reading_order": {
+      "sample_count": 194,
+      "page_count": 194
+    }
+  },
+  "teds": {
+    "tables_in_mean": 89,
+    "negative_values_retained": [
+      -0.14607442454664676
+    ],
+    "negative_float_hex": "-0x1.2b291161adcf0p-3",
+    "mean": 0.6698691772585724,
+    "structure_only_mean": 0.7502593216020016,
+    "clamped_or_excluded": false
+  },
+  "annotation_adaptation": {
+    "removed_links": 2,
+    "distinct_papers": 2,
+    "paper_ids": [
+      "omnidocbench:docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+      "omnidocbench:scihub_s00894-012-1568-z.pdf_2.jpg"
+    ],
+    "all200_other_annotation_fields_unchanged": true
+  },
+  "quality": {
+    "literal_identity_pages": 200,
+    "overall_and_all_seven_category_differentials": 0.0,
+    "exact_official_run_record_prediction_audit_result_joins": true,
+    "embedded_official_report_exact": true,
+    "fixed_corpus_reporting_complete": true,
+    "absolute_accuracy_accepted": false,
+    "official_Overall_computed": false,
+    "planned_domain_coverage_complete": false,
+    "historical_startup_gaps_retained": true
+  },
+  "documentation_review": {
+    "files": [
+      "README.md",
+      "docs/QUALITY.md",
+      "docs/EVALUATION.md",
+      "docs/STATUS.md"
+    ],
+    "component_scores_and_coverage_match": true,
+    "negative_TEDS_and_two_paper_adaptations_match": true,
+    "CER_WER_counts_and_rounded_rates_match": true,
+    "no_concrete_mismatch_found_in_requested_descriptions": true
+  },
+  "limits": [
+    "Bounded saved-report review. Existing independent full inference-record review is referenced; model/image/build validation was not duplicated.",
+    "Component coverage differs by matcher/component and missing component pages remain explicit, not assigned zero.",
+    "Identical predictions prove zero differential on this fixed corpus; this does not establish high absolute OCR accuracy, universal document coverage, tensor/BF16 parity or performance.",
+    "No scoring, model, test, build or GPU execution occurred. No existing report or artifact was modified."
+  ],
+  "idle_after_review": true
+}

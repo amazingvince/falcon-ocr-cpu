@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "status": "accepted_unmodified_ptx_roundtrip",
+  "accepted": true,
+  "report_path": "artifacts/reference/bf16-ptx-roundtrip-v1/report.json",
+  "report_sha256": "461afe06cdec2d84e8d3c509be9b36edb0f9c8017677d6dd7dc191b0908e4c6d",
+  "assembler_invocations": 1,
+  "checks": {
+    "entire_machine_text_section_exact": true,
+    "function_attributes_exact": true
+  },
+  "cases": [
+    {
+      "case": "prefill.layer.0",
+      "accepted": true,
+      "checks": {
+        "raw.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "raw.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "log2_lse.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "log2_lse.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "raw.original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.17",
+      "accepted": true,
+      "checks": {
+        "raw.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "raw.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "log2_lse.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "log2_lse.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "raw.original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        }
+      }
+    },
+    {
+      "case": "prefill.layer.19",
+      "accepted": true,
+      "checks": {
+        "raw.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "raw.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "log2_lse.roundtrip_vs_original": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "log2_lse.original_vs_saved_control": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "raw.original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 147456,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        },
+        "lse.original_vs_frozen": {
+          "equal": true,
+          "different_count": 0,
+          "elements": 2304,
+          "first_different_indices": [],
+          "max_absolute": 0.0
+        }
+      }
+    }
+  ],
+  "artifact_sha256": {
+    "original.ptx": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+    "original.sass": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d",
+    "outputs.safetensors": "500d996810959f9f1cbea19849d7f4d1c14d7c97d63e4e381c0d2f78f914f33a",
+    "roundtrip.cubin": "7ba5f8153557a08dbc5069b058359d01c09c0e6e860b0be8e2d23a5bc9f15c7e",
+    "roundtrip.sass": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d"
+  },
+  "qualification": "Unmodified PTX control only. This establishes assembler/ABI feasibility, not acceptance of any observer or model. A single prospective stores-only observer may now be prepared for independent source review; GPU execution is held."
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "manifest_sha256": "1c7f4eadf7d9bef4b3ffb946e7a955b979b30093a1addfb5bf94026e982de60c",
+  "serving_helper_source_sha256": "e69caf69e5eefc3977d25b62fb1f28ad3f34d0b58146c90cfdc731e5d00f82b2",
+  "hf_processor_sha256": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+  "script_sha256": "0e2978f28eae161fb18db6c8524991dc40732b704027f3ea795c46cffe952788",
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.14.1",
+    "pillow": "12.3.0",
+    "numpy": "2.5.1"
+  },
+  "gpu_execution": false,
+  "pages": [
+    {
+      "sample_id": "3f294b5e60a0c2d4",
+      "category": "ordinary",
+      "input_sha256": "99cac91923ba466cb8a562f133d01207a8550fc376f73069a14dae5621ef6c41",
+      "hf_prefix_tokens": 6544,
+      "configured_image_hw": [
+        1536,
+        1088
+      ],
+      "default_image_hw": [
+        1024,
+        720
+      ],
+      "configured_pixels_exact": true,
+      "different_elements": 0,
+      "max_abs": 0.0,
+      "configured_pixels_sha256": "0a4aed6637a89f23371e2c478c13bb1d0f169c38f26777a4b519d59fdd2928ee",
+      "hf_unpadded_pixels_sha256": "0a4aed6637a89f23371e2c478c13bb1d0f169c38f26777a4b519d59fdd2928ee"
+    },
+    {
+      "sample_id": "2c243b31d36eb729",
+      "category": "tables",
+      "input_sha256": "beeb1c251ac083686ac1dd0ff0b8934022e5a996c2af4e58da48cf747252735e",
+      "hf_prefix_tokens": 7120,
+      "configured_image_hw": [
+        1536,
+        1184
+      ],
+      "default_image_hw": [
+        1024,
+        784
+      ],
+      "configured_pixels_exact": true,
+      "different_elements": 0,
+      "max_abs": 0.0,
+      "configured_pixels_sha256": "521d21d4fd64df64e898e6e29000d9a163c00667cf3e045430b6ec25e0534eae",
+      "hf_unpadded_pixels_sha256": "521d21d4fd64df64e898e6e29000d9a163c00667cf3e045430b6ec25e0534eae"
+    },
+    {
+      "sample_id": "f75c4a0b98e45ab3",
+      "category": "multi_column",
+      "input_sha256": "e900609f33a80d87830fd823ad2fd835628f3513ef63544e6d1571f9ecf11a2c",
+      "hf_prefix_tokens": 7120,
+      "configured_image_hw": [
+        1536,
+        1184
+      ],
+      "default_image_hw": [
+        1024,
+        784
+      ],
+      "configured_pixels_exact": true,
+      "different_elements": 0,
+      "max_abs": 0.0,
+      "configured_pixels_sha256": "b04780c22e4bde0e3dec5136f707817b9066c30eb5b844dff06a5b32fe050272",
+      "hf_unpadded_pixels_sha256": "b04780c22e4bde0e3dec5136f707817b9066c30eb5b844dff06a5b32fe050272"
+    }
+  ],
+  "all_configured_pixels_exact": true,
+  "qualification": "Pinned source helper evaluated under the HF reference CPU environment. Actual vLLM worker processing, its dependency versions and effective overrides still require serving runtime evidence."
+}

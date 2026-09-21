@@ -1,0 +1,92 @@
+{
+  "schema_version": 2,
+  "status": "rejected_stores_only_ptx_observer",
+  "accepted": false,
+  "native_intermediates_accepted": false,
+  "report_path": "artifacts/reference/bf16-ptx-observer-v2/report.json",
+  "report_sha256": "7d7a7d8a565cfaac0085f3c9695e915c780604de30458d92d365bf917422e6c0",
+  "phase": "single_assembly",
+  "actual_assembler_invocations": 1,
+  "actual_kernel_launch_counts": {
+    "observer_attention": 0,
+    "original_attention_control": 0,
+    "natural_lse": 0
+  },
+  "case_count": 0,
+  "machine_arithmetic_delta": {
+    "added": [
+      {
+        "opcode": "FADD",
+        "immediates": [],
+        "count": 1
+      }
+    ],
+    "removed": []
+  },
+  "gates": {
+    "ptx_restoration": true,
+    "machine_arithmetic_inventory": false,
+    "complete_raw_bf16_output": "not_reached",
+    "complete_natural_lse_output": "not_reached",
+    "complete_log2_lse_output": "not_reached",
+    "runtime_probe_mapping": "not_reached",
+    "runtime_unique_store_coverage": "not_reached",
+    "source_window": true,
+    "input_window": true,
+    "actual_lf_launcher_closure": true
+  },
+  "candidate_sha256": "164bf064bb7e6ecdc31a3ff3f0f031c3471a0670dddcc933dd0d6780a5171717",
+  "spec_sha256": "568fac1e9db7645fdc4e020d187be0ae2d3558fa8abf02deee4dddb242fd33d5",
+  "review_receipt": {
+    "path": "reference/bf16-ptx-observer-independent-review-v2.json",
+    "sha256": "b8918bc64916e2ba1627dbaa73c7de3c854db65152d71707cc8d104cf315d850"
+  },
+  "operational_recovery_receipt": {
+    "path": "reference/bf16-ptx-observer-v2-operational-recovery-v1.json",
+    "sha256": "bcabf3aa23945ce1463b3a2ac6aabf1776658a7d79068b58946aebaafd2712cb"
+  },
+  "unavailable_argument_count_in_prospective_spec": 32,
+  "unavailable_argument_runtime_capture": "not_reached; no observed values or placeholders exported",
+  "artifacts": {
+    "mapping.json": {
+      "sha256": "80420fa1c3b140ce92479cf6c3266ae12a762408dbf49e82331e23a4f24bc3a9",
+      "bytes": 48820
+    },
+    "observer.cubin": {
+      "sha256": "a3ec85cef4223066ddca4f383632405b55e797458edd430b841612f19acd5c4f",
+      "bytes": 876976
+    },
+    "observer.ptx": {
+      "sha256": "164bf064bb7e6ecdc31a3ff3f0f031c3471a0670dddcc933dd0d6780a5171717",
+      "bytes": 745413
+    },
+    "observer.sass": {
+      "sha256": "b5bd9356118285ce50d7f305d6d8fb304331216fe227210a963cec5f46e5e05d",
+      "bytes": 6006812
+    },
+    "original.sass": {
+      "sha256": "79ddb1d796047f443bfa26c1b32ef628fb309c5eaee116dc4b2a462d4236b60d",
+      "bytes": 4204422
+    },
+    "ptxas.stderr.txt": {
+      "sha256": "fe68867042c7225c97d2b537fc444b37ba92cdff0883cadd5ebb7d308ecce44d",
+      "bytes": 434
+    },
+    "restored-original.ptx": {
+      "sha256": "d7ddae62ca0170c91a5540286d931839608a43eb567100690365b4ce235523d0",
+      "bytes": 582922
+    }
+  },
+  "gpu_status": {
+    "checked_utc": "2026-09-20T13:08:14.929744+00:00",
+    "uuid": "GPU-2efafa74-a255-add8-9c6c-ad80b6b8cb58",
+    "name": "NVIDIA GeForce RTX 4090",
+    "memory_used_mib": 42,
+    "memory_free_mib": 24096,
+    "utilization_percent": 0,
+    "observer_process_exit_code": 1,
+    "owned_gpu_work_running": false,
+    "qualification": "Read-only nvidia-smi snapshot after process exit; no observer CUDA kernel was launched."
+  },
+  "qualification": "Single v2 numerical attempt rejected before any kernel launch because the unchanged machine inventory still contains one additional FADD. Full-output, mapping and runtime availability gates were not reached. No native intermediate captured or accepted. The launcher-format failure is preserved separately and its explicitly authorized LF-only operational recovery did not change numerical sources/gates. No additional observer, diagnosis sweep, assembler variant, retry or gate change is authorized."
+}

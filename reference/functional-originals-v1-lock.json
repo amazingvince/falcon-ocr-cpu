@@ -1,0 +1,304 @@
+{
+  "schema_version": 1,
+  "dataset": "original-supplement-v1",
+  "provenance": "Original short text and deterministic page recipes authored for this project; no external document images or passages, no model output used to select content.",
+  "source_terms": "Original fixture text and recipes may be used and redistributed with this project. DejaVu font license notice retained; font binaries are not copied into the artifact set.",
+  "font_license": {
+    "name": "Bitstream Vera license; DejaVu changes public domain",
+    "path": "artifacts/supplement/original-v1/FONT-LICENSE.txt",
+    "sha256": "3cecd09fa1d86ccf37802d0e67ac92e6d03ad46f40df522e8a664927273d039c"
+  },
+  "runtime": {
+    "pillow": "12.3.0",
+    "freetype2": "2.14.3",
+    "raqm": "0.10.5",
+    "harfbuzz": "14.2.1",
+    "fribidi": "1.0.13"
+  },
+  "fonts": {
+    "sans": {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    "mono": {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+      "sha256": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88"
+    }
+  },
+  "generator_sha256": "ab445ccc70f7753275157b22e3be1c2cad4dccf60c8f95d735f13b9874b2a3bf",
+  "rgb_policy": "Typeset directly into RGB; no EXIF; orthogonal variants use exact pixel transposes.",
+  "ground_truth_policy": "Exact authored logical Unicode text, NFC, LF between lines, trimmed outer whitespace. Empty files are intentional for truly blank pages. Spaces within receipt lines are retained.",
+  "comparison_policy": "Report separately from the 200 natural pages. Compare GPU/CPU discrete tokens and EOS independently of authored-text quality. For blank pages report exact empty/nonempty output and hallucinated character count, not CER with a zero denominator. Group derived variants by parent.",
+  "qualification": "Generated source/pixel/text freeze; visual review and GPU/CPU inference qualification are separate. Synthetic printed pages do not establish real scanned receipt robustness or broad multilingual accuracy.",
+  "limitations": [
+    "One typeface per layout; clear typesetting rather than real scans",
+    "Three orthogonal rotated variants share one upright text parent",
+    "Faint receipt shares its clean parent",
+    "Five non-English scripts/languages do not cover all scripts or fonts",
+    "No long-output, handwriting or arbitrary-angle rotation claim",
+    "No calibration split; diagnostic evaluation only"
+  ],
+  "name": "functional-originals-v1",
+  "page_count": 3,
+  "parent_count": 3,
+  "category_counts": {
+    "receipts": 1,
+    "blank": 1,
+    "sparse": 1
+  },
+  "source_manifest": "reference/original-supplement-v1-lock.json",
+  "source_manifest_sha256": "ff90af60b10c4bd411526326fed5a65ca820c4eef9d795fede808d80a1f7cfdf",
+  "functional_workload_manifest": "reference/functional-batch-v1-lock.json",
+  "functional_workload_manifest_sha256": "c9ba1bcbadb7ffe8865aa8a149a75fb239053fb79955d86083c7a28b4de3fb72",
+  "selection_policy": "Exact complete page objects selected from the pinned original supplement. Preserve parent-manifest relative page order (receipt-cafe, blank-white, sparse-room), all parent IDs, canonical image bytes and intended text. No content, pixels or annotations changed; GPU references are joined by identity to the functional request order, never by subset position.",
+  "functional_request_order": [
+    "prose",
+    "blank-white",
+    "sparse-room",
+    "receipt-cafe"
+  ],
+  "reference_request_contract": {
+    "precision": "fp32",
+    "min_dimension": 64,
+    "max_dimension": 1536,
+    "max_new_tokens": 4096,
+    "teacher_forced": false
+  },
+  "purpose": "New strict GPU references at the exact saved functional cap4096 contract. Historical cap512 outputs are not substitutes even if they stopped at EOS. Output-only functional join, no quality/performance claim.",
+  "pages": [
+    {
+      "id": "original-supplement-v1:receipt-cafe",
+      "split": "supplemental_diagnostic",
+      "category": "receipts",
+      "source_family": "original-supplement-v1:receipt-cafe",
+      "parent_id": "original-supplement-v1:receipt-cafe",
+      "source_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "source_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "canonical_path": "artifacts/supplement/original-v1/receipt-cafe/canonical-rgb.png",
+      "canonical_png_sha256": "ea19d24d6392aeebd78d87ce7ee80c0643cc966bdafe263a3fbe95cd4701b132",
+      "rgb_sha256": "4e0762711ef89570934412f2cc35a9f694c8b72b02e875dd62108f6535066066",
+      "width": 640,
+      "height": 960,
+      "ground_truth_path": "artifacts/supplement/original-v1/receipt-cafe/ground-truth.txt",
+      "ground_truth_sha256": "9cd70e6338bb29b63f6729c4eaffdbce1d5d910d4e3ff6167f540c14bcf556d0",
+      "expected_text": "RIVER CAFE\nORIGINAL TEST RECEIPT\nORDER 018\n\nCOFFEE x2          USD  6.00\nSANDWICH           USD  7.50\n\nSUBTOTAL           USD 13.50\nTAX                USD  1.08\nTOTAL              USD 14.58\n\nPAID BY CARD\nPLEASE KEEP THIS COPY",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "mono",
+        "font_size_px": 26,
+        "line_step_px": 55,
+        "margin_px": 64,
+        "top_px": 70,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "RIVER CAFE",
+            "bbox_xyxy": [
+              64,
+              70,
+              221,
+              89
+            ]
+          },
+          {
+            "line_index": 1,
+            "text": "ORIGINAL TEST RECEIPT",
+            "bbox_xyxy": [
+              64,
+              125,
+              393,
+              144
+            ]
+          },
+          {
+            "line_index": 2,
+            "text": "ORDER 018",
+            "bbox_xyxy": [
+              64,
+              180,
+              205,
+              199
+            ]
+          },
+          {
+            "line_index": 4,
+            "text": "COFFEE x2          USD  6.00",
+            "bbox_xyxy": [
+              64,
+              290,
+              502,
+              309
+            ]
+          },
+          {
+            "line_index": 5,
+            "text": "SANDWICH           USD  7.50",
+            "bbox_xyxy": [
+              64,
+              345,
+              502,
+              364
+            ]
+          },
+          {
+            "line_index": 7,
+            "text": "SUBTOTAL           USD 13.50",
+            "bbox_xyxy": [
+              64,
+              455,
+              502,
+              474
+            ]
+          },
+          {
+            "line_index": 8,
+            "text": "TAX                USD  1.08",
+            "bbox_xyxy": [
+              64,
+              510,
+              502,
+              529
+            ]
+          },
+          {
+            "line_index": 9,
+            "text": "TOTAL              USD 14.58",
+            "bbox_xyxy": [
+              64,
+              565,
+              502,
+              584
+            ]
+          },
+          {
+            "line_index": 11,
+            "text": "PAID BY CARD",
+            "bbox_xyxy": [
+              64,
+              675,
+              252,
+              694
+            ]
+          },
+          {
+            "line_index": 12,
+            "text": "PLEASE KEEP THIS COPY",
+            "bbox_xyxy": [
+              64,
+              730,
+              393,
+              749
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:blank-white",
+      "split": "supplemental_diagnostic",
+      "category": "blank",
+      "source_family": "original-supplement-v1:blank-white",
+      "parent_id": "original-supplement-v1:blank-white",
+      "source_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "source_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "canonical_path": "artifacts/supplement/original-v1/blank-white/canonical-rgb.png",
+      "canonical_png_sha256": "9abc5fac868b7fe43da39a391f0be14446555a430aa7056777bb98954b33c404",
+      "rgb_sha256": "88c8b8894136213781d61b7cd1a7c63c6ccc8501e83fff6cd1982f2e7ca48341",
+      "width": 1024,
+      "height": 1280,
+      "ground_truth_path": "artifacts/supplement/original-v1/blank-white/ground-truth.txt",
+      "ground_truth_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_text": "",
+      "expected_empty_output": true,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Uniform RGB fill",
+        "rgb": [
+          255,
+          255,
+          255
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    },
+    {
+      "id": "original-supplement-v1:sparse-room",
+      "split": "supplemental_diagnostic",
+      "category": "sparse",
+      "source_family": "original-supplement-v1:sparse-room",
+      "parent_id": "original-supplement-v1:sparse-room",
+      "source_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "source_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "canonical_path": "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+      "canonical_png_sha256": "3d119f604c6bbfe24e0ecb96c1a1ae29fc087288641b328fcc703bc495e00e5c",
+      "rgb_sha256": "807169bad826b3ac123db467b40dc664a33217d7365559f67d7d86561fd3f316",
+      "width": 1024,
+      "height": 768,
+      "ground_truth_path": "artifacts/supplement/original-v1/sparse-room/ground-truth.txt",
+      "ground_truth_sha256": "14e7c925cf8a3f8885a90445d6ce6153d0b48c0439c387be40235aa5b62b6503",
+      "expected_text": "Room 204",
+      "expected_empty_output": false,
+      "attributes": {
+        "language": "english",
+        "data_source": "original_typesetting",
+        "rotation_counterclockwise_degrees": 0
+      },
+      "recipe": {
+        "method": "Pillow text, RAQM layout, one logical string per line",
+        "font": "sans",
+        "font_size_px": 34,
+        "line_step_px": 72,
+        "margin_px": 400,
+        "top_px": 350,
+        "foreground_rgb": [
+          24,
+          24,
+          24
+        ],
+        "background_rgb": [
+          255,
+          255,
+          255
+        ],
+        "direction": "ltr",
+        "language": "en",
+        "line_boxes_upright": [
+          {
+            "line_index": 0,
+            "text": "Room 204",
+            "bbox_xyxy": [
+              400,
+              350,
+              573,
+              375
+            ]
+          }
+        ]
+      },
+      "visual_review": "pending_in_separate_review"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "status": "source_review_passed",
+  "scope": "Independent source review and six offline Python source guards only; no Rust build, operator execution, model, or benchmark by reviewer.",
+  "preparation": {
+    "path": "artifacts/diagnostics/attention64-temporal-v1/preparation.json",
+    "sha256": "e5baa747a86a682a22afdc26ddcfc734f04b58bdc6e61b11a02830054d6bf354"
+  },
+  "reviewed_source_sha256": {
+    "experiments/attention64_temporal/candidate.rs": "d238663ba33de3925a54f3cd5e055f37d2edf5929cd4c98cc49bdfb5703e3619",
+    "experiments/attention64_temporal/tests.rs": "d71533e828cbfb19b7e90e427a19494e7ff822f6a62d223554d783d8b62ac122",
+    "experiments/attention64_temporal/patch.py": "310b08ffdf5ba67c4b655e695095216662bbd8902be02758c8b98b4e1c47222f",
+    "experiments/attention64_temporal/test_source.py": "5a319b39ddb1e79e2ad04669f8627241704707417b83aa1c501997047169ec2e",
+    "experiments/attention64_temporal/README.md": "ee74657e824a5840fac16b3098208e6551de0c6180b77480b7f76be01a1c5c42",
+    "experiments/attention64_temporal/temporal_candidate.rs": "d636e7fb065b50fde80bf905cf245a69fe60d2b2a8e45361ad6eed3bed1f7fc8",
+    "experiments/attention64_temporal/temporal_model_tests.rs": "51c7fe618cbb2760fcc3efd1ba329d36a107b7888ce7fdcafdb75bc5c12cbfc2",
+    "experiments/attention64_temporal/capture.py": "4672d9161044ee7ff4fbb7b0adee177097fe5243a8604b9e65a8f42a8ceaf1c3",
+    "experiments/cache_layout/temporal_model_qualification.rs": "26759aeb8c2789a4522639a9a22e5a3dce0900fd7adac5fbf431dc42e18c5b74"
+  },
+  "changed_runtime_sources": [
+    "src/config.rs",
+    "src/lib.rs",
+    "src/model.rs",
+    "src/kernels.rs"
+  ],
+  "added_runtime_sources": [
+    "src/temporal_candidate.rs",
+    "src/temporal_model_tests.rs"
+  ],
+  "checks": [
+    "Original kernels preserved byte-for-byte as prefix; explicit new enum retains independent Compact and Expanded paths and Expanded default.",
+    "Prefill still borrows original expanded work.k and calls unchanged compact attention; complete-prefix and one-token append/decode limits remain explicit.",
+    "Prefix split dot retains four chronological FMA accumulators, operand order and reduction tree; generated K and fixed AXPY64 helpers remain unchanged.",
+    "Safe adapter validates 16/8/64 shape, single query, exact slices, image/query interval and AVX2/FMA availability before unsafe dispatch.",
+    "Storage validates duplicate bits and capacity before mutation; exact reused storage/model-test bytes are independently pinned.",
+    "Capture binds original archive, exactly four changed/two added runtime members, copied sources and qualification harness; fresh isolated target and Cargo manifest/src/artifact checks precede executable preservation.",
+    "Operator inventory requires all thirteen disjoint selected tests, actual successful status lines and exit codes, with source/binary closure after execution.",
+    "Execution-only run_model helper is intentionally excluded and must bind its own source closure at launch."
+  ],
+  "offline_tests": {
+    "command": "C:/Users/amazi/mambaforge/python.exe -m unittest discover -s experiments/attention64_temporal -p test_source.py -v",
+    "exit_code": 0,
+    "tests_passed": 6
+  },
+  "concrete_findings": [],
+  "limitations": [
+    "Source/offline guards do not establish compiled arithmetic or full-model parity.",
+    "No performance/default-promotion claim; later built operator, model and timing evidence remains separate."
+  ]
+}

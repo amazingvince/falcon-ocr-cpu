@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "kind": "windows-temporal-candidate-fullpage-independent-review-v1",
+  "status": "passed_saved_result_review",
+  "plan_sha256": "efcfae3c67c3f3e9da9ff83a346538b7a4f9d5d4b6fe019561876f4fd55b715e",
+  "checks": 742,
+  "bound_file_count": 27,
+  "inputs_sha256": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\review_temporal_candidate_results.py": "3159615a7a6b9e2645b3af27224204d58063f710a42f1f38dd6c5b90ac35b501",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\plan.json": "efcfae3c67c3f3e9da9ff83a346538b7a4f9d5d4b6fe019561876f4fd55b715e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\comparison.json": "6cac723632a2423a4518fbc4e570e4876f93451fe5cd4ffd17656f8e19cab670",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\benchmark_temporal_candidate.py": "6b8ec9382e674d913a8684f5942f9f0533d12c5c08c7b1e3e3fa4cf24787de06",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\scripts\\realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\protocol-source.zip": "60916ef990e0c61eeb1143e04d459ad677715221ccff6aea175a62aad6e4552a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-compact-fullpage-window-v1\\candidate.json": "de250d2ad37db564503762952fa8557c05dde24c48d2f4d659af136a7752fa91",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\build.json": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-temporal-v2\\benchmark-build\\build.json": "737d8cf857d3db2d31b9b8960c99232c6a239fba8cfb569b9146a74afd7b8790",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\ocr_bench.exe": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\source.zip": "f39d1f4641237aa82dc318d9bc14d5a28c71c292c27fdd497d39253c257ac4d3",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-temporal-v2\\benchmark-build\\ocr_bench.exe": "9c655c627b219b56a4126d594cd3b1fb7764853fffee2cec0119bcd563f9b5ce",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-temporal-v2\\benchmark-build\\source.zip": "e96adda0790ee166429c31688f57ce3982eaa048f1b349414c39da6b0b848618",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\execution-start.json": "c8ca3c6e91985d4476e78afbb2bf0dc766694bff6fb164d03892cda4ce56941a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-before.json": "246d95f03aec92b7a2cf01e895a6c2d8222afea2a15143e69d8433f3a936f78e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-before.execution.json": "a181e0a00f4ba77b055bebbb8f188f47513bab8f5eb75488974f7ae789fd0b18",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-before.start.json": "95ad00dcd8a9b4dd19ea486debc795cb6e55155b73b5e829dd8817087ebb1bfc",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-before.log": "0702ada1f103a8ccf53898f1fb6d48a2ac7da60cfaa6c28312072648a7344f01",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\candidate.json": "8cfe941476279dbf7e53a3cdfeb7ae1eda82379a9558a99c50854d07155f02fa",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\candidate.execution.json": "37e1cd7a96555862141e5a6ff48c66e7631c36bc3b35e44cdf240f71c45c752f",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\candidate.start.json": "65ba54971a6cfb87fa6d9c4156018f15de1e739954a3ca252147be96099deeae",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\candidate.log": "c4f2fe3c01662d49faec7f79a1d8ed2c0112a770c06eacf152c806f883e5dfce",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-after.json": "2aa6ed207e96f3d3e31cc2e8e0e4cf78b9f66b9a66d6105fa67e123aae7db63a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-after.execution.json": "aae526f774cd355fbadab00e61bb81abdc4be1bc4f526139bd4b7000d0d940b0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-after.start.json": "c6205f055a41f80e1413a54367bc51b543473b4adbd33eca6ca9d117a00cd518",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-temporal-fullpage-window-v1\\control-after.log": "3518a4f9c434b3ef06e96444cdde6826a4506195d053c08773b806f6f3bc9cdf"
+  },
+  "all_bound_files_unchanged": true,
+  "measured_outputs_checked": 9,
+  "output_tokens_each": 1140,
+  "exact_literal_text_stops_counts_dimensions": true,
+  "exact_token_vector_per_case": true,
+  "token_ids_storage": "One stored vector per case; the bound compiled harness asserts every measured repetition equals that vector. Literal text/stop/count/dimensions are independently stored and checked for all9 repetitions.",
+  "source_changes": [
+    "src/config.rs",
+    "src/kernels.rs",
+    "src/lib.rs",
+    "src/model.rs"
+  ],
+  "source_additions": [
+    "src/temporal_candidate.rs",
+    "src/temporal_model_tests.rs"
+  ],
+  "cache_layouts": {
+    "control": {
+      "cli": "compact",
+      "report": "compact"
+    },
+    "candidate": {
+      "cli": "temporal-candidate",
+      "report": "temporal_candidate"
+    }
+  },
+  "shared_report_validator_passed": true,
+  "completed_output_artifact_hashes_verified": true,
+  "compiler_and_selected_build_environment_match_except_target": true,
+  "protocol_archive_verified": true,
+  "three_processes_exit_zero_without_overlap": true,
+  "combined_attention_control_build_sha256": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0",
+  "combined_attention_control_binary_sha256": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+  "historical_combined_attention_output_sha256": "de250d2ad37db564503762952fa8557c05dde24c48d2f4d659af136a7752fa91",
+  "results": [
+    {
+      "name": "control-before",
+      "cache_layout": "compact",
+      "median_ms": 62818.1073,
+      "samples_ms": [
+        62932.5818,
+        62498.2852,
+        62818.1073
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 54.5475,
+        "prefill_ms": 12259.2122,
+        "decode_ms": 50459.6562,
+        "total_ms": 62818.1041
+      },
+      "pid": 105400
+    },
+    {
+      "name": "candidate",
+      "cache_layout": "temporal_candidate",
+      "median_ms": 60730.334800000004,
+      "samples_ms": [
+        60616.0018,
+        60730.334800000004,
+        61025.5524
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 57.190400000000004,
+        "prefill_ms": 12397.0269,
+        "decode_ms": 48232.841,
+        "total_ms": 60730.3322
+      },
+      "pid": 63088
+    },
+    {
+      "name": "control-after",
+      "cache_layout": "compact",
+      "median_ms": 62757.8397,
+      "samples_ms": [
+        62273.283800000005,
+        62757.8397,
+        63003.7656
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 57.3721,
+        "prefill_ms": 12299.7317,
+        "decode_ms": 50347.3637,
+        "total_ms": 62757.8364
+      },
+      "pid": 75660
+    }
+  ],
+  "control_drift_percent": -0.09593985331679544,
+  "candidate_latency_reduction_percent": {
+    "control_before": 3.323520223284404,
+    "control_after": 3.2306798795051495
+  },
+  "whole_page_stability_pass": true,
+  "target_met_in_this_page": false,
+  "control_stage_drift_percent": {
+    "prefill_ms": 0.3305228699769236,
+    "decode_ms": -0.22253916981700428
+  },
+  "stage_timings_are_nonisolated_wall_intervals": true,
+  "default_promotion": false,
+  "limitations": [
+    "One page, one control/candidate/control bracket and three measured repetitions per process; this does not establish broad workload, batch or platform promotion.",
+    "All processes use joint/unpacked B1: controls use Compact and candidate uses the explicit TemporalCandidate cache. The archived Runner uses its single-page fallback, so this is not a joint multirow performance claim.",
+    "This tests the temporal-prefix candidate incrementally over combined fixed64 attention with compact cache. Gains are not added to historical cache/attention percentages.",
+    "The historical candidate report fixes outputs and options; its timing is not a fresh control in this bracket.",
+    "Stage timings are descriptive wall intervals with control variation, not isolated kernel measurements or causal phase attribution.",
+    "Selected compiler versions and flags match; captured sources differ only by the four declared integration files and two added temporal modules, and targets are isolated. Neither build is claimed hermetic.",
+    "Stage medians need not sum to the median of total time because different repetitions can supply each median.",
+    "Two warmups per process are unmeasured and not independently exported.",
+    "Model/image bytes were not rehashed in this bounded review; their frozen metadata joins and the completed capture's existing input validation are retained.",
+    "Operator/smoke/allocation and compiled-code evidence are separate prerequisites; this receipt does not substitute for them or close GPU numerical failures.",
+    "No inference, ETL scan, tests or builds were run. Only small metadata/source/archive and explicit executable identities were read and hashed."
+  ]
+}

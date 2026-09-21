@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-20T09:52:02.305785+00:00",
+  "status": "not_ready_incomplete_predictions_and_two_validation_gaps",
+  "read_only_audit": true,
+  "inference_or_evaluation_executed": false,
+  "source_sha256_before_fixes": {
+    "scripts/run_official_evaluation.py": "003a8955bd799f9d4b4b46dff0c5ea2de0b9a409d04497530a469327cbca920f",
+    "scripts/prepare_official_evaluation.py": "14402915ba1d9f7de3ba2eaa168439147da5f1c13cd6e9c1aa9dd441cef5b5b2",
+    "scripts/compare_official_evaluation.py": "01bcb9a81ecb7935508639bde67f38a0d39fc1e8e6fade747366293a7c3a5562",
+    "scripts/run_evaluation_checked.py": "d1317f0284c90e5f80890e76c54a75870977c9ac18db924ecc122f702734a867",
+    "scripts/report_quality_regression.py": "73c26e9782c473830e5fedd08be40328de88bb95644aa0024446403611e402d7",
+    "scripts/validate_gpu_reference_record.py": "db36206f4d057bc9a958ea9ebe52c66c0a161967c5f768841a730bb43e1b6032",
+    "scripts/corpus_comparison.py": "0ccfbc9077c2e0aa9656e4310eba37d2f1517a3810a99231c71fad0db7a4f8ee",
+    "scripts/validate_text_replay.py": "0589094ba226a5049457664e08f93543619b14ea98e1e4b85979ecc793865e2d",
+    "scripts/compare_corpus.py": "9a137ce531c4eaf52d6b5db236bb97e9bfb0250c367caf1e8f0e9f6fccfa4a80",
+    "docs/EVALUATION.md": "e01b00711cb14e02cac058492fdd35178d4daa120da5a138fe6bfa4088793530",
+    "docs/QUALITY.md": "78dc5187d512c7a65ccd66d8adf7a816f7441bb888198250476c342f6062ebdd",
+    "docs/PLAN.md": "3b0c40598d68945e53fda26e681011d691698b6c6d7d72f84639e5e260423661",
+    "requirements/evaluation-resolved.txt": "a8891b60facd074ae65ad53a79216f7e475e7c37ace48a8940f45914827325e0",
+    "reference/corpus-v3-evaluation-lock.json": "1a52a404670c48800eea9a275c8527bb35e800305d95061c85feaf3d5868204f",
+    "reference/corpus-v3-annotation-audit.json": "a219f575e326c46c21857285bd3151d3b08ea80da23db8fee6b1abd257896617",
+    "reference/official-components-v1-fp32.json": "3c451b0079221bdb90aecee210256f26c8218d0f138043615aae41af0ae34922",
+    "reference/official-evaluation-workflow-validation.json": "19804e37a77e436d50c7ac43986193ecdf115d902590d62520d83d9c01c7edbe",
+    "reference/windows-rust-corpus-v3-fp32-redecoded-082.json": "982ea24080da6615af81ff760f6891276effd927108c58b0303b1584afd63ea7",
+    "reference/quality-regression-v3-fp32-partial-082-v3.json": "b471b992ed9e3691bf84c360df24946ec1a79ef0c9dba50b7c94d5daf090db28",
+    "artifacts/builds/redecode-corpus-v3-windows/build.json": "dbe872701a038260572830517bf27d40023848221910069b8cbe76df439c568a"
+  },
+  "observed_live_inventory": [
+    {
+      "directory": "artifacts/cpu/corpus-v3-fp32-4096",
+      "run_sha256": "d00e1d4ee70d693caedc82b4951da924cc1370f85b99e5032ed3dae24a46d210",
+      "declared_status": null,
+      "manifest_named_record_files_present": 100,
+      "missing_record_files": 100,
+      "qualification": "Non-atomic presence-only inventory during active jobs; no records revalidated and no inference completion asserted."
+    },
+    {
+      "directory": "artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2",
+      "run_sha256": "2ec6bddb63e484bce82e45084915950be4b0a8d8197745b277841ecaa7810f2f",
+      "declared_status": null,
+      "manifest_named_record_files_present": 100,
+      "missing_record_files": 100,
+      "qualification": "Non-atomic presence-only inventory during active jobs; no records revalidated and no inference completion asserted."
+    },
+    {
+      "directory": "artifacts/reference/corpus-v3-fp32-4096",
+      "run_sha256": "3adceaec8d1268d2ecb7a26fda523471763e867aeab725023fa31cf6e75e24c9",
+      "declared_status": "running",
+      "manifest_named_record_files_present": 162,
+      "missing_record_files": 38,
+      "qualification": "Non-atomic presence-only inventory during active jobs; no records revalidated and no inference completion asserted."
+    }
+  ],
+  "existing_evidence": {
+    "official_v1_pages": 24,
+    "preserved_quality_snapshot_pages": 82,
+    "preserved_quality_snapshot_expected": 200,
+    "full_v3_official_results_present": false
+  },
+  "findings": [
+    {
+      "id": "OFFICIAL-GPU-VALIDATION",
+      "severity": "correctness",
+      "files": [
+        "scripts/prepare_official_evaluation.py"
+      ],
+      "finding": "Standalone official preflight uses an older partial GPU result predicate. It can accept missing or inconsistent prefix/cache/logit diagnostics and explicitly teacher-forced or replay-labeled GPU output. The corpus/quality comparators already use a stronger shared predicate.",
+      "remedy": "Import the existing GPU result validator read-only, invoke it for every GPU record, and reject explicit run/record teacher-forced or replay markers. Preserve absence of historical startup fields as absence."
+    },
+    {
+      "id": "QUALITY-OFFICIAL-JOIN",
+      "severity": "correctness",
+      "files": [
+        "scripts/report_quality_regression.py"
+      ],
+      "finding": "Attaching official components compares inference contracts and only a global prediction-equality boolean, without joining official source runs, per-page source records and prediction hashes to this quality comparison. Different valid outputs under the same configuration can therefore supply unrelated absolute metrics.",
+      "remedy": "Require exact source-run identity/hash, one-to-one page identity/category joins, source-record identity/hash and literal UTF8 prediction hashes for both sides, and bind official provenance into the final source window. Reject absent or ambiguous joins."
+    }
+  ],
+  "prerequisites": [
+    "Complete all200 original CPU records and GPU records; GPU run must declare complete with200 pages, no failed/missing records. Active file counts are not this proof.",
+    "Finish the saved-token CPU text replay with the preserved decoder binary d857bf74d3f7093bee62913e3122f781220f8d29aeaef4e6ae211f73b8859eac; strict original tokens/stops/timings remain unchanged. Resume may only append identical-contract records.",
+    "Apply both bounded validation fixes and regression tests before full evaluation.",
+    "Create a fresh schema2 complete corpus comparison; all seven categories must retain35/30/30/30/25/25/25 pages. Preserve all historical reports.",
+    "Use the isolated pinned evaluator Python3.10.20, dependency lock, clean evaluator revision59b103c4b47d3a01fada83491585d6512a40c0bc, and WSL project working directory. This audit did not inspect the live environment.",
+    "Enable and record the established dangling-truncated-relation adaptation on both sides; the frozen v3 annotation audit finds2 dangling links,2 original merger failures,0 adapted failures.",
+    "Require both execution audits to enter/complete all200 pages, reject logged errors and silent exits, and validate all expected result files/aggregate/counts. Component subsets remain explicit.",
+    "A complete literal-text identity proof can pass the0.25pp overall/1pp category differential budgets without inventing a primary metric. Nonidentical complete text remains unresolved because no primary aggregate was fixed.",
+    "Full quality reporting also requires descriptive CER/WER and audited structure components. Do not infer it from the quality CLI exit code alone: require reporting_conditions.fixed_corpus_quality_reporting_complete.",
+    "No rendered CDM, official Overall, absolute minimum-accuracy threshold, numerical tensor parity, performance claim, quantized gate or complete domain coverage is supplied by this workflow."
+  ],
+  "proposed_commands_not_executed": {
+    "native_windows_after_all200_cpu_records_complete": "& artifacts/builds/redecode-corpus-v3-windows/redecode_corpus.exe --model artifacts/model --source artifacts/cpu/corpus-v3-fp32-4096 --output artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2 --manifest reference/corpus-v3-evaluation-lock.json --resume",
+    "wsl_after_fixes_and_all200_predictions_complete": [
+      "/home/amazi/falcon-ocr-evaluation/.venv/bin/python scripts/compare_corpus.py --manifest reference/corpus-v3-evaluation-lock.json --cpu artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2 --gpu artifacts/reference/corpus-v3-fp32-4096 --precision fp32 --output reference/windows-rust-corpus-v3-fp32-complete-v1.json",
+      "/home/amazi/falcon-ocr-evaluation/.venv/bin/python scripts/run_official_evaluation.py --manifest reference/corpus-v3-evaluation-lock.json --cpu artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2 --gpu artifacts/reference/corpus-v3-fp32-4096 --output-root artifacts/evaluation/v3-checked-fp32-v1 --report reference/official-components-v3-fp32-complete-v1.json --drop-dangling-truncated-relations --preflight-only",
+      "/home/amazi/falcon-ocr-evaluation/.venv/bin/python scripts/run_official_evaluation.py --manifest reference/corpus-v3-evaluation-lock.json --cpu artifacts/cpu/corpus-v3-fp32-4096-redecoded-v2 --gpu artifacts/reference/corpus-v3-fp32-4096 --output-root artifacts/evaluation/v3-checked-fp32-v1 --report reference/official-components-v3-fp32-complete-v1.json --drop-dangling-truncated-relations",
+      "/home/amazi/falcon-ocr-evaluation/.venv/bin/python scripts/report_quality_regression.py --manifest reference/corpus-v3-evaluation-lock.json --comparison reference/windows-rust-corpus-v3-fp32-complete-v1.json --official-gpu artifacts/evaluation/v3-checked-fp32-v1/gpu --official-cpu artifacts/evaluation/v3-checked-fp32-v1/cpu --output reference/quality-regression-v3-fp32-complete-v1.json"
+    ]
+  },
+  "command_conditions": [
+    "Run native replay from the Windows workspace; run Python commands from /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr in WSL.",
+    "Verify the preserved decoder hash and use fresh unused report/output paths. No optional --cpu-build was fabricated because this historical CPU contract lacks startup build-manifest binding.",
+    "Only start evaluation after preflight inputs_complete and coordinated CPU scheduling. A partial comparison can exit0, so inspect expected/compared/missing/failed/provenance fields explicitly.",
+    "If inference contracts or paths differ when work completes, stop and regenerate an explicit plan; do not substitute outputs silently."
+  ]
+}

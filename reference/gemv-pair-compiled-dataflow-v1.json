@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "kind": "gemv-pair-compiled-manual-dataflow-review-v1",
+  "status": "paired_dataflow_confirmed_for_this_function",
+  "function": "falcon_ocr::kernels::gemv_pair_candidate::channel_block",
+  "address": "0x1400b1310",
+  "code_bytes": 762,
+  "pe_codeview": {
+    "guid": "F77F4AC5-403D-4391-B812-ADBBF34A360F",
+    "age": 1,
+    "original_path": "ocr_bench.pdb"
+  },
+  "binary_sha256": "13e440dfc4c0ce27fc2bc4b2bd9c12ea6446011043670f31bac2379ea512ce25",
+  "pdb_sha256": "d7a3a77d0c4c2c62251deb9e70d8bb8b5bbb802a04618a2c898569fb80a63cf5",
+  "source_sha256": "7c90fbca7d8b3209c27f7fd540dfca0680db3d26fa23cec26d2484c8db2f2b44",
+  "inner_k_loop": {
+    "first_instruction": "0x1400b13f0",
+    "back_edge": "0x1400b1448",
+    "input_index_register": "r10",
+    "input_step_elements": 32,
+    "input_base_register": "rcx",
+    "input_load_offsets_bytes": [
+      0,
+      32,
+      64,
+      96
+    ],
+    "input_registers": [
+      "ymm8",
+      "ymm9",
+      "ymm10",
+      "ymm11"
+    ],
+    "input_loads_per_iteration": 4,
+    "fmas_per_iteration": 8,
+    "weight_base_registers": [
+      "r8",
+      "rbx"
+    ],
+    "first_output_accumulators": [
+      "ymm7",
+      "ymm6",
+      "ymm5",
+      "ymm4"
+    ],
+    "second_output_accumulators": [
+      "ymm3",
+      "ymm2",
+      "ymm1",
+      "ymm0"
+    ],
+    "input_registers_reused_by_both_outputs": true,
+    "weight_operands_loaded_directly_by_fma": true,
+    "calls": 0,
+    "stack_accesses": 0
+  },
+  "reductions": [
+    {
+      "output": 0,
+      "addresses": [
+        "0x1400b144a",
+        "0x1400b1464"
+      ],
+      "merge": "(ymm7+ymm6)+(ymm5+ymm4)",
+      "then": "low128 + high128, two horizontal adds",
+      "store": "0x1400b1486 -> output[0]"
+    },
+    {
+      "output": 1,
+      "addresses": [
+        "0x1400b1468",
+        "0x1400b1482"
+      ],
+      "merge": "(ymm3+ymm2)+(ymm1+ymm0)",
+      "then": "low128 + high128, two horizontal adds",
+      "store": "0x1400b148a -> output[1]"
+    }
+  ],
+  "channel_pair_loop": {
+    "first_instruction": "0x1400b1380",
+    "back_edge": "0x1400b149b",
+    "weight_advance_bytes": "input_width*8 (two FP32 rows)",
+    "output_advance_bytes": 8,
+    "calls_on_successful_path": 0,
+    "stack_accesses_on_successful_path": 0
+  },
+  "stack_classification": {
+    "true_accumulator_spills_observed_in_successful_pair_loop": false,
+    "preserved_incoming_registers": [
+      "xmm6",
+      "xmm7",
+      "xmm8",
+      "xmm9",
+      "xmm10",
+      "xmm11"
+    ],
+    "save_range": [
+      "0x1400b131e",
+      "0x1400b133c"
+    ],
+    "restore_range": [
+      "0x1400b15d4",
+      "0x1400b15f2"
+    ],
+    "interpretation": "Six 128-bit incoming register saves before arithmetic and matching restores after the loops are Windows register-preservation traffic, not accumulator spills."
+  },
+  "calls": {
+    "indirect_calls_or_tail_transfers": 0,
+    "direct_calls": [
+      {
+        "address": "0x1400b158b",
+        "target": "0x140370a20"
+      },
+      {
+        "address": "0x1400b15a6",
+        "target": "0x140370a20"
+      }
+    ],
+    "interpretation": "Both direct calls lie on slice-range-check failure paths reached by carry/upper-bound branches. They are outside the successful pair/K loops; no dot helper call remains.",
+    "target_symbol_not_independently_resolved": true
+  },
+  "extra_unreachable_dispatch_path": "Compiler retains a zero-input-width fill branch at0x1400b14a6; the five supported public dispatch shapes all have positive input width.",
+  "evidence": {
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/compiled-channel-block/symbol-receipt.json": {
+      "sha256": "9ecd5d1ed8f6a01e5e82c7a260326b774c8c652a2e18628ad8c9cbce3ebfb25c"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/preparation.json": {
+      "sha256": "28c12aaf1f8b3589d8e816d15fc26a08e75daf5dc1c4433ed22ffc509631bf3e"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/build.json": {
+      "sha256": "9cee524cda2db72be503c9be200d69fc8e631d9687331dcc82fa989f9874044a"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/operators.json": {
+      "sha256": "7f1999ac52a0d685042c1e9c102f6a877b6106f15ae4be6e1c7a1a8a9ba029d6"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/compiled-channel-block/channel-block-disassembly.txt": {
+      "sha256": "0aab00b497fd0e19fca4217c74d52438a26c1b64fdbf14b8ad438f90609c1d00"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/compiled-channel-block/channel-block-symbol.txt": {
+      "sha256": "b93b765c4276a65b67612207ce5a8689c57a4e328535811745eec4232622f8c0"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/compiled-channel-block/pdb-summary.txt": {
+      "sha256": "d98fb49b3d31ddb57cf54ea243b41e063383875ae321c0be511e44fa373ee47e"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/ocr_bench.exe": {
+      "sha256": "13e440dfc4c0ce27fc2bc4b2bd9c12ea6446011043670f31bac2379ea512ce25"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/ocr_bench.pdb": {
+      "sha256": "d7a3a77d0c4c2c62251deb9e70d8bb8b5bbb802a04618a2c898569fb80a63cf5"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/benchmark-build/build.json": {
+      "sha256": "a0e1cc7e201a75ef6eb4202b8c5b3bf2a481a467ca224650f9bfd7900aadcecb"
+    },
+    "artifacts/diagnostics/gemv-pair-v1/project/src/kernels.rs": {
+      "sha256": "7c90fbca7d8b3209c27f7fd540dfca0680db3d26fa23cec26d2484c8db2f2b44"
+    },
+    "experiments/gemv_pair/candidate.rs": {
+      "sha256": "11fd374a8f031f06a3dea3a2ff123e78317342bdd223a4a8e44289b3477e543a"
+    }
+  },
+  "limitations": [
+    "Only channel_block from this preserved executable is inspected. The observed addresses are not reused for other builds.",
+    "No claim about all-binary spills, cache behavior, memory bandwidth or speedup follows from this disassembly.",
+    "Full-output bit-exact operator checks remain separate evidence; opcode counts alone are not the numerical proof.",
+    "Objdump nearest-export labels are unrelated; exact PDB section/offset/extent and PE/PDB GUID+age establish attribution.",
+    "No rebuild, model execution, profiling or benchmark was performed."
+  ],
+  "performance_claim": false,
+  "default_promotion": false
+}

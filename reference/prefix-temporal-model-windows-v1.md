@@ -1,0 +1,16 @@
+# Temporal-prefix cache: bounded Windows model qualification
+
+The candidate passes the saved-output CPU comparison against genuine original expanded and compact controls. All five native processes exited 0 in the frozen order: expanded-before, compact-before, candidate, compact-after, expanded-after. This was concurrent functional work; no performance measurement or production change was made.
+
+Each invocation preserves exactly 1,904 canonical teacher-forced tensor identities and 2,144 independently free-running mixed tensor identities, including names, dtype, shape and SHA256 of every raw F32 byte. All five inventories match exactly. The canonical trace has seventeen actual argmax decisions matching the pinned smoke IDs. Independent single and mixed outputs agree on literal text, token IDs, EOS, dimensions and counts for the seventeen-, two- and six-token fixtures. Mixed decode includes active row counts three, two and one; captured logits and request indices reconstruct the emitted IDs before common-prefix trace equivalence is checked.
+
+All ten warmed full-Runner decode intervals reported zero allocation calls and zero requested bytes, with exactly one start/end callback per interval. Tracing was disabled during allocation counting. These intervals exclude load, preprocessing, prefill, detokenization and result assembly; they are not capacity, peak-RSS or timing measurements.
+
+Two reporting/build failures remain preserved:
+
+- The first no-run build reused a shared Cargo target artifact and is rejected before inference in `prefix-temporal-model-build-rejection-v1.json`. The v2 build used separate fresh D: targets and verified each manifest, source path, newly compiled artifact and target boundary. Its preserved control binary is `b4c74405c2032c99dc16a9aaac9e96e7e5aa638d52503a98f7fade4abee3228f`; candidate binary is `4043fbe506cfe98c82f1a5c1d194ec6cb25f70a91a2b23a1eff441eaf3dbef2f`.
+- The original v2 Python comparison incorrectly required EOS on the teacher-forced trace. The compiled Runner deliberately bypasses EOS for teacher tokens and reports `length` at exactly seventeen requested steps. The failed execution receipt is unchanged. A separate reviewed comparator corrected only that teacher assertion, retained free-run EOS and every numerical/allocation gate, and revalidated all saved evidence without inference or rebuild.
+
+The accepted metadata receipt is `prefix-temporal-model-windows-v1.json`, SHA256 `3a0566d6d31ad72ef2f7d6dd5cd5c1dace9c2428c32d90c48aadd485dfbe50ea`. It binds the actual compiled Runner source, original failed execution, build, model/input assets, source archives, binary/log/command/result files and final unchanged-source checks. The independent comparator review is `prefix-temporal-model-saved-comparator-independent-review-v1.json`, SHA256 `ef78b3becfa3dc68354d9cfcca48a99e737f9a05a89a0b3c5dd69be536d30d46`; all four correction tests passed.
+
+This qualifies CPU cache-layout equivalence only for the fixed smoke and three-input mixed cases. It does not close CPU/GPU hidden-stage numerical gates, establish natural-corpus quality, qualify unsupported multiquery continuation, or establish speed or a production default. Linux model qualification is a separate pending step.

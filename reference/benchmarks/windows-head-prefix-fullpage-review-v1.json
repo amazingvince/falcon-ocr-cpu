@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "kind": "windows-head-prefix-fullpage-independent-review-v1",
+  "status": "passed_saved_result_review",
+  "plan_sha256": "164016585b6075199ee016b7016125fe704643d82a6f3f67c7d7ecfb166e4888",
+  "comparison_sha256": "b9fd89428424e9a093996378b0623d6d4755aad89d1865c70fd9f7878f4a11db",
+  "qualification": {
+    "path": "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\comparison.json",
+    "sha256": "2b34ceac86e3cbac1774093d030cd11d0e2b4aa5e514a8a98c37231fa6f24a0f",
+    "preparation_sha256": "09263f7c068af2578131d4520c9bece7919cac970f77ecf0b4c66be63033def4",
+    "build_sha256": "bd5c36231e613950c01a64e36f20d851e3067a32b8e1786dd74318872702e621",
+    "operators_sha256": "6f1f9dfeb2a2ca6451cc17cc50729010168050b5f8e3f7846913e579716ffd5a",
+    "benchmark_build_sha256": "fd1093dba495a9494950267edda7a9543b1fb1dfb385231b70b88644f3f893d8",
+    "scope": "Accepted operator, smoke/mixed and allocation evidence; no speed qualification"
+  },
+  "inherited_bulk_artifact_sha256_not_rehashed": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\artifact-manifest.json": "eea9640e8ab9feccd9358a6b3526e579b14dc4bfcd47ecd561853863952b594d",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\smoke-fp32\\canonical-rgb.png": "d62f8db10dca06c65c99ae4dde59e4a68b9548c56a42c76caa2bf7044ccca0db",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\smoke-fp32\\trace.safetensors": "30dca24da26b6a42b5f6e65c0f0a3efd02f845c54710ddb626e624b32c4395d4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\cpu\\smoke-trace-sinks-pairwise.safetensors": "e2dad223ab7afc252a4a02e6294848ce17258ee0aad76dbd56f441af5fd85309",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\attention.py": "9dcd7f868901e50ae5b541ff44c9893215c9fb9684127799c841f3e1456dc524",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\config.json": "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\configuration_falcon_ocr.py": "3caccafb5bdf7fb943c181031a95036e4ef98331dbcf2460c6ccd94068f41bd4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\model_args.json": "649dc7d6cc7b56c56622642d6365930fa3d0fc8045df1ae9ba4b573c74a69a1d",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\modeling_falcon_ocr.py": "9d6bb7476c8d60d123b4aa6935c7a9f0a4005e3c2036bc44251069fa27a7c14c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\processing_falcon_ocr.py": "a6297617311dc9a02b1dcc17d40b9545e1bc348e6dffa7758b32f1ba7be44599",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\rope.py": "8446ee8047a7da4291a9b4b91bbee2e7ca988dc05ab94ce65d9dc12868c345c7",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\special_tokens_map.json": "edd96763ef5d2e6c583ddd4859f3aa23661a9ace343e3709d96cea05d555be51",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\tokenizer.json": "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\tokenizer_config.json": "074e03d3fd56d190dac763ec5dfe75a728e15783fc5d919d4b5cbe72bcd24d26",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\README.md": "25f52a04ae10f2407b0ac52f09115e32282fc460c5c615c31942003834ad4b79",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\model\\model.safetensors": "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16"
+  },
+  "checks": 838,
+  "bound_file_count": 45,
+  "inputs_sha256": {
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\review_head_prefix_candidate_results.py": "5d918580ae5a30a9700b77e20ab4be7e53c37ea9eec1667262630ef3b1350b7d",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\plan.json": "164016585b6075199ee016b7016125fe704643d82a6f3f67c7d7ecfb166e4888",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\comparison.json": "b9fd89428424e9a093996378b0623d6d4755aad89d1865c70fd9f7878f4a11db",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\profiling\\benchmark_head_prefix_candidate.py": "9ac50902dab24f36c6da5591117c7eea003ba5e210f1847b92a78594c582d8b2",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\scripts\\realistic_benchmark.py": "262927f170bff7566496c905d17d5c8bec2c0216e45c1d2eb53e20510695636e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\protocol-source.zip": "d679574a363206e250b8edc2993d48e507b272aa07ee939add53e8c97cf14c0f",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\reference\\benchmarks\\realistic-fp32-v1-workloads.json": "b4080bc6a1b38a26cc5363e2f1e92712ed89ad96a6a04b618c5123fa81735e5c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\attention64-compact-fullpage-window-v1\\candidate.json": "de250d2ad37db564503762952fa8557c05dde24c48d2f4d659af136a7752fa91",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\build.json": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\benchmark-build\\build.json": "fd1093dba495a9494950267edda7a9543b1fb1dfb385231b70b88644f3f893d8",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\ocr_bench.exe": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\attention64-compact-v1\\benchmark-build\\source.zip": "f39d1f4641237aa82dc318d9bc14d5a28c71c292c27fdd497d39253c257ac4d3",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\benchmark-build\\ocr_bench.exe": "5695e415c58432305905d4e7f46cdf958118249ad880816434dd6fc75e2afe52",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\benchmark-build\\source.zip": "c0ec152bd96edebbcdcdc4eabdee0906894d989eb7f4cdb7061b1dcee7f8746b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\comparison.json": "2b34ceac86e3cbac1774093d030cd11d0e2b4aa5e514a8a98c37231fa6f24a0f",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\preparation.json": "09263f7c068af2578131d4520c9bece7919cac970f77ecf0b4c66be63033def4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\build.json": "bd5c36231e613950c01a64e36f20d851e3067a32b8e1786dd74318872702e621",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\operators.json": "6f1f9dfeb2a2ca6451cc17cc50729010168050b5f8e3f7846913e579716ffd5a",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\reference\\smoke-fp32\\metadata.json": "c84b1fcc4526135677579392d2c2c52b1566c1f361ac950a6409a5145a8fc65e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\experiments\\head_contiguous_prefix\\run_model.py": "ec5055556ca78d2c563daca724539fccd81fe2b6ecee5e642c9c5b4230cc5dcc",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\operators.exe": "bdc1affc87709fd9d5c4b744a22e141dfa82dd4c19a1c89d6977c79598c9cc66",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\operator-0.log": "d4858607d75f5bc94670a6a35a7f0032ab4e0e8ae0ec795a8b0400a400728113",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\operator-1.log": "b8050cd82415c887204844dc55a1ac537cd7e9e39a249521409513975e062e86",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\qualification.exe": "1b3bf6acb8ae322252fcbdb874d923f27b670364bdf2e8dfe12edfc109915cea",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\compact.log": "e227315c754a33c6b56707b81bad0e90988c426d24a8c24e530256ec5bb5eac4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\compact.json": "4b7bd71b0521854f9ba6ce55e73745b833e9529fe35a62a0cb47ad03a1eda6ce",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\head_contiguous_prefix.log": "0a925073602cc03658a51281c91b8f87cea725d86dbea83ce82266a7a382920f",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\head_contiguous_prefix.json": "1844f7699c890334bd9d5fd918aa1a2af95951166f2792c7fbce3c99cd8693b4",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\compact-invocation.json": "37bcc6ef761cf52a709d7de41afbf24a020823764c0eb3b4b80f465a86dd006b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\compact-process-start.json": "5384de20072df4cd843ea012ebfb43536725c7a92647ae8b8f3b20738968e1db",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\head_contiguous_prefix-invocation.json": "b70918e771cf338db967d04d6943051b0b0e1ccf781c2466ed0bae9424f32779",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\diagnostics\\head-contiguous-prefix-v1\\model-run-v1\\head_contiguous_prefix-process-start.json": "d9d904fbddb1a08d53b261585d38b2353096495d7fa7246c87698174045fe06e",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\execution-start.json": "988610c5a3125ace5bd08546999641812b7336dee4c84f7972d46073b5888035",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-before.json": "fdc9148d695a5af514ebe96d16917613165bf640f227460cb7f7ee9da4afdd69",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-before.execution.json": "107df1d371e2c40f5eb47b3cd783df35552d3c0e6d5fc1e0c5e9badb37efcd0b",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-before.start.json": "fa8b9a348d4c196f707704c8c64421bc29daca552647e21bb44f52e2902898e6",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-before.log": "7d91dd569a1cda6ca62824116cf1cda77ad0c0f924636099f149efa56b6950e9",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\candidate.json": "40268b5fae9cf17cb791a0fba10fbb068ef0395ee4eb616c1fef1a2913622d72",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\candidate.execution.json": "dca026b5f834a88938d7b1b66a44607f20b49e541cb6010087e9e87707538761",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\candidate.start.json": "3cd52a3cda5beba99fbf1cc02878370bbef02abcd9e39a000b10b5dab46ec261",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\candidate.log": "393d9cf4de8be17dee819b524e2898df9bb112f43c54362e99fd7bef8adaf26c",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-after.json": "6ca4233a3fd6874395a6b139faad8dd005d3dde0ad7786c46e258f6200494798",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-after.execution.json": "0cff0b10d4f6dfd4c4b7034492e7ab93fae0c3829ef10a5e45f5524c211d77ae",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-after.start.json": "c5f4bd875c7feeec42e7f0250daeeafc985c680585f9628bd5f43c679631dd52",
+    "C:\\Users\\amazi\\Documents\\ChatGPT\\falcon-ocr\\artifacts\\benchmarks\\head-contiguous-prefix-fullpage-window-v1\\control-after.log": "6b18df033afd728d388b9387e25c635a1c97f20d41871026dd9fed2a13d6c17c"
+  },
+  "all_bound_files_unchanged": true,
+  "measured_outputs_checked": 9,
+  "output_tokens_each": 1140,
+  "exact_literal_text_stops_counts_dimensions": true,
+  "exact_token_vector_per_case": true,
+  "token_ids_storage": "One stored vector per case; the bound compiled harness asserts every measured repetition equals that vector. Literal text/stop/count/dimensions are independently stored and checked for all9 repetitions.",
+  "source_changes": [
+    "src/config.rs",
+    "src/kernels.rs",
+    "src/lib.rs",
+    "src/model.rs"
+  ],
+  "source_additions": [
+    "src/head_contiguous_prefix.rs",
+    "src/head_contiguous_prefix_model_tests.rs"
+  ],
+  "cache_layouts": {
+    "control": {
+      "cli": "compact",
+      "report": "compact"
+    },
+    "candidate": {
+      "cli": "head-contiguous-prefix",
+      "report": "head_contiguous_prefix"
+    }
+  },
+  "shared_report_validator_passed": true,
+  "completed_output_artifact_hashes_verified": true,
+  "compiler_and_selected_build_environment_match_except_target": true,
+  "protocol_archive_verified": true,
+  "three_processes_exit_zero_without_overlap": true,
+  "combined_attention_control_build_sha256": "68b1667cb7fed0d5470ec8b9153e87dee7198787f70667e71f807be9f8cae7f0",
+  "combined_attention_control_binary_sha256": "8de750766ea4026303f7d3b8f0c1ce91da67b12b4af293245cf24faa98d3a3ac",
+  "historical_combined_attention_output_sha256": "de250d2ad37db564503762952fa8557c05dde24c48d2f4d659af136a7752fa91",
+  "results": [
+    {
+      "name": "control-before",
+      "cache_layout": "compact",
+      "median_ms": 63942.22,
+      "samples_ms": [
+        63709.0137,
+        64042.4294,
+        63942.22
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 51.7446,
+        "prefill_ms": 10240.6029,
+        "decode_ms": 53552.3302,
+        "total_ms": 63942.216799999995
+      },
+      "all_request_stage_medians_ms": {
+        "decode_ms": 53552.3302,
+        "image_decode_ms": 0.0,
+        "image_projection_ms": 6.5149,
+        "prefill_ms": 10240.6029,
+        "preprocessing_ms": 51.7446,
+        "time_to_first_token_ms": 10292.3475,
+        "total_ms": 63942.216799999995,
+        "transformer_prefill_ms": 10231.017899999999
+      },
+      "memory": {
+        "loaded": {
+          "peak_private_commit_bytes": 25788416,
+          "peak_resident_bytes": 1099714560,
+          "private_commit_bytes": 16769024,
+          "resident_bytes": 1099677696
+        },
+        "after": {
+          "peak_private_commit_bytes": 1784270848,
+          "peak_resident_bytes": 2575966208,
+          "private_commit_bytes": 67448832,
+          "resident_bytes": 1137913856
+        }
+      },
+      "pid": 8004
+    },
+    {
+      "name": "candidate",
+      "cache_layout": "head_contiguous_prefix",
+      "median_ms": 63048.307100000005,
+      "samples_ms": [
+        63140.8671,
+        63048.307100000005,
+        62833.716799999995
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 55.351200000000006,
+        "prefill_ms": 10262.949,
+        "decode_ms": 52640.5285,
+        "total_ms": 63048.3017
+      },
+      "all_request_stage_medians_ms": {
+        "decode_ms": 52640.5285,
+        "image_decode_ms": 0.0,
+        "image_projection_ms": 7.6166,
+        "prefill_ms": 10262.949,
+        "preprocessing_ms": 55.351200000000006,
+        "time_to_first_token_ms": 10314.111,
+        "total_ms": 63048.3017,
+        "transformer_prefill_ms": 10250.9378
+      },
+      "memory": {
+        "loaded": {
+          "peak_private_commit_bytes": 25776128,
+          "peak_resident_bytes": 1099767808,
+          "private_commit_bytes": 16769024,
+          "resident_bytes": 1099706368
+        },
+        "after": {
+          "peak_private_commit_bytes": 1797849088,
+          "peak_resident_bytes": 2576707584,
+          "private_commit_bytes": 67477504,
+          "resident_bytes": 1138057216
+        }
+      },
+      "pid": 37184
+    },
+    {
+      "name": "control-after",
+      "cache_layout": "compact",
+      "median_ms": 63438.4194,
+      "samples_ms": [
+        63454.0051,
+        63438.4194,
+        63369.96460000001
+      ],
+      "stage_medians_ms": {
+        "preprocessing_ms": 52.9547,
+        "prefill_ms": 10214.7716,
+        "decode_ms": 53118.270899999996,
+        "total_ms": 63438.4158
+      },
+      "all_request_stage_medians_ms": {
+        "decode_ms": 53118.270899999996,
+        "image_decode_ms": 0.0,
+        "image_projection_ms": 6.8497,
+        "prefill_ms": 10214.7716,
+        "preprocessing_ms": 52.9547,
+        "time_to_first_token_ms": 10270.0067,
+        "total_ms": 63438.4158,
+        "transformer_prefill_ms": 10204.8628
+      },
+      "memory": {
+        "loaded": {
+          "peak_private_commit_bytes": 25792512,
+          "peak_resident_bytes": 1099739136,
+          "private_commit_bytes": 16773120,
+          "resident_bytes": 1099681792
+        },
+        "after": {
+          "peak_private_commit_bytes": 1784737792,
+          "peak_resident_bytes": 2576384000,
+          "private_commit_bytes": 67719168,
+          "resident_bytes": 1138262016
+        }
+      },
+      "pid": 84436
+    }
+  ],
+  "control_drift_percent": -0.7878997632550178,
+  "candidate_latency_reduction_percent": {
+    "control_before": 1.3980010390630682,
+    "control_after": 0.6149464373319424
+  },
+  "whole_page_stability_pass": true,
+  "target_met_in_this_page": false,
+  "memory_deltas": {
+    "candidate_minus_control_before_bytes": {
+      "peak_private_commit_bytes": 13578240,
+      "peak_resident_bytes": 741376,
+      "private_commit_bytes": 28672,
+      "resident_bytes": 143360
+    },
+    "candidate_minus_control_after_bytes": {
+      "peak_private_commit_bytes": 13111296,
+      "peak_resident_bytes": 323584,
+      "private_commit_bytes": -241664,
+      "resident_bytes": -204800
+    }
+  },
+  "memory_qualification": "Windows whole-process snapshots/high-water marks across load, warmups and measurements; not KV capacities, per-repetition peaks or causal attribution to scratch allocation.",
+  "control_stage_drift_percent": {
+    "prefill_ms": -0.2522439377079966,
+    "decode_ms": -0.8105329840530473
+  },
+  "stage_timings_are_nonisolated_wall_intervals": true,
+  "default_promotion": false,
+  "limitations": [
+    "One page, one control/candidate/control bracket and three measured repetitions per process; this does not establish broad workload, batch or platform promotion.",
+    "All processes use joint/unpacked B1: controls use Compact and candidate uses the explicit HeadContiguousPrefix cache. The archived Runner uses its single-page fallback, so this is not a joint multirow performance claim.",
+    "This tests the head-contiguous-prefix candidate incrementally over combined fixed64 attention with compact cache. Gains are not added to historical cache/attention percentages.",
+    "The historical candidate report fixes outputs and options; its timing is not a fresh control in this bracket.",
+    "Stage timings are descriptive wall intervals with control variation, not isolated kernel measurements or causal phase attribution.",
+    "Selected compiler versions and flags match; captured sources differ only by the four declared integration files and two added head-prefix modules, and targets are isolated. Neither build is claimed hermetic.",
+    "Stage medians need not sum to the median of total time because different repetitions can supply each median.",
+    "Two warmups per process are unmeasured and not independently exported.",
+    "Model/image bytes were not rehashed in this bounded review; their frozen metadata joins and the completed capture's existing input validation are retained.",
+    "Operator/smoke/allocation and compiled-code evidence are separate prerequisites; this receipt does not substitute for them or close GPU numerical failures.",
+    "No inference, ETL scan, tests or builds were run. Only small metadata/source/archive and explicit executable identities were read and hashed."
+  ]
+}
