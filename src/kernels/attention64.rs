@@ -11,7 +11,6 @@
 //! Promoted from `experiments/attention64` (expanded cache, measured 6.15–9.43%
 //! lower full-page latency) and `experiments/attention64_compact` (compact
 //! cache, a further 6.15–6.40%); see `docs/PERFORMANCE.md`.
-use rayon::prelude::*;
 use std::arch::x86_64::*;
 
 /// Expanded-cache attention for one query row over `n_heads` heads of width 64.
@@ -32,7 +31,11 @@ pub(super) unsafe fn attention(
     output: &mut [f32],
 ) {
     let scale = (64_f32).sqrt().recip();
-    output.par_chunks_mut(64).enumerate().for_each(|(qh, out)| {
+    let heads = output.len() / 64;
+    let shared = crate::team::SharedMut::new(output);
+    crate::team::for_each(heads, |qh| {
+        // SAFETY: each task owns one disjoint 64-wide head of `output`.
+        let out = unsafe { shared.slice(qh * 64, 64) };
         // SAFETY: The parent checked AVX2/FMA and all shapes before entering.
         // The target-feature function encloses the complete per-head loop;
         // Rayon closures do not need to inherit the caller's target features.
@@ -147,7 +150,11 @@ pub(super) unsafe fn compact(
     output: &mut [f32],
 ) {
     let scale = (64_f32).sqrt().recip();
-    output.par_chunks_mut(64).enumerate().for_each(|(qh, out)| {
+    let heads = output.len() / 64;
+    let shared = crate::team::SharedMut::new(output);
+    crate::team::for_each(heads, |qh| {
+        // SAFETY: each task owns one disjoint 64-wide head of `output`.
+        let out = unsafe { shared.slice(qh * 64, 64) };
         // SAFETY: The parent validated features, slices and shape relationships.
         unsafe {
             compact_head(

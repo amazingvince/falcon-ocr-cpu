@@ -58,16 +58,18 @@ pub(crate) struct SplitPrefix {
     pub generated_v: Vec<f32>,
 }
 
-/// Default position chunks: exact for FP32, split (Tier B) for lossy storage.
+/// Default position chunks: exact for FP32, split (rounding-level) for lossy storage.
 /// `FALCON_OCR_SPLIT_CHUNKS=1|2|4` overrides it once, at sealing, for experiments.
 fn default_chunks(mode: PrefixMode) -> usize {
     let requested = std::env::var("FALCON_OCR_SPLIT_CHUNKS")
         .ok()
         .and_then(|v| v.parse::<usize>().ok())
         .filter(|n| [1, 2, 4].contains(n));
+    // Four chunks (32 tasks) measured ~13% faster attention than two on a
+    // 16-thread 7950X at a 6.5k prefix; FP32 keeps the exact single scan.
     requested.unwrap_or(match mode {
         PrefixMode::SplitF32 => 1,
-        _ => 2,
+        _ => 4,
     })
 }
 
@@ -393,36 +395,36 @@ impl SplitPrefix {
         let chunks = self.chunks.clamp(1, MAX_CHUNKS).min(tiles);
         let tiles_per_chunk = tiles.div_ceil(chunks);
         let mut parts = [Partial::EMPTY; MAX_GROUPS * MAX_CHUNKS];
-        parts[..groups * chunks]
-            .par_iter_mut()
-            .enumerate()
-            .for_each(|(index, part)| {
-                let (g, chunk) = (index / chunks, index % chunks);
-                let start = (chunk * tiles_per_chunk * TILE).min(total_len);
-                let end = ((chunk + 1) * tiles_per_chunk * TILE).min(total_len);
-                let span = Span {
-                    prefix_len: self.prefix_len,
-                    groups,
-                    group: g,
-                    start,
-                    end,
-                    q0: &q[2 * g * 64..(2 * g + 1) * 64],
-                    q1: &q[(2 * g + 1) * 64..(2 * g + 2) * 64],
-                    generated_k: &self.generated_k,
-                    generated_v: &self.generated_v,
-                };
-                // SAFETY: AVX2/FMA were detected by the caller; `Span` and the
-                // record stores were shape-checked at construction and entry.
-                unsafe {
-                    match &self.records {
-                        Records::F32(d) => pair_avx2(&F32Rec(d), &span, part),
-                        Records::Bf16(d) => pair_avx2(&Bf16Rec(d), &span, part),
-                        Records::Q8 { codes, scales } => {
-                            pair_avx2(&Q8Rec { codes, scales }, &span, part)
-                        }
+        let shared = crate::team::SharedMut::new(&mut parts[..groups * chunks]);
+        crate::team::for_each(groups * chunks, |index| {
+            // SAFETY: each task owns one disjoint element of `parts`.
+            let part = unsafe { &mut shared.slice(index, 1)[0] };
+            let (g, chunk) = (index / chunks, index % chunks);
+            let start = (chunk * tiles_per_chunk * TILE).min(total_len);
+            let end = ((chunk + 1) * tiles_per_chunk * TILE).min(total_len);
+            let span = Span {
+                prefix_len: self.prefix_len,
+                groups,
+                group: g,
+                start,
+                end,
+                q0: &q[2 * g * 64..(2 * g + 1) * 64],
+                q1: &q[(2 * g + 1) * 64..(2 * g + 2) * 64],
+                generated_k: &self.generated_k,
+                generated_v: &self.generated_v,
+            };
+            // SAFETY: AVX2/FMA were detected by the caller; `Span` and the
+            // record stores were shape-checked at construction and entry.
+            unsafe {
+                match &self.records {
+                    Records::F32(d) => pair_avx2(&F32Rec(d), &span, part),
+                    Records::Bf16(d) => pair_avx2(&Bf16Rec(d), &span, part),
+                    Records::Q8 { codes, scales } => {
+                        pair_avx2(&Q8Rec { codes, scales }, &span, part)
                     }
                 }
-            });
+            }
+        });
         for g in 0..groups {
             let group_parts = &parts[g * chunks..(g + 1) * chunks];
             for pair in 0..2 {

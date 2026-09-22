@@ -367,7 +367,7 @@ impl Q8Linear {
         let dot = self.dot_fn(simd);
         let tasks = balanced_tasks(ffn);
         let block = ffn.div_ceil(tasks);
-        (0..ffn.div_ceil(block)).into_par_iter().for_each(|b| {
+        crate::team::for_each(ffn.div_ceil(block), |b| {
             let out = out.get();
             for i in b * block..((b + 1) * block).min(ffn) {
                 let (gate_row, up_row) = (2 * i, 2 * i + 1);
@@ -425,7 +425,7 @@ impl Q8Linear {
         let groups = in_dim.div_ceil(self.group_size);
         let dot = self.dot_fn(simd);
         let block = out_dim.div_ceil(balanced_tasks(out_dim));
-        (0..out_dim.div_ceil(block)).into_par_iter().for_each(|b| {
+        crate::team::for_each(out_dim.div_ceil(block), |b| {
             for channel in b * block..((b + 1) * block).min(out_dim) {
                 let codes = &self.codes[channel * in_dim..(channel + 1) * in_dim];
                 let scales = &self.scales[channel * groups..(channel + 1) * groups];
@@ -446,7 +446,7 @@ type DotQ8 = fn(&[f32], &[i8], &[f32]) -> f32;
 /// About two equal channel blocks per pool thread (multiples of 4 channels):
 /// small decode matrices finish in one or two rounds without idle threads.
 fn balanced_tasks(channels: usize) -> usize {
-    let target = 2 * rayon::current_num_threads().max(1);
+    let target = 2 * crate::team::threads();
     let per = channels.div_ceil(target).next_multiple_of(4).max(4);
     channels.div_ceil(per)
 }

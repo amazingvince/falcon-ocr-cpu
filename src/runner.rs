@@ -70,6 +70,8 @@ pub struct Runner {
     pool: rayon::ThreadPool,
     config: RunnerConfig,
     head: HeadMode,
+    /// Spin-waiting workers for decode steps; prefill keeps using `pool`.
+    team: crate::team::Team,
 }
 impl Runner {
     pub fn new(
@@ -99,12 +101,14 @@ impl Runner {
         if config.weight_layout == WeightLayout::PhasePacked {
             model.prepare_phase_packed();
         }
+        let team = crate::team::Team::new(pool.current_num_threads())?;
         Ok(Self {
             model,
             tokenizer,
             pool,
             config,
             head: HeadMode::Full,
+            team,
         })
     }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
@@ -403,6 +407,7 @@ impl Runner {
         }
         let decode_started = Instant::now();
         let mut step = 0;
+        let team = self.team.enter();
         trace.decode_start();
         while !active.is_empty() {
             tokens.clear();
@@ -460,6 +465,7 @@ impl Runner {
             step += 1;
         }
         trace.decode_end();
+        drop(team);
         crate::model::report_decode_phases();
         states
             .into_iter()
@@ -570,6 +576,7 @@ impl Runner {
         let stops = self.tokenizer.stop_ids();
         let mut generated = Vec::with_capacity(options.max_new_tokens);
         let mut reason = FinishReason::Length;
+        let team = self.team.enter();
         trace.decode_start();
         for step in 0..options.max_new_tokens {
             let token = next_token;
@@ -606,6 +613,7 @@ impl Runner {
             trace.decode_step(1, step_ms, session.cache_bytes());
         }
         trace.decode_end();
+        drop(team);
         crate::model::report_decode_phases();
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
         let text = self.tokenizer.decode(&generated)?;

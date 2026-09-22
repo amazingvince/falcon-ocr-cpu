@@ -130,19 +130,26 @@ pub fn linear_with_simd(
         let dot = dot_kernel(selected);
         // No packing/allocation on the decode and small-batch paths. This
         // avoids packing a full weight matrix to multiply only 1-8 vectors.
-        // Rayon partitions the flattened outputs, exposing channel parallelism
-        // even when the number of request rows is smaller than the threadpool.
-        out.par_iter_mut()
-            .enumerate()
-            .with_min_len(32)
-            .for_each(|(index, value)| {
+        // Tasks partition the flattened outputs, exposing channel parallelism
+        // even when the number of request rows is smaller than the pool.
+        let total = out.len();
+        let block = crate::team::block_size(total, 8, 32);
+        let shared = crate::team::SharedMut::new(out);
+        crate::team::for_each(total.div_ceil(block), |b| {
+            let start = b * block;
+            let len = block.min(total - start);
+            // SAFETY: blocks are disjoint ranges of `out`.
+            let values = unsafe { shared.slice(start, len) };
+            for (offset, value) in values.iter_mut().enumerate() {
+                let index = start + offset;
                 let row = index / out_dim;
                 let channel = index % out_dim;
                 *value = dot(
                     &input[row * in_dim..(row + 1) * in_dim],
                     &weight[channel * in_dim..(channel + 1) * in_dim],
                 );
-            });
+            }
+        });
         return;
     }
     if selected == Simd::Scalar {
@@ -309,11 +316,16 @@ pub fn linear_glu_with_simd(
         return false;
     }
     let dot = dot_kernel(simd.resolved());
-    gated
-        .par_iter_mut()
-        .enumerate()
-        .with_min_len(16)
-        .for_each(|(index, value)| {
+    let total = gated.len();
+    let block = crate::team::block_size(total, 4, 16);
+    let shared = crate::team::SharedMut::new(gated);
+    crate::team::for_each(total.div_ceil(block), |b| {
+        let start = b * block;
+        let len = block.min(total - start);
+        // SAFETY: blocks are disjoint ranges of `gated`.
+        let values = unsafe { shared.slice(start, len) };
+        for (offset, value) in values.iter_mut().enumerate() {
+            let index = start + offset;
             let row = index / ffn_dim;
             let channel = index % ffn_dim;
             let x = &input[row * in_dim..(row + 1) * in_dim];
@@ -323,7 +335,8 @@ pub fn linear_glu_with_simd(
                 &weight[(2 * channel + 1) * in_dim..(2 * channel + 2) * in_dim],
             );
             *value = squared_relu_glu(gate, up);
-        });
+        }
+    });
     true
 }
 

@@ -16,6 +16,7 @@ mod numerical_diagnostics;
 pub mod packed_kernels;
 pub mod preprocess;
 pub mod runner;
+mod team;
 pub mod tokenizer;
 pub mod trace;
 

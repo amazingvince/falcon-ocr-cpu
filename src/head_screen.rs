@@ -47,6 +47,7 @@ pub(crate) struct ScreenedHead {
 #[derive(Default)]
 pub(crate) struct HeadScratch {
     upper: Vec<f32>,
+    lower_max: Vec<f32>,
     candidates: Vec<u32>,
     norms: Vec<f32>,
 }
@@ -54,6 +55,8 @@ pub(crate) struct HeadScratch {
 impl HeadScratch {
     pub(crate) fn reserve(&mut self, head: &ScreenedHead) {
         self.upper.resize(head.vocab, 0.0);
+        self.lower_max
+            .resize(head.vocab.div_ceil(BLOCK), f32::NEG_INFINITY);
         self.norms.resize(head.groups, 0.0);
         self.candidates
             .reserve(CANDIDATE_LIMIT + 1 - self.candidates.len().min(CANDIDATE_LIMIT + 1));
@@ -165,29 +168,35 @@ impl ScreenedHead {
             };
         }
         let norms = &scratch.norms;
-        let (dim, groups, kappa) = (self.dim, self.groups, self.kappa);
+        let (dim, groups, kappa, vocab) = (self.dim, self.groups, self.kappa, self.vocab);
+        let upper_all = crate::team::SharedMut::new(&mut scratch.upper);
+        let lower_all = crate::team::SharedMut::new(&mut scratch.lower_max);
+        crate::team::for_each(vocab.div_ceil(BLOCK), |block| {
+            let start = block * BLOCK;
+            // SAFETY: each task owns one disjoint block of rows.
+            let upper = unsafe { upper_all.slice(start, BLOCK.min(vocab - start)) };
+            let mut lower_max = f32::NEG_INFINITY;
+            for (i, hi) in upper.iter_mut().enumerate() {
+                let row = block * BLOCK + i;
+                let codes = &self.codes[row * dim..(row + 1) * dim];
+                let scales = &self.scales[row * groups..(row + 1) * groups];
+                #[cfg(target_arch = "x86_64")]
+                // SAFETY: AVX2/FMA were detected above; slices are exact rows.
+                let (q, s) = unsafe { screen_row_avx2(x, codes, scales, norms) };
+                #[cfg(not(target_arch = "x86_64"))]
+                let (q, s) = (0.0_f32, f32::INFINITY);
+                let bound = kappa.mul_add(s, ETA);
+                *hi = q + bound;
+                lower_max = lower_max.max(q - bound);
+            }
+            // SAFETY: one maximum slot per block.
+            unsafe { lower_all.slice(block, 1)[0] = lower_max };
+        });
         let tau = scratch
-            .upper
-            .par_chunks_mut(BLOCK)
-            .enumerate()
-            .map(|(block, upper)| {
-                let mut lower_max = f32::NEG_INFINITY;
-                for (i, hi) in upper.iter_mut().enumerate() {
-                    let row = block * BLOCK + i;
-                    let codes = &self.codes[row * dim..(row + 1) * dim];
-                    let scales = &self.scales[row * groups..(row + 1) * groups];
-                    #[cfg(target_arch = "x86_64")]
-                    // SAFETY: AVX2/FMA were detected above; slices are exact rows.
-                    let (q, s) = unsafe { screen_row_avx2(x, codes, scales, norms) };
-                    #[cfg(not(target_arch = "x86_64"))]
-                    let (q, s) = (0.0_f32, f32::INFINITY);
-                    let bound = kappa.mul_add(s, ETA);
-                    *hi = q + bound;
-                    lower_max = lower_max.max(q - bound);
-                }
-                lower_max
-            })
-            .reduce(|| f32::NEG_INFINITY, f32::max);
+            .lower_max
+            .iter()
+            .copied()
+            .fold(f32::NEG_INFINITY, f32::max);
         if !tau.is_finite() {
             return fallback;
         }
