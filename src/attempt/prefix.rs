@@ -15,6 +15,13 @@
 //! bit-identical to the compact kernel over their dequantized values. More
 //! chunks split positions on tile boundaries and merge partial softmaxes, which
 //! changes rounding only.
+//!
+//! Generated positions are stored in the same format as the prefix, in
+//! group-major 128-element tail records `[K 0..64 | V 64..128]` (text keys are
+//! identical within a GQA pair, so one key serves both heads). With FP32
+//! storage the tail keeps the exact values; BF16/Q8 storage compresses each
+//! generated position as it is appended, so long outputs do not stream an
+//! FP32 tail that grows past the compressed prefix.
 use super::PrefixMode;
 use crate::{
     config::ModelConfig,
@@ -29,6 +36,8 @@ const RECORD: usize = 160;
 const TEMPORAL: usize = 0;
 const SPATIAL: [usize; 2] = [32, 64];
 const VALUE: usize = 96;
+/// Elements per (group, generated position) tail record: `[K 64 | V 64]`.
+const TAIL_RECORD: usize = 128;
 /// Q8 scales per record: one per 32-element chunk.
 const Q8_SCALES: usize = RECORD / 32;
 /// Online-softmax tile, identical to the compact decode kernel.
@@ -54,8 +63,11 @@ pub(crate) struct SplitPrefix {
     kv_heads: usize,
     /// Position chunks per group; 1 keeps the compact kernel's exact rounding.
     chunks: usize,
-    pub generated_k: Vec<f32>,
-    pub generated_v: Vec<f32>,
+    /// Generated positions, `[group][tail_capacity]` records of
+    /// [`TAIL_RECORD`] elements in the prefix's storage format.
+    tail: Records,
+    tail_capacity: usize,
+    tail_len: usize,
 }
 
 /// Default position chunks: exact for FP32, split (rounding-level) for lossy storage.
@@ -71,6 +83,35 @@ fn default_chunks(mode: PrefixMode) -> usize {
         PrefixMode::SplitF32 => 1,
         _ => 4,
     })
+}
+
+impl Records {
+    fn bytes(&self) -> usize {
+        match self {
+            Records::F32(d) => d.capacity() * 4,
+            Records::Bf16(d) => d.capacity() * 2,
+            Records::Q8 { codes, scales } => codes.capacity() + scales.capacity() * 4,
+        }
+    }
+
+    /// Element `offset` of `record` (`width` elements per record), decoded to
+    /// the FP32 value decode uses.
+    fn value(&self, width: usize, record: usize, offset: usize) -> f32 {
+        let at = record * width + offset;
+        match self {
+            Records::F32(d) => d[at],
+            Records::Bf16(d) => bf16::from_bits(d[at]).to_f32(),
+            Records::Q8 { codes, scales } => codes[at] as f32 * scales[at / 32],
+        }
+    }
+}
+
+/// A zero-filled buffer, failing instead of aborting when memory is short.
+fn zeroed<T: Clone + Default>(len: usize) -> Result<Vec<T>> {
+    let mut data = Vec::new();
+    data.try_reserve_exact(len)?;
+    data.resize(len, T::default());
+    Ok(data)
 }
 
 fn q8_scale(values: &[f32]) -> f32 {
@@ -211,22 +252,92 @@ impl SplitPrefix {
             }
             PrefixMode::Reference => unreachable!("checked above"),
         };
-        let tail = (capacity - prefix_len)
-            .checked_mul(c.kv_dim())
+        let tail_capacity = capacity - prefix_len;
+        let tail_elements = (groups * tail_capacity)
+            .checked_mul(TAIL_RECORD)
             .ok_or_else(|| anyhow::anyhow!("tail capacity overflow"))?;
-        let mut generated_k = Vec::new();
-        let mut generated_v = Vec::new();
-        generated_k.try_reserve_exact(tail)?;
-        generated_v.try_reserve_exact(tail)?;
+        let tail = match &records {
+            Records::F32(_) => Records::F32(zeroed(tail_elements)?),
+            Records::Bf16(_) => Records::Bf16(zeroed(tail_elements)?),
+            Records::Q8 { .. } => Records::Q8 {
+                codes: zeroed(tail_elements)?,
+                scales: zeroed(tail_elements / 32)?,
+            },
+        };
         Ok(Self {
             records,
             prefix_len,
             heads,
             kv_heads: groups,
             chunks: default_chunks(mode),
-            generated_k,
-            generated_v,
+            tail,
+            tail_capacity,
+            tail_len: 0,
         })
+    }
+
+    /// Appends generated positions. `k` and `v` are expanded
+    /// `[rows][heads][64]`, identical within each GQA pair (text positions).
+    pub fn append(&mut self, k: &[f32], v: &[f32]) {
+        let width = self.heads * 64;
+        assert!(k.len() == v.len() && k.len() % width == 0, "tail row shape");
+        let mut key = [0.0_f32; MAX_GROUPS * 64];
+        let mut value = [0.0_f32; MAX_GROUPS * 64];
+        let unique = self.kv_heads * 64;
+        for (k, v) in k.chunks_exact(width).zip(v.chunks_exact(width)) {
+            for g in 0..self.kv_heads {
+                let pair = 2 * g * 64;
+                debug_assert!(
+                    (0..64).all(|d| k[pair + d].to_bits() == k[pair + 64 + d].to_bits()
+                        && v[pair + d].to_bits() == v[pair + 64 + d].to_bits()),
+                    "split tail requires identical duplicated heads"
+                );
+                key[g * 64..(g + 1) * 64].copy_from_slice(&k[pair..pair + 64]);
+                value[g * 64..(g + 1) * 64].copy_from_slice(&v[pair..pair + 64]);
+            }
+            self.push_unique(&key[..unique], &value[..unique]);
+        }
+    }
+
+    /// Appends one generated position given one key and one value per group
+    /// (`[groups][64]` each), encoded in the prefix's storage format. A
+    /// non-finite input keeps a non-finite decoded value (NaN for BF16 NaN and
+    /// for any Q8 block that holds one), so it still reaches the logits.
+    fn push_unique(&mut self, k: &[f32], v: &[f32]) {
+        assert_eq!(k.len(), self.kv_heads * 64);
+        assert_eq!(v.len(), k.len());
+        assert!(self.tail_len < self.tail_capacity, "split tail capacity");
+        for g in 0..self.kv_heads {
+            let mut values = [0.0_f32; TAIL_RECORD];
+            values[..64].copy_from_slice(&k[g * 64..(g + 1) * 64]);
+            values[64..].copy_from_slice(&v[g * 64..(g + 1) * 64]);
+            let record = g * self.tail_capacity + self.tail_len;
+            let at = record * TAIL_RECORD;
+            match &mut self.tail {
+                Records::F32(d) => d[at..at + TAIL_RECORD].copy_from_slice(&values),
+                Records::Bf16(d) => {
+                    for (bits, &value) in d[at..at + TAIL_RECORD].iter_mut().zip(&values) {
+                        *bits = bf16::from_f32(value).to_bits();
+                    }
+                }
+                Records::Q8 { codes, scales } => {
+                    let blocks = TAIL_RECORD / 32;
+                    for (block, values) in values.chunks_exact(32).enumerate() {
+                        let scale = if values.iter().all(|x| x.is_finite()) {
+                            q8_scale(values)
+                        } else {
+                            f32::NAN
+                        };
+                        scales[record * blocks + block] = scale;
+                        let codes = &mut codes[at + 32 * block..at + 32 * (block + 1)];
+                        for (code, &value) in codes.iter_mut().zip(values) {
+                            *code = q8_code(value, scale);
+                        }
+                    }
+                }
+            }
+        }
+        self.tail_len += 1;
     }
 
     #[cfg(test)]
@@ -237,24 +348,19 @@ impl SplitPrefix {
     }
 
     pub fn bytes(&self) -> usize {
-        let records = match &self.records {
-            Records::F32(d) => d.capacity() * 4,
-            Records::Bf16(d) => d.capacity() * 2,
-            Records::Q8 { codes, scales } => codes.capacity() + scales.capacity() * 4,
-        };
-        records + 4 * (self.generated_k.capacity() + self.generated_v.capacity())
+        self.records.bytes() + self.tail.bytes()
     }
 
     /// Record element `offset` of `record`, as the FP32 value decode uses.
     fn value(&self, record: usize, offset: usize) -> f32 {
-        let at = record * RECORD + offset;
-        match &self.records {
-            Records::F32(d) => d[at],
-            Records::Bf16(d) => bf16::from_bits(d[at]).to_f32(),
-            Records::Q8 { codes, scales } => {
-                codes[at] as f32 * scales[record * Q8_SCALES + offset / 32]
-            }
-        }
+        self.records.value(RECORD, record, offset)
+    }
+
+    /// Element `offset` of the tail record of `group` at generated position
+    /// `index`.
+    fn tail_value(&self, group: usize, index: usize, offset: usize) -> f32 {
+        self.tail
+            .value(TAIL_RECORD, group * self.tail_capacity + index, offset)
     }
 
     /// The compact `[t][heads][64]` keys and `[t][groups][64]` values that the
@@ -293,11 +399,7 @@ impl SplitPrefix {
         assert_eq!(q.len(), self.heads * 64);
         assert_eq!(output.len(), q.len());
         assert_eq!(sinks.len(), self.heads);
-        assert_eq!(self.generated_k.len(), self.generated_v.len());
-        assert_eq!(
-            total_len,
-            self.prefix_len + self.generated_k.len() / (self.kv_heads * 64)
-        );
+        assert_eq!(total_len, self.prefix_len + self.tail_len);
         let selected = simd.resolved();
         #[cfg(target_arch = "x86_64")]
         if selected != Simd::Scalar
@@ -327,7 +429,6 @@ impl SplitPrefix {
     ) {
         let dot = kernels::dot_kernel(selected);
         let axpy = kernels::axpy_kernel(selected);
-        let groups = self.kv_heads;
         output.par_chunks_mut(64).enumerate().for_each(|(h, out)| {
             let group = h / 2;
             let query = &q[h * 64..(h + 1) * 64];
@@ -349,8 +450,9 @@ impl SplitPrefix {
                             key[32 + d] = self.value(record, SPATIAL[h % 2] + d);
                         }
                     } else {
-                        let a = ((t - self.prefix_len) * groups + group) * 64;
-                        key.copy_from_slice(&self.generated_k[a..a + 64]);
+                        for (d, x) in key.iter_mut().enumerate() {
+                            *x = self.tail_value(group, t - self.prefix_len, d);
+                        }
                     }
                     *logit = dot(query, &key) * 0.125;
                     block_max = block_max.max(*logit);
@@ -375,8 +477,9 @@ impl SplitPrefix {
                             *x = self.value(record, VALUE + d);
                         }
                     } else {
-                        let a = ((t - self.prefix_len) * groups + group) * 64;
-                        value.copy_from_slice(&self.generated_v[a..a + 64]);
+                        for (d, x) in value.iter_mut().enumerate() {
+                            *x = self.tail_value(group, t - self.prefix_len, 64 + d);
+                        }
                     }
                     axpy(probability, &value, out);
                 }
@@ -410,24 +513,42 @@ impl SplitPrefix {
             let end = ((chunk + 1) * tiles_per_chunk * TILE).min(total_len);
             let span = Span {
                 prefix_len: self.prefix_len,
-                groups,
                 group: g,
+                tail_base: g * self.tail_capacity,
                 start,
                 end,
                 q0: &q[2 * g * 64..(2 * g + 1) * 64],
                 q1: &q[(2 * g + 1) * 64..(2 * g + 2) * 64],
-                generated_k: &self.generated_k,
-                generated_v: &self.generated_v,
             };
             // SAFETY: the native vector ISA was checked by the caller; `Span`
             // and the record stores were shape-checked at construction and entry.
             unsafe {
-                match &self.records {
-                    Records::F32(d) => pair_native(&F32Rec(d), &span, part),
-                    Records::Bf16(d) => pair_native(&Bf16Rec(d), &span, part),
-                    Records::Q8 { codes, scales } => {
-                        pair_native(&Q8Rec { codes, scales }, &span, part)
+                match (&self.records, &self.tail) {
+                    (Records::F32(d), Records::F32(t)) => {
+                        pair_native(&F32Rec::<RECORD>(d), &F32Rec::<TAIL_RECORD>(t), &span, part)
                     }
+                    (Records::Bf16(d), Records::Bf16(t)) => pair_native(
+                        &Bf16Rec::<RECORD>(d),
+                        &Bf16Rec::<TAIL_RECORD>(t),
+                        &span,
+                        part,
+                    ),
+                    (
+                        Records::Q8 { codes, scales },
+                        Records::Q8 {
+                            codes: tail_codes,
+                            scales: tail_scales,
+                        },
+                    ) => pair_native(
+                        &Q8Rec::<RECORD> { codes, scales },
+                        &Q8Rec::<TAIL_RECORD> {
+                            codes: tail_codes,
+                            scales: tail_scales,
+                        },
+                        &span,
+                        part,
+                    ),
+                    _ => unreachable!("tail storage matches the prefix"),
                 }
             }
         });
@@ -487,53 +608,73 @@ impl Partial {
 
 struct Span<'a> {
     prefix_len: usize,
-    groups: usize,
     group: usize,
+    /// First tail record of the group.
+    tail_base: usize,
     start: usize,
     end: usize,
     q0: &'a [f32],
     q1: &'a [f32],
-    generated_k: &'a [f32],
-    generated_v: &'a [f32],
 }
+
+/// Offsets of the key halves and the value inside a record.
+#[derive(Clone, Copy)]
+struct Layout {
+    temporal: usize,
+    spatial: [usize; 2],
+    value: usize,
+}
+/// Prefix records: shared temporal half, one spatial half per head, value.
+const PREFIX: Layout = Layout {
+    temporal: TEMPORAL,
+    spatial: SPATIAL,
+    value: VALUE,
+};
+/// Tail records: one key for both heads (its halves at 0 and 32), value.
+const TAIL: Layout = Layout {
+    temporal: 0,
+    spatial: [32, 32],
+    value: 64,
+};
 
 use crate::simd::Simd as Isa;
 
-/// Eight decoded FP32 values of one record, at an offset that is a multiple
-/// of 8, as a vector of instruction set `S`.
+/// Eight decoded FP32 values of one `W`-element record, at an offset that is
+/// a multiple of 8, as a vector of instruction set `S`.
 trait RecordStore {
     unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V;
 }
-struct F32Rec<'a>(&'a [f32]);
-struct Bf16Rec<'a>(&'a [u16]);
-struct Q8Rec<'a> {
+struct F32Rec<'a, const W: usize>(&'a [f32]);
+struct Bf16Rec<'a, const W: usize>(&'a [u16]);
+struct Q8Rec<'a, const W: usize> {
     codes: &'a [i8],
+    /// One scale per 32 elements.
     scales: &'a [f32],
 }
-impl RecordStore for F32Rec<'_> {
+impl<const W: usize> RecordStore for F32Rec<'_, W> {
     #[inline(always)]
     unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
-        debug_assert!((record + 1) * RECORD <= self.0.len());
-        unsafe { S::load(self.0.as_ptr().add(record * RECORD + offset)) }
+        debug_assert!((record + 1) * W <= self.0.len());
+        unsafe { S::load(self.0.as_ptr().add(record * W + offset)) }
     }
 }
-impl RecordStore for Bf16Rec<'_> {
+impl<const W: usize> RecordStore for Bf16Rec<'_, W> {
     #[inline(always)]
     unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
-        debug_assert!((record + 1) * RECORD <= self.0.len());
+        debug_assert!((record + 1) * W <= self.0.len());
         // BF16 -> FP32 is exact: the bits move to the high half.
-        unsafe { S::load_bf16(self.0.as_ptr().add(record * RECORD + offset)) }
+        unsafe { S::load_bf16(self.0.as_ptr().add(record * W + offset)) }
     }
 }
-impl RecordStore for Q8Rec<'_> {
+impl<const W: usize> RecordStore for Q8Rec<'_, W> {
     #[inline(always)]
     unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
-        debug_assert!((record + 1) * RECORD <= self.codes.len());
+        debug_assert!((record + 1) * W <= self.codes.len());
         // fl(code * scale), exactly the scalar dequantization.
         unsafe {
             S::mul(
-                S::load_i8(self.codes.as_ptr().add(record * RECORD + offset)),
-                S::splat(*self.scales.get_unchecked(record * Q8_SCALES + offset / 32)),
+                S::load_i8(self.codes.as_ptr().add(record * W + offset)),
+                S::splat(*self.scales.get_unchecked((record * W + offset) / 32)),
             )
         }
     }
@@ -542,10 +683,12 @@ impl RecordStore for Q8Rec<'_> {
 /// `dot64(q, key)` for both heads of a record: the shared temporal half feeds
 /// both accumulator sets first (dot64's i = 0 pass), then each spatial half
 /// (its i = 32 pass). Per head this is dot64's exact FMA sequence and
-/// reduction tree (`(a0+a1)+(a2+a3)`, then `Simd::sum`).
+/// reduction tree (`(a0+a1)+(a2+a3)`, then `Simd::sum`), which is also
+/// `simd::dot` over 64 elements (the tail layout's single key).
 #[inline(always)]
 unsafe fn qk2<S: Isa, R: RecordStore>(
     store: &R,
+    layout: Layout,
     record: usize,
     q0: &[f32],
     q1: &[f32],
@@ -554,14 +697,18 @@ unsafe fn qk2<S: Isa, R: RecordStore>(
         let mut a = [S::zero(); 4];
         let mut b = [S::zero(); 4];
         for j in 0..4 {
-            let t = store.load8::<S>(record, TEMPORAL + 8 * j);
+            let t = store.load8::<S>(record, layout.temporal + 8 * j);
             a[j] = S::fma(S::load(q0.as_ptr().add(8 * j)), t, a[j]);
             b[j] = S::fma(S::load(q1.as_ptr().add(8 * j)), t, b[j]);
         }
         for j in 0..4 {
-            let s0 = store.load8::<S>(record, SPATIAL[0] + 8 * j);
+            let s0 = store.load8::<S>(record, layout.spatial[0] + 8 * j);
             a[j] = S::fma(S::load(q0.as_ptr().add(32 + 8 * j)), s0, a[j]);
-            let s1 = store.load8::<S>(record, SPATIAL[1] + 8 * j);
+            let s1 = if layout.spatial[1] == layout.spatial[0] {
+                s0
+            } else {
+                store.load8::<S>(record, layout.spatial[1] + 8 * j)
+            };
             b[j] = S::fma(S::load(q1.as_ptr().add(32 + 8 * j)), s1, b[j]);
         }
         (
@@ -592,42 +739,35 @@ unsafe fn pv2<S: Isa>(v: [S::V; 8], p0: f32, p1: f32, o0: &mut [f32; 64], o1: &m
 }
 
 #[inline(always)]
-unsafe fn record_value<S: Isa, R: RecordStore>(store: &R, record: usize) -> [S::V; 8] {
+unsafe fn record_value<S: Isa, R: RecordStore>(
+    store: &R,
+    layout: Layout,
+    record: usize,
+) -> [S::V; 8] {
+    let value = layout.value;
     unsafe {
         [
-            store.load8::<S>(record, VALUE),
-            store.load8::<S>(record, VALUE + 8),
-            store.load8::<S>(record, VALUE + 16),
-            store.load8::<S>(record, VALUE + 24),
-            store.load8::<S>(record, VALUE + 32),
-            store.load8::<S>(record, VALUE + 40),
-            store.load8::<S>(record, VALUE + 48),
-            store.load8::<S>(record, VALUE + 56),
+            store.load8::<S>(record, value),
+            store.load8::<S>(record, value + 8),
+            store.load8::<S>(record, value + 16),
+            store.load8::<S>(record, value + 24),
+            store.load8::<S>(record, value + 32),
+            store.load8::<S>(record, value + 40),
+            store.load8::<S>(record, value + 48),
+            store.load8::<S>(record, value + 56),
         ]
     }
 }
 
+/// Both heads of one KV group over positions `[start, end)` (tile aligned),
+/// prefix positions from `store` and generated ones from `tail`.
 #[inline(always)]
-unsafe fn slice_value<S: Isa>(v: &[f32]) -> [S::V; 8] {
-    debug_assert_eq!(v.len(), 64);
-    let at = |i: usize| v.as_ptr().wrapping_add(i);
-    unsafe {
-        [
-            S::load(at(0)),
-            S::load(at(8)),
-            S::load(at(16)),
-            S::load(at(24)),
-            S::load(at(32)),
-            S::load(at(40)),
-            S::load(at(48)),
-            S::load(at(56)),
-        ]
-    }
-}
-
-/// Both heads of one KV group over positions `[start, end)` (tile aligned).
-#[inline(always)]
-unsafe fn pair<S: Isa, R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
+unsafe fn pair<S: Isa, R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    span: &Span<'_>,
+    part: &mut Partial,
+) {
     let scale = (64_f32).sqrt().recip();
     let [o0, o1] = &mut part.out;
     o0.fill(0.0);
@@ -636,7 +776,7 @@ unsafe fn pair<S: Isa, R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Pa
     let mut denominator = [0.0_f32; 2];
     let mut logits = [[0.0_f32; TILE]; 2];
     let first_record = span.group * span.prefix_len;
-    let tail = |key: usize| ((key - span.prefix_len) * span.groups + span.group) * 64;
+    let tail_record = |key: usize| span.tail_base + (key - span.prefix_len);
     let mut start = span.start;
     // SAFETY: records and tail offsets are within the shape-checked stores.
     unsafe {
@@ -646,13 +786,9 @@ unsafe fn pair<S: Isa, R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Pa
             for j in 0..len {
                 let key = start + j;
                 let (s0, s1) = if key < span.prefix_len {
-                    qk2::<S, R>(store, first_record + key, span.q0, span.q1)
+                    qk2::<S, R>(store, PREFIX, first_record + key, span.q0, span.q1)
                 } else {
-                    let k = &span.generated_k[tail(key)..tail(key) + 64];
-                    (
-                        crate::simd::dot::<S>(span.q0, k),
-                        crate::simd::dot::<S>(span.q1, k),
-                    )
+                    qk2::<S, T>(tail, TAIL, tail_record(key), span.q0, span.q1)
                 };
                 logits[0][j] = s0 * scale;
                 block_max[0] = block_max[0].max(logits[0][j]);
@@ -681,9 +817,9 @@ unsafe fn pair<S: Isa, R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Pa
                 let p1 = logits[1][j];
                 denominator[1] += p1;
                 let value = if key < span.prefix_len {
-                    record_value::<S, R>(store, first_record + key)
+                    record_value::<S, R>(store, PREFIX, first_record + key)
                 } else {
-                    slice_value::<S>(&span.generated_v[tail(key)..tail(key) + 64])
+                    record_value::<S, T>(tail, TAIL, tail_record(key))
                 };
                 pv2::<S>(value, p0, p1, o0, o1);
             }
@@ -698,12 +834,22 @@ unsafe fn pair<S: Isa, R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Pa
 /// Per-ISA entry for [`pair`] (the target features enclose the whole loop).
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
-unsafe fn pair_native<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
-    unsafe { pair::<crate::simd::Avx2, R>(store, span, part) }
+unsafe fn pair_native<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    span: &Span<'_>,
+    part: &mut Partial,
+) {
+    unsafe { pair::<crate::simd::Avx2, R, T>(store, tail, span, part) }
 }
 #[cfg(target_arch = "aarch64")]
-unsafe fn pair_native<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
-    unsafe { pair::<crate::simd::Neon, R>(store, span, part) }
+unsafe fn pair_native<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    span: &Span<'_>,
+    part: &mut Partial,
+) {
+    unsafe { pair::<crate::simd::Neon, R, T>(store, tail, span, part) }
 }
 
 #[cfg(test)]
@@ -767,6 +913,26 @@ mod tests {
         expected
     }
 
+    /// Appends `[generated][groups][64]` keys and values.
+    fn push_rows(cache: &mut SplitPrefix, c: &ModelConfig, k: &[f32], v: &[f32]) {
+        for (k, v) in k.chunks_exact(c.kv_dim()).zip(v.chunks_exact(c.kv_dim())) {
+            cache.push_unique(k, v);
+        }
+    }
+
+    /// The generated keys and values the tail records decode to.
+    fn dequantized_tail(cache: &SplitPrefix) -> (Vec<f32>, Vec<f32>) {
+        let mut k = Vec::new();
+        let mut v = Vec::new();
+        for t in 0..cache.tail_len {
+            for g in 0..cache.kv_heads {
+                k.extend((0..64).map(|d| cache.tail_value(g, t, d)));
+                v.extend((0..64).map(|d| cache.tail_value(g, t, 64 + d)));
+            }
+        }
+        (k, v)
+    }
+
     fn backends() -> Vec<Simd> {
         [Simd::Scalar, Simd::Auto]
             .into_iter()
@@ -797,16 +963,18 @@ mod tests {
                 let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
                     .unwrap()
                     .with_chunks(1);
-                cache.generated_k.extend_from_slice(&tail_k);
-                cache.generated_v.extend_from_slice(&tail_v);
+                push_rows(&mut cache, &c, &tail_k, &tail_v);
                 let (dk, dv) = cache.dequantized_compact();
+                let (tk, tv) = dequantized_tail(&cache);
                 if mode == PrefixMode::SplitF32 {
                     assert_eq!(dk, k);
                     assert_eq!(dv, v);
+                    assert_eq!(tk, tail_k);
+                    assert_eq!(tv, tail_v);
                 }
                 for backend in backends() {
                     let expected =
-                        compact_reference(&c, &q, &dk, &dv, &tail_k, &tail_v, p, &sinks, backend);
+                        compact_reference(&c, &q, &dk, &dv, &tk, &tv, p, &sinks, backend);
                     let mut output = vec![f32::NAN; c.query_dim()];
                     cache.attention_decode(&q, p + generated, &sinks, &mut output, backend);
                     for (a, b) in output.iter().zip(&expected) {
@@ -837,8 +1005,7 @@ mod tests {
                 let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
                     .unwrap()
                     .with_chunks(chunks);
-                cache.generated_k.extend_from_slice(&tail);
-                cache.generated_v.extend_from_slice(&tail);
+                push_rows(&mut cache, &c, &tail, &tail);
                 let mut output = vec![0.0; c.query_dim()];
                 cache.attention_decode(&q, p + generated, &sinks, &mut output, Simd::Auto);
                 if chunks == 1 {
@@ -863,8 +1030,7 @@ mod tests {
         let expected = compact_reference(&c, &q, &k, &v, &tail, &tail, p, &sinks, Simd::Auto);
         for mode in [PrefixMode::SplitBf16, PrefixMode::SplitQ8] {
             let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 1, &c, mode).unwrap();
-            cache.generated_k.extend_from_slice(&tail);
-            cache.generated_v.extend_from_slice(&tail);
+            push_rows(&mut cache, &c, &tail, &tail);
             let mut output = vec![0.0; c.query_dim()];
             cache.attention_decode(&q, p + 1, &sinks, &mut output, Simd::Auto);
             assert!(output.iter().all(|x| x.is_finite()));
@@ -874,6 +1040,34 @@ mod tests {
                     .zip(&expected)
                     .all(|(a, b)| (a - b).abs() < 0.02)
             );
+        }
+    }
+
+    #[test]
+    fn nonfinite_tail_values_reach_the_output() {
+        let c: ModelConfig =
+            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let p = 130;
+        let (k, v, q) = fixture(&c, p, 5);
+        let sinks = vec![0.5; c.n_heads];
+        for mode in [
+            PrefixMode::SplitF32,
+            PrefixMode::SplitBf16,
+            PrefixMode::SplitQ8,
+        ] {
+            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 2, &c, mode).unwrap();
+            let mut tail = vec![0.01; c.kv_dim()];
+            push_rows(&mut cache, &c, &tail, &tail);
+            tail[3] = f32::NAN;
+            push_rows(&mut cache, &c, &tail, &tail);
+            for backend in backends() {
+                let mut output = vec![0.0; c.query_dim()];
+                cache.attention_decode(&q, p + 2, &sinks, &mut output, backend);
+                assert!(
+                    output[..64].iter().all(|x| x.is_nan()),
+                    "{mode:?} {backend:?}"
+                );
+            }
         }
     }
 

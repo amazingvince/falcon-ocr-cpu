@@ -21,6 +21,10 @@
 //! reference's own gemm calls and scalar softmax, so all tiles stay bitwise
 //! equal. Tests compare the kernels with gemm for every tile shape and the
 //! whole function with `attention_gemm_compact`.
+//!
+//! `FALCON_OCR_EXP=fast` (read once) switches x86 to the portable fast exp
+//! (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
+//! portable instantiations, but no longer equal to the platform `expf`.
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;
 
@@ -82,9 +86,17 @@ pub(super) unsafe fn compact_prefill(
     sinks: &[f32],
     output: &mut [f32],
 ) {
+    #[cfg(target_arch = "x86_64")]
+    let tile: TileFn = if fast_exp() {
+        tile_head_fast
+    } else {
+        tile_head_native
+    };
+    #[cfg(not(target_arch = "x86_64"))]
+    let tile: TileFn = tile_head_native;
     unsafe {
         compact_prefill_with(
-            tile_head_native,
+            tile,
             q,
             k,
             v,
@@ -98,6 +110,13 @@ pub(super) unsafe fn compact_prefill(
             output,
         )
     }
+}
+
+/// Whether `FALCON_OCR_EXP=fast` selects the portable fast exp on x86.
+#[cfg(target_arch = "x86_64")]
+fn fast_exp() -> bool {
+    static FAST: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *FAST.get_or_init(|| std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "fast"))
 }
 
 /// Entry for one (query tile, head) with a given instruction set.
@@ -173,6 +192,28 @@ unsafe fn tile_head_native(
 ) {
     unsafe {
         tile_head::<crate::simd::Avx2>(q, k, v, shape, tile, queries, head, kv_head, sinks, output)
+    }
+}
+/// AVX2 with the portable fast exp (`FALCON_OCR_EXP=fast`).
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn tile_head_fast(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    unsafe {
+        tile_head::<crate::simd::Avx2Fast>(
+            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
+        )
     }
 }
 #[cfg(target_arch = "aarch64")]
@@ -771,6 +812,22 @@ mod tests {
         }
     }
 
+    /// AVX2 with the fast exp is bitwise equal to the portable instantiation.
+    #[cfg(target_arch = "x86_64")]
+    #[test]
+    fn fast_exp_prefill_matches_portable_bitwise() {
+        if !available() {
+            return;
+        }
+        for (query_len, image_start, image_end) in CASES {
+            let fast = run(tile_head_fast, query_len, (image_start, image_end));
+            let portable = run(tile_head_portable, query_len, (image_start, image_end));
+            for (i, (a, b)) in fast.iter().zip(&portable).enumerate() {
+                assert_eq!(a.to_bits(), b.to_bits(), "query_len {query_len} index {i}");
+            }
+        }
+    }
+
     #[cfg(target_arch = "x86_64")]
     #[target_feature(enable = "avx2,fma")]
     unsafe fn qk_via_lanes(
@@ -796,6 +853,10 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     #[test]
+    #[cfg_attr(
+        feature = "gemm-avx512",
+        ignore = "gemm dispatches to its AVX-512 kernels"
+    )]
     fn qk_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
             return;
@@ -851,6 +912,10 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     #[test]
+    #[cfg_attr(
+        feature = "gemm-avx512",
+        ignore = "gemm dispatches to its AVX-512 kernels"
+    )]
     fn pv_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
             return;
@@ -927,6 +992,10 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     #[test]
+    #[cfg_attr(
+        feature = "gemm-avx512",
+        ignore = "gemm dispatches to its AVX-512 kernels"
+    )]
     fn whole_prefill_matches_reference_bitwise() {
         if !available() {
             return;

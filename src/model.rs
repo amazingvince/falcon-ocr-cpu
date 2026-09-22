@@ -1160,10 +1160,7 @@ enum LayerCache {
 impl LayerCache {
     fn append(&mut self, k: &[f32], v: &[f32], offset: usize, c: &ModelConfig) {
         match self {
-            Self::Split(cache) => {
-                append_unique_heads(&mut cache.generated_k, k, c);
-                append_unique_heads(&mut cache.generated_v, v, c);
-            }
+            Self::Split(cache) => cache.append(k, v),
             Self::Expanded { k: keys, v: values } => {
                 keys.extend_from_slice(k);
                 values.extend_from_slice(v);

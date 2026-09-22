@@ -331,6 +331,83 @@ impl Simd for Avx2 {
     }
 }
 
+/// [`Avx2`] with the portable fast exp ([`exp_poly`]) in place of the
+/// platform-exact one, so its kernels are bitwise equal to the NEON and
+/// portable instantiations. Not bitwise equal to the scalar platform `expf`;
+/// used where token agreement, not bit continuity, is the bar.
+#[cfg(target_arch = "x86_64")]
+#[derive(Clone, Copy)]
+pub(crate) struct Avx2Fast;
+
+#[cfg(target_arch = "x86_64")]
+impl Simd for Avx2Fast {
+    type V = <Avx2 as Simd>::V;
+    #[inline(always)]
+    unsafe fn zero() -> Self::V {
+        unsafe { Avx2::zero() }
+    }
+    #[inline(always)]
+    unsafe fn splat(x: f32) -> Self::V {
+        unsafe { Avx2::splat(x) }
+    }
+    #[inline(always)]
+    unsafe fn load(p: *const f32) -> Self::V {
+        unsafe { Avx2::load(p) }
+    }
+    #[inline(always)]
+    unsafe fn store(p: *mut f32, v: Self::V) {
+        unsafe { Avx2::store(p, v) }
+    }
+    #[inline(always)]
+    unsafe fn add(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::add(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn sub(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::sub(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn mul(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::mul(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn fma(a: Self::V, b: Self::V, c: Self::V) -> Self::V {
+        unsafe { Avx2::fma(a, b, c) }
+    }
+    #[inline(always)]
+    unsafe fn load_i8(p: *const i8) -> Self::V {
+        unsafe { Avx2::load_i8(p) }
+    }
+    #[inline(always)]
+    unsafe fn load_bf16(p: *const u16) -> Self::V {
+        unsafe { Avx2::load_bf16(p) }
+    }
+    #[inline(always)]
+    unsafe fn sum(v: Self::V) -> f32 {
+        unsafe { Avx2::sum(v) }
+    }
+    #[inline(always)]
+    unsafe fn max(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::max(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn eq(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::eq(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn select(mask: Self::V, a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::select(mask, a, b) }
+    }
+    #[inline(always)]
+    unsafe fn mask_bits(mask: Self::V) -> u32 {
+        unsafe { Avx2::mask_bits(mask) }
+    }
+    #[inline(always)]
+    unsafe fn exp_fast(x: Self::V) -> Self::V {
+        unsafe { Avx2::exp_fast(x) }
+    }
+}
+
 /// aarch64 NEON: two `float32x4_t` (lanes 0-3, 4-7). Baseline on aarch64.
 #[cfg(target_arch = "aarch64")]
 #[derive(Clone, Copy)]
