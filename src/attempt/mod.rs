@@ -17,6 +17,7 @@ pub enum Profile {
     W8Body,
     W8All,
     W8BodyKvBf16,
+    W8BodyKvQ8,
     W8AllKvBf16,
     W8AllKvQ8,
 }
@@ -32,7 +33,12 @@ impl Profile {
     pub fn quantizes_body(self) -> bool {
         matches!(
             self,
-            Self::W8Body | Self::W8All | Self::W8BodyKvBf16 | Self::W8AllKvBf16 | Self::W8AllKvQ8
+            Self::W8Body
+                | Self::W8All
+                | Self::W8BodyKvBf16
+                | Self::W8BodyKvQ8
+                | Self::W8AllKvBf16
+                | Self::W8AllKvQ8
         )
     }
     pub fn quantizes_head(self) -> bool {
@@ -42,7 +48,7 @@ impl Profile {
         match self {
             Self::SplitF32 => PrefixMode::SplitF32,
             Self::KvBf16 | Self::W8BodyKvBf16 | Self::W8AllKvBf16 => PrefixMode::SplitBf16,
-            Self::KvQ8 | Self::W8AllKvQ8 => PrefixMode::SplitQ8,
+            Self::KvQ8 | Self::W8BodyKvQ8 | Self::W8AllKvQ8 => PrefixMode::SplitQ8,
             _ => PrefixMode::Reference,
         }
     }
@@ -59,9 +65,72 @@ impl Profile {
             Self::W8Body => "w8-body",
             Self::W8All => "w8-all",
             Self::W8BodyKvBf16 => "w8-body-kv-bf16",
+            Self::W8BodyKvQ8 => "w8-body-kv-q8",
             Self::W8AllKvBf16 => "w8-all-kv-bf16",
             Self::W8AllKvQ8 => "w8-all-kv-q8",
         }
+    }
+}
+
+/// Process working-set and commit counters (bytes) at the time of the call.
+/// Peak values cover the whole process lifetime, including load/import.
+pub fn process_memory() -> serde_json::Value {
+    #[cfg(target_os = "linux")]
+    {
+        let status = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
+        let bytes = |key: &str| {
+            status
+                .lines()
+                .find_map(|line| line.strip_prefix(key))
+                .and_then(|s| s.split_whitespace().next()?.parse::<u64>().ok())
+                .map(|kb| kb * 1024)
+        };
+        serde_json::json!({"resident_bytes":bytes("VmRSS:"),"peak_resident_bytes":bytes("VmHWM:")})
+    }
+    #[cfg(target_os = "windows")]
+    {
+        #[repr(C)]
+        struct Counters {
+            cb: u32,
+            faults: u32,
+            sizes: [usize; 8],
+        }
+        #[link(name = "psapi")]
+        unsafe extern "system" {
+            fn GetProcessMemoryInfo(
+                process: *mut std::ffi::c_void,
+                counters: *mut Counters,
+                cb: u32,
+            ) -> i32;
+        }
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn GetCurrentProcess() -> *mut std::ffi::c_void;
+        }
+        let mut counters = Counters {
+            cb: std::mem::size_of::<Counters>() as u32,
+            faults: 0,
+            sizes: [0; 8],
+        };
+        // SAFETY: ABI matches PROCESS_MEMORY_COUNTERS; the pseudo-handle is valid
+        // and the writable struct has the advertised size.
+        let ok = unsafe {
+            GetProcessMemoryInfo(
+                GetCurrentProcess(),
+                &mut counters,
+                std::mem::size_of::<Counters>() as u32,
+            )
+        };
+        if ok == 0 {
+            serde_json::json!({"unavailable":true})
+        } else {
+            serde_json::json!({"resident_bytes":counters.sizes[1],"peak_resident_bytes":counters.sizes[0],
+                "private_commit_bytes":counters.sizes[6],"peak_private_commit_bytes":counters.sizes[7]})
+        }
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        serde_json::json!({"unavailable":true})
     }
 }
 
@@ -79,6 +148,13 @@ pub struct Telemetry {
     pub kv_bytes_after_seal_sum: usize,
     pub kv_allocated_high_water: usize,
     pub retired_cache_bytes_sum: usize,
+    /// Screened vocabulary-head selections and full-head fallbacks.
+    pub head_screen_steps: usize,
+    pub head_screen_fallbacks: usize,
+    pub head_candidates_sum: usize,
+    pub head_candidates_max: usize,
+    /// Recomputed-row buckets: 1, 2-4, 5-16, 17-64, 65-256, 257-1024, >1024.
+    pub head_candidates_histogram: [usize; 7],
 }
 impl crate::trace::Trace for Telemetry {
     fn enabled(&self) -> bool {
@@ -105,6 +181,22 @@ impl crate::trace::Trace for Telemetry {
     }
     fn cache_retired(&mut self, bytes: usize) {
         self.retired_cache_bytes_sum += bytes;
+    }
+    fn head_screen(&mut self, candidates: usize, fallback: bool) {
+        self.head_screen_steps += 1;
+        self.head_screen_fallbacks += usize::from(fallback);
+        self.head_candidates_sum += candidates;
+        self.head_candidates_max = self.head_candidates_max.max(candidates);
+        let bucket = match candidates {
+            0..=1 => 0,
+            2..=4 => 1,
+            5..=16 => 2,
+            17..=64 => 3,
+            65..=256 => 4,
+            257..=1024 => 5,
+            _ => 6,
+        };
+        self.head_candidates_histogram[bucket] += 1;
     }
 }
 

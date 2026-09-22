@@ -9,6 +9,12 @@ use rayon::prelude::*;
 
 #[cfg(target_arch = "x86_64")]
 mod attention64;
+#[cfg(target_arch = "x86_64")]
+mod prefill64;
+// Wired into softmax loops only after the exhaustive platform check passes.
+#[cfg(target_arch = "x86_64")]
+#[cfg_attr(not(test), allow(dead_code))]
+mod vexp;
 
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.
 ///
@@ -204,28 +210,41 @@ pub fn rms_norm(input: &[f32], out: &mut [f32], width: usize, eps: f32, weight: 
     if crate::numerical_diagnostics::rms_override(input, out, width, eps, weight) {
         return;
     }
+    // Decode-sized inputs (one hidden row, or 16 query/key heads of up to eight
+    // rows) cost less than waking the pool; each row's arithmetic is identical.
+    if input.len() <= RMS_NORM_SERIAL_ELEMENTS {
+        for (dst, src) in out.chunks_mut(width).zip(input.chunks(width)) {
+            rms_norm_row(src, dst, width, eps, weight);
+        }
+        return;
+    }
     out.par_chunks_mut(width)
         .zip(input.par_chunks(width))
-        .for_each(|(dst, src)| {
-            // Pairwise FP32 reduction limits accumulated rounding error on
-            // 768-channel rows without widening the reference's dtype or
-            // fusing the square into an accumulation. CUDA reduction order
-            // may still differ and is checked by independent operator traces.
-            let sum = sum_squares_pairwise(src);
-            let scale = (sum / width as f32 + eps).sqrt().recip();
-            match weight {
-                Some(w) => {
-                    for ((y, x), affine) in dst.iter_mut().zip(src).zip(w) {
-                        *y = (*x * scale) * *affine;
-                    }
-                }
-                None => {
-                    for (y, x) in dst.iter_mut().zip(src) {
-                        *y = *x * scale;
-                    }
-                }
+        .for_each(|(dst, src)| rms_norm_row(src, dst, width, eps, weight));
+}
+
+const RMS_NORM_SERIAL_ELEMENTS: usize = 16_384;
+
+#[inline]
+fn rms_norm_row(src: &[f32], dst: &mut [f32], width: usize, eps: f32, weight: Option<&[f32]>) {
+    // Pairwise FP32 reduction limits accumulated rounding error on
+    // 768-channel rows without widening the reference's dtype or
+    // fusing the square into an accumulation. CUDA reduction order
+    // may still differ and is checked by independent operator traces.
+    let sum = sum_squares_pairwise(src);
+    let scale = (sum / width as f32 + eps).sqrt().recip();
+    match weight {
+        Some(w) => {
+            for ((y, x), affine) in dst.iter_mut().zip(src).zip(w) {
+                *y = (*x * scale) * *affine;
             }
-        });
+        }
+        None => {
+            for (y, x) in dst.iter_mut().zip(src) {
+                *y = *x * scale;
+            }
+        }
+    }
 }
 
 fn sum_squares_pairwise(input: &[f32]) -> f32 {
@@ -251,13 +270,62 @@ fn sum_squares_pairwise(input: &[f32]) -> f32 {
 /// Interleaved `[gate_0, up_0, gate_1, up_1, ...]` squared-ReLU GLU.
 pub fn squared_relu_gate(interleaved: &[f32], output: &mut [f32]) {
     assert_eq!(interleaved.len(), elements(output.len(), 2), "GLU shape");
-    output.par_iter_mut().enumerate().for_each(|(i, y)| {
-        let gate = interleaved[i * 2];
-        // Match the pinned Triton kernel's tl.where(gate > 0, gate, 0),
-        // including its treatment of NaN gates and signed zero.
-        let relu = if gate > 0.0 { gate } else { 0.0 };
-        *y = (relu * relu) * interleaved[i * 2 + 1];
-    });
+    output
+        .par_iter_mut()
+        .enumerate()
+        .for_each(|(i, y)| *y = squared_relu_glu(interleaved[i * 2], interleaved[i * 2 + 1]));
+}
+
+#[inline(always)]
+fn squared_relu_glu(gate: f32, up: f32) -> f32 {
+    // Match the pinned Triton kernel's tl.where(gate > 0, gate, 0),
+    // including its treatment of NaN gates and signed zero.
+    let relu = if gate > 0.0 { gate } else { 0.0 };
+    (relu * relu) * up
+}
+
+/// `linear_with_simd` into interleaved `[gate, up]` channels followed by
+/// `squared_relu_gate`, fused for 1..=8 rows. Each gated value uses the same
+/// per-channel dot product and gate expression as the unfused pair, so the
+/// result is bit-identical while one parallel region replaces two and the
+/// `2 * ffn_dim` intermediate is never written. Returns `false` (and writes
+/// nothing) for shapes the fused path does not cover.
+pub fn linear_glu_with_simd(
+    input: &[f32],
+    rows: usize,
+    in_dim: usize,
+    weight: &[f32],
+    ffn_dim: usize,
+    gated: &mut [f32],
+    simd: Simd,
+) -> bool {
+    assert_eq!(input.len(), elements(rows, in_dim), "GLU input shape");
+    assert_eq!(
+        weight.len(),
+        elements(elements(ffn_dim, 2), in_dim),
+        "GLU weight shape"
+    );
+    assert_eq!(gated.len(), elements(rows, ffn_dim), "GLU output shape");
+    if rows == 0 || rows > 8 || in_dim == 0 {
+        return false;
+    }
+    let dot = dot_kernel(simd.resolved());
+    gated
+        .par_iter_mut()
+        .enumerate()
+        .with_min_len(16)
+        .for_each(|(index, value)| {
+            let row = index / ffn_dim;
+            let channel = index % ffn_dim;
+            let x = &input[row * in_dim..(row + 1) * in_dim];
+            let gate = dot(x, &weight[2 * channel * in_dim..(2 * channel + 1) * in_dim]);
+            let up = dot(
+                x,
+                &weight[(2 * channel + 1) * in_dim..(2 * channel + 2) * in_dim],
+            );
+            *value = squared_relu_glu(gate, up);
+        });
+    true
 }
 
 /// Expanded-head attention on token-major `[sequence, heads, head_dim]` Q/K/V.
@@ -909,6 +977,11 @@ fn attention_gemm_compact(
     let kv_stride = isize::try_from(kv_width).expect("compact attention KV stride too large");
     let scale = (head_dim as f32).sqrt().recip();
     let repeat = n_heads / n_kv_heads;
+    // Bit-identical AVX2 tiles replace gemm's main-path calls; see prefill64.
+    #[cfg(target_arch = "x86_64")]
+    let fast = head_dim == 64 && avx2_available();
+    #[cfg(target_arch = "x86_64")]
+    const _: () = assert!(QUERY_TILE == prefill64::QUERY_TILE && KEY_TILE == prefill64::KEY_TILE);
     output
         .par_chunks_mut(QUERY_TILE * query_width)
         .enumerate()
@@ -924,6 +997,8 @@ fn attention_gemm_compact(
                 last_absolute + 1
             };
             let mut scores = [0.0_f32; QUERY_TILE * KEY_TILE];
+            #[cfg(target_arch = "x86_64")]
+            let mut transposed = prefill64::KeyTile([0.0; 64 * KEY_TILE]);
             let mut maxima = [0.0_f32; QUERY_TILE];
             let mut denominators = [0.0_f32; QUERY_TILE];
             // Pure prefill has no segmented K boundary and leaves this empty.
@@ -971,31 +1046,55 @@ fn attention_gemm_compact(
                         }
                         (boundary_keys.as_slice(), 0, head_dim as isize)
                     };
+                    #[cfg(target_arch = "x86_64")]
+                    let tiled = fast && prefill64::qk_uses_main_path(queries, keys);
+                    #[cfg(not(target_arch = "x86_64"))]
+                    let tiled = false;
+                    #[cfg(target_arch = "x86_64")]
+                    if tiled {
+                        // SAFETY: AVX2/FMA detected; the same validated operands
+                        // as the gemm call below, rows of 64 floats at the strides.
+                        unsafe {
+                            prefill64::qk(
+                                q.as_ptr().add(q_start),
+                                query_width,
+                                queries,
+                                key_data.as_ptr().add(key_start_offset),
+                                key_stride as usize,
+                                keys,
+                                scale,
+                                &mut scores,
+                                &mut transposed,
+                            );
+                        }
+                    }
                     // SAFETY: The public compact entry validates shapes. The K
                     // interval is entirely in one buffer or gathered contiguously;
                     // no matrix straddles the separately allocated cache segments.
-                    unsafe {
-                        gemm::gemm(
-                            queries,
-                            keys,
-                            head_dim,
-                            scores.as_mut_ptr(),
-                            1,
-                            KEY_TILE as isize,
-                            false,
-                            q.as_ptr().add(q_start),
-                            1,
-                            query_stride,
-                            key_data.as_ptr().add(key_start_offset),
-                            key_stride,
-                            1,
-                            0.0_f32,
-                            scale,
-                            false,
-                            false,
-                            false,
-                            gemm::Parallelism::None,
-                        );
+                    if !tiled {
+                        unsafe {
+                            gemm::gemm(
+                                queries,
+                                keys,
+                                head_dim,
+                                scores.as_mut_ptr(),
+                                1,
+                                KEY_TILE as isize,
+                                false,
+                                q.as_ptr().add(q_start),
+                                1,
+                                query_stride,
+                                key_data.as_ptr().add(key_start_offset),
+                                key_stride,
+                                1,
+                                0.0_f32,
+                                scale,
+                                false,
+                                false,
+                                false,
+                                gemm::Parallelism::None,
+                            );
+                        }
                     }
                     for row in 0..queries {
                         let absolute = first_absolute + row;
@@ -1034,30 +1133,52 @@ fn attention_gemm_compact(
                         maxima[row] = new_max;
                     }
                     let value_start = key_start * kv_width + kv_head * head_dim;
+                    #[cfg(target_arch = "x86_64")]
+                    let tiled = fast && prefill64::pv_uses_main_path(queries, keys);
+                    #[cfg(not(target_arch = "x86_64"))]
+                    let tiled = false;
+                    #[cfg(target_arch = "x86_64")]
+                    if tiled {
+                        // SAFETY: AVX2/FMA detected; V rows and output rows are
+                        // the gemm call's operands with the same strides.
+                        unsafe {
+                            prefill64::pv(
+                                &scores,
+                                queries,
+                                keys,
+                                v.as_ptr().add(value_start),
+                                kv_width,
+                                out.as_mut_ptr().add(head * head_dim),
+                                query_width,
+                            );
+                        }
+                    }
                     // The compact value row stride is smaller, but the GEMM
                     // dimensions and accumulation order match expanded attention.
-                    unsafe {
-                        gemm::gemm(
-                            queries,
-                            head_dim,
-                            keys,
-                            out.as_mut_ptr().add(head * head_dim),
-                            1,
-                            query_stride,
-                            true,
-                            scores.as_ptr(),
-                            1,
-                            KEY_TILE as isize,
-                            v.as_ptr().add(value_start),
-                            1,
-                            kv_stride,
-                            1.0_f32,
-                            1.0_f32,
-                            false,
-                            false,
-                            false,
-                            gemm::Parallelism::None,
-                        );
+                    if !tiled {
+                        unsafe {
+                            gemm::gemm(
+                                queries,
+                                head_dim,
+                                keys,
+                                out.as_mut_ptr().add(head * head_dim),
+                                1,
+                                query_stride,
+                                true,
+                                scores.as_ptr(),
+                                1,
+                                KEY_TILE as isize,
+                                v.as_ptr().add(value_start),
+                                1,
+                                kv_stride,
+                                1.0_f32,
+                                1.0_f32,
+                                false,
+                                false,
+                                false,
+                                gemm::Parallelism::None,
+                            );
+                        }
                     }
                 }
                 for row in 0..queries {
@@ -1319,6 +1440,74 @@ mod tests {
             }
         }
         out
+    }
+
+    #[test]
+    fn fused_glu_is_bitwise_linear_then_gate() {
+        // Real FFN widths plus odd widths; gates include NaN, signed zeros and
+        // negatives so every branch of the squared-ReLU expression is exercised.
+        for (in_dim, ffn_dim) in [(768, 2304), (65, 19), (1, 1)] {
+            let mut weights = values(2 * ffn_dim * in_dim, 7);
+            for (i, w) in weights.iter_mut().enumerate().step_by(97) {
+                *w = [f32::NAN, 0.0, -0.0, -3.0][i % 4];
+            }
+            for simd in implementations() {
+                for rows in 1..=8 {
+                    let input = values(rows * in_dim, 11 + rows as u32);
+                    let mut packed = vec![0.0; rows * 2 * ffn_dim];
+                    linear_with_simd(
+                        &input,
+                        rows,
+                        in_dim,
+                        &weights,
+                        2 * ffn_dim,
+                        &mut packed,
+                        simd,
+                    );
+                    let mut expected = vec![0.0; rows * ffn_dim];
+                    squared_relu_gate(&packed, &mut expected);
+                    let mut fused = vec![f32::INFINITY; rows * ffn_dim];
+                    assert!(linear_glu_with_simd(
+                        &input, rows, in_dim, &weights, ffn_dim, &mut fused, simd
+                    ));
+                    for (a, b) in fused.iter().zip(&expected) {
+                        assert_eq!(a.to_bits(), b.to_bits(), "{simd:?} rows {rows} in {in_dim}");
+                    }
+                }
+            }
+        }
+        let mut unused = vec![0.0; 9];
+        assert!(!linear_glu_with_simd(
+            &values(9 * 4, 1),
+            9,
+            4,
+            &values(2 * 4, 2),
+            1,
+            &mut unused,
+            Simd::Scalar
+        ));
+    }
+
+    #[test]
+    fn serial_rms_norm_rows_match_parallel_rows() {
+        // Small inputs run serially; the same rows inside a large (parallel)
+        // input must normalize to identical bits.
+        for width in [64, 768] {
+            let small_rows = RMS_NORM_SERIAL_ELEMENTS / width;
+            let large_rows = small_rows * 3;
+            let large = values(large_rows * width, 5);
+            let affine = values(width, 9);
+            for weight in [None, Some(affine.as_slice())] {
+                let mut parallel = vec![0.0; large.len()];
+                rms_norm(&large, &mut parallel, width, 1e-5, weight);
+                let small = &large[..small_rows * width];
+                let mut serial = vec![0.0; small.len()];
+                rms_norm(small, &mut serial, width, 1e-5, weight);
+                for (a, b) in serial.iter().zip(&parallel) {
+                    assert_eq!(a.to_bits(), b.to_bits(), "width {width}");
+                }
+            }
+        }
     }
 
     #[test]

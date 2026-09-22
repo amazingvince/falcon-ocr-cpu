@@ -2,7 +2,6 @@
 //! production backend or modify the frozen numerical acceptance policy.
 use super::*;
 use crate::trace::TensorTrace;
-use rayon::prelude::*;
 
 fn cuda_tree_rms(
     input: &[f32],

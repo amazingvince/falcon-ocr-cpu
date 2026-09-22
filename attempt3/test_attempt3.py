@@ -107,7 +107,8 @@ class AttentionMathTests(unittest.TestCase):
 
 class ComparisonTests(unittest.TestCase):
     def report(self,profile="reference",time_ms=100.0):
-        out={"width":1088,"height":1536,"input_tokens":6544,"output_tokens":3,"finish_reason":"eos","token_ids":[1,2,11],"text":"total 12.3"}
+        out={"width":1088,"height":1536,"input_tokens":6544,"output_tokens":3,"finish_reason":"eos","token_ids":[1,2,11],"text":"total 12.3",
+             "timings":{"prefill_ms":10.0,"decode_ms":20.0,"total_ms":30.0}}
         return {"schema":"falcon-ocr-attempt3-report-v1","profile":profile,"weights_sha256":"weights","model_revision":"v15",
                 "threads":16,"backend":"auto","batch_size":1,"options":{"max_new_tokens":4096},
                 "inputs":[{"sha256":"image"}],"binary_sha256":"binary",
@@ -157,6 +158,40 @@ class ComparisonTests(unittest.TestCase):
         for a,b,expected in [("kitten","sitting",3),("x","",1),("abc","abc",0),("abcdef","abqdef",1)]:
             self.assertEqual(bench.edit_distance(a,b),expected)
         self.assertIsNone(bench.edit_distance("aaa","bbb",1))
+
+    def test_bit_parallel_levenshtein_matches_table(self):
+        import random
+        def table(a,b):
+            prev=list(range(len(b)+1))
+            for i,x in enumerate(a,1):
+                row=[i]
+                for j,y in enumerate(b,1):
+                    row.append(min(row[-1]+1,prev[j]+1,prev[j-1]+(x!=y)))
+                prev=row
+            return prev[-1]
+        rng=random.Random(7)
+        for _ in range(400):
+            a=[rng.randrange(4) for _ in range(rng.randrange(0,90))]
+            b=[rng.randrange(4) for _ in range(rng.randrange(0,90))]
+            self.assertEqual(bench.levenshtein(a,b),table(a,b))
+            self.assertEqual(bench.levenshtein("".join(map(str,a)),"".join(map(str,b))),table(a,b))
+
+    def test_divergence_metrics_for_changed_output(self):
+        c=self.report("w8-body")
+        for sample in c["samples"]:
+            sample["outputs"][0].update({"token_ids":[1,5,11],"text":"total 15.3"})
+        page=bench.compare(self.report(),c,self.report())["pages"][0]
+        self.assertEqual((page["first_divergence_token"],page["token_edit_distance"],page["text_edit_distance"]),(1,1,1))
+        self.assertIsNone(bench.first_divergence([1,2],[1,2]))
+        self.assertEqual(bench.first_divergence([1,2],[1,2,3]),2)
+
+    def test_schedules_share_or_repeat_controls(self):
+        arms,triples=bench.schedule(["a","b","c"],"interleaved",2)
+        self.assertEqual(arms,["reference","a","b","reference","c","reference"])
+        self.assertEqual(triples,[(0,1,3),(0,2,3),(3,4,5)])
+        arms,triples=bench.schedule(["a","b"],"bracket",2)
+        self.assertEqual(arms,["reference","a","reference","reference","b","reference"])
+        self.assertEqual(triples,[(0,1,2),(3,4,5)])
 
     def test_manifest_validation(self):
         with tempfile.TemporaryDirectory() as d:
@@ -212,7 +247,10 @@ class WiringTests(unittest.TestCase):
     def test_no_silent_switch_to_original_weights(self):
         model=(ROOT/"src/model.rs").read_text()
         block=model[model.index("pub(crate) fn forward"):model.index("fn decode_linear")]
-        self.assertEqual(block.count("self.linear("),10)
+        # W13 routes through linear_glu, which itself dispatches via self.linear.
+        self.assertEqual(block.count("self.linear(")+block.count("self.linear_glu("),10)
+        glu=model[model.index("fn linear_glu("):model.index("fn w(&self")]
+        self.assertEqual(glu.count("self.linear("),1)
         self.assertNotIn("self.w(&layer.qkv)",block)
         self.assertIn("scratch.dense",(ROOT/"src/attempt/quant.rs").read_text())
 

@@ -14,6 +14,9 @@ pub trait Trace: Send {
     fn decode_step(&mut self, _rows: usize, _ms: f64, _kv_bytes: usize) {}
     fn prefix_sealed(&mut self, _before: usize, _after: usize, _ms: f64) {}
     fn cache_retired(&mut self, _bytes: usize) {}
+    /// One screened vocabulary-head selection: rows recomputed exactly, and
+    /// whether the step fell back to the full FP32 head.
+    fn head_screen(&mut self, _candidates: usize, _fallback: bool) {}
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()>;
 }
 pub struct NoTrace;
@@ -57,6 +60,9 @@ impl Trace for PrefixedTrace<'_> {
     }
     fn cache_retired(&mut self, bytes: usize) {
         self.inner.cache_retired(bytes);
+    }
+    fn head_screen(&mut self, candidates: usize, fallback: bool) {
+        self.inner.head_screen(candidates, fallback);
     }
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
         self.inner

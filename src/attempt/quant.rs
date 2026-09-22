@@ -225,15 +225,10 @@ mod tests {
     }
 }
 
+/// Large-M expansion target; decode (1..=8 rows) writes outputs directly.
 #[derive(Default)]
 pub(crate) struct Scratch {
     pub dense: Vec<f32>,
-    pub channel_major: Vec<f32>,
-}
-impl Scratch {
-    pub fn reserve_decode(&mut self, rows: usize, vocabulary: usize) {
-        self.channel_major.resize(rows * vocabulary, 0.0);
-    }
 }
 impl Q8Linear {
     /// Import the exact custom W8G64 encoding, not GGML Q8_0/Q8_K.
@@ -289,6 +284,15 @@ impl Q8Linear {
 
     /// Same reconstructed weights at every phase. Large-M uses one reusable
     /// dense scratch matrix, never the original full-precision weights.
+    ///
+    /// 1..=8 rows compute each output with the FP32 GEMV kernel's exact
+    /// operation sequence over `fl(code * scale)` weights (four phase
+    /// accumulators, the same reduction tree and scalar tail on AVX2; the same
+    /// iterator sum on the scalar path). The result is therefore bitwise equal
+    /// to `kernels::linear_with_simd` on the dequantized matrix, which also
+    /// makes large-M (dequantize, then the same GEMM) consistent by
+    /// construction. NaN/Inf are not scanned here: they propagate exactly as in
+    /// the FP32 graph and are rejected by greedy selection.
     pub(crate) fn linear(
         &self,
         input: &[f32],
@@ -304,10 +308,6 @@ impl Q8Linear {
         ensure!(
             rows.checked_mul(self.out_dim) == Some(output.len()),
             "W8 output shape"
-        );
-        ensure!(
-            input.iter().all(|x| x.is_finite()),
-            "nonfinite W8 activation"
         );
         simd.validate().map_err(anyhow::Error::msg)?;
         if rows == 0 {
@@ -329,103 +329,142 @@ impl Q8Linear {
                 output,
                 simd,
             );
-        } else {
-            let selected = simd.resolved();
-            #[cfg(target_arch = "x86_64")]
-            let use_avx2 = selected != crate::kernels::Simd::Scalar
-                && std::is_x86_feature_detected!("avx2")
-                && std::is_x86_feature_detected!("fma");
-            #[cfg(not(target_arch = "x86_64"))]
-            let use_avx2 = {
-                let _ = selected;
-                false
-            };
-            scratch.channel_major.resize(rows * self.out_dim, 0.0);
-            // A task owns all active rows for one output channel. Weight values
-            // are unpacked once per channel and reused across up to eight rows.
-            scratch
-                .channel_major
-                .par_chunks_mut(rows)
-                .enumerate()
-                .with_min_len(16)
-                .for_each(|(channel, dst)| {
-                    #[cfg(target_arch = "x86_64")]
-                    if use_avx2 {
-                        // SAFETY: feature and shape checks above bound all loads.
-                        unsafe {
-                            self.channel_avx2(input, rows, channel, dst);
-                        }
-                        return;
-                    }
-                    let _ = use_avx2;
-                    self.channel_scalar(input, rows, channel, dst);
-                });
-            output
-                .par_chunks_mut(self.out_dim)
-                .enumerate()
-                .for_each(|(r, dst)| {
-                    for (c, y) in dst.iter_mut().enumerate() {
-                        *y = scratch.channel_major[c * rows + r];
-                    }
-                });
+            return Ok(());
         }
-        ensure!(
-            output.iter().all(|x| x.is_finite()),
-            "nonfinite W8 accumulation"
-        );
+        let selected = simd.resolved();
+        #[cfg(target_arch = "x86_64")]
+        let use_avx2 = selected != crate::kernels::Simd::Scalar
+            && std::is_x86_feature_detected!("avx2")
+            && std::is_x86_feature_detected!("fma");
+        #[cfg(not(target_arch = "x86_64"))]
+        let use_avx2 = {
+            let _ = selected;
+            false
+        };
+        let (in_dim, out_dim) = (self.in_dim, self.out_dim);
+        let groups = in_dim.div_ceil(self.group_size);
+        let output_ptr = OutputPtr(output.as_mut_ptr());
+        // A task owns a block of output channels for every active row, so a
+        // channel's codes are reused from L1 across rows. Blocks are disjoint.
+        let block = if rows == 1 { 32 } else { 16 };
+        (0..out_dim.div_ceil(block)).into_par_iter().for_each(|b| {
+            let output = output_ptr.get();
+            for channel in b * block..((b + 1) * block).min(out_dim) {
+                let codes = &self.codes[channel * in_dim..(channel + 1) * in_dim];
+                let scales = &self.scales[channel * groups..(channel + 1) * groups];
+                for row in 0..rows {
+                    let x = &input[row * in_dim..(row + 1) * in_dim];
+                    #[cfg(target_arch = "x86_64")]
+                    let value = if use_avx2 {
+                        // SAFETY: AVX2/FMA detected; slices have equal lengths.
+                        unsafe { dot_q8_avx2(x, codes, scales, self.group_size) }
+                    } else {
+                        dot_q8_scalar(x, codes, scales, self.group_size)
+                    };
+                    #[cfg(not(target_arch = "x86_64"))]
+                    let value = {
+                        let _ = use_avx2;
+                        dot_q8_scalar(x, codes, scales, self.group_size)
+                    };
+                    // SAFETY: (row, channel) lies inside `rows * out_dim`, and
+                    // exactly one task writes each channel for all rows.
+                    unsafe { *output.add(row * out_dim + channel) = value };
+                }
+            }
+        });
         Ok(())
     }
-    fn channel_scalar(&self, input: &[f32], rows: usize, channel: usize, output: &mut [f32]) {
-        output.fill(0.0);
-        let groups = self.in_dim.div_ceil(self.group_size);
-        for k in 0..self.in_dim {
-            let w = self.codes[channel * self.in_dim + k] as f32
-                * self.scales[channel * groups + k / self.group_size];
-            for r in 0..rows {
-                output[r] = input[r * self.in_dim + k].mul_add(w, output[r]);
-            }
+}
+
+/// Output base pointer shared by tasks that write disjoint elements.
+#[derive(Clone, Copy)]
+struct OutputPtr(*mut f32);
+// SAFETY: tasks write disjoint (row, channel) elements of one exclusive borrow.
+unsafe impl Send for OutputPtr {}
+unsafe impl Sync for OutputPtr {}
+impl OutputPtr {
+    fn get(self) -> *mut f32 {
+        self.0
+    }
+}
+
+/// `kernels::dot_scalar` over `fl(code * scale)` weights, same iterator sum.
+fn dot_q8_scalar(x: &[f32], codes: &[i8], scales: &[f32], group_size: usize) -> f32 {
+    x.iter()
+        .zip(codes)
+        .enumerate()
+        .map(|(k, (value, &code))| value * (code as f32 * scales[k / group_size]))
+        .sum()
+}
+
+/// `kernels::x86::dot_avx2` over `fl(code * scale)` weights: four phase
+/// accumulators per 32-element block, the same combination tree, the same
+/// eight-wide tail and the same unfused scalar tail. Eight-element loads never
+/// straddle a quantization group because group sizes are multiples of 32.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn dot_q8_avx2(x: &[f32], codes: &[i8], scales: &[f32], group_size: usize) -> f32 {
+    use std::arch::x86_64::*;
+    debug_assert_eq!(x.len(), codes.len());
+    debug_assert_eq!(group_size % 32, 0);
+    #[inline(always)]
+    unsafe fn weights(codes: &[i8], scales: &[f32], group_size: usize, i: usize) -> __m256 {
+        // SAFETY: caller keeps i + 8 <= len; unaligned 8-byte load.
+        unsafe {
+            let packed = _mm_loadl_epi64(codes.as_ptr().add(i).cast());
+            _mm256_mul_ps(
+                _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(packed)),
+                _mm256_set1_ps(*scales.get_unchecked(i / group_size)),
+            )
         }
     }
-    #[cfg(target_arch = "x86_64")]
-    #[target_feature(enable = "avx2,fma")]
-    unsafe fn channel_avx2(&self, input: &[f32], rows: usize, channel: usize, output: &mut [f32]) {
-        use std::arch::x86_64::*;
-        // Every eight-byte code load is inside a row/group; tails use scalar
-        // reads. No global target-cpu=native or integer activation approximation.
-        unsafe {
-            let mut accum = [_mm256_setzero_ps(); 8];
-            let mut tails = [0.0_f32; 8];
-            let groups = self.in_dim.div_ceil(self.group_size);
-            for group in 0..groups {
-                let scale = self.scales[channel * groups + group];
-                let sv = _mm256_set1_ps(scale);
-                let mut k = group * self.group_size;
-                let end = (k + self.group_size).min(self.in_dim);
-                while k + 8 <= end {
-                    let packed =
-                        _mm_loadl_epi64(self.codes.as_ptr().add(channel * self.in_dim + k).cast());
-                    let w = _mm256_mul_ps(_mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(packed)), sv);
-                    for r in 0..rows {
-                        let x = _mm256_loadu_ps(input.as_ptr().add(r * self.in_dim + k));
-                        accum[r] = _mm256_fmadd_ps(x, w, accum[r]);
-                    }
-                    k += 8;
-                }
-                for k in k..end {
-                    let w = self.codes[channel * self.in_dim + k] as f32 * scale;
-                    for r in 0..rows {
-                        tails[r] = input[r * self.in_dim + k].mul_add(w, tails[r]);
-                    }
-                }
-            }
-            for r in 0..rows {
-                let mut lane = [0.0_f32; 8];
-                _mm256_storeu_ps(lane.as_mut_ptr(), accum[r]);
-                let a = (lane[0] + lane[1]) + (lane[2] + lane[3]);
-                let b = (lane[4] + lane[5]) + (lane[6] + lane[7]);
-                output[r] = (a + b) + tails[r];
-            }
+    // SAFETY: every vector load stays below x.len() == codes.len().
+    unsafe {
+        let mut acc0 = _mm256_setzero_ps();
+        let mut acc1 = _mm256_setzero_ps();
+        let mut acc2 = _mm256_setzero_ps();
+        let mut acc3 = _mm256_setzero_ps();
+        let mut i = 0;
+        while i + 32 <= x.len() {
+            acc0 = _mm256_fmadd_ps(
+                _mm256_loadu_ps(x.as_ptr().add(i)),
+                weights(codes, scales, group_size, i),
+                acc0,
+            );
+            acc1 = _mm256_fmadd_ps(
+                _mm256_loadu_ps(x.as_ptr().add(i + 8)),
+                weights(codes, scales, group_size, i + 8),
+                acc1,
+            );
+            acc2 = _mm256_fmadd_ps(
+                _mm256_loadu_ps(x.as_ptr().add(i + 16)),
+                weights(codes, scales, group_size, i + 16),
+                acc2,
+            );
+            acc3 = _mm256_fmadd_ps(
+                _mm256_loadu_ps(x.as_ptr().add(i + 24)),
+                weights(codes, scales, group_size, i + 24),
+                acc3,
+            );
+            i += 32;
         }
+        let mut acc = _mm256_add_ps(_mm256_add_ps(acc0, acc1), _mm256_add_ps(acc2, acc3));
+        while i + 8 <= x.len() {
+            acc = _mm256_fmadd_ps(
+                _mm256_loadu_ps(x.as_ptr().add(i)),
+                weights(codes, scales, group_size, i),
+                acc,
+            );
+            i += 8;
+        }
+        let halves = _mm_add_ps(_mm256_castps256_ps128(acc), _mm256_extractf128_ps::<1>(acc));
+        let pairs = _mm_hadd_ps(halves, halves);
+        let mut sum = _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs));
+        while i < x.len() {
+            sum += x[i] * (codes[i] as f32 * scales[i / group_size]);
+            i += 1;
+        }
+        sum
     }
 }
 
@@ -467,6 +506,46 @@ mod integrated_tests {
                                     <= 4.0 * k as f64 * f32::EPSILON as f64 * magnitude + 1e-6
                             );
                         }
+                    }
+                }
+            }
+        }
+    }
+    #[test]
+    fn small_m_is_bitwise_fp32_on_dequantized_weights() {
+        // The oracle for every W8 decode result: the FP32 GEMV on fl(code*scale).
+        for (n, k) in [(37, 768), (5, 1024), (3, 2304), (4, 65), (2, 31)] {
+            let w: Vec<_> = (0..n * k)
+                .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
+                .collect();
+            let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
+            let mut dense = vec![0.0; n * k];
+            for r in 0..n {
+                q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
+            }
+            for backend in [Simd::Scalar, Simd::Auto, Simd::Avx2]
+                .into_iter()
+                .filter(|s| s.validate().is_ok())
+            {
+                for rows in 1..=8 {
+                    let x: Vec<_> = (0..rows * k)
+                        .map(|i| ((i * 104729 % 1009) as f32 - 504.0) / 311.0)
+                        .collect();
+                    let mut expected = vec![0.0; rows * n];
+                    crate::kernels::linear_with_simd(
+                        &x,
+                        rows,
+                        k,
+                        &dense,
+                        n,
+                        &mut expected,
+                        backend,
+                    );
+                    let mut out = vec![f32::NAN; rows * n];
+                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend)
+                        .unwrap();
+                    for (a, b) in out.iter().zip(&expected) {
+                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} rows{rows}");
                     }
                 }
             }

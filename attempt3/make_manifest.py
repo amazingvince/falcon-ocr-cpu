@@ -11,6 +11,8 @@ def main():
     p.add_argument("--max-new-tokens", type=int, default=4096)
     p.add_argument("--max-dimension", type=int, default=1536)
     p.add_argument("--include-batch", action="store_true")
+    p.add_argument("--sibling-ground-truth", action="store_true",
+                   help="attach <image dir>/ground-truth.txt (corpus layout) for exact CER diagnostics")
     a = p.parse_args()
     if a.output.exists() or not all(x.is_file() for x in a.images):
         p.error("select existing images and a new output path")
@@ -18,6 +20,13 @@ def main():
         p.error("choose positive token budget and a max dimension >=64 divisible by 16")
     cases = [{"id": f"page-{i+1}", "images": [str(x.resolve())], "batch_size": 1,
               "max_new_tokens": a.max_new_tokens, "max_dimension": a.max_dimension} for i,x in enumerate(a.images)]
+    if a.sibling_ground_truth:
+        for case, image in zip(cases, a.images):
+            truth = image.resolve().parent / "ground-truth.txt"
+            if not truth.is_file():
+                p.error(f"missing {truth}")
+            case["id"] = image.resolve().parent.name
+            case["ground_truth"] = [str(truth)]
     if a.include_batch:
         if not 2 <= len(a.images) <= 8:
             p.error("batch example needs 2..8 images; prefer distinct long-output pages")

@@ -18,8 +18,12 @@ CONFIG_SHA256 = "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794ad
 FORMAT = "falcon-ocr-attempt3-w8g64-v1"
 
 def sha256(path: Path) -> str:
+    # Chunked rather than hashlib.file_digest so Python 3.10 also works.
+    digest = hashlib.sha256()
     with path.open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
+        for chunk in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 def encode(values: np.ndarray, group_size: int = 64) -> tuple[np.ndarray, np.ndarray]:
     """Same FP64 scale division/round-to-even contract as uploaded q8_reference.rs."""

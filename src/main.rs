@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, Bf16Model, Bf16Runner, CacheLayout, GenerationOptions, Model, Precision, Runner,
-    RunnerConfig, WeightLayout, trace::TensorTrace,
+    Backend, Bf16Model, Bf16Runner, CacheLayout, GenerationOptions, HeadMode, Model, Precision,
+    Runner, RunnerConfig, WeightLayout, trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -27,6 +27,10 @@ struct Cli {
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
     #[arg(long, value_enum, default_value = "unpacked", global = true)]
     weight_layout: WeightLayout,
+    /// FP32 greedy head: `screened` selects the same tokens through an exact
+    /// INT8 screen (53 MB extra); traces always record full logits.
+    #[arg(long, value_enum, default_value = "full", global = true)]
+    head: HeadMode,
     #[command(subcommand)]
     command: Command,
 }
@@ -91,7 +95,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
     eprintln!("Verified model loaded in {load_ms:.1} ms");
-    let runner = Runner::new(
+    let mut runner = Runner::new(
         model,
         &cli.model,
         RunnerConfig {
@@ -102,6 +106,7 @@ fn main() -> Result<()> {
             weight_layout: cli.weight_layout,
         },
     )?;
+    runner.set_head_mode(cli.head)?;
     match cli.command {
         Command::Run {
             images,
@@ -146,6 +151,10 @@ fn main() -> Result<()> {
 }
 
 fn execute_bf16(cli: Cli) -> Result<()> {
+    anyhow::ensure!(
+        cli.head == HeadMode::Full,
+        "the experimental BF16 graph has no screened head"
+    );
     let config = RunnerConfig {
         threads: cli.threads,
         backend: cli.backend,

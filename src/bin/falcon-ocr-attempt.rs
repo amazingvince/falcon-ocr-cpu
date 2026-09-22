@@ -2,7 +2,7 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout,
+    Backend, CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout,
     attempt::{Profile, Telemetry},
     trace::TensorTrace,
 };
@@ -30,6 +30,9 @@ struct Cli {
     /// Custom W8G64 safetensors overlay, made by attempt3/convert_w8.py.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
+    /// FP32 greedy head evaluation; `screened` is exact (same tokens as `full`).
+    #[arg(long, value_enum, default_value = "full", global = true)]
+    head: HeadMode,
     #[command(subcommand)]
     command: Command,
 }
@@ -154,7 +157,7 @@ fn main() -> Result<()> {
     )?);
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.attempt_memory_report();
-    let runner = Runner::new(
+    let mut runner = Runner::new(
         model.clone(),
         &args.model,
         RunnerConfig {
@@ -165,6 +168,7 @@ fn main() -> Result<()> {
             weight_layout: WeightLayout::Unpacked,
         },
     )?;
+    runner.set_head_mode(args.head)?;
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
         args.profile.label(),
@@ -205,9 +209,10 @@ fn main() -> Result<()> {
                 "quality_qualified":false,"model_revision":falcon_ocr::config::MODEL_REVISION,
                 "weights_sha256":model.weights_sha256(),"binary_sha256":digest(&std::env::current_exe()?)?,
                 "hardware":hardware,"threads":args.threads,"backend":args.backend,"batch_size":args.batch_size,
+                "head":args.head,"screened_head_bytes":model.screened_head_bytes(),
                 "schedule":"fixed cohorts; layer-major decode; opt-in completed-cache retirement; no refill",
                 "options":options,"inputs":inputs,"warmup":warmup,"load_and_import_ms":load_ms,
-                "memory_policy":memory,"samples":records,
+                "memory_policy":memory,"process_memory":falcon_ocr::attempt::process_memory(),"samples":records,
                 "timing_scope":"warm model, original encoded files to all returned text; load/import excluded; report serialization excluded",
                 "limits":"KV counters are persistent-allocation snapshots, not OS RSS or transient conversion peaks. Source F32 mapping remains."});
             write_new(&report, &report_value)

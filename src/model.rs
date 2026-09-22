@@ -9,11 +9,13 @@ use std::{
 
 use anyhow::{Context, Result, bail, ensure};
 use memmap2::Mmap;
+use rayon::prelude::*;
 use safetensors::{Dtype, SafeTensors};
 use sha2::{Digest, Sha256};
 
 use crate::{
     config::{CONFIG_SHA256, CacheLayout, ModelConfig, WEIGHTS_SHA256, WeightLayout},
+    head_screen::Screened,
     kernels,
     packed_kernels::PhasePackedLinear,
     trace::Trace,
@@ -56,6 +58,7 @@ pub struct Model {
     temporal: Vec<[f32; 2]>,
     layers: Vec<Layer>,
     packed: OnceLock<PackedWeights>,
+    screened: OnceLock<crate::head_screen::ScreenedHead>,
     attempt_profile: crate::attempt::Profile,
     attempt_setup_ms: f64,
     attempt_artifact_sha256: Option<String>,
@@ -73,6 +76,25 @@ impl Model {
     /// This remains resident if another Runner on this Model enabled packing.
     pub fn packed_weight_bytes(&self) -> usize {
         self.packed.get().map_or(0, |p| p.tensor_bytes)
+    }
+    /// Build and verify the INT8 screen of the FP32 vocabulary head once per
+    /// model. Greedy selection through it is exact; see `head_screen`.
+    pub(crate) fn prepare_screened_head(&self) -> Result<()> {
+        ensure!(
+            self.output.quantized.is_none(),
+            "the screened head requires the FP32 vocabulary head"
+        );
+        if self.screened.get().is_none() {
+            let c = &self.config;
+            let head =
+                crate::head_screen::ScreenedHead::build(self.w(&self.output), c.vocab_size, c.dim)?;
+            let _ = self.screened.set(head);
+        }
+        Ok(())
+    }
+    /// Payload of the INT8 head screen, or zero if it was never prepared.
+    pub fn screened_head_bytes(&self) -> usize {
+        self.screened.get().map_or(0, |h| h.payload_bytes())
     }
     /// Time spent constructing the one shared packed copy, or zero if absent.
     pub fn weight_packing_ms(&self) -> f64 {
@@ -213,6 +235,7 @@ impl Model {
             temporal,
             layers,
             packed: OnceLock::new(),
+            screened: OnceLock::new(),
             attempt_profile: crate::attempt::Profile::Reference,
             attempt_setup_ms: 0.0,
             attempt_artifact_sha256: None,
@@ -417,6 +440,52 @@ impl Model {
         }
     }
 
+    /// W13 projection followed by the squared-ReLU gate. FP32 weights with
+    /// 1..=8 rows and no phase-packed copy use the fused kernel; every other
+    /// case keeps the two original operations. Results are bit-identical.
+    #[allow(clippy::too_many_arguments)]
+    fn linear_glu(
+        &self,
+        input: &[f32],
+        rows: usize,
+        w13: &Weight,
+        packed: Option<&PhasePackedLinear>,
+        intermediate: &mut [f32],
+        gated: &mut [f32],
+        scratch: &mut crate::attempt::quant::Scratch,
+        simd: kernels::Simd,
+    ) -> Result<()> {
+        let c = &self.config;
+        let packed_rows = packed.is_some() && (2..=8).contains(&rows);
+        if w13.quantized.is_none()
+            && !packed_rows
+            && kernels::linear_glu_with_simd(
+                input,
+                rows,
+                c.dim,
+                self.w(w13),
+                c.ffn_dim,
+                gated,
+                simd,
+            )
+        {
+            return Ok(());
+        }
+        self.linear(
+            input,
+            rows,
+            c.dim,
+            w13,
+            packed,
+            2 * c.ffn_dim,
+            intermediate,
+            scratch,
+            simd,
+        )?;
+        kernels::squared_relu_gate(intermediate, gated);
+        Ok(())
+    }
+
     fn w(&self, weight: &Weight) -> &[f32] {
         bytemuck::cast_slice(&self.map[weight.range.clone()])
     }
@@ -485,6 +554,25 @@ impl Model {
         trace: &mut dyn Trace,
         phase: &str,
     ) -> Result<&'s [f32]> {
+        match self.forward_next(h, positions, positions_hw, session, trace, phase, false)? {
+            Next::Logits(logits) => Ok(logits),
+            Next::Tokens(_) => unreachable!("full head requested"),
+        }
+    }
+
+    /// `forward`, optionally selecting the greedy token through the exact
+    /// screened head. Tracing always evaluates and records the full logits.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn forward_next<'s>(
+        &self,
+        h: &mut [f32],
+        positions: &[usize],
+        positions_hw: &[[f32; 2]],
+        session: &'s mut Session,
+        trace: &mut dyn Trace,
+        phase: &str,
+        screen: bool,
+    ) -> Result<Next<'s>> {
         let c = &self.config;
         let rows = positions.len();
         ensure!(
@@ -536,19 +624,34 @@ impl Model {
             )?;
             // Normalize each original K head before GQA expansion. Spatial rotations
             // subsequently differ for paired heads, so expanded keys are intentional.
-            for r in 0..rows {
-                let qkv = &work.qkv[r * qkv_width..(r + 1) * qkv_width];
+            let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
                 for head in 0..c.n_heads {
-                    let dst = (r * c.n_heads + head) * c.head_dim;
-                    work.q[dst..dst + c.head_dim]
+                    let dst = head * c.head_dim;
+                    q[dst..dst + c.head_dim]
                         .copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
                     let kvhead = head / (c.n_heads / c.n_kv_heads);
                     let kstart = qdim + kvhead * c.head_dim;
-                    work.k[dst..dst + c.head_dim]
-                        .copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
+                    k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
                     let vstart = qdim + kdim + kvhead * c.head_dim;
-                    work.v[dst..dst + c.head_dim]
-                        .copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
+                    v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
+                }
+            };
+            if rows >= PARALLEL_ROWS {
+                work.qkv
+                    .par_chunks(qkv_width)
+                    .zip(work.q.par_chunks_mut(qdim))
+                    .zip(work.k.par_chunks_mut(qdim))
+                    .zip(work.v.par_chunks_mut(qdim))
+                    .for_each(|(((qkv, q), k), v)| split(qkv, q, k, v));
+            } else {
+                for (((qkv, q), k), v) in work
+                    .qkv
+                    .chunks(qkv_width)
+                    .zip(work.q.chunks_mut(qdim))
+                    .zip(work.k.chunks_mut(qdim))
+                    .zip(work.v.chunks_mut(qdim))
+                {
+                    split(qkv, q, k, v);
                 }
             }
             // Normalize all heads in two calls; avoid creating a Rayon operation
@@ -557,13 +660,12 @@ impl Model {
             std::mem::swap(&mut work.q, &mut work.attn);
             kernels::rms_norm(&work.k, &mut work.attn, c.head_dim, f32::EPSILON, None);
             std::mem::swap(&mut work.k, &mut work.attn);
-            for r in 0..rows {
+            let rotate = |rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32]| {
                 for head in 0..c.n_heads {
-                    let dst = (r * c.n_heads + head) * c.head_dim;
+                    let dst = head * c.head_dim;
                     for pair in 0..c.head_dim / 2 {
-                        let [cos, sin] =
-                            work.rope[(r * c.n_heads + head) * (c.head_dim / 2) + pair];
-                        for vector in [&mut work.q, &mut work.k] {
+                        let [cos, sin] = rope[head * (c.head_dim / 2) + pair];
+                        for vector in [&mut *q, &mut *k] {
                             let p = dst + 2 * pair;
                             let a = vector[p];
                             let b = vector[p + 1];
@@ -571,6 +673,22 @@ impl Model {
                             vector[p + 1] = a * sin + b * cos;
                         }
                     }
+                }
+            };
+            let rope_width = c.n_heads * (c.head_dim / 2);
+            if rows >= PARALLEL_ROWS {
+                work.rope[..rows * rope_width]
+                    .par_chunks(rope_width)
+                    .zip(work.q.par_chunks_mut(qdim))
+                    .zip(work.k.par_chunks_mut(qdim))
+                    .for_each(|((rope, q), k)| rotate(rope, q, k));
+            } else {
+                for ((rope, q), k) in work.rope[..rows * rope_width]
+                    .chunks(rope_width)
+                    .zip(work.q.chunks_mut(qdim))
+                    .zip(work.k.chunks_mut(qdim))
+                {
+                    rotate(rope, q, k);
                 }
             }
             if trace.enabled() {
@@ -622,22 +740,18 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
-            for (x, a) in h.iter_mut().zip(&work.projected) {
-                *x += a;
-            }
+            add_residual(h, &work.projected, c.dim);
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            self.linear(
+            self.linear_glu(
                 &work.normalized,
                 rows,
-                c.dim,
                 &layer.w13,
                 None,
-                2 * c.ffn_dim,
                 &mut work.ffn_packed,
+                &mut work.gated,
                 &mut work.quant_scratch,
                 simd,
             )?;
-            kernels::squared_relu_gate(&work.ffn_packed, &mut work.gated);
             self.linear(
                 &work.gated,
                 rows,
@@ -649,9 +763,7 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
-            for (x, a) in h.iter_mut().zip(&work.projected) {
-                *x += a;
-            }
+            add_residual(h, &work.projected, c.dim);
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
@@ -662,6 +774,21 @@ impl Model {
         let last = &h[(rows - 1) * c.dim..];
         let norm = &mut work.normalized[..c.dim];
         kernels::rms_norm(last, norm, c.dim, c.norm_eps, Some(self.w(&self.norm)));
+        if screen
+            && !trace.enabled()
+            && let Some(head) = self.screened.get()
+            && !work.selected.is_empty()
+        {
+            let dot = kernels::dot_kernel(simd.resolved());
+            match head.select(norm, self.w(&self.output), dot, &mut work.head) {
+                Screened::Token { token, candidates } => {
+                    trace.head_screen(candidates, false);
+                    work.selected[0] = token;
+                    return Ok(Next::Tokens(&work.selected[..1]));
+                }
+                Screened::Fallback { candidates } => trace.head_screen(candidates, true),
+            }
+        }
         work.logits.resize(c.vocab_size, 0.);
         self.linear(
             norm,
@@ -677,12 +804,16 @@ impl Model {
         if trace.enabled() {
             trace.tensor(&format!("{phase}.logits"), &[c.vocab_size], &work.logits)?;
         }
-        Ok(&work.logits)
+        Ok(Next::Logits(&work.logits))
     }
 
     /// Advance one generated token per active request. Linear projections share
     /// one matrix operation, while attention and KV storage remain per request.
-    pub(crate) fn decode_batch<'w>(
+    /// `decode_batch`, optionally selecting every row's greedy token through
+    /// the exact screened head. Any row outside the screen's assumptions makes
+    /// the whole step evaluate full logits.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn decode_batch_next<'w>(
         &self,
         tokens: &[u32],
         active: &[usize],
@@ -691,7 +822,8 @@ impl Model {
         weight_layout: WeightLayout,
         trace: &mut dyn Trace,
         phase: &str,
-    ) -> Result<&'w [f32]> {
+        screen: bool,
+    ) -> Result<Next<'w>> {
         let c = &self.config;
         let rows = tokens.len();
         let packed = if weight_layout == WeightLayout::PhasePacked && rows > 1 {
@@ -847,22 +979,18 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
-            for (x, a) in h.iter_mut().zip(&work.projected) {
-                *x += a;
-            }
+            add_residual(h, &work.projected, c.dim);
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            self.linear(
+            self.linear_glu(
                 &work.normalized,
                 rows,
-                c.dim,
                 &layer.w13,
                 packed.map(|p| &p.layers[i].w13),
-                2 * c.ffn_dim,
                 &mut work.ffn_packed,
+                &mut work.gated,
                 &mut work.quant_scratch,
                 simd,
             )?;
-            kernels::squared_relu_gate(&work.ffn_packed, &mut work.gated);
             self.linear(
                 &work.gated,
                 rows,
@@ -874,9 +1002,7 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
-            for (x, a) in h.iter_mut().zip(&work.projected) {
-                *x += a;
-            }
+            add_residual(h, &work.projected, c.dim);
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
@@ -892,6 +1018,32 @@ impl Model {
             c.norm_eps,
             Some(self.w(&self.norm)),
         );
+        if screen
+            && !trace.enabled()
+            && let Some(head) = self.screened.get()
+            && work.selected.len() >= rows
+        {
+            let dot = kernels::dot_kernel(simd.resolved());
+            let fp32 = self.w(&self.output);
+            let mut complete = true;
+            for row in 0..rows {
+                let x = &work.normalized[row * c.dim..(row + 1) * c.dim];
+                match head.select(x, fp32, dot, &mut work.head) {
+                    Screened::Token { token, candidates } => {
+                        trace.head_screen(candidates, false);
+                        work.selected[row] = token;
+                    }
+                    Screened::Fallback { candidates } => {
+                        trace.head_screen(candidates, true);
+                        complete = false;
+                        break;
+                    }
+                }
+            }
+            if complete {
+                return Ok(Next::Tokens(&work.selected[..rows]));
+            }
+        }
         work.logits.resize(rows * c.vocab_size, 0.);
         self.linear(
             &work.normalized,
@@ -911,8 +1063,16 @@ impl Model {
                 &work.logits,
             )?;
         }
-        Ok(&work.logits)
+        Ok(Next::Logits(&work.logits))
     }
+}
+
+/// Greedy decision input produced by one forward step.
+pub(crate) enum Next<'a> {
+    /// Full FP32 logits, `[rows][vocab]`; the caller selects the token.
+    Logits(&'a [f32]),
+    /// Exact FP32 argmax per row, selected through the screened head.
+    Tokens(&'a [u32]),
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -942,8 +1102,8 @@ pub(crate) struct BatchWorkspace {
     work: Workspace,
 }
 impl BatchWorkspace {
-    pub(crate) fn prepare_attempt(&mut self, rows: usize, c: &ModelConfig) {
-        self.work.quant_scratch.reserve_decode(rows, c.vocab_size);
+    pub(crate) fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
+        self.work.reserve_screened_head(model, rows);
     }
     pub fn new(rows: usize, c: &ModelConfig) -> Self {
         let mut work = Workspace::default();
@@ -1150,11 +1310,18 @@ impl Session {
         Ok(())
     }
     pub(crate) fn prepare_small_decode(&mut self, c: &ModelConfig) {
+        let head = std::mem::take(&mut self.workspace.head);
+        let selected = std::mem::take(&mut self.workspace.selected);
         self.workspace = Workspace::default();
+        self.workspace.head = head;
+        self.workspace.selected = selected;
         self.workspace.resize(1, c);
         self.workspace.rope.resize(c.query_dim() / 2, [1.0, 0.0]);
         self.workspace.logits.resize(c.vocab_size, 0.0);
-        self.workspace.quant_scratch.reserve_decode(1, c.vocab_size);
+    }
+    /// Reserve screened-head scratch so warm decode steps never allocate.
+    pub(crate) fn reserve_screened_head(&mut self, model: &Model) {
+        self.workspace.reserve_screened_head(model, 1);
     }
     /// Sequential batch prefills share one scratch allocation. The preceding
     /// request has already consumed its logits; only its KV cache is retained.
@@ -1233,8 +1400,19 @@ struct Workspace {
     gated: Vec<f32>,
     logits: Vec<f32>,
     rope: Vec<[f32; 2]>,
+    /// Screened-head scratch and per-row selected tokens; reserved before decode.
+    head: crate::head_screen::HeadScratch,
+    selected: Vec<u32>,
 }
 impl Workspace {
+    fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
+        if let Some(head) = model.screened.get() {
+            self.head.reserve(head);
+            if self.selected.len() < rows {
+                self.selected.resize(rows, 0);
+            }
+        }
+    }
     fn resize(&mut self, rows: usize, c: &ModelConfig) {
         self.normalized.resize(rows * c.dim, 0.);
         self.qkv.resize(rows * (c.query_dim() + 2 * c.kv_dim()), 0.);
@@ -1274,12 +1452,11 @@ pub(crate) fn rotary_factors(
     let pairs = c.head_dim / 2;
     let temporal_pairs = pairs / 2;
     result.resize(t.len() * c.n_heads * pairs, [1., 0.]);
-    for row in 0..t.len() {
+    let fill = |row: usize, factors: &mut [[f32; 2]]| {
         for head in 0..c.n_heads {
             for pair in 0..pairs {
                 if pair < temporal_pairs {
-                    result[(row * c.n_heads + head) * pairs + pair] =
-                        temporal[t[row] * temporal_pairs + pair];
+                    factors[head * pairs + pair] = temporal[t[row] * temporal_pairs + pair];
                     continue;
                 }
                 let angle = if hw[row][0].is_finite() && hw[row][1].is_finite() {
@@ -1289,11 +1466,43 @@ pub(crate) fn rotary_factors(
                     0.
                 };
                 let (sin, cos) = angle.sin_cos();
-                result[(row * c.n_heads + head) * pairs + pair] = [cos, sin];
+                factors[head * pairs + pair] = [cos, sin];
             }
+        }
+    };
+    let width = c.n_heads * pairs;
+    if t.len() >= PARALLEL_ROWS {
+        result
+            .par_chunks_mut(width)
+            .enumerate()
+            .for_each(|(row, factors)| fill(row, factors));
+    } else {
+        for (row, factors) in result.chunks_mut(width).enumerate() {
+            fill(row, factors);
         }
     }
 }
+
+/// `h += projected`, row-parallel for prefill-sized inputs.
+fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
+    if h.len() >= PARALLEL_ROWS * dim {
+        h.par_chunks_mut(dim)
+            .zip(projected.par_chunks(dim))
+            .for_each(|(h, a)| {
+                for (x, a) in h.iter_mut().zip(a) {
+                    *x += a;
+                }
+            });
+    } else {
+        for (x, a) in h.iter_mut().zip(projected) {
+            *x += a;
+        }
+    }
+}
+
+/// Row count from which per-row elementwise prefill work uses the pool.
+/// Decode (one to eight rows) stays serial; arithmetic is identical either way.
+const PARALLEL_ROWS: usize = 64;
 
 pub(crate) fn image_range(tokens: &[u32], c: &ModelConfig) -> Result<(usize, usize)> {
     let start = tokens

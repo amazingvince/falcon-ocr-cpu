@@ -1,6 +1,6 @@
 use crate::{
-    config::{CacheLayout, GenerationOptions, RunnerConfig, WeightLayout},
-    model::{BatchWorkspace, Model, Session, image_range, positions},
+    config::{CacheLayout, GenerationOptions, HeadMode, RunnerConfig, WeightLayout},
+    model::{BatchWorkspace, Model, Next, Session, image_range, positions},
     preprocess::{PreparedImage, prepare_file_timed, prepare_rgb},
     tokenizer::OcrTokenizer,
     trace::{NoTrace, PrefixedTrace, Trace},
@@ -69,6 +69,7 @@ pub struct Runner {
     tokenizer: OcrTokenizer,
     pool: rayon::ThreadPool,
     config: RunnerConfig,
+    head: HeadMode,
 }
 impl Runner {
     pub fn new(
@@ -103,7 +104,22 @@ impl Runner {
             tokenizer,
             pool,
             config,
+            head: HeadMode::Full,
         })
+    }
+    /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
+    /// builds and verifies an INT8 copy of the FP32 head once per `Model`
+    /// (about 53 MB) and selects exactly the same tokens as `Full`.
+    pub fn set_head_mode(&mut self, mode: HeadMode) -> Result<()> {
+        if mode == HeadMode::Screened {
+            let model = &self.model;
+            self.pool.install(|| model.prepare_screened_head())?;
+        }
+        self.head = mode;
+        Ok(())
+    }
+    pub fn head_mode(&self) -> HeadMode {
+        self.head
     }
     /// Execution settings are immutable because the owned thread pool and
     /// validated CPU feature selection are established when constructing Runner.
@@ -381,8 +397,9 @@ impl Runner {
         }
         let mut tokens = Vec::with_capacity(count);
         let mut batch = BatchWorkspace::new(active.len(), c);
-        if self.model.attempt_profile().quantizes_body() {
-            batch.prepare_attempt(active.len(), c);
+        let screen = self.head == HeadMode::Screened;
+        if screen {
+            batch.reserve_screened_head(&self.model, active.len());
         }
         let decode_started = Instant::now();
         let mut step = 0;
@@ -405,7 +422,7 @@ impl Runner {
                 trace.tensor(&format!("{phase}.request_indices"), &[active.len()], &ids)?;
             }
             let step_started = Instant::now();
-            let logits = self.model.decode_batch(
+            let next = self.model.decode_batch_next(
                 &tokens,
                 &active,
                 &mut sessions,
@@ -413,6 +430,7 @@ impl Runner {
                 self.config.weight_layout,
                 trace,
                 &phase,
+                screen,
             )?;
             trace.decode_step(
                 active.len(),
@@ -420,7 +438,7 @@ impl Runner {
                 sessions.iter().map(Session::cache_bytes).sum(),
             );
             for (row, &index) in active.iter().enumerate() {
-                let token = argmax(&logits[row * c.vocab_size..(row + 1) * c.vocab_size])?;
+                let token = select(&next, row, c.vocab_size)?;
                 let state = &mut states[index];
                 state.generated.push(token);
                 if stops.contains(&token) {
@@ -513,15 +531,25 @@ impl Runner {
         let image_projection_ms =
             self.model
                 .embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
+        let screen = self.head == HeadMode::Screened && teacher_tokens.is_empty();
+        if screen {
+            session.reserve_screened_head(&self.model);
+        }
         let transformer_started = Instant::now();
-        let logits =
-            self.model
-                .forward(&mut hidden, &pos_t, &pos_hw, &mut session, trace, "prefill")?;
+        let next = self.model.forward_next(
+            &mut hidden,
+            &pos_t,
+            &pos_hw,
+            &mut session,
+            trace,
+            "prefill",
+            screen,
+        )?;
         let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
         let mut next_token = if let Some(&forced) = teacher_tokens.first() {
             forced
         } else {
-            argmax(logits)?
+            select(&next, 0, c.vocab_size)?
         };
         if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token))
             && options.max_new_tokens > 1
@@ -559,19 +587,20 @@ impl Runner {
             } else {
                 String::new()
             };
-            let logits = self.model.forward(
+            let next = self.model.forward_next(
                 &mut hidden,
                 &[session.next_position],
                 &[[f32::NAN; 2]],
                 &mut session,
                 trace,
                 &phase,
+                screen,
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
             next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
                 forced
             } else {
-                argmax(logits)?
+                select(&next, 0, c.vocab_size)?
             };
             trace.decode_step(1, step_ms, session.cache_bytes());
         }
@@ -753,18 +782,28 @@ fn validate_prepared_bounds(prepared: &PreparedImage, options: &GenerationOption
 }
 
 fn argmax(logits: &[f32]) -> Result<u32> {
-    ensure!(
-        !logits.is_empty() && logits.iter().all(|x| x.is_finite()),
-        "nonfinite or empty logits"
-    );
+    ensure!(!logits.is_empty(), "nonfinite or empty logits");
     let mut best = 0;
-    // Match torch.argmax's first-index tie break.
+    let mut finite = logits[0].is_finite();
+    // Match torch.argmax's first-index tie break. One pass also checks
+    // finiteness; any nonfinite value rejects the step exactly as before.
     for i in 1..logits.len() {
+        finite &= logits[i].is_finite();
         if logits[i] > logits[best] {
             best = i;
         }
     }
+    ensure!(finite, "nonfinite or empty logits");
     Ok(best as u32)
+}
+
+/// Greedy token for `row`: the screened head's exact choice, or the argmax of
+/// that row's full FP32 logits.
+fn select(next: &Next<'_>, row: usize, vocab: usize) -> Result<u32> {
+    match next {
+        Next::Tokens(tokens) => Ok(tokens[row]),
+        Next::Logits(logits) => argmax(&logits[row * vocab..(row + 1) * vocab]),
+    }
 }
 
 #[cfg(test)]

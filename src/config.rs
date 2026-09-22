@@ -39,6 +39,17 @@ pub enum WeightLayout {
     /// Experimental shared phase packing for AVX2 batch decode with 2–8 live rows.
     PhasePacked,
 }
+/// How greedy decoding evaluates the FP32 vocabulary head.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum HeadMode {
+    /// Every FP32 logit, then argmax.
+    #[default]
+    Full,
+    /// INT8 screen with a proven error bound, then exact FP32 logits for the
+    /// few rows that can still win. Selects the same token as `Full`.
+    Screened,
+}
 impl Backend {
     pub(crate) fn simd(self) -> crate::kernels::Simd {
         match self {
