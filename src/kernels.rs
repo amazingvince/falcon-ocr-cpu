@@ -11,10 +11,9 @@ use rayon::prelude::*;
 mod attention64;
 #[cfg(target_arch = "x86_64")]
 mod prefill64;
-// Wired into softmax loops only after the exhaustive platform check passes.
+// Bitwise equal to the platform expf on the softmax domain (exhaustive test).
 #[cfg(target_arch = "x86_64")]
-#[cfg_attr(not(test), allow(dead_code))]
-mod vexp;
+pub(crate) mod vexp;
 
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.
 ///
@@ -651,8 +650,8 @@ fn attention_gemm(
                             *value *= rescale;
                         }
                         denominators[row] *= rescale;
-                        for probability in row_scores {
-                            *probability = (*probability - new_max).exp();
+                        exp_shifted(row_scores, new_max);
+                        for probability in row_scores.iter() {
                             denominators[row] += *probability;
                         }
                         maxima[row] = new_max;
@@ -1126,8 +1125,8 @@ fn attention_gemm_compact(
                             *value *= rescale;
                         }
                         denominators[row] *= rescale;
-                        for probability in row_scores {
-                            *probability = (*probability - new_max).exp();
+                        exp_shifted(row_scores, new_max);
+                        for probability in row_scores.iter() {
                             denominators[row] += *probability;
                         }
                         maxima[row] = new_max;
@@ -1192,6 +1191,20 @@ fn attention_gemm_compact(
                 }
             }
         });
+}
+
+/// `values[i] = (values[i] - shift).exp()`, vectorized where available with a
+/// bitwise-identical exp (see `vexp`).
+fn exp_shifted(values: &mut [f32], shift: f32) {
+    #[cfg(target_arch = "x86_64")]
+    if avx2_available() {
+        // SAFETY: AVX2/FMA availability checked.
+        unsafe { vexp::exp_shifted_in_place(values, shift) };
+        return;
+    }
+    for value in values {
+        *value = (*value - shift).exp();
+    }
 }
 
 pub(crate) type Dot = fn(&[f32], &[f32]) -> f32;

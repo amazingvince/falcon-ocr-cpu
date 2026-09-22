@@ -108,8 +108,8 @@ unsafe fn head(
                 *value *= rescale;
             }
             denominator *= rescale;
-            for (j, logit) in logits[..len].iter().enumerate() {
-                let probability = (*logit - new_max).exp();
+            super::vexp::exp_shifted_in_place(&mut logits[..len], new_max);
+            for (j, &probability) in logits[..len].iter().enumerate() {
                 denominator += probability;
                 let begin = (start + j) * token_width + head * head_dim;
                 axpy64(probability, &v[begin..begin + head_dim], out);
@@ -236,8 +236,8 @@ unsafe fn compact_head(
                 *value *= rescale;
             }
             denominator *= rescale;
-            for (j, logit) in logits[..len].iter().enumerate() {
-                let probability = (*logit - new_max).exp();
+            super::vexp::exp_shifted_in_place(&mut logits[..len], new_max);
+            for (j, &probability) in logits[..len].iter().enumerate() {
                 denominator += probability;
                 let begin = (start + j) * kv_width + kv_head * head_dim;
                 axpy64(probability, &v[begin..begin + head_dim], out);

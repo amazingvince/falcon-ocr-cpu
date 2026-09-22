@@ -697,11 +697,13 @@ unsafe fn pair_avx2<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Parti
                 }
                 denominator[h] *= rescale;
             }
+            crate::kernels::vexp::exp_shifted_in_place(&mut logits[0][..len], new_max[0]);
+            crate::kernels::vexp::exp_shifted_in_place(&mut logits[1][..len], new_max[1]);
             for j in 0..len {
                 let key = start + j;
-                let p0 = (logits[0][j] - new_max[0]).exp();
+                let p0 = logits[0][j];
                 denominator[0] += p0;
-                let p1 = (logits[1][j] - new_max[1]).exp();
+                let p1 = logits[1][j];
                 denominator[1] += p1;
                 let value = if key < span.prefix_len {
                     record_value(store, first_record + key)

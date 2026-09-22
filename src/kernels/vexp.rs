@@ -126,6 +126,25 @@ pub(super) unsafe fn exp8(x: __m256) -> __m256 {
     }
 }
 
+/// `values[i] = exp(values[i] - shift)`, bitwise `(values[i] - shift).exp()`.
+///
+/// # Safety
+/// AVX2/FMA must be available.
+#[target_feature(enable = "avx2,fma")]
+pub(crate) unsafe fn exp_shifted_in_place(values: &mut [f32], shift: f32) {
+    unsafe {
+        let s = _mm256_set1_ps(shift);
+        let mut chunks = values.chunks_exact_mut(8);
+        for chunk in &mut chunks {
+            let x = _mm256_sub_ps(_mm256_loadu_ps(chunk.as_ptr()), s);
+            _mm256_storeu_ps(chunk.as_mut_ptr(), exp8(x));
+        }
+        for value in chunks.into_remainder() {
+            *value = (*value - shift).exp();
+        }
+    }
+}
+
 /// Scalar convenience wrapper for tests and tails.
 #[cfg(test)]
 #[target_feature(enable = "avx2,fma")]
@@ -166,6 +185,29 @@ mod tests {
             }
         }
         (count, first)
+    }
+
+    #[test]
+    fn shifted_slices_match_scalar_loop() {
+        if !available() {
+            return;
+        }
+        for len in [0, 1, 7, 8, 9, 31, 128] {
+            let values: Vec<f32> = (0..len)
+                .map(|i| match i % 11 {
+                    0 => f32::NEG_INFINITY,
+                    1 => -0.0,
+                    _ => (i as f32 * 0.731).sin() * 9.0,
+                })
+                .collect();
+            let shift = 3.25_f32;
+            let expected: Vec<f32> = values.iter().map(|v| (v - shift).exp()).collect();
+            let mut actual = values.clone();
+            unsafe { exp_shifted_in_place(&mut actual, shift) };
+            for (a, b) in actual.iter().zip(&expected) {
+                assert_eq!(a.to_bits(), b.to_bits(), "len {len}");
+            }
+        }
     }
 
     #[test]
