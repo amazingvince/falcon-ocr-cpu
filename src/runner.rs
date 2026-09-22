@@ -460,6 +460,7 @@ impl Runner {
             step += 1;
         }
         trace.decode_end();
+        crate::model::report_decode_phases();
         states
             .into_iter()
             .map(|state| {
@@ -605,6 +606,7 @@ impl Runner {
             trace.decode_step(1, step_ms, session.cache_bytes());
         }
         trace.decode_end();
+        crate::model::report_decode_phases();
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
         let text = self.tokenizer.decode(&generated)?;
         Ok(OcrResult {

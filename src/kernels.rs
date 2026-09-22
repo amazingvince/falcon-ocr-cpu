@@ -276,7 +276,7 @@ pub fn squared_relu_gate(interleaved: &[f32], output: &mut [f32]) {
 }
 
 #[inline(always)]
-fn squared_relu_glu(gate: f32, up: f32) -> f32 {
+pub(crate) fn squared_relu_glu(gate: f32, up: f32) -> f32 {
     // Match the pinned Triton kernel's tl.where(gate > 0, gate, 0),
     // including its treatment of NaN gates and signed zero.
     let relu = if gate > 0.0 { gate } else { 0.0 };

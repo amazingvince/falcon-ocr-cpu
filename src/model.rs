@@ -456,6 +456,11 @@ impl Model {
         simd: kernels::Simd,
     ) -> Result<()> {
         let c = &self.config;
+        if let Some(q) = &w13.quantized
+            && q.linear_glu(input, rows, gated, simd)?
+        {
+            return Ok(());
+        }
         let packed_rows = packed.is_some() && (2..=8).contains(&rows);
         if w13.quantized.is_none()
             && !packed_rows
@@ -777,7 +782,6 @@ impl Model {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
         }
-        clock.report(rows);
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;
         // Generation needs only the final token's vocabulary projection.
@@ -1510,32 +1514,42 @@ fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
     }
 }
 
-/// Opt-in wall-clock split of prefill-sized forwards (`FALCON_OCR_PHASES=1`),
-/// printed to stderr. Disabled, each mark is one branch.
+/// Opt-in wall-clock split of forwards (`FALCON_OCR_PHASES=1`) on stderr.
+/// Prefill-sized forwards print immediately; decode steps accumulate on the
+/// calling thread until `report_decode_phases`. Disabled, a mark is a branch.
 struct PhaseClock {
     enabled: bool,
+    rows: usize,
     last: Instant,
-    totals: [f64; 8],
+    totals: [f64; PHASES],
+}
+const PHASES: usize = 9;
+const PHASE_NAMES: [&str; PHASES] = [
+    "rope_factors",
+    "norm+qkv",
+    "split+qk_norm+rope",
+    "cache_append",
+    "attention",
+    "wo+residual",
+    "norm+w13+gate",
+    "w2+residual",
+    "final_norm+head",
+];
+thread_local! {
+    static DECODE_PHASES: std::cell::RefCell<([f64; PHASES], usize)> =
+        const { std::cell::RefCell::new(([0.0; PHASES], 0)) };
+}
+fn phases_enabled() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("FALCON_OCR_PHASES").is_some())
 }
 impl PhaseClock {
-    const NAMES: [&'static str; 8] = [
-        "rope_factors",
-        "norm+qkv",
-        "split+qk_norm+rope",
-        "cache_append",
-        "attention",
-        "wo+residual",
-        "norm+w13+gate",
-        "w2+residual",
-    ];
     fn new(rows: usize) -> Self {
-        static ENABLED: OnceLock<bool> = OnceLock::new();
-        let enabled = rows >= PARALLEL_ROWS
-            && *ENABLED.get_or_init(|| std::env::var_os("FALCON_OCR_PHASES").is_some());
         Self {
-            enabled,
+            enabled: phases_enabled(),
+            rows,
             last: Instant::now(),
-            totals: [0.0; 8],
+            totals: [0.0; PHASES],
         }
     }
     /// Charge the time since the previous mark to the phase that just ended.
@@ -1547,16 +1561,55 @@ impl PhaseClock {
             self.last = now;
         }
     }
-    fn report(&self, rows: usize) {
-        if self.enabled {
-            let parts: Vec<String> = Self::NAMES
-                .iter()
-                .zip(&self.totals)
-                .map(|(name, ms)| format!("{name}={ms:.0}ms"))
-                .collect();
-            eprintln!("prefill phases rows={rows}: {}", parts.join(" "));
+}
+impl Drop for PhaseClock {
+    fn drop(&mut self) {
+        if !self.enabled {
+            return;
+        }
+        self.mark(PHASES - 1);
+        if self.rows >= PARALLEL_ROWS {
+            eprintln!(
+                "prefill phases rows={}: {}",
+                self.rows,
+                format_phases(&self.totals, 1)
+            );
+        } else {
+            DECODE_PHASES.with(|cell| {
+                let mut state = cell.borrow_mut();
+                for (total, value) in state.0.iter_mut().zip(&self.totals) {
+                    *total += value;
+                }
+                state.1 += 1;
+            });
         }
     }
+}
+fn format_phases(totals: &[f64; PHASES], steps: usize) -> String {
+    let per = steps.max(1) as f64;
+    PHASE_NAMES
+        .iter()
+        .zip(totals)
+        .map(|(name, ms)| format!("{name}={:.3}ms", ms / per))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+/// Print and reset this thread's accumulated decode-step phases (per step).
+pub(crate) fn report_decode_phases() {
+    if !phases_enabled() {
+        return;
+    }
+    DECODE_PHASES.with(|cell| {
+        let mut state = cell.borrow_mut();
+        if state.1 > 0 {
+            eprintln!(
+                "decode phases per step over {} steps: {}",
+                state.1,
+                format_phases(&state.0, state.1)
+            );
+        }
+        *state = ([0.0; PHASES], 0);
+    });
 }
 
 /// Row count from which per-row elementwise prefill work uses the pool.
