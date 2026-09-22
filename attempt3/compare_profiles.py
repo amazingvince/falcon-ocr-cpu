@@ -25,6 +25,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bench import first_divergence, levenshtein  # noqa: E402
 
 
+DIVERGENT_KEYS = ("page", "category", "first_divergence", "reference_tokens", "candidate_tokens",
+                  "reference_stop", "candidate_stop", "token_edit_distance", "cer_vs_reference",
+                  "cer_truth_reference", "cer_truth_candidate")
+
+
 def outputs(report: dict) -> dict[str, dict]:
     sample = report["samples"][0]
     paths = [item["path"] for item in report["inputs"]]
@@ -92,6 +97,19 @@ def main() -> None:
         chars = sum(p["truth_chars"] for p in truth_pages) or 1
         micro_ref = sum(p["cer_truth_reference"] * p["truth_chars"] for p in truth_pages) / chars
         micro_cand = sum(p["cer_truth_candidate"] * p["truth_chars"] for p in truth_pages) / chars
+        by_stop = {}
+        for stop in ("eos", "length"):
+            ps = [p for p in pages if p["reference_stop"] == stop]
+            tp = [p for p in ps if "cer_truth_reference" in p]
+            n = sum(p["truth_chars"] for p in tp) or 1
+            by_stop[stop] = {
+                "pages": len(ps),
+                "identical": sum(p["identical"] for p in ps),
+                "token_edits": sum(p["token_edit_distance"] for p in ps),
+                "reference_tokens": sum(p["reference_tokens"] for p in ps),
+                "micro_cer_truth_reference": sum(p["cer_truth_reference"] * p["truth_chars"] for p in tp) / n,
+                "micro_cer_truth_candidate": sum(p["cer_truth_candidate"] * p["truth_chars"] for p in tp) / n,
+            }
         by_category = defaultdict(list)
         for p in pages:
             by_category[p["category"]].append(p)
@@ -109,6 +127,7 @@ def main() -> None:
             "stop_changes": sum(p["reference_stop"] != p["candidate_stop"] for p in pages),
             "reference_total_s": sum(p["reference_speed"]["total_s"] for p in pages),
             "candidate_total_s": sum(p["candidate_speed"]["total_s"] for p in pages),
+            "by_reference_stop": by_stop,
             "by_category": {
                 c: {
                     "pages": len(ps),
@@ -118,9 +137,7 @@ def main() -> None:
                 for c, ps in sorted(by_category.items())
             },
             "divergent_pages": [
-                {k: p[k] for k in ("page", "category", "first_divergence", "reference_tokens",
-                                   "token_edit_distance", "cer_vs_reference")
-                 | ({"cer_truth_reference", "cer_truth_candidate"} & p.keys())}
+                {k: p[k] for k in DIVERGENT_KEYS if k in p}
                 for p in pages if not p["identical"]
             ],
             "per_page": pages,
@@ -131,6 +148,10 @@ def main() -> None:
               f"mean CER vs FP32 {entry['mean_cer_vs_reference']:.4%} (max {entry['max_cer_vs_reference']:.4%}); "
               f"micro CER vs truth {micro_ref:.4%} -> {micro_cand:.4%}; stop changes {entry['stop_changes']}; "
               f"time {entry['reference_total_s']:.0f}s -> {entry['candidate_total_s']:.0f}s")
+        for stop, v in by_stop.items():
+            print(f"   reference stop {stop:>6}: {v['identical']}/{v['pages']} identical, token edits "
+                  f"{v['token_edits']}/{v['reference_tokens']}, micro CER vs truth "
+                  f"{v['micro_cer_truth_reference']:.4%} -> {v['micro_cer_truth_candidate']:.4%}")
         for c, v in entry["by_category"].items():
             print(f"   {c:>20}: {v['identical']}/{v['pages']} identical, mean CER vs FP32 {v['mean_cer_vs_reference']:.4%}")
         for d in entry["divergent_pages"]:
