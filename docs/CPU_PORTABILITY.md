@@ -71,19 +71,21 @@ Dispatch picks the ISA once per process from runtime feature detection, so a sin
 
 ## 3. Kernel inventory
 
+Status after the first porting pass (commits `71fdd7b`, `bc4b287`). "Generic" means one source, instantiated per ISA.
+
 | Kernel | Phase | AVX2 | AVX-512 | NEON | Portable |
 |---|---|---|---|---|---|
-| FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | hand-written | hand-written | — (scalar) | scalar |
-| Fused GLU (`linear_glu_with_simd`) | decode | via dot kernel | via dot kernel | scalar | scalar |
-| W8 GEMV and fused GLU (`attempt::quant`) | decode | hand-written | — | scalar | scalar |
-| Compact decode attention (`kernels/attention64.rs`) | decode | hand-written | — | generic loop | generic loop |
-| Group-split BF16/Q8 cache attention (`attempt::prefix`) | decode | hand-written | — | generic loop | generic loop |
-| Screened head (`head_screen.rs`) | decode | hand-written | — | falls back to full head | falls back to full head |
-| Vector exp (`kernels/vexp.rs`) | both | hand-written, platform-exact | — | scalar | scalar |
-| Prefill attention tiles (`kernels/prefill64.rs`) | prefill | hand-written | — | gemm crate + scalar | gemm crate + scalar |
-| Prefill projections | prefill | gemm crate | gemm crate (needs `x86-v4` feature) | gemm crate (NEON) | gemm crate |
+| FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | hand-written (equal to generic) | hand-written | generic | scalar |
+| Fused GLU (`linear_glu_with_simd`) | decode | via dot kernel | via dot kernel | via dot kernel | scalar |
+| W8 GEMV and fused GLU (`attempt::quant`) | decode | generic | generic (AVX2 code) | generic | scalar |
+| Compact and expanded decode attention (`kernels/attention64.rs`) | decode | generic | generic loop | generic | generic loop |
+| Group-split F32/BF16/Q8 cache (`attempt::prefix`) | decode | generic | generic | generic | generic loop |
+| INT8 head screen (`head_screen.rs`) | decode | generic | generic | generic | falls back to full head |
+| Vector exp | both | platform-exact (`vexp.rs`) | same | portable fast exp | portable fast exp |
+| Prefill attention tiles (`kernels/prefill64.rs`) | prefill | generic | generic | generic | gemm crate + scalar |
+| Prefill projections | prefill | gemm crate | gemm crate (`x86-v4` not yet enabled) | gemm crate (NEON) | gemm crate |
 
-Every NEON cell above currently falls back to scalar code. Before any tuning, the M4 would run decode several times slower than it should.
+Deliberate exception: AVX2 keeps the platform-exact exp, so Windows outputs stay bitwise unchanged. NEON and portable share the fast exp and are bitwise equal to each other. Across ISAs the exp differs by at most a few ulp in rare lanes, which is subject to token agreement.
 
 ## 4. Roadmap
 
