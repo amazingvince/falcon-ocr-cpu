@@ -60,8 +60,8 @@ impl Bf16Runner {
             Backend::Auto => Bf16Backend::Auto,
             Backend::Scalar => Bf16Backend::Scalar,
             Backend::Avx512 => Bf16Backend::Avx512Bf16,
-            Backend::Avx2 => anyhow::bail!(
-                "experimental BF16 supports auto, scalar, or avx512 (AVX-512F + AVX-512BF16); AVX2 is an FP32 backend"
+            Backend::Avx2 | Backend::Neon => anyhow::bail!(
+                "experimental BF16 supports auto, scalar, or avx512 (AVX-512F + AVX-512BF16); AVX2 and NEON are FP32 backends"
             ),
         };
         backend.validate().map_err(anyhow::Error::msg)?;

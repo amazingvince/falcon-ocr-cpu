@@ -232,14 +232,16 @@ def schedule(profiles: list[str], kind: str, control_every: int) -> tuple[list[s
             arms += ["reference", profile, "reference"]
             triples.append((base, base + 1, base + 2))
         return arms, triples
-    arms, pending, triples = ["reference"], [], []
+    # Controls are tracked by position: a candidate may itself be "reference"
+    # (for example a new build compared with an old one).
+    arms, pending, triples, last_control = ["reference"], [], [], 0
     for i, profile in enumerate(profiles):
         pending.append(len(arms))
         arms.append(profile)
         if (i + 1) % control_every == 0 or i + 1 == len(profiles):
-            before = max(j for j in range(len(arms)) if arms[j] == "reference")
             arms.append("reference")
-            triples += [(before, k, len(arms) - 1) for k in pending]
+            triples += [(last_control, k, len(arms) - 1) for k in pending]
+            last_control = len(arms) - 1
             pending = []
     return arms, triples
 

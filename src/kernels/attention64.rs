@@ -1,4 +1,5 @@
-//! Fixed-width (`head_dim == 64`) AVX2/FMA single-query attention for decode.
+//! Fixed-width (`head_dim == 64`) single-query attention for decode, generic
+//! over `crate::simd::Simd` (AVX2/FMA on x86, NEON on aarch64).
 //!
 //! The per-head bodies are the generic online-softmax loops from `kernels.rs`
 //! with their function-pointer dot/AXPY calls replaced by 64-wide helpers that
@@ -11,7 +12,7 @@
 //! Promoted from `experiments/attention64` (expanded cache, measured 6.15–9.43%
 //! lower full-page latency) and `experiments/attention64_compact` (compact
 //! cache, a further 6.15–6.40%); see `docs/PERFORMANCE.md`.
-use std::arch::x86_64::*;
+use crate::simd::Simd;
 
 /// Expanded-cache attention for one query row over `n_heads` heads of width 64.
 ///
@@ -57,9 +58,74 @@ pub(super) unsafe fn attention(
     });
 }
 
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
 #[allow(clippy::too_many_arguments)]
 unsafe fn head(
+    qh: usize,
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    n_heads: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    scale: f32,
+    out: &mut [f32],
+) {
+    unsafe {
+        head_generic::<crate::simd::Avx2>(
+            qh,
+            q,
+            k,
+            v,
+            n_heads,
+            query_offset,
+            image_start,
+            image_end,
+            sinks,
+            scale,
+            out,
+        )
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn head(
+    qh: usize,
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    n_heads: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    scale: f32,
+    out: &mut [f32],
+) {
+    unsafe {
+        head_generic::<crate::simd::Neon>(
+            qh,
+            q,
+            k,
+            v,
+            n_heads,
+            query_offset,
+            image_start,
+            image_end,
+            sinks,
+            scale,
+            out,
+        )
+    }
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+unsafe fn head_generic<S: Simd>(
     qh: usize,
     q: &[f32],
     k: &[f32],
@@ -98,7 +164,7 @@ unsafe fn head(
             for (j, logit) in logits[..len].iter_mut().enumerate() {
                 let key = start + j;
                 let begin = key * token_width + head * head_dim;
-                *logit = dot64(qvec, &k[begin..begin + head_dim]) * scale;
+                *logit = crate::simd::dot::<S>(qvec, &k[begin..begin + head_dim]) * scale;
                 block_max = block_max.max(*logit);
             }
             let new_max = running_max.max(block_max);
@@ -111,11 +177,11 @@ unsafe fn head(
                 *value *= rescale;
             }
             denominator *= rescale;
-            super::vexp::exp_shifted_in_place(&mut logits[..len], new_max);
+            S::exp_shifted(&mut logits[..len], new_max);
             for (j, &probability) in logits[..len].iter().enumerate() {
                 denominator += probability;
                 let begin = (start + j) * token_width + head * head_dim;
-                axpy64(probability, &v[begin..begin + head_dim], out);
+                crate::simd::axpy::<S>(probability, &v[begin..begin + head_dim], out);
             }
             running_max = new_max;
         }
@@ -177,9 +243,86 @@ pub(super) unsafe fn compact(
     });
 }
 
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
 #[allow(clippy::too_many_arguments)]
 unsafe fn compact_head(
+    qh: usize,
+    q: &[f32],
+    prefix_k: &[f32],
+    generated_k: &[f32],
+    v: &[f32],
+    prefix_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    scale: f32,
+    out: &mut [f32],
+) {
+    unsafe {
+        compact_head_generic::<crate::simd::Avx2>(
+            qh,
+            q,
+            prefix_k,
+            generated_k,
+            v,
+            prefix_len,
+            n_heads,
+            n_kv_heads,
+            query_offset,
+            image_start,
+            image_end,
+            sinks,
+            scale,
+            out,
+        )
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn compact_head(
+    qh: usize,
+    q: &[f32],
+    prefix_k: &[f32],
+    generated_k: &[f32],
+    v: &[f32],
+    prefix_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    scale: f32,
+    out: &mut [f32],
+) {
+    unsafe {
+        compact_head_generic::<crate::simd::Neon>(
+            qh,
+            q,
+            prefix_k,
+            generated_k,
+            v,
+            prefix_len,
+            n_heads,
+            n_kv_heads,
+            query_offset,
+            image_start,
+            image_end,
+            sinks,
+            scale,
+            out,
+        )
+    }
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+unsafe fn compact_head_generic<S: Simd>(
     qh: usize,
     q: &[f32],
     prefix_k: &[f32],
@@ -230,7 +373,7 @@ unsafe fn compact_head(
                     let begin = (key - prefix_len) * kv_width + kv_head * head_dim;
                     &generated_k[begin..begin + head_dim]
                 };
-                *logit = dot64(qvec, kvec) * scale;
+                *logit = crate::simd::dot::<S>(qvec, kvec) * scale;
                 block_max = block_max.max(*logit);
             }
             let new_max = running_max.max(block_max);
@@ -243,11 +386,11 @@ unsafe fn compact_head(
                 *value *= rescale;
             }
             denominator *= rescale;
-            super::vexp::exp_shifted_in_place(&mut logits[..len], new_max);
+            S::exp_shifted(&mut logits[..len], new_max);
             for (j, &probability) in logits[..len].iter().enumerate() {
                 denominator += probability;
                 let begin = (start + j) * kv_width + kv_head * head_dim;
-                axpy64(probability, &v[begin..begin + head_dim], out);
+                crate::simd::axpy::<S>(probability, &v[begin..begin + head_dim], out);
             }
             running_max = new_max;
         }
@@ -259,70 +402,12 @@ unsafe fn compact_head(
     }
 }
 
-// These helpers are deliberately inline(always), with the feature-qualified
-// head as their caller. No function-pointer call remains inside the key loops.
-#[inline(always)]
-unsafe fn dot64(a: &[f32], b: &[f32]) -> f32 {
-    debug_assert_eq!(a.len(), 64);
-    debug_assert_eq!(b.len(), 64);
-    unsafe {
-        let mut acc0 = _mm256_setzero_ps();
-        let mut acc1 = _mm256_setzero_ps();
-        let mut acc2 = _mm256_setzero_ps();
-        let mut acc3 = _mm256_setzero_ps();
-        for i in [0, 32] {
-            acc0 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(a.as_ptr().add(i)),
-                _mm256_loadu_ps(b.as_ptr().add(i)),
-                acc0,
-            );
-            acc1 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(a.as_ptr().add(i + 8)),
-                _mm256_loadu_ps(b.as_ptr().add(i + 8)),
-                acc1,
-            );
-            acc2 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(a.as_ptr().add(i + 16)),
-                _mm256_loadu_ps(b.as_ptr().add(i + 16)),
-                acc2,
-            );
-            acc3 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(a.as_ptr().add(i + 24)),
-                _mm256_loadu_ps(b.as_ptr().add(i + 24)),
-                acc3,
-            );
-        }
-        let acc = _mm256_add_ps(_mm256_add_ps(acc0, acc1), _mm256_add_ps(acc2, acc3));
-        let halves = _mm_add_ps(_mm256_castps256_ps128(acc), _mm256_extractf128_ps::<1>(acc));
-        let pairs = _mm_hadd_ps(halves, halves);
-        _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs))
-    }
-}
-
-#[inline(always)]
-unsafe fn axpy64(a: f32, x: &[f32], y: &mut [f32]) {
-    debug_assert_eq!(x.len(), 64);
-    debug_assert_eq!(y.len(), 64);
-    unsafe {
-        let factor = _mm256_set1_ps(a);
-        for i in [0, 8, 16, 24, 32, 40, 48, 56] {
-            let value = _mm256_fmadd_ps(
-                factor,
-                _mm256_loadu_ps(x.as_ptr().add(i)),
-                _mm256_loadu_ps(y.as_ptr().add(i)),
-            );
-            _mm256_storeu_ps(y.as_mut_ptr().add(i), value);
-        }
-    }
-}
-
-#[cfg(test)]
+#[cfg(all(test, target_arch = "x86_64"))]
 mod tests {
     use super::super::{
         Simd, attention_compact_online_softmax, attention_compact_with_simd, attention_gemm,
         attention_gemm_compact, attention_online_softmax, attention_with_simd, x86,
     };
-    use super::*;
 
     fn supported() {
         assert!(
@@ -464,10 +549,13 @@ mod tests {
     #[target_feature(enable = "avx2,fma")]
     unsafe fn compare_vectors(a: &[f32], b: &[f32], factor: f32) {
         unsafe {
-            assert_eq!(dot64(a, b).to_bits(), x86::dot_avx2(a, b).to_bits());
+            assert_eq!(
+                crate::simd::dot::<crate::simd::Avx2>(a, b).to_bits(),
+                x86::dot_avx2(a, b).to_bits()
+            );
             let mut actual = a.to_vec();
             let mut expected = a.to_vec();
-            axpy64(factor, b, &mut actual);
+            crate::simd::axpy::<crate::simd::Avx2>(factor, b, &mut actual);
             x86::axpy_avx2(factor, b, &mut expected);
             exact(&actual, &expected);
         }

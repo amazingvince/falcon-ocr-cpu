@@ -7,7 +7,7 @@
 
 use rayon::prelude::*;
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 mod attention64;
 #[cfg(target_arch = "x86_64")]
 mod prefill64;
@@ -26,6 +26,8 @@ pub enum Simd {
     Scalar,
     Avx2,
     Avx512,
+    /// aarch64 Advanced SIMD (always present on aarch64).
+    Neon,
 }
 
 impl Simd {
@@ -36,6 +38,8 @@ impl Simd {
             Self::Avx512 if avx512_available() => Ok(()),
             Self::Avx2 => Err("AVX2 and FMA are unavailable on this CPU"),
             Self::Avx512 => Err("AVX-512F is unavailable on this CPU"),
+            Self::Neon if cfg!(target_arch = "aarch64") => Ok(()),
+            Self::Neon => Err("NEON requires an aarch64 CPU"),
         }
     }
 
@@ -44,9 +48,22 @@ impl Simd {
         self.validate().expect("unsupported SIMD override");
         match self {
             Self::Auto if avx2_available() => Self::Avx2,
+            Self::Auto if cfg!(target_arch = "aarch64") => Self::Neon,
             Self::Auto => Self::Scalar,
             explicit => explicit,
         }
+    }
+}
+
+/// The instruction set the fixed-width decode kernels are compiled for:
+/// AVX2/FMA on x86-64, NEON on aarch64 (never matched elsewhere).
+fn native_vector() -> Simd {
+    if cfg!(target_arch = "aarch64") {
+        Simd::Neon
+    } else if cfg!(target_arch = "x86_64") {
+        Simd::Avx2
+    } else {
+        Simd::Auto
     }
 }
 
@@ -442,9 +459,9 @@ pub fn attention_with_simd(
         );
         return;
     }
-    #[cfg(target_arch = "x86_64")]
-    if query_len == 1 && head_dim == 64 && selected == Simd::Avx2 {
-        // SAFETY: AVX2/FMA availability and every slice shape were checked above.
+    #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
+    if query_len == 1 && head_dim == 64 && selected == native_vector() {
+        // SAFETY: the native vector ISA is available and every slice shape was checked above.
         unsafe {
             attention64::attention(
                 q,
@@ -865,9 +882,9 @@ pub fn attention_compact_with_simd(
         );
         return;
     }
-    #[cfg(target_arch = "x86_64")]
-    if query_len == 1 && head_dim == 64 && selected == Simd::Avx2 {
-        // SAFETY: AVX2/FMA availability and every slice shape were checked above.
+    #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
+    if query_len == 1 && head_dim == 64 && selected == native_vector() {
+        // SAFETY: the native vector ISA is available and every slice shape was checked above.
         unsafe {
             attention64::compact(
                 q,
@@ -1205,6 +1222,9 @@ pub(crate) fn dot_kernel(simd: Simd) -> Dot {
         },
         #[cfg(target_arch = "x86_64")]
         Simd::Avx512 => |a, b| unsafe { x86::dot_avx512(a, b) },
+        #[cfg(target_arch = "aarch64")]
+        // SAFETY: NEON is baseline on aarch64; equal slice lengths.
+        Simd::Neon => |a, b| unsafe { crate::simd::dot::<crate::simd::Neon>(a, b) },
         Simd::Scalar => dot_scalar,
         _ => unreachable!("unresolved or unsupported vector implementation"),
     }
@@ -1216,6 +1236,9 @@ pub(crate) fn axpy_kernel(simd: Simd) -> Axpy {
         Simd::Avx2 => |a, x, y| unsafe { x86::axpy_avx2(a, x, y) },
         #[cfg(target_arch = "x86_64")]
         Simd::Avx512 => |a, x, y| unsafe { x86::axpy_avx512(a, x, y) },
+        #[cfg(target_arch = "aarch64")]
+        // SAFETY: NEON is baseline on aarch64; equal slice lengths.
+        Simd::Neon => |a, x, y| unsafe { crate::simd::axpy::<crate::simd::Neon>(a, x, y) },
         Simd::Scalar => axpy_scalar,
         _ => unreachable!("unresolved or unsupported vector implementation"),
     }

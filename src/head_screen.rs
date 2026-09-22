@@ -144,10 +144,12 @@ impl ScreenedHead {
         );
         let fallback = Screened::Fallback { candidates: 0 };
         #[cfg(target_arch = "x86_64")]
-        let avx2 = std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma");
-        #[cfg(not(target_arch = "x86_64"))]
-        let avx2 = false;
-        if !avx2 || !x.iter().all(|v| v.is_finite()) {
+        let vector = std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma");
+        #[cfg(target_arch = "aarch64")]
+        let vector = true;
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        let vector = false;
+        if !vector || !x.iter().all(|v| v.is_finite()) {
             return fallback;
         }
         // Every FP32 logit is provably finite below this; beyond it, let the full
@@ -175,20 +177,12 @@ impl ScreenedHead {
             let start = block * BLOCK;
             // SAFETY: each task owns one disjoint block of rows.
             let upper = unsafe { upper_all.slice(start, BLOCK.min(vocab - start)) };
-            let mut lower_max = f32::NEG_INFINITY;
-            for (i, hi) in upper.iter_mut().enumerate() {
-                let row = block * BLOCK + i;
-                let codes = &self.codes[row * dim..(row + 1) * dim];
-                let scales = &self.scales[row * groups..(row + 1) * groups];
-                #[cfg(target_arch = "x86_64")]
-                // SAFETY: AVX2/FMA were detected above; slices are exact rows.
-                let (q, s) = unsafe { screen_row_avx2(x, codes, scales, norms) };
-                #[cfg(not(target_arch = "x86_64"))]
-                let (q, s) = (0.0_f32, f32::INFINITY);
-                let bound = kappa.mul_add(s, ETA);
-                *hi = q + bound;
-                lower_max = lower_max.max(q - bound);
-            }
+            let rows = start..start + upper.len();
+            let codes = &self.codes[rows.start * dim..rows.end * dim];
+            let scales = &self.scales[rows.start * groups..rows.end * groups];
+            // SAFETY: the native vector ISA was detected above; slices are
+            // whole rows of this block.
+            let lower_max = unsafe { screen_block_native(x, codes, scales, norms, kappa, upper) };
             // SAFETY: one maximum slot per block.
             unsafe { lower_all.slice(block, 1)[0] = lower_max };
         });
@@ -274,36 +268,101 @@ fn quantize_row(row: &[f32], codes: &mut [i8], scales: &mut [f32]) -> Result<f32
     Ok(row_max)
 }
 
-/// Approximate logit `q` and `S = sum_g s_g n_g` for one INT8 row.
-#[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx2,fma")]
-unsafe fn screen_row_avx2(x: &[f32], codes: &[i8], scales: &[f32], norms: &[f32]) -> (f32, f32) {
-    use std::arch::x86_64::*;
+/// Approximate logit `q` and `S = sum_g s_g n_g` for one INT8 row. The bound
+/// holds for any summation order, so the reduction tree is not significant.
+#[inline(always)]
+unsafe fn screen_row<S: crate::simd::Simd>(
+    x: &[f32],
+    codes: &[i8],
+    scales: &[f32],
+    norms: &[f32],
+) -> (f32, f32) {
     debug_assert_eq!(x.len(), codes.len());
     debug_assert_eq!(scales.len() * GROUP, codes.len());
-    let mut row = _mm256_setzero_ps();
+    let mut row = unsafe { S::zero() };
     let mut total = 0.0_f32;
     for (group, (&scale, &norm)) in scales.iter().zip(norms).enumerate() {
         let base = group * GROUP;
         // SAFETY: base + 64 <= len for both slices; unaligned loads are used.
         unsafe {
-            let mut a0 = _mm256_setzero_ps();
-            let mut a1 = _mm256_setzero_ps();
+            let mut a0 = S::zero();
+            let mut a1 = S::zero();
             for j in (0..GROUP).step_by(16) {
-                let packed = _mm_loadu_si128(codes.as_ptr().add(base + j).cast());
-                let low = _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(packed));
-                let high = _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(_mm_srli_si128::<8>(packed)));
-                a0 = _mm256_fmadd_ps(_mm256_loadu_ps(x.as_ptr().add(base + j)), low, a0);
-                a1 = _mm256_fmadd_ps(_mm256_loadu_ps(x.as_ptr().add(base + j + 8)), high, a1);
+                let low = S::load_i8(codes.as_ptr().add(base + j));
+                let high = S::load_i8(codes.as_ptr().add(base + j + 8));
+                a0 = S::fma(S::load(x.as_ptr().add(base + j)), low, a0);
+                a1 = S::fma(S::load(x.as_ptr().add(base + j + 8)), high, a1);
             }
-            row = _mm256_fmadd_ps(_mm256_add_ps(a0, a1), _mm256_set1_ps(scale), row);
+            row = S::fma(S::add(a0, a1), S::splat(scale), row);
         }
         total = scale.mul_add(norm, total);
     }
-    let half = _mm_add_ps(_mm256_castps256_ps128(row), _mm256_extractf128_ps::<1>(row));
-    let pair = _mm_add_ps(half, _mm_movehl_ps(half, half));
-    let single = _mm_add_ss(pair, _mm_shuffle_ps::<0b01>(pair, pair));
-    (_mm_cvtss_f32(single), total)
+    (unsafe { S::sum(row) }, total)
+}
+
+/// Screen one block of rows: write `q + B` per row, return the block's
+/// largest `q - B`.
+#[inline(always)]
+unsafe fn screen_block<S: crate::simd::Simd>(
+    x: &[f32],
+    codes: &[i8],
+    scales: &[f32],
+    norms: &[f32],
+    kappa: f32,
+    upper: &mut [f32],
+) -> f32 {
+    let dim = x.len();
+    let groups = dim / GROUP;
+    let mut lower_max = f32::NEG_INFINITY;
+    for (i, hi) in upper.iter_mut().enumerate() {
+        let (q, s) = unsafe {
+            screen_row::<S>(
+                x,
+                &codes[i * dim..(i + 1) * dim],
+                &scales[i * groups..(i + 1) * groups],
+                norms,
+            )
+        };
+        let bound = kappa.mul_add(s, ETA);
+        *hi = q + bound;
+        lower_max = lower_max.max(q - bound);
+    }
+    lower_max
+}
+
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn screen_block_native(
+    x: &[f32],
+    codes: &[i8],
+    scales: &[f32],
+    norms: &[f32],
+    kappa: f32,
+    upper: &mut [f32],
+) -> f32 {
+    unsafe { screen_block::<crate::simd::Avx2>(x, codes, scales, norms, kappa, upper) }
+}
+#[cfg(target_arch = "aarch64")]
+unsafe fn screen_block_native(
+    x: &[f32],
+    codes: &[i8],
+    scales: &[f32],
+    norms: &[f32],
+    kappa: f32,
+    upper: &mut [f32],
+) -> f32 {
+    unsafe { screen_block::<crate::simd::Neon>(x, codes, scales, norms, kappa, upper) }
+}
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+unsafe fn screen_block_native(
+    x: &[f32],
+    codes: &[i8],
+    scales: &[f32],
+    norms: &[f32],
+    kappa: f32,
+    upper: &mut [f32],
+) -> f32 {
+    unsafe { screen_block::<crate::simd::Portable>(x, codes, scales, norms, kappa, upper) }
 }
 
 #[cfg(test)]
@@ -420,9 +479,9 @@ mod tests {
                 .chunks(GROUP)
                 .map(|g| g.iter().map(|v| v.abs()).sum())
                 .collect();
-            #[cfg(target_arch = "x86_64")]
-            if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
-                let (q, s) = unsafe { screen_row_avx2(&x, codes, scales, &norms) };
+            {
+                let (q, s) =
+                    unsafe { screen_row::<crate::simd::Portable>(&x, codes, scales, &norms) };
                 let bound = f64::from(screened.kappa) * f64::from(s);
                 assert!((exact - f64::from(q)).abs() <= bound, "row {row}");
             }

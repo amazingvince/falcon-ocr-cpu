@@ -307,6 +307,11 @@ impl SplitPrefix {
             self.attention_pairs(q, total_len, sinks, output);
             return;
         }
+        #[cfg(target_arch = "aarch64")]
+        if selected == Simd::Neon {
+            self.attention_pairs(q, total_len, sinks, output);
+            return;
+        }
         self.attention_generic(q, total_len, sinks, output, selected);
     }
 
@@ -387,8 +392,9 @@ impl SplitPrefix {
         });
     }
 
-    /// AVX2 path: one task per (KV group, position chunk) serving both heads.
-    #[cfg(target_arch = "x86_64")]
+    /// Vector path (AVX2 or NEON): one task per (KV group, position chunk)
+    /// serving both heads.
+    #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
     fn attention_pairs(&self, q: &[f32], total_len: usize, sinks: &[f32], output: &mut [f32]) {
         let groups = self.kv_heads;
         let tiles = total_len.div_ceil(TILE);
@@ -413,14 +419,14 @@ impl SplitPrefix {
                 generated_k: &self.generated_k,
                 generated_v: &self.generated_v,
             };
-            // SAFETY: AVX2/FMA were detected by the caller; `Span` and the
-            // record stores were shape-checked at construction and entry.
+            // SAFETY: the native vector ISA was checked by the caller; `Span`
+            // and the record stores were shape-checked at construction and entry.
             unsafe {
                 match &self.records {
-                    Records::F32(d) => pair_avx2(&F32Rec(d), &span, part),
-                    Records::Bf16(d) => pair_avx2(&Bf16Rec(d), &span, part),
+                    Records::F32(d) => pair_native(&F32Rec(d), &span, part),
+                    Records::Bf16(d) => pair_native(&Bf16Rec(d), &span, part),
                     Records::Q8 { codes, scales } => {
-                        pair_avx2(&Q8Rec { codes, scales }, &span, part)
+                        pair_native(&Q8Rec { codes, scales }, &span, part)
                     }
                 }
             }
@@ -491,173 +497,137 @@ struct Span<'a> {
     generated_v: &'a [f32],
 }
 
-#[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
+use crate::simd::Simd as Isa;
 
-/// Eight decoded FP32 values of one record, at an offset that is a multiple of 8.
-#[cfg(target_arch = "x86_64")]
+/// Eight decoded FP32 values of one record, at an offset that is a multiple
+/// of 8, as a vector of instruction set `S`.
 trait RecordStore {
-    unsafe fn load8(&self, record: usize, offset: usize) -> __m256;
+    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V;
 }
-#[cfg(target_arch = "x86_64")]
 struct F32Rec<'a>(&'a [f32]);
-#[cfg(target_arch = "x86_64")]
 struct Bf16Rec<'a>(&'a [u16]);
-#[cfg(target_arch = "x86_64")]
 struct Q8Rec<'a> {
     codes: &'a [i8],
     scales: &'a [f32],
 }
-#[cfg(target_arch = "x86_64")]
 impl RecordStore for F32Rec<'_> {
     #[inline(always)]
-    unsafe fn load8(&self, record: usize, offset: usize) -> __m256 {
+    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
         debug_assert!((record + 1) * RECORD <= self.0.len());
-        unsafe { _mm256_loadu_ps(self.0.as_ptr().add(record * RECORD + offset)) }
+        unsafe { S::load(self.0.as_ptr().add(record * RECORD + offset)) }
     }
 }
-#[cfg(target_arch = "x86_64")]
 impl RecordStore for Bf16Rec<'_> {
     #[inline(always)]
-    unsafe fn load8(&self, record: usize, offset: usize) -> __m256 {
+    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
         debug_assert!((record + 1) * RECORD <= self.0.len());
         // BF16 -> FP32 is exact: the bits move to the high half.
-        unsafe {
-            let bits = _mm_loadu_si128(self.0.as_ptr().add(record * RECORD + offset).cast());
-            _mm256_castsi256_ps(_mm256_slli_epi32::<16>(_mm256_cvtepu16_epi32(bits)))
-        }
+        unsafe { S::load_bf16(self.0.as_ptr().add(record * RECORD + offset)) }
     }
 }
-#[cfg(target_arch = "x86_64")]
 impl RecordStore for Q8Rec<'_> {
     #[inline(always)]
-    unsafe fn load8(&self, record: usize, offset: usize) -> __m256 {
+    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
         debug_assert!((record + 1) * RECORD <= self.codes.len());
         // fl(code * scale), exactly the scalar dequantization.
         unsafe {
-            let packed = _mm_loadl_epi64(self.codes.as_ptr().add(record * RECORD + offset).cast());
-            _mm256_mul_ps(
-                _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(packed)),
-                _mm256_set1_ps(*self.scales.get_unchecked(record * Q8_SCALES + offset / 32)),
+            S::mul(
+                S::load_i8(self.codes.as_ptr().add(record * RECORD + offset)),
+                S::splat(*self.scales.get_unchecked(record * Q8_SCALES + offset / 32)),
             )
         }
     }
 }
 
-/// `attention64::dot64`'s final reduction tree.
-#[cfg(target_arch = "x86_64")]
-#[inline(always)]
-unsafe fn reduce(acc: [__m256; 4]) -> f32 {
-    unsafe {
-        let acc = _mm256_add_ps(_mm256_add_ps(acc[0], acc[1]), _mm256_add_ps(acc[2], acc[3]));
-        let halves = _mm_add_ps(_mm256_castps256_ps128(acc), _mm256_extractf128_ps::<1>(acc));
-        let pairs = _mm_hadd_ps(halves, halves);
-        _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs))
-    }
-}
-
 /// `dot64(q, key)` for both heads of a record: the shared temporal half feeds
 /// both accumulator sets first (dot64's i = 0 pass), then each spatial half
-/// (its i = 32 pass). Per head this is dot64's exact FMA sequence.
-#[cfg(target_arch = "x86_64")]
+/// (its i = 32 pass). Per head this is dot64's exact FMA sequence and
+/// reduction tree (`(a0+a1)+(a2+a3)`, then `Simd::sum`).
 #[inline(always)]
-unsafe fn qk2<R: RecordStore>(store: &R, record: usize, q0: &[f32], q1: &[f32]) -> (f32, f32) {
+unsafe fn qk2<S: Isa, R: RecordStore>(
+    store: &R,
+    record: usize,
+    q0: &[f32],
+    q1: &[f32],
+) -> (f32, f32) {
     unsafe {
-        let zero = _mm256_setzero_ps();
-        let mut a = [zero; 4];
-        let mut b = [zero; 4];
+        let mut a = [S::zero(); 4];
+        let mut b = [S::zero(); 4];
         for j in 0..4 {
-            let t = store.load8(record, TEMPORAL + 8 * j);
-            a[j] = _mm256_fmadd_ps(_mm256_loadu_ps(q0.as_ptr().add(8 * j)), t, a[j]);
-            b[j] = _mm256_fmadd_ps(_mm256_loadu_ps(q1.as_ptr().add(8 * j)), t, b[j]);
+            let t = store.load8::<S>(record, TEMPORAL + 8 * j);
+            a[j] = S::fma(S::load(q0.as_ptr().add(8 * j)), t, a[j]);
+            b[j] = S::fma(S::load(q1.as_ptr().add(8 * j)), t, b[j]);
         }
         for j in 0..4 {
-            let s0 = store.load8(record, SPATIAL[0] + 8 * j);
-            a[j] = _mm256_fmadd_ps(_mm256_loadu_ps(q0.as_ptr().add(32 + 8 * j)), s0, a[j]);
-            let s1 = store.load8(record, SPATIAL[1] + 8 * j);
-            b[j] = _mm256_fmadd_ps(_mm256_loadu_ps(q1.as_ptr().add(32 + 8 * j)), s1, b[j]);
+            let s0 = store.load8::<S>(record, SPATIAL[0] + 8 * j);
+            a[j] = S::fma(S::load(q0.as_ptr().add(32 + 8 * j)), s0, a[j]);
+            let s1 = store.load8::<S>(record, SPATIAL[1] + 8 * j);
+            b[j] = S::fma(S::load(q1.as_ptr().add(32 + 8 * j)), s1, b[j]);
         }
-        (reduce(a), reduce(b))
-    }
-}
-
-/// `dot64` over an FP32 key (generated tail).
-#[cfg(target_arch = "x86_64")]
-#[inline(always)]
-unsafe fn dot64(q: &[f32], key: &[f32]) -> f32 {
-    unsafe {
-        let zero = _mm256_setzero_ps();
-        let mut acc = [zero; 4];
-        for i in [0, 32] {
-            for j in 0..4 {
-                acc[j] = _mm256_fmadd_ps(
-                    _mm256_loadu_ps(q.as_ptr().add(i + 8 * j)),
-                    _mm256_loadu_ps(key.as_ptr().add(i + 8 * j)),
-                    acc[j],
-                );
-            }
-        }
-        reduce(acc)
+        (
+            S::sum(S::add(S::add(a[0], a[1]), S::add(a[2], a[3]))),
+            S::sum(S::add(S::add(b[0], b[1]), S::add(b[2], b[3]))),
+        )
     }
 }
 
 /// `axpy64` into both heads' outputs with one load of each value vector.
-#[cfg(target_arch = "x86_64")]
 #[inline(always)]
-unsafe fn pv2(v: [__m256; 8], p0: f32, p1: f32, o0: &mut [f32; 64], o1: &mut [f32; 64]) {
+unsafe fn pv2<S: Isa>(v: [S::V; 8], p0: f32, p1: f32, o0: &mut [f32; 64], o1: &mut [f32; 64]) {
     unsafe {
-        let f0 = _mm256_set1_ps(p0);
-        let f1 = _mm256_set1_ps(p1);
+        let f0 = S::splat(p0);
+        let f1 = S::splat(p1);
         for (chunk, value) in v.into_iter().enumerate() {
             let i = 8 * chunk;
-            let y0 = _mm256_fmadd_ps(f0, value, _mm256_loadu_ps(o0.as_ptr().add(i)));
-            _mm256_storeu_ps(o0.as_mut_ptr().add(i), y0);
-            let y1 = _mm256_fmadd_ps(f1, value, _mm256_loadu_ps(o1.as_ptr().add(i)));
-            _mm256_storeu_ps(o1.as_mut_ptr().add(i), y1);
+            S::store(
+                o0.as_mut_ptr().add(i),
+                S::fma(f0, value, S::load(o0.as_ptr().add(i))),
+            );
+            S::store(
+                o1.as_mut_ptr().add(i),
+                S::fma(f1, value, S::load(o1.as_ptr().add(i))),
+            );
         }
     }
 }
 
-#[cfg(target_arch = "x86_64")]
 #[inline(always)]
-unsafe fn record_value<R: RecordStore>(store: &R, record: usize) -> [__m256; 8] {
+unsafe fn record_value<S: Isa, R: RecordStore>(store: &R, record: usize) -> [S::V; 8] {
     unsafe {
         [
-            store.load8(record, VALUE),
-            store.load8(record, VALUE + 8),
-            store.load8(record, VALUE + 16),
-            store.load8(record, VALUE + 24),
-            store.load8(record, VALUE + 32),
-            store.load8(record, VALUE + 40),
-            store.load8(record, VALUE + 48),
-            store.load8(record, VALUE + 56),
+            store.load8::<S>(record, VALUE),
+            store.load8::<S>(record, VALUE + 8),
+            store.load8::<S>(record, VALUE + 16),
+            store.load8::<S>(record, VALUE + 24),
+            store.load8::<S>(record, VALUE + 32),
+            store.load8::<S>(record, VALUE + 40),
+            store.load8::<S>(record, VALUE + 48),
+            store.load8::<S>(record, VALUE + 56),
         ]
     }
 }
 
-#[cfg(target_arch = "x86_64")]
 #[inline(always)]
-unsafe fn slice_value(v: &[f32]) -> [__m256; 8] {
+unsafe fn slice_value<S: Isa>(v: &[f32]) -> [S::V; 8] {
     debug_assert_eq!(v.len(), 64);
     let at = |i: usize| v.as_ptr().wrapping_add(i);
     unsafe {
         [
-            _mm256_loadu_ps(at(0)),
-            _mm256_loadu_ps(at(8)),
-            _mm256_loadu_ps(at(16)),
-            _mm256_loadu_ps(at(24)),
-            _mm256_loadu_ps(at(32)),
-            _mm256_loadu_ps(at(40)),
-            _mm256_loadu_ps(at(48)),
-            _mm256_loadu_ps(at(56)),
+            S::load(at(0)),
+            S::load(at(8)),
+            S::load(at(16)),
+            S::load(at(24)),
+            S::load(at(32)),
+            S::load(at(40)),
+            S::load(at(48)),
+            S::load(at(56)),
         ]
     }
 }
 
 /// Both heads of one KV group over positions `[start, end)` (tile aligned).
-#[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx2,fma")]
-unsafe fn pair_avx2<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
+#[inline(always)]
+unsafe fn pair<S: Isa, R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
     let scale = (64_f32).sqrt().recip();
     let [o0, o1] = &mut part.out;
     o0.fill(0.0);
@@ -676,10 +646,13 @@ unsafe fn pair_avx2<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Parti
             for j in 0..len {
                 let key = start + j;
                 let (s0, s1) = if key < span.prefix_len {
-                    qk2(store, first_record + key, span.q0, span.q1)
+                    qk2::<S, R>(store, first_record + key, span.q0, span.q1)
                 } else {
                     let k = &span.generated_k[tail(key)..tail(key) + 64];
-                    (dot64(span.q0, k), dot64(span.q1, k))
+                    (
+                        crate::simd::dot::<S>(span.q0, k),
+                        crate::simd::dot::<S>(span.q1, k),
+                    )
                 };
                 logits[0][j] = s0 * scale;
                 block_max[0] = block_max[0].max(logits[0][j]);
@@ -699,8 +672,8 @@ unsafe fn pair_avx2<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Parti
                 }
                 denominator[h] *= rescale;
             }
-            crate::kernels::vexp::exp_shifted_in_place(&mut logits[0][..len], new_max[0]);
-            crate::kernels::vexp::exp_shifted_in_place(&mut logits[1][..len], new_max[1]);
+            S::exp_shifted(&mut logits[0][..len], new_max[0]);
+            S::exp_shifted(&mut logits[1][..len], new_max[1]);
             for j in 0..len {
                 let key = start + j;
                 let p0 = logits[0][j];
@@ -708,11 +681,11 @@ unsafe fn pair_avx2<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Parti
                 let p1 = logits[1][j];
                 denominator[1] += p1;
                 let value = if key < span.prefix_len {
-                    record_value(store, first_record + key)
+                    record_value::<S, R>(store, first_record + key)
                 } else {
-                    slice_value(&span.generated_v[tail(key)..tail(key) + 64])
+                    slice_value::<S>(&span.generated_v[tail(key)..tail(key) + 64])
                 };
-                pv2(value, p0, p1, o0, o1);
+                pv2::<S>(value, p0, p1, o0, o1);
             }
             max = new_max;
             start += len;
@@ -720,6 +693,17 @@ unsafe fn pair_avx2<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Parti
     }
     part.max = max;
     part.denominator = denominator;
+}
+
+/// Per-ISA entry for [`pair`] (the target features enclose the whole loop).
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn pair_native<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
+    unsafe { pair::<crate::simd::Avx2, R>(store, span, part) }
+}
+#[cfg(target_arch = "aarch64")]
+unsafe fn pair_native<R: RecordStore>(store: &R, span: &Span<'_>, part: &mut Partial) {
+    unsafe { pair::<crate::simd::Neon, R>(store, span, part) }
 }
 
 #[cfg(test)]

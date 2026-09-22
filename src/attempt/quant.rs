@@ -405,6 +405,14 @@ impl Q8Linear {
                 _ => |x, c, s| unsafe { dot_q8_avx2::<128>(x, c, s) },
             };
         }
+        #[cfg(target_arch = "aarch64")]
+        if selected == crate::kernels::Simd::Neon {
+            return match self.group_size {
+                // SAFETY (both): NEON is baseline on aarch64.
+                64 => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 64>(x, c, s) },
+                _ => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 128>(x, c, s) },
+            };
+        }
         let _ = selected;
         match self.group_size {
             64 => dot_q8_scalar::<64>,
@@ -482,67 +490,12 @@ fn dot_q8_scalar<const G: usize>(x: &[f32], codes: &[i8], scales: &[f32]) -> f32
         .sum()
 }
 
-/// `kernels::x86::dot_avx2` over `fl(code * scale)` weights: four phase
-/// accumulators per 32-element block, the same combination tree, the same
-/// eight-wide tail and the same unfused scalar tail. `G` is a multiple of 32,
-/// so every 32-element block uses one scale, broadcast once.
+/// `kernels::x86::dot_avx2` over `fl(code * scale)` weights: the generic
+/// `simd::dot_q8` (same phase accumulators, tree and tails) under AVX2/FMA.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
 unsafe fn dot_q8_avx2<const G: usize>(x: &[f32], codes: &[i8], scales: &[f32]) -> f32 {
-    use std::arch::x86_64::*;
-    debug_assert_eq!(x.len(), codes.len());
-    debug_assert_eq!(G % 32, 0);
-    #[inline(always)]
-    unsafe fn weights(codes: *const i8, scale: __m256) -> __m256 {
-        // SAFETY: caller keeps the 8-byte load inside the row.
-        unsafe {
-            let packed = _mm_loadl_epi64(codes.cast());
-            _mm256_mul_ps(_mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(packed)), scale)
-        }
-    }
-    // SAFETY: every vector load stays below x.len() == codes.len().
-    unsafe {
-        let (xp, cp) = (x.as_ptr(), codes.as_ptr());
-        let mut acc0 = _mm256_setzero_ps();
-        let mut acc1 = _mm256_setzero_ps();
-        let mut acc2 = _mm256_setzero_ps();
-        let mut acc3 = _mm256_setzero_ps();
-        let mut i = 0;
-        while i + 32 <= x.len() {
-            let s = _mm256_set1_ps(*scales.get_unchecked(i / G));
-            acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(xp.add(i)), weights(cp.add(i), s), acc0);
-            acc1 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(xp.add(i + 8)),
-                weights(cp.add(i + 8), s),
-                acc1,
-            );
-            acc2 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(xp.add(i + 16)),
-                weights(cp.add(i + 16), s),
-                acc2,
-            );
-            acc3 = _mm256_fmadd_ps(
-                _mm256_loadu_ps(xp.add(i + 24)),
-                weights(cp.add(i + 24), s),
-                acc3,
-            );
-            i += 32;
-        }
-        let mut acc = _mm256_add_ps(_mm256_add_ps(acc0, acc1), _mm256_add_ps(acc2, acc3));
-        while i + 8 <= x.len() {
-            let s = _mm256_set1_ps(*scales.get_unchecked(i / G));
-            acc = _mm256_fmadd_ps(_mm256_loadu_ps(xp.add(i)), weights(cp.add(i), s), acc);
-            i += 8;
-        }
-        let halves = _mm_add_ps(_mm256_castps256_ps128(acc), _mm256_extractf128_ps::<1>(acc));
-        let pairs = _mm_hadd_ps(halves, halves);
-        let mut sum = _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs));
-        while i < x.len() {
-            sum += x[i] * (codes[i] as f32 * scales[i / G]);
-            i += 1;
-        }
-        sum
-    }
+    unsafe { crate::simd::dot_q8::<crate::simd::Avx2, G>(x, codes, scales) }
 }
 
 #[cfg(test)]

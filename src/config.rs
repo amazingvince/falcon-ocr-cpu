@@ -22,6 +22,8 @@ pub enum Backend {
     Scalar,
     Avx2,
     Avx512,
+    /// aarch64 Advanced SIMD; `auto` selects it on aarch64.
+    Neon,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
@@ -57,6 +59,7 @@ impl Backend {
             Self::Scalar => crate::kernels::Simd::Scalar,
             Self::Avx2 => crate::kernels::Simd::Avx2,
             Self::Avx512 => crate::kernels::Simd::Avx512,
+            Self::Neon => crate::kernels::Simd::Neon,
         }
     }
 }
