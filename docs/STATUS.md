@@ -1,6 +1,29 @@
 # Qualification status
 
-Updated 2026-09-20. The persistent goal remains active.
+Updated 2026-09-21. The persistent goal remains active.
+
+Commit `95daabc0` promoted two measured, exact-output candidates into the FP32
+default runtime: the fixed-width (head width 64) AVX2 single-query attention
+kernels for both cache layouts (`src/kernels/attention64.rs`, ported verbatim
+from `experiments/attention64` and `experiments/attention64_compact`) and the
+compact KV cache as the default `--cache-layout` (the experimental BF16 graph
+keeps `expanded`). Evidence before promotion: eleven operator tests bit-exact
+against the generic loops, the 1,904-tensor smoke trace byte-identical to the
+saved control (`e2dad223…`) on both layouts, and every existing gate
+(`cargo test --locked`, GPU parity, zero-allocation decode, batch parity, cache
+layout, negative inputs) passing. The control/candidate/control bracket against
+the previous default is recorded in `docs/PERFORMANCE.md`
+(`artifacts/benchmarks/attention64-promotion-v1/`). The same session added the
+first matched external comparison, `docs/COMPARISON.md`, against the Rust/GGML
+implementation `pszemraj/falcon-ocr.rs`; its smoke lane matched all eight pages
+token for token.
+
+Correction recorded during that comparison: its first full-page lanes ran our
+side with `--cache-layout expanded` because the driver's default still named the
+previous layout, so those rows measure expanded caches plus the fixed-width
+kernels (journal page 69.2 s), not the new compact default (62.7 s in the
+promotion bracket). The driver default now matches the runtime default and the
+ours-only compact rows were rerun; `docs/COMPARISON.md` labels each row's layout.
 
 The user explicitly requested a compiler update after the RTen 0.26 dependency
 review identified a Rust 1.94 requirement. The project now pins Rust 1.94.0;

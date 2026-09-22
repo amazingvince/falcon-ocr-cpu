@@ -1,0 +1,264 @@
+{
+  "kind": "promotion-bracket-v1",
+  "label": "fixed64 attention + compact default (95daabc0) vs previous default (5275f467)",
+  "created_utc": "2026-09-21T14:35:18.353952+00:00",
+  "attestation": "idle machine: no interactive use, builds or other inference during the bracket",
+  "threads": 16,
+  "backend": "avx2",
+  "control": {
+    "binary": "artifacts\\builds\\control-5275f467\\ocr_bench.exe",
+    "sha256": "f3435bf3b11ee6fe77a0bb2058e60442cdf2e4f71ae7647f3bfbcef36e53f521",
+    "flags": "--cache-layout expanded"
+  },
+  "candidate": {
+    "binary": "artifacts\\builds\\candidate-95daabc0\\ocr_bench.exe",
+    "sha256": "6dc62b32c0454c40e5cd4633e0473a34962b328f2da35325409a9a792e6fe72b",
+    "flags": "--cache-layout compact"
+  },
+  "git_commit": "95daabc031aec3f68c23acd63fb8c989d455032d",
+  "limits": {
+    "control_drift": 0.05,
+    "target_reduction": 0.05,
+    "regression": 0.05
+  },
+  "cases": [
+    {
+      "name": "journal-b1",
+      "definition": {
+        "name": "journal-b1",
+        "description": "Canonical journal page, single request, joint execution batch 1 (the frozen full-page protocol).",
+        "execution": "joint",
+        "batches": "1",
+        "warmup": 2,
+        "repetitions": 3,
+        "max_dimension": 1536,
+        "max_new_tokens": 4096,
+        "images": [
+          "artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png"
+        ],
+        "gpu_records": {
+          "0": "artifacts/reference/corpus-v3-fp32-4096/3f294b5e60a0c2d4.json"
+        }
+      },
+      "jobs": {
+        "control-before": {
+          "exit_code": 0,
+          "wall_s": 369.0809186999686,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\journal-b1-control-before.json",
+          "sha256": "c8687cafc579a1cfc0f6122e66edfffb080ba0b958942ed98b5f0660a7d27d3e"
+        },
+        "candidate": {
+          "exit_code": 0,
+          "wall_s": 318.3513243999332,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\journal-b1-candidate.json",
+          "sha256": "cccfde0e4f73ec2cdff7c941232718a671848e2c3d22b60622274146d0196774"
+        },
+        "control-after": {
+          "exit_code": 0,
+          "wall_s": 368.182254599873,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\journal-b1-control-after.json",
+          "sha256": "23726b2d3bdab01beeeabf52739067d736e5279ef4318c6811b4cc4feebde96d"
+        }
+      },
+      "evaluation": {
+        "cases": {
+          "1": {
+            "control_before_ms": 73403.1522,
+            "candidate_ms": 62718.8903,
+            "control_after_ms": 74167.0998,
+            "control_drift_pct": 1.0407558491745528,
+            "drift_ok": true,
+            "change_vs_before_pct": -14.55559002546487,
+            "change_vs_after_pct": -15.435697945411636,
+            "meets_target": true,
+            "regresses_beyond_limit": false
+          }
+        },
+        "outputs_exact": true,
+        "gpu_exact": true,
+        "problems": [],
+        "stages": {
+          "control_before": {
+            "prefill_ms": 12677.5766,
+            "decode_ms": 60727.1653
+          },
+          "candidate": {
+            "prefill_ms": 12336.591,
+            "decode_ms": 51574.708399999996
+          },
+          "control_after": {
+            "prefill_ms": 12722.5614,
+            "decode_ms": 61300.4224
+          }
+        }
+      }
+    },
+    {
+      "name": "mixed-b2",
+      "definition": {
+        "name": "mixed-b2",
+        "description": "Frozen mixed-sparse-first pair: sparse-room then the natural table page, joint batch 2.",
+        "execution": "joint",
+        "batches": "2",
+        "warmup": 2,
+        "repetitions": 3,
+        "max_dimension": 1536,
+        "max_new_tokens": 4096,
+        "images": [
+          "artifacts/supplement/original-v1/sparse-room/canonical-rgb.png",
+          "artifacts/corpus/v3/2c243b31d36eb729/canonical-rgb.png"
+        ],
+        "gpu_records": {
+          "0": "artifacts/reference/functional-originals-fp32-4096/sparse-room.json",
+          "1": "artifacts/reference/corpus-v3-fp32-4096/2c243b31d36eb729.json"
+        }
+      },
+      "jobs": {
+        "control-before": {
+          "exit_code": 0,
+          "wall_s": 799.6690844001714,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\mixed-b2-control-before.json",
+          "sha256": "bd3a327fcd046779956017c367eef0c98c424b1d47d86b40f4ef5a4a55477993"
+        },
+        "candidate": {
+          "exit_code": 0,
+          "wall_s": 660.8792950999923,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\mixed-b2-candidate.json",
+          "sha256": "934cac710d5a4f0c546bb50127d41e673df7c8b19381daa6d0701d5bfbe985c1"
+        },
+        "control-after": {
+          "exit_code": 0,
+          "wall_s": 781.6770451001357,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\mixed-b2-control-after.json",
+          "sha256": "69bc913e6714a61a27d496bd9f71beb96cd52a6cd0e8878218d6642106a1039c"
+        }
+      },
+      "evaluation": {
+        "cases": {
+          "2": {
+            "control_before_ms": 159286.1854,
+            "candidate_ms": 131764.13400000002,
+            "control_after_ms": 157735.0493,
+            "control_drift_pct": 0.9833807431408804,
+            "drift_ok": true,
+            "change_vs_before_pct": -17.27836681560708,
+            "change_vs_after_pct": -16.464898204460123,
+            "meets_target": true,
+            "regresses_beyond_limit": false
+          }
+        },
+        "outputs_exact": true,
+        "gpu_exact": true,
+        "problems": [],
+        "stages": {
+          "control_before": {},
+          "candidate": {},
+          "control_after": {}
+        }
+      }
+    },
+    {
+      "name": "smoke-joint",
+      "definition": {
+        "name": "smoke-joint",
+        "description": "Canonical 256x128 three-line fixture repeated in joint groups of 1, 2, 4 and 8 (small-batch throughput check).",
+        "execution": "joint",
+        "batches": "1,2,4,8",
+        "warmup": 2,
+        "repetitions": 7,
+        "max_dimension": 256,
+        "max_new_tokens": 32,
+        "images": [
+          "artifacts/reference/smoke-fp32/canonical-rgb.png"
+        ],
+        "gpu_records": {}
+      },
+      "jobs": {
+        "control-before": {
+          "exit_code": 0,
+          "wall_s": 43.30030829994939,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\smoke-joint-control-before.json",
+          "sha256": "e9a8485b138d83a6999480d57a22d55753a9947dd1ce782eb1dd1f0a5491f447"
+        },
+        "candidate": {
+          "exit_code": 0,
+          "wall_s": 41.633663000073284,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\smoke-joint-candidate.json",
+          "sha256": "01f32bef0221a49c7450ddb130e2db84a32400d08cb0fe2420d4ca320dd64cb4"
+        },
+        "control-after": {
+          "exit_code": 0,
+          "wall_s": 43.02977230004035,
+          "output": "artifacts\\benchmarks\\attention64-promotion-v1\\bracket\\smoke-joint-control-after.json",
+          "sha256": "ae5d2fe005ffa2b1eac43cf866ba36e69a6480274e2d9520d8dd35f1163de104"
+        }
+      },
+      "evaluation": {
+        "cases": {
+          "1": {
+            "control_before_ms": 492.5163,
+            "candidate_ms": 484.726,
+            "control_after_ms": 496.5464,
+            "control_drift_pct": 0.8182673345024326,
+            "drift_ok": true,
+            "change_vs_before_pct": -1.5817344522404644,
+            "change_vs_after_pct": -2.380522746716119,
+            "meets_target": false,
+            "regresses_beyond_limit": false
+          },
+          "2": {
+            "control_before_ms": 799.8597,
+            "candidate_ms": 772.4284,
+            "control_after_ms": 787.4087,
+            "control_drift_pct": 1.5812626911539107,
+            "drift_ok": true,
+            "change_vs_before_pct": -3.429513951009154,
+            "change_vs_after_pct": -1.9024808844504697,
+            "meets_target": false,
+            "regresses_beyond_limit": false
+          },
+          "4": {
+            "control_before_ms": 1297.8035000000002,
+            "candidate_ms": 1255.6885,
+            "control_after_ms": 1266.5495,
+            "control_drift_pct": 2.4676493101927823,
+            "drift_ok": true,
+            "change_vs_before_pct": -3.2450983527167425,
+            "change_vs_after_pct": -0.8575266896398525,
+            "meets_target": false,
+            "regresses_beyond_limit": false
+          },
+          "8": {
+            "control_before_ms": 2047.3694,
+            "candidate_ms": 1961.3445000000002,
+            "control_after_ms": 2087.0852,
+            "control_drift_pct": 1.9398453449582642,
+            "drift_ok": true,
+            "change_vs_before_pct": -4.201728325137608,
+            "change_vs_after_pct": -6.0247037351421895,
+            "meets_target": false,
+            "regresses_beyond_limit": false
+          }
+        },
+        "outputs_exact": true,
+        "gpu_exact": null,
+        "problems": [],
+        "stages": {
+          "control_before": {
+            "prefill_ms": 127.62950000000001,
+            "decode_ms": 362.2147
+          },
+          "candidate": {
+            "prefill_ms": 123.516,
+            "decode_ms": 357.98839999999996
+          },
+          "control_after": {
+            "prefill_ms": 125.9083,
+            "decode_ms": 370.1458
+          }
+        }
+      }
+    }
+  ],
+  "finished_utc": "2026-09-21T15:32:24.236844+00:00"
+}

@@ -79,6 +79,45 @@ Reproduce with `scripts/benchmark_packed_windows.ps1` and summarize with
 `reference/benchmarks/quiet-packed-*.json`; the summary is
 `reference/benchmarks/windows-packed-comparison.json`.
 
+## Promotion bracket: fixed-width attention and compact default (2026-09-21)
+
+Commit `95daabc0` makes `--cache-layout compact` the FP32 default and routes
+single-query, 64-wide-head AVX2 attention through `src/kernels/attention64.rs`
+(the kernels measured in isolation under `experiments/attention64` and
+`experiments/attention64_compact`). The promotion bracket ran three fresh
+`examples/ocr_bench.rs` processes per case in the order control-before,
+candidate, control-after on an idle native Windows host (Ryzen 9 7950X, Rust
+1.94.0 MSVC, 16 threads, FP32 AVX2, unpacked weights). The control is the
+previous default binary (commit `5275f467`, expanded cache); the candidate is the
+new default (compact cache, fixed-width attention). Each process performed two
+warmups and three measured recognitions (seven for the small fixture). Every
+measured token ID, text, stop reason and dimension is identical across the three
+processes and, where a pinned GPU record exists, identical to it.
+
+| Case | Control before | Candidate | Control after | Drift | Candidate vs controls |
+|---|---:|---:|---:|---:|---:|
+| Journal page, batch 1 (6,544-token prefix, 1,140 output tokens, 1536 cap) | 73.403 s | **62.719 s** | 74.167 s | 1.04% | −14.56% / −15.44% |
+| Mixed pair, joint batch 2 (sparse room 6 tokens + table page 2,280 tokens) | 159.286 s | **131.764 s** | 157.735 s | 0.98% | −17.28% / −16.46% |
+| Small fixture, joint group 1 | 0.493 s | 0.485 s | 0.497 s | 0.82% | −1.58% / −2.38% |
+| Small fixture, joint group 2 | 0.800 s | 0.772 s | 0.787 s | 1.58% | −3.43% / −1.90% |
+| Small fixture, joint group 4 | 1.298 s | 1.256 s | 1.267 s | 2.47% | −3.25% / −0.86% |
+| Small fixture, joint group 8 | 2.047 s | 1.961 s | 2.087 s | 1.94% | −4.20% / −6.02% |
+
+Journal-page stage medians: prefill 12.68 / 12.34 / 12.72 s and decode
+60.73 / 51.58 / 61.30 s for control-before / candidate / control-after; the gain
+is in decode, as the isolated experiments predicted. The target workloads beat
+both controls by more than the 5% promotion threshold, and no secondary workload
+regresses (the small-fixture groups move by −0.9% to −6.0%). Raw processes,
+commands and the evaluation are in
+`artifacts/benchmarks/attention64-promotion-v1/bracket/` (`bracket.json`,
+`bracket.md`), produced by `scripts/promotion_bracket.py`; the control and
+candidate binaries are preserved under `artifacts/builds/control-5275f467/` and
+`artifacts/builds/candidate-95daabc0/`. This bracket qualifies the new default on
+native Windows only; bare-metal Linux performance remains deferred.
+
+An external head-to-head against the Rust/GGML implementation
+`pszemraj/falcon-ocr.rs` is recorded separately in [`COMPARISON.md`](COMPARISON.md).
+
 ## Full-page single-request measurement
 
 The first full-page group completed on native Windows with the Ryzen 9 7950X,

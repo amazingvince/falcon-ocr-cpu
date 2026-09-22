@@ -1,0 +1,370 @@
+{
+ "schema_version": 1,
+ "kind": "focr-comparison-v1",
+ "created_utc": "2026-09-21T15:32:24.384382+00:00",
+ "host": {
+  "platform": "Windows-10-10.0.26200-SP0",
+  "logical_cpus": 32,
+  "cpu_label": "AMD Ryzen 9 7950X",
+  "environment_label": "native Windows",
+  "quiet_attestation": "operator idle attestation: no interactive use, no other benchmarks, no builds during this lane"
+ },
+ "settings": {
+  "min_dimension": 64,
+  "max_dimension": 1024,
+  "max_new_tokens_requested": 1536,
+  "warmup": 2,
+  "repetitions": 3,
+  "processes": 2,
+  "order": "ABBA",
+  "stop_ids": [
+   11,
+   263
+  ],
+  "focr_max_seq_len": 8192,
+  "focr_max_image_tokens": 39200,
+  "focr_prompt_mode": "hf-split"
+ },
+ "implementations": {
+  "ours": {
+   "implementation": "falcon-ocr (this repository)",
+   "binary_sha256": "09170f25533526efa41d855a26c9987aad88447e08d1bdcd59f0f773af727457",
+   "bench_binary_sha256": "6dc62b32c0454c40e5cd4633e0473a34962b328f2da35325409a9a792e6fe72b",
+   "git_commit": "95daabc031aec3f68c23acd63fb8c989d455032d",
+   "git_dirty_entries": 2,
+   "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+   "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+   "backend": "avx2",
+   "threads": 16,
+   "cache_layout": "expanded",
+   "weight_layout": "unpacked",
+   "precision_lane": "fp32-weights/fp32-compute",
+   "build_lane": "head",
+   "binary_commit_note": "",
+   "model": "artifacts\\model"
+  },
+  "focr": {
+   "implementation": "focr (pszemraj/falcon-ocr.rs)",
+   "binary_sha256": "7b7442d60e4319463b8bb70983f2ceeae0819cd53bbb2ca445312159a68f6334",
+   "git_commit": "331be9ef3e13156208c76ca0bbd6e77ead823e07",
+   "git_dirty_entries": 0,
+   "git_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "ggml_submodule_status": "707321c4cf6d21cb4bc831aa8b687dbf01a521ce vendor/ggml (v0.15.2)",
+   "ggml_submodule_commit": "707321c4cf6d21cb4bc831aa8b687dbf01a521ce",
+   "cargo_lock_sha256": "3c23fa4e2b26c0ded8bc8b4e8b5ff2409ff2bbacfb9e4c240590ab5cccadce15",
+   "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+   "cargo_features": "default (ggml-cpu, turbojpeg)",
+   "cmake_cache_path": ".tmp\\friend-target-baseline\\release\\build\\falcon-ocr-ggml-sys-7a5ba1ce3adda0ff\\out\\ggml-build\\CMakeCache.txt",
+   "cmake_isa": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "GGML_AVX": "ON",
+    "GGML_AVX2": "ON",
+    "GGML_AVX512": "OFF",
+    "GGML_AVX512_BF16": "OFF",
+    "GGML_AVX512_VBMI": "OFF",
+    "GGML_AVX512_VNNI": "OFF",
+    "GGML_BMI2": "ON",
+    "GGML_CPU_REPACK": "OFF",
+    "GGML_LLAMAFILE": "OFF",
+    "GGML_NATIVE": "OFF",
+    "GGML_OPENMP": "OFF",
+    "CMAKE_GENERATOR": "Visual Studio 17 2022"
+   },
+   "backend": "ggml-linear",
+   "weight_mode": "resident-f32",
+   "activation_dtype": "f32",
+   "prompt_mode": "hf-split",
+   "max_length": 8192,
+   "max_seq_len": 8192,
+   "max_image_tokens": 39200,
+   "threads": 16,
+   "precision_lane": "fp32-weights/fp32-compute",
+   "build_lane": "unmodified",
+   "patch_path": null,
+   "model": ".tmp\\compare-model"
+  }
+ },
+ "thread_sweep": {
+  "page": "artifacts\\corpus\\v3\\3f294b5e60a0c2d4\\canonical-rgb.png",
+  "max_new_tokens": 256,
+  "ours": [
+   {
+    "threads": 8,
+    "median_model_ms": 13820.6572,
+    "median_prefill_ms": 5551.1687,
+    "median_decode_ms": 8280.9029,
+    "samples": [
+     {
+      "prefill_ms": 5568.7872,
+      "decode_ms": 8216.6962,
+      "model_ms": 13785.483400000001,
+      "e2e_ms": 13853.0218,
+      "preprocessing_ms": 41.9115,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 31.15607462765874
+     },
+     {
+      "prefill_ms": 5551.1687,
+      "decode_ms": 8280.9029,
+      "model_ms": 13832.0716,
+      "e2e_ms": 13892.7596,
+      "preprocessing_ms": 35.113,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 30.9145032964944
+     },
+     {
+      "prefill_ms": 5496.2600999999995,
+      "decode_ms": 8324.3971,
+      "model_ms": 13820.6572,
+      "e2e_ms": 13882.4511,
+      "preprocessing_ms": 35.7299,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 30.752977894339036
+     }
+    ]
+   },
+   {
+    "threads": 16,
+    "median_model_ms": 11956.902699999999,
+    "median_prefill_ms": 3256.9134000000004,
+    "median_decode_ms": 8680.0103,
+    "samples": [
+     {
+      "prefill_ms": 3256.9134000000004,
+      "decode_ms": 8721.132000000001,
+      "model_ms": 11978.045400000003,
+      "e2e_ms": 12032.1705,
+      "preprocessing_ms": 35.9122,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 29.353987532811104
+     },
+     {
+      "prefill_ms": 3276.8923999999997,
+      "decode_ms": 8680.0103,
+      "model_ms": 11956.902699999999,
+      "e2e_ms": 12011.35,
+      "preprocessing_ms": 35.619699999999995,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 29.4930525600874
+     },
+     {
+      "prefill_ms": 3245.8543999999997,
+      "decode_ms": 8644.590900000001,
+      "model_ms": 11890.445300000001,
+      "e2e_ms": 11944.6394,
+      "preprocessing_ms": 35.7252,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 29.613894163574585
+     }
+    ]
+   },
+   {
+    "threads": 32,
+    "median_model_ms": 13259.0956,
+    "median_prefill_ms": 2582.5762999999997,
+    "median_decode_ms": 10690.6752,
+    "samples": [
+     {
+      "prefill_ms": 2582.5762999999997,
+      "decode_ms": 10665.2945,
+      "model_ms": 13247.8708,
+      "e2e_ms": 13300.1327,
+      "preprocessing_ms": 36.4937,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 24.003087772212947
+     },
+     {
+      "prefill_ms": 2568.4204,
+      "decode_ms": 10690.6752,
+      "model_ms": 13259.0956,
+      "e2e_ms": 13320.993,
+      "preprocessing_ms": 43.9052,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 23.946102113363242
+     },
+     {
+      "prefill_ms": 2592.971,
+      "decode_ms": 10715.426300000001,
+      "model_ms": 13308.3973,
+      "e2e_ms": 13364.2652,
+      "preprocessing_ms": 36.4629,
+      "output_tokens": 256,
+      "stop_reason": "length",
+      "decode_tok_s": 23.890790047242447
+     }
+    ]
+   }
+  ],
+  "focr": [
+   {
+    "threads": 8,
+    "median_model_ms": 60177.44989999999,
+    "median_prefill_ms": 18763.8429,
+    "median_decode_ms": 41413.606999999996,
+    "samples": [
+     {
+      "prefill_ms": 18729.6793,
+      "decode_ms": 41188.678199999995,
+      "model_ms": 59918.3575,
+      "e2e_ms": 59993.5001,
+      "total_ocr_latency_ms": 59925.0801,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 6.215300203539914
+     },
+     {
+      "prefill_ms": 18763.8429,
+      "decode_ms": 41413.606999999996,
+      "model_ms": 60177.44989999999,
+      "e2e_ms": 60255.0547,
+      "total_ocr_latency_ms": 60184.807,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 6.181543182171986
+     },
+     {
+      "prefill_ms": 19154.640199999998,
+      "decode_ms": 41827.077600000004,
+      "model_ms": 60981.7178,
+      "e2e_ms": 61057.034700000004,
+      "total_ocr_latency_ms": 60987.8721,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 6.1204371591095805
+     }
+    ]
+   },
+   {
+    "threads": 16,
+    "median_model_ms": 63843.5829,
+    "median_prefill_ms": 11163.0311,
+    "median_decode_ms": 52750.8373,
+    "samples": [
+     {
+      "prefill_ms": 11163.0311,
+      "decode_ms": 52435.928,
+      "model_ms": 63598.9591,
+      "e2e_ms": 63675.1358,
+      "total_ocr_latency_ms": 63606.0552,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.882148743510365
+     },
+     {
+      "prefill_ms": 11178.057,
+      "decode_ms": 52781.529,
+      "model_ms": 63959.586,
+      "e2e_ms": 64039.784600000006,
+      "total_ocr_latency_ms": 63968.384399999995,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.850181585304207
+     },
+     {
+      "prefill_ms": 11092.7456,
+      "decode_ms": 52750.8373,
+      "model_ms": 63843.5829,
+      "e2e_ms": 63918.060099999995,
+      "total_ocr_latency_ms": 63850.9044,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.853003537064236
+     }
+    ]
+   },
+   {
+    "threads": 24,
+    "median_model_ms": 72230.65340000001,
+    "median_prefill_ms": 9105.9118,
+    "median_decode_ms": 63136.339700000004,
+    "samples": [
+     {
+      "prefill_ms": 9209.8784,
+      "decode_ms": 62881.940200000005,
+      "model_ms": 72091.8186,
+      "e2e_ms": 72170.397,
+      "total_ocr_latency_ms": 72099.20270000001,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.071121202459334
+     },
+     {
+      "prefill_ms": 9094.3137,
+      "decode_ms": 63136.339700000004,
+      "model_ms": 72230.65340000001,
+      "e2e_ms": 72308.27130000001,
+      "total_ocr_latency_ms": 72237.56319999999,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.054717159981322
+     },
+     {
+      "prefill_ms": 9105.9118,
+      "decode_ms": 63160.125,
+      "model_ms": 72266.0368,
+      "e2e_ms": 72352.6669,
+      "total_ocr_latency_ms": 72285.8195,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.053190205054217
+     }
+    ]
+   },
+   {
+    "threads": 32,
+    "median_model_ms": 144683.2607,
+    "median_prefill_ms": 9870.8961,
+    "median_decode_ms": 134889.37759999998,
+    "samples": [
+     {
+      "prefill_ms": 9995.3853,
+      "decode_ms": 136175.06829999998,
+      "model_ms": 146170.45359999998,
+      "e2e_ms": 146243.09389999998,
+      "total_ocr_latency_ms": 146175.97989999998,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 1.8799329656734238
+     },
+     {
+      "prefill_ms": 9783.095,
+      "decode_ms": 134889.37759999998,
+      "model_ms": 144672.47259999998,
+      "e2e_ms": 144754.0084,
+      "total_ocr_latency_ms": 144678.1123,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 1.8978514435668954
+     },
+     {
+      "prefill_ms": 9870.8961,
+      "decode_ms": 134812.3646,
+      "model_ms": 144683.2607,
+      "e2e_ms": 144756.9903,
+      "total_ocr_latency_ms": 144689.6766,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 1.898935611429814
+     }
+    ]
+   }
+  ],
+  "selected": {
+   "ours": 16,
+   "focr": 8
+  }
+ },
+ "pages": [],
+ "notes": [
+  "Lane b: thread sweep on the journal page at 1024/256 tokens; selects each side's best thread count by median model time."
+ ],
+ "finished_utc": "2026-09-21T15:58:04.401158+00:00"
+}

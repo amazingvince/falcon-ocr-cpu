@@ -1,0 +1,255 @@
+{
+ "schema_version": 1,
+ "kind": "focr-comparison-v1",
+ "created_utc": "2026-09-22T07:32:57.278539+00:00",
+ "host": {
+  "platform": "Windows-10-10.0.26200-SP0",
+  "logical_cpus": 32,
+  "cpu_label": "AMD Ryzen 9 7950X",
+  "environment_label": "native Windows",
+  "quiet_attestation": "operator idle attestation: no interactive use, no other benchmarks, no builds during this lane"
+ },
+ "settings": {
+  "min_dimension": 64,
+  "max_dimension": 1024,
+  "max_new_tokens_requested": 1536,
+  "warmup": 2,
+  "repetitions": 3,
+  "processes": 2,
+  "order": "ABBA",
+  "stop_ids": [
+   11,
+   263
+  ],
+  "focr_max_seq_len": 8192,
+  "focr_max_image_tokens": 39200,
+  "focr_prompt_mode": "hf-split"
+ },
+ "implementations": {
+  "ours": {
+   "implementation": "falcon-ocr (this repository)",
+   "binary_sha256": "09170f25533526efa41d855a26c9987aad88447e08d1bdcd59f0f773af727457",
+   "bench_binary_sha256": "6dc62b32c0454c40e5cd4633e0473a34962b328f2da35325409a9a792e6fe72b",
+   "git_commit": "95daabc031aec3f68c23acd63fb8c989d455032d",
+   "git_dirty_entries": 9,
+   "cargo_lock_sha256": "eb2ac98d2720b84d4197194602f303ada2cc3e382f0f000c265d58386d65fdb6",
+   "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+   "backend": "avx2",
+   "threads": 16,
+   "cache_layout": "expanded",
+   "weight_layout": "unpacked",
+   "precision_lane": "fp32-weights/fp32-compute",
+   "build_lane": "head",
+   "binary_commit_note": "",
+   "model": "artifacts\\model"
+  },
+  "focr": {
+   "implementation": "focr (pszemraj/falcon-ocr.rs)",
+   "binary_sha256": "a1d12c231737c40205eacf5955cb8a48aa00bf762628a1be1a6d4c173109840c",
+   "git_commit": "331be9ef3e13156208c76ca0bbd6e77ead823e07",
+   "git_dirty_entries": 2,
+   "git_diff_sha256": "9b3aac0e02cf4477035430d3e32282fd42ca7319034975a2c9b69a24f3861b94",
+   "ggml_submodule_status": "707321c4cf6d21cb4bc831aa8b687dbf01a521ce vendor/ggml (v0.15.2)",
+   "ggml_submodule_commit": "707321c4cf6d21cb4bc831aa8b687dbf01a521ce",
+   "cargo_lock_sha256": "3c23fa4e2b26c0ded8bc8b4e8b5ff2409ff2bbacfb9e4c240590ab5cccadce15",
+   "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+   "cargo_features": "default (ggml-cpu, turbojpeg)",
+   "cmake_cache_path": ".tmp\\friend-target-avx512\\release\\build\\falcon-ocr-ggml-sys-7a5ba1ce3adda0ff\\out\\ggml-build\\CMakeCache.txt",
+   "cmake_isa": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "GGML_AVX": "ON",
+    "GGML_AVX2": "ON",
+    "GGML_AVX512": "ON",
+    "GGML_AVX512_BF16": "OFF",
+    "GGML_AVX512_VBMI": "OFF",
+    "GGML_AVX512_VNNI": "OFF",
+    "GGML_BMI2": "ON",
+    "GGML_CPU_REPACK": "OFF",
+    "GGML_LLAMAFILE": "OFF",
+    "GGML_NATIVE": "OFF",
+    "GGML_OPENMP": "OFF",
+    "CMAKE_GENERATOR": "Visual Studio 17 2022"
+   },
+   "backend": "ggml-linear",
+   "weight_mode": "resident-f32",
+   "activation_dtype": "f32",
+   "prompt_mode": "hf-split",
+   "max_length": 8192,
+   "max_seq_len": 8192,
+   "max_image_tokens": 39200,
+   "threads": 16,
+   "precision_lane": "fp32-weights/fp32-compute",
+   "build_lane": "modified-ggml-avx512",
+   "patch_path": "artifacts\\benchmarks\\focr-comparison-v1\\focr-avx512-modified.patch",
+   "model": ".tmp\\compare-model"
+  }
+ },
+ "thread_sweep": {
+  "page": "artifacts\\corpus\\v3\\3f294b5e60a0c2d4\\canonical-rgb.png",
+  "max_new_tokens": 256,
+  "ours": [],
+  "focr": [
+   {
+    "threads": 8,
+    "median_model_ms": 61572.2627,
+    "median_prefill_ms": 19694.3938,
+    "median_decode_ms": 42346.1439,
+    "samples": [
+     {
+      "prefill_ms": 19226.118799999997,
+      "decode_ms": 42346.1439,
+      "model_ms": 61572.2627,
+      "e2e_ms": 61645.4656,
+      "total_ocr_latency_ms": 61578.0554,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 6.045414680603303
+     },
+     {
+      "prefill_ms": 19695.5048,
+      "decode_ms": 43070.1236,
+      "model_ms": 62765.6284,
+      "e2e_ms": 62844.3407,
+      "total_ocr_latency_ms": 62774.1989,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 5.9437953412327795
+     },
+     {
+      "prefill_ms": 19694.3938,
+      "decode_ms": 41529.813599999994,
+      "model_ms": 61224.2074,
+      "e2e_ms": 61299.185000000005,
+      "total_ocr_latency_ms": 61230.534400000004,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 6.1642463042502085
+     }
+    ]
+   },
+   {
+    "threads": 16,
+    "median_model_ms": 65065.4663,
+    "median_prefill_ms": 11667.3499,
+    "median_decode_ms": 53325.323599999996,
+    "samples": [
+     {
+      "prefill_ms": 11740.1427,
+      "decode_ms": 53325.323599999996,
+      "model_ms": 65065.4663,
+      "e2e_ms": 65141.3178,
+      "total_ocr_latency_ms": 65073.0437,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.800720984279222
+     },
+     {
+      "prefill_ms": 11667.3499,
+      "decode_ms": 53532.6558,
+      "model_ms": 65200.0057,
+      "e2e_ms": 65275.4154,
+      "total_ocr_latency_ms": 65206.3153,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.782127771811388
+     },
+     {
+      "prefill_ms": 11666.8696,
+      "decode_ms": 53254.9943,
+      "model_ms": 64921.8639,
+      "e2e_ms": 65001.07889999999,
+      "total_ocr_latency_ms": 64928.3248,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.807060884428636
+     }
+    ]
+   },
+   {
+    "threads": 24,
+    "median_model_ms": 73493.13070000001,
+    "median_prefill_ms": 9252.929999999998,
+    "median_decode_ms": 64259.66420000001,
+    "samples": [
+     {
+      "prefill_ms": 9290.9978,
+      "decode_ms": 63925.1318,
+      "model_ms": 73216.1296,
+      "e2e_ms": 73292.80219999999,
+      "total_ocr_latency_ms": 73221.5475,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 4.00468474278531
+     },
+     {
+      "prefill_ms": 9233.4665,
+      "decode_ms": 64259.66420000001,
+      "model_ms": 73493.13070000001,
+      "e2e_ms": 73570.0167,
+      "total_ocr_latency_ms": 73499.3481,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 3.983836566640508
+     },
+     {
+      "prefill_ms": 9252.929999999998,
+      "decode_ms": 64326.865900000004,
+      "model_ms": 73579.7959,
+      "e2e_ms": 73653.5368,
+      "total_ocr_latency_ms": 73585.8175,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 3.979674688301579
+     }
+    ]
+   },
+   {
+    "threads": 32,
+    "median_model_ms": 148136.2185,
+    "median_prefill_ms": 9813.7679,
+    "median_decode_ms": 138322.45059999998,
+    "samples": [
+     {
+      "prefill_ms": 9813.7679,
+      "decode_ms": 138322.45059999998,
+      "model_ms": 148136.2185,
+      "e2e_ms": 148208.0513,
+      "total_ocr_latency_ms": 148141.5816,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 1.8507480086533403
+     },
+     {
+      "prefill_ms": 9732.3756,
+      "decode_ms": 143067.0715,
+      "model_ms": 152799.4471,
+      "e2e_ms": 152872.5575,
+      "total_ocr_latency_ms": 152804.9863,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 1.7893705191274571
+     },
+     {
+      "prefill_ms": 10000.898599999999,
+      "decode_ms": 138114.62,
+      "model_ms": 148115.51859999998,
+      "e2e_ms": 148192.0839,
+      "total_ocr_latency_ms": 148123.3804,
+      "output_tokens": 256,
+      "stop_reason": null,
+      "decode_tok_s": 1.8535329569020282
+     }
+    ]
+   }
+  ],
+  "selected": {
+   "ours": null,
+   "focr": 8
+  }
+ },
+ "pages": [],
+ "notes": [
+  "Lane e sweep: MODIFIED focr build (-DGGML_AVX512=ON); not the unmodified upstream build."
+ ],
+ "finished_utc": "2026-09-22T07:56:25.093247+00:00"
+}

@@ -218,6 +218,11 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(bench[bench.index("--repeats") + 1], "5")
         self.assertEqual(bench[bench.index("--threads") + 1], "32")
 
+    def test_ours_cache_layout_default_is_the_runtime_default(self):
+        args = self.args()
+        cold = cf.ours_cold_command(args, Path("p.png"), 8)
+        self.assertEqual(cold[cold.index("--cache-layout") + 1], "compact")
+
     def test_ours_commands_carry_matched_settings(self):
         args = self.args(max_dimension=1024, ours_threads=16, ours_cache_layout="compact")
         cold = cf.ours_cold_command(args, Path("p.png"), 4096)

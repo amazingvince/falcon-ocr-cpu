@@ -804,7 +804,7 @@ def build_parser() -> argparse.ArgumentParser:
     ours.add_argument("--ours-model", type=Path, default=Path("artifacts/model"))
     ours.add_argument("--ours-threads", type=int, default=16)
     ours.add_argument("--ours-backend", default="avx2")
-    ours.add_argument("--ours-cache-layout", default="expanded")
+    ours.add_argument("--ours-cache-layout", default="compact", help="the runtime default is compact; pass expanded for the previous layout")
     ours.add_argument("--ours-weight-layout", default="unpacked")
     ours.add_argument("--ours-build-lane", default="head", help="label for the binary under test, e.g. head or control-<commit>")
     ours.add_argument("--ours-commit-note", default="", help="which commit the ours binaries were built from, if not HEAD")

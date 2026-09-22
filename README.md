@@ -85,25 +85,25 @@ pool. `recognize` accepts an `image::RgbImage`. `recognize_batch` and
 across active rows. Finished requests leave the batch; results retain input order.
 Set `--batch-size` for the CLI or `RunnerConfig.batch_size` before creating a runner.
 
-`--cache-layout compact` selects reduced KV storage: sixteen image-prefix key
-heads, eight generated-text key heads, and eight value heads. The default remains
-`expanded` until performance qualification. Both paths match bit for bit on the
-single/mixed fixtures on Windows and Linux; reported fixture heap savings are in
-the status document. A full-page Windows batch-one comparison measured 8.7–9.4%
-lower latency with compact caches and about 398 MB lower peak resident memory;
-larger/mixed workload qualification remains pending. Prefill scratch is reused
-across layers and batch requests.
+`--cache-layout` defaults to `compact` for FP32: sixteen image-prefix key
+heads, eight generated-text key heads, and eight value heads. `expanded`
+duplicates every KV head and remains selectable (the experimental BF16 graph
+still requires it). Both layouts match bit for bit on the single/mixed fixtures
+on Windows and Linux; reported fixture heap savings are in the status document.
+The earlier full-page Windows batch-one comparison measured 8.7–9.4% lower
+latency with compact caches and about 398 MB lower peak resident memory.
+Prefill scratch is reused across layers and batch requests.
 
-A separate [fixed-width attention experiment](experiments/attention64/RESULTS-V1.md)
-uses an isolated copied build and measured 6.15–9.43% lower full-page Windows
-latency with expanded caches. All nine measured outputs and the complete smoke
-tensor trace match the control. A [combined compact-cache build](experiments/attention64_compact/RESULTS-V1.md)
-then measured a further 6.15–6.40% latency reduction over fresh compact controls,
-at 63.10 seconds per page with exact outputs. Separate smoke checks confirmed
-zero warm-decode allocations.
-The combined build also passes Linux-under-WSL operator, smoke-tensor and
-allocation checks. These are isolated copied builds, not live runtime options;
-broader workload qualification and bare-metal Linux measurements remain pending.
+Single-query decode attention with 64-wide heads on AVX2 now uses the
+fixed-width kernels in `src/kernels/attention64.rs`, promoted from the
+[expanded-cache](experiments/attention64/RESULTS-V1.md) and
+[compact-cache](experiments/attention64_compact/RESULTS-V1.md) experiments.
+They are bit-identical to the generic loops (eleven operator tests, the
+byte-exact 1,904-tensor smoke trace on both layouts, zero warm-decode
+allocations). The control/candidate/control promotion bracket for the new
+default is recorded in [performance evidence](docs/PERFORMANCE.md). A matched
+head-to-head against an external Rust/GGML implementation is documented in
+[docs/COMPARISON.md](docs/COMPARISON.md).
 
 `--weight-layout phase-packed` adds a once-packed shared weight copy for AVX2
 batch decode. Repeated small-fixture runs reduce batch2/4/8 latency by about
