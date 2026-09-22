@@ -110,7 +110,46 @@ Every NEON cell above currently falls back to scalar code. Before any tuning, th
    - token agreement on the four full pages and the 64-page calibration set against the stored FP32 reference outputs;
    - a speed report against that machine's measured floors.
 
-## 5. Known risks
+## 5. Running on Apple Silicon (first M4 session)
+
+What exists now:
+
+- The SIMD layer and every hot kernel have NEON instantiations:
+  - FP32 and W8 GEMV and GLU;
+  - both decode attentions;
+  - the BF16/Q8 split cache;
+  - the INT8 head screen;
+  - prefill attention tiles;
+  - the portable fast exp.
+- `--backend auto` selects NEON. The NEON code type-checks for `aarch64-apple-darwin` (checked from Windows).
+- Its results are verified on the Mac by `neon == portable` bitwise unit tests.
+
+Prefill projections use the gemm crate's own NEON kernels.
+
+Steps on the Mac:
+
+1. Install the tools: `brew install cmake python`, `pip3 install numpy safetensors`, then rustup. `rust-toolchain.toml` selects 1.94.0.
+2. Check out the `phase4-attempt3` branch.
+3. Get the model: `python3 scripts/fetch_reference.py --output artifacts/model`. Alternatively, copy `artifacts/model` from the Windows host.
+4. Copy these benchmark inputs from the Windows host (all under `artifacts/`, which git ignores):
+   - `artifacts/corpus/v3/3f294b5e60a0c2d4/`
+   - `artifacts/corpus/smoke/{ebac2ad1cac11a99,a1336e3bc391f255,bc2882dcec9a3e02}/`
+   - `artifacts/reference/smoke-fp32/`, which the GPU-token gate and trace tests need
+   - optionally `artifacts/phase4/control-default-4096/`, the Windows FP32 tokens, for comparing tokens across machines
+5. Run `bash scripts/m4_check.sh` (or `QUICK=1` first). It writes `artifacts/portability/<host>-<time>/summary.txt`, with:
+   - machine features (DotProd/I8MM/BF16/SME);
+   - unit and model gates;
+   - per-phase profiles at P-core and all-core thread counts;
+   - a bracket with token agreement for FP32 against W8 + BF16/Q8.
+
+What to look for:
+
+- **`neon_*_bitwise` tests pass.** These establish kernel correctness.
+- **GPU smoke tokens match.** This checks platform numerics end to end.
+- **Decode ms/token against the machine's bandwidth.** If decode is far from bytes per token divided by bandwidth while threads are busy, int8 dequantization is the limit, and roadmap step 4 (SDOT/I8MM) is the fix.
+- **Prefill.** If prefill dominates, Accelerate (AMX/SME) for projections and attention tiles is the lever (roadmap step 3).
+
+## 6. Known risks
 
 - **Inlining.** Generic kernels only match hand-written speed if every trait method inlines into the `#[target_feature]` wrapper. Keep a per-kernel benchmark and compare the old and new AVX2 paths before deleting any hand-written code.
 - **NEON widening cost.** NEON has no single-instruction i8→f32 widening (it takes `sxtl`, `sxtl`, then `scvtf`), so W8 decode may be compute-bound on the M4. Step 4 exists for this reason.
