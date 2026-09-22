@@ -25,3 +25,5 @@ pub use config::{
 };
 pub use model::Model;
 pub use runner::{FinishReason, OcrResult, Runner, Timings};
+
+pub mod attempt;

@@ -77,6 +77,11 @@ impl Runner {
         config: RunnerConfig,
     ) -> Result<Self> {
         config.validate()?;
+        if model.attempt_profile() != crate::attempt::Profile::Reference {
+            ensure!(config.cache_layout == CacheLayout::Compact, "attempt profiles require compact source caches");
+            ensure!(config.batch_size <= 8, "attempt profiles support 1..=8 active rows");
+            ensure!(config.weight_layout == WeightLayout::Unpacked, "attempt profiles do not combine with phase-packed FP32 copies");
+        }
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(config.threads)
             .build()?;
@@ -101,6 +106,11 @@ impl Runner {
         path: impl AsRef<Path>,
         options: &GenerationOptions,
     ) -> Result<OcrResult> {
+        self.recognize_file_with_trace(path, options, &mut NoTrace)
+    }
+    pub fn recognize_file_with_trace(
+        &self, path: impl AsRef<Path>, options: &GenerationOptions, trace: &mut dyn Trace,
+    ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
         let (prepared, decode_ms) =
@@ -109,7 +119,7 @@ impl Runner {
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
         let mut result =
-            self.run_prepared_scoped(prepared, tokens, options, prep_ms, &mut NoTrace, &[])?;
+            self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
         result.timings.image_decode_ms = decode_ms;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
         result.timings.time_to_first_token_ms += decode_ms;
@@ -196,11 +206,16 @@ impl Runner {
         paths: &[P],
         options: &GenerationOptions,
     ) -> Result<Vec<OcrResult>> {
+        self.recognize_files_with_trace(paths, options, &mut NoTrace)
+    }
+    pub fn recognize_files_with_trace<P: AsRef<Path>>(
+        &self, paths: &[P], options: &GenerationOptions, trace: &mut dyn Trace,
+    ) -> Result<Vec<OcrResult>> {
         options.validate()?;
         let mut results = Vec::with_capacity(paths.len());
         for (chunk_index, chunk) in paths.chunks(self.config.batch_size).enumerate() {
             if chunk.len() == 1 {
-                results.push(self.recognize_file(&chunk[0], options)?);
+                results.push(self.recognize_file_with_trace(&chunk[0], options, trace)?);
                 continue;
             }
             let started = Instant::now();
@@ -224,13 +239,23 @@ impl Runner {
                     inputs,
                     options,
                     started,
-                    &mut NoTrace,
+                    trace,
                     chunk_index * self.config.batch_size,
                 )
             })?;
             results.append(&mut outputs);
         }
         Ok(results)
+    }
+
+    fn seal_for_attempt(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
+        let mode=self.model.attempt_profile().prefix_mode();
+        if mode != crate::attempt::PrefixMode::Reference {
+            let before=session.cache_bytes(); let t=Instant::now();
+            session.seal_prefix(&self.model.config, mode)?;
+            trace.prefix_sealed(before,session.cache_bytes(),t.elapsed().as_secs_f64()*1000.0);
+        }
+        Ok(())
     }
 
     fn run_batch_chunk(
@@ -285,6 +310,9 @@ impl Runner {
                     .forward(&mut hidden, &pos_t, &pos_hw, &mut session, trace, &phase)?;
             let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
             let token = argmax(logits)?;
+            if !stops.contains(&token) && options.max_new_tokens > 1 {
+                self.seal_for_attempt(&mut session, trace)?;
+            }
             let prefill_ms = prefill_started.elapsed().as_secs_f64() * 1000.;
             let first_token_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
             let mut generated = Vec::with_capacity(options.max_new_tokens);
@@ -313,6 +341,9 @@ impl Runner {
                     total_ms: if finished { first_token_ms } else { 0. },
                 },
             });
+            if finished && self.model.attempt_profile().memory_hygiene() {
+                trace.cache_retired(session.retire_cache());
+            }
             sessions.push(session);
         }
         // All earlier sessions handed their scratch to the next prefill. Joint
@@ -330,6 +361,7 @@ impl Runner {
         }
         let mut tokens = Vec::with_capacity(count);
         let mut batch = BatchWorkspace::new(active.len(), c);
+        if self.model.attempt_profile().quantizes_body() { batch.prepare_attempt(active.len(), c); }
         let decode_started = Instant::now();
         let mut step = 0;
         trace.decode_start();
@@ -350,6 +382,7 @@ impl Runner {
                     .collect::<Vec<_>>();
                 trace.tensor(&format!("{phase}.request_indices"), &[active.len()], &ids)?;
             }
+            let step_started = Instant::now();
             let logits = self.model.decode_batch(
                 &tokens,
                 &active,
@@ -359,6 +392,8 @@ impl Runner {
                 trace,
                 &phase,
             )?;
+            trace.decode_step(active.len(), step_started.elapsed().as_secs_f64()*1000.0,
+                sessions.iter().map(Session::cache_bytes).sum());
             for (row, &index) in active.iter().enumerate() {
                 let token = argmax(&logits[row * c.vocab_size..(row + 1) * c.vocab_size])?;
                 let state = &mut states[index];
@@ -373,6 +408,9 @@ impl Runner {
                 if state.finished {
                     state.timings.decode_ms = decode_started.elapsed().as_secs_f64() * 1000.;
                     state.timings.total_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
+                    if self.model.attempt_profile().memory_hygiene() {
+                        trace.cache_retired(sessions[index].retire_cache());
+                    }
                 }
             }
             active.retain(|&index| !states[index].finished);
@@ -391,7 +429,7 @@ impl Runner {
                     width: state.width,
                     height: state.height,
                     input_tokens: state.input_tokens,
-                    precision: "fp32".into(),
+                    precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference { "fp32".into() } else {format!("attempt3/{}",self.model.attempt_profile().label())},
                     backend: format!("rust-gemm/{:?}", simd.resolved()).to_lowercase(),
                     cache_layout: self.config.cache_layout,
                     weight_layout: self.config.weight_layout,
@@ -455,6 +493,17 @@ impl Runner {
         } else {
             argmax(logits)?
         };
+        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token)) && options.max_new_tokens > 1 {
+            self.seal_for_attempt(&mut session, trace)?;
+        }
+        if self.model.attempt_profile().memory_hygiene() {
+            session.prepare_small_decode(c);
+            hidden = Vec::with_capacity(c.dim);
+            drop(prepared.patches);
+            drop(prepared.positions_hw);
+            drop(pos_t);
+            drop(pos_hw);
+        }
         let prefill_ms = start.elapsed().as_secs_f64() * 1000.;
         let decode_start = Instant::now();
         let stops = self.tokenizer.stop_ids();
@@ -471,6 +520,7 @@ impl Runner {
             if step + 1 == options.max_new_tokens {
                 break;
             }
+            let step_started=Instant::now();
             self.model.embed(&[token], None, simd, &mut hidden)?;
             let phase = if trace.enabled() {
                 format!("decode.{step}")
@@ -485,11 +535,13 @@ impl Runner {
                 trace,
                 &phase,
             )?;
+            let step_ms = step_started.elapsed().as_secs_f64()*1000.0;
             next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
                 forced
             } else {
                 argmax(logits)?
             };
+            trace.decode_step(1,step_ms,session.cache_bytes());
         }
         trace.decode_end();
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
@@ -502,7 +554,7 @@ impl Runner {
             width: prepared.width,
             height: prepared.height,
             input_tokens: tokens.len(),
-            precision: "fp32".into(),
+            precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference { "fp32".into() } else {format!("attempt3/{}",self.model.attempt_profile().label())},
             backend: format!("rust-gemm/{:?}", simd.resolved()).to_lowercase(),
             cache_layout: self.config.cache_layout,
             weight_layout: self.config.weight_layout,

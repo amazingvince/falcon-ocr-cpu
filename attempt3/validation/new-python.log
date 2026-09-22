@@ -1,0 +1,34 @@
+test_payload_accounting (test_attempt3.AttentionMathTests.test_payload_accounting) ... ok
+test_split_cache_and_single_sink (test_attempt3.AttentionMathTests.test_split_cache_and_single_sink) ... ok
+test_changed_text_never_promoted (test_attempt3.ComparisonTests.test_changed_text_never_promoted) ... ok
+test_drift_disqualifies (test_attempt3.ComparisonTests.test_drift_disqualifies) ... ok
+test_edit_distance_exact_and_bounded (test_attempt3.ComparisonTests.test_edit_distance_exact_and_bounded) ... ok
+test_exact_complete_comparison (test_attempt3.ComparisonTests.test_exact_complete_comparison) ... ok
+test_manifest_validation (test_attempt3.ComparisonTests.test_manifest_validation) ... ok
+test_nondeterministic_samples_fail (test_attempt3.ComparisonTests.test_nondeterministic_samples_fail) ... ok
+test_optional_cer_not_silently_quality_gate (test_attempt3.ComparisonTests.test_optional_cer_not_silently_quality_gate) ... ok
+test_reject_binary_mismatch (test_attempt3.ComparisonTests.test_reject_binary_mismatch) ... ok
+test_reject_resolution_mismatch (test_attempt3.ComparisonTests.test_reject_resolution_mismatch) ... ok
+test_truncated_control_not_complete_page_evidence (test_attempt3.ComparisonTests.test_truncated_control_not_complete_page_evidence) ... ok
+test_inventory_excludes_protected_tensors (test_attempt3.EncodingTests.test_inventory_excludes_protected_tensors) ... ok
+test_matches_scalar_formula (test_attempt3.EncodingTests.test_matches_scalar_formula) ... ok
+test_partial_groups_and_error_bounds (test_attempt3.EncodingTests.test_partial_groups_and_error_bounds) ... ok
+test_reject_nonfinite_empty_group (test_attempt3.EncodingTests.test_reject_nonfinite_empty_group) ... ok
+test_safetensors_roundtrip (test_attempt3.EncodingTests.test_safetensors_roundtrip) ... ok
+test_subnormal (test_attempt3.EncodingTests.test_subnormal) ... ok
+test_zero_ties_and_endpoints (test_attempt3.EncodingTests.test_zero_ties_and_endpoints) ... ok
+test_bracket_driver_records_all_arms_and_routes_overlay (test_attempt3.HarnessWorkflowTests.test_bracket_driver_records_all_arms_and_routes_overlay) ... journal / w8-body / before
+journal / w8-body / candidate
+journal / w8-body / after
+ok
+test_invalid_manifest_never_launches_native_process (test_attempt3.HarnessWorkflowTests.test_invalid_manifest_never_launches_native_process) ... ok
+test_cache_seal_and_retirement_wired (test_attempt3.WiringTests.test_cache_seal_and_retirement_wired) ... ok
+test_no_silent_switch_to_original_weights (test_attempt3.WiringTests.test_no_silent_switch_to_original_weights) ... ok
+test_reference_loader_still_default (test_attempt3.WiringTests.test_reference_loader_still_default) ... ok
+test_source_model_identity_not_relaxed (test_attempt3.WiringTests.test_source_model_identity_not_relaxed) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.050s
+
+OK
+/tmp/tmpxmr5lk70/reports/summary.json

@@ -1,5 +1,6 @@
 [package]
 name = "falcon-ocr"
+default-run = "falcon-ocr"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.94"
@@ -33,3 +34,7 @@ debug = 1
 [[bin]]
 name = "falcon-ocr"
 path = "src/main.rs"
+
+[[bin]]
+name = "falcon-ocr-attempt"
+path = "src/bin/falcon-ocr-attempt.rs"

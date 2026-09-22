@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, ops::Range, path::Path, sync::OnceLock, time::Instant};
+use std::{collections::HashMap, fs::File, ops::Range, path::Path, sync::{Arc, OnceLock}, time::Instant};
 
 use anyhow::{Context, Result, bail, ensure};
 use memmap2::Mmap;
@@ -15,6 +15,7 @@ use crate::{
 #[derive(Clone)]
 struct Weight {
     range: Range<usize>,
+    quantized: Option<Arc<crate::attempt::quant::Q8Linear>>,
 }
 struct Layer {
     qkv: Weight,
@@ -48,6 +49,9 @@ pub struct Model {
     temporal: Vec<[f32; 2]>,
     layers: Vec<Layer>,
     packed: OnceLock<PackedWeights>,
+    attempt_profile: crate::attempt::Profile,
+    attempt_setup_ms: f64,
+    attempt_artifact_sha256: Option<String>,
     pub(crate) weights_sha256: String,
 }
 
@@ -142,6 +146,7 @@ impl Model {
                     tensor.shape().to_vec(),
                     Weight {
                         range: start..start + tensor.data().len(),
+                        quantized: None,
                     },
                 ),
             );
@@ -201,8 +206,106 @@ impl Model {
             temporal,
             layers,
             packed: OnceLock::new(),
+            attempt_profile: crate::attempt::Profile::Reference,
+            attempt_setup_ms: 0.0,
+            attempt_artifact_sha256: None,
             weights_sha256: hash,
         })
+    }
+
+    /// Load a separately labelled experiment without changing the reference loader.
+    /// Source weights remain mmap-backed for protected tensors and the oracle.
+    /// The mapping length is NOT equivalent to additional committed/resident RAM.
+    pub fn load_attempt(dir: impl AsRef<Path>, profile: crate::attempt::Profile,
+        artifact: Option<&Path>) -> Result<Self> {
+        let mut model = Self::load(dir)?;
+        model.attempt_profile = profile;
+        ensure!(artifact.is_none() || profile.quantizes_body(), "W8 artifact supplied to an FP32 profile");
+        if !profile.quantizes_body() { return Ok(model); }
+        let started = Instant::now();
+        let bytes = artifact.map(std::fs::read).transpose()?;
+        let tensors = bytes.as_ref().map(|b| SafeTensors::deserialize(b)).transpose()?;
+        if let Some(bytes) = &bytes {
+            ensure!(bytes.len() >= 8, "short W8 artifact");
+            let len = usize::try_from(u64::from_le_bytes(bytes[..8].try_into()?))?;
+            let end = 8usize.checked_add(len).context("W8 header overflow")?;
+            ensure!(end <= bytes.len(), "W8 header out of bounds");
+            let header: serde_json::Value = serde_json::from_slice(&bytes[8..end])?;
+            let meta = header.get("__metadata__").context("W8 metadata missing")?;
+            let check = |key: &str, expected: &str| -> Result<()> {
+                ensure!(meta.get(key).and_then(|v|v.as_str()) == Some(expected), "W8 metadata {key} mismatch"); Ok(())
+            };
+            check("format", "falcon-ocr-attempt3-w8g64-v1")?;
+            check("source_sha256", WEIGHTS_SHA256)?;
+            check("model_revision", crate::config::MODEL_REVISION)?;
+            check("include_head", if profile.quantizes_head() {"true"} else {"false"})?;
+            check("group_size", "64")?;
+            check("scale_dtype", "f32")?;
+            check("rounding", "ties_to_even")?;
+            check("activation_dtype", "f32")?;
+            model.attempt_artifact_sha256 = Some(format!("{:x}", Sha256::digest(bytes)));
+            ensure!(tensors.as_ref().unwrap().len() == 2*(4*model.config.n_layers + (profile.quantizes_head() as usize)),
+                "W8 artifact has unexpected tensors");
+        }
+        // Build separately before mutating Weight handles (and their source views).
+        let mut prepared = Vec::new();
+        let make = |name: &str, w: &Weight, input: usize, output: usize| -> Result<Arc<crate::attempt::quant::Q8Linear>> {
+            use crate::attempt::quant::Q8Linear;
+            let q = if let Some(tensors) = &tensors {
+                let codes=tensors.tensor(&format!("{name}.__w8_codes"))?;
+                let scales=tensors.tensor(&format!("{name}.__w8_scales"))?;
+                ensure!(codes.dtype()==Dtype::I8 && codes.shape()==[output,input],"W8 codes dtype/shape for {name}");
+                ensure!(scales.dtype()==Dtype::F32 && scales.shape()==[output,input.div_ceil(64)],"W8 scales dtype/shape for {name}");
+                let codes=codes.data().iter().map(|&x|x as i8).collect();
+                let scales=scales.data().chunks_exact(4).map(|b|f32::from_le_bytes(b.try_into().unwrap())).collect();
+                Q8Linear::from_parts(output,input,64,codes,scales)?
+            } else {
+                Q8Linear::quantize(model.w(w),output,input,64).map_err(anyhow::Error::msg)?
+            };
+            Ok(Arc::new(q))
+        };
+        let c=&model.config;
+        for (i,l) in model.layers.iter().enumerate() {
+            prepared.push(make(&format!("layers.{i}.attention.wqkv.weight"),&l.qkv,c.dim,c.query_dim()+2*c.kv_dim())?);
+            prepared.push(make(&format!("layers.{i}.attention.wo.weight"),&l.wo,c.query_dim(),c.dim)?);
+            prepared.push(make(&format!("layers.{i}.feed_forward.w13.weight"),&l.w13,c.dim,2*c.ffn_dim)?);
+            prepared.push(make(&format!("layers.{i}.feed_forward.w2.weight"),&l.w2,c.ffn_dim,c.dim)?);
+        }
+        if profile.quantizes_head() { prepared.push(make("output.weight",&model.output,c.dim,c.vocab_size)?); }
+        let mut prepared=prepared.into_iter();
+        for l in &mut model.layers {
+            l.qkv.quantized=prepared.next(); l.wo.quantized=prepared.next();
+            l.w13.quantized=prepared.next(); l.w2.quantized=prepared.next();
+        }
+        if profile.quantizes_head() { model.output.quantized=prepared.next(); }
+        model.attempt_setup_ms=started.elapsed().as_secs_f64()*1000.0;
+        Ok(model)
+    }
+    pub fn attempt_profile(&self) -> crate::attempt::Profile { self.attempt_profile }
+    pub fn attempt_memory_report(&self) -> serde_json::Value {
+        let qbytes=|w:&Weight|w.quantized.as_ref().map_or(0,|q|q.payload_bytes());
+        let effective=|w:&Weight|w.quantized.as_ref().map_or(w.range.len(),|q|q.payload_bytes());
+        let quantized=self.layers.iter().map(|l|qbytes(&l.qkv)+qbytes(&l.wo)+qbytes(&l.w13)+qbytes(&l.w2)).sum::<usize>()+qbytes(&self.output);
+        let scanned=self.layers.iter().map(|l|effective(&l.qkv)+effective(&l.wo)+effective(&l.w13)+effective(&l.w2)).sum::<usize>()+effective(&self.output);
+        serde_json::json!({"profile":self.attempt_profile,"source_mapping_bytes":self.map.len(),
+            "quantized_weight_payload_bytes":quantized,"logical_decode_weight_scan_bytes":scanned,
+            "quantization_or_import_ms":self.attempt_setup_ms,"w8_artifact_sha256":self.attempt_artifact_sha256,
+            "source_mapping_is_not_rss":true,"weights_group_size":64,"weights_scale_dtype":"f32",
+            "large_m_policy":"expand the SAME W8 values into one reusable per-operation F32 scratch matrix",
+            "w8_small_m_policy":"AVX2/FMA if available and not explicit Scalar; otherwise scalar; floating activations, not integer dot",
+            "kv_policy":"deferred compression AFTER full FP32-arithmetic prefill using the SELECTED numerical weights; generated tail F32"})
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn linear(&self, input:&[f32],rows:usize,input_dim:usize,w:&Weight,
+        packed:Option<&PhasePackedLinear>,output_dim:usize,output:&mut[f32],
+        scratch:&mut crate::attempt::quant::Scratch,simd:kernels::Simd) -> Result<()> {
+        if let Some(q)=&w.quantized {
+            ensure!(packed.is_none(),"phase-packed FP32 weights cannot override W8 numerical weights");
+            q.linear(input,rows,output,scratch,simd)
+        } else {
+            decode_linear(input,rows,input_dim,self.w(w),packed,output_dim,output,simd);
+            Ok(())
+        }
     }
 
     fn w(&self, weight: &Weight) -> &[f32] {
@@ -311,15 +414,17 @@ impl Model {
         );
         for (i, layer) in self.layers.iter().enumerate() {
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            kernels::linear_with_simd(
+            self.linear(
                 &work.normalized,
                 rows,
                 c.dim,
-                self.w(&layer.qkv),
+                &layer.qkv,
+                None,
                 qkv_width,
                 &mut work.qkv,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             // Normalize each original K head before GQA expansion. Spatial rotations
             // subsequently differ for paired heads, so expanded keys are intentional.
             for r in 0..rows {
@@ -397,38 +502,44 @@ impl Model {
                     &work.attn,
                 )?;
             }
-            kernels::linear_with_simd(
+            self.linear(
                 &work.attn,
                 rows,
                 qdim,
-                self.w(&layer.wo),
+                &layer.wo,
+                None,
                 c.dim,
                 &mut work.projected,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             for (x, a) in h.iter_mut().zip(&work.projected) {
                 *x += a;
             }
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            kernels::linear_with_simd(
+            self.linear(
                 &work.normalized,
                 rows,
                 c.dim,
-                self.w(&layer.w13),
+                &layer.w13,
+                None,
                 2 * c.ffn_dim,
                 &mut work.ffn_packed,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             kernels::squared_relu_gate(&work.ffn_packed, &mut work.gated);
-            kernels::linear_with_simd(
+            self.linear(
                 &work.gated,
                 rows,
                 c.ffn_dim,
-                self.w(&layer.w2),
+                &layer.w2,
+                None,
                 c.dim,
                 &mut work.projected,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             for (x, a) in h.iter_mut().zip(&work.projected) {
                 *x += a;
             }
@@ -443,15 +554,17 @@ impl Model {
         let norm = &mut work.normalized[..c.dim];
         kernels::rms_norm(last, norm, c.dim, c.norm_eps, Some(self.w(&self.norm)));
         work.logits.resize(c.vocab_size, 0.);
-        kernels::linear_with_simd(
+        self.linear(
             norm,
             1,
             c.dim,
-            self.w(&self.output),
+            &self.output,
+                None,
             c.vocab_size,
             &mut work.logits,
+            &mut work.quant_scratch,
             simd,
-        );
+        )?;
         if trace.enabled() {
             trace.tensor(&format!("{phase}.logits"), &[c.vocab_size], &work.logits)?;
         }
@@ -525,16 +638,17 @@ impl Model {
         let qkv_width = qdim + 2 * kdim;
         for (i, layer) in self.layers.iter().enumerate() {
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            decode_linear(
+            self.linear(
                 &work.normalized,
                 rows,
                 c.dim,
-                self.w(&layer.qkv),
+                &layer.qkv,
                 packed.map(|p| &p.layers[i].qkv),
                 qkv_width,
                 &mut work.qkv,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             for row in 0..rows {
                 let qkv = &work.qkv[row * qkv_width..(row + 1) * qkv_width];
                 for head in 0..c.n_heads {
@@ -613,41 +727,44 @@ impl Model {
                     &work.attn,
                 )?;
             }
-            decode_linear(
+            self.linear(
                 &work.attn,
                 rows,
                 qdim,
-                self.w(&layer.wo),
+                &layer.wo,
                 packed.map(|p| &p.layers[i].wo),
                 c.dim,
                 &mut work.projected,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             for (x, a) in h.iter_mut().zip(&work.projected) {
                 *x += a;
             }
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            decode_linear(
+            self.linear(
                 &work.normalized,
                 rows,
                 c.dim,
-                self.w(&layer.w13),
+                &layer.w13,
                 packed.map(|p| &p.layers[i].w13),
                 2 * c.ffn_dim,
                 &mut work.ffn_packed,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             kernels::squared_relu_gate(&work.ffn_packed, &mut work.gated);
-            decode_linear(
+            self.linear(
                 &work.gated,
                 rows,
                 c.ffn_dim,
-                self.w(&layer.w2),
+                &layer.w2,
                 packed.map(|p| &p.layers[i].w2),
                 c.dim,
                 &mut work.projected,
+                &mut work.quant_scratch,
                 simd,
-            );
+            )?;
             for (x, a) in h.iter_mut().zip(&work.projected) {
                 *x += a;
             }
@@ -667,16 +784,17 @@ impl Model {
             Some(self.w(&self.norm)),
         );
         work.logits.resize(rows * c.vocab_size, 0.);
-        decode_linear(
+        self.linear(
             &work.normalized,
             rows,
             c.dim,
-            self.w(&self.output),
+            &self.output,
             packed.map(|p| &p.output),
             c.vocab_size,
             &mut work.logits,
+            &mut work.quant_scratch,
             simd,
-        );
+        )?;
         if trace.enabled() {
             trace.tensor(
                 &format!("{phase}.logits"),
@@ -715,10 +833,14 @@ pub(crate) struct BatchWorkspace {
     work: Workspace,
 }
 impl BatchWorkspace {
+    pub(crate) fn prepare_attempt(&mut self, rows: usize, c: &ModelConfig) {
+        self.work.quant_scratch.reserve_decode(rows, c.vocab_size);
+    }
     pub fn new(rows: usize, c: &ModelConfig) -> Self {
         let mut work = Workspace::default();
         work.resize(rows, c);
         work.rope.resize(rows * c.query_dim() / 2, [1., 0.]);
+
         work.logits.resize(rows * c.vocab_size, 0.);
         Self {
             hidden: vec![0.; rows * c.dim],
@@ -740,6 +862,7 @@ pub(crate) struct Session {
     simd: kernels::Simd,
 }
 enum LayerCache {
+    Split(crate::attempt::prefix::SplitPrefix),
     Expanded {
         k: Vec<f32>,
         v: Vec<f32>,
@@ -754,6 +877,10 @@ enum LayerCache {
 impl LayerCache {
     fn append(&mut self, k: &[f32], v: &[f32], offset: usize, c: &ModelConfig) {
         match self {
+            Self::Split(cache) => {
+                append_unique_heads(&mut cache.generated_k, k, c);
+                append_unique_heads(&mut cache.generated_v, v, c);
+            }
             Self::Expanded { k: keys, v: values } => {
                 keys.extend_from_slice(k);
                 values.extend_from_slice(v);
@@ -790,6 +917,11 @@ impl LayerCache {
         simd: kernels::Simd,
     ) {
         match self {
+            Self::Split(cache) => {
+                assert_eq!(rows, 1, "sealed prefix supports text decode only");
+                assert!(offset >= image_end, "cannot treat a partial image as causal decode");
+                cache.attention_decode(q, total_len, sinks, output, simd);
+            }
             Self::Expanded { k, v } => kernels::attention_with_simd(
                 q,
                 k,
@@ -849,6 +981,34 @@ fn append_unique_heads(output: &mut Vec<f32>, expanded: &[f32], c: &ModelConfig)
     }
 }
 impl Session {
+    pub(crate) fn cache_bytes(&self) -> usize {
+        self.layers.iter().map(|c|match c {
+            LayerCache::Expanded{k,v}=>4*(k.capacity()+v.capacity()),
+            LayerCache::Compact{prefix_k,generated_k,v,..}=>4*(prefix_k.capacity()+generated_k.capacity()+v.capacity()),
+            LayerCache::Split(c)=>c.bytes(),
+        }).sum()
+    }
+    pub(crate) fn retire_cache(&mut self) -> usize {
+        let bytes=self.cache_bytes(); self.layers=Vec::new(); self.capacity=0; bytes
+    }
+    pub(crate) fn seal_prefix(&mut self,c:&ModelConfig,mode:crate::attempt::PrefixMode)->Result<()> {
+        if mode==crate::attempt::PrefixMode::Reference {return Ok(());}
+        for layer in &mut self.layers {
+            if let LayerCache::Compact{prefix_k,v,prefix_len,..}=layer {
+                ensure!(self.len==*prefix_len,"seal only a complete prefix, before any text decode");
+                let packed=crate::attempt::prefix::SplitPrefix::from_compact(prefix_k,v,*prefix_len,self.capacity,c,mode)?;
+                *layer=LayerCache::Split(packed);
+            } else {bail!("attempt prefix sealing requires an unsealed compact cache");}
+        }
+        Ok(())
+    }
+    pub(crate) fn prepare_small_decode(&mut self,c:&ModelConfig) {
+        self.workspace=Workspace::default();
+        self.workspace.resize(1,c);
+        self.workspace.rope.resize(c.query_dim()/2,[1.0,0.0]);
+        self.workspace.logits.resize(c.vocab_size,0.0);
+        self.workspace.quant_scratch.reserve_decode(1,c.vocab_size);
+    }
     /// Sequential batch prefills share one scratch allocation. The preceding
     /// request has already consumed its logits; only its KV cache is retained.
     pub(crate) fn reuse_workspace_from(&mut self, previous: &mut Self) {
@@ -914,6 +1074,7 @@ impl Session {
 
 #[derive(Default)]
 struct Workspace {
+    quant_scratch: crate::attempt::quant::Scratch,
     normalized: Vec<f32>,
     qkv: Vec<f32>,
     q: Vec<f32>,

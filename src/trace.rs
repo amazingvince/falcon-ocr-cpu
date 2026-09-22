@@ -11,6 +11,9 @@ pub trait Trace: Send {
     /// allocation/profiling instruments to observe the steady decode loop.
     fn decode_start(&mut self) {}
     fn decode_end(&mut self) {}
+    fn decode_step(&mut self, _rows: usize, _ms: f64, _kv_bytes: usize) {}
+    fn prefix_sealed(&mut self, _before: usize, _after: usize, _ms: f64) {}
+    fn cache_retired(&mut self, _bytes: usize) {}
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()>;
 }
 pub struct NoTrace;
@@ -46,6 +49,9 @@ impl Trace for PrefixedTrace<'_> {
     fn decode_end(&mut self) {
         self.inner.decode_end();
     }
+    fn decode_step(&mut self, rows: usize, ms: f64, kv_bytes: usize) { self.inner.decode_step(rows,ms,kv_bytes); }
+    fn prefix_sealed(&mut self, before: usize, after: usize, ms: f64) { self.inner.prefix_sealed(before,after,ms); }
+    fn cache_retired(&mut self, bytes: usize) { self.inner.cache_retired(bytes); }
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
         self.inner
             .tensor(&format!("{}.{name}", self.prefix), shape, data)

@@ -1,0 +1,12 @@
+{
+  "suite": "tests",
+  "tests_run": 70,
+  "successful_test_methods": 70,
+  "failures": 0,
+  "error_records": 0,
+  "skipped": 0,
+  "was_successful": true,
+  "errors": [],
+  "failure_details": [],
+  "skip_details": []
+}

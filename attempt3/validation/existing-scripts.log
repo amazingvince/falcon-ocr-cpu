@@ -1,0 +1,247 @@
+setUpClass (test_bf16_ptx_observer.ObserverTests) ... ERROR
+setUpClass (test_bf16_ptx_observer_v2.ObserverTests) ... ERROR
+test_agreement_strips_stop_tokens (test_compare_focr.AgreementTests.test_agreement_strips_stop_tokens) ... ok
+test_first_divergence (test_compare_focr.AgreementTests.test_first_divergence) ... ok
+test_levenshtein (test_compare_focr.AgreementTests.test_levenshtein) ... ok
+test_levenshtein_falls_back_on_huge_inputs (test_compare_focr.AgreementTests.test_levenshtein_falls_back_on_huge_inputs) ... ok
+test_focr_commands_carry_matched_settings (test_compare_focr.CommandTests.test_focr_commands_carry_matched_settings) ... ok
+test_ours_commands_carry_matched_settings (test_compare_focr.CommandTests.test_ours_commands_carry_matched_settings) ... ok
+test_first_json_object_skips_noise_and_trailing_text (test_compare_focr.ParsingTests.test_first_json_object_skips_noise_and_trailing_text) ... ok
+test_focr_cold_parser_derives_stop_reason (test_compare_focr.ParsingTests.test_focr_cold_parser_derives_stop_reason) ... ok
+test_focr_preprocess_parser (test_compare_focr.ParsingTests.test_focr_preprocess_parser) ... ok
+test_last_json_line_takes_last_object_line (test_compare_focr.ParsingTests.test_last_json_line_takes_last_object_line) ... ok
+test_ours_cold_parser (test_compare_focr.ParsingTests.test_ours_cold_parser) ... ok
+test_bracket_order_is_abba (test_compare_focr.PolicyTests.test_bracket_order_is_abba) ... ok
+test_clamp_max_new_tokens (test_compare_focr.PolicyTests.test_clamp_max_new_tokens) ... ok
+test_focr_stop_reason (test_compare_focr.PolicyTests.test_focr_stop_reason) ... ok
+test_geometry_check (test_compare_focr.PolicyTests.test_geometry_check) ... ok
+test_parse_cmake_isa (test_compare_focr.PolicyTests.test_parse_cmake_isa) ... ok
+test_markdown_renders_without_error (test_compare_focr.RenderTests.test_markdown_renders_without_error) ... ok
+test_control_drift (test_compare_focr.SampleTests.test_control_drift) ... ok
+test_focr_bench_drops_warmups (test_compare_focr.SampleTests.test_focr_bench_drops_warmups) ... ok
+test_ocr_bench_samples_and_summary (test_compare_focr.SampleTests.test_ocr_bench_samples_and_summary) ... ok
+test_alias_collision_is_not_silently_overwritten (test_compare_traces.TraceComparisonTests.test_alias_collision_is_not_silently_overwritten) ... ok
+test_margin_gate_distinguishes_stable_and_near_tie (test_compare_traces.TraceComparisonTests.test_margin_gate_distinguishes_stable_and_near_tie) ... ok
+test_nonfinite_logits_are_rejected_even_when_both_match (test_compare_traces.TraceComparisonTests.test_nonfinite_logits_are_rejected_even_when_both_match) ... ok
+test_policy_bounds_must_be_finite_nonnegative_numbers (test_compare_traces.TraceComparisonTests.test_policy_bounds_must_be_finite_nonnegative_numbers) ... ok
+test_stats_rejects_shape_and_nonfinite_sign_mismatches (test_compare_traces.TraceComparisonTests.test_stats_rejects_shape_and_nonfinite_sign_mismatches) ... ok
+test_tie_report_uses_first_argmax_index (test_compare_traces.TraceComparisonTests.test_tie_report_uses_first_argmax_index) ... ok
+test_build_proof_rejects_changed_binary_or_archive (test_corpus_comparison.ComparisonTests.test_build_proof_rejects_changed_binary_or_archive) ... ok
+test_changed_page_annotations_hashes_or_metadata_rejected (test_corpus_comparison.ComparisonTests.test_changed_page_annotations_hashes_or_metadata_rejected) ... ok
+test_defaults_remain_same_manifest_strict (test_corpus_comparison.ComparisonTests.test_defaults_remain_same_manifest_strict) ... ok
+test_duplicate_id_and_duplicate_image_key_rejected (test_corpus_comparison.ComparisonTests.test_duplicate_id_and_duplicate_image_key_rejected) ... ok
+test_empty_selection_cannot_qualify (test_corpus_comparison.ComparisonTests.test_empty_selection_cannot_qualify) ... ok
+test_explicit_subset_and_different_threads_timings_pass (test_corpus_comparison.ComparisonTests.test_explicit_subset_and_different_threads_timings_pass) ... ok
+test_gpu_cli_empty_ids_or_replay_cannot_qualify (test_corpus_comparison.ComparisonTests.test_gpu_cli_empty_ids_or_replay_cannot_qualify) ... ok
+test_gpu_cli_explicit_parent_and_strict_default (test_corpus_comparison.ComparisonTests.test_gpu_cli_explicit_parent_and_strict_default) ... ok
+test_gpu_cli_partial_output_mismatch_exits_failure (test_corpus_comparison.ComparisonTests.test_gpu_cli_partial_output_mismatch_exits_failure) ... ok
+test_malformed_results_cannot_be_complete (test_corpus_comparison.ComparisonTests.test_malformed_results_cannot_be_complete) ... ok
+test_missing_historical_semantics_are_explicit_not_filled (test_corpus_comparison.ComparisonTests.test_missing_historical_semantics_are_explicit_not_filled) ... ok
+test_missing_pages_are_partial_and_explicit (test_corpus_comparison.ComparisonTests.test_missing_pages_are_partial_and_explicit) ... ok
+test_non_json_page_is_failed_not_missing (test_corpus_comparison.ComparisonTests.test_non_json_page_is_failed_not_missing) ... ok
+test_snapshot_hash_uses_the_parsed_bytes_once (test_corpus_comparison.ComparisonTests.test_snapshot_hash_uses_the_parsed_bytes_once) ... ok
+test_text_stop_count_dimensions_are_compared (test_corpus_comparison.ComparisonTests.test_text_stop_count_dimensions_are_compared) ... ok
+test_unbound_page_replay_is_rejected (test_corpus_comparison.ComparisonTests.test_unbound_page_replay_is_rejected) ... ok
+test_unbound_run_replay_is_rejected (test_corpus_comparison.ComparisonTests.test_unbound_run_replay_is_rejected) ... ok
+test_wrong_parent_content_even_with_its_hash_rejected (test_corpus_comparison.ComparisonTests.test_wrong_parent_content_even_with_its_hash_rejected) ... ok
+test_wrong_parent_hash_rejected (test_corpus_comparison.ComparisonTests.test_wrong_parent_hash_rejected) ... ok
+test_wrong_recorded_prompt_or_argmax_rejected (test_corpus_comparison.ComparisonTests.test_wrong_recorded_prompt_or_argmax_rejected) ... ok
+test_attention_typed_kernel_parameters (test_cuda_ptx_reference.AbiTests.test_attention_typed_kernel_parameters) ... ok
+test_bad_attention_pointer_count_rejected (test_cuda_ptx_reference.AbiTests.test_bad_attention_pointer_count_rejected) ... ok
+test_bad_elf_rejected (test_cuda_ptx_reference.AbiTests.test_bad_elf_rejected) ... ok
+test_natural_lse_distinct_i64_size (test_cuda_ptx_reference.AbiTests.test_natural_lse_distinct_i64_size) ... ok
+test_real_code_section_and_truncation (test_cuda_ptx_reference.AbiTests.test_real_code_section_and_truncation) ... skipped 'Pinned cubin required'
+test_comparison_accepts_exact_outputs_without_promoting (test_realistic_benchmark.ReportValidation.test_comparison_accepts_exact_outputs_without_promoting) ... ok
+test_comparison_rejects_cross_mode_text_change (test_realistic_benchmark.ReportValidation.test_comparison_rejects_cross_mode_text_change) ... ok
+test_control_drift_disables_performance_gate (test_realistic_benchmark.ReportValidation.test_control_drift_disables_performance_gate) ... ok
+test_literal_text_and_stops_preserved (test_realistic_benchmark.ReportValidation.test_literal_text_and_stops_preserved) ... ok
+test_reject_changed_build (test_realistic_benchmark.ReportValidation.test_reject_changed_build) ... ok
+test_reject_changed_text_between_repetitions (test_realistic_benchmark.ReportValidation.test_reject_changed_text_between_repetitions) ... ok
+test_reject_early_length_stop (test_realistic_benchmark.ReportValidation.test_reject_early_length_stop) ... ok
+test_reject_false_median (test_realistic_benchmark.ReportValidation.test_reject_false_median) ... ok
+test_reject_interior_eos (test_realistic_benchmark.ReportValidation.test_reject_interior_eos) ... ok
+test_reject_missing_request (test_realistic_benchmark.ReportValidation.test_reject_missing_request) ... ok
+test_reject_missing_text (test_realistic_benchmark.ReportValidation.test_reject_missing_text) ... ok
+test_reject_mode_substitution (test_realistic_benchmark.ReportValidation.test_reject_mode_substitution) ... ok
+test_reject_stop_label_mismatch (test_realistic_benchmark.ReportValidation.test_reject_stop_label_mismatch) ... ok
+test_reject_teacher_forced (test_realistic_benchmark.ReportValidation.test_reject_teacher_forced) ... ok
+test_reject_unmeasured_or_impossible_prefill_stages (test_realistic_benchmark.ReportValidation.test_reject_unmeasured_or_impossible_prefill_stages) ... ok
+test_reject_wrong_order (test_realistic_benchmark.ReportValidation.test_reject_wrong_order) ... ok
+test_workload_allows_fixed_prefixes_and_cycles (test_realistic_benchmark.ReportValidation.test_workload_allows_fixed_prefixes_and_cycles) ... ok
+test_accidental_overwrite_and_missing_resume_rejected (test_reference_corpus_contract.CorpusContractTests.test_accidental_overwrite_and_missing_resume_rejected) ... ok
+test_bad_selection_and_output_collisions (test_reference_corpus_contract.CorpusContractTests.test_bad_selection_and_output_collisions) ... ok
+test_changed_configuration_rejected_before_archive (test_reference_corpus_contract.CorpusContractTests.test_changed_configuration_rejected_before_archive) ... ok
+test_derived_or_teacher_forced_records_rejected_at_all_levels (test_reference_corpus_contract.CorpusContractTests.test_derived_or_teacher_forced_records_rejected_at_all_levels) ... ok
+test_exact_selected_order (test_reference_corpus_contract.CorpusContractTests.test_exact_selected_order) ... ok
+test_malformed_record_cannot_resume_as_complete (test_reference_corpus_contract.CorpusContractTests.test_malformed_record_cannot_resume_as_complete) ... ok
+test_nonfinite_json_does_not_replace_existing_record (test_reference_corpus_contract.CorpusContractTests.test_nonfinite_json_does_not_replace_existing_record) ... ok
+test_resume_requires_identity_binding (test_reference_corpus_contract.CorpusContractTests.test_resume_requires_identity_binding) ... ok
+test_stale_temporary_does_not_block_and_handled_failure_cleans_up (test_reference_corpus_contract.CorpusContractTests.test_stale_temporary_does_not_block_and_handled_failure_cleans_up) ... ok
+test_new_run_and_identical_resume (test_reference_run_identity.StartupIdentityTests.test_new_run_and_identical_resume) ... ERROR
+test_new_source_identity_cannot_resume_old_run (test_reference_run_identity.StartupIdentityTests.test_new_source_identity_cannot_resume_old_run) ... ERROR
+test_old_run_without_archive_cannot_be_retrofitted (test_reference_run_identity.StartupIdentityTests.test_old_run_without_archive_cannot_be_retrofitted) ... ERROR
+test_source_mutation_rejected (test_reference_run_identity.StartupIdentityTests.test_source_mutation_rejected) ... ERROR
+test_source_path_injection_rejected (test_reference_run_identity.StartupIdentityTests.test_source_path_injection_rejected) ... ERROR
+test_unset_or_changed_actual_cublas_environment_rejected (test_reference_run_identity.StartupIdentityTests.test_unset_or_changed_actual_cublas_environment_rejected) ... ERROR
+test_decisions_reject_corruption (test_validate_gpu_reference_record.GpuRecordTests.test_decisions_reject_corruption) ... ok
+test_empty_and_malformed_tokens (test_validate_gpu_reference_record.GpuRecordTests.test_empty_and_malformed_tokens) ... ok
+test_false_length_stop (test_validate_gpu_reference_record.GpuRecordTests.test_false_length_stop) ... ok
+test_impossible_context (test_validate_gpu_reference_record.GpuRecordTests.test_impossible_context) ... ok
+test_missing_timing_or_object (test_validate_gpu_reference_record.GpuRecordTests.test_missing_timing_or_object) ... ok
+test_valid_record (test_validate_gpu_reference_record.GpuRecordTests.test_valid_record) ... ok
+test_all_actual_native_pages_preserve_inference (test_validate_text_replay.NativeReplayTests.test_all_actual_native_pages_preserve_inference) ... skipped 'Pass --replay for actual native-Windows-produced artifact validation'
+test_one_ulp_timing_mutation_rejected (test_validate_text_replay.NativeReplayTests.test_one_ulp_timing_mutation_rejected) ... skipped 'Pass --replay for actual native-Windows-produced artifact validation'
+test_token_and_original_text_mutations_rejected (test_validate_text_replay.NativeReplayTests.test_token_and_original_text_mutations_rejected) ... skipped 'Pass --replay for actual native-Windows-produced artifact validation'
+test_empty_result_rejected (test_validate_text_replay.SavedResultTests.test_empty_result_rejected) ... ok
+test_length_stop_requires_cap (test_validate_text_replay.SavedResultTests.test_length_stop_requires_cap) ... ok
+test_malformed_fields_rejected (test_validate_text_replay.SavedResultTests.test_malformed_fields_rejected) ... ok
+test_nonfinite_timing_rejected (test_validate_text_replay.SavedResultTests.test_nonfinite_timing_rejected) ... ok
+test_valid_saved_result (test_validate_text_replay.SavedResultTests.test_valid_saved_result) ... ok
+test_changed_shuffle_offset_fails (test_verify_bf16_reduction_lowering.LoweringTests.test_changed_shuffle_offset_fails) ... skipped 'Preserved pinned compiler artifacts required'
+test_missing_artifact_fails (test_verify_bf16_reduction_lowering.LoweringTests.test_missing_artifact_fails) ... skipped 'Preserved pinned compiler artifacts required'
+test_original_is_positive_control (test_verify_bf16_reduction_lowering.LoweringTests.test_original_is_positive_control) ... skipped 'Preserved pinned compiler artifacts required'
+test_partial_observer_changes_only_debug_sum_store (test_verify_bf16_reduction_lowering.LoweringTests.test_partial_observer_changes_only_debug_sum_store) ... skipped 'Preserved pinned compiler artifacts required'
+test_rejected_v4_fails_both_structural_checks (test_verify_bf16_reduction_lowering.LoweringTests.test_rejected_v4_fails_both_structural_checks) ... skipped 'Preserved pinned compiler artifacts required'
+
+======================================================================
+ERROR: setUpClass (test_bf16_ptx_observer.ObserverTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_bf16_ptx_observer.py", line 19, in setUpClass
+    cls.original = (ROOT / "artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx").read_bytes()
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 625, in read_bytes
+    with self.open(mode='rb') as f:
+         ~~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx'
+
+======================================================================
+ERROR: setUpClass (test_bf16_ptx_observer_v2.ObserverTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_bf16_ptx_observer_v2.py", line 19, in setUpClass
+    cls.original = (ROOT / "artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx").read_bytes()
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 625, in read_bytes
+    with self.open(mode='rb') as f:
+         ~~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx'
+
+======================================================================
+ERROR: test_new_run_and_identical_resume (test_reference_run_identity.StartupIdentityTests.test_new_run_and_identical_resume)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py", line 18, in setUp
+    run = json.loads((self.root / "artifacts/reference/corpus-v3-fp32-4096/run.json").read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 548, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'
+
+======================================================================
+ERROR: test_new_source_identity_cannot_resume_old_run (test_reference_run_identity.StartupIdentityTests.test_new_source_identity_cannot_resume_old_run)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py", line 18, in setUp
+    run = json.loads((self.root / "artifacts/reference/corpus-v3-fp32-4096/run.json").read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 548, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'
+
+======================================================================
+ERROR: test_old_run_without_archive_cannot_be_retrofitted (test_reference_run_identity.StartupIdentityTests.test_old_run_without_archive_cannot_be_retrofitted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py", line 18, in setUp
+    run = json.loads((self.root / "artifacts/reference/corpus-v3-fp32-4096/run.json").read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 548, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'
+
+======================================================================
+ERROR: test_source_mutation_rejected (test_reference_run_identity.StartupIdentityTests.test_source_mutation_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py", line 18, in setUp
+    run = json.loads((self.root / "artifacts/reference/corpus-v3-fp32-4096/run.json").read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 548, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'
+
+======================================================================
+ERROR: test_source_path_injection_rejected (test_reference_run_identity.StartupIdentityTests.test_source_path_injection_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py", line 18, in setUp
+    run = json.loads((self.root / "artifacts/reference/corpus-v3-fp32-4096/run.json").read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 548, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'
+
+======================================================================
+ERROR: test_unset_or_changed_actual_cublas_environment_rejected (test_reference_run_identity.StartupIdentityTests.test_unset_or_changed_actual_cublas_environment_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py", line 18, in setUp
+    run = json.loads((self.root / "artifacts/reference/corpus-v3-fp32-4096/run.json").read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 548, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 539, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'
+
+----------------------------------------------------------------------
+Ran 102 tests in 0.168s
+
+FAILED (errors=8, skipped=9)

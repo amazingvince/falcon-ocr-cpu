@@ -1,5 +1,11 @@
 # Falcon-OCR CPU runner
 
+> **Integrated experimental source added:** see [Attempt 3](attempt3/README.md) and
+> [its build/test status](attempt3/BUILD_STATUS.json). The new `falcon-ocr-attempt`
+> binary has opt-in W8/split-prefix profiles. **These changes are uncompiled here,
+> unqualified for OCR quality, and have no measured speedup.** Historical results
+> below apply to the original reference work, not this new attempt.
+
 A model-specific Rust library and CLI for the updated Falcon-OCR v1.5 weights.
 The implementation currently runs FP32 full-page plain OCR. It is under active
 validation: the completed 200-page Windows comparison matches all 275,903 GPU

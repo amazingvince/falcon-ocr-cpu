@@ -140,7 +140,7 @@ pub fn linear_with_simd(
             });
         return;
     }
-    if selected == Simd::Scalar {
+    if simd == Simd::Scalar {
         out.par_chunks_mut(out_dim)
             .enumerate()
             .for_each(|(row, dst)| {
@@ -1073,10 +1073,10 @@ fn attention_gemm_compact(
         });
 }
 
-type Dot = fn(&[f32], &[f32]) -> f32;
-type Axpy = fn(f32, &[f32], &mut [f32]);
+pub(crate) type Dot = fn(&[f32], &[f32]) -> f32;
+pub(crate) type Axpy = fn(f32, &[f32], &mut [f32]);
 
-fn dot_kernel(simd: Simd) -> Dot {
+pub(crate) fn dot_kernel(simd: Simd) -> Dot {
     match simd {
         #[cfg(target_arch = "x86_64")]
         Simd::Avx2 => |a, b| {
@@ -1091,7 +1091,7 @@ fn dot_kernel(simd: Simd) -> Dot {
     }
 }
 
-fn axpy_kernel(simd: Simd) -> Axpy {
+pub(crate) fn axpy_kernel(simd: Simd) -> Axpy {
     match simd {
         #[cfg(target_arch = "x86_64")]
         Simd::Avx2 => |a, x, y| unsafe { x86::axpy_avx2(a, x, y) },
