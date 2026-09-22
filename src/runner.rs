@@ -78,9 +78,18 @@ impl Runner {
     ) -> Result<Self> {
         config.validate()?;
         if model.attempt_profile() != crate::attempt::Profile::Reference {
-            ensure!(config.cache_layout == CacheLayout::Compact, "attempt profiles require compact source caches");
-            ensure!(config.batch_size <= 8, "attempt profiles support 1..=8 active rows");
-            ensure!(config.weight_layout == WeightLayout::Unpacked, "attempt profiles do not combine with phase-packed FP32 copies");
+            ensure!(
+                config.cache_layout == CacheLayout::Compact,
+                "attempt profiles require compact source caches"
+            );
+            ensure!(
+                config.batch_size <= 8,
+                "attempt profiles support 1..=8 active rows"
+            );
+            ensure!(
+                config.weight_layout == WeightLayout::Unpacked,
+                "attempt profiles do not combine with phase-packed FP32 copies"
+            );
         }
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(config.threads)
@@ -109,7 +118,10 @@ impl Runner {
         self.recognize_file_with_trace(path, options, &mut NoTrace)
     }
     pub fn recognize_file_with_trace(
-        &self, path: impl AsRef<Path>, options: &GenerationOptions, trace: &mut dyn Trace,
+        &self,
+        path: impl AsRef<Path>,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
     ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
@@ -209,7 +221,10 @@ impl Runner {
         self.recognize_files_with_trace(paths, options, &mut NoTrace)
     }
     pub fn recognize_files_with_trace<P: AsRef<Path>>(
-        &self, paths: &[P], options: &GenerationOptions, trace: &mut dyn Trace,
+        &self,
+        paths: &[P],
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
     ) -> Result<Vec<OcrResult>> {
         options.validate()?;
         let mut results = Vec::with_capacity(paths.len());
@@ -249,11 +264,16 @@ impl Runner {
     }
 
     fn seal_for_attempt(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
-        let mode=self.model.attempt_profile().prefix_mode();
+        let mode = self.model.attempt_profile().prefix_mode();
         if mode != crate::attempt::PrefixMode::Reference {
-            let before=session.cache_bytes(); let t=Instant::now();
+            let before = session.cache_bytes();
+            let t = Instant::now();
             session.seal_prefix(&self.model.config, mode)?;
-            trace.prefix_sealed(before,session.cache_bytes(),t.elapsed().as_secs_f64()*1000.0);
+            trace.prefix_sealed(
+                before,
+                session.cache_bytes(),
+                t.elapsed().as_secs_f64() * 1000.0,
+            );
         }
         Ok(())
     }
@@ -361,7 +381,9 @@ impl Runner {
         }
         let mut tokens = Vec::with_capacity(count);
         let mut batch = BatchWorkspace::new(active.len(), c);
-        if self.model.attempt_profile().quantizes_body() { batch.prepare_attempt(active.len(), c); }
+        if self.model.attempt_profile().quantizes_body() {
+            batch.prepare_attempt(active.len(), c);
+        }
         let decode_started = Instant::now();
         let mut step = 0;
         trace.decode_start();
@@ -392,8 +414,11 @@ impl Runner {
                 trace,
                 &phase,
             )?;
-            trace.decode_step(active.len(), step_started.elapsed().as_secs_f64()*1000.0,
-                sessions.iter().map(Session::cache_bytes).sum());
+            trace.decode_step(
+                active.len(),
+                step_started.elapsed().as_secs_f64() * 1000.0,
+                sessions.iter().map(Session::cache_bytes).sum(),
+            );
             for (row, &index) in active.iter().enumerate() {
                 let token = argmax(&logits[row * c.vocab_size..(row + 1) * c.vocab_size])?;
                 let state = &mut states[index];
@@ -429,7 +454,12 @@ impl Runner {
                     width: state.width,
                     height: state.height,
                     input_tokens: state.input_tokens,
-                    precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference { "fp32".into() } else {format!("attempt3/{}",self.model.attempt_profile().label())},
+                    precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference
+                    {
+                        "fp32".into()
+                    } else {
+                        format!("attempt3/{}", self.model.attempt_profile().label())
+                    },
                     backend: format!("rust-gemm/{:?}", simd.resolved()).to_lowercase(),
                     cache_layout: self.config.cache_layout,
                     weight_layout: self.config.weight_layout,
@@ -493,7 +523,9 @@ impl Runner {
         } else {
             argmax(logits)?
         };
-        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token)) && options.max_new_tokens > 1 {
+        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token))
+            && options.max_new_tokens > 1
+        {
             self.seal_for_attempt(&mut session, trace)?;
         }
         if self.model.attempt_profile().memory_hygiene() {
@@ -520,7 +552,7 @@ impl Runner {
             if step + 1 == options.max_new_tokens {
                 break;
             }
-            let step_started=Instant::now();
+            let step_started = Instant::now();
             self.model.embed(&[token], None, simd, &mut hidden)?;
             let phase = if trace.enabled() {
                 format!("decode.{step}")
@@ -535,13 +567,13 @@ impl Runner {
                 trace,
                 &phase,
             )?;
-            let step_ms = step_started.elapsed().as_secs_f64()*1000.0;
+            let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
             next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
                 forced
             } else {
                 argmax(logits)?
             };
-            trace.decode_step(1,step_ms,session.cache_bytes());
+            trace.decode_step(1, step_ms, session.cache_bytes());
         }
         trace.decode_end();
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
@@ -554,7 +586,11 @@ impl Runner {
             width: prepared.width,
             height: prepared.height,
             input_tokens: tokens.len(),
-            precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference { "fp32".into() } else {format!("attempt3/{}",self.model.attempt_profile().label())},
+            precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference {
+                "fp32".into()
+            } else {
+                format!("attempt3/{}", self.model.attempt_profile().label())
+            },
             backend: format!("rust-gemm/{:?}", simd.resolved()).to_lowercase(),
             cache_layout: self.config.cache_layout,
             weight_layout: self.config.weight_layout,

@@ -3,8 +3,8 @@
 //! Same rules as q4_reference except the code range and byte storage.
 //! Neither activations nor accumulators are integer/BF16; this is not W8A8.
 
-use rayon::prelude::*;
 use anyhow::ensure;
+use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct Q8Linear {
@@ -237,67 +237,142 @@ impl Scratch {
 }
 impl Q8Linear {
     /// Import the exact custom W8G64 encoding, not GGML Q8_0/Q8_K.
-    pub fn from_parts(out_dim: usize, in_dim: usize, group_size: usize,
-        codes: Vec<i8>, scales: Vec<f32>) -> anyhow::Result<Self> {
-        ensure!(out_dim > 0 && in_dim > 0 && group_size == 64, "invalid W8G64 shape/group");
-        ensure!(out_dim.checked_mul(in_dim) == Some(codes.len()), "W8 codes shape");
-        ensure!(out_dim.checked_mul(in_dim.div_ceil(group_size)) == Some(scales.len()), "W8 scales shape");
-        ensure!(codes.iter().all(|&v| v != -128), "W8 code -128 is outside [-127,127]");
-        ensure!(scales.iter().all(|&s| s.is_finite() && s >= 0.0 && (127.0 * s).is_finite()), "invalid W8 scale");
+    pub fn from_parts(
+        out_dim: usize,
+        in_dim: usize,
+        group_size: usize,
+        codes: Vec<i8>,
+        scales: Vec<f32>,
+    ) -> anyhow::Result<Self> {
+        ensure!(
+            out_dim > 0 && in_dim > 0 && group_size == 64,
+            "invalid W8G64 shape/group"
+        );
+        ensure!(
+            out_dim.checked_mul(in_dim) == Some(codes.len()),
+            "W8 codes shape"
+        );
+        ensure!(
+            out_dim.checked_mul(in_dim.div_ceil(group_size)) == Some(scales.len()),
+            "W8 scales shape"
+        );
+        ensure!(
+            codes.iter().all(|&v| v != -128),
+            "W8 code -128 is outside [-127,127]"
+        );
+        ensure!(
+            scales
+                .iter()
+                .all(|&s| s.is_finite() && s >= 0.0 && (127.0 * s).is_finite()),
+            "invalid W8 scale"
+        );
         for row in 0..out_dim {
             for g in 0..in_dim.div_ceil(group_size) {
                 if scales[row * in_dim.div_ceil(group_size) + g] == 0.0 {
                     let a = row * in_dim + g * group_size;
                     let b = (a + group_size).min((row + 1) * in_dim);
-                    ensure!(codes[a..b].iter().all(|&v| v == 0), "nonzero code in zero-scale group");
+                    ensure!(
+                        codes[a..b].iter().all(|&v| v == 0),
+                        "nonzero code in zero-scale group"
+                    );
                 }
             }
         }
-        Ok(Self { out_dim, in_dim, group_size, codes, scales })
+        Ok(Self {
+            out_dim,
+            in_dim,
+            group_size,
+            codes,
+            scales,
+        })
     }
 
     /// Same reconstructed weights at every phase. Large-M uses one reusable
     /// dense scratch matrix, never the original full-precision weights.
-    pub(crate) fn linear(&self, input: &[f32], rows: usize, output: &mut [f32],
-        scratch: &mut Scratch, simd: crate::kernels::Simd) -> anyhow::Result<()> {
-        ensure!(rows.checked_mul(self.in_dim) == Some(input.len()), "W8 input shape");
-        ensure!(rows.checked_mul(self.out_dim) == Some(output.len()), "W8 output shape");
-        ensure!(input.iter().all(|x| x.is_finite()), "nonfinite W8 activation");
+    pub(crate) fn linear(
+        &self,
+        input: &[f32],
+        rows: usize,
+        output: &mut [f32],
+        scratch: &mut Scratch,
+        simd: crate::kernels::Simd,
+    ) -> anyhow::Result<()> {
+        ensure!(
+            rows.checked_mul(self.in_dim) == Some(input.len()),
+            "W8 input shape"
+        );
+        ensure!(
+            rows.checked_mul(self.out_dim) == Some(output.len()),
+            "W8 output shape"
+        );
+        ensure!(
+            input.iter().all(|x| x.is_finite()),
+            "nonfinite W8 activation"
+        );
         simd.validate().map_err(anyhow::Error::msg)?;
-        if rows == 0 { return Ok(()); }
+        if rows == 0 {
+            return Ok(());
+        }
         if rows > 8 {
             scratch.dense.resize(self.codes.len(), 0.0);
-            scratch.dense.par_chunks_mut(self.in_dim).enumerate()
+            scratch
+                .dense
+                .par_chunks_mut(self.in_dim)
+                .enumerate()
                 .for_each(|(row, dst)| self.dequantize_row(row, dst));
-            crate::kernels::linear_with_simd(input, rows, self.in_dim, &scratch.dense,
-                self.out_dim, output, simd);
+            crate::kernels::linear_with_simd(
+                input,
+                rows,
+                self.in_dim,
+                &scratch.dense,
+                self.out_dim,
+                output,
+                simd,
+            );
         } else {
             let selected = simd.resolved();
-            let mut use_avx2 = false;
             #[cfg(target_arch = "x86_64")]
-            { use_avx2 = selected != crate::kernels::Simd::Scalar
-                && std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma"); }
+            let use_avx2 = selected != crate::kernels::Simd::Scalar
+                && std::is_x86_feature_detected!("avx2")
+                && std::is_x86_feature_detected!("fma");
             #[cfg(not(target_arch = "x86_64"))]
-            let _ = selected;
+            let use_avx2 = {
+                let _ = selected;
+                false
+            };
             scratch.channel_major.resize(rows * self.out_dim, 0.0);
             // A task owns all active rows for one output channel. Weight values
             // are unpacked once per channel and reused across up to eight rows.
-            scratch.channel_major.par_chunks_mut(rows).enumerate()
-                .with_min_len(16).for_each(|(channel, dst)| {
+            scratch
+                .channel_major
+                .par_chunks_mut(rows)
+                .enumerate()
+                .with_min_len(16)
+                .for_each(|(channel, dst)| {
                     #[cfg(target_arch = "x86_64")]
                     if use_avx2 {
                         // SAFETY: feature and shape checks above bound all loads.
-                        unsafe { self.channel_avx2(input, rows, channel, dst); }
+                        unsafe {
+                            self.channel_avx2(input, rows, channel, dst);
+                        }
                         return;
                     }
                     let _ = use_avx2;
                     self.channel_scalar(input, rows, channel, dst);
                 });
-            output.par_chunks_mut(self.out_dim).enumerate().for_each(|(r, dst)| {
-                for (c, y) in dst.iter_mut().enumerate() { *y = scratch.channel_major[c * rows + r]; }
-            });
+            output
+                .par_chunks_mut(self.out_dim)
+                .enumerate()
+                .for_each(|(r, dst)| {
+                    for (c, y) in dst.iter_mut().enumerate() {
+                        *y = scratch.channel_major[c * rows + r];
+                    }
+                });
         }
-        ensure!(output.iter().all(|x| x.is_finite()), "nonfinite W8 accumulation");
+        ensure!(
+            output.iter().all(|x| x.is_finite()),
+            "nonfinite W8 accumulation"
+        );
         Ok(())
     }
     fn channel_scalar(&self, input: &[f32], rows: usize, channel: usize, output: &mut [f32]) {
@@ -306,7 +381,9 @@ impl Q8Linear {
         for k in 0..self.in_dim {
             let w = self.codes[channel * self.in_dim + k] as f32
                 * self.scales[channel * groups + k / self.group_size];
-            for r in 0..rows { output[r] = input[r * self.in_dim + k].mul_add(w, output[r]); }
+            for r in 0..rows {
+                output[r] = input[r * self.in_dim + k].mul_add(w, output[r]);
+            }
         }
     }
     #[cfg(target_arch = "x86_64")]
@@ -325,7 +402,8 @@ impl Q8Linear {
                 let mut k = group * self.group_size;
                 let end = (k + self.group_size).min(self.in_dim);
                 while k + 8 <= end {
-                    let packed = _mm_loadl_epi64(self.codes.as_ptr().add(channel * self.in_dim + k).cast());
+                    let packed =
+                        _mm_loadl_epi64(self.codes.as_ptr().add(channel * self.in_dim + k).cast());
                     let w = _mm256_mul_ps(_mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(packed)), sv);
                     for r in 0..rows {
                         let x = _mm256_loadu_ps(input.as_ptr().add(r * self.in_dim + k));
@@ -335,7 +413,9 @@ impl Q8Linear {
                 }
                 for k in k..end {
                     let w = self.codes[channel * self.in_dim + k] as f32 * scale;
-                    for r in 0..rows { tails[r] = input[r * self.in_dim + k].mul_add(w, tails[r]); }
+                    for r in 0..rows {
+                        tails[r] = input[r * self.in_dim + k].mul_add(w, tails[r]);
+                    }
                 }
             }
             for r in 0..rows {
@@ -357,28 +437,45 @@ mod integrated_tests {
     fn integrated_shapes_and_phase_values() {
         for k in [31, 64, 65, 768, 1024, 2304] {
             let n = 9;
-            let w: Vec<_> = (0..n*k).map(|i| ((i*137%193) as f32-96.0)/113.0).collect();
-            let q = Q8Linear::quantize(&w,n,k,64).unwrap();
-            for rows in [1,2,4,8,9,17] {
-                let x:Vec<_>=(0..rows*k).map(|i| ((i*31%151) as f32-75.0)/97.0).collect();
-                let mut dense=vec![0.0;n*k];
-                for r in 0..n { q.dequantize_row(r,&mut dense[r*k..(r+1)*k]); }
+            let w: Vec<_> = (0..n * k)
+                .map(|i| ((i * 137 % 193) as f32 - 96.0) / 113.0)
+                .collect();
+            let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
+            for rows in [1, 2, 4, 8, 9, 17] {
+                let x: Vec<_> = (0..rows * k)
+                    .map(|i| ((i * 31 % 151) as f32 - 75.0) / 97.0)
+                    .collect();
+                let mut dense = vec![0.0; n * k];
+                for r in 0..n {
+                    q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
+                }
                 for backend in [Simd::Scalar, Simd::Auto] {
-                    let mut out=vec![0.0;rows*n]; let mut scratch=Scratch::default();
-                    q.linear(&x,rows,&mut out,&mut scratch,backend).unwrap();
-                    for r in 0..rows { for c in 0..n {
-                        let mut expected=0.0_f64; let mut magnitude=0.0_f64;
-                        for j in 0..k { let p=x[r*k+j] as f64*dense[c*k+j] as f64; expected+=p; magnitude+=p.abs(); }
-                        assert!((out[r*n+c] as f64-expected).abs() <= 4.0*k as f64*f32::EPSILON as f64*magnitude+1e-6);
-                    }}
+                    let mut out = vec![0.0; rows * n];
+                    let mut scratch = Scratch::default();
+                    q.linear(&x, rows, &mut out, &mut scratch, backend).unwrap();
+                    for r in 0..rows {
+                        for c in 0..n {
+                            let mut expected = 0.0_f64;
+                            let mut magnitude = 0.0_f64;
+                            for j in 0..k {
+                                let p = x[r * k + j] as f64 * dense[c * k + j] as f64;
+                                expected += p;
+                                magnitude += p.abs();
+                            }
+                            assert!(
+                                (out[r * n + c] as f64 - expected).abs()
+                                    <= 4.0 * k as f64 * f32::EPSILON as f64 * magnitude + 1e-6
+                            );
+                        }
+                    }
                 }
             }
         }
     }
     #[test]
     fn artifact_validation() {
-        assert!(Q8Linear::from_parts(1,1,64,vec![-128],vec![1.0]).is_err());
-        assert!(Q8Linear::from_parts(1,1,64,vec![1],vec![0.0]).is_err());
-        assert!(Q8Linear::from_parts(1,1,64,vec![0],vec![f32::NAN]).is_err());
+        assert!(Q8Linear::from_parts(1, 1, 64, vec![-128], vec![1.0]).is_err());
+        assert!(Q8Linear::from_parts(1, 1, 64, vec![1], vec![0.0]).is_err());
+        assert!(Q8Linear::from_parts(1, 1, 64, vec![0], vec![f32::NAN]).is_err());
     }
 }

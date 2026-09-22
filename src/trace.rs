@@ -49,9 +49,15 @@ impl Trace for PrefixedTrace<'_> {
     fn decode_end(&mut self) {
         self.inner.decode_end();
     }
-    fn decode_step(&mut self, rows: usize, ms: f64, kv_bytes: usize) { self.inner.decode_step(rows,ms,kv_bytes); }
-    fn prefix_sealed(&mut self, before: usize, after: usize, ms: f64) { self.inner.prefix_sealed(before,after,ms); }
-    fn cache_retired(&mut self, bytes: usize) { self.inner.cache_retired(bytes); }
+    fn decode_step(&mut self, rows: usize, ms: f64, kv_bytes: usize) {
+        self.inner.decode_step(rows, ms, kv_bytes);
+    }
+    fn prefix_sealed(&mut self, before: usize, after: usize, ms: f64) {
+        self.inner.prefix_sealed(before, after, ms);
+    }
+    fn cache_retired(&mut self, bytes: usize) {
+        self.inner.cache_retired(bytes);
+    }
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
         self.inner
             .tensor(&format!("{}.{name}", self.prefix), shape, data)

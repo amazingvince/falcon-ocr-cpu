@@ -140,7 +140,7 @@ pub fn linear_with_simd(
             });
         return;
     }
-    if simd == Simd::Scalar {
+    if selected == Simd::Scalar {
         out.par_chunks_mut(out_dim)
             .enumerate()
             .for_each(|(row, dst)| {
