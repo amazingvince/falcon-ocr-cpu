@@ -128,7 +128,7 @@ on every page:
 |---|---|---:|---:|---:|
 | 1024 | journal + 3 full pages, to EOS (1117–2423 tokens) | 40.9 – 90.9 s | 215.3 – 520.3 s | 5.3x – 5.8x |
 | 1536 | journal, `bc2882dcec9a3e02` (1140 / 1264 tokens) | 63.8 / 72.6 s | 436.2 / 507.8 s | 6.8x / 7.0x |
-| 1536 | `ebac2ad1cac11a99`, `a1336e3bc391f255` | clean rerun in progress (`dim1536-rerun/`) | | |
+| 1536 | `ebac2ad1cac11a99`, `a1336e3bc391f255` (1536 / 1168 tokens, clean rerun) | 79.6 / 69.5 s | 543.3 / 478.9 s | 6.8x / 6.9x |
 
 Decode throughput: ours 21–30 tok/s, focr 2.2–5.7 tok/s. Prefill: ours
 2.9–3.5 s at 1024 and 12.3–13.7 s at 1536; focr 16–21 s and 75–105 s. Peak
@@ -229,10 +229,23 @@ drift) on the two undisturbed pages, against the focr rows above:
 
 The journal figure agrees with the promotion bracket's 62.7 s
 (`docs/PERFORMANCE.md`); expanded caches measured 69.2 s here. Peak resident
-memory with the compact cache: 2.6–2.7 GB. The rerun of the two disturbed pages
-(`dim1536-rerun/`, ours compact and focr in one window) is in progress; its
-first cold runs give `ebac2ad1cac11a99` at ours 10.9 s prefill / 68.7 s decode
-and focr 76.2 s / 466.6 s.
+memory with the compact cache: 2.6–2.7 GB.
+
+Clean rerun of the two disturbed pages (`dim1536-rerun/`, ours compact and focr
+in one window, same ABBA order). The host stopped this lane for low system
+memory after 13 of its 14 processes (focr peaks near 25 GB resident at 1536),
+so no `report.json` exists; the numbers below are assembled from the completed
+per-process files (`reference/benchmarks/focr-comparison-v1-dim1536-rerun-partial.json`).
+
+| page | out tokens | ours prefill s | ours decode s | ours model s | focr prefill s | focr decode s | focr model s | focr / ours |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| ebac2ad1cac11a99 (two processes per side, drift ours 2.8%, focr 0.02%) | 1536 (cap) | 11.23 | 68.4 | 79.6 | 76.13 | 467.0 | 543.3 | 6.83x |
+| a1336e3bc391f255 (one completed process per side) | 1168 (clamped cap) | 14.37 | 55.0 | 69.5 | 95.09 | 383.4 | 478.9 | 6.89x |
+
+Generated IDs are again identical on both pages. These replace the disturbed
+first-pass cells above: with the first-pass expanded rows the ratios were 6.2x
+and 6.3x; with the compact default in a clean window they are 6.8x and 6.9x, in
+line with the journal page and `bc2882dcec9a3e02`.
 
 ### Lane e: modified AVX-512 focr build (separate lane, not his released build)
 

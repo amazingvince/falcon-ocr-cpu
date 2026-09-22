@@ -1,0 +1,158 @@
+{
+ "kind": "focr-comparison-v1-partial",
+ "note": "dim1536-rerun was stopped by the host for low system memory after 13 of 14 runs; assembled from per-run files, no report.json was written",
+ "pages": {
+  "ebac2ad1cac11a99": {
+   "cold": {
+    "ours": {
+     "prefill_ms": 10869.722,
+     "decode_ms": 68697.29209999999,
+     "output_tokens": 1536,
+     "stop_reason": "length",
+     "width": 1024,
+     "height": 1536,
+     "input_tokens": 6160
+    },
+    "focr": {
+     "prefill_ms": 76158.2957,
+     "decode_ms": 466602.3103,
+     "output_tokens": 1536,
+     "stop_reason": "length",
+     "width": 1024,
+     "height": 1536,
+     "patches": 6144,
+     "prompt_tokens": 6160
+    }
+   },
+   "agreement": {
+    "token_ids_exact": true,
+    "first_divergence_index": null,
+    "common_prefix_fraction": 1.0,
+    "ours_len": 1536,
+    "focr_len": 1536,
+    "token_levenshtein_normalized": 0.0,
+    "token_similarity_method": "levenshtein",
+    "text_levenshtein_normalized": 0.0,
+    "text_similarity_method": "levenshtein",
+    "text_exact": true,
+    "ours_text_sha256": "eee1e5d43ed477b792a81bc200ce856804b378fb35b36ec14831e0b5b77e0361",
+    "focr_text_sha256": "eee1e5d43ed477b792a81bc200ce856804b378fb35b36ec14831e0b5b77e0361"
+   },
+   "warm": {
+    "ours": [
+     {
+      "count": 3,
+      "median_prefill_ms": 11232.8256,
+      "median_decode_ms": 68397.5781,
+      "median_model_ms": 79630.4037,
+      "median_e2e_ms": 79947.8893,
+      "median_decode_tok_s": 22.456935503685617,
+      "output_tokens": [
+       1536
+      ]
+     },
+     {
+      "count": 3,
+      "median_prefill_ms": 11320.855599999999,
+      "median_decode_ms": 70440.89409999999,
+      "median_model_ms": 81758.58919999999,
+      "median_e2e_ms": 82131.8861,
+      "median_decode_tok_s": 21.805515384564096,
+      "output_tokens": [
+       1536
+      ]
+     }
+    ],
+    "focr": [
+     {
+      "count": 3,
+      "median_prefill_ms": 76125.1734,
+      "median_decode_ms": 467008.85390000005,
+      "median_model_ms": 543263.8689,
+      "median_e2e_ms": 543746.23,
+      "median_decode_tok_s": 3.2890168723201585,
+      "output_tokens": [
+       1536
+      ]
+     },
+     {
+      "count": 3,
+      "median_prefill_ms": 71966.1542,
+      "median_decode_ms": 471577.1086,
+      "median_model_ms": 543366.5275999999,
+      "median_e2e_ms": 543839.5451,
+      "median_decode_tok_s": 3.2571555573594697,
+      "output_tokens": [
+       1536
+      ]
+     }
+    ]
+   }
+  },
+  "a1336e3bc391f255": {
+   "cold": {
+    "ours": {
+     "prefill_ms": 13737.1098,
+     "decode_ms": 56538.0435,
+     "output_tokens": 1168,
+     "stop_reason": "length",
+     "width": 1168,
+     "height": 1536,
+     "input_tokens": 7024
+    },
+    "focr": {
+     "prefill_ms": 95216.177,
+     "decode_ms": 385722.2642,
+     "output_tokens": 1168,
+     "stop_reason": "eos",
+     "width": 1168,
+     "height": 1536,
+     "patches": 7008,
+     "prompt_tokens": 7024
+    }
+   },
+   "agreement": {
+    "token_ids_exact": true,
+    "first_divergence_index": null,
+    "common_prefix_fraction": 1.0,
+    "ours_len": 1168,
+    "focr_len": 1168,
+    "token_levenshtein_normalized": 0.0,
+    "token_similarity_method": "levenshtein",
+    "text_levenshtein_normalized": 0.0,
+    "text_similarity_method": "levenshtein",
+    "text_exact": true,
+    "ours_text_sha256": "4b6631dd14314ddf0d2e91f4489cc0299df34c6472a7677db59765526eb7813f",
+    "focr_text_sha256": "4b6631dd14314ddf0d2e91f4489cc0299df34c6472a7677db59765526eb7813f"
+   },
+   "warm": {
+    "ours": [
+     {
+      "count": 3,
+      "median_prefill_ms": 14367.6485,
+      "median_decode_ms": 54960.621600000006,
+      "median_model_ms": 69497.2353,
+      "median_e2e_ms": 69588.69989999999,
+      "median_decode_tok_s": 21.25157914880642,
+      "output_tokens": [
+       1168
+      ]
+     }
+    ],
+    "focr": [
+     {
+      "count": 3,
+      "median_prefill_ms": 95089.8012,
+      "median_decode_ms": 383440.4676,
+      "median_model_ms": 478901.68549999996,
+      "median_e2e_ms": 479067.6625,
+      "median_decode_tok_s": 3.0461051941404427,
+      "output_tokens": [
+       1168
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
