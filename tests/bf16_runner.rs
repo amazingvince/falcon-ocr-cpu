@@ -51,6 +51,9 @@ fn bf16_graph_exposes_casts_provenance_and_exact_smoke_generation() {
             RunnerConfig {
                 threads: 4,
                 backend,
+                // The experimental BF16 graph requires expanded KV storage;
+                // FP32 defaults to compact since the attention promotion.
+                cache_layout: falcon_ocr::CacheLayout::Expanded,
                 ..Default::default()
             },
         )
