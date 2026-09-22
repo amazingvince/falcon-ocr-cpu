@@ -34,14 +34,88 @@ pub(crate) trait Simd: Copy + Send + Sync + 'static {
     /// `((v0+v4) + (v1+v5)) + ((v2+v6) + (v3+v7))`: the x86 `dot_avx2` tree
     /// (128-bit halves added, then two horizontal pair additions).
     unsafe fn sum(v: Self::V) -> f32;
-    /// `values[i] = (values[i] - shift).exp()`, bitwise the platform `expf`.
+    /// Lane-wise `if a > b { a } else { b }`: x86 `maxps(a, b)` semantics
+    /// (`b` when either is NaN or both are zeros), identical on every ISA.
+    unsafe fn max(a: Self::V, b: Self::V) -> Self::V;
+    /// All-ones lanes where `a == b` (ordered), zero lanes elsewhere.
+    unsafe fn eq(a: Self::V, b: Self::V) -> Self::V;
+    /// Lanes of `a` where `mask` is all-ones, else lanes of `b`.
+    unsafe fn select(mask: Self::V, a: Self::V, b: Self::V) -> Self::V;
+    /// Bit `i` set when lane `i` of `mask` is all-ones.
+    unsafe fn mask_bits(mask: Self::V) -> u32;
+    /// [`exp_poly`] on every lane (same bits on every ISA).
+    unsafe fn exp_fast(x: Self::V) -> Self::V;
+    /// The preferred vector exp: [`Simd::exp_fast`], except on AVX2, where it
+    /// is the platform-exact vector exp that keeps outputs bitwise equal to
+    /// the scalar platform `expf` (and so to earlier results on this host).
+    #[inline(always)]
+    unsafe fn exp(x: Self::V) -> Self::V {
+        unsafe { Self::exp_fast(x) }
+    }
+    /// [`Simd::exp`] plus a bit mask of lanes the caller must recompute with
+    /// scalar `f32::exp` (only the platform-exact AVX2 exp reports lanes).
+    #[inline(always)]
+    unsafe fn exp_raw(x: Self::V) -> (Self::V, u32) {
+        unsafe { (Self::exp(x), 0) }
+    }
+    /// `values[i] = exp(values[i] - shift)` with [`Simd::exp`] semantics
+    /// (the tail uses the scalar form of the same function).
     #[inline(always)]
     unsafe fn exp_shifted(values: &mut [f32], shift: f32) {
-        for value in values {
-            *value = (*value - shift).exp();
+        unsafe {
+            let s = Self::splat(shift);
+            let mut chunks = values.chunks_exact_mut(8);
+            for chunk in &mut chunks {
+                let x = Self::sub(Self::load(chunk.as_ptr()), s);
+                Self::store(chunk.as_mut_ptr(), Self::exp(x));
+            }
+            for value in chunks.into_remainder() {
+                *value = exp_poly(*value - shift);
+            }
         }
     }
 }
+
+/// Portable single-precision exp (Cephes coefficients, about 1-2 ulp):
+/// `exp(x) = 2^n * e^r`, `n = round(x * log2 e)`, `r = x - n ln 2` in two
+/// FMA steps, `e^r = 1 + r + r^2 * P(r)`. Arguments below -87 return 0 (no
+/// subnormal results, so no flush-to-zero dependence), above 88.72 return
+/// infinity, NaN returns NaN. Every ISA's `exp_fast` performs exactly these
+/// IEEE operations, so the results are bit-identical across machines.
+#[inline(always)]
+pub(crate) fn exp_poly(x: f32) -> f32 {
+    if x.is_nan() {
+        return x;
+    }
+    if x < EXP_MIN {
+        return 0.0;
+    }
+    if x > EXP_MAX {
+        return f32::INFINITY;
+    }
+    let n = (x * EXP_LOG2E).round_ties_even();
+    let r = n.mul_add(-EXP_LN2_HI, x);
+    let r = n.mul_add(-EXP_LN2_LO, r);
+    let mut p = EXP_P[0];
+    for c in &EXP_P[1..] {
+        p = p.mul_add(r, *c);
+    }
+    let y = p.mul_add(r * r, r) + 1.0;
+    y * f32::from_bits(((n as i32 + 127) as u32) << 23)
+}
+const EXP_MIN: f32 = -87.0;
+const EXP_MAX: f32 = 88.722_83;
+const EXP_LOG2E: f32 = std::f32::consts::LOG2_E;
+const EXP_LN2_HI: f32 = 0.693_359_4;
+const EXP_LN2_LO: f32 = -2.121_944_4e-4;
+const EXP_P: [f32; 6] = [
+    1.987_569_1e-4,
+    1.398_199_9e-3,
+    8.333_452e-3,
+    4.166_579_6e-2,
+    0.166_666_65,
+    0.5,
+];
 
 /// The reference implementation and the fallback for any CPU: plain arrays
 /// with `f32::mul_add` (hardware FMA on aarch64 and x86 with FMA).
@@ -99,6 +173,28 @@ impl Simd for Portable {
     #[inline(always)]
     unsafe fn sum(v: Self::V) -> f32 {
         ((v[0] + v[4]) + (v[1] + v[5])) + ((v[2] + v[6]) + (v[3] + v[7]))
+    }
+    #[inline(always)]
+    unsafe fn max(a: Self::V, b: Self::V) -> Self::V {
+        std::array::from_fn(|i| if a[i] > b[i] { a[i] } else { b[i] })
+    }
+    #[inline(always)]
+    unsafe fn eq(a: Self::V, b: Self::V) -> Self::V {
+        std::array::from_fn(|i| f32::from_bits(if a[i] == b[i] { u32::MAX } else { 0 }))
+    }
+    #[inline(always)]
+    unsafe fn select(mask: Self::V, a: Self::V, b: Self::V) -> Self::V {
+        std::array::from_fn(|i| if mask[i].to_bits() != 0 { a[i] } else { b[i] })
+    }
+    #[inline(always)]
+    unsafe fn mask_bits(mask: Self::V) -> u32 {
+        (0..8).fold(0, |bits, i| {
+            bits | (u32::from(mask[i].to_bits() >> 31) << i)
+        })
+    }
+    #[inline(always)]
+    unsafe fn exp_fast(x: Self::V) -> Self::V {
+        x.map(exp_poly)
     }
 }
 
@@ -163,6 +259,69 @@ impl Simd for Avx2 {
             let halves = _mm_add_ps(_mm256_castps256_ps128(v), _mm256_extractf128_ps::<1>(v));
             let pairs = _mm_hadd_ps(halves, halves);
             _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs))
+        }
+    }
+    #[inline(always)]
+    unsafe fn max(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { std::arch::x86_64::_mm256_max_ps(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn eq(a: Self::V, b: Self::V) -> Self::V {
+        use std::arch::x86_64::*;
+        unsafe { _mm256_cmp_ps::<_CMP_EQ_OQ>(a, b) }
+    }
+    #[inline(always)]
+    unsafe fn select(mask: Self::V, a: Self::V, b: Self::V) -> Self::V {
+        unsafe { std::arch::x86_64::_mm256_blendv_ps(b, a, mask) }
+    }
+    #[inline(always)]
+    unsafe fn mask_bits(mask: Self::V) -> u32 {
+        unsafe { std::arch::x86_64::_mm256_movemask_ps(mask) as u32 }
+    }
+    #[inline(always)]
+    unsafe fn exp_fast(x: Self::V) -> Self::V {
+        use std::arch::x86_64::*;
+        unsafe {
+            let n = _mm256_round_ps::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(
+                _mm256_mul_ps(x, _mm256_set1_ps(EXP_LOG2E)),
+            );
+            let r = _mm256_fmadd_ps(n, _mm256_set1_ps(-EXP_LN2_HI), x);
+            let r = _mm256_fmadd_ps(n, _mm256_set1_ps(-EXP_LN2_LO), r);
+            let mut p = _mm256_set1_ps(EXP_P[0]);
+            for c in &EXP_P[1..] {
+                p = _mm256_fmadd_ps(p, r, _mm256_set1_ps(*c));
+            }
+            let y = _mm256_add_ps(
+                _mm256_fmadd_ps(p, _mm256_mul_ps(r, r), r),
+                _mm256_set1_ps(1.0),
+            );
+            let bits = _mm256_slli_epi32::<23>(_mm256_add_epi32(
+                _mm256_cvtps_epi32(n),
+                _mm256_set1_epi32(127),
+            ));
+            let value = _mm256_mul_ps(y, _mm256_castsi256_ps(bits));
+            let value = _mm256_blendv_ps(
+                value,
+                _mm256_setzero_ps(),
+                _mm256_cmp_ps::<_CMP_LT_OQ>(x, _mm256_set1_ps(EXP_MIN)),
+            );
+            let value = _mm256_blendv_ps(
+                value,
+                _mm256_set1_ps(f32::INFINITY),
+                _mm256_cmp_ps::<_CMP_GT_OQ>(x, _mm256_set1_ps(EXP_MAX)),
+            );
+            _mm256_blendv_ps(value, x, _mm256_cmp_ps::<_CMP_UNORD_Q>(x, x))
+        }
+    }
+    #[inline(always)]
+    unsafe fn exp(x: Self::V) -> Self::V {
+        unsafe { crate::kernels::vexp::exp8(x) }
+    }
+    #[inline(always)]
+    unsafe fn exp_raw(x: Self::V) -> (Self::V, u32) {
+        unsafe {
+            let (value, lanes) = crate::kernels::vexp::exp8_raw(x);
+            (value, lanes as u32)
         }
     }
     #[inline(always)]
@@ -257,6 +416,79 @@ impl Simd for Neon {
             let halves = vaddq_f32(v.0, v.1);
             let pairs = vpaddq_f32(halves, halves);
             vgetq_lane_f32::<0>(pairs) + vgetq_lane_f32::<1>(pairs)
+        }
+    }
+    #[inline(always)]
+    unsafe fn max(a: Self::V, b: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        // x86 maxps semantics: a where a > b (ordered), else b.
+        unsafe {
+            (
+                vbslq_f32(vcgtq_f32(a.0, b.0), a.0, b.0),
+                vbslq_f32(vcgtq_f32(a.1, b.1), a.1, b.1),
+            )
+        }
+    }
+    #[inline(always)]
+    unsafe fn eq(a: Self::V, b: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe {
+            (
+                vreinterpretq_f32_u32(vceqq_f32(a.0, b.0)),
+                vreinterpretq_f32_u32(vceqq_f32(a.1, b.1)),
+            )
+        }
+    }
+    #[inline(always)]
+    unsafe fn select(mask: Self::V, a: Self::V, b: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe {
+            (
+                vbslq_f32(vreinterpretq_u32_f32(mask.0), a.0, b.0),
+                vbslq_f32(vreinterpretq_u32_f32(mask.1), a.1, b.1),
+            )
+        }
+    }
+    #[inline(always)]
+    unsafe fn mask_bits(mask: Self::V) -> u32 {
+        use std::arch::aarch64::*;
+        unsafe {
+            let shifts = vld1q_s32([0, 1, 2, 3].as_ptr());
+            let half = |m: float32x4_t| {
+                vaddvq_u32(vshlq_u32(
+                    vshrq_n_u32::<31>(vreinterpretq_u32_f32(m)),
+                    shifts,
+                ))
+            };
+            half(mask.0) | (half(mask.1) << 4)
+        }
+    }
+    #[inline(always)]
+    unsafe fn exp_fast(x: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe {
+            let lane = |x: float32x4_t| {
+                let n = vrndnq_f32(vmulq_f32(x, vdupq_n_f32(EXP_LOG2E)));
+                // vfmaq_f32(c, a, b) = c + a * b.
+                let r = vfmaq_f32(x, n, vdupq_n_f32(-EXP_LN2_HI));
+                let r = vfmaq_f32(r, n, vdupq_n_f32(-EXP_LN2_LO));
+                let mut p = vdupq_n_f32(EXP_P[0]);
+                for c in &EXP_P[1..] {
+                    p = vfmaq_f32(vdupq_n_f32(*c), p, r);
+                }
+                let y = vaddq_f32(vfmaq_f32(r, p, vmulq_f32(r, r)), vdupq_n_f32(1.0));
+                let bits = vshlq_n_s32::<23>(vaddq_s32(vcvtq_s32_f32(n), vdupq_n_s32(127)));
+                let value = vmulq_f32(y, vreinterpretq_f32_s32(bits));
+                let value = vbslq_f32(vcltq_f32(x, vdupq_n_f32(EXP_MIN)), vdupq_n_f32(0.0), value);
+                let value = vbslq_f32(
+                    vcgtq_f32(x, vdupq_n_f32(EXP_MAX)),
+                    vdupq_n_f32(f32::INFINITY),
+                    value,
+                );
+                // NaN lanes (x != x) return x.
+                vbslq_f32(vceqq_f32(x, x), value, x)
+            };
+            (lane(x.0), lane(x.1))
         }
     }
 }
@@ -375,6 +607,69 @@ mod tests {
                 }
             })
             .collect()
+    }
+
+    #[test]
+    fn fast_exp_is_identical_across_isas_and_accurate() {
+        let mut inputs: Vec<f32> = (0..200_000)
+            .map(|i| -110.0 + 200.0 * (i as f32) / 200_000.0)
+            .collect();
+        inputs.extend([
+            0.0,
+            -0.0,
+            -87.0,
+            -86.999,
+            -87.001,
+            88.72,
+            88.73,
+            f32::NEG_INFINITY,
+            f32::INFINITY,
+            f32::NAN,
+            -1e-30,
+            1e-30,
+        ]);
+        let mut worst = 0.0_f64;
+        for chunk in inputs.chunks(8) {
+            let mut lanes = [0.0_f32; 8];
+            lanes[..chunk.len()].copy_from_slice(chunk);
+            let portable = unsafe { Portable::exp_fast(lanes) };
+            for (x, y) in lanes.iter().zip(&portable) {
+                let exact = f64::from(*x).exp();
+                if x.is_finite() && *x >= -87.0 && *x <= 88.0 {
+                    let ulp =
+                        f64::from(f32::EPSILON) * exact.abs().max(f64::from(f32::MIN_POSITIVE));
+                    worst = worst.max((f64::from(*y) - exact).abs() / ulp);
+                }
+            }
+            #[cfg(target_arch = "x86_64")]
+            if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
+                #[target_feature(enable = "avx2,fma")]
+                unsafe fn native(x: [f32; 8]) -> [f32; 8] {
+                    let mut out = [0.0_f32; 8];
+                    unsafe {
+                        Avx2::store(out.as_mut_ptr(), Avx2::exp_fast(Avx2::load(x.as_ptr())))
+                    };
+                    out
+                }
+                let avx2 = unsafe { native(lanes) };
+                for (a, b) in avx2.iter().zip(&portable) {
+                    assert!(a.to_bits() == b.to_bits() || (a.is_nan() && b.is_nan()));
+                }
+            }
+            #[cfg(target_arch = "aarch64")]
+            {
+                let mut out = [0.0_f32; 8];
+                unsafe {
+                    Neon::store(out.as_mut_ptr(), Neon::exp_fast(Neon::load(lanes.as_ptr())))
+                };
+                for (a, b) in out.iter().zip(&portable) {
+                    assert!(a.to_bits() == b.to_bits() || (a.is_nan() && b.is_nan()));
+                }
+            }
+        }
+        assert!(worst < 3.0, "exp_poly error {worst} ulp");
+        assert_eq!(exp_poly(f32::NEG_INFINITY), 0.0);
+        assert!(exp_poly(f32::NAN).is_nan());
     }
 
     /// Every native implementation equals the portable one bit for bit.

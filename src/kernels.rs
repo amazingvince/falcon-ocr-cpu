@@ -9,7 +9,7 @@ use rayon::prelude::*;
 
 #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 mod attention64;
-#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 mod prefill64;
 // Bitwise equal to the platform expf on the softmax domain (exhaustive test).
 #[cfg(target_arch = "x86_64")]
@@ -839,14 +839,19 @@ pub fn attention_compact_with_simd(
         "compact attention query interval"
     );
     let selected = simd.resolved();
-    #[cfg(target_arch = "x86_64")]
+    // AVX2 (also under an explicit AVX-512 selection) on x86, NEON on aarch64.
+    #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
     if query_len >= 4
-        && selected != Simd::Scalar
         && head_dim == 64
         && total_len == prefix_len
-        && avx2_available()
+        && if cfg!(target_arch = "x86_64") {
+            selected != Simd::Scalar && avx2_available()
+        } else {
+            selected == Simd::Neon
+        }
     {
-        // SAFETY: AVX2/FMA checked; shapes validated above; no generated keys.
+        // SAFETY: the vector ISA is available; shapes validated above; no
+        // generated keys.
         unsafe {
             prefill64::compact_prefill(
                 q,

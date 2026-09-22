@@ -88,7 +88,7 @@ unsafe fn uncertain(distance: __m256i) -> __m256i {
 /// recomputed with scalar `f32::exp` (midpoint window, subnormal/overflow
 /// range, NaN). No branches; callers batch the rare fix-ups.
 #[inline(always)]
-pub(super) unsafe fn exp8_raw(x: __m256) -> (__m256, i32) {
+pub(crate) unsafe fn exp8_raw(x: __m256) -> (__m256, i32) {
     unsafe {
         let (lo, lo_distance) = exp4(_mm256_cvtps_pd(_mm256_castps256_ps128(x)));
         let (hi, hi_distance) = exp4(_mm256_cvtps_pd(_mm256_extractf128_ps::<1>(x)));
@@ -110,7 +110,7 @@ pub(super) unsafe fn exp8_raw(x: __m256) -> (__m256, i32) {
 /// # Safety
 /// AVX2/FMA must be available.
 #[inline(always)]
-pub(super) unsafe fn exp8(x: __m256) -> __m256 {
+pub(crate) unsafe fn exp8(x: __m256) -> __m256 {
     unsafe {
         let (lo, lo_distance) = exp4(_mm256_cvtps_pd(_mm256_castps256_ps128(x)));
         let (hi, hi_distance) = exp4(_mm256_cvtps_pd(_mm256_extractf128_ps::<1>(x)));

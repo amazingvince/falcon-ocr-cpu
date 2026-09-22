@@ -1,5 +1,7 @@
-//! Compact-cache prefill attention for `head_dim == 64` on AVX2/FMA, bitwise
-//! equal to `attention_gemm_compact`.
+//! Compact-cache prefill attention for `head_dim == 64`, generic over
+//! `crate::simd::Simd` (AVX2/FMA on x86, NEON on aarch64). The AVX2
+//! instantiation is bitwise equal to `attention_gemm_compact`; NEON and the
+//! portable path use the portable fast exp and are bitwise equal to each other.
 //!
 //! The reference runs two single-threaded `gemm` calls per (32-query tile,
 //! head, 128-key tile) with a scalar mask/softmax between them. For the shapes
@@ -19,9 +21,8 @@
 //! reference's own gemm calls and scalar softmax, so all tiles stay bitwise
 //! equal. Tests compare the kernels with gemm for every tile shape and the
 //! whole function with `attention_gemm_compact`.
-use super::vexp::{exp8, exp8_raw};
+use crate::simd::Simd as Isa;
 use rayon::prelude::*;
-use std::arch::x86_64::*;
 
 pub(super) const QUERY_TILE: usize = 32;
 pub(super) const KEY_TILE: usize = 128;
@@ -81,6 +82,43 @@ pub(super) unsafe fn compact_prefill(
     sinks: &[f32],
     output: &mut [f32],
 ) {
+    unsafe {
+        compact_prefill_with(
+            tile_head_native,
+            q,
+            k,
+            v,
+            query_len,
+            n_heads,
+            n_kv_heads,
+            query_offset,
+            image_start,
+            image_end,
+            sinks,
+            output,
+        )
+    }
+}
+
+/// Entry for one (query tile, head) with a given instruction set.
+type TileFn =
+    unsafe fn(&[f32], &[f32], &[f32], &Shape, usize, usize, usize, usize, &[f32], *mut f32);
+
+#[allow(clippy::too_many_arguments)]
+unsafe fn compact_prefill_with(
+    tile_head: TileFn,
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    query_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    output: &mut [f32],
+) {
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
         kv_width: n_kv_heads * HEAD_DIM,
@@ -117,10 +155,69 @@ pub(super) unsafe fn compact_prefill(
     }
 }
 
-/// One (query tile, head) across all visible key tiles.
+/// One (query tile, head) across all visible key tiles, native ISA.
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
 #[allow(clippy::too_many_arguments)]
-unsafe fn tile_head(
+unsafe fn tile_head_native(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    unsafe {
+        tile_head::<crate::simd::Avx2>(q, k, v, shape, tile, queries, head, kv_head, sinks, output)
+    }
+}
+#[cfg(target_arch = "aarch64")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn tile_head_native(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    unsafe {
+        tile_head::<crate::simd::Neon>(q, k, v, shape, tile, queries, head, kv_head, sinks, output)
+    }
+}
+/// The portable instantiation (tests; bitwise equal to NEON).
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)]
+unsafe fn tile_head_portable(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    unsafe {
+        tile_head::<crate::simd::Portable>(
+            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
+        )
+    }
+}
+
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+unsafe fn tile_head<S: Isa>(
     q: &[f32],
     k: &[f32],
     v: &[f32],
@@ -172,7 +269,7 @@ unsafe fn tile_head(
         };
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
             unsafe {
-                qk_lanes(
+                qk_lanes::<S>(
                     &qt,
                     queries,
                     key_rows,
@@ -184,7 +281,7 @@ unsafe fn tile_head(
                 if !all_image {
                     mask_lanes(shape, first_absolute, queries, key_start, keys, &mut st);
                 }
-                softmax_lanes(
+                softmax_lanes::<S>(
                     queries,
                     keys,
                     &mut st,
@@ -193,7 +290,7 @@ unsafe fn tile_head(
                     out,
                     shape.query_width,
                 );
-                pv_lanes(
+                pv_lanes::<S>(
                     &st,
                     queries,
                     keys,
@@ -239,7 +336,7 @@ unsafe fn tile_head(
 /// Register blocking is 16 queries x 6 keys (12 accumulators, 2 query
 /// vectors, 1 broadcast), which fits the 16 AVX2 registers without spills.
 #[inline(always)]
-unsafe fn qk_lanes(
+unsafe fn qk_lanes<S: Isa>(
     qt: &[f32; HEAD_DIM * QUERY_TILE],
     queries: usize,
     k: *const f32,
@@ -249,20 +346,20 @@ unsafe fn qk_lanes(
     st: &mut [f32; KEY_TILE * QUERY_TILE],
 ) {
     unsafe {
-        let scale = _mm256_set1_ps(scale);
+        let scale = S::splat(scale);
         for half in 0..queries.div_ceil(16) {
             let lane0 = 16 * half;
             let mut key = 0;
             while key + 6 <= keys {
-                qk_keys::<6>(qt, lane0, k, k_stride, key, scale, st);
+                qk_keys::<S, 6>(qt, lane0, k, k_stride, key, scale, st);
                 key += 6;
             }
             match keys - key {
-                5 => qk_keys::<5>(qt, lane0, k, k_stride, key, scale, st),
-                4 => qk_keys::<4>(qt, lane0, k, k_stride, key, scale, st),
-                3 => qk_keys::<3>(qt, lane0, k, k_stride, key, scale, st),
-                2 => qk_keys::<2>(qt, lane0, k, k_stride, key, scale, st),
-                1 => qk_keys::<1>(qt, lane0, k, k_stride, key, scale, st),
+                5 => qk_keys::<S, 5>(qt, lane0, k, k_stride, key, scale, st),
+                4 => qk_keys::<S, 4>(qt, lane0, k, k_stride, key, scale, st),
+                3 => qk_keys::<S, 3>(qt, lane0, k, k_stride, key, scale, st),
+                2 => qk_keys::<S, 2>(qt, lane0, k, k_stride, key, scale, st),
+                1 => qk_keys::<S, 1>(qt, lane0, k, k_stride, key, scale, st),
                 _ => {}
             }
         }
@@ -270,31 +367,31 @@ unsafe fn qk_lanes(
 }
 
 #[inline(always)]
-unsafe fn qk_keys<const N: usize>(
+unsafe fn qk_keys<S: Isa, const N: usize>(
     qt: &[f32; HEAD_DIM * QUERY_TILE],
     lane0: usize,
     k: *const f32,
     k_stride: usize,
     key: usize,
-    scale: __m256,
+    scale: S::V,
     st: &mut [f32; KEY_TILE * QUERY_TILE],
 ) {
     unsafe {
-        let mut acc = [[_mm256_setzero_ps(); 2]; N];
+        let mut acc = [[S::zero(); 2]; N];
         for d in 0..HEAD_DIM {
             let lanes = qt.as_ptr().add(d * QUERY_TILE + lane0);
-            let q0 = _mm256_loadu_ps(lanes);
-            let q1 = _mm256_loadu_ps(lanes.add(8));
+            let q0 = S::load(lanes);
+            let q1 = S::load(lanes.add(8));
             for (n, acc) in acc.iter_mut().enumerate() {
-                let kv = _mm256_set1_ps(*k.add((key + n) * k_stride + d));
-                acc[0] = _mm256_fmadd_ps(q0, kv, acc[0]);
-                acc[1] = _mm256_fmadd_ps(q1, kv, acc[1]);
+                let kv = S::splat(*k.add((key + n) * k_stride + d));
+                acc[0] = S::fma(q0, kv, acc[0]);
+                acc[1] = S::fma(q1, kv, acc[1]);
             }
         }
         for (n, acc) in acc.iter().enumerate() {
             let dst = st.as_mut_ptr().add((key + n) * QUERY_TILE + lane0);
-            _mm256_storeu_ps(dst, _mm256_mul_ps(scale, acc[0]));
-            _mm256_storeu_ps(dst.add(8), _mm256_mul_ps(scale, acc[1]));
+            S::store(dst, S::mul(scale, acc[0]));
+            S::store(dst.add(8), S::mul(scale, acc[1]));
         }
     }
 }
@@ -327,7 +424,7 @@ fn mask_lanes(
 /// key yet), rescale output and denominator, then `p = exp(s - max)` and
 /// `denominator += p` in key order. Probabilities overwrite `st`.
 #[inline(always)]
-unsafe fn softmax_lanes(
+unsafe fn softmax_lanes<S: Isa>(
     queries: usize,
     keys: usize,
     st: &mut [f32; KEY_TILE * QUERY_TILE],
@@ -337,24 +434,24 @@ unsafe fn softmax_lanes(
     out_stride: usize,
 ) {
     unsafe {
-        let neg_inf = _mm256_set1_ps(f32::NEG_INFINITY);
+        let neg_inf = S::splat(f32::NEG_INFINITY);
         for group in 0..queries.div_ceil(8) {
             let lane0 = 8 * group;
             let mut block_max = neg_inf;
             for j in 0..keys {
-                let s = _mm256_loadu_ps(st.as_ptr().add(j * QUERY_TILE + lane0));
-                block_max = _mm256_max_ps(s, block_max);
+                let s = S::load(st.as_ptr().add(j * QUERY_TILE + lane0));
+                block_max = S::max(s, block_max);
             }
-            let old_max = _mm256_loadu_ps(maxima.as_ptr().add(lane0));
-            let new_max = _mm256_max_ps(block_max, old_max);
-            let skip = _mm256_cmp_ps::<_CMP_EQ_OQ>(new_max, neg_inf);
-            let first = _mm256_cmp_ps::<_CMP_EQ_OQ>(old_max, neg_inf);
-            let mut rescale = exp8(_mm256_sub_ps(old_max, new_max));
-            rescale = _mm256_blendv_ps(rescale, _mm256_setzero_ps(), first);
-            rescale = _mm256_blendv_ps(rescale, _mm256_set1_ps(1.0), skip);
+            let old_max = S::load(maxima.as_ptr().add(lane0));
+            let new_max = S::max(block_max, old_max);
+            let skip = S::eq(new_max, neg_inf);
+            let first = S::eq(old_max, neg_inf);
+            let mut rescale = S::exp(S::sub(old_max, new_max));
+            rescale = S::select(first, S::zero(), rescale);
+            rescale = S::select(skip, S::splat(1.0), rescale);
             let mut factors = [0.0_f32; 8];
-            _mm256_storeu_ps(factors.as_mut_ptr(), rescale);
-            let skip_bits = _mm256_movemask_ps(skip);
+            S::store(factors.as_mut_ptr(), rescale);
+            let skip_bits = S::mask_bits(skip);
             for (lane, &factor) in factors.iter().enumerate() {
                 let r = lane0 + lane;
                 if r >= queries || skip_bits & (1 << lane) != 0 {
@@ -372,15 +469,15 @@ unsafe fn softmax_lanes(
             let mut flagged = [0_u64; KEY_TILE / 64];
             for j in 0..keys {
                 let at = st.as_ptr().add(j * QUERY_TILE + lane0);
-                let (p, lanes) = exp8_raw(_mm256_sub_ps(_mm256_loadu_ps(at), new_max));
-                let p = _mm256_blendv_ps(p, _mm256_setzero_ps(), skip);
-                _mm256_storeu_ps(probabilities.as_mut_ptr().add(8 * j), p);
+                let (p, lanes) = S::exp_raw(S::sub(S::load(at), new_max));
+                let p = S::select(skip, S::zero(), p);
+                S::store(probabilities.as_mut_ptr().add(8 * j), p);
                 let lanes = lanes & !skip_bits;
                 masks[j] = lanes as u8;
                 flagged[j / 64] |= u64::from(lanes != 0) << (j % 64);
             }
             let mut maxima_lanes = [0.0_f32; 8];
-            _mm256_storeu_ps(maxima_lanes.as_mut_ptr(), new_max);
+            S::store(maxima_lanes.as_mut_ptr(), new_max);
             for (word, mut bits) in flagged.into_iter().enumerate() {
                 while bits != 0 {
                     let j = 64 * word + bits.trailing_zeros() as usize;
@@ -394,17 +491,16 @@ unsafe fn softmax_lanes(
                     }
                 }
             }
-            let mut denominator =
-                _mm256_mul_ps(_mm256_loadu_ps(denominators.as_ptr().add(lane0)), rescale);
+            let mut denominator = S::mul(S::load(denominators.as_ptr().add(lane0)), rescale);
             for j in 0..keys {
-                let p = _mm256_loadu_ps(probabilities.as_ptr().add(8 * j));
-                denominator = _mm256_add_ps(denominator, p);
-                _mm256_storeu_ps(st.as_mut_ptr().add(j * QUERY_TILE + lane0), p);
+                let p = S::load(probabilities.as_ptr().add(8 * j));
+                denominator = S::add(denominator, p);
+                S::store(st.as_mut_ptr().add(j * QUERY_TILE + lane0), p);
             }
-            _mm256_storeu_ps(denominators.as_mut_ptr().add(lane0), denominator);
-            _mm256_storeu_ps(
+            S::store(denominators.as_mut_ptr().add(lane0), denominator);
+            S::store(
                 maxima.as_mut_ptr().add(lane0),
-                _mm256_blendv_ps(new_max, old_max, skip),
+                S::select(skip, old_max, new_max),
             );
         }
     }
@@ -413,7 +509,7 @@ unsafe fn softmax_lanes(
 /// `out[query][d] += sum_j p[j][query] * v[j][d]`, the keys summed in
 /// ascending order by FMA from +0.0 before the single add (gemm's order).
 #[inline(always)]
-unsafe fn pv_lanes(
+unsafe fn pv_lanes<S: Isa>(
     st: &[f32; KEY_TILE * QUERY_TILE],
     queries: usize,
     keys: usize,
@@ -428,12 +524,12 @@ unsafe fn pv_lanes(
             let rows = (queries - row).min(6);
             for d in (0..HEAD_DIM).step_by(16) {
                 match rows {
-                    6 => pv_rows::<6>(st, row, keys, v, v_stride, d, out, out_stride),
-                    5 => pv_rows::<5>(st, row, keys, v, v_stride, d, out, out_stride),
-                    4 => pv_rows::<4>(st, row, keys, v, v_stride, d, out, out_stride),
-                    3 => pv_rows::<3>(st, row, keys, v, v_stride, d, out, out_stride),
-                    2 => pv_rows::<2>(st, row, keys, v, v_stride, d, out, out_stride),
-                    _ => pv_rows::<1>(st, row, keys, v, v_stride, d, out, out_stride),
+                    6 => pv_rows::<S, 6>(st, row, keys, v, v_stride, d, out, out_stride),
+                    5 => pv_rows::<S, 5>(st, row, keys, v, v_stride, d, out, out_stride),
+                    4 => pv_rows::<S, 4>(st, row, keys, v, v_stride, d, out, out_stride),
+                    3 => pv_rows::<S, 3>(st, row, keys, v, v_stride, d, out, out_stride),
+                    2 => pv_rows::<S, 2>(st, row, keys, v, v_stride, d, out, out_stride),
+                    _ => pv_rows::<S, 1>(st, row, keys, v, v_stride, d, out, out_stride),
                 }
             }
             row += rows;
@@ -443,7 +539,7 @@ unsafe fn pv_lanes(
 
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
-unsafe fn pv_rows<const R: usize>(
+unsafe fn pv_rows<S: Isa, const R: usize>(
     st: &[f32; KEY_TILE * QUERY_TILE],
     row: usize,
     keys: usize,
@@ -454,24 +550,21 @@ unsafe fn pv_rows<const R: usize>(
     out_stride: usize,
 ) {
     unsafe {
-        let mut acc = [[_mm256_setzero_ps(); 2]; R];
+        let mut acc = [[S::zero(); 2]; R];
         for j in 0..keys {
-            let v0 = _mm256_loadu_ps(v.add(j * v_stride + d));
-            let v1 = _mm256_loadu_ps(v.add(j * v_stride + d + 8));
+            let v0 = S::load(v.add(j * v_stride + d));
+            let v1 = S::load(v.add(j * v_stride + d + 8));
             let p = st.as_ptr().add(j * QUERY_TILE + row);
             for (r, acc) in acc.iter_mut().enumerate() {
-                let pv = _mm256_set1_ps(*p.add(r));
-                acc[0] = _mm256_fmadd_ps(v0, pv, acc[0]);
-                acc[1] = _mm256_fmadd_ps(v1, pv, acc[1]);
+                let pv = S::splat(*p.add(r));
+                acc[0] = S::fma(v0, pv, acc[0]);
+                acc[1] = S::fma(v1, pv, acc[1]);
             }
         }
         for (r, acc) in acc.iter().enumerate() {
             let dst = out.add((row + r) * out_stride + d);
-            _mm256_storeu_ps(dst, _mm256_add_ps(acc[0], _mm256_loadu_ps(dst)));
-            _mm256_storeu_ps(
-                dst.add(8),
-                _mm256_add_ps(acc[1], _mm256_loadu_ps(dst.add(8))),
-            );
+            S::store(dst, S::add(acc[0], S::load(dst)));
+            S::store(dst.add(8), S::add(acc[1], S::load(dst.add(8))));
         }
     }
 }
@@ -598,10 +691,87 @@ mod tests {
             .collect()
     }
 
+    #[cfg(target_arch = "x86_64")]
     fn available() -> bool {
         std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
     }
 
+    /// Random prefill operands: (q, k, v, sinks) for 16 query / 8 KV heads.
+    fn operands(query_len: usize) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
+        (
+            values(query_len * 16 * 64, 17 + query_len as u32, 3.0),
+            values(query_len * 16 * 64, 19 + query_len as u32, 3.0),
+            values(query_len * 8 * 64, 23 + query_len as u32, 3.0),
+            values(16, 29, 2.0),
+        )
+    }
+
+    const CASES: [(usize, usize, usize); 7] = [
+        (70, 3, 65),
+        (300, 5, 262),
+        (257, 0, 257),
+        (160, 16, 144),
+        (129, 1, 128),
+        (40, 0, 3),
+        (95, 10, 90),
+    ];
+
+    fn run(tile: TileFn, query_len: usize, image: (usize, usize)) -> Vec<f32> {
+        let (q, k, v, sinks) = operands(query_len);
+        let mut out = vec![f32::NAN; q.len()];
+        unsafe {
+            compact_prefill_with(
+                tile, &q, &k, &v, query_len, 16, 8, 0, image.0, image.1, &sinks, &mut out,
+            );
+        }
+        out
+    }
+
+    /// The portable instantiation (fast exp) stays close to the reference.
+    #[test]
+    fn portable_prefill_is_close_to_reference() {
+        for (query_len, image_start, image_end) in CASES {
+            let (q, k, v, sinks) = operands(query_len);
+            let mut expected = vec![f32::NAN; q.len()];
+            super::super::attention_gemm_compact(
+                &q,
+                &k,
+                &[],
+                &v,
+                query_len,
+                16,
+                8,
+                64,
+                0,
+                image_start,
+                image_end,
+                &sinks,
+                &mut expected,
+            );
+            let actual = run(tile_head_portable, query_len, (image_start, image_end));
+            for (i, (a, b)) in actual.iter().zip(&expected).enumerate() {
+                assert!(
+                    (a - b).abs() <= 1e-5 * (1.0 + b.abs()),
+                    "query_len {query_len} index {i}: {a} vs {b}"
+                );
+            }
+        }
+    }
+
+    /// NEON is bitwise equal to the portable instantiation.
+    #[cfg(target_arch = "aarch64")]
+    #[test]
+    fn neon_prefill_matches_portable_bitwise() {
+        for (query_len, image_start, image_end) in CASES {
+            let native = run(tile_head_native, query_len, (image_start, image_end));
+            let portable = run(tile_head_portable, query_len, (image_start, image_end));
+            for (i, (a, b)) in native.iter().zip(&portable).enumerate() {
+                assert_eq!(a.to_bits(), b.to_bits(), "query_len {query_len} index {i}");
+            }
+        }
+    }
+
+    #[cfg(target_arch = "x86_64")]
     #[target_feature(enable = "avx2,fma")]
     unsafe fn qk_via_lanes(
         q: &[f32],
@@ -618,10 +788,13 @@ mod tests {
             }
         }
         let mut st = [f32::NAN; KEY_TILE * QUERY_TILE];
-        unsafe { qk_lanes(&qt, queries, k.as_ptr(), k_stride, keys, 0.125, &mut st) };
+        unsafe {
+            qk_lanes::<crate::simd::Avx2>(&qt, queries, k.as_ptr(), k_stride, keys, 0.125, &mut st)
+        };
         st
     }
 
+    #[cfg(target_arch = "x86_64")]
     #[test]
     fn qk_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
@@ -676,6 +849,7 @@ mod tests {
         assert!(checked > 3000);
     }
 
+    #[cfg(target_arch = "x86_64")]
     #[test]
     fn pv_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
@@ -728,7 +902,7 @@ mod tests {
                 }
                 let mut actual = initial.clone();
                 unsafe {
-                    pv_lanes(
+                    pv_lanes::<crate::simd::Avx2>(
                         &key_major,
                         queries,
                         keys,
@@ -751,6 +925,7 @@ mod tests {
         assert!(checked > 3000);
     }
 
+    #[cfg(target_arch = "x86_64")]
     #[test]
     fn whole_prefill_matches_reference_bitwise() {
         if !available() {
