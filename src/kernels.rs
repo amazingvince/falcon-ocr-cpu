@@ -809,6 +809,31 @@ pub fn attention_compact_with_simd(
         "compact attention query interval"
     );
     let selected = simd.resolved();
+    #[cfg(target_arch = "x86_64")]
+    if query_len >= 4
+        && selected != Simd::Scalar
+        && head_dim == 64
+        && total_len == prefix_len
+        && avx2_available()
+    {
+        // SAFETY: AVX2/FMA checked; shapes validated above; no generated keys.
+        unsafe {
+            prefill64::compact_prefill(
+                q,
+                prefix_k,
+                v,
+                query_len,
+                n_heads,
+                n_kv_heads,
+                query_offset,
+                image_start,
+                image_end,
+                sinks,
+                output,
+            );
+        }
+        return;
+    }
     if query_len >= 4 && selected != Simd::Scalar {
         attention_gemm_compact(
             q,
@@ -976,11 +1001,6 @@ fn attention_gemm_compact(
     let kv_stride = isize::try_from(kv_width).expect("compact attention KV stride too large");
     let scale = (head_dim as f32).sqrt().recip();
     let repeat = n_heads / n_kv_heads;
-    // Bit-identical AVX2 tiles replace gemm's main-path calls; see prefill64.
-    #[cfg(target_arch = "x86_64")]
-    let fast = head_dim == 64 && avx2_available();
-    #[cfg(target_arch = "x86_64")]
-    const _: () = assert!(QUERY_TILE == prefill64::QUERY_TILE && KEY_TILE == prefill64::KEY_TILE);
     output
         .par_chunks_mut(QUERY_TILE * query_width)
         .enumerate()
@@ -996,8 +1016,6 @@ fn attention_gemm_compact(
                 last_absolute + 1
             };
             let mut scores = [0.0_f32; QUERY_TILE * KEY_TILE];
-            #[cfg(target_arch = "x86_64")]
-            let mut transposed = prefill64::KeyTile([0.0; 64 * KEY_TILE]);
             let mut maxima = [0.0_f32; QUERY_TILE];
             let mut denominators = [0.0_f32; QUERY_TILE];
             // Pure prefill has no segmented K boundary and leaves this empty.
@@ -1045,55 +1063,31 @@ fn attention_gemm_compact(
                         }
                         (boundary_keys.as_slice(), 0, head_dim as isize)
                     };
-                    #[cfg(target_arch = "x86_64")]
-                    let tiled = fast && prefill64::qk_uses_main_path(queries, keys);
-                    #[cfg(not(target_arch = "x86_64"))]
-                    let tiled = false;
-                    #[cfg(target_arch = "x86_64")]
-                    if tiled {
-                        // SAFETY: AVX2/FMA detected; the same validated operands
-                        // as the gemm call below, rows of 64 floats at the strides.
-                        unsafe {
-                            prefill64::qk(
-                                q.as_ptr().add(q_start),
-                                query_width,
-                                queries,
-                                key_data.as_ptr().add(key_start_offset),
-                                key_stride as usize,
-                                keys,
-                                scale,
-                                &mut scores,
-                                &mut transposed,
-                            );
-                        }
-                    }
                     // SAFETY: The public compact entry validates shapes. The K
                     // interval is entirely in one buffer or gathered contiguously;
                     // no matrix straddles the separately allocated cache segments.
-                    if !tiled {
-                        unsafe {
-                            gemm::gemm(
-                                queries,
-                                keys,
-                                head_dim,
-                                scores.as_mut_ptr(),
-                                1,
-                                KEY_TILE as isize,
-                                false,
-                                q.as_ptr().add(q_start),
-                                1,
-                                query_stride,
-                                key_data.as_ptr().add(key_start_offset),
-                                key_stride,
-                                1,
-                                0.0_f32,
-                                scale,
-                                false,
-                                false,
-                                false,
-                                gemm::Parallelism::None,
-                            );
-                        }
+                    unsafe {
+                        gemm::gemm(
+                            queries,
+                            keys,
+                            head_dim,
+                            scores.as_mut_ptr(),
+                            1,
+                            KEY_TILE as isize,
+                            false,
+                            q.as_ptr().add(q_start),
+                            1,
+                            query_stride,
+                            key_data.as_ptr().add(key_start_offset),
+                            key_stride,
+                            1,
+                            0.0_f32,
+                            scale,
+                            false,
+                            false,
+                            false,
+                            gemm::Parallelism::None,
+                        );
                     }
                     for row in 0..queries {
                         let absolute = first_absolute + row;
@@ -1132,52 +1126,30 @@ fn attention_gemm_compact(
                         maxima[row] = new_max;
                     }
                     let value_start = key_start * kv_width + kv_head * head_dim;
-                    #[cfg(target_arch = "x86_64")]
-                    let tiled = fast && prefill64::pv_uses_main_path(queries, keys);
-                    #[cfg(not(target_arch = "x86_64"))]
-                    let tiled = false;
-                    #[cfg(target_arch = "x86_64")]
-                    if tiled {
-                        // SAFETY: AVX2/FMA detected; V rows and output rows are
-                        // the gemm call's operands with the same strides.
-                        unsafe {
-                            prefill64::pv(
-                                &scores,
-                                queries,
-                                keys,
-                                v.as_ptr().add(value_start),
-                                kv_width,
-                                out.as_mut_ptr().add(head * head_dim),
-                                query_width,
-                            );
-                        }
-                    }
                     // The compact value row stride is smaller, but the GEMM
                     // dimensions and accumulation order match expanded attention.
-                    if !tiled {
-                        unsafe {
-                            gemm::gemm(
-                                queries,
-                                head_dim,
-                                keys,
-                                out.as_mut_ptr().add(head * head_dim),
-                                1,
-                                query_stride,
-                                true,
-                                scores.as_ptr(),
-                                1,
-                                KEY_TILE as isize,
-                                v.as_ptr().add(value_start),
-                                1,
-                                kv_stride,
-                                1.0_f32,
-                                1.0_f32,
-                                false,
-                                false,
-                                false,
-                                gemm::Parallelism::None,
-                            );
-                        }
+                    unsafe {
+                        gemm::gemm(
+                            queries,
+                            head_dim,
+                            keys,
+                            out.as_mut_ptr().add(head * head_dim),
+                            1,
+                            query_stride,
+                            true,
+                            scores.as_ptr(),
+                            1,
+                            KEY_TILE as isize,
+                            v.as_ptr().add(value_start),
+                            1,
+                            kv_stride,
+                            1.0_f32,
+                            1.0_f32,
+                            false,
+                            false,
+                            false,
+                            gemm::Parallelism::None,
+                        );
                     }
                 }
                 for row in 0..queries {

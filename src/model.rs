@@ -600,6 +600,7 @@ impl Model {
         if trace.enabled() {
             trace.tensor(&format!("{phase}.embedding"), &[rows, c.dim], h)?;
         }
+        let mut clock = PhaseClock::new(rows);
         // RoPE factors are shared by all transformer layers.
         rotary_factors(
             c,
@@ -609,6 +610,7 @@ impl Model {
             &self.temporal,
             &mut work.rope,
         );
+        clock.mark(0);
         for (i, layer) in self.layers.iter().enumerate() {
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
             self.linear(
@@ -622,6 +624,7 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
+            clock.mark(1);
             // Normalize each original K head before GQA expansion. Spatial rotations
             // subsequently differ for paired heads, so expanded keys are intentional.
             let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
@@ -708,8 +711,10 @@ impl Model {
                     &work.v,
                 )?;
             }
+            clock.mark(2);
             let cache = &mut session.layers[i];
             cache.append(&work.k, &work.v, offset, c);
+            clock.mark(3);
             cache.attention(
                 &work.q,
                 rows,
@@ -722,6 +727,7 @@ impl Model {
                 &mut work.attn,
                 simd,
             );
+            clock.mark(4);
             if trace.enabled() {
                 trace.tensor(
                     &format!("{phase}.layer.{i}.attention"),
@@ -741,6 +747,7 @@ impl Model {
                 simd,
             )?;
             add_residual(h, &work.projected, c.dim);
+            clock.mark(5);
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
             self.linear_glu(
                 &work.normalized,
@@ -752,6 +759,7 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
+            clock.mark(6);
             self.linear(
                 &work.gated,
                 rows,
@@ -764,10 +772,12 @@ impl Model {
                 simd,
             )?;
             add_residual(h, &work.projected, c.dim);
+            clock.mark(7);
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
         }
+        clock.report(rows);
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;
         // Generation needs only the final token's vocabulary projection.
@@ -1496,6 +1506,55 @@ fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
     } else {
         for (x, a) in h.iter_mut().zip(projected) {
             *x += a;
+        }
+    }
+}
+
+/// Opt-in wall-clock split of prefill-sized forwards (`FALCON_OCR_PHASES=1`),
+/// printed to stderr. Disabled, each mark is one branch.
+struct PhaseClock {
+    enabled: bool,
+    last: Instant,
+    totals: [f64; 8],
+}
+impl PhaseClock {
+    const NAMES: [&'static str; 8] = [
+        "rope_factors",
+        "norm+qkv",
+        "split+qk_norm+rope",
+        "cache_append",
+        "attention",
+        "wo+residual",
+        "norm+w13+gate",
+        "w2+residual",
+    ];
+    fn new(rows: usize) -> Self {
+        static ENABLED: OnceLock<bool> = OnceLock::new();
+        let enabled = rows >= PARALLEL_ROWS
+            && *ENABLED.get_or_init(|| std::env::var_os("FALCON_OCR_PHASES").is_some());
+        Self {
+            enabled,
+            last: Instant::now(),
+            totals: [0.0; 8],
+        }
+    }
+    /// Charge the time since the previous mark to the phase that just ended.
+    #[inline]
+    fn mark(&mut self, ended: usize) {
+        if self.enabled {
+            let now = Instant::now();
+            self.totals[ended] += (now - self.last).as_secs_f64() * 1000.0;
+            self.last = now;
+        }
+    }
+    fn report(&self, rows: usize) {
+        if self.enabled {
+            let parts: Vec<String> = Self::NAMES
+                .iter()
+                .zip(&self.totals)
+                .map(|(name, ms)| format!("{name}={ms:.0}ms"))
+                .collect();
+            eprintln!("prefill phases rows={rows}: {}", parts.join(" "));
         }
     }
 }

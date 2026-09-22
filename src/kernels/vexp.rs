@@ -20,18 +20,20 @@ const FAST_MAX: f32 = 88.0;
 /// Midpoint window, in f64 ulps of the evaluated value (29 bits are dropped
 /// when rounding a normal f64 to f32; the midpoint pattern is 1 << 28).
 /// Measured on Windows UCRT: `expf` differs from correct rounding on 13,243 of
-/// 1.12e9 inputs in [-104, 0], always by one ulp and always within 0.01 f32 ulp
-/// (5.4e6 f64 ulps) of a midpoint. 2^23 f64 ulps (0.0156 f32 ulp) covers those
-/// with margin; about 3% of lanes take the scalar path. Other C libraries must
-/// pass `exhaustive_platform_agreement` before relying on bitwise agreement.
-const UNCERTAIN: i64 = 1 << 23;
+/// 1.12e9 inputs in [-104, 0], always by one ulp and at most 5.84e-4 f32 ulp
+/// (2^18.3 f64 ulps) from a midpoint. The polynomial adds at most ~2^15 f64
+/// ulps, so 2^20 keeps a 3x margin; about 0.4% of lanes take the scalar path.
+/// Other C libraries must pass `exhaustive_platform_agreement` first.
+const UNCERTAIN: i64 = 1 << 20;
 
 const LOG2E: f64 = std::f64::consts::LOG2_E;
 const LN2_HI: f64 = 6.931_471_803_691_238_164_9e-1;
 const LN2_LO: f64 = 1.908_214_929_270_587_700_02e-10;
 
-/// `exp` of four f64 lanes to < 2^-50 relative error, plus the lanes'
-/// distance (in f64 ulps) from an f32 rounding midpoint.
+/// `exp` of four f64 lanes to < 1e-11 relative error (degree-9 Taylor on
+/// |r| <= ln2/2, Estrin form), plus the lanes' distance (in f64 ulps) from an
+/// f32 rounding midpoint. The error is ~275x below the `UNCERTAIN` window,
+/// which is all the rounding decision needs.
 #[inline(always)]
 unsafe fn exp4(x: __m256d) -> (__m128, __m256i) {
     unsafe {
@@ -40,24 +42,19 @@ unsafe fn exp4(x: __m256d) -> (__m128, __m256i) {
         );
         let r = _mm256_fnmadd_pd(k, _mm256_set1_pd(LN2_HI), x);
         let r = _mm256_fnmadd_pd(k, _mm256_set1_pd(LN2_LO), r);
-        // Horner, 1/12! down to 1/0!.
-        let mut p = _mm256_set1_pd(1.0 / 479_001_600.0);
-        for c in [
-            1.0 / 39_916_800.0,
-            1.0 / 3_628_800.0,
-            1.0 / 362_880.0,
-            1.0 / 40_320.0,
-            1.0 / 5_040.0,
-            1.0 / 720.0,
-            1.0 / 120.0,
-            1.0 / 24.0,
-            1.0 / 6.0,
-            0.5,
-            1.0,
-            1.0,
-        ] {
-            p = _mm256_fmadd_pd(p, r, _mm256_set1_pd(c));
-        }
+        let c = |v: f64| _mm256_set1_pd(v);
+        let r2 = _mm256_mul_pd(r, r);
+        let r4 = _mm256_mul_pd(r2, r2);
+        let r8 = _mm256_mul_pd(r4, r4);
+        let p01 = _mm256_fmadd_pd(r, c(1.0), c(1.0));
+        let p23 = _mm256_fmadd_pd(r, c(1.0 / 6.0), c(0.5));
+        let p45 = _mm256_fmadd_pd(r, c(1.0 / 120.0), c(1.0 / 24.0));
+        let p67 = _mm256_fmadd_pd(r, c(1.0 / 5_040.0), c(1.0 / 720.0));
+        let p89 = _mm256_fmadd_pd(r, c(1.0 / 362_880.0), c(1.0 / 40_320.0));
+        let p03 = _mm256_fmadd_pd(r2, p23, p01);
+        let p47 = _mm256_fmadd_pd(r2, p67, p45);
+        let p07 = _mm256_fmadd_pd(r4, p47, p03);
+        let p = _mm256_fmadd_pd(r8, p89, p07);
         // 2^k for k in [-151, 128]: exact normal f64 scale.
         let ki = _mm256_cvtepi32_epi64(_mm256_cvtpd_epi32(k));
         let bits = _mm256_slli_epi64::<52>(_mm256_add_epi64(ki, _mm256_set1_epi64x(1023)));
@@ -84,6 +81,26 @@ unsafe fn uncertain(distance: __m256i) -> __m256i {
         let above = _mm256_cmpgt_epi64(distance, _mm256_set1_epi64x(-UNCERTAIN));
         let below = _mm256_cmpgt_epi64(_mm256_set1_epi64x(UNCERTAIN), distance);
         _mm256_and_si256(above, below)
+    }
+}
+
+/// Vector `exp` of eight lanes and the bit mask of lanes that must be
+/// recomputed with scalar `f32::exp` (midpoint window, subnormal/overflow
+/// range, NaN). No branches; callers batch the rare fix-ups.
+#[inline(always)]
+pub(super) unsafe fn exp8_raw(x: __m256) -> (__m256, i32) {
+    unsafe {
+        let (lo, lo_distance) = exp4(_mm256_cvtps_pd(_mm256_castps256_ps128(x)));
+        let (hi, hi_distance) = exp4(_mm256_cvtps_pd(_mm256_extractf128_ps::<1>(x)));
+        let result = _mm256_set_m128(hi, lo);
+        let lo_mask = _mm256_castsi256_ps(uncertain(lo_distance));
+        let hi_mask = _mm256_castsi256_ps(uncertain(hi_distance));
+        let window = _mm256_set_m128(pack_mask(hi_mask), pack_mask(lo_mask));
+        let outside = _mm256_or_ps(
+            _mm256_cmp_ps::<_CMP_NGE_UQ>(x, _mm256_set1_ps(FAST_MIN)),
+            _mm256_cmp_ps::<_CMP_GT_OQ>(x, _mm256_set1_ps(FAST_MAX)),
+        );
+        (result, _mm256_movemask_ps(_mm256_or_ps(window, outside)))
     }
 }
 
@@ -133,13 +150,51 @@ pub(super) unsafe fn exp8(x: __m256) -> __m256 {
 #[target_feature(enable = "avx2,fma")]
 pub(crate) unsafe fn exp_shifted_in_place(values: &mut [f32], shift: f32) {
     unsafe {
-        let s = _mm256_set1_ps(shift);
-        let mut chunks = values.chunks_exact_mut(8);
-        for chunk in &mut chunks {
-            let x = _mm256_sub_ps(_mm256_loadu_ps(chunk.as_ptr()), s);
-            _mm256_storeu_ps(chunk.as_mut_ptr(), exp8(x));
+        for block in values.chunks_mut(BLOCK) {
+            exp_shifted_block(block, shift);
         }
-        for value in chunks.into_remainder() {
+    }
+}
+
+/// Values per branch-free block (64 vectors).
+const BLOCK: usize = 512;
+
+#[inline(always)]
+unsafe fn exp_shifted_block(values: &mut [f32], shift: f32) {
+    debug_assert!(values.len() <= BLOCK);
+    unsafe {
+        let s = _mm256_set1_ps(shift);
+        let vectors = values.len() / 8;
+        let mut masks = [0_u8; BLOCK / 8];
+        let mut flagged = 0_u64;
+        for (v, mask) in masks.iter_mut().enumerate().take(vectors) {
+            let at = values.as_mut_ptr().add(8 * v);
+            let (result, lanes) = exp8_raw(_mm256_sub_ps(_mm256_loadu_ps(at), s));
+            // Keep the input for flagged lanes: store the result only where
+            // no fix-up is needed (blend), so the fix-up can recompute x.
+            let keep = _mm256_castsi256_ps(_mm256_cmpeq_epi32(
+                _mm256_and_si256(
+                    _mm256_set1_epi32(lanes),
+                    _mm256_setr_epi32(1, 2, 4, 8, 16, 32, 64, 128),
+                ),
+                _mm256_setzero_si256(),
+            ));
+            _mm256_storeu_ps(at, _mm256_blendv_ps(_mm256_loadu_ps(at), result, keep));
+            *mask = lanes as u8;
+            flagged |= u64::from(lanes != 0) << v;
+        }
+        while flagged != 0 {
+            let v = flagged.trailing_zeros() as usize;
+            flagged &= flagged - 1;
+            let mut lanes = masks[v];
+            while lanes != 0 {
+                let lane = lanes.trailing_zeros() as usize;
+                lanes &= lanes - 1;
+                let value = &mut values[8 * v + lane];
+                *value = (*value - shift).exp();
+            }
+        }
+        for value in &mut values[8 * vectors..] {
             *value = (*value - shift).exp();
         }
     }

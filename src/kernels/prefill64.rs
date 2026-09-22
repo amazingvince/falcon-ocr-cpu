@@ -1,16 +1,26 @@
-//! Allocation-free AVX2/FMA replacements for the two per-tile `gemm` calls of
-//! compact prefill attention (`head_dim == 64`), bit-identical to them.
+//! Compact-cache prefill attention for `head_dim == 64` on AVX2/FMA, bitwise
+//! equal to `attention_gemm_compact`.
 //!
-//! For the shapes routed here, gemm 0.19 transposes the destination and runs
-//! its main microkernel: every output element is one FMA chain over the depth
-//! starting from +0.0, followed by `beta * acc` (QK, `read_dst == false`) or
-//! `acc + dst` (PV, `alpha == beta == 1`). The helpers below keep exactly that
-//! per-element sequence while vectorizing across independent elements, and
-//! avoid gemm's per-call packing and heap allocation (about 7.5 million calls
-//! per full page). Shapes for which gemm takes a different path (horizontal
-//! dot products when `keys * queries <= 256`, `gevv` for `keys <= 2`, `gemv`
-//! for a single query) stay on gemm; see [`qk_uses_main_path`] and
-//! [`pv_uses_main_path`]. Tests compare every tile shape against gemm itself.
+//! The reference runs two single-threaded `gemm` calls per (32-query tile,
+//! head, 128-key tile) with a scalar mask/softmax between them. For the shapes
+//! routed to gemm's main microkernel, every QK and PV element is one FMA chain
+//! over the depth from +0.0 followed by `scale * acc` (QK) or `acc + out`
+//! (PV); see `qk_uses_main_path` / `pv_uses_main_path`. This module keeps
+//! those per-element sequences but
+//! * makes the tile's 32 queries the vector lanes: Q is transposed once per
+//!   (tile, head) and each key row is read contiguously (no K transpose);
+//! * keeps scores key-major so the online softmax runs eight queries per
+//!   vector with the platform-exact vector exp, each lane in the reference's
+//!   key order;
+//! * schedules KV group by KV group, so one group's keys and values (about
+//!   5 MB at a full page) stay in cache while every query tile reads them.
+//!
+//! Key tiles outside gemm's main path (the last, short tiles) run the
+//! reference's own gemm calls and scalar softmax, so all tiles stay bitwise
+//! equal. Tests compare the kernels with gemm for every tile shape and the
+//! whole function with `attention_gemm_compact`.
+use super::vexp::{exp8, exp8_raw};
+use rayon::prelude::*;
 use std::arch::x86_64::*;
 
 pub(super) const QUERY_TILE: usize = 32;
@@ -29,102 +39,382 @@ pub(super) fn pv_uses_main_path(queries: usize, keys: usize) -> bool {
     keys >= 3 && queries >= 2
 }
 
-/// Transposed K tile, `[d][KEY_TILE]`, reused by every row group of one tile.
-pub(super) struct KeyTile(pub [f32; HEAD_DIM * KEY_TILE]);
+/// Output base pointer shared by tasks that write disjoint (row, head) blocks.
+#[derive(Clone, Copy)]
+struct OutputPtr(*mut f32);
+// SAFETY: every task writes only its own query rows of its own head.
+unsafe impl Send for OutputPtr {}
+unsafe impl Sync for OutputPtr {}
+impl OutputPtr {
+    fn get(self) -> *mut f32 {
+        self.0
+    }
+}
 
-/// `scores[row * KEY_TILE + key] = scale * sum_d q[row][d] * k[key][d]`, with
-/// the depth summed in ascending order by FMA from +0.0 for each element.
+struct Shape {
+    query_width: usize,
+    kv_width: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    scale: f32,
+}
+
+/// Pure prefill (no generated keys): `k` is `[total][n_heads][64]`, `v` is
+/// `[total][n_kv_heads][64]`, `q`/`output` are `[query_len][n_heads][64]`.
 ///
 /// # Safety
-/// AVX2/FMA must be available; `q` addresses `queries` rows of 64 floats at
-/// `q_stride`, `k` addresses `keys` rows of 64 floats at `k_stride`, and
-/// `queries <= QUERY_TILE`, `keys <= KEY_TILE`.
+/// AVX2/FMA must be available and every shape must satisfy the checks of
+/// `attention_compact_with_simd` with `head_dim == 64` and `prefix_len ==
+/// total_len`.
+#[allow(clippy::too_many_arguments)]
+pub(super) unsafe fn compact_prefill(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    query_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    output: &mut [f32],
+) {
+    let shape = Shape {
+        query_width: n_heads * HEAD_DIM,
+        kv_width: n_kv_heads * HEAD_DIM,
+        query_offset,
+        image_start,
+        image_end,
+        scale: (HEAD_DIM as f32).sqrt().recip(),
+    };
+    let repeat = n_heads / n_kv_heads;
+    let tiles = query_len.div_ceil(QUERY_TILE);
+    let out = OutputPtr(output.as_mut_ptr());
+    for kv_head in 0..n_kv_heads {
+        (0..tiles * repeat).into_par_iter().for_each(|task| {
+            let (tile, pair) = (task / repeat, task % repeat);
+            let head = kv_head * repeat + pair;
+            let queries = (query_len - tile * QUERY_TILE).min(QUERY_TILE);
+            // SAFETY: features and shapes were checked by the caller; each
+            // task owns rows [tile * 32, tile * 32 + queries) of `head`.
+            unsafe {
+                tile_head(
+                    q,
+                    k,
+                    v,
+                    &shape,
+                    tile,
+                    queries,
+                    head,
+                    kv_head,
+                    sinks,
+                    out.get(),
+                );
+            }
+        });
+    }
+}
+
+/// One (query tile, head) across all visible key tiles.
 #[target_feature(enable = "avx2,fma")]
 #[allow(clippy::too_many_arguments)]
-pub(super) unsafe fn qk(
-    q: *const f32,
-    q_stride: usize,
+unsafe fn tile_head(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    let first_query = tile * QUERY_TILE;
+    let first_absolute = shape.query_offset + first_query;
+    let last_absolute = first_absolute + queries - 1;
+    let intersects_image = first_absolute < shape.image_end && last_absolute >= shape.image_start;
+    let visible_end = if intersects_image {
+        (last_absolute + 1).max(shape.image_end)
+    } else {
+        last_absolute + 1
+    };
+    // Rows of image queries see every key below image_end; nothing to mask.
+    let all_image = first_absolute >= shape.image_start && last_absolute < shape.image_end;
+    let mut qt = [0.0_f32; HEAD_DIM * QUERY_TILE];
+    for r in 0..queries {
+        let row = &q[(first_query + r) * shape.query_width + head * HEAD_DIM..][..HEAD_DIM];
+        for (d, &value) in row.iter().enumerate() {
+            qt[d * QUERY_TILE + r] = value;
+        }
+    }
+    let mut maxima = [f32::NEG_INFINITY; QUERY_TILE];
+    let mut denominators = [0.0_f32; QUERY_TILE];
+    // SAFETY: row offsets stay inside `output` for this task's rows and head.
+    let out = unsafe { output.add(first_query * shape.query_width + head * HEAD_DIM) };
+    for r in 0..queries {
+        unsafe { std::slice::from_raw_parts_mut(out.add(r * shape.query_width), HEAD_DIM) }
+            .fill(0.0);
+    }
+    let mut st = [0.0_f32; KEY_TILE * QUERY_TILE];
+    let mut scores = [0.0_f32; QUERY_TILE * KEY_TILE];
+    for key_start in (0..visible_end).step_by(KEY_TILE) {
+        let keys = (visible_end - key_start).min(KEY_TILE);
+        let key_rows = unsafe {
+            k.as_ptr()
+                .add(key_start * shape.query_width + head * HEAD_DIM)
+        };
+        let value_rows = unsafe {
+            v.as_ptr()
+                .add(key_start * shape.kv_width + kv_head * HEAD_DIM)
+        };
+        if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
+            unsafe {
+                qk_lanes(
+                    &qt,
+                    queries,
+                    key_rows,
+                    shape.query_width,
+                    keys,
+                    shape.scale,
+                    &mut st,
+                );
+                if !all_image {
+                    mask_lanes(shape, first_absolute, queries, key_start, keys, &mut st);
+                }
+                softmax_lanes(
+                    queries,
+                    keys,
+                    &mut st,
+                    &mut maxima,
+                    &mut denominators,
+                    out,
+                    shape.query_width,
+                );
+                pv_lanes(
+                    &st,
+                    queries,
+                    keys,
+                    value_rows,
+                    shape.kv_width,
+                    out,
+                    shape.query_width,
+                );
+            }
+        } else {
+            unsafe {
+                reference_key_tile(
+                    shape,
+                    q.as_ptr()
+                        .add(first_query * shape.query_width + head * HEAD_DIM),
+                    first_absolute,
+                    queries,
+                    key_start,
+                    keys,
+                    key_rows,
+                    value_rows,
+                    &mut scores,
+                    &mut maxima,
+                    &mut denominators,
+                    out,
+                );
+            }
+        }
+    }
+    for r in 0..queries {
+        let row =
+            unsafe { std::slice::from_raw_parts_mut(out.add(r * shape.query_width), HEAD_DIM) };
+        let logsumexp = maxima[r] + denominators[r].ln();
+        let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
+        for value in row {
+            *value = (*value / denominators[r]) * sink_scale;
+        }
+    }
+}
+
+/// `st[key * 32 + query] = scale * sum_d q[query][d] * k[key][d]`, the depth
+/// summed in ascending order by FMA from +0.0 (gemm's main-path order).
+/// Register blocking is 16 queries x 6 keys (12 accumulators, 2 query
+/// vectors, 1 broadcast), which fits the 16 AVX2 registers without spills.
+#[inline(always)]
+unsafe fn qk_lanes(
+    qt: &[f32; HEAD_DIM * QUERY_TILE],
     queries: usize,
     k: *const f32,
     k_stride: usize,
     keys: usize,
     scale: f32,
-    scores: &mut [f32; QUERY_TILE * KEY_TILE],
-    transposed: &mut KeyTile,
+    st: &mut [f32; KEY_TILE * QUERY_TILE],
 ) {
-    debug_assert!(queries <= QUERY_TILE && keys <= KEY_TILE);
-    let padded = keys.next_multiple_of(8);
-    let kt = &mut transposed.0;
     unsafe {
-        for d in 0..HEAD_DIM {
-            let row = &mut kt[d * KEY_TILE..d * KEY_TILE + padded];
-            for (key, value) in row.iter_mut().enumerate() {
-                *value = if key < keys {
-                    *k.add(key * k_stride + d)
-                } else {
-                    0.0
-                };
-            }
-        }
         let scale = _mm256_set1_ps(scale);
-        let mut row = 0;
-        while row < queries {
-            let rows = (queries - row).min(6);
+        for half in 0..queries.div_ceil(16) {
+            let lane0 = 16 * half;
             let mut key = 0;
-            while key < padded {
-                match rows {
-                    6 => qk_block::<6>(q, q_stride, row, kt, key, scale, scores),
-                    5 => qk_block::<5>(q, q_stride, row, kt, key, scale, scores),
-                    4 => qk_block::<4>(q, q_stride, row, kt, key, scale, scores),
-                    3 => qk_block::<3>(q, q_stride, row, kt, key, scale, scores),
-                    2 => qk_block::<2>(q, q_stride, row, kt, key, scale, scores),
-                    _ => qk_block::<1>(q, q_stride, row, kt, key, scale, scores),
-                }
-                key += 8;
+            while key + 6 <= keys {
+                qk_keys::<6>(qt, lane0, k, k_stride, key, scale, st);
+                key += 6;
             }
-            row += rows;
+            match keys - key {
+                5 => qk_keys::<5>(qt, lane0, k, k_stride, key, scale, st),
+                4 => qk_keys::<4>(qt, lane0, k, k_stride, key, scale, st),
+                3 => qk_keys::<3>(qt, lane0, k, k_stride, key, scale, st),
+                2 => qk_keys::<2>(qt, lane0, k, k_stride, key, scale, st),
+                1 => qk_keys::<1>(qt, lane0, k, k_stride, key, scale, st),
+                _ => {}
+            }
         }
     }
 }
 
 #[inline(always)]
-unsafe fn qk_block<const R: usize>(
-    q: *const f32,
-    q_stride: usize,
-    row: usize,
-    kt: &[f32; HEAD_DIM * KEY_TILE],
+unsafe fn qk_keys<const N: usize>(
+    qt: &[f32; HEAD_DIM * QUERY_TILE],
+    lane0: usize,
+    k: *const f32,
+    k_stride: usize,
     key: usize,
     scale: __m256,
-    scores: &mut [f32; QUERY_TILE * KEY_TILE],
+    st: &mut [f32; KEY_TILE * QUERY_TILE],
 ) {
     unsafe {
-        let mut acc = [_mm256_setzero_ps(); R];
+        let mut acc = [[_mm256_setzero_ps(); 2]; N];
         for d in 0..HEAD_DIM {
-            let kv = _mm256_loadu_ps(kt.as_ptr().add(d * KEY_TILE + key));
-            for (r, acc) in acc.iter_mut().enumerate() {
-                let qv = _mm256_set1_ps(*q.add((row + r) * q_stride + d));
-                *acc = _mm256_fmadd_ps(kv, qv, *acc);
+            let lanes = qt.as_ptr().add(d * QUERY_TILE + lane0);
+            let q0 = _mm256_loadu_ps(lanes);
+            let q1 = _mm256_loadu_ps(lanes.add(8));
+            for (n, acc) in acc.iter_mut().enumerate() {
+                let kv = _mm256_set1_ps(*k.add((key + n) * k_stride + d));
+                acc[0] = _mm256_fmadd_ps(q0, kv, acc[0]);
+                acc[1] = _mm256_fmadd_ps(q1, kv, acc[1]);
             }
         }
-        for (r, acc) in acc.iter().enumerate() {
+        for (n, acc) in acc.iter().enumerate() {
+            let dst = st.as_mut_ptr().add((key + n) * QUERY_TILE + lane0);
+            _mm256_storeu_ps(dst, _mm256_mul_ps(scale, acc[0]));
+            _mm256_storeu_ps(dst.add(8), _mm256_mul_ps(scale, acc[1]));
+        }
+    }
+}
+
+/// The reference's causal/image visibility rule for tiles with text queries.
+#[inline(always)]
+fn mask_lanes(
+    shape: &Shape,
+    first_absolute: usize,
+    queries: usize,
+    key_start: usize,
+    keys: usize,
+    st: &mut [f32; KEY_TILE * QUERY_TILE],
+) {
+    for r in 0..queries {
+        let absolute = first_absolute + r;
+        let image_query = absolute >= shape.image_start && absolute < shape.image_end;
+        for j in 0..keys {
+            let key = key_start + j;
+            if key > absolute && !(image_query && key >= shape.image_start && key < shape.image_end)
+            {
+                st[j * QUERY_TILE + r] = f32::NEG_INFINITY;
+            }
+        }
+    }
+}
+
+/// The reference's per-row online softmax step, eight rows per vector. Each
+/// lane follows the scalar sequence: block max, new max, (skip if no visible
+/// key yet), rescale output and denominator, then `p = exp(s - max)` and
+/// `denominator += p` in key order. Probabilities overwrite `st`.
+#[inline(always)]
+unsafe fn softmax_lanes(
+    queries: usize,
+    keys: usize,
+    st: &mut [f32; KEY_TILE * QUERY_TILE],
+    maxima: &mut [f32; QUERY_TILE],
+    denominators: &mut [f32; QUERY_TILE],
+    out: *mut f32,
+    out_stride: usize,
+) {
+    unsafe {
+        let neg_inf = _mm256_set1_ps(f32::NEG_INFINITY);
+        for group in 0..queries.div_ceil(8) {
+            let lane0 = 8 * group;
+            let mut block_max = neg_inf;
+            for j in 0..keys {
+                let s = _mm256_loadu_ps(st.as_ptr().add(j * QUERY_TILE + lane0));
+                block_max = _mm256_max_ps(s, block_max);
+            }
+            let old_max = _mm256_loadu_ps(maxima.as_ptr().add(lane0));
+            let new_max = _mm256_max_ps(block_max, old_max);
+            let skip = _mm256_cmp_ps::<_CMP_EQ_OQ>(new_max, neg_inf);
+            let first = _mm256_cmp_ps::<_CMP_EQ_OQ>(old_max, neg_inf);
+            let mut rescale = exp8(_mm256_sub_ps(old_max, new_max));
+            rescale = _mm256_blendv_ps(rescale, _mm256_setzero_ps(), first);
+            rescale = _mm256_blendv_ps(rescale, _mm256_set1_ps(1.0), skip);
+            let mut factors = [0.0_f32; 8];
+            _mm256_storeu_ps(factors.as_mut_ptr(), rescale);
+            let skip_bits = _mm256_movemask_ps(skip);
+            for (lane, &factor) in factors.iter().enumerate() {
+                let r = lane0 + lane;
+                if r >= queries || skip_bits & (1 << lane) != 0 {
+                    continue;
+                }
+                let row = std::slice::from_raw_parts_mut(out.add(r * out_stride), HEAD_DIM);
+                for value in row {
+                    *value *= factor;
+                }
+            }
+            // Probabilities for every key first (branch-free), then the rare
+            // scalar fix-ups, then the denominator in key order per lane.
+            let mut probabilities = [0.0_f32; KEY_TILE * 8];
+            let mut masks = [0_u8; KEY_TILE];
+            let mut flagged = [0_u64; KEY_TILE / 64];
+            for j in 0..keys {
+                let at = st.as_ptr().add(j * QUERY_TILE + lane0);
+                let (p, lanes) = exp8_raw(_mm256_sub_ps(_mm256_loadu_ps(at), new_max));
+                let p = _mm256_blendv_ps(p, _mm256_setzero_ps(), skip);
+                _mm256_storeu_ps(probabilities.as_mut_ptr().add(8 * j), p);
+                let lanes = lanes & !skip_bits;
+                masks[j] = lanes as u8;
+                flagged[j / 64] |= u64::from(lanes != 0) << (j % 64);
+            }
+            let mut maxima_lanes = [0.0_f32; 8];
+            _mm256_storeu_ps(maxima_lanes.as_mut_ptr(), new_max);
+            for (word, mut bits) in flagged.into_iter().enumerate() {
+                while bits != 0 {
+                    let j = 64 * word + bits.trailing_zeros() as usize;
+                    bits &= bits - 1;
+                    let mut lanes = masks[j];
+                    while lanes != 0 {
+                        let lane = lanes.trailing_zeros() as usize;
+                        lanes &= lanes - 1;
+                        let score = st[j * QUERY_TILE + lane0 + lane];
+                        probabilities[8 * j + lane] = (score - maxima_lanes[lane]).exp();
+                    }
+                }
+            }
+            let mut denominator =
+                _mm256_mul_ps(_mm256_loadu_ps(denominators.as_ptr().add(lane0)), rescale);
+            for j in 0..keys {
+                let p = _mm256_loadu_ps(probabilities.as_ptr().add(8 * j));
+                denominator = _mm256_add_ps(denominator, p);
+                _mm256_storeu_ps(st.as_mut_ptr().add(j * QUERY_TILE + lane0), p);
+            }
+            _mm256_storeu_ps(denominators.as_mut_ptr().add(lane0), denominator);
             _mm256_storeu_ps(
-                scores.as_mut_ptr().add((row + r) * KEY_TILE + key),
-                _mm256_mul_ps(scale, *acc),
+                maxima.as_mut_ptr().add(lane0),
+                _mm256_blendv_ps(new_max, old_max, skip),
             );
         }
     }
 }
 
-/// `out[row][d] = out[row][d] + sum_j p[row][j] * v[j][d]`, with the keys
-/// summed in ascending order by FMA from +0.0 for each element.
-///
-/// # Safety
-/// AVX2/FMA must be available; `p` is the row-major probability tile; `v`
-/// addresses `keys` rows of 64 floats at `v_stride`; `out` addresses
-/// `queries` rows of 64 floats at `out_stride`; `queries <= QUERY_TILE`.
-#[target_feature(enable = "avx2,fma")]
-pub(super) unsafe fn pv(
-    p: &[f32; QUERY_TILE * KEY_TILE],
+/// `out[query][d] += sum_j p[j][query] * v[j][d]`, the keys summed in
+/// ascending order by FMA from +0.0 before the single add (gemm's order).
+#[inline(always)]
+unsafe fn pv_lanes(
+    st: &[f32; KEY_TILE * QUERY_TILE],
     queries: usize,
     keys: usize,
     v: *const f32,
@@ -132,19 +422,18 @@ pub(super) unsafe fn pv(
     out: *mut f32,
     out_stride: usize,
 ) {
-    debug_assert!(queries <= QUERY_TILE && keys <= KEY_TILE);
     unsafe {
         let mut row = 0;
         while row < queries {
             let rows = (queries - row).min(6);
             for d in (0..HEAD_DIM).step_by(16) {
                 match rows {
-                    6 => pv_block::<6>(p, row, keys, v, v_stride, d, out, out_stride),
-                    5 => pv_block::<5>(p, row, keys, v, v_stride, d, out, out_stride),
-                    4 => pv_block::<4>(p, row, keys, v, v_stride, d, out, out_stride),
-                    3 => pv_block::<3>(p, row, keys, v, v_stride, d, out, out_stride),
-                    2 => pv_block::<2>(p, row, keys, v, v_stride, d, out, out_stride),
-                    _ => pv_block::<1>(p, row, keys, v, v_stride, d, out, out_stride),
+                    6 => pv_rows::<6>(st, row, keys, v, v_stride, d, out, out_stride),
+                    5 => pv_rows::<5>(st, row, keys, v, v_stride, d, out, out_stride),
+                    4 => pv_rows::<4>(st, row, keys, v, v_stride, d, out, out_stride),
+                    3 => pv_rows::<3>(st, row, keys, v, v_stride, d, out, out_stride),
+                    2 => pv_rows::<2>(st, row, keys, v, v_stride, d, out, out_stride),
+                    _ => pv_rows::<1>(st, row, keys, v, v_stride, d, out, out_stride),
                 }
             }
             row += rows;
@@ -154,8 +443,8 @@ pub(super) unsafe fn pv(
 
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
-unsafe fn pv_block<const R: usize>(
-    p: &[f32; QUERY_TILE * KEY_TILE],
+unsafe fn pv_rows<const R: usize>(
+    st: &[f32; KEY_TILE * QUERY_TILE],
     row: usize,
     keys: usize,
     v: *const f32,
@@ -169,8 +458,9 @@ unsafe fn pv_block<const R: usize>(
         for j in 0..keys {
             let v0 = _mm256_loadu_ps(v.add(j * v_stride + d));
             let v1 = _mm256_loadu_ps(v.add(j * v_stride + d + 8));
+            let p = st.as_ptr().add(j * QUERY_TILE + row);
             for (r, acc) in acc.iter_mut().enumerate() {
-                let pv = _mm256_set1_ps(*p.get_unchecked((row + r) * KEY_TILE + j));
+                let pv = _mm256_set1_ps(*p.add(r));
                 acc[0] = _mm256_fmadd_ps(v0, pv, acc[0]);
                 acc[1] = _mm256_fmadd_ps(v1, pv, acc[1]);
             }
@@ -186,16 +476,117 @@ unsafe fn pv_block<const R: usize>(
     }
 }
 
+/// A key tile outside gemm's main path: the reference code verbatim (gemm QK,
+/// scalar mask/softmax, gemm PV) on row-major scores.
+#[allow(clippy::too_many_arguments)]
+unsafe fn reference_key_tile(
+    shape: &Shape,
+    q: *const f32,
+    first_absolute: usize,
+    queries: usize,
+    key_start: usize,
+    keys: usize,
+    key_rows: *const f32,
+    value_rows: *const f32,
+    scores: &mut [f32; QUERY_TILE * KEY_TILE],
+    maxima: &mut [f32; QUERY_TILE],
+    denominators: &mut [f32; QUERY_TILE],
+    out: *mut f32,
+) {
+    let query_stride = shape.query_width as isize;
+    unsafe {
+        gemm::gemm(
+            queries,
+            keys,
+            HEAD_DIM,
+            scores.as_mut_ptr(),
+            1,
+            KEY_TILE as isize,
+            false,
+            q,
+            1,
+            query_stride,
+            key_rows,
+            query_stride,
+            1,
+            0.0_f32,
+            shape.scale,
+            false,
+            false,
+            false,
+            gemm::Parallelism::None,
+        );
+    }
+    for row in 0..queries {
+        let absolute = first_absolute + row;
+        let image_query = absolute >= shape.image_start && absolute < shape.image_end;
+        let row_scores = &mut scores[row * KEY_TILE..row * KEY_TILE + keys];
+        let mut block_max = f32::NEG_INFINITY;
+        for (col, score) in row_scores.iter_mut().enumerate() {
+            let key = key_start + col;
+            if key > absolute && !(image_query && key >= shape.image_start && key < shape.image_end)
+            {
+                *score = f32::NEG_INFINITY;
+            }
+            block_max = block_max.max(*score);
+        }
+        let new_max = maxima[row].max(block_max);
+        if new_max == f32::NEG_INFINITY {
+            row_scores.fill(0.0);
+            continue;
+        }
+        let rescale = if maxima[row] == f32::NEG_INFINITY {
+            0.0
+        } else {
+            (maxima[row] - new_max).exp()
+        };
+        let out_row =
+            unsafe { std::slice::from_raw_parts_mut(out.add(row * shape.query_width), HEAD_DIM) };
+        for value in out_row {
+            *value *= rescale;
+        }
+        denominators[row] *= rescale;
+        for probability in row_scores.iter_mut() {
+            *probability = (*probability - new_max).exp();
+            denominators[row] += *probability;
+        }
+        maxima[row] = new_max;
+    }
+    unsafe {
+        gemm::gemm(
+            queries,
+            HEAD_DIM,
+            keys,
+            out,
+            1,
+            query_stride,
+            true,
+            scores.as_ptr(),
+            1,
+            KEY_TILE as isize,
+            value_rows,
+            1,
+            shape.kv_width as isize,
+            1.0_f32,
+            1.0_f32,
+            false,
+            false,
+            false,
+            gemm::Parallelism::None,
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn values(n: usize, seed: u32) -> Vec<f32> {
+    fn values(n: usize, seed: u32, range: f32) -> Vec<f32> {
         let mut state = seed;
         (0..n)
             .map(|i| {
                 state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-                let x = ((state >> 8) as f64 / 16_777_216.0 * 8.0 - 4.0) as f32;
+                let x = ((state >> 8) as f64 / 16_777_216.0 * 2.0 - 1.0) as f32 * range;
                 // Signed zeros and a subnormal exercise edge rounding.
                 match i % 97 {
                     0 => -0.0,
@@ -211,15 +602,34 @@ mod tests {
         std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
     }
 
+    #[target_feature(enable = "avx2,fma")]
+    unsafe fn qk_via_lanes(
+        q: &[f32],
+        q_stride: usize,
+        queries: usize,
+        k: &[f32],
+        k_stride: usize,
+        keys: usize,
+    ) -> [f32; KEY_TILE * QUERY_TILE] {
+        let mut qt = [0.0_f32; HEAD_DIM * QUERY_TILE];
+        for r in 0..queries {
+            for d in 0..HEAD_DIM {
+                qt[d * QUERY_TILE + r] = q[r * q_stride + d];
+            }
+        }
+        let mut st = [f32::NAN; KEY_TILE * QUERY_TILE];
+        unsafe { qk_lanes(&qt, queries, k.as_ptr(), k_stride, keys, 0.125, &mut st) };
+        st
+    }
+
     #[test]
-    fn qk_matches_gemm_main_path_for_every_tile_shape() {
+    fn qk_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
             return;
         }
-        let (q_stride, k_stride) = (1024, 1024);
-        let q = values(QUERY_TILE * q_stride, 3);
-        let k = values(KEY_TILE * k_stride, 5);
-        let mut transposed = KeyTile([0.0; HEAD_DIM * KEY_TILE]);
+        let stride = 1024;
+        let q = values(QUERY_TILE * stride, 3, 4.0);
+        let k = values(KEY_TILE * stride, 5, 4.0);
         let mut checked = 0;
         for queries in 1..=QUERY_TILE {
             for keys in 1..=KEY_TILE {
@@ -238,9 +648,9 @@ mod tests {
                         false,
                         q.as_ptr(),
                         1,
-                        q_stride as isize,
+                        stride as isize,
                         k.as_ptr(),
-                        k_stride as isize,
+                        stride as isize,
                         1,
                         0.0_f32,
                         0.125,
@@ -250,26 +660,12 @@ mod tests {
                         gemm::Parallelism::None,
                     );
                 }
-                let mut actual = [f32::NAN; QUERY_TILE * KEY_TILE];
-                unsafe {
-                    qk(
-                        q.as_ptr(),
-                        q_stride,
-                        queries,
-                        k.as_ptr(),
-                        k_stride,
-                        keys,
-                        0.125,
-                        &mut actual,
-                        &mut transposed,
-                    );
-                }
+                let st = unsafe { qk_via_lanes(&q, stride, queries, &k, stride, keys) };
                 for row in 0..queries {
                     for key in 0..keys {
-                        let at = row * KEY_TILE + key;
                         assert_eq!(
-                            actual[at].to_bits(),
-                            expected[at].to_bits(),
+                            st[key * QUERY_TILE + row].to_bits(),
+                            expected[row * KEY_TILE + key].to_bits(),
                             "queries {queries} keys {keys} row {row} key {key}"
                         );
                     }
@@ -281,22 +677,25 @@ mod tests {
     }
 
     #[test]
-    fn pv_matches_gemm_main_path_for_every_tile_shape() {
+    fn pv_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
             return;
         }
         let (v_stride, out_stride) = (512, 1024);
-        let v = values(KEY_TILE * v_stride, 7);
-        let mut p = [0.0_f32; QUERY_TILE * KEY_TILE];
-        for (x, y) in p.iter_mut().zip(values(QUERY_TILE * KEY_TILE, 11)) {
-            // Probabilities in [0, 1], with exact zeros from masking.
-            *x = if y < -3.0 {
-                0.0
-            } else {
-                (y.abs() / 4.0).min(1.0)
-            };
+        let v = values(KEY_TILE * v_stride, 7, 4.0);
+        let probabilities: Vec<f32> = values(QUERY_TILE * KEY_TILE, 11, 1.0)
+            .into_iter()
+            .map(|p| if p < -0.7 { 0.0 } else { p.abs() })
+            .collect();
+        let mut row_major = [0.0_f32; QUERY_TILE * KEY_TILE];
+        let mut key_major = [0.0_f32; KEY_TILE * QUERY_TILE];
+        for r in 0..QUERY_TILE {
+            for j in 0..KEY_TILE {
+                row_major[r * KEY_TILE + j] = probabilities[r * KEY_TILE + j];
+                key_major[j * QUERY_TILE + r] = probabilities[r * KEY_TILE + j];
+            }
         }
-        let initial = values(QUERY_TILE * out_stride, 13);
+        let initial = values(QUERY_TILE * out_stride, 13, 4.0);
         let mut checked = 0;
         for queries in 1..=QUERY_TILE {
             for keys in 1..=KEY_TILE {
@@ -313,7 +712,7 @@ mod tests {
                         1,
                         out_stride as isize,
                         true,
-                        p.as_ptr(),
+                        row_major.as_ptr(),
                         1,
                         KEY_TILE as isize,
                         v.as_ptr(),
@@ -329,8 +728,8 @@ mod tests {
                 }
                 let mut actual = initial.clone();
                 unsafe {
-                    pv(
-                        &p,
+                    pv_lanes(
+                        &key_major,
                         queries,
                         keys,
                         v.as_ptr(),
@@ -343,12 +742,75 @@ mod tests {
                     assert_eq!(
                         a.to_bits(),
                         b.to_bits(),
-                        "queries {queries} keys {keys} index {i}"
+                        "queries {queries} keys {keys} {i}"
                     );
                 }
                 checked += 1;
             }
         }
         assert!(checked > 3000);
+    }
+
+    #[test]
+    fn whole_prefill_matches_reference_bitwise() {
+        if !available() {
+            return;
+        }
+        let (n_heads, n_kv_heads) = (16, 8);
+        // (query_len, image_start, image_end): tail tiles, text before and
+        // after the image, image ends inside and on key-tile boundaries.
+        for (query_len, image_start, image_end) in [
+            (70, 3, 65),
+            (300, 5, 262),
+            (257, 0, 257),
+            (160, 16, 144),
+            (129, 1, 128),
+            (40, 0, 3),
+            (95, 10, 90),
+        ] {
+            let q = values(query_len * n_heads * 64, 17 + query_len as u32, 3.0);
+            let k = values(query_len * n_heads * 64, 19 + query_len as u32, 3.0);
+            let v = values(query_len * n_kv_heads * 64, 23 + query_len as u32, 3.0);
+            let sinks = values(n_heads, 29, 2.0);
+            let mut expected = vec![f32::NAN; q.len()];
+            super::super::attention_gemm_compact(
+                &q,
+                &k,
+                &[],
+                &v,
+                query_len,
+                n_heads,
+                n_kv_heads,
+                64,
+                0,
+                image_start,
+                image_end,
+                &sinks,
+                &mut expected,
+            );
+            let mut actual = vec![f32::NAN; q.len()];
+            unsafe {
+                compact_prefill(
+                    &q,
+                    &k,
+                    &v,
+                    query_len,
+                    n_heads,
+                    n_kv_heads,
+                    0,
+                    image_start,
+                    image_end,
+                    &sinks,
+                    &mut actual,
+                );
+            }
+            for (i, (a, b)) in actual.iter().zip(&expected).enumerate() {
+                assert_eq!(
+                    a.to_bits(),
+                    b.to_bits(),
+                    "query_len {query_len} image {image_start}..{image_end} index {i}"
+                );
+            }
+        }
     }
 }
