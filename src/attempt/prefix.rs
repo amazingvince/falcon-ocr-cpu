@@ -57,6 +57,11 @@ enum Records {
         codes: Vec<i8>,
         scales: Vec<f32>,
     },
+    /// 16-bit codes, one scale per 32 elements (prefix and tail).
+    Q16 {
+        codes: Vec<i16>,
+        scales: Vec<f32>,
+    },
     /// Prefix only: key channel `c` of records `[t * KC_TILE, (t + 1) *
     /// KC_TILE)` shares `k_scales[t * VALUE + c]`; each record's two value
     /// halves have `v_scales[2 * record + h]`.
@@ -102,6 +107,7 @@ impl Records {
             Records::F32(d) => d.capacity() * 4,
             Records::Bf16(d) => d.capacity() * 2,
             Records::Q8 { codes, scales } => codes.capacity() + scales.capacity() * 4,
+            Records::Q16 { codes, scales } => codes.capacity() * 2 + scales.capacity() * 4,
             Records::Q8Kc {
                 codes,
                 k_scales,
@@ -118,6 +124,7 @@ impl Records {
             Records::F32(d) => d[at],
             Records::Bf16(d) => bf16::from_bits(d[at]).to_f32(),
             Records::Q8 { codes, scales } => codes[at] as f32 * scales[at / 32],
+            Records::Q16 { codes, scales } => codes[at] as f32 * scales[at / 32],
             Records::Q8Kc {
                 codes,
                 k_scales,
@@ -152,6 +159,25 @@ fn q8_scale_of_max(max: f32) -> f32 {
         0.0
     } else {
         ((max as f64 / 127.0) as f32).max(f32::from_bits(1))
+    }
+}
+
+fn q16_scale(values: &[f32]) -> f32 {
+    let max = values.iter().fold(0.0_f32, |a, &b| a.max(b.abs()));
+    if max == 0.0 {
+        0.0
+    } else {
+        ((max as f64 / 32767.0) as f32).max(f32::from_bits(1))
+    }
+}
+
+fn q16_code(value: f32, scale: f32) -> i16 {
+    if scale == 0.0 {
+        0
+    } else {
+        (value as f64 / scale as f64)
+            .round_ties_even()
+            .clamp(-32767.0, 32767.0) as i16
     }
 }
 
@@ -282,6 +308,35 @@ impl SplitPrefix {
                     })?;
                 Records::Q8 { codes, scales }
             }
+            PrefixMode::SplitQ16 => {
+                let mut codes = vec![0_i16; count * RECORD];
+                let mut scales = vec![0.0_f32; count * Q8_SCALES];
+                codes
+                    .par_chunks_mut(RECORD)
+                    .zip(scales.par_chunks_mut(Q8_SCALES))
+                    .enumerate()
+                    .try_for_each(|(record, (dst, record_scales))| {
+                        let mut values = [0.0; RECORD];
+                        gather(record, &mut values)?;
+                        for ((codes, values), scale_out) in dst
+                            .chunks_exact_mut(32)
+                            .zip(values.chunks_exact(32))
+                            .zip(record_scales.iter_mut())
+                        {
+                            let scale = q16_scale(values);
+                            *scale_out = scale;
+                            for (code, &value) in codes.iter_mut().zip(values) {
+                                *code = q16_code(value, scale);
+                                ensure!(
+                                    (*code as f32 * scale).is_finite(),
+                                    "Q16 KV conversion overflow"
+                                );
+                            }
+                        }
+                        Ok(())
+                    })?;
+                Records::Q16 { codes, scales }
+            }
             PrefixMode::SplitQ8Kc => {
                 let tiles = count.div_ceil(KC_TILE);
                 let mut codes = vec![0_i8; count * RECORD];
@@ -350,6 +405,10 @@ impl SplitPrefix {
                 codes: zeroed(tail_elements)?,
                 scales: zeroed(tail_elements / 32)?,
             },
+            Records::Q16 { .. } => Records::Q16 {
+                codes: zeroed(tail_elements)?,
+                scales: zeroed(tail_elements / 32)?,
+            },
         };
         Ok(Self {
             records,
@@ -408,6 +467,21 @@ impl SplitPrefix {
                     }
                 }
                 Records::Q8Kc { .. } => unreachable!("the tail never uses per-channel scales"),
+                Records::Q16 { codes, scales } => {
+                    let blocks = TAIL_RECORD / 32;
+                    for (block, values) in values.chunks_exact(32).enumerate() {
+                        let scale = if values.iter().all(|x| x.is_finite()) {
+                            q16_scale(values)
+                        } else {
+                            f32::NAN
+                        };
+                        scales[record * blocks + block] = scale;
+                        let codes = &mut codes[at + 32 * block..at + 32 * (block + 1)];
+                        for (code, &value) in codes.iter_mut().zip(values) {
+                            *code = q16_code(value, scale);
+                        }
+                    }
+                }
                 Records::Q8 { codes, scales } => {
                     let blocks = TAIL_RECORD / 32;
                     for (block, values) in values.chunks_exact(32).enumerate() {
@@ -637,6 +711,21 @@ impl SplitPrefix {
                         part,
                     ),
                     (
+                        Records::Q16 { codes, scales },
+                        Records::Q16 {
+                            codes: tail_codes,
+                            scales: tail_scales,
+                        },
+                    ) => pair_native(
+                        &Q16Rec::<RECORD> { codes, scales },
+                        &Q16Rec::<TAIL_RECORD> {
+                            codes: tail_codes,
+                            scales: tail_scales,
+                        },
+                        &span,
+                        part,
+                    ),
+                    (
                         Records::Q8Kc {
                             codes,
                             k_scales,
@@ -785,6 +874,25 @@ impl<const W: usize> RecordStore for Q8Rec<'_, W> {
         unsafe {
             S::mul(
                 S::load_i8(self.codes.as_ptr().add(record * W + offset)),
+                S::splat(*self.scales.get_unchecked((record * W + offset) / 32)),
+            )
+        }
+    }
+}
+
+struct Q16Rec<'a, const W: usize> {
+    codes: &'a [i16],
+    /// One scale per 32 elements.
+    scales: &'a [f32],
+}
+impl<const W: usize> RecordStore for Q16Rec<'_, W> {
+    #[inline(always)]
+    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
+        debug_assert!((record + 1) * W <= self.codes.len());
+        // fl(code * scale), exactly the scalar dequantization.
+        unsafe {
+            S::mul(
+                S::load_i16(self.codes.as_ptr().add(record * W + offset)),
                 S::splat(*self.scales.get_unchecked((record * W + offset) / 32)),
             )
         }
@@ -1096,6 +1204,8 @@ mod tests {
                 PrefixMode::SplitBf16,
                 PrefixMode::SplitQ8,
                 PrefixMode::SplitQ8Kc,
+            PrefixMode::SplitQ16,
+                PrefixMode::SplitQ16,
             ] {
                 let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
                     .unwrap()
@@ -1137,6 +1247,7 @@ mod tests {
             PrefixMode::SplitBf16,
             PrefixMode::SplitQ8,
             PrefixMode::SplitQ8Kc,
+            PrefixMode::SplitQ16,
         ] {
             let mut reference = vec![0.0; c.query_dim()];
             for chunks in [1, 2, 4] {
@@ -1170,6 +1281,7 @@ mod tests {
             PrefixMode::SplitBf16,
             PrefixMode::SplitQ8,
             PrefixMode::SplitQ8Kc,
+            PrefixMode::SplitQ16,
         ] {
             let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 1, &c, mode).unwrap();
             push_rows(&mut cache, &c, &tail, &tail);
@@ -1197,6 +1309,7 @@ mod tests {
             PrefixMode::SplitBf16,
             PrefixMode::SplitQ8,
             PrefixMode::SplitQ8Kc,
+            PrefixMode::SplitQ16,
         ] {
             let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 2, &c, mode).unwrap();
             let mut tail = vec![0.01; c.kv_dim()];

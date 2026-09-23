@@ -1,27 +1,55 @@
-//! Integrated W8A32 experiment, derived from q8_reference.rs: signed [-127,127] row-major bytes, FP32
-//! absmax/127 scale per K group, ties-to-even, FP32 dequant and ascending-K FMA.
-//! Same rules as q4_reference except the code range and byte storage.
-//! Neither activations nor accumulators are integer/BF16; this is not W8A8.
+//! Integrated W8A32 / W16A32 experiment, derived from q8_reference.rs: signed
+//! row-major codes in [-127,127] (8-bit) or [-32767,32767] (16-bit), an FP32
+//! absmax/qmax scale per K group, ties-to-even, FP32 dequant and ascending-K
+//! FMA. Neither activations nor accumulators are integer/BF16; this is not
+//! W8A8. 16-bit codes are effectively lossless against the FP32 weights
+//! (activation-weighted output error about 2.5e-5 relative).
 
 use anyhow::ensure;
 use rayon::prelude::*;
 
+/// Row-major weight codes of one matrix.
+#[derive(Debug)]
+enum Codes {
+    I8(Vec<i8>),
+    I16(Vec<i16>),
+}
+
+/// A quantized linear layer with 8- or 16-bit codes (the name predates
+/// 16-bit support).
 #[derive(Debug)]
 pub struct Q8Linear {
     out_dim: usize,
     in_dim: usize,
     group_size: usize,
-    codes: Vec<i8>,
+    codes: Codes,
     scales: Vec<f32>,
 }
 
 impl Q8Linear {
+    /// 8-bit codes; see [`Q8Linear::quantize_bits`].
     pub fn quantize(
         weights: &[f32],
         out_dim: usize,
         in_dim: usize,
         group_size: usize,
     ) -> Result<Self, &'static str> {
+        Self::quantize_bits(weights, out_dim, in_dim, group_size, 8)
+    }
+
+    /// Round-to-nearest (ties to even) codes of `bits` = 8 or 16 with one
+    /// absmax scale per `group_size` inputs of each output row.
+    pub fn quantize_bits(
+        weights: &[f32],
+        out_dim: usize,
+        in_dim: usize,
+        group_size: usize,
+        bits: u32,
+    ) -> Result<Self, &'static str> {
+        if bits != 8 && bits != 16 {
+            return Err("8- or 16-bit codes required");
+        }
+        let qmax = if bits == 8 { 127.0 } else { 32767.0 };
         if out_dim == 0 || in_dim == 0 || ![32, 64, 128].contains(&group_size) {
             return Err("nonzero shape and group size 32/64/128 required");
         }
@@ -32,13 +60,8 @@ impl Q8Linear {
             return Err("nonfinite weight");
         }
         let groups = in_dim.div_ceil(group_size);
-        let mut result = Self {
-            out_dim,
-            in_dim,
-            group_size,
-            codes: vec![0; weights.len()],
-            scales: vec![0.; out_dim * groups],
-        };
+        let mut scales = vec![0.; out_dim * groups];
+        let mut codes = vec![0i32; weights.len()];
         for row in 0..out_dim {
             for group in 0..groups {
                 let start = group * group_size;
@@ -48,49 +71,88 @@ impl Q8Linear {
                 let scale = if maximum == 0.0 {
                     0.0
                 } else {
-                    ((maximum as f64 / 127.0) as f32).max(f32::from_bits(1))
+                    ((maximum as f64 / qmax) as f32).max(f32::from_bits(1))
                 };
-                result.scales[row * groups + group] = scale;
+                scales[row * groups + group] = scale;
                 for (i, &value) in values.iter().enumerate() {
                     let code = if scale == 0.0 {
                         0
                     } else {
                         (value as f64 / scale as f64)
                             .round_ties_even()
-                            .clamp(-127., 127.) as i8
+                            .clamp(-qmax, qmax) as i32
                     };
                     if !(code as f32 * scale).is_finite() {
                         return Err("dequantized value overflows FP32");
                     }
-                    result.codes[row * in_dim + start + i] = code;
+                    codes[row * in_dim + start + i] = code;
                 }
             }
         }
-        Ok(result)
+        let codes = if bits == 8 {
+            Codes::I8(codes.into_iter().map(|c| c as i8).collect())
+        } else {
+            Codes::I16(codes.into_iter().map(|c| c as i16).collect())
+        };
+        Ok(Self {
+            out_dim,
+            in_dim,
+            group_size,
+            codes,
+            scales,
+        })
     }
 
     pub fn dimensions(&self) -> (usize, usize) {
         (self.out_dim, self.in_dim)
     }
+    /// The 8-bit codes (panics for a 16-bit matrix).
     pub fn codes(&self) -> &[i8] {
-        &self.codes
+        match &self.codes {
+            Codes::I8(codes) => codes,
+            Codes::I16(_) => panic!("16-bit codes"),
+        }
+    }
+    /// Bits per code: 8 or 16.
+    pub fn bits(&self) -> u32 {
+        match self.codes {
+            Codes::I8(_) => 8,
+            Codes::I16(_) => 16,
+        }
     }
     pub fn scales(&self) -> &[f32] {
         &self.scales
     }
     /// Tensor payload only, excluding headers/alignment/allocator overhead.
     pub fn payload_bytes(&self) -> usize {
-        self.codes.len() + self.scales.len() * size_of::<f32>()
+        let codes = match &self.codes {
+            Codes::I8(codes) => codes.len(),
+            Codes::I16(codes) => 2 * codes.len(),
+        };
+        codes + self.scales.len() * size_of::<f32>()
     }
 
     pub fn dequantize_row(&self, row: usize, output: &mut [f32]) {
         assert!(row < self.out_dim);
         assert_eq!(output.len(), self.in_dim);
         let groups = self.in_dim.div_ceil(self.group_size);
-        for (column, value) in output.iter_mut().enumerate() {
-            *value = self.codes[row * self.in_dim + column] as f32
-                * self.scales[row * groups + column / self.group_size];
+        let scales = &self.scales[row * groups..(row + 1) * groups];
+        let span = row * self.in_dim..(row + 1) * self.in_dim;
+        match &self.codes {
+            Codes::I8(codes) => fill_row(&codes[span], scales, self.group_size, output),
+            Codes::I16(codes) => fill_row(&codes[span], scales, self.group_size, output),
         }
+    }
+
+    /// `fl(code * scale)` for element `index` (row-major).
+    fn weight(&self, index: usize) -> f32 {
+        let groups = self.in_dim.div_ceil(self.group_size);
+        let (row, column) = (index / self.in_dim, index % self.in_dim);
+        let code = match &self.codes {
+            Codes::I8(codes) => codes[index] as f32,
+            Codes::I16(codes) => codes[index] as f32,
+        };
+        code * self.scales[row * groups + column / self.group_size]
     }
 
     pub fn linear_f32(
@@ -107,13 +169,11 @@ impl Q8Linear {
         if input.iter().any(|x| !x.is_finite()) {
             return Err("nonfinite activation");
         }
-        let groups = self.in_dim.div_ceil(self.group_size);
         for row in 0..rows {
             for channel in 0..self.out_dim {
                 let mut sum = 0.0f32;
                 for k in 0..self.in_dim {
-                    let w = self.codes[channel * self.in_dim + k] as f32
-                        * self.scales[channel * groups + k / self.group_size];
+                    let w = self.weight(channel * self.in_dim + k);
                     sum = input[row * self.in_dim + k].mul_add(w, sum);
                 }
                 if !sum.is_finite() {
@@ -277,7 +337,7 @@ impl Q8Linear {
             out_dim,
             in_dim,
             group_size,
-            codes,
+            codes: Codes::I8(codes),
             scales,
         })
     }
@@ -314,7 +374,7 @@ impl Q8Linear {
             return Ok(());
         }
         if rows > 8 {
-            scratch.dense.resize(self.codes.len(), 0.0);
+            scratch.dense.resize(self.out_dim * self.in_dim, 0.0);
             scratch
                 .dense
                 .par_chunks_mut(self.in_dim)
@@ -363,7 +423,7 @@ impl Q8Linear {
             return Ok(false);
         }
         let out = OutputPtr(gated.as_mut_ptr());
-        let (in_dim, groups) = (self.in_dim, self.in_dim.div_ceil(self.group_size));
+        let in_dim = self.in_dim;
         let dot = self.dot_fn(simd);
         let tasks = balanced_tasks(ffn);
         let block = ffn.div_ceil(tasks);
@@ -373,16 +433,8 @@ impl Q8Linear {
                 let (gate_row, up_row) = (2 * i, 2 * i + 1);
                 for row in 0..rows {
                     let x = &input[row * in_dim..(row + 1) * in_dim];
-                    let gate = dot(
-                        x,
-                        &self.codes[gate_row * in_dim..(gate_row + 1) * in_dim],
-                        &self.scales[gate_row * groups..(gate_row + 1) * groups],
-                    );
-                    let up = dot(
-                        x,
-                        &self.codes[up_row * in_dim..(up_row + 1) * in_dim],
-                        &self.scales[up_row * groups..(up_row + 1) * groups],
-                    );
+                    let gate = self.row_dot(dot, x, gate_row);
+                    let up = self.row_dot(dot, x, up_row);
                     // SAFETY: (row, i) lies inside `rows * ffn`; disjoint tasks.
                     unsafe { *out.add(row * ffn + i) = crate::kernels::squared_relu_glu(gate, up) };
                 }
@@ -391,35 +443,24 @@ impl Q8Linear {
         Ok(true)
     }
 
-    /// The dot kernel for this matrix's group size and the selected backend.
-    fn dot_fn(&self, simd: crate::kernels::Simd) -> DotQ8 {
-        let selected = simd.resolved();
-        #[cfg(target_arch = "x86_64")]
-        if selected != crate::kernels::Simd::Scalar
-            && std::is_x86_feature_detected!("avx2")
-            && std::is_x86_feature_detected!("fma")
-        {
-            return match self.group_size {
-                // SAFETY (all): AVX2/FMA detected above.
-                32 => |x, c, s| unsafe { dot_q8_avx2::<32>(x, c, s) },
-                64 => |x, c, s| unsafe { dot_q8_avx2::<64>(x, c, s) },
-                _ => |x, c, s| unsafe { dot_q8_avx2::<128>(x, c, s) },
-            };
+    /// The dot kernel for this matrix's code type, group size and backend.
+    fn dot_fn(&self, simd: crate::kernels::Simd) -> Dot {
+        match self.codes {
+            Codes::I8(_) => Dot::I8(select_dot::<i8>(self.group_size, simd)),
+            Codes::I16(_) => Dot::I16(select_dot::<i16>(self.group_size, simd)),
         }
-        #[cfg(target_arch = "aarch64")]
-        if selected == crate::kernels::Simd::Neon {
-            return match self.group_size {
-                // SAFETY (all): NEON is baseline on aarch64.
-                32 => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 32>(x, c, s) },
-                64 => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 64>(x, c, s) },
-                _ => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 128>(x, c, s) },
-            };
-        }
-        let _ = selected;
-        match self.group_size {
-            32 => dot_q8_scalar::<32>,
-            64 => dot_q8_scalar::<64>,
-            _ => dot_q8_scalar::<128>,
+    }
+
+    /// `dot` of `x` with output row `channel`.
+    #[inline(always)]
+    fn row_dot(&self, dot: Dot, x: &[f32], channel: usize) -> f32 {
+        let (in_dim, groups) = (self.in_dim, self.in_dim.div_ceil(self.group_size));
+        let scales = &self.scales[channel * groups..(channel + 1) * groups];
+        let span = channel * in_dim..(channel + 1) * in_dim;
+        match (dot, &self.codes) {
+            (Dot::I8(f), Codes::I8(codes)) => f(x, &codes[span], scales),
+            (Dot::I16(f), Codes::I16(codes)) => f(x, &codes[span], scales),
+            _ => unreachable!("dot kernel selected for another code type"),
         }
     }
 
@@ -433,18 +474,15 @@ impl Q8Linear {
         write: impl Fn(usize, usize, f32) + Sync,
     ) {
         let (in_dim, out_dim) = (self.in_dim, self.out_dim);
-        let groups = in_dim.div_ceil(self.group_size);
         let dot = self.dot_fn(simd);
         let block = out_dim.div_ceil(balanced_tasks(out_dim));
         crate::team::for_each(out_dim.div_ceil(block), |b| {
             for channel in b * block..((b + 1) * block).min(out_dim) {
-                let codes = &self.codes[channel * in_dim..(channel + 1) * in_dim];
-                let scales = &self.scales[channel * groups..(channel + 1) * groups];
                 for row in 0..rows {
                     write(
                         channel,
                         row,
-                        dot(&input[row * in_dim..(row + 1) * in_dim], codes, scales),
+                        self.row_dot(dot, &input[row * in_dim..(row + 1) * in_dim], channel),
                     );
                 }
             }
@@ -452,7 +490,52 @@ impl Q8Linear {
     }
 }
 
-type DotQ8 = fn(&[f32], &[i8], &[f32]) -> f32;
+type DotQ<C> = fn(&[f32], &[C], &[f32]) -> f32;
+
+#[derive(Clone, Copy)]
+enum Dot {
+    I8(DotQ<i8>),
+    I16(DotQ<i16>),
+}
+
+/// `output[k] = fl(codes[k] * scales[k / group])`.
+fn fill_row<C: crate::simd::QCode>(codes: &[C], scales: &[f32], group: usize, output: &mut [f32]) {
+    for (k, (value, &code)) in output.iter_mut().zip(codes).enumerate() {
+        *value = code.to_f32() * scales[k / group];
+    }
+}
+
+/// The dot kernel for code type `C`, `group` and the selected backend.
+fn select_dot<C: crate::simd::QCode>(group: usize, simd: crate::kernels::Simd) -> DotQ<C> {
+    let selected = simd.resolved();
+    #[cfg(target_arch = "x86_64")]
+    if selected != crate::kernels::Simd::Scalar
+        && std::is_x86_feature_detected!("avx2")
+        && std::is_x86_feature_detected!("fma")
+    {
+        return match group {
+            // SAFETY (all): AVX2/FMA detected above.
+            32 => |x, c, s| unsafe { dot_q_avx2::<C, 32>(x, c, s) },
+            64 => |x, c, s| unsafe { dot_q_avx2::<C, 64>(x, c, s) },
+            _ => |x, c, s| unsafe { dot_q_avx2::<C, 128>(x, c, s) },
+        };
+    }
+    #[cfg(target_arch = "aarch64")]
+    if selected == crate::kernels::Simd::Neon {
+        return match group {
+            // SAFETY (all): NEON is baseline on aarch64.
+            32 => |x, c, s| unsafe { crate::simd::dot_q::<crate::simd::Neon, C, 32>(x, c, s) },
+            64 => |x, c, s| unsafe { crate::simd::dot_q::<crate::simd::Neon, C, 64>(x, c, s) },
+            _ => |x, c, s| unsafe { crate::simd::dot_q::<crate::simd::Neon, C, 128>(x, c, s) },
+        };
+    }
+    let _ = selected;
+    match group {
+        32 => dot_q_scalar::<C, 32>,
+        64 => dot_q_scalar::<C, 64>,
+        _ => dot_q_scalar::<C, 128>,
+    }
+}
 
 /// About two equal channel blocks per pool thread (multiples of 4 channels):
 /// small decode matrices finish in one or two rounds without idle threads.
@@ -485,20 +568,24 @@ unsafe impl Send for OutputCell {}
 unsafe impl Sync for OutputCell {}
 
 /// `kernels::dot_scalar` over `fl(code * scale)` weights, same iterator sum.
-fn dot_q8_scalar<const G: usize>(x: &[f32], codes: &[i8], scales: &[f32]) -> f32 {
+fn dot_q_scalar<C: crate::simd::QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
     x.iter()
         .zip(codes)
         .enumerate()
-        .map(|(k, (value, &code))| value * (code as f32 * scales[k / G]))
+        .map(|(k, (value, &code))| value * (code.to_f32() * scales[k / G]))
         .sum()
 }
 
 /// `kernels::x86::dot_avx2` over `fl(code * scale)` weights: the generic
-/// `simd::dot_q8` (same phase accumulators, tree and tails) under AVX2/FMA.
+/// `simd::dot_q` (same phase accumulators, tree and tails) under AVX2/FMA.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
-unsafe fn dot_q8_avx2<const G: usize>(x: &[f32], codes: &[i8], scales: &[f32]) -> f32 {
-    unsafe { crate::simd::dot_q8::<crate::simd::Avx2, G>(x, codes, scales) }
+unsafe fn dot_q_avx2<C: crate::simd::QCode, const G: usize>(
+    x: &[f32],
+    codes: &[C],
+    scales: &[f32],
+) -> f32 {
+    unsafe { crate::simd::dot_q::<crate::simd::Avx2, C, G>(x, codes, scales) }
 }
 
 #[cfg(test)]
@@ -592,6 +679,43 @@ mod integrated_tests {
                             b.to_bits(),
                             "{backend:?} n{n} k{k} g{group} rows{rows}"
                         );
+                    }
+                }
+            }
+        }
+    }
+    #[test]
+    fn w16_small_m_is_bitwise_fp32_on_dequantized_weights() {
+        for (n, k) in [(37, 768), (5, 1024), (3, 2304), (4, 65)] {
+            let w: Vec<_> = (0..n * k)
+                .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
+                .collect();
+            let q = Q8Linear::quantize_bits(&w, n, k, 64, 16).unwrap();
+            assert_eq!(q.bits(), 16);
+            assert_eq!(q.payload_bytes(), 2 * n * k + 4 * n * k.div_ceil(64));
+            let mut dense = vec![0.0; n * k];
+            for r in 0..n {
+                q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
+            }
+            // 16-bit codes: every weight within half a step of 1/32767 of its group's absmax.
+            for (a, b) in dense.iter().zip(&w) {
+                assert!((a - b).abs() <= 1.0 / 32767.0 * 1.03 + 1e-7, "{a} vs {b}");
+            }
+            for backend in [Simd::Scalar, Simd::Auto, Simd::Avx2]
+                .into_iter()
+                .filter(|s| s.validate().is_ok())
+            {
+                for rows in 1..=8 {
+                    let x: Vec<_> = (0..rows * k)
+                        .map(|i| ((i * 104729 % 1009) as f32 - 504.0) / 311.0)
+                        .collect();
+                    let mut expected = vec![0.0; rows * n];
+                    crate::kernels::linear_with_simd(&x, rows, k, &dense, n, &mut expected, backend);
+                    let mut out = vec![f32::NAN; rows * n];
+                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend)
+                        .unwrap();
+                    for (a, b) in out.iter().zip(&expected) {
+                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} rows{rows}");
                     }
                 }
             }

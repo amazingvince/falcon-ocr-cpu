@@ -24,6 +24,14 @@ pub enum Profile {
     KvQ8Kc,
     /// W8 body weights; Q8 KV with per-channel key scales (`SplitQ8Kc`).
     W8BodyKvQ8Kc,
+    /// 16-bit body weights (absmax scale per 64 inputs, quantized from the
+    /// FP32 checkpoint at load) with the split FP32 cache: half the body
+    /// bytes of FP32, effectively lossless (not bitwise).
+    W16Body,
+    /// FP32 weights; 16-bit KV cache (`SplitQ16`).
+    KvQ16,
+    /// 16-bit body weights and 16-bit KV cache: the near-exact profile.
+    W16BodyKvQ16,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -35,6 +43,9 @@ pub enum PrefixMode {
     /// Q8 records whose key channels share one scale per 128-record tile
     /// (KIVI-style); values keep per-record 32-element scales.
     SplitQ8Kc,
+    /// 16-bit codes with one absmax scale per 32-element chunk (the Q8
+    /// layout with [-32767, 32767] codes): half the bytes of FP32 records.
+    SplitQ16,
 }
 impl Profile {
     pub fn quantizes_body(self) -> bool {
@@ -47,17 +58,24 @@ impl Profile {
                 | Self::W8AllKvBf16
                 | Self::W8AllKvQ8
                 | Self::W8BodyKvQ8Kc
+                | Self::W16Body
+                | Self::W16BodyKvQ16
         )
+    }
+    /// Bits per weight code of the quantized matrices: 16 or 8.
+    pub fn weight_bits(self) -> u32 {
+        if matches!(self, Self::W16Body | Self::W16BodyKvQ16) { 16 } else { 8 }
     }
     pub fn quantizes_head(self) -> bool {
         matches!(self, Self::W8All | Self::W8AllKvBf16 | Self::W8AllKvQ8)
     }
     pub fn prefix_mode(self) -> PrefixMode {
         match self {
-            Self::SplitF32 => PrefixMode::SplitF32,
+            Self::SplitF32 | Self::W16Body => PrefixMode::SplitF32,
             Self::KvBf16 | Self::W8BodyKvBf16 | Self::W8AllKvBf16 => PrefixMode::SplitBf16,
             Self::KvQ8 | Self::W8BodyKvQ8 | Self::W8AllKvQ8 => PrefixMode::SplitQ8,
             Self::KvQ8Kc | Self::W8BodyKvQ8Kc => PrefixMode::SplitQ8Kc,
+            Self::KvQ16 | Self::W16BodyKvQ16 => PrefixMode::SplitQ16,
             _ => PrefixMode::Reference,
         }
     }
@@ -83,6 +101,9 @@ impl Profile {
             Self::W8AllKvQ8 => "w8-all-kv-q8",
             Self::KvQ8Kc => "kv-q8-kc",
             Self::W8BodyKvQ8Kc => "w8-body-kv-q8-kc",
+            Self::W16Body => "w16-body",
+            Self::KvQ16 => "kv-q16",
+            Self::W16BodyKvQ16 => "w16-body-kv-q16",
         }
     }
 }

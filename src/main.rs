@@ -12,6 +12,11 @@ enum Mode {
     /// FP32 weights and caches. Tokens identical to the FP32 reference on
     /// the 67-page calibration set.
     Exact,
+    /// 16-bit body weights and 16-bit KV cache (absmax scale per 64 weights
+    /// or 32 cache values, quantized at load): about 1.9x faster decode than
+    /// exact. Not bitwise: 1 token in 24,262 differed from FP32 when
+    /// teacher-forcing 55 calibration pages (KL 9e-8 per token).
+    NearExact,
     /// 8-bit body weights (W8G64) and 8-bit KV cache: about 3x faster
     /// decode. Ground-truth neutral on calibration pages that end at EOS,
     /// but different tokens on most pages; pair with --stop-repetition.
@@ -137,6 +142,9 @@ fn main() -> Result<()> {
             Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::SplitF32, None)?
         }
         Mode::Exact => Model::load(&cli.model)?,
+        Mode::NearExact => {
+            Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::W16BodyKvQ16, None)?
+        }
         Mode::Fast => {
             let overlay = cli
                 .w8_artifact

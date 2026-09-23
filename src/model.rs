@@ -339,6 +339,10 @@ impl Model {
             return Ok(model);
         }
         let started = Instant::now();
+        ensure!(
+            artifact.is_none() || profile.weight_bits() == 8,
+            "W8 artifacts apply only to 8-bit profiles; 16-bit weights are quantized at load"
+        );
         let bytes = artifact.map(std::fs::read).transpose()?;
         let tensors = bytes
             .as_ref()
@@ -428,7 +432,8 @@ impl Model {
                     .collect();
                 Q8Linear::from_parts(output, input, group_size, codes, scales)?
             } else {
-                Q8Linear::quantize(model.w(w), output, input, 64).map_err(anyhow::Error::msg)?
+                Q8Linear::quantize_bits(model.w(w), output, input, 64, profile.weight_bits())
+                    .map_err(anyhow::Error::msg)?
             };
             Ok(Some(Arc::new(q)))
         };

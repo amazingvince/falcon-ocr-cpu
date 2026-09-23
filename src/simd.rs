@@ -29,6 +29,8 @@ pub(crate) trait Simd: Copy + Send + Sync + 'static {
     unsafe fn fma(a: Self::V, b: Self::V, c: Self::V) -> Self::V;
     /// Eight consecutive `i8` codes converted exactly to `f32`.
     unsafe fn load_i8(p: *const i8) -> Self::V;
+    /// Eight consecutive `i16` codes converted exactly to `f32`.
+    unsafe fn load_i16(p: *const i16) -> Self::V;
     /// Eight consecutive BF16 bit patterns widened exactly to `f32`.
     unsafe fn load_bf16(p: *const u16) -> Self::V;
     /// `((v0+v4) + (v1+v5)) + ((v2+v6) + (v3+v7))`: the x86 `dot_avx2` tree
@@ -166,6 +168,11 @@ impl Simd for Portable {
         codes.map(f32::from)
     }
     #[inline(always)]
+    unsafe fn load_i16(p: *const i16) -> Self::V {
+        let codes = unsafe { p.cast::<[i16; 8]>().read_unaligned() };
+        codes.map(f32::from)
+    }
+    #[inline(always)]
     unsafe fn load_bf16(p: *const u16) -> Self::V {
         let bits = unsafe { p.cast::<[u16; 8]>().read_unaligned() };
         bits.map(|b| f32::from_bits(u32::from(b) << 16))
@@ -243,6 +250,11 @@ impl Simd for Avx2 {
     unsafe fn load_i8(p: *const i8) -> Self::V {
         use std::arch::x86_64::*;
         unsafe { _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(_mm_loadl_epi64(p.cast()))) }
+    }
+    #[inline(always)]
+    unsafe fn load_i16(p: *const i16) -> Self::V {
+        use std::arch::x86_64::*;
+        unsafe { _mm256_cvtepi32_ps(_mm256_cvtepi16_epi32(_mm_loadu_si128(p.cast()))) }
     }
     #[inline(always)]
     unsafe fn load_bf16(p: *const u16) -> Self::V {
@@ -379,6 +391,10 @@ impl Simd for Avx2Fast {
         unsafe { Avx2::load_i8(p) }
     }
     #[inline(always)]
+    unsafe fn load_i16(p: *const i16) -> Self::V {
+        unsafe { Avx2::load_i16(p) }
+    }
+    #[inline(always)]
     unsafe fn load_bf16(p: *const u16) -> Self::V {
         unsafe { Avx2::load_bf16(p) }
     }
@@ -462,6 +478,17 @@ impl Simd for Neon {
         use std::arch::aarch64::*;
         // vfmaq_f32(c, a, b) = c + a * b, fused.
         unsafe { (vfmaq_f32(c.0, a.0, b.0), vfmaq_f32(c.1, a.1, b.1)) }
+    }
+    #[inline(always)]
+    unsafe fn load_i16(p: *const i16) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe {
+            let wide = vld1q_s16(p);
+            (
+                vcvtq_f32_s32(vmovl_s16(vget_low_s16(wide))),
+                vcvtq_f32_s32(vmovl_s16(vget_high_s16(wide))),
+            )
+        }
     }
     #[inline(always)]
     unsafe fn load_i8(p: *const i8) -> Self::V {
@@ -606,16 +633,55 @@ pub(crate) unsafe fn dot<S: Simd>(a: &[f32], b: &[f32]) -> f32 {
 /// (`G` a multiple of 32, so each 32-element block uses one scale, loaded and
 /// broadcast once). Same operation order as [`dot`].
 #[inline(always)]
+#[allow(dead_code)] // the W8 wrapper of `dot_q`, kept for its tests
 pub(crate) unsafe fn dot_q8<S: Simd, const G: usize>(
     x: &[f32],
     codes: &[i8],
+    scales: &[f32],
+) -> f32 {
+    unsafe { dot_q::<S, i8, G>(x, codes, scales) }
+}
+
+/// Integer weight codes that [`dot_q`] converts exactly to `f32`.
+pub(crate) trait QCode: Copy + Send + Sync + 'static {
+    /// Eight consecutive codes as `f32` lanes.
+    unsafe fn load8<S: Simd>(p: *const Self) -> S::V;
+    fn to_f32(self) -> f32;
+}
+impl QCode for i8 {
+    #[inline(always)]
+    unsafe fn load8<S: Simd>(p: *const Self) -> S::V {
+        unsafe { S::load_i8(p) }
+    }
+    #[inline(always)]
+    fn to_f32(self) -> f32 {
+        f32::from(self)
+    }
+}
+impl QCode for i16 {
+    #[inline(always)]
+    unsafe fn load8<S: Simd>(p: *const Self) -> S::V {
+        unsafe { S::load_i16(p) }
+    }
+    #[inline(always)]
+    fn to_f32(self) -> f32 {
+        f32::from(self)
+    }
+}
+
+/// [`dot_q8`] for any integer code type: the same operation order over
+/// `fl(code * scale)` weights, so it too equals [`dot`] on the dequantized row.
+#[inline(always)]
+pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(
+    x: &[f32],
+    codes: &[C],
     scales: &[f32],
 ) -> f32 {
     debug_assert_eq!(x.len(), codes.len());
     debug_assert_eq!(G % 32, 0);
     unsafe {
         let (xp, cp) = (x.as_ptr(), codes.as_ptr());
-        let w = |i: usize, s: S::V| S::mul(S::load_i8(cp.add(i)), s);
+        let w = |i: usize, s: S::V| S::mul(C::load8::<S>(cp.add(i)), s);
         let mut a0 = S::zero();
         let mut a1 = S::zero();
         let mut a2 = S::zero();
@@ -637,7 +703,7 @@ pub(crate) unsafe fn dot_q8<S: Simd, const G: usize>(
         }
         let mut total = S::sum(acc);
         while i < x.len() {
-            total += x[i] * (codes[i] as f32 * scales[i / G]);
+            total += x[i] * (codes[i].to_f32() * scales[i / G]);
             i += 1;
         }
         total
