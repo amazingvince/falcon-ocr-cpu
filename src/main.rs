@@ -59,6 +59,11 @@ struct Cli {
     /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
     #[arg(long, global = true)]
     stop_repetition: bool,
+    /// Decode threads (default: --threads). Decode is memory-bound; on SMT
+    /// CPUs one thread per physical core is usually fastest, while prefill
+    /// gains from every logical CPU in --threads.
+    #[arg(long, global = true)]
+    decode_threads: Option<usize>,
     #[command(subcommand)]
     command: Command,
 }
@@ -159,6 +164,9 @@ fn main() -> Result<()> {
     )?;
     runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
     runner.set_repetition_stop(cli.stop_repetition);
+    if let Some(threads) = cli.decode_threads {
+        runner.set_decode_threads(threads)?;
+    }
     // Recognition uses the fast exp (token-identical on calibration);
     // FALCON_OCR_EXP=exact keeps the platform exp. Traces always keep it, so
     // they stay bit-comparable with the recorded references.

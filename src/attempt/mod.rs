@@ -20,6 +20,10 @@ pub enum Profile {
     W8BodyKvQ8,
     W8AllKvBf16,
     W8AllKvQ8,
+    /// FP32 weights; Q8 KV with per-channel key scales (`SplitQ8Kc`).
+    KvQ8Kc,
+    /// W8 body weights; Q8 KV with per-channel key scales (`SplitQ8Kc`).
+    W8BodyKvQ8Kc,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -28,6 +32,9 @@ pub enum PrefixMode {
     SplitF32,
     SplitBf16,
     SplitQ8,
+    /// Q8 records whose key channels share one scale per 128-record tile
+    /// (KIVI-style); values keep per-record 32-element scales.
+    SplitQ8Kc,
 }
 impl Profile {
     pub fn quantizes_body(self) -> bool {
@@ -39,6 +46,7 @@ impl Profile {
                 | Self::W8BodyKvQ8
                 | Self::W8AllKvBf16
                 | Self::W8AllKvQ8
+                | Self::W8BodyKvQ8Kc
         )
     }
     pub fn quantizes_head(self) -> bool {
@@ -49,6 +57,7 @@ impl Profile {
             Self::SplitF32 => PrefixMode::SplitF32,
             Self::KvBf16 | Self::W8BodyKvBf16 | Self::W8AllKvBf16 => PrefixMode::SplitBf16,
             Self::KvQ8 | Self::W8BodyKvQ8 | Self::W8AllKvQ8 => PrefixMode::SplitQ8,
+            Self::KvQ8Kc | Self::W8BodyKvQ8Kc => PrefixMode::SplitQ8Kc,
             _ => PrefixMode::Reference,
         }
     }
@@ -68,6 +77,8 @@ impl Profile {
             Self::W8BodyKvQ8 => "w8-body-kv-q8",
             Self::W8AllKvBf16 => "w8-all-kv-bf16",
             Self::W8AllKvQ8 => "w8-all-kv-q8",
+            Self::KvQ8Kc => "kv-q8-kc",
+            Self::W8BodyKvQ8Kc => "w8-body-kv-q8-kc",
         }
     }
 }

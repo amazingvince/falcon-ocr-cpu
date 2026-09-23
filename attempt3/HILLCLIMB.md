@@ -48,6 +48,9 @@ RTN error in a few dominant input channels therefore dominates the output error.
 
 | # | Change | Evidence | Decision |
 |---|---|---|---|
+| S1 | `--threads 32` against 16 | Journal A/B at 01:24, 3 rounds, all arms token-identical (`artifacts/phase4/ab-s1s3`). Fast mode: 16.29 → 20.85 s (prefill 6.20 → **4.82 s**, decode 8.79 → 14.00 ms/tok). Exact mode: 42.80 → 56.82 s (prefill 6.01 → 4.65 s, decode 32.19 → 45.70 ms/tok). | **Rejected as a single setting.** SMT helps compute-bound prefill (−22%) but hurts memory-bound decode (+50–60%). Follow-up: 32-thread prefill with a 16-thread decode team. |
+| S3 | Exact mode on the split FP32 cache (`split-f32`, bitwise equal to compact) | Same run: 42.80 → **39.64 s** (decode 32.19 → 29.31 ms/tok), tokens identical. | **Accepted: −7.4%.** |
+| note | Host quietness | These quiet-host numbers are about 15–20% faster than the 20:48 run. Earlier runs overlapped other load, so compare only within one interleaved run. | |
 | S2 | gemm AVX-512 kernels (`--features gemm-avx512`) | Journal A/B from 20:48 on a quiet host, 3 rounds (`artifacts/phase4/ab-stage5`). Prefill 7.62 vs 7.54 s without the fast exp, and 6.59 vs 6.60 s with it. Projections about −0.1 s (W13 1.06 → 0.99 s, W2 0.54 → 0.48 s), attention +0.05 s. | **Rejected**: under 2%. Zen 4 runs AVX-512 as two 256-bit halves. Worth re-testing on an Intel AVX-512 host. |
 
 ## Offline output-error proxy (`attempt3/w8_output_error.py`)
@@ -70,6 +73,11 @@ GPTQ removes the early-layer W13 hot spot. It reduces the proxy 4.6× on average
 | RTN G64 (current) | 8.62 (123) | | baseline |
 | **GPTQ G64** (12-page Gram, damp 0.01) | **3.44 (49)** | **−60%** | **accepted as candidate**; same bytes and kernels |
 | RTN G32 | 9.47 (135) | +10% | **rejected**: within counting noise of G64 (±11 flips), +6% weight bytes. The 10% proxy gain did not carry over. |
+| GPTQ G32 | 2.66 (38) | −69% (−22% vs GPTQ G64) | candidate. About +2% total decode bytes, just outside counting noise (±7) of GPTQ G64. |
+| **GPTQ G64 act-order** (static groups) | **2.73 (39)** | **−68%** (−20% vs GPTQ G64) | **preferred G64 candidate**: the same flips as G32 with no extra bytes. Proxy 0.122%. |
+| GPTQ G32 act-order | 2.73 (39) | −68% | **rejected**: no gain over G64 act-order. Proxy 0.110%. |
+
+**Weights winner: GPTQ G64 act-order** (`artifacts/phase4/w8/gptq64ao.safetensors`).
 
 By category (flips, RTN → GPTQ):
 

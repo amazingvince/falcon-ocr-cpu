@@ -126,6 +126,19 @@ impl Runner {
     pub fn repetition_stop(&self) -> bool {
         self.repetition_stop
     }
+    /// Size the decode spin team separately from the prefill pool. Prefill is
+    /// compute-bound and gains from SMT siblings; decode is memory-bound and
+    /// loses when both siblings of a core stream (on a 16-core/32-thread
+    /// Ryzen 7950X: prefill 32 threads 22% faster, decode 32 threads 60%
+    /// slower than 16). `threads` must be between 1 and the pool size.
+    pub fn set_decode_threads(&mut self, threads: usize) -> Result<()> {
+        ensure!(
+            (1..=self.pool.current_num_threads()).contains(&threads),
+            "decode threads must be between 1 and the runner's thread count"
+        );
+        self.team = crate::team::Team::new(threads)?;
+        Ok(())
+    }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
     /// builds and verifies an INT8 copy of the FP32 head once per `Model`
     /// (about 53 MB) and selects exactly the same tokens as `Full`.
