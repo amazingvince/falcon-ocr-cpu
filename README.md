@@ -1,10 +1,13 @@
 # Falcon-OCR CPU runner
 
 > **Phase 4 (branch `phase4-attempt3`):** `--mode exact|fast`, an exact screened
-> vocabulary head, and an opt-in `--stop-repetition`. On the journal benchmark
-> page, exact mode keeps FP32 tokens and fast mode takes about 19 s instead of
-> about 64 s. The 200-page held-out qualification of fast mode is still to do.
-> Evidence: [Stage 5 results](attempt3/RESULTS-V2.md) and
+> vocabulary head, a GPTQ-quantized fast mode, and an opt-in
+> `--stop-repetition`. On the journal benchmark page (Ryzen 9 7950X), exact
+> mode takes 38.4 s and fast mode 14.7 s, down from 63.8 s. Both are
+> token-identical to FP32 on the four full benchmark pages. The 200-page
+> held-out qualification of fast mode is still to do. Evidence:
+> [overnight results](attempt3/RESULTS-V3.md),
+> [Stage 5 results](attempt3/RESULTS-V2.md) and
 > [CPU portability](docs/CPU_PORTABILITY.md). Historical results below apply to
 > the reference path.
 
@@ -48,21 +51,29 @@ cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 
 | | `--mode exact` (default) | `--mode fast` |
 |---|---|---|
-| Weights | FP32 | 8-bit body (W8G64); FP32 embeddings, norms and head |
-| Image KV cache | FP32 | 8-bit (G32 scales), including generated tokens |
-| Tokens vs FP32 reference | identical on all 67 calibration pages | identical on 19 of 67; others diverge after a near-tie |
-| Quality vs ground truth | reference | neutral on pages that end normally (17.7% → 17.2% CER) |
-| Journal page (7950X, 16 threads) | ~53 s | ~19 s |
+| Weights | FP32 | 8-bit body, GPTQ act-order W8G64 (`<model>/w8-gptq.safetensors`); FP32 embeddings, norms and head |
+| Image KV cache | FP32 (split layout, bit-identical) | 8-bit (G32 scales), including generated tokens |
+| Tokens vs FP32 reference | identical on all 67 calibration pages | identical on 25 of 55 held-back calibration pages; others diverge after a near-tie |
+| Quality vs ground truth | reference | neutral on pages that end normally (18.40% → 18.38% CER) |
+| Journal page (7950X, default threads) | 38.4 s | 14.7 s |
 
 Both modes use the exact screened head (`--head screened`, the default; it
 selects the same tokens as `--head full`) and a portable vector exp in prefill
 attention, which is token-identical to the platform exp on all calibration
 pages. Set `FALCON_OCR_EXP=exact` to keep the platform exp; `trace` always does.
 
-`--mode fast` quantizes the body weights at load (about 0.5 s), or reads an
-overlay from `--w8-artifact` (made by `attempt3/convert_w8.py`).
-- Fast mode can send a page that ended normally into a repetition loop: 2 of
-  the 58 such calibration pages.
+`--mode fast` loads the GPTQ overlay `<model>/w8-gptq.safetensors`. Build it
+once with `bash attempt3/make_gptq_overlay.sh` (about 20 min). The overlay
+roughly triples closeness to FP32 against plain rounding: 2.7 against 8.6
+flipped greedy choices per 1,000 teacher-forced steps. Without the overlay,
+fast mode quantizes round-to-nearest at load, and `--w8-artifact` selects
+another overlay.
+
+`--threads` defaults to all logical CPUs, used by the compute-bound prefill.
+`--decode-threads` defaults to one per physical core: decode is memory-bound,
+and SMT siblings only contend there.
+- Fast mode can send a page that ended normally into a repetition loop: 1 of
+  the 46 such held-back calibration pages.
 - `--stop-repetition` ends a page once it repeats a cycle of at most 128 tokens
   for at least max(256, 4 × cycle) tokens, with `finish_reason: "repetition"`.
   Output up to that point is unchanged.

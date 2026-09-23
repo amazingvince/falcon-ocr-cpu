@@ -71,7 +71,7 @@ Dispatch picks the ISA once per process from runtime feature detection, so a sin
 
 ## 3. Kernel inventory
 
-Status after the first porting pass (commits `71fdd7b`, `bc4b287`). "Generic" means one source, instantiated per ISA.
+Status after the overnight pass of 2026-09-23 (see `attempt3/RESULTS-V3.md`). "Generic" means one source, instantiated per ISA.
 
 | Kernel | Phase | AVX2 | AVX-512 | NEON | Portable |
 |---|---|---|---|---|---|
@@ -79,13 +79,15 @@ Status after the first porting pass (commits `71fdd7b`, `bc4b287`). "Generic" me
 | Fused GLU (`linear_glu_with_simd`) | decode | via dot kernel | via dot kernel | via dot kernel | scalar |
 | W8 GEMV and fused GLU (`attempt::quant`) | decode | generic | generic (AVX2 code) | generic | scalar |
 | Compact and expanded decode attention (`kernels/attention64.rs`) | decode | generic | generic loop | generic | generic loop |
-| Group-split F32/BF16/Q8 cache (`attempt::prefix`) | decode | generic | generic | generic | generic loop |
+| Group-split F32/BF16/Q8 cache and compressed generated tail (`attempt::prefix`) | decode | generic | generic | generic | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | generic | generic | falls back to full head |
-| Vector exp | both | platform-exact (`vexp.rs`) | same | portable fast exp | portable fast exp |
-| Prefill attention tiles (`kernels/prefill64.rs`) | prefill | generic | generic | generic | gemm crate + scalar |
-| Prefill projections | prefill | gemm crate | gemm crate (`x86-v4` not yet enabled) | gemm crate (NEON) | gemm crate |
+| Vector exp | both | portable fast exp by default for `run`; platform-exact (`vexp.rs`) for `trace` or `FALCON_OCR_EXP=exact` | same as AVX2 | portable fast exp | portable fast exp |
+| Prefill attention tiles (`kernels/prefill64.rs`) | prefill | generic | 16-lane QK/PV (`wide`), bitwise equal to AVX2 | generic | gemm crate + scalar |
+| Prefill projections | prefill | gemm crate | gemm crate (the `gemm-avx512` feature measured under 2% on Zen 4) | gemm crate (NEON) | gemm crate |
+| Thread defaults (`src/cpu.rs`) | both | prefill on all logical CPUs, decode on one thread per physical core | same | macOS `hw.physicalcpu` | Linux sysfs, else logical count |
 
-Deliberate exception: AVX2 keeps the platform-exact exp, so Windows outputs stay bitwise unchanged. NEON and portable share the fast exp and are bitwise equal to each other. Across ISAs the exp differs by at most a few ulp in rare lanes, which is subject to token agreement.
+- The fast exp is token-identical to the platform exp on all 67 calibration pages, so recognition uses it on every ISA, and NEON, portable and AVX2 now share one exp. Traces keep the platform-exact exp, so the recorded x86 reference hashes still reproduce.
+- The GPTQ fast-mode overlay (`<model>/w8-gptq.safetensors`) is plain W8G64 data, so every ISA's W8 kernels use it unchanged. It can be built on one machine and copied to others.
 
 ## 4. Roadmap
 
