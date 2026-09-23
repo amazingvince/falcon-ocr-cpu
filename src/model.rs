@@ -251,6 +251,19 @@ impl Model {
         profile: crate::attempt::Profile,
         artifact: Option<&Path>,
     ) -> Result<Self> {
+        Self::load_attempt_with(dir, profile, artifact, &[])
+    }
+
+    /// [`Model::load_attempt`] that also keeps every body matrix whose name
+    /// matches one of `keep_fp32` (`*` matches any run of characters) in
+    /// FP32, whatever the overlay holds: mixed precision without writing a
+    /// new overlay.
+    pub fn load_attempt_with(
+        dir: impl AsRef<Path>,
+        profile: crate::attempt::Profile,
+        artifact: Option<&Path>,
+        keep_fp32: &[String],
+    ) -> Result<Self> {
         let mut model = Self::load(dir)?;
         model.attempt_profile = profile;
         ensure!(
@@ -323,6 +336,9 @@ impl Model {
                     output: usize|
          -> Result<Option<Arc<crate::attempt::quant::Q8Linear>>> {
             use crate::attempt::quant::Q8Linear;
+            if keep_fp32.iter().any(|pattern| glob_match(pattern, name)) {
+                return Ok(None);
+            }
             let q = if let Some(tensors) = &tensors {
                 let codes_name = format!("{name}.__w8_codes");
                 if partial && !tensors.names().iter().any(|n| **n == codes_name) {
@@ -1643,6 +1659,42 @@ pub(crate) fn report_decode_phases() {
 /// Row count from which per-row elementwise prefill work uses the pool.
 /// Decode (one to eight rows) stays serial; arithmetic is identical either way.
 const PARALLEL_ROWS: usize = 64;
+
+/// `*` in `pattern` matches any run of characters; everything else literally.
+fn glob_match(pattern: &str, name: &str) -> bool {
+    let parts: Vec<&str> = pattern.split('*').collect();
+    if parts.len() == 1 {
+        return pattern == name;
+    }
+    let (first, last) = (parts[0], parts[parts.len() - 1]);
+    if !name.starts_with(first) || !name[first.len()..].ends_with(last) {
+        return false;
+    }
+    let mut rest = &name[first.len()..name.len() - last.len()];
+    for part in &parts[1..parts.len() - 1] {
+        match rest.find(part) {
+            Some(at) => rest = &rest[at + part.len()..],
+            None => return false,
+        }
+    }
+    true
+}
+
+#[cfg(test)]
+mod glob_tests {
+    #[test]
+    fn glob_matches_names() {
+        use super::glob_match;
+        let name = "layers.3.feed_forward.w2.weight";
+        assert!(glob_match(name, name));
+        assert!(glob_match("layers.3.*", name));
+        assert!(glob_match("*.w2.weight", name));
+        assert!(glob_match("layers.*.feed_forward.*", name));
+        assert!(!glob_match("layers.30.*", name));
+        assert!(!glob_match("*.w13.weight", name));
+        assert!(!glob_match("layers.3", name));
+    }
+}
 
 pub(crate) fn image_range(tokens: &[u32], c: &ModelConfig) -> Result<(usize, usize)> {
     let start = tokens

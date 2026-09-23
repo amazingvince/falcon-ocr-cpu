@@ -610,6 +610,9 @@ impl Runner {
         let mut next_token = if let Some(&forced) = teacher_tokens.first() {
             if score {
                 trace.teacher_step(0, forced, select(&next, 0, c.vocab_size)?);
+                if let Next::Logits(logits) = &next {
+                    trace.teacher_logits(0, &logits[..c.vocab_size]);
+                }
             }
             forced
         } else {
@@ -671,6 +674,9 @@ impl Runner {
             next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
                 if score {
                     trace.teacher_step(step + 1, forced, select(&next, 0, c.vocab_size)?);
+                    if let Next::Logits(logits) = &next {
+                        trace.teacher_logits(step + 1, &logits[..c.vocab_size]);
+                    }
                 }
                 forced
             } else {

@@ -25,6 +25,9 @@ pub trait Trace: Send {
     /// Teacher-forced step `step`: the forced token and the token greedy
     /// decoding would have selected from the same prefix.
     fn teacher_step(&mut self, _step: usize, _forced: u32, _predicted: u32) {}
+    /// Full next-token logits of teacher-forced step `step` (only when
+    /// [`Trace::scores_teacher`] is true and the step evaluated the full head).
+    fn teacher_logits(&mut self, _step: usize, _logits: &[f32]) {}
     /// Whether single-request forward passes should report every projection
     /// input through [`Trace::linear_input`] (quantization calibration).
     fn captures_linear_inputs(&self) -> bool {

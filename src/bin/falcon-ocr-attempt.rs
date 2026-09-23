@@ -30,6 +30,11 @@ struct Cli {
     /// Custom W8G64 safetensors overlay, made by attempt3/convert_w8.py.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
+    /// Body matrices kept in FP32 whatever the W8 overlay holds, by name
+    /// (comma-separated; `*` matches any characters), e.g.
+    /// `layers.3.feed_forward.w2.weight` or `layers.3.*`.
+    #[arg(long, value_delimiter = ',', global = true)]
+    keep_fp32: Vec<String>,
     /// FP32 greedy head evaluation; `screened` is exact (same tokens as `full`).
     #[arg(long, value_enum, default_value = "full", global = true)]
     head: HeadMode,
@@ -106,7 +111,45 @@ enum Command {
         /// Must not already exist.
         #[arg(long)]
         report: PathBuf,
+        /// Write this run's top-K next-token log-probabilities per step
+        /// (JSON), to score other profiles against (run it with FP32).
+        #[arg(long)]
+        dump_topk: Option<PathBuf>,
+        /// Score KL(reference || this profile) per step against a
+        /// `--dump-topk` file of the same pages and steps.
+        #[arg(long)]
+        reference_topk: Option<PathBuf>,
     },
+}
+
+/// Log-probabilities kept per step by `--dump-topk`.
+const TOP_K: usize = 32;
+
+/// `log softmax(logits)` in f64.
+fn log_softmax(logits: &[f32]) -> Vec<f64> {
+    let max = logits.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b)) as f64;
+    let sum: f64 = logits.iter().map(|&l| (l as f64 - max).exp()).sum();
+    let lse = max + sum.ln();
+    logits.iter().map(|&l| l as f64 - lse).collect()
+}
+
+/// KL(P || Q) with P given by its top-K `(id, log p)` and Q by full
+/// log-probabilities; every other token is pooled into one tail bucket on
+/// both sides (a lower bound on the full KL, identical for all candidates).
+fn kl_topk(reference: &[(u32, f32)], log_q: &[f64]) -> f64 {
+    let (mut kl, mut p_top, mut q_top) = (0.0, 0.0, 0.0);
+    for &(id, log_p) in reference {
+        let (log_p, log_q) = (log_p as f64, log_q[id as usize]);
+        let p = log_p.exp();
+        kl += p * (log_p - log_q);
+        p_top += p;
+        q_top += log_q.exp();
+    }
+    let (p_tail, q_tail) = ((1.0 - p_top).max(0.0), (1.0 - q_top).max(1e-300));
+    if p_tail > 0.0 {
+        kl += p_tail * (p_tail.ln() - q_tail.ln());
+    }
+    kl.max(0.0)
 }
 
 /// Accumulates `XᵀX` of every projection input over free-running pages (GPTQ
@@ -236,11 +279,15 @@ impl falcon_ocr::trace::Trace for GramCapture {
     }
 }
 
-/// Collects the teacher-forced greedy choices of one page.
+/// Collects the teacher-forced greedy choices of one page, and optionally
+/// its top-K log-probabilities (dump) or KL against a reference (score).
 #[derive(Default)]
 struct Agreement {
     steps: usize,
     flips: Vec<(usize, u32, u32)>,
+    dump: Option<Vec<Vec<(u32, f32)>>>,
+    reference: Option<Vec<Vec<(u32, f32)>>>,
+    kl: Vec<f64>,
 }
 impl falcon_ocr::trace::Trace for Agreement {
     fn enabled(&self) -> bool {
@@ -253,6 +300,30 @@ impl falcon_ocr::trace::Trace for Agreement {
         self.steps += 1;
         if forced != predicted {
             self.flips.push((step, forced, predicted));
+        }
+    }
+    fn teacher_logits(&mut self, step: usize, logits: &[f32]) {
+        if self.dump.is_none() && self.reference.is_none() {
+            return;
+        }
+        let log_q = log_softmax(logits);
+        if let Some(dump) = &mut self.dump {
+            let mut order: Vec<u32> = (0..log_q.len() as u32).collect();
+            order.select_nth_unstable_by(TOP_K, |&a, &b| {
+                log_q[b as usize].total_cmp(&log_q[a as usize])
+            });
+            let mut top: Vec<(u32, f32)> = order[..TOP_K]
+                .iter()
+                .map(|&i| (i, log_q[i as usize] as f32))
+                .collect();
+            top.sort_by(|a, b| b.1.total_cmp(&a.1));
+            debug_assert_eq!(dump.len(), step);
+            dump.push(top);
+        }
+        if let Some(reference) = &self.reference
+            && let Some(top) = reference.get(step)
+        {
+            self.kl.push(kl_topk(top, &log_q));
         }
     }
     fn tensor(&mut self, _name: &str, _shape: &[usize], _data: &[f32]) -> Result<()> {
@@ -374,10 +445,11 @@ fn main() -> Result<()> {
         Command::Doctor => unreachable!(),
     }
     let started = Instant::now();
-    let model = Arc::new(Model::load_attempt(
+    let model = Arc::new(Model::load_attempt_with(
         &args.model,
         args.profile,
         args.w8_artifact.as_deref(),
+        &args.keep_fp32,
     )?);
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.attempt_memory_report();
@@ -504,7 +576,20 @@ fn main() -> Result<()> {
             max_dimension,
             min_dimension,
             report,
+            dump_topk,
+            reference_topk,
         } => {
+            let reference_top: Option<std::collections::HashMap<String, Vec<Vec<(u32, f32)>>>> =
+                match &reference_topk {
+                    Some(path) => {
+                        let value: serde_json::Value =
+                            serde_json::from_slice(&std::fs::read(path)?)?;
+                        Some(serde_json::from_value(value["pages"].clone())?)
+                    }
+                    None => None,
+                };
+            let mut dumped = serde_json::Map::new();
+            let (mut kl_sum, mut kl_steps) = (0.0_f64, 0_usize);
             let reference_report: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(&reference)?)?;
             let mut forced = std::collections::HashMap::new();
@@ -538,37 +623,76 @@ fn main() -> Result<()> {
                     max_dimension,
                     min_dimension,
                 };
-                let mut agreement = Agreement::default();
+                let mut agreement = Agreement {
+                    dump: dump_topk.as_ref().map(|_| Vec::new()),
+                    reference: match &reference_top {
+                        Some(pages) => Some(
+                            pages
+                                .get(&id)
+                                .with_context(|| {
+                                    format!("page {id} missing from the top-K reference")
+                                })?
+                                .clone(),
+                        ),
+                        None => None,
+                    },
+                    ..Agreement::default()
+                };
                 let t = Instant::now();
                 runner.score_teacher_file(image, teacher, &options, &mut agreement)?;
+                if reference_top.is_some() {
+                    ensure!(
+                        agreement.kl.len() == agreement.steps,
+                        "top-K reference for {id} has fewer steps than this run"
+                    );
+                }
+                let page_kl: f64 = agreement.kl.iter().sum();
+                kl_sum += page_kl;
+                kl_steps += agreement.kl.len();
+                if let Some(dump) = agreement.dump.take() {
+                    dumped.insert(id.clone(), serde_json::to_value(dump)?);
+                }
                 let wall_ms = t.elapsed().as_secs_f64() * 1000.0;
                 total_steps += agreement.steps;
                 total_flips += agreement.flips.len();
                 eprintln!(
-                    "{id}: {} flips / {} steps in {:.1}s",
+                    "{id}: {} flips / {} steps, mean KL {:.3e} in {:.1}s",
                     agreement.flips.len(),
                     agreement.steps,
+                    page_kl / agreement.kl.len().max(1) as f64,
                     wall_ms / 1000.0
                 );
                 pages.push(serde_json::json!({"page":id,"path":image,"steps":agreement.steps,
                     "flips":agreement.flips.len(),
+                    "kl_mean":(!agreement.kl.is_empty()).then(|| page_kl / agreement.kl.len() as f64),
+                    "kl_max":agreement.kl.iter().copied().fold(None, |m: Option<f64>, x| Some(m.map_or(x, |m| m.max(x)))),
                     "first_flip":agreement.flips.first().map(|f| f.0),
                     "flip_steps":agreement.flips.iter().map(|f| serde_json::json!([f.0,f.1,f.2])).collect::<Vec<_>>(),
                     "wall_ms":wall_ms}));
             }
             let per_thousand = 1000.0 * total_flips as f64 / total_steps.max(1) as f64;
+            let kl_mean = (kl_steps > 0).then(|| kl_sum / kl_steps as f64);
+            if let Some(path) = &dump_topk {
+                write_new(
+                    path,
+                    &serde_json::json!({"k":TOP_K,"profile":args.profile,
+                    "max_steps":max_steps,"pages":dumped}),
+                )
+                .with_context(|| format!("write {}", path.display()))?;
+            }
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":args.profile,
                 "reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
                 "exp_mode":format!("{:?}", falcon_ocr::kernels::exp_mode()),
                 "binary_sha256":digest(&std::env::current_exe()?)?,"threads":args.threads,"backend":args.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
+                "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,
                 "wall_ms":started.elapsed().as_secs_f64() * 1000.0,"pages":pages});
             write_new(&report, &report_value)
                 .with_context(|| format!("write {}", report.display()))?;
             println!(
                 "{}",
                 serde_json::json!({"report":report,"profile":args.profile,"steps":total_steps,
-                    "flips":total_flips,"flips_per_1000":per_thousand})
+                    "flips":total_flips,"flips_per_1000":per_thousand,"kl_mean":kl_mean})
             );
         }
         Command::Doctor => unreachable!(),
