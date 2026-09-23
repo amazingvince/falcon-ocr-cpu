@@ -106,6 +106,9 @@ pub struct Runner {
     /// Automatic decode thread count (`set_decode_threads_auto`): one team
     /// per candidate size and the tuner choosing between them.
     auto_threads: Option<AutoThreads>,
+    /// Speculative decoding (`set_speculation`): at most this many drafted
+    /// tokens per step and the minimum n-gram match; `None` is off.
+    speculation: Option<(usize, usize)>,
 }
 
 struct AutoThreads {
@@ -191,6 +194,7 @@ impl Runner {
             repetition_stop: false,
             team,
             auto_threads: None,
+            speculation: None,
         })
     }
     /// Stop greedy generation once it repeats a cycle of at most 128 tokens
@@ -237,6 +241,18 @@ impl Runner {
             tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
         });
         Ok(())
+    }
+    /// Speculative decoding for single-page generation with the attempt
+    /// profiles' split cache: up to `max_draft` tokens (at most 7) drafted
+    /// from earlier output (`crate::draft`, n-gram match of at least
+    /// `min_match` tokens) are verified in one multi-row step. Every row is
+    /// bitwise the single-row step, so tokens are unchanged; `max_draft = 0`
+    /// turns it off. Teacher forcing, tracing and batches never speculate.
+    pub fn set_speculation(&mut self, max_draft: usize, min_match: usize) {
+        self.speculation = (max_draft > 0).then_some((
+            max_draft.min(crate::head_screen::MAX_ROWS - 1),
+            min_match.max(1),
+        ));
     }
     /// The automatically chosen decode thread count, once tuning finished.
     pub fn decode_threads_chosen(&self) -> Option<usize> {
@@ -748,7 +764,113 @@ impl Runner {
         let stop_loops = self.repetition_stop && teacher_tokens.is_empty();
         let mut team = DecodeTeam::new(self);
         trace.decode_start();
+        let speculate = self
+            .speculation
+            .filter(|_| teacher_tokens.is_empty() && !trace.enabled() && session.is_split());
+        if let Some((max_draft, min_match)) = speculate {
+            let mut drafter = crate::draft::NgramDrafter::new(min_match);
+            let mut draft = Vec::with_capacity(max_draft);
+            let mut inputs = Vec::with_capacity(max_draft + 1);
+            let mut positions = Vec::with_capacity(max_draft + 1);
+            // (single steps, their ms, verify steps, their ms, drafted, accepted)
+            let mut stats = (0_usize, 0.0_f64, 0_usize, 0.0_f64, 0_usize, 0_usize);
+            'decode: loop {
+                let token = next_token;
+                generated.push(token);
+                if stops.contains(&token) {
+                    reason = FinishReason::Eos;
+                    break;
+                }
+                if stop_loops && repetition.push(&generated) {
+                    reason = FinishReason::Repetition;
+                    break;
+                }
+                if generated.len() == options.max_new_tokens {
+                    break;
+                }
+                // Accepted drafts plus the next token stay within the budget
+                // and the cache.
+                let limit = max_draft
+                    .min(options.max_new_tokens - generated.len() - 1)
+                    .min(session.remaining_capacity().saturating_sub(1));
+                drafter.propose(&generated, limit, &mut draft);
+                team.select();
+                let step_started = Instant::now();
+                if draft.is_empty() {
+                    self.model.embed(&[token], None, simd, &mut hidden)?;
+                    let next = self.model.forward_next(
+                        &mut hidden,
+                        &[session.next_position],
+                        &[[f32::NAN; 2]],
+                        &mut session,
+                        trace,
+                        "",
+                        screen,
+                    )?;
+                    let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
+                    team.record(step_ms);
+                    stats.0 += 1;
+                    stats.1 += step_ms;
+                    next_token = select(&next, 0, c.vocab_size)?;
+                    trace.decode_step(1, step_ms, session.cache_bytes());
+                    continue;
+                }
+                inputs.clear();
+                inputs.push(token);
+                inputs.extend_from_slice(&draft);
+                let rows = inputs.len();
+                positions.clear();
+                positions.extend((0..rows).map(|r| session.next_position + r));
+                let kept = session.len;
+                self.model.embed(&inputs, None, simd, &mut hidden)?;
+                let next = self
+                    .model
+                    .verify_next(&mut hidden, &positions, &mut session, screen)?;
+                // predicted[r]: the greedy token after inputs[..=r].
+                let mut predicted = [0_u32; crate::head_screen::MAX_ROWS];
+                for (r, slot) in predicted[..rows].iter_mut().enumerate() {
+                    *slot = select(&next, r, c.vocab_size)?;
+                }
+                let accepted = draft
+                    .iter()
+                    .zip(&predicted)
+                    .take_while(|(d, p)| d == p)
+                    .count();
+                session.truncate(kept + 1 + accepted)?;
+                let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
+                stats.2 += 1;
+                stats.3 += step_ms;
+                stats.4 += draft.len();
+                stats.5 += accepted;
+                trace.decode_step(rows, step_ms, session.cache_bytes());
+                for &token in &draft[..accepted] {
+                    generated.push(token);
+                    if stops.contains(&token) {
+                        reason = FinishReason::Eos;
+                        break 'decode;
+                    }
+                    if stop_loops && repetition.push(&generated) {
+                        reason = FinishReason::Repetition;
+                        break 'decode;
+                    }
+                }
+                next_token = predicted[accepted];
+            }
+            if std::env::var_os("FALCON_OCR_PHASES").is_some() {
+                let (singles, single_ms, verifies, verify_ms, drafted, accepted) = stats;
+                eprintln!(
+                    "speculation: {} tokens; {singles} single steps ({:.2} ms), {verifies} verify steps ({:.2} ms),                      drafted {drafted}, accepted {accepted} ({:.0}%)",
+                    generated.len(),
+                    single_ms / singles.max(1) as f64,
+                    verify_ms / verifies.max(1) as f64,
+                    100.0 * accepted as f64 / drafted.max(1) as f64,
+                );
+            }
+        }
         for step in 0..options.max_new_tokens {
+            if speculate.is_some() {
+                break;
+            }
             let token = next_token;
             generated.push(token);
             if stops.contains(&token) && teacher_tokens.is_empty() {

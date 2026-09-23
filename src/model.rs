@@ -682,6 +682,59 @@ impl Model {
         phase: &str,
         screen: bool,
     ) -> Result<Next<'s>> {
+        self.forward_layers(h, positions, positions_hw, session, trace, phase)?;
+        let c = &self.config;
+        let rows = positions.len();
+        let simd = session.simd;
+        let work = &mut session.workspace;
+        // Generation needs only the final token's vocabulary projection.
+        let last = &h[(rows - 1) * c.dim..];
+        let norm = &mut work.normalized[..c.dim];
+        kernels::rms_norm(last, norm, c.dim, c.norm_eps, Some(self.w(&self.norm)));
+        if screen
+            && !trace.enabled()
+            && let Some(head) = self.screened.get()
+            && !work.selected.is_empty()
+        {
+            let dot = kernels::dot_kernel(simd.resolved());
+            match head.select(norm, self.w(&self.output), dot, &mut work.head) {
+                Screened::Token { token, candidates } => {
+                    trace.head_screen(candidates, false);
+                    work.selected[0] = token;
+                    return Ok(Next::Tokens(&work.selected[..1]));
+                }
+                Screened::Fallback { candidates } => trace.head_screen(candidates, true),
+            }
+        }
+        work.logits.resize(c.vocab_size, 0.);
+        self.linear(
+            norm,
+            1,
+            c.dim,
+            &self.output,
+            None,
+            c.vocab_size,
+            &mut work.logits,
+            &mut work.quant_scratch,
+            simd,
+        )?;
+        if trace.enabled() {
+            trace.tensor(&format!("{phase}.logits"), &[c.vocab_size], &work.logits)?;
+        }
+        Ok(Next::Logits(&work.logits))
+    }
+
+    /// The transformer layers of `forward_next`: appends the rows' keys and
+    /// values to the session and leaves the final hidden states in `h`.
+    fn forward_layers(
+        &self,
+        h: &mut [f32],
+        positions: &[usize],
+        positions_hw: &[[f32; 2]],
+        session: &mut Session,
+        trace: &mut dyn Trace,
+        phase: &str,
+    ) -> Result<()> {
         let c = &self.config;
         let rows = positions.len();
         ensure!(
@@ -901,29 +954,68 @@ impl Model {
         }
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;
-        // Generation needs only the final token's vocabulary projection.
-        let last = &h[(rows - 1) * c.dim..];
-        let norm = &mut work.normalized[..c.dim];
-        kernels::rms_norm(last, norm, c.dim, c.norm_eps, Some(self.w(&self.norm)));
-        if screen
-            && !trace.enabled()
-            && let Some(head) = self.screened.get()
-            && !work.selected.is_empty()
-        {
+        Ok(())
+    }
+
+    /// Verify drafted tokens: `h` holds the embeddings of the last accepted
+    /// token followed by drafts at consecutive text `positions` (at most
+    /// `head_screen::MAX_ROWS`). Runs the layers once for all rows and returns
+    /// the greedy next token of every row: `Tokens` through the exact screened
+    /// head, or full per-row `Logits` when any row falls outside the screen.
+    /// Per row this is bitwise the single-row `forward_next` step.
+    pub(crate) fn verify_next<'s>(
+        &self,
+        h: &mut [f32],
+        positions: &[usize],
+        session: &'s mut Session,
+        screen: bool,
+    ) -> Result<Next<'s>> {
+        let rows = positions.len();
+        ensure!(
+            (2..=crate::head_screen::MAX_ROWS).contains(&rows),
+            "verification needs 2..=8 rows"
+        );
+        let text = vec![[f32::NAN; 2]; rows];
+        self.forward_layers(h, positions, &text, session, &mut crate::trace::NoTrace, "")?;
+        let c = &self.config;
+        let simd = session.simd;
+        let work = &mut session.workspace;
+        let norm = &mut work.normalized[..rows * c.dim];
+        kernels::rms_norm(h, norm, c.dim, c.norm_eps, Some(self.w(&self.norm)));
+        if screen && let Some(head) = self.screened.get() {
+            if work.head_rows.len() < crate::head_screen::MAX_ROWS {
+                work.head_rows
+                    .resize_with(crate::head_screen::MAX_ROWS, Default::default);
+            }
+            let mut results = [Screened::Fallback { candidates: 0 }; crate::head_screen::MAX_ROWS];
             let dot = kernels::dot_kernel(simd.resolved());
-            match head.select(norm, self.w(&self.output), dot, &mut work.head) {
-                Screened::Token { token, candidates } => {
-                    trace.head_screen(candidates, false);
-                    work.selected[0] = token;
-                    return Ok(Next::Tokens(&work.selected[..1]));
+            head.select_rows(
+                norm,
+                rows,
+                self.w(&self.output),
+                dot,
+                &mut work.head_rows,
+                &mut results,
+            );
+            if results[..rows]
+                .iter()
+                .all(|r| matches!(r, Screened::Token { .. }))
+            {
+                if work.selected.len() < rows {
+                    work.selected.resize(rows, 0);
                 }
-                Screened::Fallback { candidates } => trace.head_screen(candidates, true),
+                for (slot, result) in work.selected.iter_mut().zip(&results[..rows]) {
+                    if let Screened::Token { token, .. } = result {
+                        *slot = *token;
+                    }
+                }
+                return Ok(Next::Tokens(&work.selected[..rows]));
             }
         }
-        work.logits.resize(c.vocab_size, 0.);
+        work.logits.resize(rows * c.vocab_size, 0.);
         self.linear(
-            norm,
-            1,
+            &work.normalized[..rows * c.dim],
+            rows,
             c.dim,
             &self.output,
             None,
@@ -932,10 +1024,7 @@ impl Model {
             &mut work.quant_scratch,
             simd,
         )?;
-        if trace.enabled() {
-            trace.tensor(&format!("{phase}.logits"), &[c.vocab_size], &work.logits)?;
-        }
-        Ok(Next::Logits(&work.logits))
+        Ok(Next::Logits(&work.logits[..rows * c.vocab_size]))
     }
 
     /// Advance one generated token per active request. Linear projections share
@@ -1315,12 +1404,16 @@ impl LayerCache {
     ) {
         match self {
             Self::Split(cache) => {
-                assert_eq!(rows, 1, "sealed prefix supports text decode only");
                 assert!(
                     offset >= image_end,
                     "cannot treat a partial image as causal decode"
                 );
-                cache.attention_decode(q, total_len, sinks, output, simd);
+                if rows == 1 {
+                    cache.attention_decode(q, total_len, sinks, output, simd);
+                } else {
+                    // Draft verification: rows are the newest text positions.
+                    cache.attention_decode_rows(q, rows, sinks, output, simd);
+                }
             }
             Self::Expanded { k, v } => kernels::attention_with_simd(
                 q,
@@ -1381,6 +1474,34 @@ fn append_unique_heads(output: &mut Vec<f32>, expanded: &[f32], c: &ModelConfig)
     }
 }
 impl Session {
+    /// Drop the newest positions so that `len` remain (rejected draft
+    /// tokens). Needs the split cache of the attempt profiles.
+    pub(crate) fn truncate(&mut self, len: usize) -> Result<()> {
+        ensure!(
+            len >= self.image_end && len <= self.len,
+            "truncation must keep the prompt"
+        );
+        let dropped = self.len - len;
+        for layer in &mut self.layers {
+            match layer {
+                LayerCache::Split(cache) => {
+                    ensure!(cache.tail_len() >= dropped, "truncation past the prefix");
+                    cache.truncate_tail(cache.tail_len() - dropped);
+                }
+                _ => anyhow::bail!("speculative decoding needs the split cache"),
+            }
+        }
+        self.len = len;
+        self.next_position -= dropped;
+        Ok(())
+    }
+    /// Whether every layer uses the split cache (required by `truncate`).
+    pub(crate) fn is_split(&self) -> bool {
+        self.layers.iter().all(|l| matches!(l, LayerCache::Split(_)))
+    }
+    pub(crate) fn remaining_capacity(&self) -> usize {
+        self.capacity - self.len
+    }
     pub(crate) fn cache_bytes(&self) -> usize {
         self.layers
             .iter()
@@ -1531,6 +1652,8 @@ struct Workspace {
     /// Screened-head scratch and per-row selected tokens; reserved before decode.
     head: crate::head_screen::HeadScratch,
     selected: Vec<u32>,
+    /// Per-row screened-head scratch for draft verification.
+    head_rows: Vec<crate::head_screen::HeadScratch>,
 }
 impl Workspace {
     fn reserve_screened_head(&mut self, model: &Model, rows: usize) {

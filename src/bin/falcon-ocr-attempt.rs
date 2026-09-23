@@ -51,6 +51,15 @@ struct Cli {
     /// gains from every logical CPU in --threads.
     #[arg(long, global = true)]
     decode_threads: Option<falcon_ocr::runner::DecodeThreads>,
+    /// Speculative decoding: verify up to N tokens drafted from earlier output
+    /// in one step (0 = off, at most 7). Every verified token is the model's own
+    /// greedy choice, so outputs are unchanged. Needs the split cache
+    /// (near-exact, fast and attempt profiles); single pages only.
+    #[arg(long, default_value_t = 0, global = true)]
+    speculate: usize,
+    /// Minimum n-gram match in the earlier output for a draft.
+    #[arg(long, default_value_t = 2, global = true)]
+    speculate_min_match: usize,
     #[command(subcommand)]
     command: Command,
 }
@@ -471,6 +480,7 @@ fn main() -> Result<()> {
     )?;
     runner.set_head_mode(args.head)?;
     runner.set_repetition_stop(args.stop_repetition);
+    runner.set_speculation(args.speculate, args.speculate_min_match);
     match args.decode_threads {
         Some(falcon_ocr::runner::DecodeThreads::Auto) => runner.set_decode_threads_auto()?,
         Some(falcon_ocr::runner::DecodeThreads::Fixed(threads)) => runner.set_decode_threads(threads)?,
@@ -519,6 +529,7 @@ fn main() -> Result<()> {
                 "head":args.head,"screened_head_bytes":model.screened_head_bytes(),
                 "stop_repetition":args.stop_repetition,"decode_threads":args.decode_threads.map(|d| d.to_string()),
                 "decode_threads_chosen":runner.decode_threads_chosen(),
+                "speculate":args.speculate,"speculate_min_match":args.speculate_min_match,
                 "schedule":"fixed cohorts; layer-major decode; opt-in completed-cache retirement; no refill",
                 "options":options,"inputs":inputs,"warmup":warmup,"load_and_import_ms":load_ms,
                 "memory_policy":memory,"process_memory":falcon_ocr::attempt::process_memory(),"samples":records,

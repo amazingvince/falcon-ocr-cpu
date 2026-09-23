@@ -231,7 +231,7 @@ pub fn linear_with_simd(
     }
     let in_stride = isize::try_from(in_dim).expect("linear input stride too large");
     let out_stride = isize::try_from(out_dim).expect("linear output stride too large");
-    let threads = rayon::current_num_threads();
+    let threads = gemm_threads().unwrap_or_else(rayon::current_num_threads);
     let parallelism = if threads == 1 {
         gemm::Parallelism::None
     } else {
@@ -263,6 +263,18 @@ pub fn linear_with_simd(
             parallelism,
         );
     }
+}
+
+/// Experiment override of the prefill GEMM's thread count
+/// (`FALCON_OCR_GEMM_THREADS`, read once); scheduling only, same arithmetic.
+fn gemm_threads() -> Option<usize> {
+    static THREADS: std::sync::OnceLock<Option<usize>> = std::sync::OnceLock::new();
+    *THREADS.get_or_init(|| {
+        std::env::var("FALCON_OCR_GEMM_THREADS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .filter(|&n: &usize| n >= 1)
+    })
 }
 
 /// Normalize each contiguous `width`-element row in FP32.

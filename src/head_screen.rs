@@ -32,6 +32,8 @@ pub(crate) const CANDIDATE_LIMIT: usize = 1024;
 const BLOCK: usize = 512;
 /// Absolute slack covering subnormal rounding in the screen.
 const ETA: f32 = 7.888_609e-31; // 2^-100
+/// Inputs per [`ScreenedHead::select_rows`] call.
+pub(crate) const MAX_ROWS: usize = 8;
 
 pub(crate) struct ScreenedHead {
     vocab: usize,
@@ -143,31 +145,8 @@ impl ScreenedHead {
             "screened head FP32 shape"
         );
         let fallback = Screened::Fallback { candidates: 0 };
-        #[cfg(target_arch = "x86_64")]
-        let vector = std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma");
-        #[cfg(target_arch = "aarch64")]
-        let vector = true;
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
-        let vector = false;
-        if !vector || !x.iter().all(|v| v.is_finite()) {
+        if !self.prepare(x, scratch) {
             return fallback;
-        }
-        // Every FP32 logit is provably finite below this; beyond it, let the full
-        // head decide (and report) exactly as the reference does.
-        let l1: f64 = x.iter().map(|v| f64::from(v.abs())).sum();
-        if l1 * f64::from(self.weight_abs_max) * 1.01 >= f64::from(f32::MAX) / 2.0 {
-            return fallback;
-        }
-        scratch.reserve(self);
-        for (norm, group) in scratch.norms.iter_mut().zip(x.chunks_exact(GROUP)) {
-            let exact: f64 = group.iter().map(|v| f64::from(v.abs())).sum();
-            let rounded = exact as f32;
-            // Round up: the bound must never shrink.
-            *norm = if f64::from(rounded) < exact {
-                rounded.next_up()
-            } else {
-                rounded
-            };
         }
         let norms = &scratch.norms;
         let (dim, groups, kappa, vocab) = (self.dim, self.groups, self.kappa, self.vocab);
@@ -186,6 +165,45 @@ impl ScreenedHead {
             // SAFETY: one maximum slot per block.
             unsafe { lower_all.slice(block, 1)[0] = lower_max };
         });
+        self.finish(x, fp32, dot, scratch)
+    }
+
+    /// Input checks and per-group L1 norms (rounded up) into `scratch`;
+    /// `false` when the proof's assumptions do not hold for `x`.
+    fn prepare(&self, x: &[f32], scratch: &mut HeadScratch) -> bool {
+        #[cfg(target_arch = "x86_64")]
+        let vector = std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma");
+        #[cfg(target_arch = "aarch64")]
+        let vector = true;
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        let vector = false;
+        if !vector || !x.iter().all(|v| v.is_finite()) {
+            return false;
+        }
+        // Every FP32 logit is provably finite below this; beyond it, let the full
+        // head decide (and report) exactly as the reference does.
+        let l1: f64 = x.iter().map(|v| f64::from(v.abs())).sum();
+        if l1 * f64::from(self.weight_abs_max) * 1.01 >= f64::from(f32::MAX) / 2.0 {
+            return false;
+        }
+        scratch.reserve(self);
+        for (norm, group) in scratch.norms.iter_mut().zip(x.chunks_exact(GROUP)) {
+            let exact: f64 = group.iter().map(|v| f64::from(v.abs())).sum();
+            let rounded = exact as f32;
+            // Round up: the bound must never shrink.
+            *norm = if f64::from(rounded) < exact {
+                rounded.next_up()
+            } else {
+                rounded
+            };
+        }
+        true
+    }
+
+    /// The exact token from the screened bounds in `scratch`.
+    fn finish(&self, x: &[f32], fp32: &[f32], dot: Dot, scratch: &mut HeadScratch) -> Screened {
+        let fallback = Screened::Fallback { candidates: 0 };
+        let dim = self.dim;
         let tau = scratch
             .lower_max
             .iter()
@@ -223,6 +241,71 @@ impl ScreenedHead {
                 candidates: scratch.candidates.len(),
             },
             None => fallback,
+        }
+    }
+
+    /// [`ScreenedHead::select`] for `rows` inputs (`xs` is `rows x dim`),
+    /// reading each screen row once for all of them; `out[r]` is exactly what
+    /// `select` returns for input `r` (the token is the exact FP32 argmax,
+    /// whatever the screen's evaluation order).
+    pub(crate) fn select_rows(
+        &self,
+        xs: &[f32],
+        rows: usize,
+        fp32: &[f32],
+        dot: Dot,
+        scratch: &mut [HeadScratch],
+        out: &mut [Screened],
+    ) {
+        let dim = self.dim;
+        assert!(rows <= MAX_ROWS && rows <= scratch.len() && rows <= out.len());
+        assert_eq!(xs.len(), rows * dim, "screened head input shape");
+        assert_eq!(fp32.len(), self.vocab * dim, "screened head FP32 shape");
+        let mut live = [0_usize; MAX_ROWS];
+        let mut n = 0;
+        for r in 0..rows {
+            out[r] = Screened::Fallback { candidates: 0 };
+            if self.prepare(&xs[r * dim..(r + 1) * dim], &mut scratch[r]) {
+                live[n] = r;
+                n += 1;
+            }
+        }
+        if n == 0 {
+            return;
+        }
+        let (groups, kappa, vocab) = (self.groups, self.kappa, self.vocab);
+        let uppers: [crate::team::SharedMut<f32>; MAX_ROWS] = std::array::from_fn(|i| {
+            crate::team::SharedMut::new(&mut scratch[live[i.min(n - 1)]].upper)
+        });
+        let lowers: [crate::team::SharedMut<f32>; MAX_ROWS] = std::array::from_fn(|i| {
+            crate::team::SharedMut::new(&mut scratch[live[i.min(n - 1)]].lower_max)
+        });
+        {
+            let inputs: [&[f32]; MAX_ROWS] =
+                std::array::from_fn(|i| &xs[live[i.min(n - 1)] * dim..(live[i.min(n - 1)] + 1) * dim]);
+            let norms: [&[f32]; MAX_ROWS] =
+                std::array::from_fn(|i| scratch[live[i.min(n - 1)]].norms.as_slice());
+            crate::team::for_each(vocab.div_ceil(BLOCK), |block| {
+                let start = block * BLOCK;
+                let len = BLOCK.min(vocab - start);
+                let codes = &self.codes[start * dim..(start + len) * dim];
+                let scales = &self.scales[start * groups..(start + len) * groups];
+                // SAFETY: each task owns one disjoint block of every input's rows.
+                let mut upper: [&mut [f32]; MAX_ROWS] =
+                    std::array::from_fn(|i| unsafe { uppers[i].slice(start, if i < n { len } else { 0 }) });
+                // SAFETY: the native vector ISA was checked by `prepare`; slices
+                // are whole rows of this block.
+                let lower = unsafe {
+                    screen_block_rows_native(&inputs[..n], &norms[..n], codes, scales, kappa, &mut upper[..n])
+                };
+                for (i, value) in lower[..n].iter().enumerate() {
+                    // SAFETY: one maximum slot per (input, block).
+                    unsafe { lowers[i].slice(block, 1)[0] = *value };
+                }
+            });
+        }
+        for &r in &live[..n] {
+            out[r] = self.finish(&xs[r * dim..(r + 1) * dim], fp32, dot, &mut scratch[r]);
         }
     }
 }
@@ -328,6 +411,68 @@ unsafe fn screen_block<S: crate::simd::Simd>(
         lower_max = lower_max.max(q - bound);
     }
     lower_max
+}
+
+/// [`screen_block`] for several inputs: each screen row is loaded once and
+/// scored against every input.
+#[inline(always)]
+unsafe fn screen_block_rows<S: crate::simd::Simd>(
+    inputs: &[&[f32]],
+    norms: &[&[f32]],
+    codes: &[i8],
+    scales: &[f32],
+    kappa: f32,
+    upper: &mut [&mut [f32]],
+) -> [f32; MAX_ROWS] {
+    let dim = inputs[0].len();
+    let groups = dim / GROUP;
+    let mut lower_max = [f32::NEG_INFINITY; MAX_ROWS];
+    for i in 0..upper[0].len() {
+        let row_codes = &codes[i * dim..(i + 1) * dim];
+        let row_scales = &scales[i * groups..(i + 1) * groups];
+        for (r, x) in inputs.iter().enumerate() {
+            let (q, s) = unsafe { screen_row::<S>(x, row_codes, row_scales, norms[r]) };
+            let bound = kappa.mul_add(s, ETA);
+            upper[r][i] = q + bound;
+            lower_max[r] = lower_max[r].max(q - bound);
+        }
+    }
+    lower_max
+}
+
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn screen_block_rows_native(
+    inputs: &[&[f32]],
+    norms: &[&[f32]],
+    codes: &[i8],
+    scales: &[f32],
+    kappa: f32,
+    upper: &mut [&mut [f32]],
+) -> [f32; MAX_ROWS] {
+    unsafe { screen_block_rows::<crate::simd::Avx2>(inputs, norms, codes, scales, kappa, upper) }
+}
+#[cfg(target_arch = "aarch64")]
+unsafe fn screen_block_rows_native(
+    inputs: &[&[f32]],
+    norms: &[&[f32]],
+    codes: &[i8],
+    scales: &[f32],
+    kappa: f32,
+    upper: &mut [&mut [f32]],
+) -> [f32; MAX_ROWS] {
+    unsafe { screen_block_rows::<crate::simd::Neon>(inputs, norms, codes, scales, kappa, upper) }
+}
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+unsafe fn screen_block_rows_native(
+    inputs: &[&[f32]],
+    norms: &[&[f32]],
+    codes: &[i8],
+    scales: &[f32],
+    kappa: f32,
+    upper: &mut [&mut [f32]],
+) -> [f32; MAX_ROWS] {
+    unsafe { screen_block_rows::<crate::simd::Portable>(inputs, norms, codes, scales, kappa, upper) }
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -445,6 +590,39 @@ mod tests {
                             "unexpected fallback"
                         );
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn select_rows_equals_select_per_row() {
+        let (vocab, dim) = (2100, 768);
+        let mut rng = Lcg(29);
+        let mut head: Vec<f32> = (0..vocab * dim).map(|_| rng.next() * 0.05).collect();
+        for (dst, src) in [(1500, 3), (900, 1200)] {
+            let row: Vec<f32> = head[src * dim..(src + 1) * dim].to_vec();
+            head[dst * dim..(dst + 1) * dim].copy_from_slice(&row);
+        }
+        let screened = ScreenedHead::build(&head, vocab, dim).unwrap();
+        for simd in backends() {
+            let dot = dot_kernel(simd);
+            for rows in 1..=MAX_ROWS {
+                let mut xs: Vec<f32> = (0..rows * dim).map(|_| rng.next() * 3.0).collect();
+                // Aim one input at a duplicated row (a tie), make one nonfinite.
+                for (xi, w) in xs[..dim].iter_mut().zip(&head[3 * dim..4 * dim]) {
+                    *xi = w * 40.0;
+                }
+                if rows > 2 {
+                    xs[2 * dim + 5] = f32::NAN;
+                }
+                let mut scratch: Vec<HeadScratch> = (0..MAX_ROWS).map(|_| HeadScratch::default()).collect();
+                let mut joint = [Screened::Fallback { candidates: 0 }; MAX_ROWS];
+                screened.select_rows(&xs, rows, &head, dot, &mut scratch, &mut joint);
+                let mut single_scratch = HeadScratch::default();
+                for r in 0..rows {
+                    let single = screened.select(&xs[r * dim..(r + 1) * dim], &head, dot, &mut single_scratch);
+                    assert_eq!(joint[r], single, "{simd:?} rows {rows} row {r}");
                 }
             }
         }

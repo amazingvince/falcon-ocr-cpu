@@ -47,6 +47,8 @@ const Q8_SCALES: usize = RECORD / 32;
 const TILE: usize = 128;
 const MAX_GROUPS: usize = 8;
 const MAX_CHUNKS: usize = 4;
+/// Query rows of one verification step (the last token plus drafts).
+pub(crate) const MAX_ROWS: usize = 8;
 
 #[derive(Debug)]
 enum Records {
@@ -752,6 +754,13 @@ impl SplitPrefix {
                 }
             }
         });
+        self.merge(&parts[..groups * chunks], chunks, sinks, output);
+    }
+
+    /// Final softmax normalization of every head from its group's position
+    /// chunks (`parts[g * chunks + chunk]`), then the sink.
+    fn merge(&self, parts: &[Partial], chunks: usize, sinks: &[f32], output: &mut [f32]) {
+        let groups = self.kv_heads;
         for g in 0..groups {
             let group_parts = &parts[g * chunks..(g + 1) * chunks];
             for pair in 0..2 {
@@ -788,6 +797,200 @@ impl SplitPrefix {
                 }
             }
         }
+    }
+
+    /// Record stores of this cache, passed to `kernel` with their concrete types.
+    ///
+    /// # Safety
+    /// The kernel's own requirements (native vector ISA, span bounds).
+    unsafe fn dispatch(&self, kernel: &mut impl PairKernel) {
+        unsafe {
+            match (&self.records, &self.tail) {
+                (Records::F32(d), Records::F32(t)) => {
+                    kernel.run(&F32Rec::<RECORD>(d), &F32Rec::<TAIL_RECORD>(t))
+                }
+                (Records::Bf16(d), Records::Bf16(t)) => {
+                    kernel.run(&Bf16Rec::<RECORD>(d), &Bf16Rec::<TAIL_RECORD>(t))
+                }
+                (Records::Q8 { codes, scales }, Records::Q8 { codes: tc, scales: ts }) => kernel.run(
+                    &Q8Rec::<RECORD> { codes, scales },
+                    &Q8Rec::<TAIL_RECORD> { codes: tc, scales: ts },
+                ),
+                (Records::Q16 { codes, scales }, Records::Q16 { codes: tc, scales: ts }) => kernel.run(
+                    &Q16Rec::<RECORD> { codes, scales },
+                    &Q16Rec::<TAIL_RECORD> { codes: tc, scales: ts },
+                ),
+                (
+                    Records::Q8Kc {
+                        codes,
+                        k_scales,
+                        v_scales,
+                    },
+                    Records::Q8 { codes: tc, scales: ts },
+                ) => kernel.run(
+                    &Q8KcRec {
+                        codes,
+                        k_scales,
+                        v_scales,
+                    },
+                    &Q8Rec::<TAIL_RECORD> { codes: tc, scales: ts },
+                ),
+                _ => unreachable!("tail storage matches the prefix"),
+            }
+        }
+    }
+
+    /// Generated positions currently stored.
+    pub fn tail_len(&self) -> usize {
+        self.tail_len
+    }
+
+    /// Forget generated positions past `tail_len` (rejected draft tokens).
+    pub fn truncate_tail(&mut self, tail_len: usize) {
+        assert!(tail_len <= self.tail_len, "cannot grow the tail by truncation");
+        self.tail_len = tail_len;
+    }
+
+    /// [`SplitPrefix::attention_decode`] with the last `rows` cached
+    /// positions as queries: row `r` sees the first `total - rows + 1 + r`
+    /// positions (causal verification of drafted tokens in one step). Every
+    /// row's output is bitwise its single-row result at that length; rows
+    /// that share a position partition scan each record once.
+    pub fn attention_decode_rows(
+        &self,
+        q: &[f32],
+        rows: usize,
+        sinks: &[f32],
+        output: &mut [f32],
+        simd: Simd,
+    ) {
+        let width = self.heads * 64;
+        assert!((1..=MAX_ROWS).contains(&rows) && rows <= self.tail_len.max(1));
+        assert_eq!(q.len(), rows * width);
+        assert_eq!(output.len(), q.len());
+        assert_eq!(sinks.len(), self.heads);
+        let last = self.prefix_len + self.tail_len;
+        if rows == 1 {
+            self.attention_decode(q, last, sinks, output, simd);
+            return;
+        }
+        let selected = simd.resolved();
+        #[cfg(target_arch = "x86_64")]
+        if selected != Simd::Scalar
+            && std::is_x86_feature_detected!("avx2")
+            && std::is_x86_feature_detected!("fma")
+        {
+            self.attention_pairs_rows(q, rows, last, sinks, output);
+            return;
+        }
+        #[cfg(target_arch = "aarch64")]
+        if selected == Simd::Neon {
+            self.attention_pairs_rows(q, rows, last, sinks, output);
+            return;
+        }
+        for r in 0..rows {
+            self.attention_generic(
+                &q[r * width..(r + 1) * width],
+                last + 1 + r - rows,
+                sinks,
+                &mut output[r * width..(r + 1) * width],
+                selected,
+            );
+        }
+    }
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
+    fn attention_pairs_rows(
+        &self,
+        q: &[f32],
+        rows: usize,
+        last: usize,
+        sinks: &[f32],
+        output: &mut [f32],
+    ) {
+        let width = self.heads * 64;
+        let groups = self.kv_heads;
+        // The position partition `attention_pairs` uses at each length.
+        let partition = |total: usize| {
+            let tiles = total.div_ceil(TILE);
+            let chunks = self.chunks.clamp(1, MAX_CHUNKS).min(tiles);
+            (chunks, tiles.div_ceil(chunks))
+        };
+        let total = |r: usize| last + 1 + r - rows;
+        let mut assigned = [false; MAX_ROWS];
+        for first in 0..rows {
+            if assigned[first] {
+                continue;
+            }
+            let key = partition(total(first));
+            let (chunks, per_chunk) = key;
+            let mut members = [0_usize; MAX_ROWS];
+            let mut n = 0;
+            for r in first..rows {
+                if !assigned[r] && partition(total(r)) == key {
+                    assigned[r] = true;
+                    members[n] = r;
+                    n += 1;
+                }
+            }
+            let mut parts = vec![Partial::EMPTY; n * groups * chunks];
+            let shared = crate::team::SharedMut::new(&mut parts);
+            crate::team::for_each(groups * chunks, |index| {
+                let (g, chunk) = (index / chunks, index % chunks);
+                let spans: [Span<'_>; MAX_ROWS] = std::array::from_fn(|i| {
+                    let r = members[i.min(n - 1)];
+                    let t = total(r);
+                    let base = r * width;
+                    Span {
+                        prefix_len: self.prefix_len,
+                        group: g,
+                        tail_base: g * self.tail_capacity,
+                        start: (chunk * per_chunk * TILE).min(t),
+                        end: ((chunk + 1) * per_chunk * TILE).min(t),
+                        q0: &q[base + 2 * g * 64..base + (2 * g + 1) * 64],
+                        q1: &q[base + (2 * g + 1) * 64..base + (2 * g + 2) * 64],
+                    }
+                });
+                let mut local = [Partial::EMPTY; MAX_ROWS];
+                // SAFETY: the native vector ISA was checked by the caller; spans
+                // lie inside the shape-checked stores.
+                unsafe {
+                    self.dispatch(&mut RowsKernel {
+                        spans: &spans[..n],
+                        parts: &mut local[..n],
+                    })
+                };
+                for (i, part) in local[..n].iter().enumerate() {
+                    // SAFETY: element (i, g, chunk) belongs to this task alone.
+                    unsafe { shared.slice((i * groups + g) * chunks + chunk, 1)[0] = *part };
+                }
+            });
+            for (i, &r) in members[..n].iter().enumerate() {
+                self.merge(
+                    &parts[i * groups * chunks..(i + 1) * groups * chunks],
+                    chunks,
+                    sinks,
+                    &mut output[r * width..(r + 1) * width],
+                );
+            }
+        }
+    }
+}
+
+/// A decode kernel over one prefix/tail store pair (see `SplitPrefix::dispatch`).
+trait PairKernel {
+    unsafe fn run<R: RecordStore, T: RecordStore>(&mut self, store: &R, tail: &T);
+}
+
+/// [`pair_rows`] over several query rows of one (group, chunk).
+struct RowsKernel<'a, 'b> {
+    spans: &'a [Span<'b>],
+    parts: &'a mut [Partial],
+}
+impl PairKernel for RowsKernel<'_, '_> {
+    #[inline(always)]
+    unsafe fn run<R: RecordStore, T: RecordStore>(&mut self, store: &R, tail: &T) {
+        unsafe { pair_rows_native(store, tail, self.spans, self.parts) }
     }
 }
 
@@ -1096,9 +1299,201 @@ unsafe fn pair_native<R: RecordStore, T: RecordStore>(
     unsafe { pair::<crate::simd::Neon, R, T>(store, tail, span, part) }
 }
 
+/// [`pair`] for several query rows of one group over spans that start at the
+/// same position and end at their own lengths (empty spans are skipped). Each
+/// row performs exactly [`pair`]'s operation sequence; the rows share every
+/// tile's record loads.
+#[inline(always)]
+unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    let n = spans.len();
+    debug_assert!(n <= MAX_ROWS && parts.len() == n);
+    let scale = (64_f32).sqrt().recip();
+    let mut max = [[f32::NEG_INFINITY; 2]; MAX_ROWS];
+    let mut denominator = [[0.0_f32; 2]; MAX_ROWS];
+    let mut logits = [[[0.0_f32; TILE]; 2]; MAX_ROWS];
+    for part in parts.iter_mut() {
+        part.out[0].fill(0.0);
+        part.out[1].fill(0.0);
+    }
+    let first = &spans[0];
+    let (prefix_len, tail_base) = (first.prefix_len, first.tail_base);
+    let first_record = first.group * prefix_len;
+    let tail_record = |key: usize| tail_base + (key - prefix_len);
+    let live = |span: &Span<'_>| span.start < span.end;
+    let Some(mut start) = spans.iter().filter(|s| live(s)).map(|s| s.start).min() else {
+        return;
+    };
+    debug_assert!(spans.iter().filter(|s| live(s)).all(|s| s.start == start));
+    let end = spans.iter().map(|s| s.end).max().unwrap_or(start);
+    // SAFETY: records and tail offsets are within the shape-checked stores.
+    unsafe {
+        while start < end {
+            let mut lens = [0_usize; MAX_ROWS];
+            for (r, span) in spans.iter().enumerate() {
+                if live(span) && span.end > start {
+                    lens[r] = (span.end - start).min(TILE);
+                }
+            }
+            let len = lens[..n].iter().copied().max().unwrap_or(0);
+            let mut block_max = [[f32::NEG_INFINITY; 2]; MAX_ROWS];
+            for j in 0..len {
+                let key = start + j;
+                for r in 0..n {
+                    if j >= lens[r] {
+                        continue;
+                    }
+                    let span = &spans[r];
+                    let (s0, s1) = if key < prefix_len {
+                        qk2::<S, R>(store, PREFIX, first_record + key, span.q0, span.q1)
+                    } else {
+                        qk2::<S, T>(tail, TAIL, tail_record(key), span.q0, span.q1)
+                    };
+                    logits[r][0][j] = s0 * scale;
+                    block_max[r][0] = block_max[r][0].max(logits[r][0][j]);
+                    logits[r][1][j] = s1 * scale;
+                    block_max[r][1] = block_max[r][1].max(logits[r][1][j]);
+                }
+            }
+            let mut new_max = [[0.0_f32; 2]; MAX_ROWS];
+            for r in 0..n {
+                if lens[r] == 0 {
+                    continue;
+                }
+                let [o0, o1] = &mut parts[r].out;
+                for (h, out) in [&mut *o0, &mut *o1].into_iter().enumerate() {
+                    new_max[r][h] = max[r][h].max(block_max[r][h]);
+                    let rescale = if max[r][h] == f32::NEG_INFINITY {
+                        0.0
+                    } else {
+                        (max[r][h] - new_max[r][h]).exp()
+                    };
+                    for value in out.iter_mut() {
+                        *value *= rescale;
+                    }
+                    denominator[r][h] *= rescale;
+                }
+                let [l0, l1] = &mut logits[r];
+                S::exp_shifted(&mut l0[..lens[r]], new_max[r][0]);
+                S::exp_shifted(&mut l1[..lens[r]], new_max[r][1]);
+            }
+            for j in 0..len {
+                let key = start + j;
+                let value = if key < prefix_len {
+                    record_value::<S, R>(store, PREFIX, first_record + key)
+                } else {
+                    record_value::<S, T>(tail, TAIL, tail_record(key))
+                };
+                for r in 0..n {
+                    if j >= lens[r] {
+                        continue;
+                    }
+                    let p0 = logits[r][0][j];
+                    denominator[r][0] += p0;
+                    let p1 = logits[r][1][j];
+                    denominator[r][1] += p1;
+                    let [o0, o1] = &mut parts[r].out;
+                    pv2::<S>(value, p0, p1, o0, o1);
+                }
+            }
+            for r in 0..n {
+                if lens[r] > 0 {
+                    max[r] = new_max[r];
+                }
+            }
+            start += len;
+        }
+    }
+    for (r, part) in parts.iter_mut().enumerate() {
+        part.max = max[r];
+        part.denominator = denominator[r];
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    unsafe { pair_rows::<crate::simd::Avx2, R, T>(store, tail, spans, parts) }
+}
+#[cfg(target_arch = "aarch64")]
+unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    unsafe { pair_rows::<crate::simd::Neon, R, T>(store, tail, spans, parts) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn verification_rows_are_bitwise_single_rows() {
+        let c: ModelConfig =
+            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let width = c.query_dim();
+        for (p, generated, rows) in [(300, 5, 5), (1000, 9, 8), (130, 3, 2), (7, 4, 4), (254, 6, 6)] {
+            let (k, v, _) = fixture(&c, p, p + 3);
+            let tail_k: Vec<_> = (0..generated * c.kv_dim())
+                .map(|i| ((i * 13) % 37) as f32 / 53.0 - 0.3)
+                .collect();
+            let tail_v: Vec<_> = (0..generated * c.kv_dim())
+                .map(|i| ((i * 11) % 41) as f32 / 67.0 - 0.3)
+                .collect();
+            let q: Vec<_> = (0..rows * width)
+                .map(|i| ((i * 7 + 3) % 61) as f32 / 21.0 - 1.4)
+                .collect();
+            let sinks: Vec<_> = (0..c.n_heads).map(|h| h as f32 * 0.25 - 1.0).collect();
+            for mode in [
+                PrefixMode::SplitF32,
+                PrefixMode::SplitBf16,
+                PrefixMode::SplitQ8,
+                PrefixMode::SplitQ8Kc,
+                PrefixMode::SplitQ16,
+            ] {
+                for chunks in [1, 2, 4] {
+                    for backend in backends() {
+                        let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
+                            .unwrap()
+                            .with_chunks(chunks);
+                        push_rows(&mut cache, &c, &tail_k, &tail_v);
+                        let mut joint = vec![f32::NAN; rows * width];
+                        cache.attention_decode_rows(&q, rows, &sinks, &mut joint, backend);
+                        for r in (0..rows).rev() {
+                            cache.truncate_tail(generated - (rows - 1 - r));
+                            let mut single = vec![f32::NAN; width];
+                            let total = p + cache.tail_len;
+                            cache.attention_decode(
+                                &q[r * width..(r + 1) * width],
+                                total,
+                                &sinks,
+                                &mut single,
+                                backend,
+                            );
+                            for (a, b) in joint[r * width..(r + 1) * width].iter().zip(&single) {
+                                assert_eq!(
+                                    a.to_bits(),
+                                    b.to_bits(),
+                                    "{mode:?} chunks {chunks} {backend:?} p{p} row {r}"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     fn fixture(c: &ModelConfig, p: usize, seed: usize) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
         let mut k = vec![0.0; p * c.query_dim()];
@@ -1204,7 +1599,6 @@ mod tests {
                 PrefixMode::SplitBf16,
                 PrefixMode::SplitQ8,
                 PrefixMode::SplitQ8Kc,
-            PrefixMode::SplitQ16,
                 PrefixMode::SplitQ16,
             ] {
                 let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)

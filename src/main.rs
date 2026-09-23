@@ -72,6 +72,15 @@ struct Cli {
     /// Prefill uses every logical CPU in --threads.
     #[arg(long, global = true)]
     decode_threads: Option<falcon_ocr::runner::DecodeThreads>,
+    /// Speculative decoding: verify up to N tokens drafted from earlier output
+    /// in one step (0 = off, at most 7). Every verified token is the model's own
+    /// greedy choice, so outputs are unchanged. Needs the split cache
+    /// (near-exact, fast and attempt profiles); single pages only.
+    #[arg(long, default_value_t = 0, global = true)]
+    speculate: usize,
+    /// Minimum n-gram match in the earlier output for a draft.
+    #[arg(long, default_value_t = 2, global = true)]
+    speculate_min_match: usize,
     #[command(subcommand)]
     command: Command,
 }
@@ -187,6 +196,7 @@ fn main() -> Result<()> {
     )?;
     runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
     runner.set_repetition_stop(cli.stop_repetition);
+    runner.set_speculation(cli.speculate, cli.speculate_min_match);
     match cli
         .decode_threads
         .unwrap_or(falcon_ocr::runner::DecodeThreads::Auto)
