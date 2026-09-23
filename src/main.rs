@@ -26,8 +26,9 @@ const DEFAULT_OVERLAY: &str = "w8-gptq.safetensors";
 struct Cli {
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
-    #[arg(long, default_value_t = 16, global = true)]
-    threads: usize,
+    /// Prefill and pool threads [default: all logical CPUs].
+    #[arg(long, global = true)]
+    threads: Option<usize>,
     /// FP32 runner mode.
     #[arg(long, value_enum, default_value = "exact", global = true)]
     mode: Mode,
@@ -59,9 +60,9 @@ struct Cli {
     /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
     #[arg(long, global = true)]
     stop_repetition: bool,
-    /// Decode threads (default: --threads). Decode is memory-bound; on SMT
-    /// CPUs one thread per physical core is usually fastest, while prefill
-    /// gains from every logical CPU in --threads.
+    /// Decode threads [default: physical cores, at most --threads]. Decode
+    /// is memory-bound, so SMT siblings only contend; prefill gains from
+    /// every logical CPU in --threads.
     #[arg(long, global = true)]
     decode_threads: Option<usize>,
     #[command(subcommand)]
@@ -100,7 +101,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     if matches!(cli.command, Command::Doctor) {
         let mut features = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
-            "logical_cpus":std::thread::available_parallelism().map(|n|n.get()).unwrap_or(1),
+            "logical_cpus":falcon_ocr::cpu::logical_cpus(),"physical_cores":falcon_ocr::cpu::physical_cores(),
             "precision":cli.precision,"gpu_parity_qualified":false});
         #[cfg(target_arch = "x86_64")]
         {
@@ -121,7 +122,18 @@ fn main() -> Result<()> {
         "--w8-artifact applies to --mode fast"
     );
     let start = Instant::now();
+    // Exact recognition uses the split FP32 cache (bit-identical to compact,
+    // about 7% faster decode); traces and batches keep the reference loader.
+    let split_exact = matches!(cli.command, Command::Run { .. })
+        && cli.batch_size == 1
+        && cli
+            .cache_layout
+            .is_none_or(|layout| layout == CacheLayout::Compact)
+        && cli.weight_layout == WeightLayout::Unpacked;
     let model = Arc::new(match cli.mode {
+        Mode::Exact if split_exact => {
+            Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::SplitF32, None)?
+        }
         Mode::Exact => Model::load(&cli.model)?,
         Mode::Fast => {
             let overlay = cli
@@ -151,11 +163,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
     eprintln!("Verified model loaded in {load_ms:.1} ms");
+    let threads = cli.threads.unwrap_or_else(falcon_ocr::cpu::logical_cpus);
     let mut runner = Runner::new(
         model,
         &cli.model,
         RunnerConfig {
-            threads: cli.threads,
+            threads,
             backend: cli.backend,
             batch_size: cli.batch_size,
             cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
@@ -164,8 +177,11 @@ fn main() -> Result<()> {
     )?;
     runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
     runner.set_repetition_stop(cli.stop_repetition);
-    if let Some(threads) = cli.decode_threads {
-        runner.set_decode_threads(threads)?;
+    let decode_threads = cli
+        .decode_threads
+        .unwrap_or_else(|| falcon_ocr::cpu::physical_cores().min(threads));
+    if decode_threads != threads {
+        runner.set_decode_threads(decode_threads)?;
     }
     // Recognition uses the fast exp (token-identical on calibration);
     // FALCON_OCR_EXP=exact keeps the platform exp. Traces always keep it, so
@@ -230,7 +246,7 @@ fn execute_bf16(cli: Cli) -> Result<()> {
         "--mode fast and --w8-artifact apply to the FP32 runner"
     );
     let config = RunnerConfig {
-        threads: cli.threads,
+        threads: cli.threads.unwrap_or(16),
         backend: cli.backend,
         batch_size: cli.batch_size,
         cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Expanded),

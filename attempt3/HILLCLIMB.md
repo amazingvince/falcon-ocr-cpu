@@ -93,3 +93,30 @@ By category (flips, RTN → GPTQ):
 | full-page | 0 | 1 |
 
 Pages: 15 better, 4 worse, 5 the same. The capture pages are disjoint from the screening set.
+
+## KV variants (screening set, 768 steps)
+
+| Arm | Flips / 1,000 steps | vs Q8 | Decision |
+|---|---:|---:|---|
+| GPTQ G64 act-order weights + Q8 KV | 2.73 (39) | | |
+| GPTQ G64 act-order weights + **per-channel key scales** (`w8-body-kv-q8-kc`) | 2.66 (38) | none | Flip-neutral. Adopt only if faster (about 6% fewer KV bytes). |
+| FP32 weights + Q8 KV | 0.77 (11) | | |
+| FP32 weights + per-channel key scales (`kv-q8-kc`) | 0.77 (11) | none | Key-channel outliers do not drive the KV flips. |
+
+| # | Change | Evidence | Decision |
+|---|---|---|---|
+| S5 | Hybrid threads: 32-thread prefill pool, 16-thread decode team (`--threads 32 --decode-threads 16`) | Journal A/B at 01:48, 3 rounds, tokens identical (`artifacts/phase4/ab-hybrid`). Fast (GPTQ weights) 16.38 → **14.85 s** (prefill 6.22 → 4.74 s, decode unchanged at 8.8 ms/tok). Exact split 39.77 → **38.35 s**. | **Accepted: −9.3% fast, −3.6% exact.** Main-binary defaults: `--threads` = logical CPUs, `--decode-threads` = physical cores (`src/cpu.rs`, which detects 32/16 here). |
+| S6 | Per-channel key scales (`w8-body-kv-q8-kc`) for speed | Journal A/B, 4 rounds (`artifacts/phase4/ab-kc`): 14.97 → 14.79 s (−1.2%; attention 4.32 → 4.15 ms). | **Not adopted**: under 2% and flip-neutral. It stays available as a profile. |
+
+## Confirmation: free-running on the 55 calibration pages outside the Gram capture set (`artifacts/phase4/checks/eval55-*.json`)
+
+| Fast mode | Identical pages | EOS pages identical | Token edits (EOS pages) | Stop changes | CER vs truth on the 45 both-EOS pages |
+|---|---:|---:|---:|---|---|
+| RTN W8 + Q8 | 15/55 | 15/46 | 4,282 | 1 (df13 EOS → loop) | 18.40% → 17.65% |
+| **GPTQ G64 act-order + Q8** | **25/55** | **24/46** | **2,996 (−30%)** | 2 (df13 EOS → loop; 3ae0 loop → EOS, CER 2.88 → 0.13) | 18.40% → 18.38% |
+| FP32 weights + Q8 (reference point) | 39/55 | 32/46 | 286 | 0 | |
+
+- With `--stop-repetition`, the simulated stop fires on 8 GPTQ pages, none of them EOS pages (so df13 is caught). Tokens drop 34.7%; micro CER vs truth over all 55 pages goes 62.6% → 40.2%.
+- The 55 pages took 1,005 s with hybrid threads on a quiet host.
+
+**Decision:** GPTQ G64 act-order is the fast-mode weights. It is installed as `artifacts/model/w8-gptq.safetensors` (sha256 `60808bbf…`), which `--mode fast` loads by default.

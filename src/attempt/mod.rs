@@ -61,6 +61,10 @@ impl Profile {
             _ => PrefixMode::Reference,
         }
     }
+    /// Profiles whose outputs are bit-identical to the FP32 reference.
+    pub fn is_exact(self) -> bool {
+        matches!(self, Self::Reference | Self::Hygiene | Self::SplitF32)
+    }
     pub fn memory_hygiene(self) -> bool {
         self != Self::Reference
     }

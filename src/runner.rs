@@ -533,8 +533,7 @@ impl Runner {
                     width: state.width,
                     height: state.height,
                     input_tokens: state.input_tokens,
-                    precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference
-                    {
+                    precision: if self.model.attempt_profile().is_exact() {
                         "fp32".into()
                     } else {
                         format!("attempt3/{}", self.model.attempt_profile().label())
@@ -692,7 +691,7 @@ impl Runner {
             width: prepared.width,
             height: prepared.height,
             input_tokens: tokens.len(),
-            precision: if self.model.attempt_profile() == crate::attempt::Profile::Reference {
+            precision: if self.model.attempt_profile().is_exact() {
                 "fp32".into()
             } else {
                 format!("attempt3/{}", self.model.attempt_profile().label())

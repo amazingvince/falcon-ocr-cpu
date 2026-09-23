@@ -8,6 +8,7 @@ pub mod bf16_model;
 pub mod bf16_ops;
 pub mod bf16_runner;
 pub mod config;
+pub mod cpu;
 mod head_screen;
 pub mod kernels;
 pub mod model;
