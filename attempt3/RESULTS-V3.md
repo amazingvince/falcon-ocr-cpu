@@ -179,3 +179,44 @@ Remedies to consider:
 1. **Loop fallback.** When the repetition stop fires in fast mode, re-decode that page in exact mode. The W8-induced loops then get FP32's output, at exact-mode cost only on looping pages.
 2. **Document fast mode as unqualified for degraded and handwritten pages,** and recommend exact mode there.
 3. **Raise fidelity further,** for example by keeping the most sensitive matrices in FP32, then re-qualify on a fresh held-out set drawn from the source datasets.
+
+## 8. Production BF16 as the reference (2026-09-23, post hoc)
+
+Production serves this model in BF16 on GPU. `scripts/run_vllm_bf16.sh` runs the pinned serving image with its own vLLM flags and `DTYPE=bfloat16`, plus the full-page image config. `scripts/request_vllm_heldout.py` then records tokens and top-32 log-probabilities for the 200 held-out pages (`artifacts/reference/vllm-heldout-bf16-4096`) and the 64 calibration pages. This is a post-hoc look at the already-used held-out set, not a new qualification.
+
+**FP32 is not production.** `attempt3/compare_runs.py` gives the following on the 200 pages:
+
+| | Production BF16 | CPU FP32 | Fast (GPTQ, current) | Fast (BF16-source GPTQ) |
+|---|---:|---:|---:|---:|
+| Pages token-identical to production | 200 | 71 | 56 | 68 |
+| Token edits vs production | 0 | 53,114 | 46,808 | 44,084 |
+| Micro CER, pages where all four end at EOS (173) | 16.41% | 15.90% | 15.78% | 15.93% |
+| Runs to the 4,096-token limit | 15 | 19 | 7 | 7 |
+| Stopped by `--stop-repetition` | – | – | 13 | 11 |
+
+The section 6 budget measures against FP32. Measured that way, production itself would fail: overall +1.68 pt, handwriting +29.9, degraded +1.9, tables +2.8. The per-category limit was below the natural spread between two correct implementations.
+
+**Divergence from production**, teacher-forced on 55 calibration pages outside the GPTQ capture set (512 steps each, GPU harness, `artifacts/phase4/agree/gpu/vllm-cal/`):
+
+| Configuration | KL (prod ‖ config) | Flips |
+|---|---:|---:|
+| FP32 math on BF16-rounded weights | 6.9e-4 | 105 |
+| FP32 (exact mode) | 9.2e-4 | 127 |
+| BF16-source GPTQ W8 + BF16-rounded weights | 9.5e-4 | 111 |
+| GPTQ W8 (current fast mode) | 1.14e-3 | 132 |
+| BF16 math (PyTorch, different kernels) | 1.20e-3 | 134 |
+| BF16 math + W8 | 1.68e-3 | 141 |
+
+A different BF16 implementation does not approximate production better than FP32 math. BF16 rounding noise is specific to each implementation.
+
+**LLM judge** (`attempt3/judge_pages.py`, `artifacts/phase4/judge/`). Blinded, shuffled outputs of the four systems were judged against the page image, with the ground truth as an aid, for content errors vs formatting-only differences. Rubric in `RUBRIC.md`. Five pages per category were re-judged under new letters: the mean score change was 1.5 (handwriting) and 0.4 (degraded) points, with the same verdict 34/34 times.
+
+| Content score (0–100), mean over 25 pages | Production BF16 | FP32 | Fast (current) | Fast (BF16-source) |
+|---|---:|---:|---:|---:|
+| Handwriting | 63.8 | 63.4 | 62.2 | 64.1 |
+| — pages lost to a loop | 1 | 2 | 3 | 1 |
+| Degraded | 82.1 | 82.6 | 82.6 | 82.5 |
+| — pages lost to a loop or garbage | 3 | 3 | 3 | 3 |
+
+- **Handwriting.** Every system misreads roughly 35–50% of the handwritten Chinese, often substituting Latin or Cyrillic fragments, and they share the same misreads. Pages differ mainly by which system falls into a loop. Most of the CER gap in section 6 is formatting (HTML tables vs lines, notebook "NO./Date" furniture, line breaks) plus loops. The ground truth itself has typos on about half the pages.
+- **Degraded.** The four systems are content-equivalent within a few points on every page. All four, production included, fail the same three pages (vertical text, a title page, a leader-dot loop). The section 6 degraded "+1.4 pt" is not a content difference.
