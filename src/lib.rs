@@ -20,6 +20,7 @@ mod repetition;
 pub mod runner;
 mod simd;
 mod team;
+mod tune;
 pub mod tokenizer;
 pub mod trace;
 

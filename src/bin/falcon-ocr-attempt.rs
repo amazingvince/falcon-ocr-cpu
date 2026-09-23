@@ -50,7 +50,7 @@ struct Cli {
     /// CPUs one thread per physical core is usually fastest, while prefill
     /// gains from every logical CPU in --threads.
     #[arg(long, global = true)]
-    decode_threads: Option<usize>,
+    decode_threads: Option<falcon_ocr::runner::DecodeThreads>,
     #[command(subcommand)]
     command: Command,
 }
@@ -471,8 +471,10 @@ fn main() -> Result<()> {
     )?;
     runner.set_head_mode(args.head)?;
     runner.set_repetition_stop(args.stop_repetition);
-    if let Some(threads) = args.decode_threads {
-        runner.set_decode_threads(threads)?;
+    match args.decode_threads {
+        Some(falcon_ocr::runner::DecodeThreads::Auto) => runner.set_decode_threads_auto()?,
+        Some(falcon_ocr::runner::DecodeThreads::Fixed(threads)) => runner.set_decode_threads(threads)?,
+        None => {}
     }
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
@@ -515,7 +517,8 @@ fn main() -> Result<()> {
                 "weights_sha256":model.weights_sha256(),"binary_sha256":digest(&std::env::current_exe()?)?,
                 "hardware":hardware,"threads":args.threads,"backend":args.backend,"batch_size":args.batch_size,
                 "head":args.head,"screened_head_bytes":model.screened_head_bytes(),
-                "stop_repetition":args.stop_repetition,"decode_threads":args.decode_threads,
+                "stop_repetition":args.stop_repetition,"decode_threads":args.decode_threads.map(|d| d.to_string()),
+                "decode_threads_chosen":runner.decode_threads_chosen(),
                 "schedule":"fixed cohorts; layer-major decode; opt-in completed-cache retirement; no refill",
                 "options":options,"inputs":inputs,"warmup":warmup,"load_and_import_ms":load_ms,
                 "memory_policy":memory,"process_memory":falcon_ocr::attempt::process_memory(),"samples":records,

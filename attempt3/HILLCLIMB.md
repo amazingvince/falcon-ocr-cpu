@@ -123,3 +123,25 @@ Pages: 15 better, 4 worse, 5 the same. The capture pages are disjoint from the s
 | S7 | Multi-page batching in fast mode (`--batch-size`), 8 EOS calibration pages of 316–631 tokens | `artifacts/phase4/checks/batch-b*.json`: batch 1 → 390 pages/h, 2 → 419, 4 → 439, 8 → 444. Tokens identical to batch 1 on 8/8 pages at every size. | Works and is exact, but only +14%. On these pages prefill (about 4.8 s each, sequential) is about half the wall time, and batching shares only decode weight reads. Next lever for corpus throughput: prefill speed, or overlapping prefill with decode. |
 | S8 | AVX-512F prefill QK/PV tiles (`kernels/prefill64.rs` `wide`), exact | First version: 16 queries × 24-key blocks was 2.4× *slower* (attention 6.45 s). Key rows are 4 KB apart, so 24 rows in one L1 set thrash its 8 ways. Fixed: 32 queries (two zmm) × 8-key blocks, and PV as 6 rows × the whole 64-wide row. Journal A/B, 2 rounds (`artifacts/phase4/ab-wide`): attention 2.64 → **2.41 s** (−9%), prefill 4.74 → 4.61 s. Tokens identical; smoke trace byte-exact under `auto` too. | **Kept, but not a hill-climb win here**: under 1% end to end on Zen 4, which runs AVX-512 as two 256-bit halves. Enabled for backend `auto`/`avx512` on AVX-512F hosts because outputs are bitwise identical. Intel hosts with full-width AVX-512 should gain more (unmeasured). |
 | S9 | 4-bit screened head (26.7 MB instead of 53.5 MB), still exact | Journal A/B, 3 rounds (`artifacts/phase4/ab-i4`). The 4-bit screen fell back to the full FP32 head on **1,140 of 1,140 steps**: the candidate count exceeded 1,024 every time, versus 1.01 candidates per step for the 8-bit screen. Decode 8.91 → 12.29 ms/tok. Tokens identical, because the fallback is exact. | **Rejected and reverted.** The rigorous worst-case bound, half a quantization step times the full `|x|` mass, is about 18× wider at 4 bits and covers thousands of rows even when the true margin is clear. |
+
+# Phase 5: kernel and data-type work, anchored on FP32 (2026-09-23)
+
+Order agreed with the user: thread autotuning, INT16 exact mode, speculative decoding, own prefill GEMM, prefill attention tiles. Fidelity anchor: FP32.
+
+## Storage types against FP32 (GPU harness, 55 calibration pages outside the Gram set, 24,262 teacher-forced steps, FP32 KV)
+
+| Body weights | Bytes/weight | KL vs FP32 | Flips |
+|---|---:|---:|---:|
+| INT16, absmax scale per 64 inputs | 2.06 | 1.7e-7 | 1 |
+| FP16 | 2.00 | 7.1e-6 | 11 |
+| BF16 | 2.00 | 2.2e-4 | 51 |
+| GPTQ INT8 G64 act-order (fast mode) | 1.06 | 2.8e-4 | 63 |
+| BF16-source GPTQ + BF16-rounded weights | 1.06 | 6.8e-4 | 97 |
+| INT8 round-to-nearest G64 | 1.06 | 3.4e-3 | 168 |
+
+Offline activation-weighted output error (`attempt3/dtype_proxy.py`) agrees: INT16 0.0025%, FP16 0.024%, BF16 0.19%, GPTQ INT8 0.12%, INT4 10–12%. BF16 is dominated as a storage type; 4-bit is out for this model.
+
+| # | Change | Evidence | Decision |
+|---|---|---|---|
+| T1 | Decode thread count sweep, fast mode | Journal, 2 rounds (`artifacts/phase4/ab-threads`): 8 → 9.70, 10 → 9.21, 12 → 9.35, 14 → 9.47, 16 → 9.43, 20 → 9.85 ms/token (a noisier host period than other runs). Flat from 10 to 16. | Informs T2. |
+| T2 | `--decode-threads auto` (`src/tune.rs`): time team sizes {P/2, 3P/4, P, (P+L)/2} round-robin on the first decode steps, keep the smallest within 2% of the fastest | Journal A/B, 3 rounds (`artifacts/phase4/ab-tune`): auto chose 12 each time (medians 8:8.6, 12:8.3, 16:8.7, 24:8.9 ms/step); decode 8.81 → 8.54 ms/token, total 14.55 → 14.36 s. Tokens identical. | **Accepted as the main binary's default** (−3% decode here). Its real purpose is other hosts (SMT, efficiency cores, higher bandwidth). |

@@ -60,11 +60,13 @@ struct Cli {
     /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
     #[arg(long, global = true)]
     stop_repetition: bool,
-    /// Decode threads [default: physical cores, at most --threads]. Decode
-    /// is memory-bound, so SMT siblings only contend; prefill gains from
-    /// every logical CPU in --threads.
+    /// Decode threads, or `auto` [default: auto]. Decode is memory-bound, so
+    /// past bandwidth saturation extra threads and SMT siblings only contend;
+    /// `auto` times a few team sizes on the first decode steps and keeps the
+    /// smallest within 2% of the fastest (tokens never depend on it).
+    /// Prefill uses every logical CPU in --threads.
     #[arg(long, global = true)]
-    decode_threads: Option<usize>,
+    decode_threads: Option<falcon_ocr::runner::DecodeThreads>,
     #[command(subcommand)]
     command: Command,
 }
@@ -177,11 +179,13 @@ fn main() -> Result<()> {
     )?;
     runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
     runner.set_repetition_stop(cli.stop_repetition);
-    let decode_threads = cli
+    match cli
         .decode_threads
-        .unwrap_or_else(|| falcon_ocr::cpu::physical_cores().min(threads));
-    if decode_threads != threads {
-        runner.set_decode_threads(decode_threads)?;
+        .unwrap_or(falcon_ocr::runner::DecodeThreads::Auto)
+    {
+        falcon_ocr::runner::DecodeThreads::Auto => runner.set_decode_threads_auto()?,
+        falcon_ocr::runner::DecodeThreads::Fixed(n) if n != threads => runner.set_decode_threads(n)?,
+        falcon_ocr::runner::DecodeThreads::Fixed(_) => {}
     }
     // Recognition uses the fast exp (token-identical on calibration);
     // FALCON_OCR_EXP=exact keeps the platform exp. Traces always keep it, so

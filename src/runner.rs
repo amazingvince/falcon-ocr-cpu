@@ -66,6 +66,33 @@ fn legacy_cache_layout() -> CacheLayout {
     CacheLayout::Expanded
 }
 
+/// `--decode-threads`: a fixed count, or `auto` ([`Runner::set_decode_threads_auto`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DecodeThreads {
+    Auto,
+    Fixed(usize),
+}
+impl std::str::FromStr for DecodeThreads {
+    type Err = String;
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        if value.eq_ignore_ascii_case("auto") {
+            return Ok(Self::Auto);
+        }
+        match value.parse::<usize>() {
+            Ok(n) if n >= 1 => Ok(Self::Fixed(n)),
+            _ => Err(format!("expected `auto` or a positive thread count, got `{value}`")),
+        }
+    }
+}
+impl std::fmt::Display for DecodeThreads {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Auto => f.write_str("auto"),
+            Self::Fixed(n) => write!(f, "{n}"),
+        }
+    }
+}
+
 pub struct Runner {
     model: Arc<Model>,
     tokenizer: OcrTokenizer,
@@ -76,7 +103,56 @@ pub struct Runner {
     repetition_stop: bool,
     /// Spin-waiting workers for decode steps; prefill keeps using `pool`.
     team: crate::team::Team,
+    /// Automatic decode thread count (`set_decode_threads_auto`): one team
+    /// per candidate size and the tuner choosing between them.
+    auto_threads: Option<AutoThreads>,
 }
+
+struct AutoThreads {
+    teams: Vec<crate::team::Team>,
+    tuner: std::sync::Mutex<crate::tune::Tuner>,
+}
+
+/// The decode team for the coming step: the fixed team, or the candidate the
+/// automatic tuner wants measured or has chosen.
+struct DecodeTeam<'a> {
+    runner: &'a Runner,
+    index: usize,
+    entered: Option<crate::team::Entered<'a>>,
+}
+impl<'a> DecodeTeam<'a> {
+    fn new(runner: &'a Runner) -> Self {
+        let mut team = Self {
+            runner,
+            index: usize::MAX,
+            entered: None,
+        };
+        team.select();
+        team
+    }
+    /// Enter the team for the next step (a no-op unless the tuner switches).
+    fn select(&mut self) {
+        let (index, team) = match &self.runner.auto_threads {
+            Some(auto) => {
+                let index = auto.tuner.lock().unwrap().current();
+                (index, &auto.teams[index])
+            }
+            None => (0, &self.runner.team),
+        };
+        if index != self.index {
+            self.entered = None;
+            self.entered = team.enter();
+            self.index = index;
+        }
+    }
+    /// Report the step just run on the selected team.
+    fn record(&self, ms: f64) {
+        if let Some(auto) = &self.runner.auto_threads {
+            auto.tuner.lock().unwrap().record(self.index, ms);
+        }
+    }
+}
+
 impl Runner {
     pub fn new(
         model: Arc<Model>,
@@ -114,6 +190,7 @@ impl Runner {
             head: HeadMode::Full,
             repetition_stop: false,
             team,
+            auto_threads: None,
         })
     }
     /// Stop greedy generation once it repeats a cycle of at most 128 tokens
@@ -137,7 +214,35 @@ impl Runner {
             "decode threads must be between 1 and the runner's thread count"
         );
         self.team = crate::team::Team::new(threads)?;
+        self.auto_threads = None;
         Ok(())
+    }
+    /// Choose the decode thread count automatically: the first decode steps
+    /// of this runner time a few team sizes (`crate::tune`) and keep the
+    /// smallest one within 2% of the fastest. Tokens never depend on it.
+    pub fn set_decode_threads_auto(&mut self) -> Result<()> {
+        let sizes = crate::tune::candidate_sizes(
+            crate::cpu::physical_cores(),
+            crate::cpu::logical_cpus(),
+            self.pool.current_num_threads(),
+        );
+        let physical = crate::cpu::physical_cores().min(self.pool.current_num_threads());
+        let start = sizes.iter().position(|&s| s >= physical).unwrap_or(sizes.len() - 1);
+        let teams = sizes
+            .iter()
+            .map(|&size| crate::team::Team::new(size))
+            .collect::<std::io::Result<Vec<_>>>()?;
+        self.auto_threads = Some(AutoThreads {
+            teams,
+            tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
+        });
+        Ok(())
+    }
+    /// The automatically chosen decode thread count, once tuning finished.
+    pub fn decode_threads_chosen(&self) -> Option<usize> {
+        self.auto_threads
+            .as_ref()
+            .and_then(|auto| auto.tuner.lock().unwrap().chosen())
     }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
     /// builds and verifies an INT8 copy of the FP32 head once per `Model`
@@ -458,7 +563,7 @@ impl Runner {
         }
         let decode_started = Instant::now();
         let mut step = 0;
-        let team = self.team.enter();
+        let mut team = DecodeTeam::new(self);
         trace.decode_start();
         while !active.is_empty() {
             tokens.clear();
@@ -477,6 +582,7 @@ impl Runner {
                     .collect::<Vec<_>>();
                 trace.tensor(&format!("{phase}.request_indices"), &[active.len()], &ids)?;
             }
+            team.select();
             let step_started = Instant::now();
             let next = self.model.decode_batch_next(
                 &tokens,
@@ -488,9 +594,11 @@ impl Runner {
                 &phase,
                 screen,
             )?;
+            let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
+            team.record(step_ms);
             trace.decode_step(
                 active.len(),
-                step_started.elapsed().as_secs_f64() * 1000.0,
+                step_ms,
                 sessions.iter().map(Session::cache_bytes).sum(),
             );
             for (row, &index) in active.iter().enumerate() {
@@ -638,7 +746,7 @@ impl Runner {
         let mut reason = FinishReason::Length;
         let mut repetition = crate::repetition::RepetitionStop::new();
         let stop_loops = self.repetition_stop && teacher_tokens.is_empty();
-        let team = self.team.enter();
+        let mut team = DecodeTeam::new(self);
         trace.decode_start();
         for step in 0..options.max_new_tokens {
             let token = next_token;
@@ -654,6 +762,7 @@ impl Runner {
             if step + 1 == options.max_new_tokens {
                 break;
             }
+            team.select();
             let step_started = Instant::now();
             self.model.embed(&[token], None, simd, &mut hidden)?;
             let phase = if trace.enabled() {
@@ -671,6 +780,7 @@ impl Runner {
                 screen,
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
+            team.record(step_ms);
             next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
                 if score {
                     trace.teacher_step(step + 1, forced, select(&next, 0, c.vocab_size)?);
