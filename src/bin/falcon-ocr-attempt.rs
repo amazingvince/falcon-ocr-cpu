@@ -33,6 +33,10 @@ struct Cli {
     /// FP32 greedy head evaluation; `screened` is exact (same tokens as `full`).
     #[arg(long, value_enum, default_value = "full", global = true)]
     head: HeadMode,
+    /// Stop a page once it repeats a cycle of at most 128 tokens for at
+    /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
+    #[arg(long, global = true)]
+    stop_repetition: bool,
     #[command(subcommand)]
     command: Command,
 }
@@ -169,6 +173,7 @@ fn main() -> Result<()> {
         },
     )?;
     runner.set_head_mode(args.head)?;
+    runner.set_repetition_stop(args.stop_repetition);
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
         args.profile.label(),
@@ -210,6 +215,7 @@ fn main() -> Result<()> {
                 "weights_sha256":model.weights_sha256(),"binary_sha256":digest(&std::env::current_exe()?)?,
                 "hardware":hardware,"threads":args.threads,"backend":args.backend,"batch_size":args.batch_size,
                 "head":args.head,"screened_head_bytes":model.screened_head_bytes(),
+                "stop_repetition":args.stop_repetition,
                 "schedule":"fixed cohorts; layer-major decode; opt-in completed-cache retirement; no refill",
                 "options":options,"inputs":inputs,"warmup":warmup,"load_and_import_ms":load_ms,
                 "memory_policy":memory,"process_memory":falcon_ocr::attempt::process_memory(),"samples":records,

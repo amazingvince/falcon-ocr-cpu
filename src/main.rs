@@ -31,6 +31,10 @@ struct Cli {
     /// INT8 screen (53 MB extra); traces always record full logits.
     #[arg(long, value_enum, default_value = "full", global = true)]
     head: HeadMode,
+    /// Stop a page once it repeats a cycle of at most 128 tokens for at
+    /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
+    #[arg(long, global = true)]
+    stop_repetition: bool,
     #[command(subcommand)]
     command: Command,
 }
@@ -107,6 +111,7 @@ fn main() -> Result<()> {
         },
     )?;
     runner.set_head_mode(cli.head)?;
+    runner.set_repetition_stop(cli.stop_repetition);
     match cli.command {
         Command::Run {
             images,

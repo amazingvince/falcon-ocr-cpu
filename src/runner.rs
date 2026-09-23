@@ -15,6 +15,8 @@ use std::{path::Path, sync::Arc, time::Instant};
 pub enum FinishReason {
     Eos,
     Length,
+    /// Stopped by the opt-in repetition stop (`Runner::set_repetition_stop`).
+    Repetition,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Timings {
@@ -70,6 +72,8 @@ pub struct Runner {
     pool: rayon::ThreadPool,
     config: RunnerConfig,
     head: HeadMode,
+    /// Opt-in stop for degenerate repetition loops (`crate::repetition`).
+    repetition_stop: bool,
     /// Spin-waiting workers for decode steps; prefill keeps using `pool`.
     team: crate::team::Team,
 }
@@ -108,8 +112,19 @@ impl Runner {
             pool,
             config,
             head: HeadMode::Full,
+            repetition_stop: false,
             team,
         })
+    }
+    /// Stop greedy generation once it repeats a cycle of at most 128 tokens
+    /// for at least `max(256, 4 * cycle)` tokens (`FinishReason::Repetition`).
+    /// Output up to that step is unchanged. Off by default; never applied to
+    /// teacher-forced traces.
+    pub fn set_repetition_stop(&mut self, enabled: bool) {
+        self.repetition_stop = enabled;
+    }
+    pub fn repetition_stop(&self) -> bool {
+        self.repetition_stop
     }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
     /// builds and verifies an INT8 copy of the FP32 head once per `Model`
@@ -368,6 +383,7 @@ impl Runner {
                 height: input.prepared.height,
                 input_tokens: input.tokens.len(),
                 generated,
+                repetition: crate::repetition::RepetitionStop::new(),
                 reason,
                 finished,
                 timings: Timings {
@@ -448,6 +464,9 @@ impl Runner {
                 state.generated.push(token);
                 if stops.contains(&token) {
                     state.reason = FinishReason::Eos;
+                    state.finished = true;
+                } else if self.repetition_stop && state.repetition.push(&state.generated) {
+                    state.reason = FinishReason::Repetition;
                     state.finished = true;
                 }
                 if state.generated.len() == options.max_new_tokens {
@@ -576,6 +595,8 @@ impl Runner {
         let stops = self.tokenizer.stop_ids();
         let mut generated = Vec::with_capacity(options.max_new_tokens);
         let mut reason = FinishReason::Length;
+        let mut repetition = crate::repetition::RepetitionStop::new();
+        let stop_loops = self.repetition_stop && teacher_tokens.is_empty();
         let team = self.team.enter();
         trace.decode_start();
         for step in 0..options.max_new_tokens {
@@ -583,6 +604,10 @@ impl Runner {
             generated.push(token);
             if stops.contains(&token) && teacher_tokens.is_empty() {
                 reason = FinishReason::Eos;
+                break;
+            }
+            if stop_loops && repetition.push(&generated) {
+                reason = FinishReason::Repetition;
                 break;
             }
             if step + 1 == options.max_new_tokens {
@@ -774,6 +799,7 @@ struct BatchState {
     height: usize,
     input_tokens: usize,
     generated: Vec<u32>,
+    repetition: crate::repetition::RepetitionStop,
     reason: FinishReason,
     finished: bool,
     timings: Timings,

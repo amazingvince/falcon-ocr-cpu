@@ -15,6 +15,7 @@ pub mod model;
 mod numerical_diagnostics;
 pub mod packed_kernels;
 pub mod preprocess;
+mod repetition;
 pub mod runner;
 mod simd;
 mod team;
