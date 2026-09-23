@@ -791,6 +791,16 @@ impl Model {
                 simd,
             )?;
             clock.mark(1);
+            // Prefill rows into a compact cache: split, per-head norms, RoPE and
+            // the cache append in one pass per row, each element's arithmetic
+            // unchanged (`fused_prefix_rows`).
+            let fused = rows >= PARALLEL_ROWS
+                && !trace.enabled()
+                && offset + rows <= session.layers[i].compact_prefix_len().unwrap_or(0);
+            if fused {
+                fused_prefix_rows(c, rows, &work.qkv, &work.rope, &mut work.q, &mut session.layers[i]);
+                clock.mark(2);
+            } else {
             // Normalize each original K head before GQA expansion. Spatial rotations
             // subsequently differ for paired heads, so expanded keys are intentional.
             let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
@@ -878,9 +888,10 @@ impl Model {
                 )?;
             }
             clock.mark(2);
-            let cache = &mut session.layers[i];
-            cache.append(&work.k, &work.v, offset, c);
+            session.layers[i].append(&work.k, &work.v, offset, c);
+            }
             clock.mark(3);
+            let cache = &mut session.layers[i];
             cache.attention(
                 &work.q,
                 rows,
@@ -1364,6 +1375,13 @@ enum LayerCache {
     },
 }
 impl LayerCache {
+    /// Prompt length of a compact cache (`None` for other layouts).
+    fn compact_prefix_len(&self) -> Option<usize> {
+        match self {
+            Self::Compact { prefix_len, .. } => Some(*prefix_len),
+            _ => None,
+        }
+    }
     fn append(&mut self, k: &[f32], v: &[f32], offset: usize, c: &ModelConfig) {
         match self {
             Self::Split(cache) => cache.append(k, v),
@@ -1659,6 +1677,61 @@ fn packed_digest<'a>(tensors: impl Iterator<Item = (&'a str, &'a [u8])>) -> Stri
         hash.update(data);
     }
     format!("{:x}", hash.finalize())
+}
+
+/// Prefill rows of `qkv` straight into `q` and a compact cache: per row, the
+/// query heads and the GQA-expanded key heads are copied, RMS-normalized per
+/// head and rotated, keys go to the cache's prefix rows and the unique value
+/// heads to its values. Every element sees exactly the operations of the
+/// separate split, `rms_norm`, rotation and `LayerCache::append` passes.
+fn fused_prefix_rows(
+    c: &ModelConfig,
+    rows: usize,
+    qkv: &[f32],
+    rope: &[[f32; 2]],
+    q: &mut [f32],
+    cache: &mut LayerCache,
+) {
+    let LayerCache::Compact { prefix_k, v: values, .. } = cache else {
+        unreachable!("fused prefill needs the compact cache");
+    };
+    let (qdim, kdim, hd) = (c.query_dim(), c.kv_dim(), c.head_dim);
+    let qkv_width = qdim + 2 * kdim;
+    let rope_width = c.n_heads * (hd / 2);
+    let group = c.n_heads / c.n_kv_heads;
+    let (k_start, v_start) = (prefix_k.len(), values.len());
+    prefix_k.resize(k_start + rows * qdim, 0.0);
+    values.resize(v_start + rows * kdim, 0.0);
+    let rotate = |rope: &[[f32; 2]], x: &mut [f32]| {
+        for head in 0..c.n_heads {
+            for pair in 0..hd / 2 {
+                let [cos, sin] = rope[head * (hd / 2) + pair];
+                let p = head * hd + 2 * pair;
+                let (a, b) = (x[p], x[p + 1]);
+                x[p] = a * cos - b * sin;
+                x[p + 1] = a * sin + b * cos;
+            }
+        }
+    };
+    q[..rows * qdim]
+        .par_chunks_mut(qdim)
+        .zip(prefix_k[k_start..].par_chunks_mut(qdim))
+        .zip(values[v_start..].par_chunks_mut(kdim))
+        .enumerate()
+        .for_each(|(row, ((q, k), v))| {
+            let src = &qkv[row * qkv_width..(row + 1) * qkv_width];
+            for head in 0..c.n_heads {
+                let dst = head * hd..(head + 1) * hd;
+                kernels::rms_norm_row(&src[dst.clone()], &mut q[dst.clone()], hd, f32::EPSILON, None);
+                let kv = head / group;
+                let key = qdim + kv * hd;
+                kernels::rms_norm_row(&src[key..key + hd], &mut k[dst], hd, f32::EPSILON, None);
+            }
+            let rope = &rope[row * rope_width..(row + 1) * rope_width];
+            rotate(rope, q);
+            rotate(rope, k);
+            v.copy_from_slice(&src[qdim + kdim..qdim + 2 * kdim]);
+        });
 }
 
 /// Store one original GQA head from each duplicated group. This runs after the

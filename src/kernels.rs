@@ -311,7 +311,7 @@ pub fn rms_norm(input: &[f32], out: &mut [f32], width: usize, eps: f32, weight: 
 const RMS_NORM_SERIAL_ELEMENTS: usize = 16_384;
 
 #[inline]
-fn rms_norm_row(src: &[f32], dst: &mut [f32], width: usize, eps: f32, weight: Option<&[f32]>) {
+pub(crate) fn rms_norm_row(src: &[f32], dst: &mut [f32], width: usize, eps: f32, weight: Option<&[f32]>) {
     // Pairwise FP32 reduction limits accumulated rounding error on
     // 768-channel rows without widening the reference's dtype or
     // fusing the square into an accumulation. CUDA reduction order
