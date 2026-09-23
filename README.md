@@ -4,8 +4,10 @@
 > vocabulary head, a GPTQ-quantized fast mode, and an opt-in
 > `--stop-repetition`. On the journal benchmark page (Ryzen 9 7950X), exact
 > mode takes 38.4 s and fast mode 14.7 s, down from 63.8 s. Both are
-> token-identical to FP32 on the four full benchmark pages. The 200-page
-> held-out qualification of fast mode is still to do. Evidence:
+> token-identical to FP32 on the four full benchmark pages. On the 200
+> held-out pages fast mode **failed** its pre-registered quality budget for
+> handwriting and degraded scans (it passes overall and on the other
+> categories); use exact mode for those documents. Evidence:
 > [overnight results](attempt3/RESULTS-V3.md),
 > [Stage 5 results](attempt3/RESULTS-V2.md) and
 > [CPU portability](docs/CPU_PORTABILITY.md). Historical results below apply to
@@ -54,7 +56,7 @@ cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 | Weights | FP32 | 8-bit body, GPTQ act-order W8G64 (`<model>/w8-gptq.safetensors`); FP32 embeddings, norms and head |
 | Image KV cache | FP32 (split layout, bit-identical) | 8-bit (G32 scales), including generated tokens |
 | Tokens vs FP32 reference | identical on all 67 calibration pages | identical on 25 of 55 held-back calibration pages; others diverge after a near-tie |
-| Quality vs ground truth | reference | neutral on pages that end normally (18.40% → 18.38% CER) |
+| Quality vs ground truth | reference | 200 held-out pages: overall CER on FP32-EOS pages 16.65% → 16.49%, but **fails the pre-registered budget** on handwriting (+5.4 pt, loops) and degraded scans (+1.4 pt); see `attempt3/RESULTS-V3.md` §6 |
 | Journal page (7950X, default threads) | 38.4 s | 14.7 s |
 
 Both modes use the exact screened head (`--head screened`, the default; it

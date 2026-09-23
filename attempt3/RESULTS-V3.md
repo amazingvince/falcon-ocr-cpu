@@ -15,7 +15,7 @@
   - the fast exp;
   - the screened head;
   - hybrid thread counts.
-- **Fast mode takes the journal page from 63.8 to 14.7 s** and is ground-truth neutral on pages that end normally. `--stop-repetition` catches runaway loops.
+- **Fast mode takes the journal page from 63.8 to 14.7 s.** On the 200 held-out pages it is within budget overall and on 5 of 7 categories, but **fails the pre-registered budget** on handwriting (W8-induced loops) and degraded scans (+1.4 pt CER). See section 6.
 - **With default flags, both modes are token-identical to FP32 on all 4 full benchmark pages.**
 
 | Page (1536 px, 4,096-token budget) | FP32 before Phase 4 | Exact mode now | Fast mode now |
@@ -121,7 +121,42 @@ falcon-ocr doctor                                          # shows logical CPUs 
 - `--threads` defaults to all logical CPUs and `--decode-threads` to the physical cores. Override either explicitly.
 - Without the overlay file, `--mode fast` falls back to round-to-nearest W8 at load, and says so on stderr.
 
-## 6. Next: held-out qualification (needs the budget confirmed)
+## 6. Held-out qualification: **FAIL** (2026-09-23)
+
+**Setup.**
+- Budget pre-registered in `reference/phase4-quality-budget.json` (commit `93b7401`) before the run.
+- 200 evaluation-lock pages, run once: fast mode with the GPTQ overlay `60808bbf…` and `--stop-repetition`.
+- Reference: the stored FP32 outputs, texts re-decoded with the current decoder.
+- Checker: `attempt3/check_heldout.py`.
+- Raw data: `artifacts/phase4/checks/heldout200-fast-gptq*.json`.
+
+| Gate (181 pages where FP32 ends at EOS) | FP32 | Fast (GPTQ) | Change | Result |
+|---|---:|---:|---:|---|
+| Overall micro CER vs ground truth (limit +0.25 pt) | 16.649% | 16.491% | −0.16 pt | PASS |
+| degraded (22 pages; limit +1 pt) | 25.73% | 27.15% | +1.42 pt | **FAIL** |
+| formulas (29) | 23.21% | 23.45% | +0.24 pt | PASS |
+| handwriting (23) | 57.28% | 62.65% | +5.37 pt | **FAIL** |
+| multi_column (23) | 16.35% | 14.41% | −1.94 pt | PASS |
+| ordinary (33) | 6.91% | 6.80% | −0.11 pt | PASS |
+| tables (26) | 17.85% | 17.28% | −0.57 pt | PASS |
+| tiny_text (25) | 12.17% | 12.06% | −0.10 pt | PASS |
+| Repetition stop fires on an FP32-EOS page (limit 0) | | 5 pages | | **FAIL** |
+
+**Not gated.**
+- 81/200 pages token-identical to FP32 (79/181 EOS pages).
+- Micro CER over all 200 pages: 35.72% → 27.39%. The stop ends 8 of FP32's 19 runaway pages, and 4 more end at EOS.
+- Tokens: 275,903 → 231,795.
+- Time: 3,027 s against the recorded 21,800 s FP32 run (different binary and host conditions, so indicative only).
+
+**Post-hoc diagnosis** (explains the failure; it does not change the verdict):
+- **Loops.** The 5 stop firings are genuine loops, not detector false positives (for example "DISC DISC DISC…" and runs of underscores).
+  - On 4 pages, W8 sent a page that FP32 ends at EOS into a loop. On the fifth (95928a9b), FP32 itself emitted a 2,232-token hallucination, and the stopped output is better (CER 1.90 → 0.83).
+  - The 3 looped handwriting pages cause all of the handwriting regression. Without them, handwriting is −0.96 pt.
+- **Degraded scans.** Their +1.42 pt is not from loops. It is spread drift: several pages diverge at token 0–1, and the flips at near-ties land slightly worse on average.
+- **Conclusion.** Fast mode as registered is **not qualified**. It is within budget overall and on 5 of 7 categories. It fails on handwriting (W8-induced loops) and degraded scans (broad drift).
+- **The held-out set is now used.** Any fix evaluated on these pages would be a post-hoc estimate, not a qualification.
+
+## 7. Options after the held-out result
 
 **Proposed budget**, on held-out pages where FP32 ends at EOS:
 - micro CER vs ground truth no more than 0.25 pt worse than FP32 overall;
@@ -138,4 +173,9 @@ FALCON_OCR_EXP=fast target/release/falcon-ocr-attempt.exe --threads 32 --decode-
   --report artifacts/phase4/checks/heldout200-fast-gptq.json
 ```
 
-Exact mode needs no budget. Its tokens can be checked against the same stored FP32 outputs (about 3 hours).
+(The command above is what was run.) Exact mode needs no budget. Its tokens can be checked against the same stored FP32 outputs (about 3 hours).
+
+Remedies to consider:
+1. **Loop fallback.** When the repetition stop fires in fast mode, re-decode that page in exact mode. The W8-induced loops then get FP32's output, at exact-mode cost only on looping pages.
+2. **Document fast mode as unqualified for degraded and handwritten pages,** and recommend exact mode there.
+3. **Raise fidelity further,** for example by keeping the most sensitive matrices in FP32, then re-qualify on a fresh held-out set drawn from the source datasets.
