@@ -15,6 +15,11 @@ reference environment (WSL: ~/falcon-ocr-rust-reference/.venv).
   are bitwise equal to FP32 math on the dequantized weights), with chosen
   matrices kept FP32 (`--keep-fp32`, `*` wildcards).
 * `sweep`: `score` for many `--keep-fp32` sets with the model loaded once.
+* `anchor`: teacher-force given tokens (for example stored FP32 outputs) and
+  store this configuration's top-K log-probabilities as a reference, so
+  candidates are scored against an FP32 anchor along a fixed trajectory.
+* `--body-type`: store the body matrices as bf16, fp16, int16-g64 or int8-g64
+  (round to nearest; integer types with one absmax scale per 64 inputs).
 * `import-vllm`: turn `scripts/request_vllm_heldout.py` records (production
   vLLM outputs with top-K log-probabilities) into `score`/`sweep` references.
 
@@ -52,8 +57,26 @@ def import_model(model_path: pathlib.Path):
     return importlib.import_module("pinned_falcon_ocr.modeling_falcon_ocr")
 
 
+def fake_store(w: torch.Tensor, kind: str) -> torch.Tensor:
+    """`w` (FP32) as stored in `kind`, dequantized back to FP32."""
+    if kind == "fp32":
+        return w
+    if kind == "bf16":
+        return w.to(torch.bfloat16).float()
+    if kind == "fp16":
+        return w.half().float()
+    bits, group = {"int16-g64": (16, 64), "int8-g64": (8, 64)}[kind]
+    qmax = 2 ** (bits - 1) - 1
+    rows, cols = w.shape
+    g = w.double().reshape(rows, cols // group, group)
+    scale = g.abs().amax(2, keepdim=True) / qmax
+    scale[scale == 0] = 1.0
+    return (torch.round(g / scale).clamp(-qmax, qmax) * scale).reshape(rows, cols).float()
+
+
 class Harness:
-    def __init__(self, model_dir: pathlib.Path, precision: str, device: str, weights_bf16: bool = False):
+    def __init__(self, model_dir: pathlib.Path, precision: str, device: str, weights_bf16: bool = False,
+                 body_type: str = "fp32"):
         torch.set_float32_matmul_precision("highest")
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
@@ -72,6 +95,9 @@ class Harness:
         if weights_bf16:
             # Production stores BF16 weights: FP32 math on BF16-rounded parameters.
             self.source = {k: v.to(torch.bfloat16).to(v.dtype) for k, v in self.source.items()}
+        if body_type != "fp32":
+            self.source = {k: fake_store(v, body_type) if k.endswith(".weight") and any(b in k for b in BODY) else v
+                           for k, v in self.source.items()}
         model.load_state_dict(self.source, strict=True, assign=True)
         self.dtype = torch.float32 if precision == "fp32" else torch.bfloat16
         self.model = model.to(device=device, dtype=self.dtype).eval()
@@ -236,13 +262,34 @@ def load_refs(directory: pathlib.Path, pages: pathlib.Path | None):
     return [r for r in refs if wanted is None or r["page"] in wanted]
 
 
+def cmd_anchor(a):
+    h = Harness(a.model, a.precision, a.device, a.weights_bf16, a.body_type)
+    report = json.loads(a.tokens.read_text(encoding="utf-8"))
+    wanted = None if a.pages is None else {page_id(p) for p in pages_of(a.pages)}
+    a.out.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for inp, out in zip(report["inputs"], report["samples"][0]["outputs"]):
+        pid = page_id(inp["path"])
+        if wanted is not None and pid not in wanted:
+            continue
+        forced = out["token_ids"][: a.max_steps]
+        logp = h.teacher_logprobs(h.prepare(inp["path"], a.max_dimension), forced)
+        values, ids = torch.topk(logp, TOP_K)
+        torch.save({"page": pid, "image": inp["path"], "tokens": forced, "ids": ids.to(torch.int32).cpu(),
+                    "logp": values.cpu(), "finish": out.get("finish_reason"), "text": "",
+                    "source": f"anchor {a.precision} body={a.body_type} weights_bf16={a.weights_bf16}"},
+                   a.out / f"{pid}.pt")
+        count += 1
+    print(count, "anchor references")
+
+
 def cmd_score(a):
-    h = Harness(a.model, a.precision, a.device, a.weights_bf16)
+    h = Harness(a.model, a.precision, a.device, a.weights_bf16, a.body_type)
     overlay = load_overlay(a.overlay) if a.overlay else None
     h.set_weights(overlay, a.keep_fp32)
     t0 = time.time()
     result = score_pages(h, load_refs(a.reference, a.pages), a.max_steps)
-    result.update({"precision": a.precision, "overlay": str(a.overlay), "keep_fp32": a.keep_fp32,
+    result.update({"precision": a.precision, "body_type": a.body_type, "overlay": str(a.overlay), "keep_fp32": a.keep_fp32,
                    "reference": str(a.reference), "seconds": time.time() - t0})
     print(json.dumps({k: v for k, v in result.items() if k != "pages"}), flush=True)
     if a.report:
@@ -250,7 +297,7 @@ def cmd_score(a):
 
 
 def cmd_sweep(a):
-    h = Harness(a.model, a.precision, a.device, a.weights_bf16)
+    h = Harness(a.model, a.precision, a.device, a.weights_bf16, a.body_type)
     overlay = load_overlay(a.overlay) if a.overlay else None
     refs = load_refs(a.reference, a.pages)
     arms = json.loads(a.arms.read_text(encoding="utf-8"))  # {name: [patterns]}
@@ -288,13 +335,14 @@ def cmd_import_vllm(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ["reference", "score", "sweep"]:
+    for name in ["reference", "score", "sweep", "anchor"]:
         s = sub.add_parser(name)
         s.add_argument("--model", type=pathlib.Path, default=pathlib.Path("artifacts/model"))
         s.add_argument("--precision", choices=["fp32", "bf16"], default="fp32" if name != "reference" else "bf16")
         s.add_argument("--device", default="cuda:0")
         s.add_argument("--pages", type=pathlib.Path)
         s.add_argument("--max-dimension", type=int, default=1536)
+        s.add_argument("--body-type", default="fp32", choices=["fp32", "bf16", "fp16", "int16-g64", "int8-g64"])
     ref = sub.choices["reference"]
     ref.add_argument("--out", type=pathlib.Path, required=True)
     ref.add_argument("--max-new-tokens", type=int, default=4096)
@@ -306,13 +354,19 @@ def main():
         s.add_argument("--report", type=pathlib.Path)
         s.add_argument("--weights-bf16", action="store_true",
                        help="round every parameter to BF16 first (FP32 math on production's BF16 weights)")
+    anc = sub.choices["anchor"]
+    anc.add_argument("--tokens", type=pathlib.Path, required=True, help="bench-style report whose token_ids to force")
+    anc.add_argument("--out", type=pathlib.Path, required=True)
+    anc.add_argument("--max-steps", type=int, default=512)
+    anc.add_argument("--weights-bf16", action="store_true")
     sub.choices["score"].add_argument("--keep-fp32", nargs="*", default=[])
     sub.choices["sweep"].add_argument("--arms", type=pathlib.Path, required=True)
     imp = sub.add_parser("import-vllm")
     imp.add_argument("--src", type=pathlib.Path, required=True)
     imp.add_argument("--out", type=pathlib.Path, required=True)
     a = ap.parse_args()
-    {"reference": cmd_reference, "score": cmd_score, "sweep": cmd_sweep, "import-vllm": cmd_import_vllm}[a.cmd](a)
+    {"reference": cmd_reference, "score": cmd_score, "sweep": cmd_sweep, "anchor": cmd_anchor,
+     "import-vllm": cmd_import_vllm}[a.cmd](a)
 
 
 if __name__ == "__main__":
