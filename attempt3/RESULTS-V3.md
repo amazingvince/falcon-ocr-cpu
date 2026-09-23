@@ -1,7 +1,7 @@
 # A better quantized Falcon-OCR v1.5, and faster exact and fast modes (2026-09-23)
 
 **Status:** measured overnight on a quiet Ryzen 9 7950X (16 cores / 32 threads, DDR5, Windows 11).
-- Quality evidence: the v3 calibration pages. The 200 held-out pages have not been run with any lossy setting.
+- Quality evidence: the v3 calibration pages, plus one pre-registered run of fast mode on the 200 held-out pages (section 6: **FAIL** on handwriting and degraded scans).
 - Every attempt, including rejected ones, is in [HILLCLIMB.md](HILLCLIMB.md).
 
 ## Summary
