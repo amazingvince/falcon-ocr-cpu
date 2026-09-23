@@ -15,6 +15,8 @@ reference environment (WSL: ~/falcon-ocr-rust-reference/.venv).
   are bitwise equal to FP32 math on the dequantized weights), with chosen
   matrices kept FP32 (`--keep-fp32`, `*` wildcards).
 * `sweep`: `score` for many `--keep-fp32` sets with the model loaded once.
+* `import-vllm`: turn `scripts/request_vllm_heldout.py` records (production
+  vLLM outputs with top-K log-probabilities) into `score`/`sweep` references.
 
   python attempt3/gpu_harness.py reference --precision bf16 --pages P.txt --out DIR
   python attempt3/gpu_harness.py score --reference DIR --overlay W.safetensors --report R.json
@@ -78,13 +80,18 @@ class Harness:
                                                        trust_remote_code=True)
         self.params = dict(self.model.named_parameters())
         self.stop_ids = [config.eos_id, self.tokenizer.convert_tokens_to_ids("<|end_of_query|>")]
+        self._batches = {}
 
     # ----- inputs
     def prepare(self, image_path: str, max_dimension: int = 1536, min_dimension: int = 64):
-        image = Image.open(image_path).convert("RGB")
-        batch = self.module.process_batch(self.tokenizer, self.config, [(image, PROMPT)],
-                                          max_length=self.config.max_seq_len,
-                                          min_dimension=min_dimension, max_dimension=max_dimension)
+        key = (image_path, max_dimension, min_dimension)
+        batch = self._batches.get(key)
+        if batch is None:  # preprocessing is deterministic; sweeps reuse it across arms
+            image = Image.open(image_path).convert("RGB")
+            batch = self.module.process_batch(self.tokenizer, self.config, [(image, PROMPT)],
+                                              max_length=self.config.max_seq_len,
+                                              min_dimension=min_dimension, max_dimension=max_dimension)
+            self._batches[key] = batch
         self.model._pad_token_id = batch["pad_token_id"]
         return batch
 
@@ -260,6 +267,24 @@ def cmd_sweep(a):
             a.report.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
 
 
+def cmd_import_vllm(a):
+    a.out.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for f in sorted(a.src.glob("*.json")):
+        r = json.loads(f.read_text(encoding="utf-8"))
+        if not isinstance(r, dict) or "top_logprobs" not in r:
+            continue
+        top = r["top_logprobs"]
+        assert len(top) == len(r["token_ids"]), f"{f}: {len(top)} top-K rows for {len(r['token_ids'])} tokens"
+        k = min(len(row) for row in top)
+        torch.save({"page": r["sample_id"], "image": r["image"], "tokens": r["token_ids"],
+                    "ids": torch.tensor([[t for t, _ in row[:k]] for row in top], dtype=torch.int32),
+                    "logp": torch.tensor([[v for _, v in row[:k]] for row in top], dtype=torch.float32),
+                    "finish": r["finish_reason"], "text": r["text"], "source": "vllm"}, a.out / f"{r['sample_id']}.pt")
+        count += 1
+    print(count, "references")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -283,8 +308,11 @@ def main():
                        help="round every parameter to BF16 first (FP32 math on production's BF16 weights)")
     sub.choices["score"].add_argument("--keep-fp32", nargs="*", default=[])
     sub.choices["sweep"].add_argument("--arms", type=pathlib.Path, required=True)
+    imp = sub.add_parser("import-vllm")
+    imp.add_argument("--src", type=pathlib.Path, required=True)
+    imp.add_argument("--out", type=pathlib.Path, required=True)
     a = ap.parse_args()
-    {"reference": cmd_reference, "score": cmd_score, "sweep": cmd_sweep}[a.cmd](a)
+    {"reference": cmd_reference, "score": cmd_score, "sweep": cmd_sweep, "import-vllm": cmd_import_vllm}[a.cmd](a)
 
 
 if __name__ == "__main__":
