@@ -18,6 +18,9 @@ enum Mode {
     Fast,
 }
 
+/// GPTQ overlay that `--mode fast` loads from the model directory by default.
+const DEFAULT_OVERLAY: &str = "w8-gptq.safetensors";
+
 #[derive(Parser)]
 #[command(version, about = "Falcon-OCR v1.5 CPU runner")]
 struct Cli {
@@ -28,8 +31,9 @@ struct Cli {
     /// FP32 runner mode.
     #[arg(long, value_enum, default_value = "exact", global = true)]
     mode: Mode,
-    /// W8G64 overlay for `--mode fast` (attempt3/convert_w8.py); without it
-    /// the body weights are quantized at load.
+    /// W8 overlay for `--mode fast`. Default: `<model>/w8-gptq.safetensors`
+    /// when present (GPTQ, built by attempt3/make_gptq_overlay.sh), otherwise
+    /// round-to-nearest quantization at load.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
     /// BF16 is an experimental single-request graph, separate from FP32 defaults.
@@ -114,11 +118,23 @@ fn main() -> Result<()> {
     let start = Instant::now();
     let model = Arc::new(match cli.mode {
         Mode::Exact => Model::load(&cli.model)?,
-        Mode::Fast => Model::load_attempt(
-            &cli.model,
-            falcon_ocr::attempt::Profile::W8BodyKvQ8,
-            cli.w8_artifact.as_deref(),
-        )?,
+        Mode::Fast => {
+            let overlay = cli
+                .w8_artifact
+                .clone()
+                .or_else(|| Some(cli.model.join(DEFAULT_OVERLAY)).filter(|p| p.is_file()));
+            match &overlay {
+                Some(path) => eprintln!("fast mode: W8 weights from {}", path.display()),
+                None => eprintln!(
+                    "fast mode: no {DEFAULT_OVERLAY} in the model directory; quantizing                      round-to-nearest at load (GPTQ is closer to FP32:                      attempt3/make_gptq_overlay.sh)"
+                ),
+            }
+            Model::load_attempt(
+                &cli.model,
+                falcon_ocr::attempt::Profile::W8BodyKvQ8,
+                overlay.as_deref(),
+            )?
+        }
     });
     let load_ms = start.elapsed().as_secs_f64() * 1000.;
     if matches!(cli.command, Command::Inspect) {

@@ -62,3 +62,26 @@ Relative output error is sqrt(tr(dW G dWᵀ) / tr(W G Wᵀ)), using the captured
 | **GPTQ G64** | **0.139%** | **0.380%** | W2 of layers 9–19 |
 
 GPTQ removes the early-layer W13 hot spot. It reduces the proxy 4.6× on average and 5.7× on the worst matrix, at identical storage (W8G64, the same kernels).
+
+## Weight variants: teacher-forced agreement (screening set, fast-mode config W8 + Q8 KV, 768 steps)
+
+| Overlay | Flips / 1,000 steps | vs RTN G64 | Decision |
+|---|---:|---:|---|
+| RTN G64 (current) | 8.62 (123) | | baseline |
+| **GPTQ G64** (12-page Gram, damp 0.01) | **3.44 (49)** | **−60%** | **accepted as candidate**; same bytes and kernels |
+| RTN G32 | 9.47 (135) | +10% | **rejected**: within counting noise of G64 (±11 flips), +6% weight bytes. The 10% proxy gain did not carry over. |
+
+By category (flips, RTN → GPTQ):
+
+| Category | RTN | GPTQ |
+|---|---:|---:|
+| degraded | 52 | 14 |
+| tables | 23 | 8 |
+| handwriting | 14 | 8 |
+| multi_column | 11 | 6 |
+| formulas | 9 | 4 |
+| ordinary | 8 | 4 |
+| tiny_text | 6 | 4 |
+| full-page | 0 | 1 |
+
+Pages: 15 better, 4 worse, 5 the same. The capture pages are disjoint from the screening set.
