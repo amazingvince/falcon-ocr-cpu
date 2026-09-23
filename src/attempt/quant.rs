@@ -437,6 +437,7 @@ impl Q8Linear {
                 self.in_dim,
                 &scratch.dense,
                 self.out_dim,
+                None,
                 panel_gemm::Epilogue::Store(output),
             );
             return Ok(());
@@ -504,6 +505,7 @@ impl Q8Linear {
                 self.in_dim,
                 &scratch.dense,
                 self.out_dim,
+                None,
                 panel_gemm::Epilogue::Glu(gated),
             );
             return Ok(true);
@@ -532,8 +534,30 @@ impl Q8Linear {
         Ok(true)
     }
 
+    /// Prefill product through `kernels::panel_gemm` with a folded row scale
+    /// (RMS norm) and a fused epilogue (store, gate or residual add). The
+    /// caller checks `panel_gemm` first.
+    pub(crate) fn prefill(
+        &self,
+        input: &[f32],
+        rows: usize,
+        row_scale: Option<&[f32]>,
+        epilogue: crate::kernels::panel_gemm::Epilogue<'_>,
+        scratch: &mut Scratch,
+    ) {
+        use crate::kernels::panel_gemm;
+        assert_eq!(input.len(), rows * self.in_dim, "prefill input shape");
+        panel_gemm::pack_panels(
+            self.out_dim,
+            self.in_dim,
+            |r, dst| self.dequantize_row(r, dst),
+            &mut scratch.dense,
+        );
+        panel_gemm::gemm(input, rows, self.in_dim, &scratch.dense, self.out_dim, row_scale, epilogue);
+    }
+
     /// Whether large-M products use `kernels::panel_gemm` here.
-    fn panel_gemm(&self, simd: crate::kernels::Simd) -> bool {
+    pub(crate) fn panel_gemm(&self, simd: crate::kernels::Simd) -> bool {
         crate::kernels::panel_gemm::available(simd)
             && self.out_dim % crate::kernels::panel_gemm::NR == 0
     }

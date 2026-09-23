@@ -774,7 +774,31 @@ impl Model {
         );
         clock.mark(0);
         let capture = trace.captures_linear_inputs();
+        // Quantized prefill: the RMS norms fold into the GEMM's row packing and
+        // the residual adds into its epilogue, with the same per-element
+        // operations as the separate passes.
+        let panel = rows > 8
+            && !capture
+            && !trace.enabled()
+            && self.layers.iter().all(|l| {
+                [&l.qkv, &l.wo, &l.w13, &l.w2]
+                    .iter()
+                    .all(|w| w.quantized.as_ref().is_some_and(|q| q.panel_gemm(simd)))
+            });
+        fn quantized(w: &Weight) -> &crate::attempt::quant::Q8Linear {
+            w.quantized.as_deref().expect("checked above")
+        }
         for (i, layer) in self.layers.iter().enumerate() {
+            if panel {
+                row_scales(h, c.dim, &mut work.row_scale);
+                quantized(&layer.qkv).prefill(
+                    h,
+                    rows,
+                    Some(&work.row_scale),
+                    kernels::panel_gemm::Epilogue::Store(&mut work.qkv),
+                    &mut work.quant_scratch,
+                );
+            } else {
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
             if capture {
                 trace.linear_input(i, "qkv", rows, &work.normalized);
@@ -790,6 +814,7 @@ impl Model {
                 &mut work.quant_scratch,
                 simd,
             )?;
+            }
             clock.mark(1);
             // Prefill rows into a compact cache: split, per-head norms, RoPE and
             // the cache append in one pass per row, each element's arithmetic
@@ -798,7 +823,7 @@ impl Model {
                 && !trace.enabled()
                 && offset + rows <= session.layers[i].compact_prefix_len().unwrap_or(0);
             if fused {
-                fused_prefix_rows(c, rows, &work.qkv, &work.rope, &mut work.q, &mut session.layers[i]);
+                fused_prefix_rows(c, rows, &work.qkv, &work.rope, &mut work.q, &mut session.layers[i], simd);
                 clock.mark(2);
             } else {
             // Normalize each original K head before GQA expansion. Spatial rotations
@@ -912,6 +937,33 @@ impl Model {
                     &work.attn,
                 )?;
             }
+            if panel {
+                quantized(&layer.wo).prefill(
+                    &work.attn,
+                    rows,
+                    None,
+                    kernels::panel_gemm::Epilogue::Add(h),
+                    &mut work.quant_scratch,
+                );
+                clock.mark(5);
+                row_scales(h, c.dim, &mut work.row_scale);
+                quantized(&layer.w13).prefill(
+                    h,
+                    rows,
+                    Some(&work.row_scale),
+                    kernels::panel_gemm::Epilogue::Glu(&mut work.gated),
+                    &mut work.quant_scratch,
+                );
+                clock.mark(6);
+                quantized(&layer.w2).prefill(
+                    &work.gated,
+                    rows,
+                    None,
+                    kernels::panel_gemm::Epilogue::Add(h),
+                    &mut work.quant_scratch,
+                );
+                clock.mark(7);
+            } else {
             if capture {
                 trace.linear_input(i, "wo", rows, &work.attn);
             }
@@ -959,6 +1011,7 @@ impl Model {
             )?;
             add_residual(h, &work.projected, c.dim);
             clock.mark(7);
+            }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
@@ -1683,7 +1736,9 @@ fn packed_digest<'a>(tensors: impl Iterator<Item = (&'a str, &'a [u8])>) -> Stri
 /// query heads and the GQA-expanded key heads are copied, RMS-normalized per
 /// head and rotated, keys go to the cache's prefix rows and the unique value
 /// heads to its values. Every element sees exactly the operations of the
-/// separate split, `rms_norm`, rotation and `LayerCache::append` passes.
+/// separate split, `rms_norm`, rotation and `LayerCache::append` passes (the
+/// AVX2 row keeps `rms_norm_row`'s reduction tree and the rotation's
+/// products, so both row kernels are bitwise equal).
 fn fused_prefix_rows(
     c: &ModelConfig,
     rows: usize,
@@ -1691,18 +1746,72 @@ fn fused_prefix_rows(
     rope: &[[f32; 2]],
     q: &mut [f32],
     cache: &mut LayerCache,
+    simd: kernels::Simd,
 ) {
     let LayerCache::Compact { prefix_k, v: values, .. } = cache else {
         unreachable!("fused prefill needs the compact cache");
     };
-    let (qdim, kdim, hd) = (c.query_dim(), c.kv_dim(), c.head_dim);
+    let (qdim, kdim) = (c.query_dim(), c.kv_dim());
     let qkv_width = qdim + 2 * kdim;
-    let rope_width = c.n_heads * (hd / 2);
-    let group = c.n_heads / c.n_kv_heads;
+    let rope_width = c.n_heads * (c.head_dim / 2);
+    prefix_k.reserve_exact(rows * qdim);
+    values.reserve_exact(rows * kdim);
     let (k_start, v_start) = (prefix_k.len(), values.len());
-    prefix_k.resize(k_start + rows * qdim, 0.0);
-    values.resize(v_start + rows * kdim, 0.0);
-    let rotate = |rope: &[[f32; 2]], x: &mut [f32]| {
+    let k_out = crate::team::SharedMut::new(prefix_k.spare_capacity_mut());
+    let v_out = crate::team::SharedMut::new(values.spare_capacity_mut());
+    #[cfg(target_arch = "x86_64")]
+    let vector = c.head_dim == 64
+        && simd.resolved() != kernels::Simd::Scalar
+        && std::is_x86_feature_detected!("avx2")
+        && std::is_x86_feature_detected!("fma");
+    #[cfg(not(target_arch = "x86_64"))]
+    let vector = {
+        let _ = simd;
+        false
+    };
+    q[..rows * qdim]
+        .par_chunks_mut(qdim)
+        .enumerate()
+        .for_each(|(row, q)| {
+            let src = &qkv[row * qkv_width..(row + 1) * qkv_width];
+            let rope = &rope[row * rope_width..(row + 1) * rope_width];
+            // SAFETY: rows write disjoint, reserved (uninitialized) slots,
+            // each fully overwritten before the lengths are set below.
+            let (k, v) = unsafe {
+                let k: &mut [std::mem::MaybeUninit<f32>] = k_out.slice(row * qdim, qdim);
+                let v: &mut [std::mem::MaybeUninit<f32>] = v_out.slice(row * kdim, kdim);
+                (
+                    std::slice::from_raw_parts_mut(k.as_mut_ptr().cast::<f32>(), qdim),
+                    std::slice::from_raw_parts_mut(v.as_mut_ptr().cast::<f32>(), kdim),
+                )
+            };
+            #[cfg(target_arch = "x86_64")]
+            if vector {
+                // SAFETY: AVX2/FMA detected above; head_dim is 64.
+                unsafe { fused_row_avx2(c, src, rope, q, k, v) };
+                return;
+            }
+            let _ = vector;
+            fused_row(c, src, rope, q, k, v);
+        });
+    // SAFETY: every reserved slot of the new rows was written above.
+    unsafe {
+        prefix_k.set_len(k_start + rows * qdim);
+        values.set_len(v_start + rows * kdim);
+    }
+}
+
+/// One row of `fused_prefix_rows` (portable).
+fn fused_row(c: &ModelConfig, src: &[f32], rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32], v: &mut [f32]) {
+    let (qdim, kdim, hd) = (c.query_dim(), c.kv_dim(), c.head_dim);
+    let group = c.n_heads / c.n_kv_heads;
+    for head in 0..c.n_heads {
+        let dst = head * hd..(head + 1) * hd;
+        kernels::rms_norm_row(&src[dst.clone()], &mut q[dst.clone()], hd, f32::EPSILON, None);
+        let key = qdim + (head / group) * hd;
+        kernels::rms_norm_row(&src[key..key + hd], &mut k[dst], hd, f32::EPSILON, None);
+    }
+    for x in [&mut *q, &mut *k] {
         for head in 0..c.n_heads {
             for pair in 0..hd / 2 {
                 let [cos, sin] = rope[head * (hd / 2) + pair];
@@ -1712,26 +1821,107 @@ fn fused_prefix_rows(
                 x[p + 1] = a * sin + b * cos;
             }
         }
-    };
-    q[..rows * qdim]
-        .par_chunks_mut(qdim)
-        .zip(prefix_k[k_start..].par_chunks_mut(qdim))
-        .zip(values[v_start..].par_chunks_mut(kdim))
-        .enumerate()
-        .for_each(|(row, ((q, k), v))| {
-            let src = &qkv[row * qkv_width..(row + 1) * qkv_width];
-            for head in 0..c.n_heads {
-                let dst = head * hd..(head + 1) * hd;
-                kernels::rms_norm_row(&src[dst.clone()], &mut q[dst.clone()], hd, f32::EPSILON, None);
-                let kv = head / group;
-                let key = qdim + kv * hd;
-                kernels::rms_norm_row(&src[key..key + hd], &mut k[dst], hd, f32::EPSILON, None);
+    }
+    v.copy_from_slice(&src[qdim + kdim..qdim + 2 * kdim]);
+}
+
+/// `fused_row` for 64-wide heads with AVX2: the same reduction tree and
+/// products, so bitwise equal.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn fused_row_avx2(c: &ModelConfig, src: &[f32], rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32], v: &mut [f32]) {
+    let qdim = c.query_dim();
+    let group = c.n_heads / c.n_kv_heads;
+    let rope = rope.as_ptr().cast::<f32>();
+    // SAFETY: every head is 64 in-bounds floats; rope holds 32 pairs per head.
+    unsafe {
+        for head in 0..c.n_heads {
+            let factors = rope.add(head * 64);
+            norm_rope_head_avx2(src.as_ptr().add(head * 64), factors, q.as_mut_ptr().add(head * 64));
+            let key = qdim + (head / group) * 64;
+            norm_rope_head_avx2(src.as_ptr().add(key), factors, k.as_mut_ptr().add(head * 64));
+        }
+    }
+    v.copy_from_slice(&src[qdim + c.kv_dim()..qdim + 2 * c.kv_dim()]);
+}
+
+/// `rms_norm_row` (width 64, no weight) then the pairwise rotation of one head.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn norm_rope_head_avx2(x: *const f32, rope: *const f32, out: *mut f32) {
+    use std::arch::x86_64::*;
+    // `sum_squares_pairwise` on 32 values: squares, then lanes i += i + 16,
+    // i += i + 8, i += i + 4, i += i + 2, i += i + 1.
+    unsafe fn leaf(x: *const f32) -> f32 {
+        unsafe {
+            let square = |i: usize| {
+                let v = _mm256_loadu_ps(x.add(i));
+                _mm256_mul_ps(v, v)
+            };
+            let a = _mm256_add_ps(square(0), square(16));
+            let b = _mm256_add_ps(square(8), square(24));
+            let w = _mm256_add_ps(a, b);
+            let h = _mm_add_ps(_mm256_castps256_ps128(w), _mm256_extractf128_ps(w, 1));
+            let h = _mm_add_ps(h, _mm_movehl_ps(h, h));
+            _mm_cvtss_f32(_mm_add_ss(h, _mm_shuffle_ps(h, h, 1)))
+        }
+    }
+    unsafe {
+        let sum = leaf(x) + leaf(x.add(32));
+        let scale = _mm256_set1_ps((sum / 64.0 + f32::EPSILON).sqrt().recip());
+        for j in 0..8 {
+            let v = _mm256_mul_ps(_mm256_loadu_ps(x.add(8 * j)), scale);
+            // Four [cos, sin] pairs: duplicate cos and sin into both lanes of a pair.
+            let factors = _mm256_loadu_ps(rope.add(8 * j));
+            let cos = _mm256_moveldup_ps(factors);
+            let sin = _mm256_movehdup_ps(factors);
+            let swapped = _mm256_permute_ps(v, 0b1011_0001);
+            // Even lanes a*cos - b*sin, odd lanes b*cos + a*sin.
+            let rotated = _mm256_addsub_ps(_mm256_mul_ps(v, cos), _mm256_mul_ps(swapped, sin));
+            _mm256_storeu_ps(out.add(8 * j), rotated);
+        }
+    }
+}
+
+#[cfg(all(test, target_arch = "x86_64"))]
+mod fused_row_tests {
+    use super::*;
+
+    #[test]
+    fn avx2_row_is_bitwise_the_portable_row() {
+        if !(std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")) {
+            return;
+        }
+        let c: ModelConfig =
+            serde_json::from_str(include_str!("../tests/fixtures/model-config.json")).unwrap();
+        let width = c.query_dim() + 2 * c.kv_dim();
+        let mut state = 12345_u64;
+        let mut next = move || {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            ((state >> 40) as f32 / (1u64 << 24) as f32) * 8.0 - 4.0
+        };
+        for trial in 0..50 {
+            let mut src: Vec<f32> = (0..width).map(|_| next()).collect();
+            if trial % 5 == 0 {
+                src[3] = 0.0;
+                src[70] = 1e-30;
+                src[200] = 3e4;
             }
-            let rope = &rope[row * rope_width..(row + 1) * rope_width];
-            rotate(rope, q);
-            rotate(rope, k);
-            v.copy_from_slice(&src[qdim + kdim..qdim + 2 * kdim]);
-        });
+            let rope: Vec<[f32; 2]> = (0..c.n_heads * c.head_dim / 2)
+                .map(|_| {
+                    let t = next();
+                    [t.cos(), t.sin()]
+                })
+                .collect();
+            let (mut q1, mut k1, mut v1) = (vec![0.0; c.query_dim()], vec![0.0; c.query_dim()], vec![0.0; c.kv_dim()]);
+            let (mut q2, mut k2, mut v2) = (q1.clone(), k1.clone(), v1.clone());
+            fused_row(&c, &src, &rope, &mut q1, &mut k1, &mut v1);
+            unsafe { fused_row_avx2(&c, &src, &rope, &mut q2, &mut k2, &mut v2) };
+            for (a, b) in q1.iter().chain(&k1).chain(&v1).zip(q2.iter().chain(&k2).chain(&v2)) {
+                assert_eq!(a.to_bits(), b.to_bits(), "trial {trial}");
+            }
+        }
+    }
 }
 
 /// Store one original GQA head from each duplicated group. This runs after the
@@ -1931,6 +2121,8 @@ struct Workspace {
     selected: Vec<u32>,
     /// Per-row screened-head scratch for draft verification.
     head_rows: Vec<crate::head_screen::HeadScratch>,
+    /// Per-row RMS-norm factors folded into prefill GEMMs.
+    row_scale: Vec<f32>,
 }
 impl Workspace {
     fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
@@ -2012,6 +2204,14 @@ pub(crate) fn rotary_factors(
 }
 
 /// `h += projected`, row-parallel for prefill-sized inputs.
+/// `rms_norm`'s factor of every `width`-wide row of `h` (eps `f32::EPSILON`, no weight).
+fn row_scales(h: &[f32], width: usize, out: &mut Vec<f32>) {
+    out.resize(h.len() / width, 0.0);
+    out.par_iter_mut()
+        .zip(h.par_chunks(width))
+        .for_each(|(scale, row)| *scale = kernels::rms_scale(row, width, f32::EPSILON));
+}
+
 fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
     if h.len() >= PARALLEL_ROWS * dim {
         h.par_chunks_mut(dim)

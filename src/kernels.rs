@@ -316,8 +316,7 @@ pub(crate) fn rms_norm_row(src: &[f32], dst: &mut [f32], width: usize, eps: f32,
     // 768-channel rows without widening the reference's dtype or
     // fusing the square into an accumulation. CUDA reduction order
     // may still differ and is checked by independent operator traces.
-    let sum = sum_squares_pairwise(src);
-    let scale = (sum / width as f32 + eps).sqrt().recip();
+    let scale = rms_scale(src, width, eps);
     match weight {
         Some(w) => {
             for ((y, x), affine) in dst.iter_mut().zip(src).zip(w) {
@@ -330,6 +329,12 @@ pub(crate) fn rms_norm_row(src: &[f32], dst: &mut [f32], width: usize, eps: f32,
             }
         }
     }
+}
+
+/// The factor `rms_norm_row` multiplies a row by.
+#[inline]
+pub(crate) fn rms_scale(src: &[f32], width: usize, eps: f32) -> f32 {
+    (sum_squares_pairwise(src) / width as f32 + eps).sqrt().recip()
 }
 
 fn sum_squares_pairwise(input: &[f32]) -> f32 {

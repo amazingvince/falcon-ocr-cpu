@@ -26,6 +26,8 @@ pub(crate) enum Epilogue<'a> {
     Store(&'a mut [f32]),
     /// `out[m][i] = squared_relu_glu(C[m][2i], C[m][2i + 1])` (`n / 2` columns).
     Glu(&'a mut [f32]),
+    /// `out[m][n] += C[m][n]` (a residual add fused into the product).
+    Add(&'a mut [f32]),
 }
 
 /// Whether [`gemm`] runs natively here for this backend (otherwise callers
@@ -75,19 +77,36 @@ pub(crate) fn pack_panels(
 }
 
 /// `C = A * W^T` for `a` (`m x k`, row-major) and `panels` from
-/// [`pack_panels`], written through `epilogue`. Requires [`available`].
-pub(crate) fn gemm(a: &[f32], m: usize, k: usize, panels: &[f32], n: usize, epilogue: Epilogue<'_>) {
+/// [`pack_panels`], written through `epilogue`. With `row_scale`, row `r` of
+/// `A` is used as `a[r][k] * row_scale[r]` (an RMS norm folded into packing:
+/// the same product `rms_norm_row` stores). Requires [`available`].
+pub(crate) fn gemm(
+    a: &[f32],
+    m: usize,
+    k: usize,
+    panels: &[f32],
+    n: usize,
+    row_scale: Option<&[f32]>,
+    epilogue: Epilogue<'_>,
+) {
     assert_eq!(a.len(), m * k, "panel GEMM input shape");
     assert_eq!(panels.len(), n * k, "panel GEMM weight shape");
     assert_eq!(n % NR, 0, "panel GEMM needs whole panels");
-    let (out, glu) = match epilogue {
+    if let Some(scale) = row_scale {
+        assert_eq!(scale.len(), m, "panel GEMM row scales");
+    }
+    let (out, glu, add) = match epilogue {
         Epilogue::Store(out) => {
             assert_eq!(out.len(), m * n, "panel GEMM output shape");
-            (out, false)
+            (out, false, false)
         }
         Epilogue::Glu(out) => {
             assert_eq!(out.len(), m * (n / 2), "panel GEMM gated shape");
-            (out, true)
+            (out, true, false)
+        }
+        Epilogue::Add(out) => {
+            assert_eq!(out.len(), m * n, "panel GEMM output shape");
+            (out, false, true)
         }
     };
     if m == 0 || n == 0 {
@@ -116,8 +135,18 @@ pub(crate) fn gemm(a: &[f32], m: usize, k: usize, panels: &[f32], n: usize, epil
                     let src_row = row0 + g * MR + r;
                     if src_row < row0 + rows {
                         let src = &a[src_row * k..(src_row + 1) * k];
-                        for (kk, &v) in src.iter().enumerate() {
-                            dst[kk * MR + r] = v;
+                        match row_scale {
+                            Some(scale) => {
+                                let s = scale[src_row];
+                                for (kk, &v) in src.iter().enumerate() {
+                                    dst[kk * MR + r] = v * s;
+                                }
+                            }
+                            None => {
+                                for (kk, &v) in src.iter().enumerate() {
+                                    dst[kk * MR + r] = v;
+                                }
+                            }
                         }
                     } else {
                         for kk in 0..k {
@@ -149,7 +178,14 @@ pub(crate) fn gemm(a: &[f32], m: usize, k: usize, panels: &[f32], n: usize, epil
                         } else {
                             let base = row * out_width + panel * NR;
                             // SAFETY: (row, panel) tiles are disjoint across units.
-                            unsafe { shared.slice(base, NR) }.copy_from_slice(values);
+                            let dst = unsafe { shared.slice(base, NR) };
+                            if add {
+                                for (y, v) in dst.iter_mut().zip(values) {
+                                    *y += v;
+                                }
+                            } else {
+                                dst.copy_from_slice(values);
+                            }
                         }
                     }
                 }
@@ -254,7 +290,7 @@ mod tests {
                 pack_panels(n, k, |r, dst| dst.copy_from_slice(&w[r * k..(r + 1) * k]), &mut panels)
             });
             let mut out = vec![f32::NAN; m * n];
-            pool.install(|| gemm(&a, m, k, &panels, n, Epilogue::Store(&mut out)));
+            pool.install(|| gemm(&a, m, k, &panels, n, None, Epilogue::Store(&mut out)));
             for row in 0..m {
                 for col in 0..n {
                     let (mut exact, mut magnitude) = (0.0_f64, 0.0_f64);
@@ -271,7 +307,21 @@ mod tests {
                 }
             }
             let mut gated = vec![f32::NAN; m * n / 2];
-            pool.install(|| gemm(&a, m, k, &panels, n, Epilogue::Glu(&mut gated)));
+            pool.install(|| gemm(&a, m, k, &panels, n, None, Epilogue::Glu(&mut gated)));
+            // Row scales equal pre-scaled rows; Add equals Store then +=.
+            let scale: Vec<f32> = (0..m).map(|r| 0.5 + r as f32 / 7.0).collect();
+            let scaled: Vec<f32> = a.iter().enumerate().map(|(i, v)| v * scale[i / k]).collect();
+            let mut direct = vec![f32::NAN; m * n];
+            pool.install(|| gemm(&scaled, m, k, &panels, n, None, Epilogue::Store(&mut direct)));
+            let mut folded = vec![f32::NAN; m * n];
+            pool.install(|| gemm(&a, m, k, &panels, n, Some(&scale), Epilogue::Store(&mut folded)));
+            assert!(direct.iter().zip(&folded).all(|(x, y)| x.to_bits() == y.to_bits()));
+            let base: Vec<f32> = (0..m * n).map(|i| (i % 17) as f32 - 8.0).collect();
+            let mut added = base.clone();
+            pool.install(|| gemm(&a, m, k, &panels, n, None, Epilogue::Add(&mut added)));
+            for ((x, b), c) in added.iter().zip(&base).zip(&out) {
+                assert_eq!(x.to_bits(), (b + c).to_bits());
+            }
             for row in 0..m {
                 for i in 0..n / 2 {
                     let expected = crate::kernels::squared_relu_glu(out[row * n + 2 * i], out[row * n + 2 * i + 1]);
@@ -281,7 +331,7 @@ mod tests {
             // Thread count never changes the result.
             let single = rayon::ThreadPoolBuilder::new().num_threads(1).build().unwrap();
             let mut again = vec![f32::NAN; m * n];
-            single.install(|| gemm(&a, m, k, &panels, n, Epilogue::Store(&mut again)));
+            single.install(|| gemm(&a, m, k, &panels, n, None, Epilogue::Store(&mut again)));
             assert!(out.iter().zip(&again).all(|(x, y)| x.to_bits() == y.to_bits()));
         }
     }
@@ -305,7 +355,7 @@ mod tests {
             let t = std::time::Instant::now();
             for _ in 0..3 {
                 pack_panels(n, k, |r, dst| dst.copy_from_slice(&w[r * k..(r + 1) * k]), &mut panels);
-                gemm(&a, m, k, &panels, n, Epilogue::Store(&mut out));
+                gemm(&a, m, k, &panels, n, None, Epilogue::Store(&mut out));
             }
             let panel_s = t.elapsed().as_secs_f64() / 3.0;
             println!(
