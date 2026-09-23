@@ -32,6 +32,10 @@ pub enum Profile {
     KvQ16,
     /// 16-bit body weights and 16-bit KV cache: the near-exact profile.
     W16BodyKvQ16,
+    /// FP32 weights; IEEE FP16 KV cache (`SplitF16`).
+    KvF16,
+    /// 16-bit body weights and IEEE FP16 KV cache.
+    W16BodyKvF16,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -46,6 +50,8 @@ pub enum PrefixMode {
     /// 16-bit codes with one absmax scale per 32-element chunk (the Q8
     /// layout with [-32767, 32767] codes): half the bytes of FP32 records.
     SplitQ16,
+    /// IEEE FP16 records (no scales).
+    SplitF16,
 }
 impl Profile {
     pub fn quantizes_body(self) -> bool {
@@ -60,11 +66,12 @@ impl Profile {
                 | Self::W8BodyKvQ8Kc
                 | Self::W16Body
                 | Self::W16BodyKvQ16
+                | Self::W16BodyKvF16
         )
     }
     /// Bits per weight code of the quantized matrices: 16 or 8.
     pub fn weight_bits(self) -> u32 {
-        if matches!(self, Self::W16Body | Self::W16BodyKvQ16) { 16 } else { 8 }
+        if matches!(self, Self::W16Body | Self::W16BodyKvQ16 | Self::W16BodyKvF16) { 16 } else { 8 }
     }
     pub fn quantizes_head(self) -> bool {
         matches!(self, Self::W8All | Self::W8AllKvBf16 | Self::W8AllKvQ8)
@@ -76,6 +83,7 @@ impl Profile {
             Self::KvQ8 | Self::W8BodyKvQ8 | Self::W8AllKvQ8 => PrefixMode::SplitQ8,
             Self::KvQ8Kc | Self::W8BodyKvQ8Kc => PrefixMode::SplitQ8Kc,
             Self::KvQ16 | Self::W16BodyKvQ16 => PrefixMode::SplitQ16,
+            Self::KvF16 | Self::W16BodyKvF16 => PrefixMode::SplitF16,
             _ => PrefixMode::Reference,
         }
     }
@@ -104,6 +112,8 @@ impl Profile {
             Self::W16Body => "w16-body",
             Self::KvQ16 => "kv-q16",
             Self::W16BodyKvQ16 => "w16-body-kv-q16",
+            Self::KvF16 => "kv-f16",
+            Self::W16BodyKvF16 => "w16-body-kv-f16",
         }
     }
 }
