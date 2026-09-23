@@ -21,6 +21,7 @@ pub mod runner;
 mod simd;
 mod team;
 mod tune;
+mod buf;
 mod draft;
 pub mod tokenizer;
 pub mod trace;

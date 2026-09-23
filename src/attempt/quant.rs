@@ -8,11 +8,12 @@
 use anyhow::ensure;
 use rayon::prelude::*;
 
-/// Row-major weight codes of one matrix.
+/// Row-major weight codes of one matrix (owned, or mapped from a
+/// kernel-ready model file).
 #[derive(Debug)]
 enum Codes {
-    I8(Vec<i8>),
-    I16(Vec<i16>),
+    I8(crate::buf::Buf<i8>),
+    I16(crate::buf::Buf<i16>),
 }
 
 /// A quantized linear layer with 8- or 16-bit codes (the name predates
@@ -23,7 +24,7 @@ pub struct Q8Linear {
     in_dim: usize,
     group_size: usize,
     codes: Codes,
-    scales: Vec<f32>,
+    scales: crate::buf::Buf<f32>,
 }
 
 impl Q8Linear {
@@ -90,16 +91,16 @@ impl Q8Linear {
             }
         }
         let codes = if bits == 8 {
-            Codes::I8(codes.into_iter().map(|c| c as i8).collect())
+            Codes::I8(crate::buf::Buf::Owned(codes.into_iter().map(|c| c as i8).collect()))
         } else {
-            Codes::I16(codes.into_iter().map(|c| c as i16).collect())
+            Codes::I16(crate::buf::Buf::Owned(codes.into_iter().map(|c| c as i16).collect()))
         };
         Ok(Self {
             out_dim,
             in_dim,
             group_size,
             codes,
-            scales,
+            scales: crate::buf::Buf::Owned(scales),
         })
     }
 
@@ -337,9 +338,56 @@ impl Q8Linear {
             out_dim,
             in_dim,
             group_size,
-            codes: Codes::I8(codes),
+            codes: Codes::I8(crate::buf::Buf::Owned(codes)),
+            scales: crate::buf::Buf::Owned(scales),
+        })
+    }
+
+    /// A matrix whose codes (`bits` = 8 or 16) and FP32 scales are byte
+    /// ranges of a kernel-ready model file, used in place. Shapes, sizes and
+    /// alignment are checked; code values are trusted (the file was written
+    /// by `Model::write_packed` from a validated matrix).
+    pub(crate) fn from_mapped(
+        out_dim: usize,
+        in_dim: usize,
+        group_size: usize,
+        bits: u32,
+        map: &std::sync::Arc<memmap2::Mmap>,
+        codes: std::ops::Range<usize>,
+        scales: std::ops::Range<usize>,
+    ) -> anyhow::Result<Self> {
+        ensure!(
+            out_dim > 0 && in_dim > 0 && [32, 64].contains(&group_size),
+            "invalid mapped matrix shape/group"
+        );
+        let elements = out_dim * in_dim;
+        let codes = match bits {
+            8 => Codes::I8(crate::buf::Buf::mapped(map, codes, elements)?),
+            16 => Codes::I16(crate::buf::Buf::mapped(map, codes, elements)?),
+            _ => anyhow::bail!("mapped codes must be 8 or 16 bits"),
+        };
+        let scales = crate::buf::Buf::mapped(map, scales, out_dim * in_dim.div_ceil(group_size))?;
+        Ok(Self {
+            out_dim,
+            in_dim,
+            group_size,
+            codes,
             scales,
         })
+    }
+
+    /// Group size of the scales.
+    pub(crate) fn group_size(&self) -> usize {
+        self.group_size
+    }
+
+    /// Raw code bytes (i8 or little-endian i16) and scale bytes.
+    pub(crate) fn raw_parts(&self) -> (&[u8], &[u8]) {
+        let codes = match &self.codes {
+            Codes::I8(c) => c.bytes(),
+            Codes::I16(c) => c.bytes(),
+        };
+        (codes, self.scales.bytes())
     }
 
     /// Same reconstructed weights at every phase. Large-M uses one reusable

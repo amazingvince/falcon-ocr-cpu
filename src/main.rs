@@ -83,6 +83,14 @@ struct Cli {
     /// Minimum n-gram match in the earlier output for a draft.
     #[arg(long, default_value_t = 2, global = true)]
     speculate_min_match: usize,
+    /// Kernel-ready model file written by `pack` (near-exact or fast; the
+    /// file decides the mode). Mapped and used in place: fast startup, no
+    /// FP32 checkpoint needed.
+    #[arg(long, global = true)]
+    model_file: Option<PathBuf>,
+    /// With --model-file: check the digest of every tensor first.
+    #[arg(long, global = true)]
+    verify_model_file: bool,
     #[command(subcommand)]
     command: Command,
 }
@@ -92,6 +100,11 @@ enum Command {
     Doctor,
     /// Verify the checkpoint hash and tensor contract.
     Inspect,
+    /// Write a kernel-ready model file for --mode near-exact or fast.
+    Pack {
+        #[arg(long)]
+        output: PathBuf,
+    },
     /// Recognize full-page PNG/JPEG images; emits JSON lines in input order.
     Run {
         #[arg(required = true)]
@@ -148,7 +161,21 @@ fn main() -> Result<()> {
             .cache_layout
             .is_none_or(|layout| layout == CacheLayout::Compact)
         && cli.weight_layout == WeightLayout::Unpacked;
+    anyhow::ensure!(
+        !matches!(cli.command, Command::Pack { .. }) || (cli.mode != Mode::Exact && cli.model_file.is_none()),
+        "pack writes --mode near-exact or fast from the checkpoint"
+    );
     let model = Arc::new(match cli.mode {
+        _ if cli.model_file.is_some() => {
+            let path = cli.model_file.as_ref().unwrap();
+            let model = Model::load_packed(path, cli.verify_model_file)?;
+            eprintln!(
+                "kernel-ready model {} ({})",
+                path.display(),
+                model.attempt_profile().label()
+            );
+            model
+        }
         Mode::Exact if split_exact => {
             Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::SplitF32, None)?
         }
@@ -175,6 +202,17 @@ fn main() -> Result<()> {
         }
     });
     let load_ms = start.elapsed().as_secs_f64() * 1000.;
+    if let Command::Pack { output } = &cli.command {
+        model.prepare_screened_head()?;
+        model.write_packed(output)?;
+        eprintln!(
+            "wrote {} ({:.0} MB, {})",
+            output.display(),
+            std::fs::metadata(output)?.len() as f64 / 1e6,
+            model.attempt_profile().label()
+        );
+        return Ok(());
+    }
     if matches!(cli.command, Command::Inspect) {
         println!(
             "{}",

@@ -19,6 +19,9 @@ use std::{
 struct Cli {
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
+    /// Kernel-ready model file (`falcon-ocr pack`); overrides --profile's weights.
+    #[arg(long, global = true)]
+    model_file: Option<PathBuf>,
     #[arg(long, value_enum, default_value = "reference", global = true)]
     profile: Profile,
     #[arg(long, value_enum, default_value = "auto", global = true)]
@@ -458,13 +461,16 @@ fn main() -> Result<()> {
         Command::Doctor => unreachable!(),
     }
     let started = Instant::now();
-    let model = Arc::new(Model::load_attempt_bf16(
-        &args.model,
-        args.profile,
-        args.w8_artifact.as_deref(),
-        &args.keep_fp32,
-        args.weights_bf16,
-    )?);
+    let model = Arc::new(match &args.model_file {
+        Some(path) => Model::load_packed(path, false)?,
+        None => Model::load_attempt_bf16(
+            &args.model,
+            args.profile,
+            args.w8_artifact.as_deref(),
+            &args.keep_fp32,
+            args.weights_bf16,
+        )?,
+    });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.attempt_memory_report();
     let mut runner = Runner::new(

@@ -39,8 +39,8 @@ pub(crate) struct ScreenedHead {
     vocab: usize,
     dim: usize,
     groups: usize,
-    codes: Vec<i8>,
-    scales: Vec<f32>,
+    codes: crate::buf::Buf<i8>,
+    scales: crate::buf::Buf<f32>,
     weight_abs_max: f32,
     kappa: f32,
 }
@@ -116,11 +116,44 @@ impl ScreenedHead {
             vocab,
             dim,
             groups,
-            codes,
-            scales,
+            codes: crate::buf::Buf::Owned(codes),
+            scales: crate::buf::Buf::Owned(scales),
             weight_abs_max,
             kappa: kappa_f32,
         })
+    }
+
+    /// A screen stored in a kernel-ready model file (written by
+    /// `Model::write_packed` from `build`), used in place.
+    pub(crate) fn from_mapped(
+        vocab: usize,
+        dim: usize,
+        map: &std::sync::Arc<memmap2::Mmap>,
+        codes: std::ops::Range<usize>,
+        scales: std::ops::Range<usize>,
+        weight_abs_max: f32,
+        kappa: f32,
+    ) -> Result<Self> {
+        ensure!(vocab > 0 && dim > 0 && dim % GROUP == 0, "mapped screen shape");
+        ensure!(
+            weight_abs_max.is_finite() && kappa.is_finite() && kappa > 0.0 && kappa < 0.53,
+            "mapped screen constants"
+        );
+        let groups = dim / GROUP;
+        Ok(Self {
+            vocab,
+            dim,
+            groups,
+            codes: crate::buf::Buf::mapped(map, codes, vocab * dim)?,
+            scales: crate::buf::Buf::mapped(map, scales, vocab * groups)?,
+            weight_abs_max,
+            kappa,
+        })
+    }
+
+    /// Code bytes, scale bytes, and the bound constants (`weight_abs_max`, `kappa`).
+    pub(crate) fn raw_parts(&self) -> (&[u8], &[u8], f32, f32) {
+        (self.codes.bytes(), self.scales.bytes(), self.weight_abs_max, self.kappa)
     }
 
     pub(crate) fn payload_bytes(&self) -> usize {
