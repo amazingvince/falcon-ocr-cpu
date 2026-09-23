@@ -22,9 +22,10 @@
 //! equal. Tests compare the kernels with gemm for every tile shape and the
 //! whole function with `attention_gemm_compact`.
 //!
-//! `FALCON_OCR_EXP=fast` (read once) switches x86 to the portable fast exp
-//! (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
-//! portable instantiations, but no longer equal to the platform `expf`.
+//! `kernels::ExpMode::Fast` (`set_exp_mode`, or `FALCON_OCR_EXP=fast`)
+//! switches x86 to the portable fast exp (`simd::Avx2Fast`): no scalar
+//! fix-ups, bitwise equal to the NEON and portable instantiations, but no
+//! longer equal to the platform `expf`.
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;
 
@@ -87,7 +88,7 @@ pub(super) unsafe fn compact_prefill(
     output: &mut [f32],
 ) {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = if fast_exp() {
+    let tile: TileFn = if super::exp_mode() == super::ExpMode::Fast {
         tile_head_fast
     } else {
         tile_head_native
@@ -110,13 +111,6 @@ pub(super) unsafe fn compact_prefill(
             output,
         )
     }
-}
-
-/// Whether `FALCON_OCR_EXP=fast` selects the portable fast exp on x86.
-#[cfg(target_arch = "x86_64")]
-fn fast_exp() -> bool {
-    static FAST: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *FAST.get_or_init(|| std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "fast"))
 }
 
 /// Entry for one (query tile, head) with a given instruction set.
@@ -194,7 +188,7 @@ unsafe fn tile_head_native(
         tile_head::<crate::simd::Avx2>(q, k, v, shape, tile, queries, head, kv_head, sinks, output)
     }
 }
-/// AVX2 with the portable fast exp (`FALCON_OCR_EXP=fast`).
+/// AVX2 with the portable fast exp (`ExpMode::Fast`).
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
 #[allow(clippy::too_many_arguments)]

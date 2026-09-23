@@ -39,7 +39,10 @@
   - After the first flip, the page continues as a different but plausible transcription.
   - FP32 weights with Q8 KV flip far less often, and mostly by 1–7 tokens.
 - **Noise floor.** Rounding-level differences essentially never flip tokens on this model. GPU FP32 against CPU FP32 is 24/24 pages and 29,205 tokens identical (`artifacts/cpu/linux-v3-gpu-comparison-complete-v1.json`). Q8 KV and W8 perturb logits well above rounding level.
-- **Pending:** FP32 + fast exp alone, which isolates the rounding-level exp change from Q8 KV.
+- **FP32 + fast exp alone** (`reference`, `FALCON_OCR_EXP=fast`, `stage6`) is identical to FP32 on 67/67 pages: 0 edits in 93,249 tokens, the same stops.
+  - So the fast exp is token-safe, and the 19 pages that differ under `kv-q8` come from Q8 KV.
+  - That run's wall time is not comparable. The host ran games and chat clients from about page 15 onward, and decode was about 30% slower from then on.
+  - Tokens do not depend on host load.
 
 ## Speed: journal page, W8 + Q8 KV, 3 interleaved rounds (medians)
 
@@ -86,8 +89,12 @@
 
 | Mode | Contents | Journal page | Calibration tokens vs FP32 | Ground truth |
 |---|---|---:|---|---|
-| Exact | FP32 weights and KV; fast exp only if the pending run shows it token-safe | ~53–55 s | identical (bit-exact without fast exp) | reference |
+| Exact | FP32 weights and KV, fast exp, screened head | ~53 s | 67/67 identical | reference |
 | Fast | W8 body + Q8 KV + Q8 tail + fast exp (+ `gemm-avx512`), with `--stop-repetition` recommended | ~19 s | 19/67 identical | neutral on EOS pages; loops caught by the stop |
 
+- **Exposed as `falcon-ocr --mode exact|fast`.**
+  - Default head: screened. The fast exp is used for `run`; `trace` keeps the platform exp.
+  - `--mode fast` quantizes at load in about 0.5 s, or reads `--w8-artifact`.
+  - Both modes are token-identical to FP32 on the journal page.
 - **FP32 weights + Q8 KV** runs at about 31 s on the journal page and is much closer to FP32 (0.56% token edits on EOS pages). It flips tokens on 19 pages, so it is not an exact mode.
 - **BF16 storage of the FP32 weights would not be lossless.** Only about 1 in 65,536 values is exactly representable, so the checkpoint is genuine FP32.

@@ -6,6 +6,18 @@ use falcon_ocr::{
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
+/// What the FP32 runner optimizes for (see `attempt3/RESULTS-V2.md`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+enum Mode {
+    /// FP32 weights and caches. Tokens identical to the FP32 reference on
+    /// the 67-page calibration set.
+    Exact,
+    /// 8-bit body weights (W8G64) and 8-bit KV cache: about 3x faster
+    /// decode. Ground-truth neutral on calibration pages that end at EOS,
+    /// but different tokens on most pages; pair with --stop-repetition.
+    Fast,
+}
+
 #[derive(Parser)]
 #[command(version, about = "Falcon-OCR v1.5 CPU runner")]
 struct Cli {
@@ -13,6 +25,13 @@ struct Cli {
     model: PathBuf,
     #[arg(long, default_value_t = 16, global = true)]
     threads: usize,
+    /// FP32 runner mode.
+    #[arg(long, value_enum, default_value = "exact", global = true)]
+    mode: Mode,
+    /// W8G64 overlay for `--mode fast` (attempt3/convert_w8.py); without it
+    /// the body weights are quantized at load.
+    #[arg(long, global = true)]
+    w8_artifact: Option<PathBuf>,
     /// BF16 is an experimental single-request graph, separate from FP32 defaults.
     #[arg(long, value_enum, default_value = "fp32", global = true)]
     precision: Precision,
@@ -27,10 +46,11 @@ struct Cli {
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
     #[arg(long, value_enum, default_value = "unpacked", global = true)]
     weight_layout: WeightLayout,
-    /// FP32 greedy head: `screened` selects the same tokens through an exact
-    /// INT8 screen (53 MB extra); traces always record full logits.
-    #[arg(long, value_enum, default_value = "full", global = true)]
-    head: HeadMode,
+    /// FP32 greedy head [default: screened]: `screened` selects the same
+    /// tokens as `full` through an exact INT8 screen (53 MB extra); traces
+    /// always record full logits.
+    #[arg(long, value_enum, global = true)]
+    head: Option<HeadMode>,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at
     /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
     #[arg(long, global = true)]
@@ -87,8 +107,19 @@ fn main() -> Result<()> {
     if cli.precision == Precision::Bf16 {
         return execute_bf16(cli);
     }
+    anyhow::ensure!(
+        cli.w8_artifact.is_none() || cli.mode == Mode::Fast,
+        "--w8-artifact applies to --mode fast"
+    );
     let start = Instant::now();
-    let model = Arc::new(Model::load(&cli.model)?);
+    let model = Arc::new(match cli.mode {
+        Mode::Exact => Model::load(&cli.model)?,
+        Mode::Fast => Model::load_attempt(
+            &cli.model,
+            falcon_ocr::attempt::Profile::W8BodyKvQ8,
+            cli.w8_artifact.as_deref(),
+        )?,
+    });
     let load_ms = start.elapsed().as_secs_f64() * 1000.;
     if matches!(cli.command, Command::Inspect) {
         println!(
@@ -110,8 +141,18 @@ fn main() -> Result<()> {
             weight_layout: cli.weight_layout,
         },
     )?;
-    runner.set_head_mode(cli.head)?;
+    runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
     runner.set_repetition_stop(cli.stop_repetition);
+    // Recognition uses the fast exp (token-identical on calibration);
+    // FALCON_OCR_EXP=exact keeps the platform exp. Traces always keep it, so
+    // they stay bit-comparable with the recorded references.
+    let exact_exp = std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "exact")
+        || matches!(cli.command, Command::Trace { .. });
+    falcon_ocr::kernels::set_exp_mode(if exact_exp {
+        falcon_ocr::kernels::ExpMode::Exact
+    } else {
+        falcon_ocr::kernels::ExpMode::Fast
+    });
     match cli.command {
         Command::Run {
             images,
@@ -157,8 +198,12 @@ fn main() -> Result<()> {
 
 fn execute_bf16(cli: Cli) -> Result<()> {
     anyhow::ensure!(
-        cli.head == HeadMode::Full,
+        cli.head.is_none_or(|head| head == HeadMode::Full),
         "the experimental BF16 graph has no screened head"
+    );
+    anyhow::ensure!(
+        cli.mode == Mode::Exact && cli.w8_artifact.is_none(),
+        "--mode fast and --w8-artifact apply to the FP32 runner"
     );
     let config = RunnerConfig {
         threads: cli.threads,

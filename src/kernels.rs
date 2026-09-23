@@ -15,6 +15,55 @@ mod prefill64;
 #[cfg(target_arch = "x86_64")]
 pub(crate) mod vexp;
 
+/// Vector exp in the prefill attention tiles on x86.
+///
+/// `Exact` reproduces the platform `expf` bit for bit (`kernels::vexp`), so
+/// hidden states match earlier results on this host. `Fast` is the portable
+/// polynomial that NEON and the portable path use: at most a few ulp from
+/// `Exact` in rare lanes, about 1 s faster per full page, and token-identical
+/// to `Exact` on all 67 calibration pages (93,249 tokens). NEON always uses
+/// the fast exp.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExpMode {
+    Exact,
+    Fast,
+}
+
+const EXP_UNSET: u8 = 0;
+const EXP_EXACT: u8 = 1;
+const EXP_FAST: u8 = 2;
+static EXP_MODE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(EXP_UNSET);
+
+/// Select the prefill exp for this process. Without a call, `Exact` is used
+/// unless the environment sets `FALCON_OCR_EXP=fast`.
+pub fn set_exp_mode(mode: ExpMode) {
+    let value = match mode {
+        ExpMode::Exact => EXP_EXACT,
+        ExpMode::Fast => EXP_FAST,
+    };
+    EXP_MODE.store(value, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// The selected prefill exp mode.
+pub fn exp_mode() -> ExpMode {
+    use std::sync::atomic::Ordering::Relaxed;
+    let mut value = EXP_MODE.load(Relaxed);
+    if value == EXP_UNSET {
+        let fast = std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "fast");
+        value = if fast { EXP_FAST } else { EXP_EXACT };
+        // A concurrent explicit `set_exp_mode` wins over the environment.
+        value = match EXP_MODE.compare_exchange(EXP_UNSET, value, Relaxed, Relaxed) {
+            Ok(_) => value,
+            Err(current) => current,
+        };
+    }
+    if value == EXP_FAST {
+        ExpMode::Fast
+    } else {
+        ExpMode::Exact
+    }
+}
+
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.
 ///
 /// Explicit unavailable variants return an error from [`Simd::validate`] and

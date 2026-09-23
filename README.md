@@ -1,10 +1,12 @@
 # Falcon-OCR CPU runner
 
-> **Integrated experimental source added:** see [Attempt 3](attempt3/README.md) and
-> [its build/test status](attempt3/BUILD_STATUS.json). The new `falcon-ocr-attempt`
-> binary has opt-in W8/split-prefix profiles. **These changes are uncompiled here,
-> unqualified for OCR quality, and have no measured speedup.** Historical results
-> below apply to the original reference work, not this new attempt.
+> **Phase 4 (branch `phase4-attempt3`):** `--mode exact|fast`, an exact screened
+> vocabulary head, and an opt-in `--stop-repetition`. On the journal benchmark
+> page, exact mode keeps FP32 tokens and fast mode takes about 19 s instead of
+> about 64 s. The 200-page held-out qualification of fast mode is still to do.
+> Evidence: [Stage 5 results](attempt3/RESULTS-V2.md) and
+> [CPU portability](docs/CPU_PORTABILITY.md). Historical results below apply to
+> the reference path.
 
 A model-specific Rust library and CLI for the updated Falcon-OCR v1.5 weights.
 The implementation currently runs FP32 full-page plain OCR. It is under active
@@ -41,6 +43,31 @@ cargo run --release --locked -- doctor
 cargo run --release --locked -- inspect
 cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 ```
+
+### Modes
+
+| | `--mode exact` (default) | `--mode fast` |
+|---|---|---|
+| Weights | FP32 | 8-bit body (W8G64); FP32 embeddings, norms and head |
+| Image KV cache | FP32 | 8-bit (G32 scales), including generated tokens |
+| Tokens vs FP32 reference | identical on all 67 calibration pages | identical on 19 of 67; others diverge after a near-tie |
+| Quality vs ground truth | reference | neutral on pages that end normally (17.7% → 17.2% CER) |
+| Journal page (7950X, 16 threads) | ~53 s | ~19 s |
+
+Both modes use the exact screened head (`--head screened`, the default; it
+selects the same tokens as `--head full`) and a portable vector exp in prefill
+attention, which is token-identical to the platform exp on all calibration
+pages. Set `FALCON_OCR_EXP=exact` to keep the platform exp; `trace` always does.
+
+`--mode fast` quantizes the body weights at load (about 0.5 s), or reads an
+overlay from `--w8-artifact` (made by `attempt3/convert_w8.py`).
+- Fast mode can send a page that ended normally into a repetition loop: 2 of
+  the 58 such calibration pages.
+- `--stop-repetition` ends a page once it repeats a cycle of at most 128 tokens
+  for at least max(256, 4 × cycle) tokens, with `finish_reason: "repetition"`.
+  Output up to that point is unchanged.
+- On calibration it never fired on a page that ended normally, and cut decode
+  work by about 26–29%.
 
 The build wrappers can fetch checksum-verified CMake/NASM prerequisites into
 ignored local artifacts when absent, without changing system configuration:
