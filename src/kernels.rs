@@ -903,6 +903,9 @@ pub fn attention_compact_with_simd(
         // generated keys.
         unsafe {
             prefill64::compact_prefill(
+                cfg!(target_arch = "x86_64")
+                    && matches!(simd, Simd::Auto | Simd::Avx512)
+                    && avx512_available(),
                 q,
                 prefix_k,
                 v,

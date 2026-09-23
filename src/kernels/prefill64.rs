@@ -22,6 +22,13 @@
 //! equal. Tests compare the kernels with gemm for every tile shape and the
 //! whole function with `attention_gemm_compact`.
 //!
+//! With AVX-512F (and backend `auto` or `avx512`), the QK and PV products use
+//! 16-lane `wide` kernels: every element keeps the same FMA chain and epilogue,
+//! so results are bitwise identical to the AVX2 kernels, while 32 registers
+//! let each broadcast feed all 32 queries of a tile (QK) or a whole 64-wide
+//! row (PV). Key blocks stay at 8 rows: key rows are 4 KB apart, so more rows
+//! per block would exceed the 8 ways of an L1 set.
+//!
 //! `kernels::ExpMode::Fast` (`set_exp_mode`, or `FALCON_OCR_EXP=fast`)
 //! switches x86 to the portable fast exp (`simd::Avx2Fast`): no scalar
 //! fix-ups, bitwise equal to the NEON and portable instantiations, but no
@@ -75,6 +82,7 @@ struct Shape {
 /// total_len`.
 #[allow(clippy::too_many_arguments)]
 pub(super) unsafe fn compact_prefill(
+    wide: bool,
     q: &[f32],
     k: &[f32],
     v: &[f32],
@@ -88,13 +96,17 @@ pub(super) unsafe fn compact_prefill(
     output: &mut [f32],
 ) {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = if super::exp_mode() == super::ExpMode::Fast {
-        tile_head_fast
-    } else {
-        tile_head_native
+    let tile: TileFn = match (super::exp_mode() == super::ExpMode::Fast, wide) {
+        (true, true) => tile_head_fast_wide,
+        (true, false) => tile_head_fast,
+        (false, true) => tile_head_native_wide,
+        (false, false) => tile_head_native,
     };
     #[cfg(not(target_arch = "x86_64"))]
-    let tile: TileFn = tile_head_native;
+    let tile: TileFn = {
+        let _ = wide;
+        tile_head_native
+    };
     unsafe {
         compact_prefill_with(
             tile,
@@ -185,7 +197,53 @@ unsafe fn tile_head_native(
     output: *mut f32,
 ) {
     unsafe {
-        tile_head::<crate::simd::Avx2>(q, k, v, shape, tile, queries, head, kv_head, sinks, output)
+        tile_head::<crate::simd::Avx2, false>(
+            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
+        )
+    }
+}
+/// AVX-512F QK/PV products with the platform-exact exp.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma,avx512f")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn tile_head_native_wide(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    unsafe {
+        tile_head::<crate::simd::Avx2, true>(
+            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
+        )
+    }
+}
+/// AVX-512F QK/PV products with the portable fast exp.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma,avx512f")]
+#[allow(clippy::too_many_arguments)]
+unsafe fn tile_head_fast_wide(
+    q: &[f32],
+    k: &[f32],
+    v: &[f32],
+    shape: &Shape,
+    tile: usize,
+    queries: usize,
+    head: usize,
+    kv_head: usize,
+    sinks: &[f32],
+    output: *mut f32,
+) {
+    unsafe {
+        tile_head::<crate::simd::Avx2Fast, true>(
+            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
+        )
     }
 }
 /// AVX2 with the portable fast exp (`ExpMode::Fast`).
@@ -205,7 +263,7 @@ unsafe fn tile_head_fast(
     output: *mut f32,
 ) {
     unsafe {
-        tile_head::<crate::simd::Avx2Fast>(
+        tile_head::<crate::simd::Avx2Fast, false>(
             q, k, v, shape, tile, queries, head, kv_head, sinks, output,
         )
     }
@@ -225,7 +283,9 @@ unsafe fn tile_head_native(
     output: *mut f32,
 ) {
     unsafe {
-        tile_head::<crate::simd::Neon>(q, k, v, shape, tile, queries, head, kv_head, sinks, output)
+        tile_head::<crate::simd::Neon, false>(
+            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
+        )
     }
 }
 /// The portable instantiation (tests; bitwise equal to NEON).
@@ -244,7 +304,7 @@ unsafe fn tile_head_portable(
     output: *mut f32,
 ) {
     unsafe {
-        tile_head::<crate::simd::Portable>(
+        tile_head::<crate::simd::Portable, false>(
             q, k, v, shape, tile, queries, head, kv_head, sinks, output,
         )
     }
@@ -252,7 +312,7 @@ unsafe fn tile_head_portable(
 
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
-unsafe fn tile_head<S: Isa>(
+unsafe fn tile_head<S: Isa, const WIDE: bool>(
     q: &[f32],
     k: &[f32],
     v: &[f32],
@@ -304,6 +364,29 @@ unsafe fn tile_head<S: Isa>(
         };
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
             unsafe {
+                #[cfg(target_arch = "x86_64")]
+                if WIDE {
+                    wide::qk_lanes(
+                        &qt,
+                        queries,
+                        key_rows,
+                        shape.query_width,
+                        keys,
+                        shape.scale,
+                        &mut st,
+                    );
+                } else {
+                    qk_lanes::<S>(
+                        &qt,
+                        queries,
+                        key_rows,
+                        shape.query_width,
+                        keys,
+                        shape.scale,
+                        &mut st,
+                    );
+                }
+                #[cfg(not(target_arch = "x86_64"))]
                 qk_lanes::<S>(
                     &qt,
                     queries,
@@ -325,6 +408,29 @@ unsafe fn tile_head<S: Isa>(
                     out,
                     shape.query_width,
                 );
+                #[cfg(target_arch = "x86_64")]
+                if WIDE {
+                    wide::pv_lanes(
+                        &st,
+                        queries,
+                        keys,
+                        value_rows,
+                        shape.kv_width,
+                        out,
+                        shape.query_width,
+                    );
+                } else {
+                    pv_lanes::<S>(
+                        &st,
+                        queries,
+                        keys,
+                        value_rows,
+                        shape.kv_width,
+                        out,
+                        shape.query_width,
+                    );
+                }
+                #[cfg(not(target_arch = "x86_64"))]
                 pv_lanes::<S>(
                     &st,
                     queries,
@@ -604,6 +710,164 @@ unsafe fn pv_rows<S: Isa, const R: usize>(
     }
 }
 
+/// AVX-512F forms of [`qk_lanes`] and [`pv_lanes`]. Each element keeps their
+/// exact sequence (an FMA chain from +0.0 in the same order, then `scale *
+/// acc` or `acc + out`), so outputs are bitwise identical.
+#[cfg(target_arch = "x86_64")]
+mod wide {
+    use super::{HEAD_DIM, KEY_TILE, QUERY_TILE};
+    use std::arch::x86_64::*;
+
+    /// `st[key * 32 + query] = scale * sum_d q[query][d] * k[key][d]`: all
+    /// the tile's queries (one or two 16-lane vectors) by 8-key blocks.
+    #[inline(always)]
+    pub(super) unsafe fn qk_lanes(
+        qt: &[f32; HEAD_DIM * QUERY_TILE],
+        queries: usize,
+        k: *const f32,
+        k_stride: usize,
+        keys: usize,
+        scale: f32,
+        st: &mut [f32; KEY_TILE * QUERY_TILE],
+    ) {
+        unsafe {
+            if queries > 16 {
+                qk_blocks::<2>(qt, k, k_stride, keys, scale, st);
+            } else {
+                qk_blocks::<1>(qt, k, k_stride, keys, scale, st);
+            }
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn qk_blocks<const V: usize>(
+        qt: &[f32; HEAD_DIM * QUERY_TILE],
+        k: *const f32,
+        k_stride: usize,
+        keys: usize,
+        scale: f32,
+        st: &mut [f32; KEY_TILE * QUERY_TILE],
+    ) {
+        unsafe {
+            let scale = _mm512_set1_ps(scale);
+            let mut key = 0;
+            while key + 8 <= keys {
+                qk_keys::<V, 8>(qt, k, k_stride, key, scale, st);
+                key += 8;
+            }
+            match keys - key {
+                7 => qk_keys::<V, 7>(qt, k, k_stride, key, scale, st),
+                6 => qk_keys::<V, 6>(qt, k, k_stride, key, scale, st),
+                5 => qk_keys::<V, 5>(qt, k, k_stride, key, scale, st),
+                4 => qk_keys::<V, 4>(qt, k, k_stride, key, scale, st),
+                3 => qk_keys::<V, 3>(qt, k, k_stride, key, scale, st),
+                2 => qk_keys::<V, 2>(qt, k, k_stride, key, scale, st),
+                1 => qk_keys::<V, 1>(qt, k, k_stride, key, scale, st),
+                _ => {}
+            }
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn qk_keys<const V: usize, const N: usize>(
+        qt: &[f32; HEAD_DIM * QUERY_TILE],
+        k: *const f32,
+        k_stride: usize,
+        key: usize,
+        scale: __m512,
+        st: &mut [f32; KEY_TILE * QUERY_TILE],
+    ) {
+        unsafe {
+            let mut acc = [[_mm512_setzero_ps(); V]; N];
+            for d in 0..HEAD_DIM {
+                let mut q = [_mm512_setzero_ps(); V];
+                for (v, q) in q.iter_mut().enumerate() {
+                    *q = _mm512_loadu_ps(qt.as_ptr().add(d * QUERY_TILE + 16 * v));
+                }
+                for (n, acc) in acc.iter_mut().enumerate() {
+                    let kv = _mm512_set1_ps(*k.add((key + n) * k_stride + d));
+                    for (a, q) in acc.iter_mut().zip(q) {
+                        *a = _mm512_fmadd_ps(q, kv, *a);
+                    }
+                }
+            }
+            for (n, acc) in acc.iter().enumerate() {
+                let dst = st.as_mut_ptr().add((key + n) * QUERY_TILE);
+                for (v, a) in acc.iter().enumerate() {
+                    _mm512_storeu_ps(dst.add(16 * v), _mm512_mul_ps(scale, *a));
+                }
+            }
+        }
+    }
+
+    /// `out[query][d] += sum_j p[j][query] * v[j][d]`: 6 query rows by the
+    /// whole 64-wide row (24 accumulators), one broadcast per probability.
+    #[inline(always)]
+    pub(super) unsafe fn pv_lanes(
+        st: &[f32; KEY_TILE * QUERY_TILE],
+        queries: usize,
+        keys: usize,
+        v: *const f32,
+        v_stride: usize,
+        out: *mut f32,
+        out_stride: usize,
+    ) {
+        unsafe {
+            let mut row = 0;
+            while row < queries {
+                let rows = (queries - row).min(6);
+                match rows {
+                    6 => pv_rows::<6>(st, row, keys, v, v_stride, out, out_stride),
+                    5 => pv_rows::<5>(st, row, keys, v, v_stride, out, out_stride),
+                    4 => pv_rows::<4>(st, row, keys, v, v_stride, out, out_stride),
+                    3 => pv_rows::<3>(st, row, keys, v, v_stride, out, out_stride),
+                    2 => pv_rows::<2>(st, row, keys, v, v_stride, out, out_stride),
+                    _ => pv_rows::<1>(st, row, keys, v, v_stride, out, out_stride),
+                }
+                row += rows;
+            }
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn pv_rows<const R: usize>(
+        st: &[f32; KEY_TILE * QUERY_TILE],
+        row: usize,
+        keys: usize,
+        v: *const f32,
+        v_stride: usize,
+        out: *mut f32,
+        out_stride: usize,
+    ) {
+        unsafe {
+            let mut acc = [[_mm512_setzero_ps(); 4]; R];
+            for j in 0..keys {
+                let vr = v.add(j * v_stride);
+                let values = [
+                    _mm512_loadu_ps(vr),
+                    _mm512_loadu_ps(vr.add(16)),
+                    _mm512_loadu_ps(vr.add(32)),
+                    _mm512_loadu_ps(vr.add(48)),
+                ];
+                let p = st.as_ptr().add(j * QUERY_TILE + row);
+                for (r, acc) in acc.iter_mut().enumerate() {
+                    let pv = _mm512_set1_ps(*p.add(r));
+                    for (a, value) in acc.iter_mut().zip(values) {
+                        *a = _mm512_fmadd_ps(value, pv, *a);
+                    }
+                }
+            }
+            for (r, acc) in acc.iter().enumerate() {
+                let dst = out.add((row + r) * out_stride);
+                for (c, a) in acc.iter().enumerate() {
+                    let at = dst.add(16 * c);
+                    _mm512_storeu_ps(at, _mm512_add_ps(*a, _mm512_loadu_ps(at)));
+                }
+            }
+        }
+    }
+}
+
 /// A key tile outside gemm's main path: the reference code verbatim (gemm QK,
 /// scalar mask/softmax, gemm PV) on row-major scores.
 #[allow(clippy::too_many_arguments)]
@@ -823,6 +1087,124 @@ mod tests {
     }
 
     #[cfg(target_arch = "x86_64")]
+    fn wide_available() -> bool {
+        available() && std::is_x86_feature_detected!("avx512f")
+    }
+
+    /// The AVX-512 QK and PV kernels equal the AVX2 ones bit for bit on every
+    /// tile shape (both keep one FMA chain per element in the same order).
+    #[cfg(target_arch = "x86_64")]
+    #[test]
+    fn wide_qk_and_pv_match_avx2_for_every_tile_shape() {
+        if !wide_available() {
+            return;
+        }
+        #[target_feature(enable = "avx2,fma,avx512f")]
+        unsafe fn both(
+            qt: &[f32; HEAD_DIM * QUERY_TILE],
+            queries: usize,
+            keys: usize,
+            k: &[f32],
+            v: &[f32],
+            probabilities: &[f32; KEY_TILE * QUERY_TILE],
+            initial: &[f32],
+        ) -> [Vec<f32>; 4] {
+            let mut st_narrow = [f32::NAN; KEY_TILE * QUERY_TILE];
+            let mut st_wide = [f32::NAN; KEY_TILE * QUERY_TILE];
+            let mut out_narrow = initial.to_vec();
+            let mut out_wide = initial.to_vec();
+            unsafe {
+                qk_lanes::<crate::simd::Avx2>(
+                    qt,
+                    queries,
+                    k.as_ptr(),
+                    1024,
+                    keys,
+                    0.125,
+                    &mut st_narrow,
+                );
+                wide::qk_lanes(qt, queries, k.as_ptr(), 1024, keys, 0.125, &mut st_wide);
+                pv_lanes::<crate::simd::Avx2>(
+                    probabilities,
+                    queries,
+                    keys,
+                    v.as_ptr(),
+                    512,
+                    out_narrow.as_mut_ptr(),
+                    1024,
+                );
+                wide::pv_lanes(
+                    probabilities,
+                    queries,
+                    keys,
+                    v.as_ptr(),
+                    512,
+                    out_wide.as_mut_ptr(),
+                    1024,
+                );
+            }
+            let keep = |st: &[f32; KEY_TILE * QUERY_TILE]| {
+                (0..keys)
+                    .flat_map(|j| (0..queries).map(move |r| (j, r)))
+                    .map(|(j, r)| st[j * QUERY_TILE + r])
+                    .collect::<Vec<_>>()
+            };
+            [keep(&st_narrow), keep(&st_wide), out_narrow, out_wide]
+        }
+        let k = values(KEY_TILE * 1024, 5, 4.0);
+        let v = values(KEY_TILE * 512, 7, 4.0);
+        let q = values(QUERY_TILE * HEAD_DIM, 3, 4.0);
+        let mut qt = [0.0_f32; HEAD_DIM * QUERY_TILE];
+        let mut probabilities = [0.0_f32; KEY_TILE * QUERY_TILE];
+        for (i, p) in values(KEY_TILE * QUERY_TILE, 11, 1.0)
+            .into_iter()
+            .enumerate()
+        {
+            probabilities[i] = if p < -0.7 { 0.0 } else { p.abs() };
+        }
+        let initial = values(QUERY_TILE * 1024, 13, 4.0);
+        for queries in 1..=QUERY_TILE {
+            qt.fill(0.0);
+            for r in 0..queries {
+                for d in 0..HEAD_DIM {
+                    qt[d * QUERY_TILE + r] = q[r * HEAD_DIM + d];
+                }
+            }
+            for keys in 1..=KEY_TILE {
+                let [a, b, c, d] =
+                    unsafe { both(&qt, queries, keys, &k, &v, &probabilities, &initial) };
+                for (i, (x, y)) in a.iter().zip(&b).enumerate() {
+                    assert_eq!(x.to_bits(), y.to_bits(), "qk q{queries} k{keys} {i}");
+                }
+                for (i, (x, y)) in c.iter().zip(&d).enumerate() {
+                    assert_eq!(x.to_bits(), y.to_bits(), "pv q{queries} k{keys} {i}");
+                }
+            }
+        }
+    }
+
+    /// Whole prefill: the wide entries equal the AVX2 entries bit for bit.
+    #[cfg(target_arch = "x86_64")]
+    #[test]
+    fn wide_prefill_matches_avx2_bitwise() {
+        if !wide_available() {
+            return;
+        }
+        for (query_len, image_start, image_end) in CASES {
+            for (narrow, wide) in [
+                (tile_head_native as TileFn, tile_head_native_wide as TileFn),
+                (tile_head_fast as TileFn, tile_head_fast_wide as TileFn),
+            ] {
+                let a = run(narrow, query_len, (image_start, image_end));
+                let b = run(wide, query_len, (image_start, image_end));
+                for (i, (x, y)) in a.iter().zip(&b).enumerate() {
+                    assert_eq!(x.to_bits(), y.to_bits(), "query_len {query_len} index {i}");
+                }
+            }
+        }
+    }
+
+    #[cfg(target_arch = "x86_64")]
     #[target_feature(enable = "avx2,fma")]
     unsafe fn qk_via_lanes(
         q: &[f32],
@@ -1029,6 +1411,7 @@ mod tests {
             let mut actual = vec![f32::NAN; q.len()];
             unsafe {
                 compact_prefill(
+                    false,
                     &q,
                     &k,
                     &v,
