@@ -35,6 +35,10 @@ struct Cli {
     /// `layers.3.feed_forward.w2.weight` or `layers.3.*`.
     #[arg(long, value_delimiter = ',', global = true)]
     keep_fp32: Vec<String>,
+    /// Round every checkpoint tensor to BF16 precision first (production
+    /// serves BF16); arithmetic stays FP32.
+    #[arg(long, global = true)]
+    weights_bf16: bool,
     /// FP32 greedy head evaluation; `screened` is exact (same tokens as `full`).
     #[arg(long, value_enum, default_value = "full", global = true)]
     head: HeadMode,
@@ -445,11 +449,12 @@ fn main() -> Result<()> {
         Command::Doctor => unreachable!(),
     }
     let started = Instant::now();
-    let model = Arc::new(Model::load_attempt_with(
+    let model = Arc::new(Model::load_attempt_bf16(
         &args.model,
         args.profile,
         args.w8_artifact.as_deref(),
         &args.keep_fp32,
+        args.weights_bf16,
     )?);
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.attempt_memory_report();
@@ -686,6 +691,7 @@ fn main() -> Result<()> {
                 "binary_sha256":digest(&std::env::current_exe()?)?,"threads":args.threads,"backend":args.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
                 "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,
+                "weights_bf16":args.weights_bf16,
                 "wall_ms":started.elapsed().as_secs_f64() * 1000.0,"pages":pages});
             write_new(&report, &report_value)
                 .with_context(|| format!("write {}", report.display()))?;

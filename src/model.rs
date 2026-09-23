@@ -46,10 +46,26 @@ struct PackedWeights {
     packing_ms: f64,
 }
 
+/// Checkpoint bytes: the read-only file mapping, or an owned copy whose
+/// tensors were rounded (`Model::round_weights_to_bf16`).
+enum Store {
+    Mapped(Mmap),
+    /// 4-byte aligned copy of the whole file.
+    Owned(Vec<u32>),
+}
+impl Store {
+    fn bytes(&self) -> &[u8] {
+        match self {
+            Store::Mapped(map) => &map[..],
+            Store::Owned(words) => bytemuck::cast_slice(words),
+        }
+    }
+}
+
 /// An immutable checkpoint. Keep its backing file unchanged while the model is loaded.
 pub struct Model {
     pub(crate) config: ModelConfig,
-    map: Mmap,
+    map: Store,
     embedding: Weight,
     projector: Weight,
     norm: Weight,
@@ -226,7 +242,7 @@ impl Model {
         let temporal = temporal_factors(&config);
         Ok(Self {
             config,
-            map,
+            map: Store::Mapped(map),
             embedding,
             projector,
             norm,
@@ -246,6 +262,39 @@ impl Model {
     /// Load a separately labelled experiment without changing the reference loader.
     /// Source weights remain mmap-backed for protected tensors and the oracle.
     /// The mapping length is NOT equivalent to additional committed/resident RAM.
+    /// Round every checkpoint tensor to BF16 precision (round to nearest,
+    /// ties to even; the values stay FP32). Production serves this model in
+    /// BF16: FP32 arithmetic on these weights is several times closer to its
+    /// outputs than FP32 arithmetic on the original weights. Copies the
+    /// checkpoint into memory; call before any W8 overlay or screened head.
+    pub fn round_weights_to_bf16(&mut self) {
+        let bytes = self.map.bytes();
+        let mut words = vec![0u32; bytes.len().div_ceil(4)];
+        bytemuck::cast_slice_mut::<u32, u8>(&mut words)[..bytes.len()].copy_from_slice(bytes);
+        let ranges = [
+            &self.embedding,
+            &self.projector,
+            &self.norm,
+            &self.output,
+            &self.golden,
+        ]
+        .into_iter()
+        .chain(
+            self.layers
+                .iter()
+                .flat_map(|l| [&l.qkv, &l.wo, &l.w13, &l.w2, &l.sinks]),
+        )
+        .map(|w| w.range.clone())
+        .collect::<Vec<_>>();
+        for range in ranges {
+            debug_assert!(range.start % 4 == 0 && range.end % 4 == 0);
+            for bits in &mut words[range.start / 4..range.end / 4] {
+                *bits = round_bf16_bits(*bits);
+            }
+        }
+        self.map = Store::Owned(words);
+    }
+
     pub fn load_attempt(
         dir: impl AsRef<Path>,
         profile: crate::attempt::Profile,
@@ -264,7 +313,23 @@ impl Model {
         artifact: Option<&Path>,
         keep_fp32: &[String],
     ) -> Result<Self> {
+        Self::load_attempt_bf16(dir, profile, artifact, keep_fp32, false)
+    }
+
+    /// [`Model::load_attempt_with`], optionally on BF16-rounded weights
+    /// ([`Model::round_weights_to_bf16`]), which unquantized matrices,
+    /// embeddings, norms and the head then use.
+    pub fn load_attempt_bf16(
+        dir: impl AsRef<Path>,
+        profile: crate::attempt::Profile,
+        artifact: Option<&Path>,
+        keep_fp32: &[String],
+        weights_bf16: bool,
+    ) -> Result<Self> {
         let mut model = Self::load(dir)?;
+        if weights_bf16 {
+            model.round_weights_to_bf16();
+        }
         model.attempt_profile = profile;
         ensure!(
             artifact.is_none() || profile.quantizes_body(),
@@ -432,7 +497,7 @@ impl Model {
             .map(|l| effective(&l.qkv) + effective(&l.wo) + effective(&l.w13) + effective(&l.w2))
             .sum::<usize>()
             + effective(&self.output);
-        serde_json::json!({"profile":self.attempt_profile,"source_mapping_bytes":self.map.len(),
+        serde_json::json!({"profile":self.attempt_profile,"source_mapping_bytes":self.map.bytes().len(),
             "quantized_weight_payload_bytes":quantized,"logical_decode_weight_scan_bytes":scanned,
             "quantization_or_import_ms":self.attempt_setup_ms,"w8_artifact_sha256":self.attempt_artifact_sha256,
             "source_mapping_is_not_rss":true,"weights_group_size":64,"weights_scale_dtype":"f32",
@@ -526,7 +591,7 @@ impl Model {
     }
 
     fn w(&self, weight: &Weight) -> &[f32] {
-        bytemuck::cast_slice(&self.map[weight.range.clone()])
+        bytemuck::cast_slice(&self.map.bytes()[weight.range.clone()])
     }
 
     pub(crate) fn embed(
@@ -1660,6 +1725,15 @@ pub(crate) fn report_decode_phases() {
 /// Decode (one to eight rows) stays serial; arithmetic is identical either way.
 const PARALLEL_ROWS: usize = 64;
 
+/// FP32 bits rounded to the nearest BF16 value (ties to even), as FP32 bits.
+/// NaN and infinity are returned unchanged.
+fn round_bf16_bits(bits: u32) -> u32 {
+    if (bits & 0x7F80_0000) == 0x7F80_0000 {
+        return bits;
+    }
+    (bits.wrapping_add(0x7FFF + ((bits >> 16) & 1))) & 0xFFFF_0000
+}
+
 /// `*` in `pattern` matches any run of characters; everything else literally.
 fn glob_match(pattern: &str, name: &str) -> bool {
     let parts: Vec<&str> = pattern.split('*').collect();
@@ -1678,6 +1752,36 @@ fn glob_match(pattern: &str, name: &str) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod bf16_round_tests {
+    #[test]
+    fn rounds_like_bf16_conversion() {
+        use super::round_bf16_bits;
+        for x in [
+            1.0f32,
+            -2.5,
+            1.0e-3,
+            3.14159,
+            65504.0,
+            -1.0e-30,
+            0.0,
+            -0.0,
+            7.1234567e5,
+        ] {
+            let expected = half::bf16::from_f32(x).to_f32();
+            assert_eq!(
+                f32::from_bits(round_bf16_bits(x.to_bits())),
+                expected,
+                "{x}"
+            );
+        }
+        // Ties go to even: 1 + 2^-8 lies halfway between 1 and 1 + 2^-7.
+        let tie = f32::from_bits(0x3F80_8000);
+        assert_eq!(f32::from_bits(round_bf16_bits(tie.to_bits())), 1.0);
+        assert!(f32::from_bits(round_bf16_bits(f32::NAN.to_bits())).is_nan());
+    }
 }
 
 #[cfg(test)]

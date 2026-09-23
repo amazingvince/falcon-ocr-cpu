@@ -166,6 +166,8 @@ def main() -> None:
     ap.add_argument("--gram-dir", type=Path)
     ap.add_argument("--act-order", action="store_true", help="GPTQ: descending activation order, static groups")
     ap.add_argument("--damp", type=float, default=0.01, help="GPTQ: relative Hessian dampening")
+    ap.add_argument("--source-bf16", action="store_true",
+                    help="quantize the BF16-rounded weights (production serves BF16) instead of FP32")
     ap.add_argument("--include", default=".*")
     ap.add_argument("--exclude", default="$^")
     args = ap.parse_args()
@@ -182,6 +184,8 @@ def main() -> None:
     with safe_open(source, framework="numpy") as model:
         for name in names:
             w = model.get_tensor(name)
+            if args.source_bf16:
+                w = (w.view(np.uint32) + 0x7FFF + ((w.view(np.uint32) >> 16) & 1) & 0xFFFF0000).view(np.float32)
             gram = None
             if args.gram_dir:
                 gram = np.load(args.gram_dir / f"{name}.gram.npy")
@@ -198,7 +202,8 @@ def main() -> None:
     partial = len(names) < len(inventory(False))
     metadata = {"format": FORMAT, "source_sha256": SOURCE_SHA256, "model_revision": REVISION,
                 "include_head": "false", "group_size": str(args.group), "scale_dtype": "f32",
-                "rounding": f"{args.method}-{args.clip}" + ("-actorder" if args.act_order else ""),
+                "rounding": f"{args.method}-{args.clip}" + ("-actorder" if args.act_order else "")
+                + ("-bf16source" if args.source_bf16 else ""),
                 "activation_dtype": "f32",
                 "partial": str(partial).lower()}
     args.output.parent.mkdir(parents=True, exist_ok=True)
