@@ -17,6 +17,14 @@ pub trait Trace: Send {
     /// One screened vocabulary-head selection: rows recomputed exactly, and
     /// whether the step fell back to the full FP32 head.
     fn head_screen(&mut self, _candidates: usize, _fallback: bool) {}
+    /// Whether teacher-forced runs should also compute the model's own greedy
+    /// choice at every step and report it through [`Trace::teacher_step`].
+    fn scores_teacher(&self) -> bool {
+        false
+    }
+    /// Teacher-forced step `step`: the forced token and the token greedy
+    /// decoding would have selected from the same prefix.
+    fn teacher_step(&mut self, _step: usize, _forced: u32, _predicted: u32) {}
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()>;
 }
 pub struct NoTrace;

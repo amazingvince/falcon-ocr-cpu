@@ -172,6 +172,28 @@ impl Runner {
         result.timings.time_to_first_token_ms += decode_ms;
         Ok(result)
     }
+    /// Teacher-forced run over `teacher` (for example a reference run's
+    /// token IDs): every step feeds the forced token, and a trace whose
+    /// `scores_teacher` is true receives the greedy choice at each step.
+    /// `options.max_new_tokens` must equal `teacher.len()`.
+    pub fn score_teacher_file(
+        &self,
+        path: impl AsRef<Path>,
+        teacher: &[u32],
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+    ) -> Result<OcrResult> {
+        options.validate()?;
+        ensure!(
+            !teacher.is_empty() && options.max_new_tokens == teacher.len(),
+            "teacher scoring needs max_new_tokens equal to the teacher length"
+        );
+        let (prepared, _) =
+            prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
+        validate_prepared_bounds(&prepared, options)?;
+        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
+        self.run_prepared_scoped(prepared, tokens, options, 0.0, trace, teacher)
+    }
     pub fn recognize(&self, image: &RgbImage, options: &GenerationOptions) -> Result<OcrResult> {
         self.recognize_with_trace(image, options, &mut NoTrace)
     }
@@ -572,7 +594,11 @@ impl Runner {
             screen,
         )?;
         let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
+        let score = trace.scores_teacher();
         let mut next_token = if let Some(&forced) = teacher_tokens.first() {
+            if score {
+                trace.teacher_step(0, forced, select(&next, 0, c.vocab_size)?);
+            }
             forced
         } else {
             select(&next, 0, c.vocab_size)?
@@ -631,6 +657,9 @@ impl Runner {
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
             next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
+                if score {
+                    trace.teacher_step(step + 1, forced, select(&next, 0, c.vocab_size)?);
+                }
                 forced
             } else {
                 select(&next, 0, c.vocab_size)?

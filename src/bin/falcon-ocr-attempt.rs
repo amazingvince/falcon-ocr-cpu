@@ -68,6 +68,59 @@ enum Command {
         #[arg(long, default_value_t = 4)]
         max_new_tokens: usize,
     },
+    /// Teacher-force each page's reference tokens (from a `bench` report of
+    /// the same pages) and count the steps where this profile's greedy choice
+    /// differs: a per-step fidelity measure that one early divergence cannot
+    /// inflate.
+    Agree {
+        #[arg(required = true)]
+        images: Vec<PathBuf>,
+        /// `bench` report whose outputs supply the forced tokens.
+        #[arg(long)]
+        reference: PathBuf,
+        /// Forced steps per page (the reference output is truncated to this).
+        #[arg(long, default_value_t = 1024)]
+        max_steps: usize,
+        #[arg(long, default_value_t = 1536)]
+        max_dimension: u32,
+        #[arg(long, default_value_t = 64)]
+        min_dimension: u32,
+        /// Must not already exist.
+        #[arg(long)]
+        report: PathBuf,
+    },
+}
+
+/// Collects the teacher-forced greedy choices of one page.
+#[derive(Default)]
+struct Agreement {
+    steps: usize,
+    flips: Vec<(usize, u32, u32)>,
+}
+impl falcon_ocr::trace::Trace for Agreement {
+    fn enabled(&self) -> bool {
+        false
+    }
+    fn scores_teacher(&self) -> bool {
+        true
+    }
+    fn teacher_step(&mut self, step: usize, forced: u32, predicted: u32) {
+        self.steps += 1;
+        if forced != predicted {
+            self.flips.push((step, forced, predicted));
+        }
+    }
+    fn tensor(&mut self, _name: &str, _shape: &[usize], _data: &[f32]) -> Result<()> {
+        Ok(())
+    }
+}
+
+/// Page directory name of an input image path (the corpus page ID).
+fn page_id(path: &Path) -> String {
+    path.parent()
+        .and_then(|p| p.file_name())
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default()
 }
 fn digest(path: &Path) -> Result<String> {
     let mut file = std::fs::File::open(path)?;
@@ -138,6 +191,18 @@ fn main() -> Result<()> {
                 max_dimension: *max_dimension,
             }
             .validate()?;
+            for p in images {
+                ensure!(p.is_file(), "missing image {}", p.display());
+            }
+        }
+        Command::Agree {
+            images,
+            reference,
+            report,
+            ..
+        } => {
+            ensure!(!report.exists(), "report already exists");
+            ensure!(reference.is_file(), "missing reference report");
             for p in images {
                 ensure!(p.is_file(), "missing image {}", p.display());
             }
@@ -243,6 +308,80 @@ fn main() -> Result<()> {
                 &output.with_extension("json"),
                 &serde_json::json!({"profile":args.profile,"quality_qualified":false,"output":result,"memory_policy":memory}),
             )?;
+        }
+        Command::Agree {
+            images,
+            reference,
+            max_steps,
+            max_dimension,
+            min_dimension,
+            report,
+        } => {
+            let reference_report: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(&reference)?)?;
+            let mut forced = std::collections::HashMap::new();
+            let inputs = reference_report["inputs"]
+                .as_array()
+                .context("reference inputs")?;
+            let outputs = reference_report["samples"][0]["outputs"]
+                .as_array()
+                .context("reference outputs")?;
+            for (input, output) in inputs.iter().zip(outputs) {
+                let path = PathBuf::from(input["path"].as_str().context("reference path")?);
+                let ids = output["token_ids"]
+                    .as_array()
+                    .context("reference token_ids")?
+                    .iter()
+                    .map(|v| v.as_u64().map(|x| x as u32).context("token id"))
+                    .collect::<Result<Vec<u32>>>()?;
+                forced.insert(page_id(&path), ids);
+            }
+            let started = Instant::now();
+            let (mut total_steps, mut total_flips) = (0usize, 0usize);
+            let mut pages = Vec::with_capacity(images.len());
+            for image in &images {
+                let id = page_id(image);
+                let ids = forced
+                    .get(&id)
+                    .with_context(|| format!("page {id} missing from the reference report"))?;
+                let teacher = &ids[..ids.len().min(max_steps)];
+                let options = GenerationOptions {
+                    max_new_tokens: teacher.len(),
+                    max_dimension,
+                    min_dimension,
+                };
+                let mut agreement = Agreement::default();
+                let t = Instant::now();
+                runner.score_teacher_file(image, teacher, &options, &mut agreement)?;
+                let wall_ms = t.elapsed().as_secs_f64() * 1000.0;
+                total_steps += agreement.steps;
+                total_flips += agreement.flips.len();
+                eprintln!(
+                    "{id}: {} flips / {} steps in {:.1}s",
+                    agreement.flips.len(),
+                    agreement.steps,
+                    wall_ms / 1000.0
+                );
+                pages.push(serde_json::json!({"page":id,"path":image,"steps":agreement.steps,
+                    "flips":agreement.flips.len(),
+                    "first_flip":agreement.flips.first().map(|f| f.0),
+                    "flip_steps":agreement.flips.iter().map(|f| serde_json::json!([f.0,f.1,f.2])).collect::<Vec<_>>(),
+                    "wall_ms":wall_ms}));
+            }
+            let per_thousand = 1000.0 * total_flips as f64 / total_steps.max(1) as f64;
+            let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":args.profile,
+                "reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
+                "exp_mode":format!("{:?}", falcon_ocr::kernels::exp_mode()),
+                "binary_sha256":digest(&std::env::current_exe()?)?,"threads":args.threads,"backend":args.backend,
+                "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
+                "wall_ms":started.elapsed().as_secs_f64() * 1000.0,"pages":pages});
+            write_new(&report, &report_value)
+                .with_context(|| format!("write {}", report.display()))?;
+            println!(
+                "{}",
+                serde_json::json!({"report":report,"profile":args.profile,"steps":total_steps,
+                    "flips":total_flips,"flips_per_1000":per_thousand})
+            );
         }
         Command::Doctor => unreachable!(),
     }
