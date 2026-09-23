@@ -2,11 +2,13 @@
 """Interleaved A/B/... runs of attempt binaries on pages, with per-arm env.
 
   python attempt3/ab.py --out DIR --rounds 3 --reference-dir artifacts/phase4/control-default-4096 \
-      --arm "base=path/to/a.exe" --arm "fast=path/to/b.exe;FALCON_OCR_EXP=fast" \
+      --arm "base=path/to/a.exe" --arm "fast=path/to/b.exe;FALCON_OCR_EXP=fast;--threads 32" \
       --args "--profile w8-body-kv-q8 --head screened --w8-artifact X" -- page1.png page2.png
 
 Each run is a fresh process (`bench --warmup 0 --samples 1`) with
-FALCON_OCR_PHASES=1; stderr is kept. Prints per-arm median prefill, decode
+FALCON_OCR_PHASES=1; stderr is kept. An arm is `name=binary` followed by
+`;KEY=VALUE` environment entries and `;--option value` global options, which
+replace `--args` options of the same name (for example `;--threads 32`). Prints per-arm median prefill, decode
 ms/token and total, plus token agreement with the reference token IDs.
 """
 from __future__ import annotations
@@ -40,16 +42,23 @@ def main() -> None:
     for spec in a.arm:
         name, rest = spec.split("=", 1)
         parts = rest.split(";")
-        env = dict(p.split("=", 1) for p in parts[1:])
-        arms.append((name, str(Path(parts[0]).resolve()), env))
-    results: dict[str, list] = {name: [] for name, _, _ in arms}
+        env = dict(p.split("=", 1) for p in parts[1:] if not p.startswith("--"))
+        options = [shlex.split(p) for p in parts[1:] if p.startswith("--")]
+        arms.append((name, str(Path(parts[0]).resolve()), env, options))
+    results: dict[str, list] = {name: [] for name, _, _, _ in arms}
     for r in range(a.rounds):
         order = arms if r % 2 == 0 else list(reversed(arms))
-        for name, binary, env in order:
+        for name, binary, env, options in order:
             report = a.out / f"{name}-r{r}.json"
             if report.exists():
                 report.unlink()
-            cmd = [binary, "--threads", a.threads, *shlex.split(a.args), "bench", *a.pages,
+            base = ["--threads", a.threads, *shlex.split(a.args)]
+            for option in options:
+                if option[0] in base:
+                    at = base.index(option[0])
+                    del base[at:at + len(option)]
+                base += option
+            cmd = [binary, *base, "bench", *a.pages,
                    "--warmup", "0", "--samples", "1", "--report", str(report)]
             e = dict(os.environ, FALCON_OCR_PHASES="1", **env)
             t0 = time.time()

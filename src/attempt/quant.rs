@@ -22,8 +22,8 @@ impl Q8Linear {
         in_dim: usize,
         group_size: usize,
     ) -> Result<Self, &'static str> {
-        if out_dim == 0 || in_dim == 0 || ![64, 128].contains(&group_size) {
-            return Err("nonzero shape and group size 64/128 required");
+        if out_dim == 0 || in_dim == 0 || ![32, 64, 128].contains(&group_size) {
+            return Err("nonzero shape and group size 32/64/128 required");
         }
         if out_dim.checked_mul(in_dim) != Some(weights.len()) {
             return Err("weight shape overflow or mismatch");
@@ -217,7 +217,7 @@ mod tests {
         }
         assert!(Q8Linear::quantize(&[], usize::MAX, 2, 64).is_err());
         assert!(Q8Linear::quantize(&[], 0, 0, 64).is_err());
-        assert!(Q8Linear::quantize(&[1.], 1, 1, 32).is_err());
+        assert!(Q8Linear::quantize(&[1.], 1, 1, 16).is_err());
         let q = Q8Linear::quantize(&[2., 2.], 1, 2, 64).unwrap();
         assert!(q.linear_f32(&[f32::NAN, 1.], 1, &mut [0.]).is_err());
         assert!(q.linear_f32(&[f32::MAX, f32::MAX], 1, &mut [0.]).is_err());
@@ -240,8 +240,8 @@ impl Q8Linear {
         scales: Vec<f32>,
     ) -> anyhow::Result<Self> {
         ensure!(
-            out_dim > 0 && in_dim > 0 && group_size == 64,
-            "invalid W8G64 shape/group"
+            out_dim > 0 && in_dim > 0 && [32, 64].contains(&group_size),
+            "invalid W8 shape/group (32 or 64)"
         );
         ensure!(
             out_dim.checked_mul(in_dim) == Some(codes.len()),
@@ -400,7 +400,8 @@ impl Q8Linear {
             && std::is_x86_feature_detected!("fma")
         {
             return match self.group_size {
-                // SAFETY (both): AVX2/FMA detected above.
+                // SAFETY (all): AVX2/FMA detected above.
+                32 => |x, c, s| unsafe { dot_q8_avx2::<32>(x, c, s) },
                 64 => |x, c, s| unsafe { dot_q8_avx2::<64>(x, c, s) },
                 _ => |x, c, s| unsafe { dot_q8_avx2::<128>(x, c, s) },
             };
@@ -408,13 +409,15 @@ impl Q8Linear {
         #[cfg(target_arch = "aarch64")]
         if selected == crate::kernels::Simd::Neon {
             return match self.group_size {
-                // SAFETY (both): NEON is baseline on aarch64.
+                // SAFETY (all): NEON is baseline on aarch64.
+                32 => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 32>(x, c, s) },
                 64 => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 64>(x, c, s) },
                 _ => |x, c, s| unsafe { crate::simd::dot_q8::<crate::simd::Neon, 128>(x, c, s) },
             };
         }
         let _ = selected;
         match self.group_size {
+            32 => dot_q8_scalar::<32>,
             64 => dot_q8_scalar::<64>,
             _ => dot_q8_scalar::<128>,
         }
@@ -544,11 +547,20 @@ mod integrated_tests {
     #[test]
     fn small_m_is_bitwise_fp32_on_dequantized_weights() {
         // The oracle for every W8 decode result: the FP32 GEMV on fl(code*scale).
-        for (n, k) in [(37, 768), (5, 1024), (3, 2304), (4, 65), (2, 31)] {
+        for (n, k, group) in [
+            (37, 768, 64),
+            (5, 1024, 64),
+            (3, 2304, 64),
+            (4, 65, 64),
+            (2, 31, 64),
+            (37, 768, 32),
+            (3, 2304, 32),
+            (4, 65, 32),
+        ] {
             let w: Vec<_> = (0..n * k)
                 .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
                 .collect();
-            let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
+            let q = Q8Linear::quantize(&w, n, k, group).unwrap();
             let mut dense = vec![0.0; n * k];
             for r in 0..n {
                 q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
@@ -575,7 +587,11 @@ mod integrated_tests {
                     q.linear(&x, rows, &mut out, &mut Scratch::default(), backend)
                         .unwrap();
                     for (a, b) in out.iter().zip(&expected) {
-                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} rows{rows}");
+                        assert_eq!(
+                            a.to_bits(),
+                            b.to_bits(),
+                            "{backend:?} n{n} k{k} g{group} rows{rows}"
+                        );
                     }
                 }
             }

@@ -266,6 +266,10 @@ impl Model {
             .as_ref()
             .map(|b| SafeTensors::deserialize(b))
             .transpose()?;
+        // Overlay options: group size 32 or 64; `partial` overlays leave every
+        // matrix they omit in FP32 (mixed precision).
+        let mut group_size = 64;
+        let mut partial = false;
         if let Some(bytes) = &bytes {
             ensure!(bytes.len() >= 8, "short W8 artifact");
             let len = usize::try_from(u64::from_le_bytes(bytes[..8].try_into()?))?;
@@ -291,14 +295,23 @@ impl Model {
                     "false"
                 },
             )?;
-            check("group_size", "64")?;
+            group_size = match meta.get("group_size").and_then(|v| v.as_str()) {
+                Some("32") => 32,
+                Some("64") => 64,
+                _ => anyhow::bail!("W8 metadata group_size must be 32 or 64"),
+            };
+            partial = meta.get("partial").and_then(|v| v.as_str()) == Some("true");
             check("scale_dtype", "f32")?;
-            check("rounding", "ties_to_even")?;
+            ensure!(
+                meta.get("rounding").and_then(|v| v.as_str()).is_some(),
+                "W8 metadata rounding missing"
+            );
             check("activation_dtype", "f32")?;
             model.attempt_artifact_sha256 = Some(format!("{:x}", Sha256::digest(bytes)));
+            let expected = 2 * (4 * model.config.n_layers + (profile.quantizes_head() as usize));
+            let count = tensors.as_ref().unwrap().len();
             ensure!(
-                tensors.as_ref().unwrap().len()
-                    == 2 * (4 * model.config.n_layers + (profile.quantizes_head() as usize)),
+                count == expected || (partial && count < expected && count % 2 == 0),
                 "W8 artifact has unexpected tensors"
             );
         }
@@ -308,17 +321,22 @@ impl Model {
                     w: &Weight,
                     input: usize,
                     output: usize|
-         -> Result<Arc<crate::attempt::quant::Q8Linear>> {
+         -> Result<Option<Arc<crate::attempt::quant::Q8Linear>>> {
             use crate::attempt::quant::Q8Linear;
             let q = if let Some(tensors) = &tensors {
-                let codes = tensors.tensor(&format!("{name}.__w8_codes"))?;
+                let codes_name = format!("{name}.__w8_codes");
+                if partial && !tensors.names().iter().any(|n| **n == codes_name) {
+                    return Ok(None);
+                }
+                let codes = tensors.tensor(&codes_name)?;
                 let scales = tensors.tensor(&format!("{name}.__w8_scales"))?;
                 ensure!(
                     codes.dtype() == Dtype::I8 && codes.shape() == [output, input],
                     "W8 codes dtype/shape for {name}"
                 );
                 ensure!(
-                    scales.dtype() == Dtype::F32 && scales.shape() == [output, input.div_ceil(64)],
+                    scales.dtype() == Dtype::F32
+                        && scales.shape() == [output, input.div_ceil(group_size)],
                     "W8 scales dtype/shape for {name}"
                 );
                 let codes = codes.data().iter().map(|&x| x as i8).collect();
@@ -327,11 +345,11 @@ impl Model {
                     .chunks_exact(4)
                     .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
                     .collect();
-                Q8Linear::from_parts(output, input, 64, codes, scales)?
+                Q8Linear::from_parts(output, input, group_size, codes, scales)?
             } else {
                 Q8Linear::quantize(model.w(w), output, input, 64).map_err(anyhow::Error::msg)?
             };
-            Ok(Arc::new(q))
+            Ok(Some(Arc::new(q)))
         };
         let c = &model.config;
         for (i, l) in model.layers.iter().enumerate() {
@@ -365,13 +383,13 @@ impl Model {
         }
         let mut prepared = prepared.into_iter();
         for l in &mut model.layers {
-            l.qkv.quantized = prepared.next();
-            l.wo.quantized = prepared.next();
-            l.w13.quantized = prepared.next();
-            l.w2.quantized = prepared.next();
+            l.qkv.quantized = prepared.next().flatten();
+            l.wo.quantized = prepared.next().flatten();
+            l.w13.quantized = prepared.next().flatten();
+            l.w2.quantized = prepared.next().flatten();
         }
         if profile.quantizes_head() {
-            model.output.quantized = prepared.next();
+            model.output.quantized = prepared.next().flatten();
         }
         model.attempt_setup_ms = started.elapsed().as_secs_f64() * 1000.0;
         Ok(model)
@@ -616,8 +634,12 @@ impl Model {
             &mut work.rope,
         );
         clock.mark(0);
+        let capture = trace.captures_linear_inputs();
         for (i, layer) in self.layers.iter().enumerate() {
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
+            if capture {
+                trace.linear_input(i, "qkv", rows, &work.normalized);
+            }
             self.linear(
                 &work.normalized,
                 rows,
@@ -740,6 +762,9 @@ impl Model {
                     &work.attn,
                 )?;
             }
+            if capture {
+                trace.linear_input(i, "wo", rows, &work.attn);
+            }
             self.linear(
                 &work.attn,
                 rows,
@@ -754,6 +779,9 @@ impl Model {
             add_residual(h, &work.projected, c.dim);
             clock.mark(5);
             kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
+            if capture {
+                trace.linear_input(i, "w13", rows, &work.normalized);
+            }
             self.linear_glu(
                 &work.normalized,
                 rows,
@@ -765,6 +793,9 @@ impl Model {
                 simd,
             )?;
             clock.mark(6);
+            if capture {
+                trace.linear_input(i, "w2", rows, &work.gated);
+            }
             self.linear(
                 &work.gated,
                 rows,

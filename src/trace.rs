@@ -25,6 +25,14 @@ pub trait Trace: Send {
     /// Teacher-forced step `step`: the forced token and the token greedy
     /// decoding would have selected from the same prefix.
     fn teacher_step(&mut self, _step: usize, _forced: u32, _predicted: u32) {}
+    /// Whether single-request forward passes should report every projection
+    /// input through [`Trace::linear_input`] (quantization calibration).
+    fn captures_linear_inputs(&self) -> bool {
+        false
+    }
+    /// Row-major input `[rows, width]` of projection `site` (`qkv`, `wo`,
+    /// `w13` or `w2`) in `layer`.
+    fn linear_input(&mut self, _layer: usize, _site: &'static str, _rows: usize, _data: &[f32]) {}
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()>;
 }
 pub struct NoTrace;

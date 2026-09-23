@@ -68,6 +68,19 @@ enum Command {
         #[arg(long, default_value_t = 4)]
         max_new_tokens: usize,
     },
+    /// Free-running pages with the FP32 reference profile, accumulating the
+    /// mean `XᵀX` of every body projection input (GPTQ calibration).
+    CaptureGram {
+        #[arg(required = true)]
+        images: Vec<PathBuf>,
+        #[arg(long, default_value_t = 512)]
+        max_new_tokens: usize,
+        #[arg(long, default_value_t = 1536)]
+        max_dimension: u32,
+        /// Directory for `<tensor>.gram.npy`; must not already exist.
+        #[arg(long)]
+        output: PathBuf,
+    },
     /// Teacher-force each page's reference tokens (from a `bench` report of
     /// the same pages) and count the steps where this profile's greedy choice
     /// differs: a per-step fidelity measure that one early divergence cannot
@@ -89,6 +102,133 @@ enum Command {
         #[arg(long)]
         report: PathBuf,
     },
+}
+
+/// Accumulates `XᵀX` of every projection input over free-running pages (GPTQ
+/// calibration). Single decode rows are buffered and multiplied in blocks.
+struct GramCapture {
+    widths: [(&'static str, usize); 4],
+    /// Per (layer, site): f64 sum of XᵀX, row count, pending rows.
+    sums: Vec<Vec<f64>>,
+    rows: Vec<usize>,
+    pending: Vec<Vec<f32>>,
+}
+impl GramCapture {
+    const FLUSH_ROWS: usize = 256;
+    fn new(layers: usize, dim: usize, query_dim: usize, ffn_dim: usize) -> Self {
+        let widths = [
+            ("qkv", dim),
+            ("wo", query_dim),
+            ("w13", dim),
+            ("w2", ffn_dim),
+        ];
+        let mut sums = Vec::new();
+        for _ in 0..layers {
+            for (_, w) in widths {
+                sums.push(vec![0.0f64; w * w]);
+            }
+        }
+        let n = sums.len();
+        Self {
+            widths,
+            sums,
+            rows: vec![0; n],
+            pending: vec![Vec::new(); n],
+        }
+    }
+    fn slot(&self, layer: usize, site: &str) -> (usize, usize) {
+        let s = self
+            .widths
+            .iter()
+            .position(|(n, _)| *n == site)
+            .expect("known projection site");
+        (layer * 4 + s, self.widths[s].1)
+    }
+    fn accumulate(&mut self, slot: usize, width: usize, x: &[f32]) {
+        let rows = x.len() / width;
+        if rows == 0 {
+            return;
+        }
+        // XᵀX = Xt · Xtᵀ with Xt = [width, rows], through the gemm-backed linear.
+        let mut xt = vec![0.0f32; width * rows];
+        for r in 0..rows {
+            for c in 0..width {
+                xt[c * rows + r] = x[r * width + c];
+            }
+        }
+        let mut gram = vec![0.0f32; width * width];
+        falcon_ocr::kernels::linear(&xt, width, rows, &xt, width, &mut gram);
+        for (acc, g) in self.sums[slot].iter_mut().zip(&gram) {
+            *acc += *g as f64;
+        }
+        self.rows[slot] += rows;
+    }
+    fn flush(&mut self) {
+        for slot in 0..self.pending.len() {
+            let pending = std::mem::take(&mut self.pending[slot]);
+            let width = self.widths[slot % 4].1;
+            self.accumulate(slot, width, &pending);
+        }
+    }
+    /// Mean `XᵀX / rows` per matrix as float32 `.npy` files.
+    fn save(&mut self, dir: &Path) -> Result<Vec<(String, usize)>> {
+        self.flush();
+        std::fs::create_dir_all(dir)?;
+        let names = [
+            "attention.wqkv",
+            "attention.wo",
+            "feed_forward.w13",
+            "feed_forward.w2",
+        ];
+        let mut written = Vec::new();
+        for slot in 0..self.sums.len() {
+            let (layer, site) = (slot / 4, slot % 4);
+            let width = self.widths[site].1;
+            let name = format!("layers.{layer}.{}.weight", names[site]);
+            let n = self.rows[slot].max(1) as f64;
+            let mut bytes = Vec::with_capacity(128 + 4 * width * width);
+            let header = format!(
+                "{{'descr': '<f4', 'fortran_order': False, 'shape': ({width}, {width}), }}"
+            );
+            let total = 10 + header.len() + 1;
+            let padded = total.div_ceil(64) * 64;
+            bytes.extend_from_slice(b"\x93NUMPY\x01\x00");
+            bytes.extend_from_slice(&((padded - 10) as u16).to_le_bytes());
+            bytes.extend_from_slice(header.as_bytes());
+            bytes.extend(std::iter::repeat_n(b' ', padded - total));
+            bytes.push(b'\n');
+            for v in &self.sums[slot] {
+                bytes.extend_from_slice(&((*v / n) as f32).to_le_bytes());
+            }
+            std::fs::write(dir.join(format!("{name}.gram.npy")), bytes)?;
+            written.push((name, self.rows[slot]));
+        }
+        Ok(written)
+    }
+}
+impl falcon_ocr::trace::Trace for GramCapture {
+    fn enabled(&self) -> bool {
+        false
+    }
+    fn captures_linear_inputs(&self) -> bool {
+        true
+    }
+    fn linear_input(&mut self, layer: usize, site: &'static str, rows: usize, data: &[f32]) {
+        let (slot, width) = self.slot(layer, site);
+        let x = &data[..rows * width];
+        if rows >= 64 {
+            self.accumulate(slot, width, x);
+        } else {
+            self.pending[slot].extend_from_slice(x);
+            if self.pending[slot].len() >= Self::FLUSH_ROWS * width {
+                let pending = std::mem::take(&mut self.pending[slot]);
+                self.accumulate(slot, width, &pending);
+            }
+        }
+    }
+    fn tensor(&mut self, _name: &str, _shape: &[usize], _data: &[f32]) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Collects the teacher-forced greedy choices of one page.
@@ -191,6 +331,16 @@ fn main() -> Result<()> {
                 max_dimension: *max_dimension,
             }
             .validate()?;
+            for p in images {
+                ensure!(p.is_file(), "missing image {}", p.display());
+            }
+        }
+        Command::CaptureGram { images, output, .. } => {
+            ensure!(!output.exists(), "output directory already exists");
+            ensure!(
+                args.profile == Profile::Reference,
+                "capture the Gram with the FP32 reference profile"
+            );
             for p in images {
                 ensure!(p.is_file(), "missing image {}", p.display());
             }
@@ -308,6 +458,36 @@ fn main() -> Result<()> {
                 &output.with_extension("json"),
                 &serde_json::json!({"profile":args.profile,"quality_qualified":false,"output":result,"memory_policy":memory}),
             )?;
+        }
+        Command::CaptureGram {
+            images,
+            max_new_tokens,
+            max_dimension,
+            output,
+        } => {
+            let c = model.config();
+            let mut capture = GramCapture::new(c.n_layers, c.dim, c.query_dim(), c.ffn_dim);
+            let options = GenerationOptions {
+                max_new_tokens,
+                max_dimension,
+                min_dimension: 64,
+            };
+            for image in &images {
+                let t = Instant::now();
+                let result = runner.recognize_file_with_trace(image, &options, &mut capture)?;
+                eprintln!(
+                    "{}: {} tokens in {:.1}s",
+                    page_id(image),
+                    result.output_tokens,
+                    t.elapsed().as_secs_f64()
+                );
+            }
+            let written = capture.save(&output)?;
+            println!(
+                "{}",
+                serde_json::json!({"output":output,"pages":images.len(),"matrices":written.len(),
+                    "rows_per_matrix":written.first().map(|w| w.1)})
+            );
         }
         Command::Agree {
             images,
