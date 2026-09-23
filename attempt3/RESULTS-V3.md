@@ -220,3 +220,19 @@ A different BF16 implementation does not approximate production better than FP32
 
 - **Handwriting.** Every system misreads roughly 35–50% of the handwritten Chinese, often substituting Latin or Cyrillic fragments, and they share the same misreads. Pages differ mainly by which system falls into a loop. Most of the CER gap in section 6 is formatting (HTML tables vs lines, notebook "NO./Date" furniture, line breaks) plus loops. The ground truth itself has typos on about half the pages.
 - **Degraded.** The four systems are content-equivalent within a few points on every page. All four, production included, fail the same three pages (vertical text, a title page, a leader-dot loop). The section 6 degraded "+1.4 pt" is not a content difference.
+
+**Which matrices to keep at BF16** (Unsloth-style allocation, against production). BF16-source GPTQ was run on the 55 calibration pages with one body matrix at a time kept BF16 (`vllm-cal/sweep-single.json`).
+- W8 accounts for 27% of this fast mode's KL against production. The other 73% comes from FP32 vs production BF16 arithmetic, which no weight allocation can remove.
+- Where the W8 cost sits: W2 (FFN down projection) 69%, QKV 16%, W13 13%, WO 3%. Layers 11 and 7 carry the most (24% and 12%). Single-matrix gains add up (sum 101–105% of the excess).
+- Ranking stability is low overall (Spearman 0.22 between page halves across 88 matrices), but the top matrices hold on both halves.
+- Selecting by ΔKL per byte on half A and then running the combined configuration on the other half (B):
+
+| Kept BF16 (chosen on half A) | Extra bytes | KL on half B | Share of W8 cost recovered |
+|---|---:|---:|---:|
+| none | 0 | 9.07e-4 | 0% |
+| L11.w2, L07.w2 | 3.3 MB | 8.46e-4 | 28% |
+| + L21.w2, L14.w2 | 6.6 MB | 8.19e-4 | 40% |
+| + L18.w2, L13.qkv | 9.8 MB | 7.96e-4 | 50% |
+| all 22 W2 | 36.5 MB | 7.64e-4 | 64% |
+
+On half B, exact FP32 scores 9.47e-4 and the BF16-weight floor 6.84e-4. Keeping 4 W2 matrices therefore puts fast mode closer to production than exact mode, for +3.7% of body weight bytes. Flips (about 60 per 11k steps) do not resolve these differences. At 2 bytes per parameter the kept matrices need a BF16 weight path on the CPU; FP32 storage doubles their cost.
