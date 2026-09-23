@@ -1,17 +1,19 @@
 # Falcon-OCR CPU runner
 
-> **Phase 4 (branch `phase4-attempt3`):** `--mode exact|fast`, an exact screened
-> vocabulary head, a GPTQ-quantized fast mode, and an opt-in
-> `--stop-repetition`. On the journal benchmark page (Ryzen 9 7950X), exact
-> mode takes 38.4 s and fast mode 14.7 s, down from 63.8 s. Both are
-> token-identical to FP32 on the four full benchmark pages. On the 200
-> held-out pages fast mode **failed** its pre-registered quality budget for
-> handwriting and degraded scans (it passes overall and on the other
-> categories); use exact mode for those documents. Evidence:
-> [overnight results](attempt3/RESULTS-V3.md),
-> [Stage 5 results](attempt3/RESULTS-V2.md) and
-> [CPU portability](docs/CPU_PORTABILITY.md). Historical results below apply to
-> the reference path.
+> **Pre-packed CPU model files:** [huggingface.co/amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu)
+> (near-exact 806 MB, fast 638 MB). They load in about 10 ms and need no FP32
+> checkpoint:
+>
+> ```sh
+> cargo build --release --locked
+> huggingface-cli download amazingvince/falcon-ocr-v1.5-cpu --local-dir models/falcon-ocr-cpu
+> target/release/falcon-ocr --model-file models/falcon-ocr-cpu/falcon-ocr-v1.5-near-exact.safetensors run page.png --text
+> ```
+>
+> On the journal benchmark page (Ryzen 9 7950X): exact ≈ 38 s, **near-exact
+> ≈ 21.5 s** (1 changed token in 24,262 against FP32), **fast ≈ 14 s**, down
+> from 63.8 s before Phase 4. See [Modes](#modes), the
+> [phase 5 log](attempt3/HILLCLIMB.md) and [results](attempt3/RESULTS-V3.md).
 
 A model-specific Rust library and CLI for the updated Falcon-OCR v1.5 weights.
 The implementation currently runs FP32 full-page plain OCR. It is under active
@@ -51,15 +53,20 @@ cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 
 ### Modes
 
-| | `--mode exact` (default) | `--mode fast` |
-|---|---|---|
-| Weights | FP32 | 8-bit body, GPTQ act-order W8G64 (`<model>/w8-gptq.safetensors`); FP32 embeddings, norms and head |
-| Image KV cache | FP32 (split layout, bit-identical) | 8-bit (G32 scales), including generated tokens |
-| Tokens vs FP32 reference | identical on all 67 calibration pages | identical on 25 of 55 held-back calibration pages; others diverge after a near-tie |
-| Quality vs ground truth | reference | 200 held-out pages: overall CER on FP32-EOS pages 16.65% → 16.49%, but **fails the pre-registered budget** on handwriting (+5.4 pt, loops) and degraded scans (+1.4 pt); see `attempt3/RESULTS-V3.md` §6 |
-| Journal page (7950X, default threads) | 38.4 s | 14.7 s |
+| | `--mode exact` (default) | `--mode near-exact` | `--mode fast` |
+|---|---|---|---|
+| Body weights | FP32 | 16-bit integers, scale per 64 weights (quantized at load, or from a packed file) | 8-bit GPTQ act-order W8G64 (`<model>/w8-gptq.safetensors`) |
+| KV cache | FP32 (split layout, bitwise) | 16-bit integers, BF16 scale per 32 values | 8-bit, BF16 scale per 32 values |
+| Teacher-forced vs FP32 (55 pages, 24,262 tokens) | bitwise | KL 9e-8, 1 changed token | KL 2.8e-4, 64 changed tokens |
+| Journal page (7950X, default flags) | ≈ 38 s | ≈ 21.5 s | ≈ 14 s |
 
-Both modes use the exact screened head (`--head screened`, the default; it
+- **Packed files.** `falcon-ocr --mode near-exact|fast pack --output F` writes a kernel-ready file, and `--model-file F` maps it and uses it in place. Loading takes about 10 ms instead of about 2 s, peak memory drops by about 1 GB, and tokens are identical. Published files: [huggingface.co/amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu).
+- **Speculative decoding.** `--speculate 4` is the default. Up to 4 tokens are drafted from the output so far and verified in one step. Every accepted token is the model's own greedy choice, so outputs are unchanged. Drafting switches itself off while it doesn't pay (normal text) and on for tables and loops, which run 22–57% faster.
+- **Decode threads.** `--decode-threads auto` is the default: the first decode steps time a few team sizes and keep the fastest.
+- **Image size.** `--max-dimension 1280` (default 1536) is about 20% faster. On 64 calibration pages it made no difference to accuracy on pages that end normally; this is not yet validated on held-out pages.
+- **Held-out check of fast mode.** On the 200 held-out pages, fast mode failed its pre-registered budget against FP32 on handwriting (loops) and degraded scans. Production BF16 fails the same budget by more. A blinded LLM judge rated fast mode's content equal to FP32 and production except for loop pages. See `attempt3/RESULTS-V3.md` §6 and §8.
+
+All modes use the exact screened head (`--head screened`, the default; it
 selects the same tokens as `--head full`) and a portable vector exp in prefill
 attention, which is token-identical to the platform exp on all calibration
 pages. Set `FALCON_OCR_EXP=exact` to keep the platform exp; `trace` always does.
@@ -72,8 +79,9 @@ fast mode quantizes round-to-nearest at load, and `--w8-artifact` selects
 another overlay.
 
 `--threads` defaults to all logical CPUs, used by the compute-bound prefill.
-`--decode-threads` defaults to one per physical core: decode is memory-bound,
-and SMT siblings only contend there.
+`--decode-threads` defaults to `auto`: decode is memory-bound, so the runner
+times a few team sizes on the first decode steps and keeps the smallest within
+2% of the fastest (12 of 16 cores on a 7950X). A number fixes it.
 - Fast mode can send a page that ended normally into a repetition loop: 1 of
   the 46 such held-back calibration pages.
 - `--stop-repetition` ends a page once it repeats a cycle of at most 128 tokens

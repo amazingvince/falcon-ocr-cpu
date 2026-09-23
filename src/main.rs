@@ -85,7 +85,8 @@ struct Cli {
     speculate_min_match: usize,
     /// Kernel-ready model file written by `pack` (near-exact or fast; the
     /// file decides the mode). Mapped and used in place: fast startup, no
-    /// FP32 checkpoint needed.
+    /// FP32 checkpoint needed. The tokenizer is read from the file's folder
+    /// when it holds tokenizer.json, otherwise from --model.
     #[arg(long, global = true)]
     model_file: Option<PathBuf>,
     /// With --model-file: check the digest of every tensor first.
@@ -223,9 +224,16 @@ fn main() -> Result<()> {
     }
     eprintln!("Verified model loaded in {load_ms:.1} ms");
     let threads = cli.threads.unwrap_or_else(falcon_ocr::cpu::logical_cpus);
+    // A kernel-ready file ships with its tokenizer: prefer the file's folder.
+    let tokenizer_dir = cli
+        .model_file
+        .as_ref()
+        .and_then(|f| f.parent())
+        .filter(|d| d.join("tokenizer.json").is_file())
+        .map_or_else(|| cli.model.clone(), |d| d.to_path_buf());
     let mut runner = Runner::new(
         model,
-        &cli.model,
+        &tokenizer_dir,
         RunnerConfig {
             threads,
             backend: cli.backend,
