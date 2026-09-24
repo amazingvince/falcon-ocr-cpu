@@ -1,0 +1,16 @@
+# Python lint configuration for the product-path helpers in `tools/`.
+# The frozen `scripts/` closure and the research archive are hashed by
+# receipts or kept as history and are not linted.
+[project]
+name = "falcon-ocr-tools"
+version = "0.0.0"
+description = "Helper scripts of the Falcon-OCR CPU runner"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["research", "scripts", "attempt3", "experiments", "reference", "requirements", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
