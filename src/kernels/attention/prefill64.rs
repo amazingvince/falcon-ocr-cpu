@@ -1,6 +1,6 @@
 //! Compact-cache prefill attention for `head_dim == 64`, generic over
 //! `crate::simd::Simd` (AVX2/FMA on x86, NEON on aarch64). The AVX2
-//! instantiation is bitwise equal to `attention_gemm_compact`; NEON and the
+//! instantiation is bitwise equal to `tiled::attention_gemm`; NEON and the
 //! portable path use the portable fast exp and are bitwise equal to each other.
 //!
 //! The reference runs two single-threaded `gemm` calls per (32-query tile,
@@ -20,7 +20,7 @@
 //! Key tiles outside gemm's main path (the last, short tiles) run the
 //! reference's own gemm calls and scalar softmax, so all tiles stay bitwise
 //! equal. Tests compare the kernels with gemm for every tile shape and the
-//! whole function with `attention_gemm_compact`.
+//! whole function with `tiled::attention_gemm`.
 //!
 //! With AVX-512F (and backend `auto`), the QK and PV products use
 //! 16-lane `wide` kernels: every element keeps the same FMA chain and epilogue,
@@ -32,6 +32,7 @@
 //! `ExpMode::Fast` (`RunnerConfig::exp`) switches x86 to the portable fast
 //! exp (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
 //! portable instantiations, but no longer equal to the platform `expf`.
+use super::{CompactKv, Geometry, PrefillOptions};
 use crate::config::ExpMode;
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;
@@ -120,32 +121,24 @@ struct Shape {
     profile: bool,
 }
 
-/// Pure prefill (no generated keys): `k` is `[total][n_heads][64]`, `v` is
-/// `[total][n_kv_heads][64]`, `q`/`output` are `[query_len][n_heads][64]`.
+/// Pure prefill (no generated keys) of `cache` (`head_dim == 64`,
+/// `prefix_len == total_len`); `wide` selects the 16-lane tiles.
 ///
 /// # Safety
-/// AVX2/FMA must be available and every shape must satisfy the checks of
-/// `attention_compact_with_simd` with `head_dim == 64` and `prefix_len ==
-/// total_len`.
-#[allow(clippy::too_many_arguments)]
+/// AVX2/FMA (NEON on aarch64) must be available and the shapes must satisfy
+/// `CompactKv::validate`.
 pub(super) unsafe fn compact_prefill(
-    wide: bool,
-    exp: ExpMode,
-    profile: bool,
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     query_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
+    geometry: Geometry,
     sinks: &[f32],
     output: &mut [f32],
+    wide: bool,
+    options: PrefillOptions,
 ) {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = match (exp == ExpMode::Fast, wide) {
+    let tile: TileFn = match (options.exp == ExpMode::Fast, wide) {
         (true, true) => tile_head_fast_wide,
         (true, false) => tile_head_fast,
         (false, true) => tile_head_native_wide,
@@ -153,53 +146,32 @@ pub(super) unsafe fn compact_prefill(
     };
     #[cfg(not(target_arch = "x86_64"))]
     let tile: TileFn = {
-        let _ = (wide, exp);
+        let _ = (wide, options.exp);
         tile_head_native
     };
-    unsafe {
-        compact_prefill_with(
-            tile,
-            profile,
-            q,
-            k,
-            v,
-            query_len,
-            n_heads,
-            n_kv_heads,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            output,
-        )
-    }
+    unsafe { compact_prefill_with(tile, q, cache, query_len, geometry, sinks, output, options.profile) }
 }
 
 /// Entry for one (query tile, head) with a given instruction set.
 type TileFn = unsafe fn(&[f32], &[f32], &[f32], &Shape, usize, usize, usize, usize, &[f32], *mut f32);
 
-#[allow(clippy::too_many_arguments)]
 unsafe fn compact_prefill_with(
     tile_head: TileFn,
-    profile: bool,
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     query_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
+    geometry: Geometry,
     sinks: &[f32],
     output: &mut [f32],
+    profile: bool,
 ) {
+    let (k, v, n_heads, n_kv_heads) = (cache.prefix_k, cache.v, cache.n_heads, cache.n_kv_heads);
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
         kv_width: n_kv_heads * HEAD_DIM,
-        query_offset,
-        image_start,
-        image_end,
+        query_offset: geometry.query_offset,
+        image_start: geometry.image_start,
+        image_end: geometry.image_end,
         scale: (HEAD_DIM as f32).sqrt().recip(),
         profile,
     };
@@ -991,7 +963,14 @@ mod tests {
         let mut out = vec![f32::NAN; q.len()];
         unsafe {
             compact_prefill_with(
-                tile, false, &q, &k, &v, query_len, 16, 8, 0, image.0, image.1, &sinks, &mut out,
+                tile,
+                &q,
+                &CompactKv::prefill(&k, &v, query_len, 16, 8, 64),
+                query_len,
+                Geometry::new(0, image.0, image.1),
+                &sinks,
+                &mut out,
+                false,
             );
         }
         out
@@ -1003,18 +982,10 @@ mod tests {
         for (query_len, image_start, image_end) in CASES {
             let (q, k, v, sinks) = operands(query_len);
             let mut expected = vec![f32::NAN; q.len()];
-            super::super::attention_gemm_compact(
+            super::super::tiled::attention_gemm(
                 &q,
-                &k,
-                &[],
-                &v,
-                query_len,
-                16,
-                8,
-                64,
-                0,
-                image_start,
-                image_end,
+                &CompactKv::prefill(&k, &v, query_len, 16, 8, 64),
+                Geometry::new(0, image_start, image_end),
                 &sinks,
                 &mut expected,
             );
@@ -1337,38 +1308,24 @@ mod tests {
             let v = values(query_len * n_kv_heads * 64, 23 + query_len as u32, 3.0);
             let sinks = values(n_heads, 29, 2.0);
             let mut expected = vec![f32::NAN; q.len()];
-            super::super::attention_gemm_compact(
+            super::super::tiled::attention_gemm(
                 &q,
-                &k,
-                &[],
-                &v,
-                query_len,
-                n_heads,
-                n_kv_heads,
-                64,
-                0,
-                image_start,
-                image_end,
+                &CompactKv::prefill(&k, &v, query_len, n_heads, n_kv_heads, 64),
+                Geometry::new(0, image_start, image_end),
                 &sinks,
                 &mut expected,
             );
             let mut actual = vec![f32::NAN; q.len()];
             unsafe {
                 compact_prefill(
-                    false,
-                    ExpMode::Exact,
-                    false,
                     &q,
-                    &k,
-                    &v,
+                    &CompactKv::prefill(&k, &v, query_len, n_heads, n_kv_heads, 64),
                     query_len,
-                    n_heads,
-                    n_kv_heads,
-                    0,
-                    image_start,
-                    image_end,
+                    Geometry::new(0, image_start, image_end),
                     &sinks,
                     &mut actual,
+                    false,
+                    PrefillOptions::EXACT,
                 );
             }
             for (i, (a, b)) in actual.iter().zip(&expected).enumerate() {

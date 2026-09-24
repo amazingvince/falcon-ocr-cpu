@@ -1357,20 +1357,20 @@ mod tests {
         let mut all_v = v.to_vec();
         all_v.extend_from_slice(tail_v);
         let mut expected = vec![0.0; c.query_dim()];
-        kernels::attention_compact_with_simd(
+        kernels::attention_with_simd(
             q,
-            k,
-            tail_k,
-            &all_v,
+            &kernels::CompactKv {
+                prefix_k: k,
+                generated_k: tail_k,
+                v: &all_v,
+                prefix_len: p,
+                total_len: p + generated,
+                n_heads: c.n_heads,
+                n_kv_heads: c.n_kv_heads,
+                head_dim: 64,
+            },
             1,
-            p,
-            p + generated,
-            c.n_heads,
-            c.n_kv_heads,
-            64,
-            p + generated - 1,
-            0,
-            p,
+            kernels::Geometry::new(p + generated - 1, 0, p),
             sinks,
             &mut expected,
             backend,

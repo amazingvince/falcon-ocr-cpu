@@ -15,10 +15,9 @@ mod panels;
 mod tests;
 
 pub(crate) use attention::{
-    Bf16Kv, attention_compact_prefill_bf16, attention_compact_prefill_with, prefill_bf16_rows_available,
-    store_prefill_bf16_row,
+    Bf16Kv, attention_prefill_bf16, attention_with, prefill_bf16_rows_available, store_prefill_bf16_row,
 };
-pub use attention::{attention, attention_compact, attention_compact_with_simd, attention_with_simd};
+pub use attention::{CompactKv, Geometry, PrefillOptions, attention, attention_with_simd};
 pub(crate) use exp as vexp;
 pub(crate) use panels::panel as panel_gemm;
 #[cfg(target_arch = "x86_64")]
@@ -116,7 +115,7 @@ pub fn prefill_plan(body_bits: Option<u32>, simd: Simd, prefill_bf16: crate::con
     let panel = body_bits.is_some() && panel_gemm::available(simd);
     // 8-bit bodies (fast mode) also run prefill attention, and with
     // `prefill_bf16 = All` the projections, in BF16 where the CPU has
-    // AVX512-BF16 (`attention_compact_prefill_bf16`).
+    // AVX512-BF16 (`attention_prefill_bf16`).
     let eight_bit = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
     let projection = if !panel {
         PrefillProjection::GemmF32

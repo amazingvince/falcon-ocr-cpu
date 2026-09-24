@@ -1,405 +1,51 @@
-//! Fixed-width (`head_dim == 64`) single-query attention for decode, generic
-//! over `crate::simd::Simd` (AVX2/FMA on x86, NEON on aarch64).
+//! Fixed-width (`head_dim == 64`) single-query attention for decode: the
+//! online-softmax head (`online::head`) with the `crate::simd` kernels of the
+//! native instruction set (AVX2/FMA on x86, NEON on aarch64) inlined into a
+//! `#[target_feature]` function, one decode-team task per query head. The
+//! helpers keep the same four-accumulator FMA order and horizontal reduction
+//! as the function-pointer kernels, so every output is bit-identical to the
+//! generic path; the tests below assert that.
 //!
-//! The per-head bodies are the generic online-softmax loops from `kernels.rs`
-//! with their function-pointer dot/AXPY calls replaced by 64-wide helpers that
-//! are inlined into a `#[target_feature]` head function. The helpers keep the
-//! same four-accumulator FMA order and horizontal reduction as `x86::dot_avx2`
-//! and `x86::axpy_avx2`, so every output is bit-identical to the generic path;
-//! the tests below assert that. GQA repeat, tiles, image mask, softmax, sink,
-//! division and multiplication order are unchanged.
-//!
-//! Promoted from `experiments/attention64` (expanded cache, measured 6.15–9.43%
-//! lower full-page latency) and `experiments/attention64_compact` (compact
-//! cache, a further 6.15–6.40%); see `docs/PERFORMANCE.md`.
-use crate::simd::Simd;
+//! Promoted from `experiments/attention64` (expanded cache, measured
+//! 6.15-9.43% lower full-page latency) and `experiments/attention64_compact`
+//! (compact cache, a further 6.15-6.40%).
+use super::{
+    CompactKv, Geometry,
+    online::{Isa, head},
+};
 
-/// Expanded-cache attention for one query row over `n_heads` heads of width 64.
+/// One query row over every head of width 64 on the decode spin team.
 ///
 /// # Safety
-/// The caller must have validated AVX2/FMA support and every slice shape
-/// exactly as `attention_with_simd` does for `query_len == 1`, `head_dim == 64`.
-#[allow(clippy::too_many_arguments)]
-pub(super) unsafe fn attention(
-    q: &[f32],
-    k: &[f32],
-    v: &[f32],
-    n_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    output: &mut [f32],
-) {
-    let scale = (64_f32).sqrt().recip();
+/// The native vector ISA must be available and the shapes validated as
+/// `attention_with` does for `query_len == 1`, `head_dim == 64`.
+pub(super) unsafe fn attention(q: &[f32], kv: &CompactKv<'_>, geometry: Geometry, sinks: &[f32], output: &mut [f32]) {
     let heads = output.len() / 64;
     let shared = crate::team::SharedMut::new(output);
     crate::team::for_each(heads, |qh| {
         // SAFETY: each task owns one disjoint 64-wide head of `output`.
         let out = unsafe { shared.slice(qh * 64, 64) };
-        // SAFETY: The parent checked AVX2/FMA and all shapes before entering.
+        // SAFETY: the parent checked the ISA and all shapes before entering.
         // The target-feature function encloses the complete per-head loop;
-        // Rayon closures do not need to inherit the caller's target features.
-        unsafe {
-            head(
-                qh,
-                q,
-                k,
-                v,
-                n_heads,
-                query_offset,
-                image_start,
-                image_end,
-                sinks,
-                scale,
-                out,
-            );
-        }
+        // team closures do not need to inherit the caller's target features.
+        unsafe { native_head(qh, q, kv, &geometry, sinks, out) }
     });
 }
 
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
-#[allow(clippy::too_many_arguments)]
-unsafe fn head(
-    qh: usize,
-    q: &[f32],
-    k: &[f32],
-    v: &[f32],
-    n_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    scale: f32,
-    out: &mut [f32],
-) {
-    unsafe {
-        head_generic::<crate::simd::Avx2>(
-            qh,
-            q,
-            k,
-            v,
-            n_heads,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            scale,
-            out,
-        )
-    }
+unsafe fn native_head(qh: usize, q: &[f32], kv: &CompactKv<'_>, geometry: &Geometry, sinks: &[f32], out: &mut [f32]) {
+    unsafe { head(&Isa::<crate::simd::Avx2>::NEW, qh, q, kv, geometry, sinks, out) }
 }
 
 #[cfg(target_arch = "aarch64")]
-#[allow(clippy::too_many_arguments)]
-unsafe fn head(
-    qh: usize,
-    q: &[f32],
-    k: &[f32],
-    v: &[f32],
-    n_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    scale: f32,
-    out: &mut [f32],
-) {
-    unsafe {
-        head_generic::<crate::simd::Neon>(
-            qh,
-            q,
-            k,
-            v,
-            n_heads,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            scale,
-            out,
-        )
-    }
-}
-
-#[inline(always)]
-#[allow(clippy::too_many_arguments)]
-unsafe fn head_generic<S: Simd>(
-    qh: usize,
-    q: &[f32],
-    k: &[f32],
-    v: &[f32],
-    n_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    scale: f32,
-    out: &mut [f32],
-) {
-    let head_dim = 64;
-    let token_width = n_heads * head_dim;
-    // SAFETY: Shapes and features were checked by the safe entry point. This
-    // body is the generic loop verbatim except its dot and AXPY call targets.
-    unsafe {
-        let query = qh / n_heads;
-        let head = qh % n_heads;
-        let absolute_query = query_offset + query;
-        let query_in_image = absolute_query >= image_start && absolute_query < image_end;
-        let visible_end = if query_in_image { image_end } else { absolute_query + 1 };
-        let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
-        out.fill(0.0);
-        let mut running_max = f32::NEG_INFINITY;
-        let mut denominator = 0.0_f32;
-        const TILE: usize = 128;
-        let mut logits = [0.0_f32; TILE];
-        for start in (0..visible_end).step_by(TILE) {
-            let len = (visible_end - start).min(TILE);
-            let mut block_max = f32::NEG_INFINITY;
-            for (j, logit) in logits[..len].iter_mut().enumerate() {
-                let key = start + j;
-                let begin = key * token_width + head * head_dim;
-                *logit = crate::simd::dot::<S>(qvec, &k[begin..begin + head_dim]) * scale;
-                block_max = block_max.max(*logit);
-            }
-            let new_max = running_max.max(block_max);
-            let rescale = if running_max == f32::NEG_INFINITY {
-                0.0
-            } else {
-                (running_max - new_max).exp()
-            };
-            for value in out.iter_mut() {
-                *value *= rescale;
-            }
-            denominator *= rescale;
-            S::exp_shifted(&mut logits[..len], new_max);
-            for (j, &probability) in logits[..len].iter().enumerate() {
-                denominator += probability;
-                let begin = (start + j) * token_width + head * head_dim;
-                crate::simd::axpy::<S>(probability, &v[begin..begin + head_dim], out);
-            }
-            running_max = new_max;
-        }
-        let logsumexp = running_max + denominator.ln();
-        let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
-        for value in out {
-            *value = (*value / denominator) * sink_scale;
-        }
-    }
-}
-
-/// Compact-cache attention for one query row: prefix keys keep every query
-/// head, generated keys and all values keep only the KV heads.
-///
-/// # Safety
-/// The caller must have validated AVX2/FMA support and every slice shape
-/// exactly as `attention_compact_with_simd` does for `query_len == 1`,
-/// `head_dim == 64`.
-#[allow(clippy::too_many_arguments)]
-pub(super) unsafe fn compact(
-    q: &[f32],
-    prefix_k: &[f32],
-    generated_k: &[f32],
-    v: &[f32],
-    prefix_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    output: &mut [f32],
-) {
-    let scale = (64_f32).sqrt().recip();
-    let heads = output.len() / 64;
-    let shared = crate::team::SharedMut::new(output);
-    crate::team::for_each(heads, |qh| {
-        // SAFETY: each task owns one disjoint 64-wide head of `output`.
-        let out = unsafe { shared.slice(qh * 64, 64) };
-        // SAFETY: The parent validated features, slices and shape relationships.
-        unsafe {
-            compact_head(
-                qh,
-                q,
-                prefix_k,
-                generated_k,
-                v,
-                prefix_len,
-                n_heads,
-                n_kv_heads,
-                query_offset,
-                image_start,
-                image_end,
-                sinks,
-                scale,
-                out,
-            );
-        }
-    });
-}
-
-#[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx2,fma")]
-#[allow(clippy::too_many_arguments)]
-unsafe fn compact_head(
-    qh: usize,
-    q: &[f32],
-    prefix_k: &[f32],
-    generated_k: &[f32],
-    v: &[f32],
-    prefix_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    scale: f32,
-    out: &mut [f32],
-) {
-    unsafe {
-        compact_head_generic::<crate::simd::Avx2>(
-            qh,
-            q,
-            prefix_k,
-            generated_k,
-            v,
-            prefix_len,
-            n_heads,
-            n_kv_heads,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            scale,
-            out,
-        )
-    }
-}
-
-#[cfg(target_arch = "aarch64")]
-#[allow(clippy::too_many_arguments)]
-unsafe fn compact_head(
-    qh: usize,
-    q: &[f32],
-    prefix_k: &[f32],
-    generated_k: &[f32],
-    v: &[f32],
-    prefix_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    scale: f32,
-    out: &mut [f32],
-) {
-    unsafe {
-        compact_head_generic::<crate::simd::Neon>(
-            qh,
-            q,
-            prefix_k,
-            generated_k,
-            v,
-            prefix_len,
-            n_heads,
-            n_kv_heads,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            scale,
-            out,
-        )
-    }
-}
-
-#[inline(always)]
-#[allow(clippy::too_many_arguments)]
-unsafe fn compact_head_generic<S: Simd>(
-    qh: usize,
-    q: &[f32],
-    prefix_k: &[f32],
-    generated_k: &[f32],
-    v: &[f32],
-    prefix_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
-    sinks: &[f32],
-    scale: f32,
-    out: &mut [f32],
-) {
-    let head_dim = 64;
-    let query_width = n_heads * head_dim;
-    let kv_width = n_kv_heads * head_dim;
-    let repeat = n_heads / n_kv_heads;
-    // SAFETY: The safe entry point checked shapes/features. This body is the
-    // generic compact loop verbatim except its dot and AXPY call targets.
-    unsafe {
-        let query = qh / n_heads;
-        let head = qh % n_heads;
-        let kv_head = head / repeat;
-        let absolute_query = query_offset + query;
-        let query_in_image = absolute_query >= image_start && absolute_query < image_end;
-        let visible_end = if query_in_image { image_end } else { absolute_query + 1 };
-        let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
-        out.fill(0.0);
-        let mut running_max = f32::NEG_INFINITY;
-        let mut denominator = 0.0_f32;
-        const TILE: usize = 128;
-        let mut logits = [0.0_f32; TILE];
-        for start in (0..visible_end).step_by(TILE) {
-            let len = (visible_end - start).min(TILE);
-            let mut block_max = f32::NEG_INFINITY;
-            for (j, logit) in logits[..len].iter_mut().enumerate() {
-                let key = start + j;
-                let kvec = if key < prefix_len {
-                    let begin = key * query_width + head * head_dim;
-                    &prefix_k[begin..begin + head_dim]
-                } else {
-                    let begin = (key - prefix_len) * kv_width + kv_head * head_dim;
-                    &generated_k[begin..begin + head_dim]
-                };
-                *logit = crate::simd::dot::<S>(qvec, kvec) * scale;
-                block_max = block_max.max(*logit);
-            }
-            let new_max = running_max.max(block_max);
-            let rescale = if running_max == f32::NEG_INFINITY {
-                0.0
-            } else {
-                (running_max - new_max).exp()
-            };
-            for value in out.iter_mut() {
-                *value *= rescale;
-            }
-            denominator *= rescale;
-            S::exp_shifted(&mut logits[..len], new_max);
-            for (j, &probability) in logits[..len].iter().enumerate() {
-                denominator += probability;
-                let begin = (start + j) * kv_width + kv_head * head_dim;
-                crate::simd::axpy::<S>(probability, &v[begin..begin + head_dim], out);
-            }
-            running_max = new_max;
-        }
-        let logsumexp = running_max + denominator.ln();
-        let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
-        for value in out {
-            *value = (*value / denominator) * sink_scale;
-        }
-    }
+unsafe fn native_head(qh: usize, q: &[f32], kv: &CompactKv<'_>, geometry: &Geometry, sinks: &[f32], out: &mut [f32]) {
+    unsafe { head(&Isa::<crate::simd::Neon>::NEW, qh, q, kv, geometry, sinks, out) }
 }
 
 #[cfg(all(test, target_arch = "x86_64"))]
 mod tests {
-    use super::super::{
-        Simd, attention_compact_online_softmax, attention_compact_with_simd, attention_gemm, attention_gemm_compact,
-        attention_online_softmax, attention_with_simd,
-    };
+    use super::super::{CompactKv, Geometry, Simd, attention_with_simd, online, tiled};
     use crate::kernels::x86;
 
     fn supported() {
@@ -432,107 +78,34 @@ mod tests {
         }
     }
 
-    /// The public expanded entry point without the fixed-width dispatch.
-    #[allow(clippy::too_many_arguments)]
-    fn expanded_oracle(
+    /// The public entry point without the fixed-width dispatch: the tiled
+    /// GEMM for several queries, else the function-pointer head.
+    fn oracle(
         q: &[f32],
-        k: &[f32],
-        v: &[f32],
+        kv: &CompactKv<'_>,
         query_len: usize,
-        n_heads: usize,
-        head_dim: usize,
-        query_offset: usize,
-        image_start: usize,
-        image_end: usize,
+        geometry: Geometry,
         sinks: &[f32],
         output: &mut [f32],
         simd: Simd,
     ) {
         let selected = simd.resolved();
         if query_len >= 4 && selected != Simd::Scalar {
-            attention_gemm(
-                q,
-                k,
-                v,
-                n_heads,
-                head_dim,
-                query_offset,
-                image_start,
-                image_end,
-                sinks,
-                output,
-            );
-            return;
+            tiled::attention_gemm(q, kv, geometry, sinks, output);
+        } else {
+            online::attention(q, kv, geometry, sinks, output, selected);
         }
-        attention_online_softmax(
-            q,
-            k,
-            v,
-            n_heads,
-            head_dim,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            output,
-            selected,
-        );
     }
 
-    /// The public compact entry point without the fixed-width dispatch.
-    #[allow(clippy::too_many_arguments)]
-    fn compact_oracle(
-        q: &[f32],
-        prefix_k: &[f32],
-        generated_k: &[f32],
-        v: &[f32],
-        query_len: usize,
-        prefix_len: usize,
-        n_heads: usize,
-        n_kv_heads: usize,
-        head_dim: usize,
-        query_offset: usize,
-        image_start: usize,
-        image_end: usize,
-        sinks: &[f32],
-        output: &mut [f32],
-        simd: Simd,
-    ) {
-        let selected = simd.resolved();
-        if query_len >= 4 && selected != Simd::Scalar {
-            attention_gemm_compact(
-                q,
-                prefix_k,
-                generated_k,
-                v,
-                prefix_len,
-                n_heads,
-                n_kv_heads,
-                head_dim,
-                query_offset,
-                image_start,
-                image_end,
-                sinks,
-                output,
-            );
-            return;
-        }
-        attention_compact_online_softmax(
-            q,
-            prefix_k,
-            generated_k,
-            v,
-            prefix_len,
-            n_heads,
-            n_kv_heads,
-            head_dim,
-            query_offset,
-            image_start,
-            image_end,
-            sinks,
-            output,
-            selected,
-        );
+    fn sinks(heads: usize) -> Vec<f32> {
+        (0..heads)
+            .map(|h| match h % 4 {
+                0 => -1000.0,
+                1 => 1000.0,
+                2 => 0.0,
+                _ => 2.25,
+            })
+            .collect()
     }
 
     #[target_feature(enable = "avx2,fma")]
@@ -566,7 +139,7 @@ mod tests {
 
     #[allow(clippy::too_many_arguments)]
     fn compare_case(
-        kv: usize,
+        kv_len: usize,
         offset: usize,
         image_start: usize,
         image_end: usize,
@@ -578,49 +151,17 @@ mod tests {
     ) {
         let heads = 16;
         let q = data(query_len * heads * width, 11, if extreme { 100.0 } else { 0.75 });
-        let k = data(kv * heads * width, 23, if extreme { 100.0 } else { 0.75 });
-        let v = data(kv * heads * width, 37, if extreme { 1e8 } else { 1.0 });
-        let sinks: Vec<_> = (0..heads)
-            .map(|h| match h % 4 {
-                0 => -1000.0,
-                1 => 1000.0,
-                2 => 0.0,
-                _ => 2.25,
-            })
-            .collect();
+        let k = data(kv_len * heads * width, 23, if extreme { 100.0 } else { 0.75 });
+        let v = data(kv_len * heads * width, 37, if extreme { 1e8 } else { 1.0 });
+        let sinks = sinks(heads);
+        let kv = CompactKv::expanded(&k, &v, kv_len, heads, width);
+        let geometry = Geometry::new(offset, image_start, image_end);
         let mut actual = vec![f32::NAN; q.len()];
         let mut expected = actual.clone();
         let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
         pool.install(|| {
-            expanded_oracle(
-                &q,
-                &k,
-                &v,
-                query_len,
-                heads,
-                width,
-                offset,
-                image_start,
-                image_end,
-                &sinks,
-                &mut expected,
-                simd,
-            );
-            attention_with_simd(
-                &q,
-                &k,
-                &v,
-                query_len,
-                kv,
-                heads,
-                width,
-                offset,
-                image_start,
-                image_end,
-                &sinks,
-                &mut actual,
-                simd,
-            );
+            oracle(&q, &kv, query_len, geometry, &sinks, &mut expected, simd);
+            attention_with_simd(&q, &kv, query_len, geometry, &sinks, &mut actual, simd);
         });
         assert!(actual.iter().all(|x| x.is_finite()));
         exact(&actual, &expected);
@@ -701,14 +242,18 @@ mod tests {
         let pk = data(prefix * qw, 53, if extreme { 100.0 } else { 0.75 });
         let gk = data((total - prefix) * kw, 67, if extreme { 100.0 } else { 0.75 });
         let v = data(total * kw, 79, if extreme { 1e8 } else { 1.0 });
-        let sinks: Vec<_> = (0..heads)
-            .map(|h| match h % 4 {
-                0 => -1000.0,
-                1 => 1000.0,
-                2 => 0.0,
-                _ => 2.25,
-            })
-            .collect();
+        let sinks = sinks(heads);
+        let kv = CompactKv {
+            prefix_k: &pk,
+            generated_k: &gk,
+            v: &v,
+            prefix_len: prefix,
+            total_len: total,
+            n_heads: heads,
+            n_kv_heads: kvheads,
+            head_dim: width,
+        };
+        let geometry = Geometry::new(offset, image_start, image_end);
         let mut expected = vec![f32::NAN; q.len()];
         let mut actual = expected.clone();
         let mut expanded_out = expected.clone();
@@ -717,68 +262,16 @@ mod tests {
         for token in 0..total {
             for head in 0..heads {
                 let target = token * qw + head * width;
-                let key = if token < prefix {
-                    &pk[target..target + width]
-                } else {
-                    let source = (token - prefix) * kw + (head / repeat) * width;
-                    &gk[source..source + width]
-                };
-                expanded_k[target..target + width].copy_from_slice(key);
-                let source = token * kw + (head / repeat) * width;
-                expanded_v[target..target + width].copy_from_slice(&v[source..source + width]);
+                expanded_k[target..target + width].copy_from_slice(kv.key(token, head));
+                expanded_v[target..target + width].copy_from_slice(kv.value(token, head / repeat));
             }
         }
+        let expanded = CompactKv::expanded(&expanded_k, &expanded_v, total, heads, width);
         let pool = rayon::ThreadPoolBuilder::new().num_threads(4).build().unwrap();
         pool.install(|| {
-            compact_oracle(
-                &q,
-                &pk,
-                &gk,
-                &v,
-                rows,
-                prefix,
-                heads,
-                kvheads,
-                width,
-                offset,
-                image_start,
-                image_end,
-                &sinks,
-                &mut expected,
-                simd,
-            );
-            attention_compact_with_simd(
-                &q,
-                &pk,
-                &gk,
-                &v,
-                rows,
-                prefix,
-                total,
-                heads,
-                kvheads,
-                width,
-                offset,
-                image_start,
-                image_end,
-                &sinks,
-                &mut actual,
-                simd,
-            );
-            expanded_oracle(
-                &q,
-                &expanded_k,
-                &expanded_v,
-                rows,
-                heads,
-                width,
-                offset,
-                image_start,
-                image_end,
-                &sinks,
-                &mut expanded_out,
-                simd,
-            );
+            oracle(&q, &kv, rows, geometry, &sinks, &mut expected, simd);
+            attention_with_simd(&q, &kv, rows, geometry, &sinks, &mut actual, simd);
+            oracle(&q, &expanded, rows, geometry, &sinks, &mut expanded_out, simd);
         });
         assert!(actual.iter().all(|x| x.is_finite()));
         exact(&actual, &expected);

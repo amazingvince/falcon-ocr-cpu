@@ -12,7 +12,7 @@ use super::{
     qk_uses_main_path, reference_key_tile, softmax_lanes,
 };
 use crate::config::ExpMode;
-use crate::kernels::Bf16Kv;
+use crate::kernels::{Bf16Kv, CompactKv, Geometry, PrefillOptions};
 use rayon::prelude::*;
 use std::arch::x86_64::*;
 
@@ -63,39 +63,31 @@ pub(crate) unsafe fn store_row(
     }
 }
 
-/// Pure prefill with the parent's shapes (`k` is `[total][n_heads][64]`,
-/// `v` is `[total][n_kv_heads][64]`, `q`/`output` are
-/// `[query_len][n_heads][64]`).
-///
+/// Pure prefill of `cache` (`head_dim == 64`, `prefix_len == total_len`).
 /// `kv` supplies the BF16 key/value copies or the scratch to convert them
-/// into; `exp` selects the softmax exp and `profile` the stage counters.
+/// into; `options` select the softmax exp and the stage counters.
 ///
 /// # Safety
 /// AVX2, FMA, AVX-512F and AVX512-BF16 must be available; shapes as in the
 /// parent's `compact_prefill`.
-#[allow(clippy::too_many_arguments)]
 pub(in crate::kernels) unsafe fn compact_prefill(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     query_len: usize,
-    n_heads: usize,
-    n_kv_heads: usize,
-    query_offset: usize,
-    image_start: usize,
-    image_end: usize,
+    geometry: Geometry,
     sinks: &[f32],
     output: &mut [f32],
     kv: Bf16Kv<'_>,
-    exp: ExpMode,
-    profile: bool,
+    options: PrefillOptions,
 ) {
+    let (k, v, n_heads, n_kv_heads) = (cache.prefix_k, cache.v, cache.n_heads, cache.n_kv_heads);
+    let PrefillOptions { exp, profile } = options;
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
         kv_width: n_kv_heads * HEAD_DIM,
-        query_offset,
-        image_start,
-        image_end,
+        query_offset: geometry.query_offset,
+        image_start: geometry.image_start,
+        image_end: geometry.image_end,
         scale: (HEAD_DIM as f32).sqrt().recip(),
         profile,
     };
@@ -814,35 +806,23 @@ mod tests {
             unsafe {
                 compact_prefill(
                     &q,
-                    &k,
-                    &v,
+                    &CompactKv::prefill(&k, &v, query_len, heads, kv_heads, 64),
                     query_len,
-                    heads,
-                    kv_heads,
-                    0,
-                    image_start,
-                    image_end,
+                    Geometry::new(0, image_start, image_end),
                     &sinks,
                     &mut own,
                     Bf16Kv::Convert(&mut scratch_keys, &mut scratch_values),
-                    ExpMode::Exact,
-                    false,
+                    PrefillOptions::EXACT,
                 );
                 compact_prefill(
                     &q,
-                    &k,
-                    &v,
+                    &CompactKv::prefill(&k, &v, query_len, heads, kv_heads, 64),
                     query_len,
-                    heads,
-                    kv_heads,
-                    0,
-                    image_start,
-                    image_end,
+                    Geometry::new(0, image_start, image_end),
                     &sinks,
                     &mut stored,
                     Bf16Kv::Converted(&keys, &value_pairs),
-                    ExpMode::Exact,
-                    false,
+                    PrefillOptions::EXACT,
                 );
             }
             for (i, (a, b)) in own.iter().zip(&stored).enumerate() {
@@ -882,19 +862,13 @@ mod tests {
             pool.install(|| unsafe {
                 compact_prefill(
                     &q,
-                    &k,
-                    &v,
+                    &CompactKv::prefill(&k, &v, query_len, heads, kv_heads, 64),
                     query_len,
-                    heads,
-                    kv_heads,
-                    0,
-                    image_start,
-                    image_end,
+                    Geometry::new(0, image_start, image_end),
                     &sinks,
                     &mut out,
                     Bf16Kv::Convert(&mut scratch_keys, &mut scratch_values),
-                    ExpMode::Exact,
-                    false,
+                    PrefillOptions::EXACT,
                 )
             });
             let mut worst = 0.0_f64;

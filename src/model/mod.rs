@@ -622,15 +622,15 @@ impl Model {
                 rows,
                 offset + rows,
                 c,
-                offset,
-                session.image_start,
-                session.image_end,
+                kernels::Geometry::new(offset, session.image_start, session.image_end),
                 self.w(&layer.sinks),
                 &mut work.attn,
                 simd,
                 bf16_kv,
-                exp,
-                tuning.prefill_profile,
+                kernels::PrefillOptions {
+                    exp,
+                    profile: tuning.prefill_profile,
+                },
             );
             clock.mark(4);
             if trace.enabled() {
@@ -911,15 +911,15 @@ impl Model {
                     1,
                     offset + 1,
                     c,
-                    offset,
-                    session.image_start,
-                    session.image_end,
+                    kernels::Geometry::new(offset, session.image_start, session.image_end),
                     self.w(&layer.sinks),
                     &mut work.attn[range],
                     simd,
                     None,
-                    session.exp,
-                    false,
+                    kernels::PrefillOptions {
+                        exp: session.exp,
+                        profile: false,
+                    },
                 );
             }
             if trace.enabled() {

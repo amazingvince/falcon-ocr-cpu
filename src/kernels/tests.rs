@@ -265,7 +265,13 @@ fn attention_matches_dense_for_hybrid_prefill_cached_decode_and_tails() {
         for simd in implementations() {
             let mut out = vec![f32::NAN; q.len()];
             attention_with_simd(
-                &q, &k, &v, qlen, kvlen, heads, dim, offset, start, end, &sinks, &mut out, simd,
+                &q,
+                &CompactKv::expanded(&k, &v, kvlen, heads, dim),
+                qlen,
+                Geometry::new(offset, start, end),
+                &sinks,
+                &mut out,
+                simd,
             );
             assert_close(&out, &expected, 2e-6, 4e-6);
         }
@@ -279,20 +285,21 @@ fn attention_image_boundaries_and_sink_value_are_correct() {
     let qk = [0.0; 5];
     let v = [1.0, 10.0, 100.0, 1000.0, 10000.0];
     let mut out = [0.0; 5];
-    attention(&qk, &qk, &v, 5, 5, 1, 1, 0, 1, 3, &[0.0], &mut out);
+    attention(
+        &qk,
+        &CompactKv::expanded(&qk, &v, 5, 1, 1),
+        5,
+        Geometry::new(0, 1, 3),
+        &[0.0],
+        &mut out,
+    );
     assert_close(&out, &[0.5, 27.75, 27.75, 222.2, 1851.8334], 1e-6, 1e-7);
     let mut no_sink = [0.0];
     attention(
         &[0.0],
-        &[0.0],
-        &[13.0],
+        &CompactKv::expanded(&[0.0], &[13.0], 1, 1, 1),
         1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0,
+        Geometry::new(0, 0, 0),
         &[f32::NEG_INFINITY],
         &mut no_sink,
     );
@@ -307,7 +314,15 @@ fn attention_stable_with_large_positive_and_negative_logits_and_sinks() {
         let expected = attention_f64(&[1.0], &keys, &values, 1, 257, 1, 1, 256, 0, 0, &[sink]);
         for simd in implementations() {
             let mut out = [f32::NAN];
-            attention_with_simd(&[1.0], &keys, &values, 1, 257, 1, 1, 256, 0, 0, &[sink], &mut out, simd);
+            attention_with_simd(
+                &[1.0],
+                &CompactKv::expanded(&keys, &values, 257, 1, 1),
+                1,
+                Geometry::new(256, 0, 0),
+                &[sink],
+                &mut out,
+                simd,
+            );
             assert_close(&out, &expected, 1e-6, 1e-6);
             assert!(out[0].is_finite());
         }
@@ -316,7 +331,14 @@ fn attention_stable_with_large_positive_and_negative_logits_and_sinks() {
     let q = [1.0; 4];
     let expected = attention_f64(&q, &keys, &values, 4, 257, 1, 1, 253, 0, 0, &[-10000.0]);
     let mut out = [f32::NAN; 4];
-    attention(&q, &keys, &values, 4, 257, 1, 1, 253, 0, 0, &[-10000.0], &mut out);
+    attention(
+        &q,
+        &CompactKv::expanded(&keys, &values, 257, 1, 1),
+        4,
+        Geometry::new(253, 0, 0),
+        &[-10000.0],
+        &mut out,
+    );
     assert_close(&out, &expected, 1e-6, 1e-6);
 }
 
@@ -391,35 +413,30 @@ fn compact_cache_is_bit_identical_to_expanded_for_every_vector_backend() {
         for simd in implementations() {
             let mut expected = vec![f32::NAN; q.len()];
             let mut actual = vec![f32::NAN; q.len()];
+            let geometry = Geometry::new(offset, image_start, image_end);
             attention_with_simd(
                 &q,
-                &expanded_k,
-                &expanded_v,
+                &CompactKv::expanded(&expanded_k, &expanded_v, total_len, heads, dim),
                 queries,
-                total_len,
-                heads,
-                dim,
-                offset,
-                image_start,
-                image_end,
+                geometry,
                 &sinks,
                 &mut expected,
                 simd,
             );
-            attention_compact_with_simd(
+            attention_with_simd(
                 &q,
-                &prefix,
-                &generated,
-                &v,
+                &CompactKv {
+                    prefix_k: &prefix,
+                    generated_k: &generated,
+                    v: &v,
+                    prefix_len,
+                    total_len,
+                    n_heads: heads,
+                    n_kv_heads: kv_heads,
+                    head_dim: dim,
+                },
                 queries,
-                prefix_len,
-                total_len,
-                heads,
-                kv_heads,
-                dim,
-                offset,
-                image_start,
-                image_end,
+                geometry,
                 &sinks,
                 &mut actual,
                 simd,
@@ -451,33 +468,27 @@ fn compact_cache_extreme_sinks_preserve_expanded_rounding() {
             let mut expected = [f32::NAN; 8];
             attention_with_simd(
                 &q,
-                &kfull,
-                &vfull,
+                &CompactKv::expanded(&kfull, &vfull, total_len, 2, 1),
                 4,
-                total_len,
-                2,
-                1,
-                129,
-                0,
-                2,
+                Geometry::new(129, 0, 2),
                 &sinks,
                 &mut expected,
                 simd,
             );
-            attention_compact_with_simd(
+            attention_with_simd(
                 &q,
-                &prefix,
-                &generated,
-                &v,
+                &CompactKv {
+                    prefix_k: &prefix,
+                    generated_k: &generated,
+                    v: &v,
+                    prefix_len,
+                    total_len,
+                    n_heads: 2,
+                    n_kv_heads: 1,
+                    head_dim: 1,
+                },
                 4,
-                prefix_len,
-                total_len,
-                2,
-                1,
-                1,
-                129,
-                0,
-                2,
+                Geometry::new(129, 0, 2),
                 &sinks,
                 &mut actual,
                 simd,
@@ -488,22 +499,22 @@ fn compact_cache_extreme_sinks_preserve_expanded_rounding() {
 }
 
 #[test]
-#[should_panic(expected = "compact attention image must be inside prefix")]
+#[should_panic(expected = "attention image must be inside the prefix")]
 fn compact_cache_rejects_spatial_keys_in_generated_region() {
-    attention_compact(
+    attention(
         &[0.0; 2],
-        &[0.0; 2],
-        &[0.0],
-        &[0.0; 2],
+        &CompactKv {
+            prefix_k: &[0.0; 2],
+            generated_k: &[0.0],
+            v: &[0.0; 2],
+            prefix_len: 1,
+            total_len: 2,
+            n_heads: 2,
+            n_kv_heads: 1,
+            head_dim: 1,
+        },
         1,
-        1,
-        2,
-        2,
-        1,
-        1,
-        1,
-        0,
-        2,
+        Geometry::new(1, 0, 2),
         &[0.0; 2],
         &mut [0.0; 2],
     );

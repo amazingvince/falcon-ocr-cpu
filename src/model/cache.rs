@@ -98,19 +98,19 @@ impl LayerCache {
         rows: usize,
         total_len: usize,
         c: &ModelConfig,
-        offset: usize,
-        image_start: usize,
-        image_end: usize,
+        geometry: kernels::Geometry,
         sinks: &[f32],
         output: &mut [f32],
         simd: kernels::Simd,
         bf16: Option<Bf16Kv<'_>>,
-        exp: ExpMode,
-        profile: bool,
+        options: kernels::PrefillOptions,
     ) {
         match self {
             Self::Split(cache) => {
-                assert!(offset >= image_end, "cannot treat a partial image as causal decode");
+                assert!(
+                    geometry.query_offset >= geometry.image_end,
+                    "cannot treat a partial image as causal decode"
+                );
                 if rows == 1 {
                     cache.attention_decode(q, total_len, sinks, output, simd);
                 } else {
@@ -118,70 +118,33 @@ impl LayerCache {
                     cache.attention_decode_rows(q, rows, sinks, output, simd);
                 }
             }
-            Self::Expanded { k, v } => kernels::attention_with_simd(
-                q,
-                k,
-                v,
-                rows,
-                total_len,
-                c.n_heads,
-                c.head_dim,
-                offset,
-                image_start,
-                image_end,
-                sinks,
-                output,
-                simd,
-            ),
+            Self::Expanded { k, v } => {
+                let kv = kernels::CompactKv::expanded(k, v, total_len, c.n_heads, c.head_dim);
+                kernels::attention_with_simd(q, &kv, rows, geometry, sinks, output, simd)
+            }
             Self::Compact {
                 prefix_k,
                 generated_k,
                 v,
                 ..
             } => {
-                if let Some(kv) = bf16
-                    && generated_k.is_empty()
-                    && kernels::attention_compact_prefill_bf16(
-                        q,
-                        prefix_k,
-                        v,
-                        rows,
-                        total_len,
-                        c.n_heads,
-                        c.n_kv_heads,
-                        c.head_dim,
-                        offset,
-                        image_start,
-                        image_end,
-                        sinks,
-                        output,
-                        kv,
-                        exp,
-                        profile,
-                    )
-                {
-                    return;
-                }
-                kernels::attention_compact_prefill_with(
-                    q,
+                let kv = kernels::CompactKv {
                     prefix_k,
                     generated_k,
                     v,
-                    rows,
-                    prefix_k.len() / c.query_dim(),
+                    prefix_len: prefix_k.len() / c.query_dim(),
                     total_len,
-                    c.n_heads,
-                    c.n_kv_heads,
-                    c.head_dim,
-                    offset,
-                    image_start,
-                    image_end,
-                    sinks,
-                    output,
-                    simd,
-                    exp,
-                    profile,
-                )
+                    n_heads: c.n_heads,
+                    n_kv_heads: c.n_kv_heads,
+                    head_dim: c.head_dim,
+                };
+                if let Some(bf16) = bf16
+                    && generated_k.is_empty()
+                    && kernels::attention_prefill_bf16(q, &kv, rows, geometry, sinks, output, bf16, options)
+                {
+                    return;
+                }
+                kernels::attention_with(q, &kv, rows, geometry, sinks, output, simd, options)
             }
         }
     }
