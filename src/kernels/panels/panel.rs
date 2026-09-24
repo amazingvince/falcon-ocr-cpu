@@ -13,12 +13,14 @@
 //! Every output is one FMA chain over ascending `k` starting from zero:
 //! deterministic and independent of the thread count, but not the summation
 //! order of the `gemm` crate, so results differ from it at rounding level.
+//! The row-block scheduler is `driver::tiled_gemm`, shared with the BF16
+//! kernel.
 use rayon::prelude::*;
+
+use super::driver::{self, MR, PanelKernel};
 
 /// Output channels per panel.
 pub(crate) const NR: usize = 16;
-/// Rows per micro-kernel call.
-const MR: usize = 6;
 
 /// Where a finished 6x16 tile goes.
 pub(crate) enum Epilogue<'a> {
@@ -64,6 +66,47 @@ pub(crate) fn pack_panels(n: usize, k: usize, row: impl Fn(usize, &mut [f32]) + 
     );
 }
 
+/// FP32 weight panels from [`pack_panels`] (`[n / 16][k][16]`).
+struct F32Panels<'a>(&'a [f32]);
+
+impl PanelKernel<NR> for F32Panels<'_> {
+    type Packed = f32;
+    /// `[group][k][6]`, zero-padding the last group.
+    fn pack_rows(&self, a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<&[f32]>, out: &mut [f32]) {
+        for g in 0..padded / MR {
+            let dst = &mut out[g * k * MR..(g + 1) * k * MR];
+            for r in 0..MR {
+                let row = g * MR + r;
+                if row < rows {
+                    let src = &a[row * k..(row + 1) * k];
+                    match row_scale {
+                        Some(scale) => {
+                            let s = scale[row];
+                            for (kk, &v) in src.iter().enumerate() {
+                                dst[kk * MR + r] = v * s;
+                            }
+                        }
+                        None => {
+                            for (kk, &v) in src.iter().enumerate() {
+                                dst[kk * MR + r] = v;
+                            }
+                        }
+                    }
+                } else {
+                    for kk in 0..k {
+                        dst[kk * MR + r] = 0.0;
+                    }
+                }
+            }
+        }
+    }
+    unsafe fn tile(&self, k: usize, a: &[f32], panel: usize, tile: &mut [[f32; NR]; MR]) {
+        let b = &self.0[panel * k * NR..(panel + 1) * k * NR];
+        // SAFETY: the caller's contract; both packed operands hold `k` steps.
+        unsafe { kernel(k, a, b, tile) }
+    }
+}
+
 /// `C = A * W^T` for `a` (`m x k`, row-major) and `panels` from
 /// [`pack_panels`], written through `epilogue`. With `row_scale`, row `r` of
 /// `A` is used as `a[r][k] * row_scale[r]` (an RMS norm folded into packing:
@@ -77,109 +120,8 @@ pub(crate) fn gemm(
     row_scale: Option<&[f32]>,
     epilogue: Epilogue<'_>,
 ) {
-    assert_eq!(a.len(), m * k, "panel GEMM input shape");
     assert_eq!(panels.len(), n * k, "panel GEMM weight shape");
-    assert_eq!(n % NR, 0, "panel GEMM needs whole panels");
-    if let Some(scale) = row_scale {
-        assert_eq!(scale.len(), m, "panel GEMM row scales");
-    }
-    let (out, glu, add) = match epilogue {
-        Epilogue::Store(out) => {
-            assert_eq!(out.len(), m * n, "panel GEMM output shape");
-            (out, false, false)
-        }
-        Epilogue::Glu(out) => {
-            assert_eq!(out.len(), m * (n / 2), "panel GEMM gated shape");
-            (out, true, false)
-        }
-        Epilogue::Add(out) => {
-            assert_eq!(out.len(), m * n, "panel GEMM output shape");
-            (out, false, true)
-        }
-    };
-    if m == 0 || n == 0 {
-        return;
-    }
-    let out_width = if glu { n / 2 } else { n };
-    // Row blocks sized so the packed block stays in L2 (about 1 MB on Zen 4).
-    let block_rows = if k <= 1024 { 96 } else { 48 };
-    let row_blocks = m.div_ceil(block_rows);
-    let panels_total = n / NR;
-    let threads = rayon::current_num_threads().max(1);
-    let splits = (2 * threads).div_ceil(row_blocks).clamp(1, panels_total);
-    let panels_per_split = panels_total.div_ceil(splits);
-    let shared = crate::team::SharedMut::new(out);
-    (0..row_blocks * splits).into_par_iter().for_each_init(
-        || vec![0.0_f32; block_rows.next_multiple_of(MR) * k],
-        |packed, unit| {
-            let (block, split) = (unit / splits, unit % splits);
-            let row0 = block * block_rows;
-            let rows = block_rows.min(m - row0);
-            let groups = rows.div_ceil(MR);
-            // Pack the row block as [group][k][6], zero-padding the last group.
-            for g in 0..groups {
-                let dst = &mut packed[g * k * MR..(g + 1) * k * MR];
-                for r in 0..MR {
-                    let src_row = row0 + g * MR + r;
-                    if src_row < row0 + rows {
-                        let src = &a[src_row * k..(src_row + 1) * k];
-                        match row_scale {
-                            Some(scale) => {
-                                let s = scale[src_row];
-                                for (kk, &v) in src.iter().enumerate() {
-                                    dst[kk * MR + r] = v * s;
-                                }
-                            }
-                            None => {
-                                for (kk, &v) in src.iter().enumerate() {
-                                    dst[kk * MR + r] = v;
-                                }
-                            }
-                        }
-                    } else {
-                        for kk in 0..k {
-                            dst[kk * MR + r] = 0.0;
-                        }
-                    }
-                }
-            }
-            let first_panel = split * panels_per_split;
-            let last_panel = (first_panel + panels_per_split).min(panels_total);
-            let mut tile = [[0.0_f32; NR]; MR];
-            for panel in first_panel..last_panel {
-                let b = &panels[panel * k * NR..(panel + 1) * k * NR];
-                for g in 0..groups {
-                    let a_group = &packed[g * k * MR..(g + 1) * k * MR];
-                    // SAFETY: `available` was checked by the caller; both
-                    // packed operands hold exactly `k` steps.
-                    unsafe { kernel(k, a_group, b, &mut tile) };
-                    let valid = MR.min(rows - g * MR);
-                    for (r, values) in tile[..valid].iter().enumerate() {
-                        let row = row0 + g * MR + r;
-                        if glu {
-                            let base = row * out_width + panel * (NR / 2);
-                            // SAFETY: (row, panel) tiles are disjoint across units.
-                            let dst = unsafe { shared.slice(base, NR / 2) };
-                            for (i, y) in dst.iter_mut().enumerate() {
-                                *y = crate::kernels::squared_relu_glu(values[2 * i], values[2 * i + 1]);
-                            }
-                        } else {
-                            let base = row * out_width + panel * NR;
-                            // SAFETY: (row, panel) tiles are disjoint across units.
-                            let dst = unsafe { shared.slice(base, NR) };
-                            if add {
-                                for (y, v) in dst.iter_mut().zip(values) {
-                                    *y += v;
-                                }
-                            } else {
-                                dst.copy_from_slice(values);
-                            }
-                        }
-                    }
-                }
-            }
-        },
-    );
+    driver::tiled_gemm(&F32Panels(panels), a, m, k, n, row_scale, epilogue);
 }
 
 /// One 6x16 tile over the whole reduction.

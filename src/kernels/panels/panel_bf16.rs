@@ -9,12 +9,13 @@
 //! All`): it changes results at the level of BF16 activation rounding.
 use rayon::prelude::*;
 
-use super::panel::Epilogue;
+use super::{
+    driver::{self, MR, PanelKernel},
+    panel::Epilogue,
+};
 
 /// Output channels per panel (two 16-lane vectors).
 pub(crate) const NR: usize = 32;
-/// Rows per micro-kernel call.
-const MR: usize = 6;
 /// Inputs per weight scale.
 const GROUP: usize = 64;
 
@@ -72,6 +73,25 @@ pub(crate) fn pack(n: usize, k: usize, codes: &[i8], scales: &[f32], out: &mut P
         });
 }
 
+/// The packed 8-bit panels as a micro-kernel.
+struct Bf16Panels<'a>(&'a Panels);
+
+impl PanelKernel<NR> for Bf16Panels<'_> {
+    type Packed = u16;
+    /// Row-major BF16 rows (times their row scale), zero rows past `rows`.
+    fn pack_rows(&self, a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<&[f32]>, out: &mut [u16]) {
+        // SAFETY: AVX512-BF16 checked by `available` in `gemm`; `out` holds
+        // `padded x k` values.
+        unsafe { pack_rows(a, rows, padded, k, row_scale, out) }
+    }
+    unsafe fn tile(&self, k: usize, a: &[u16], panel: usize, tile: &mut [[f32; NR]; MR]) {
+        let codes = &self.0.codes[panel * NR * k..(panel + 1) * NR * k];
+        let scales = &self.0.scales[panel * NR * (k / GROUP)..(panel + 1) * NR * (k / GROUP)];
+        // SAFETY: the caller's contract; the packed rows hold `MR x k` values.
+        unsafe { kernel(k, a, codes, scales, tile) }
+    }
+}
+
 /// `C = A * W^T` for `a` (`m x k`) and 8-bit `panels`, optionally scaling
 /// row `r` of `A` by `row_scale[r]` before rounding it to BF16. Requires
 /// [`available`].
@@ -85,83 +105,8 @@ pub(crate) fn gemm(
     epilogue: Epilogue<'_>,
 ) {
     assert!(available(), "AVX512-BF16 required");
-    assert_eq!(a.len(), m * k);
-    assert!(n.is_multiple_of(NR) && k.is_multiple_of(GROUP));
-    let (out, mode) = match epilogue {
-        Epilogue::Store(out) => (out, 0),
-        Epilogue::Glu(out) => (out, 1),
-        Epilogue::Add(out) => (out, 2),
-    };
-    let out_width = if mode == 1 { n / 2 } else { n };
-    assert_eq!(out.len(), m * out_width, "BF16 panel output shape");
-    if let Some(scale) = row_scale {
-        assert_eq!(scale.len(), m);
-    }
-    if m == 0 {
-        return;
-    }
-    let block_rows = if k <= 1024 { 96 } else { 48 };
-    let row_blocks = m.div_ceil(block_rows);
-    let panels_total = n / NR;
-    let threads = rayon::current_num_threads().max(1);
-    let splits = (2 * threads).div_ceil(row_blocks).clamp(1, panels_total);
-    let per_split = panels_total.div_ceil(splits);
-    let shared = crate::team::SharedMut::new(out);
-    (0..row_blocks * splits).into_par_iter().for_each_init(
-        || vec![0_u16; block_rows.next_multiple_of(MR) * k],
-        |packed, unit| {
-            let (block, split) = (unit / splits, unit % splits);
-            let row0 = block * block_rows;
-            let rows = block_rows.min(m - row0);
-            let padded = rows.next_multiple_of(MR);
-            // SAFETY: AVX512-BF16 checked by `available`; shapes checked above.
-            unsafe {
-                pack_rows(
-                    &a[row0 * k..(row0 + rows) * k],
-                    rows,
-                    padded,
-                    k,
-                    row_scale.map(|s| &s[row0..row0 + rows]),
-                    packed,
-                )
-            };
-            let first = split * per_split;
-            let last = (first + per_split).min(panels_total);
-            let mut tile = [[0.0_f32; NR]; MR];
-            for panel in first..last {
-                let codes = &panels.codes[panel * NR * k..(panel + 1) * NR * k];
-                let scales = &panels.scales[panel * NR * (k / GROUP)..(panel + 1) * NR * (k / GROUP)];
-                for g in 0..padded / MR {
-                    // SAFETY: as above; the packed rows hold `padded x k` values.
-                    unsafe { kernel(k, &packed[g * MR * k..(g + 1) * MR * k], codes, scales, &mut tile) };
-                    let valid = MR.min(rows.saturating_sub(g * MR));
-                    for (r, values) in tile[..valid].iter().enumerate() {
-                        let row = row0 + g * MR + r;
-                        match mode {
-                            1 => {
-                                // SAFETY: (row, panel) tiles are disjoint across units.
-                                let dst = unsafe { shared.slice(row * out_width + panel * (NR / 2), NR / 2) };
-                                for (i, y) in dst.iter_mut().enumerate() {
-                                    *y = crate::kernels::squared_relu_glu(values[2 * i], values[2 * i + 1]);
-                                }
-                            }
-                            2 => {
-                                // SAFETY: as above.
-                                let dst = unsafe { shared.slice(row * out_width + panel * NR, NR) };
-                                for (y, v) in dst.iter_mut().zip(values) {
-                                    *y += v;
-                                }
-                            }
-                            _ => {
-                                // SAFETY: as above.
-                                unsafe { shared.slice(row * out_width + panel * NR, NR) }.copy_from_slice(values);
-                            }
-                        }
-                    }
-                }
-            }
-        },
-    );
+    assert!(n.is_multiple_of(NR) && k.is_multiple_of(GROUP), "BF16 panel shape");
+    driver::tiled_gemm(&Bf16Panels(panels), a, m, k, n, row_scale, epilogue);
 }
 
 /// Rows of `a` (times their row scale) as BF16, row-major, zero rows padding

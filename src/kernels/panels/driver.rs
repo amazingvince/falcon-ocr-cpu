@@ -17,7 +17,15 @@ pub(super) trait PanelKernel<const NR: usize>: Sync {
     type Packed: Copy + Default + Send;
     /// Pack `rows` rows of `a` (`rows x k`, row `r` times `row_scale[r]`) as
     /// `padded` rows (zero rows past `rows`) into `out`.
-    fn pack_rows(&self, a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<&[f32]>, out: &mut [Self::Packed]);
+    fn pack_rows(
+        &self,
+        a: &[f32],
+        rows: usize,
+        padded: usize,
+        k: usize,
+        row_scale: Option<&[f32]>,
+        out: &mut [Self::Packed],
+    );
     /// One `MR x NR` tile of packed row group `a` (`MR x k`) against weight
     /// panel `panel`.
     ///
