@@ -22,7 +22,7 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         RunnerConfig {
             threads: 4,
             batch_size: 1,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();
@@ -62,7 +62,7 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
             RunnerConfig {
                 threads: 1,
                 backend,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         )
         .unwrap();

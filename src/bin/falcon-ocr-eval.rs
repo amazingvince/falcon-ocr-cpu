@@ -2,7 +2,8 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, Tuning, WeightLayout,
+    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig,
+    Speculation, Tuning, WeightLayout,
     attempt::{Profile, Telemetry},
     trace::TensorTrace,
 };
@@ -49,11 +50,11 @@ struct Cli {
     /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
     #[arg(long, global = true)]
     stop_repetition: bool,
-    /// Decode threads (default: --threads). Decode is memory-bound; on SMT
-    /// CPUs one thread per physical core is usually fastest, while prefill
-    /// gains from every logical CPU in --threads.
+    /// Decode threads: a number, `pool` (default: as many as --threads) or
+    /// `auto`. Decode is memory-bound; on SMT CPUs one thread per physical
+    /// core is usually fastest, while prefill gains from every logical CPU.
     #[arg(long, global = true)]
-    decode_threads: Option<falcon_ocr::runner::DecodeThreads>,
+    decode_threads: Option<DecodeThreads>,
     /// Speculative decoding: verify up to N tokens drafted from earlier output
     /// in one step (0 = off, at most 7). Every verified token is the model's own
     /// greedy choice, so outputs are unchanged. Needs the split cache
@@ -458,7 +459,7 @@ fn main() -> Result<()> {
     });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.attempt_memory_report();
-    let mut runner = Runner::new(
+    let runner = Runner::new(
         model.clone(),
         &args.model,
         RunnerConfig {
@@ -469,17 +470,16 @@ fn main() -> Result<()> {
             weight_layout: WeightLayout::Unpacked,
             exp: args.exp,
             tuning: Tuning::from_pairs(&args.tune)?,
+            head: args.head,
+            speculation: (args.speculate > 0).then_some(Speculation {
+                max_draft: args.speculate,
+                min_match: args.speculate_min_match,
+            }),
+            document_drafts: args.document_drafts,
+            repetition_stop: args.stop_repetition,
+            decode_threads: args.decode_threads.unwrap_or(DecodeThreads::Pool),
         },
     )?;
-    runner.set_head_mode(args.head)?;
-    runner.set_repetition_stop(args.stop_repetition);
-    runner.set_speculation(args.speculate, args.speculate_min_match);
-    runner.set_document_drafts(args.document_drafts);
-    match args.decode_threads {
-        Some(falcon_ocr::runner::DecodeThreads::Auto) => runner.set_decode_threads_auto()?,
-        Some(falcon_ocr::runner::DecodeThreads::Fixed(threads)) => runner.set_decode_threads(threads)?,
-        None => {}
-    }
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
         args.profile.label(),

@@ -20,8 +20,8 @@ pub mod trace;
 mod tune;
 
 pub use config::{
-    Backend, CacheLayout, ExpMode, GenerationOptions, HeadMode, ModelConfig, PrefillBf16, RunnerConfig, Tuning,
-    WeightLayout,
+    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, ModelConfig, PrefillBf16, RunnerConfig,
+    Speculation, Tuning, WeightLayout,
 };
 pub use model::Model;
 pub use runner::{FinishReason, OcrResult, Runner, Timings};

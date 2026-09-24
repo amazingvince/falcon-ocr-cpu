@@ -67,7 +67,7 @@ fn compact_cache_preserves_single_and_mixed_batch_traces() {
                 batch_size,
                 backend: Backend::Avx2,
                 cache_layout: layout,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         )
         .unwrap()

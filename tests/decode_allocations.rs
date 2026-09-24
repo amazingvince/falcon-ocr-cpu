@@ -86,7 +86,7 @@ fn warm_fp32_decode_has_no_heap_allocations() {
                     threads: 4,
                     cache_layout,
                     weight_layout,
-                    ..Default::default()
+                    ..RunnerConfig::reference()
                 },
             )
             .unwrap();
@@ -110,7 +110,7 @@ fn warm_fp32_decode_has_no_heap_allocations() {
                     batch_size: 4,
                     cache_layout,
                     weight_layout,
-                    ..Default::default()
+                    ..RunnerConfig::reference()
                 },
             )
             .unwrap();

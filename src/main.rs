@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, Tuning, WeightLayout,
-    trace::TensorTrace,
+    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig,
+    Speculation, Tuning, WeightLayout, trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -59,22 +59,25 @@ struct Cli {
     #[arg(long, value_enum, global = true)]
     head: Option<HeadMode>,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at
-    /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
-    #[arg(long, global = true)]
+    /// least max(256, 4 * cycle) tokens (finish_reason "repetition"); output
+    /// up to that step is unchanged. `--stop-repetition=false` lets loops run
+    /// to --max-new-tokens.
+    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, global = true)]
     stop_repetition: bool,
-    /// Decode threads, or `auto` [default: auto]. Decode is memory-bound, so
-    /// past bandwidth saturation extra threads and SMT siblings only contend;
-    /// `auto` times a few team sizes on the first decode steps and keeps the
-    /// smallest within 2% of the fastest (tokens never depend on it).
-    /// Prefill uses every logical CPU in --threads.
+    /// Decode threads: a number, `pool` (as many as --threads) or `auto`
+    /// [default: auto]. Decode is memory-bound, so past bandwidth saturation
+    /// extra threads and SMT siblings only contend; `auto` times a few team
+    /// sizes on the first decode steps and keeps the smallest within 2% of the
+    /// fastest (tokens never depend on it). Prefill uses every thread in
+    /// --threads.
     #[arg(long, global = true)]
-    decode_threads: Option<falcon_ocr::runner::DecodeThreads>,
+    decode_threads: Option<DecodeThreads>,
     /// Speculative decoding: verify up to N tokens drafted from earlier output
     /// in one step (0 = off, at most 7) [default: 4]. Every verified token is
     /// the model's own greedy choice, so outputs are unchanged. Drafting
     /// switches itself off while drafts are rejected too often to pay (normal
-    /// text) and on for repetitive output (tables, loops). Needs the split
-    /// cache (near-exact and fast modes); single pages only.
+    /// text) and on for repetitive output (tables, loops). Single pages with a
+    /// split KV cache (every `run` mode).
     #[arg(long, default_value_t = 4, global = true)]
     speculate: usize,
     /// Minimum n-gram match in the earlier output for a draft.
@@ -228,35 +231,32 @@ fn main() -> Result<()> {
         .and_then(|f| f.parent())
         .filter(|d| d.join("tokenizer.json").is_file())
         .map_or_else(|| cli.model.clone(), |d| d.to_path_buf());
-    // Recognition uses the fast exp (token-identical on calibration); traces
-    // keep the platform exp so they stay bit-comparable with the references.
-    let exp = if matches!(cli.command, Command::Trace { .. }) {
-        ExpMode::Exact
+    // Traces stay bit-comparable with the recorded references: the reference
+    // configuration (platform exp, full head, no speculation). Recognition
+    // uses the automatic one, with the flags above layered on top.
+    let base = if matches!(cli.command, Command::Trace { .. }) {
+        RunnerConfig::reference()
     } else {
-        cli.exp.unwrap_or(ExpMode::Fast)
+        RunnerConfig::default()
     };
-    let mut runner = Runner::new(
-        model,
-        &tokenizer_dir,
-        RunnerConfig {
-            threads,
-            backend: cli.backend,
-            batch_size: cli.batch_size,
-            cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
-            weight_layout: cli.weight_layout,
-            exp,
-            tuning: Tuning::from_pairs(&cli.tune)?,
-        },
-    )?;
-    runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
-    runner.set_repetition_stop(cli.stop_repetition);
-    runner.set_speculation(cli.speculate, cli.speculate_min_match);
-    runner.set_document_drafts(cli.document_drafts);
-    match cli.decode_threads.unwrap_or(falcon_ocr::runner::DecodeThreads::Auto) {
-        falcon_ocr::runner::DecodeThreads::Auto => runner.set_decode_threads_auto()?,
-        falcon_ocr::runner::DecodeThreads::Fixed(n) if n != threads => runner.set_decode_threads(n)?,
-        falcon_ocr::runner::DecodeThreads::Fixed(_) => {}
-    }
+    let config = RunnerConfig {
+        threads,
+        backend: cli.backend,
+        batch_size: cli.batch_size,
+        cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
+        weight_layout: cli.weight_layout,
+        exp: cli.exp.unwrap_or(base.exp),
+        tuning: Tuning::from_pairs(&cli.tune)?,
+        head: cli.head.unwrap_or(base.head),
+        speculation: (cli.speculate > 0).then_some(Speculation {
+            max_draft: cli.speculate,
+            min_match: cli.speculate_min_match,
+        }),
+        document_drafts: cli.document_drafts,
+        repetition_stop: cli.stop_repetition,
+        decode_threads: cli.decode_threads.unwrap_or(base.decode_threads),
+    };
+    let runner = Runner::new(model, &tokenizer_dir, config)?;
     match cli.command {
         Command::Run {
             images,

@@ -50,7 +50,7 @@ fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
                 batch_size,
                 backend: Backend::Avx2,
                 cache_layout: CacheLayout::Compact,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         )
         .unwrap()

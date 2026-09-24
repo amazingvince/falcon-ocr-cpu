@@ -265,49 +265,151 @@ impl GenerationOptions {
     }
 }
 
+/// The decode spin team: a fixed size, the prefill pool's size, or `Auto`,
+/// where the first decode steps time a few team sizes (`tune`) and keep the
+/// smallest within 2% of the fastest. Tokens never depend on it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DecodeThreads {
+    Auto,
+    Fixed(usize),
+    /// As many threads as the prefill pool.
+    Pool,
+}
+impl std::str::FromStr for DecodeThreads {
+    type Err = String;
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        if value.eq_ignore_ascii_case("auto") {
+            return Ok(Self::Auto);
+        }
+        if value.eq_ignore_ascii_case("pool") {
+            return Ok(Self::Pool);
+        }
+        match value.parse::<usize>() {
+            Ok(n) if n >= 1 => Ok(Self::Fixed(n)),
+            _ => Err(format!(
+                "expected `auto`, `pool` or a positive thread count, got `{value}`"
+            )),
+        }
+    }
+}
+impl std::fmt::Display for DecodeThreads {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Auto => f.write_str("auto"),
+            Self::Pool => f.write_str("pool"),
+            Self::Fixed(n) => write!(f, "{n}"),
+        }
+    }
+}
+
+/// Speculative decoding: up to `max_draft` tokens (1..=7) drafted from the
+/// output so far by an n-gram match of at least `min_match` tokens are
+/// verified in one step. Every accepted token is the model's own greedy
+/// choice, so outputs never change; drafting pauses itself while it does not
+/// pay. Single pages with a split KV cache only.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Speculation {
+    pub max_draft: usize,
+    pub min_match: usize,
+}
+impl Default for Speculation {
+    fn default() -> Self {
+        Self {
+            max_draft: 4,
+            min_match: 2,
+        }
+    }
+}
+
+/// Everything a [`crate::Runner`] decides about; `Default` is the automatic
+/// configuration and [`RunnerConfig::reference`] the bit-exact one.
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct RunnerConfig {
     /// Maximum threads in the owned compute pool. Zero selects logical CPUs.
     pub threads: usize,
     /// Maximum active requests. Prefill is independent; decoding shares projections.
     pub batch_size: usize,
     /// Controls GEMV and attention vectors. Large GEMMs dispatch independently.
-    #[serde(default)]
     pub backend: Backend,
     /// Compact (the default) keeps sixteen prefix K heads and eight generated
     /// K/all V heads; expanded duplicates every KV head and remains selectable.
-    #[serde(default)]
     pub cache_layout: CacheLayout,
     /// Extra immutable packed weights; single rows and prefill stay unpacked.
-    #[serde(default)]
     pub weight_layout: WeightLayout,
     /// Vector exp of the prefill attention tiles (`Exact` for traces).
-    #[serde(default)]
     pub exp: ExpMode,
     /// Experiment and diagnostic knobs.
-    #[serde(default)]
     pub tuning: Tuning,
+    /// How greedy decoding evaluates the vocabulary head; both select the
+    /// same tokens.
+    pub head: HeadMode,
+    /// Speculative decoding, or `None`.
+    pub speculation: Option<Speculation>,
+    /// Let drafts continue full n-gram matches from earlier pages of one
+    /// `recognize_files` call (outputs unchanged).
+    pub document_drafts: bool,
+    /// Stop a page once it repeats a cycle of at most 128 tokens for at least
+    /// `max(256, 4 * cycle)` tokens (`FinishReason::Repetition`). Never
+    /// applied to teacher-forced runs.
+    pub repetition_stop: bool,
+    /// The decode spin team.
+    pub decode_threads: DecodeThreads,
 }
 impl Default for RunnerConfig {
+    /// The automatic configuration: every logical CPU for prefill, a tuned
+    /// decode team, the screened head, speculation with document drafts, the
+    /// repetition stop and the fast exp.
     fn default() -> Self {
         Self {
-            threads: 16,
+            threads: 0,
             batch_size: 1,
             backend: Backend::Auto,
             cache_layout: CacheLayout::Compact,
             weight_layout: WeightLayout::Unpacked,
-            exp: ExpMode::Exact,
+            exp: ExpMode::Fast,
             tuning: Tuning::default(),
+            head: HeadMode::Screened,
+            speculation: Some(Speculation::default()),
+            document_drafts: true,
+            repetition_stop: true,
+            decode_threads: DecodeThreads::Auto,
         }
     }
 }
 impl RunnerConfig {
+    /// The bit-exact reference configuration used by traces and the numerical
+    /// gates: platform-exact exp, full head, no speculation or repetition
+    /// stop, one decode team the size of a 16-thread pool.
+    pub fn reference() -> Self {
+        Self {
+            threads: 16,
+            exp: ExpMode::Exact,
+            head: HeadMode::Full,
+            speculation: None,
+            document_drafts: false,
+            repetition_stop: false,
+            decode_threads: DecodeThreads::Pool,
+            ..Self::default()
+        }
+    }
     pub fn validate(&self) -> Result<()> {
         ensure!(self.batch_size > 0, "batch_size must be positive");
         self.backend.simd().validate().map_err(anyhow::Error::msg)?;
         ensure!(
             self.tuning.split_chunks.is_none_or(|chunks| (1..=4).contains(&chunks)),
             "tuning.split_chunks must be 1..=4"
+        );
+        if let Some(speculation) = self.speculation {
+            ensure!(
+                (1..=7).contains(&speculation.max_draft) && speculation.min_match >= 1,
+                "speculation needs 1..=7 drafts and a minimum match of at least 1"
+            );
+        }
+        ensure!(
+            !matches!(self.decode_threads, DecodeThreads::Fixed(0)),
+            "decode_threads must be at least 1"
         );
         if self.weight_layout == WeightLayout::PhasePacked {
             ensure!(
@@ -350,8 +452,53 @@ mod tests {
             assert!(Tuning::from_pairs([bad]).is_err(), "{bad}");
         }
         let config: RunnerConfig = serde_json::from_str(r#"{"threads":2,"batch_size":1}"#).unwrap();
-        assert_eq!(config.exp, ExpMode::Exact);
+        assert_eq!(config.exp, ExpMode::Fast);
         assert_eq!(config.tuning, Tuning::default());
+    }
+    #[test]
+    fn default_is_automatic_and_reference_is_bit_exact() {
+        let auto = RunnerConfig::default();
+        assert_eq!(auto.threads, 0);
+        assert_eq!(auto.head, HeadMode::Screened);
+        assert_eq!(auto.speculation, Some(Speculation::default()));
+        assert!(auto.document_drafts && auto.repetition_stop);
+        assert_eq!(auto.decode_threads, DecodeThreads::Auto);
+        assert_eq!(auto.exp, ExpMode::Fast);
+        auto.validate().unwrap();
+        let reference = RunnerConfig::reference();
+        assert_eq!(reference.threads, 16);
+        assert_eq!(reference.head, HeadMode::Full);
+        assert_eq!(reference.speculation, None);
+        assert!(!reference.document_drafts && !reference.repetition_stop);
+        assert_eq!(reference.decode_threads, DecodeThreads::Pool);
+        assert_eq!(reference.exp, ExpMode::Exact);
+        reference.validate().unwrap();
+        for bad in [
+            RunnerConfig {
+                speculation: Some(Speculation {
+                    max_draft: 8,
+                    min_match: 2,
+                }),
+                ..Default::default()
+            },
+            RunnerConfig {
+                speculation: Some(Speculation {
+                    max_draft: 4,
+                    min_match: 0,
+                }),
+                ..Default::default()
+            },
+            RunnerConfig {
+                decode_threads: DecodeThreads::Fixed(0),
+                ..Default::default()
+            },
+        ] {
+            assert!(bad.validate().is_err());
+        }
+        assert_eq!("auto".parse::<DecodeThreads>().unwrap(), DecodeThreads::Auto);
+        assert_eq!("pool".parse::<DecodeThreads>().unwrap(), DecodeThreads::Pool);
+        assert_eq!("12".parse::<DecodeThreads>().unwrap(), DecodeThreads::Fixed(12));
+        assert!("0".parse::<DecodeThreads>().is_err());
     }
     #[test]
     fn phase_packing_is_opt_in_and_rejects_incompatible_dispatch() {

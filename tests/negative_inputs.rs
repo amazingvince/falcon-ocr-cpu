@@ -145,7 +145,7 @@ fn generation_and_runner_options_reject_invalid_values() {
             threads: 1,
             batch_size: 0,
             backend: Backend::Scalar,
-            ..Default::default()
+            ..RunnerConfig::reference()
         }
         .validate(),
         "batch_size must be positive",
@@ -219,7 +219,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
                 threads: 1,
                 batch_size: 0,
                 backend: Backend::Scalar,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         ),
         "batch_size must be positive",
@@ -231,7 +231,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
             threads: 1,
             batch_size: 4,
             backend: Backend::Scalar,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();

@@ -9,7 +9,7 @@ fn runner(model: &Arc<Model>, batch_size: usize, head: HeadMode) -> Runner {
         RunnerConfig {
             threads: 8,
             batch_size,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();

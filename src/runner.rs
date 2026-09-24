@@ -66,32 +66,7 @@ fn legacy_cache_layout() -> CacheLayout {
     CacheLayout::Expanded
 }
 
-/// `--decode-threads`: a fixed count, or `auto` ([`Runner::set_decode_threads_auto`]).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DecodeThreads {
-    Auto,
-    Fixed(usize),
-}
-impl std::str::FromStr for DecodeThreads {
-    type Err = String;
-    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
-        if value.eq_ignore_ascii_case("auto") {
-            return Ok(Self::Auto);
-        }
-        match value.parse::<usize>() {
-            Ok(n) if n >= 1 => Ok(Self::Fixed(n)),
-            _ => Err(format!("expected `auto` or a positive thread count, got `{value}`")),
-        }
-    }
-}
-impl std::fmt::Display for DecodeThreads {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Auto => f.write_str("auto"),
-            Self::Fixed(n) => write!(f, "{n}"),
-        }
-    }
-}
+pub use crate::config::DecodeThreads;
 
 pub struct Runner {
     model: Arc<Model>,
@@ -121,6 +96,30 @@ enum Decode {
 struct AutoThreads {
     teams: Vec<crate::team::Team>,
     tuner: std::sync::Mutex<crate::tune::Tuner>,
+}
+
+/// One spin team per candidate decode size for a `pool_threads`-thread prefill
+/// pool, and the tuner that picks between them (`crate::tune`).
+fn auto_threads(pool_threads: usize, speculating: bool) -> std::io::Result<AutoThreads> {
+    let mut sizes =
+        crate::tune::candidate_sizes(crate::cpu::physical_cores(), crate::cpu::logical_cpus(), pool_threads);
+    // Draft verification is compute-heavy (5-row steps: 7.6 ms on 12 of 16
+    // cores, 9.1 ms on 8), while single steps are bandwidth-bound and time
+    // the same on half and three quarters of the cores; with speculation on,
+    // the half-core candidate is dropped.
+    if speculating && sizes.len() > 1 {
+        sizes.remove(0);
+    }
+    let physical = crate::cpu::physical_cores().min(pool_threads);
+    let start = sizes.iter().position(|&s| s >= physical).unwrap_or(sizes.len() - 1);
+    let teams = sizes
+        .iter()
+        .map(|&size| crate::team::Team::new(size))
+        .collect::<std::io::Result<Vec<_>>>()?;
+    Ok(AutoThreads {
+        teams,
+        tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
+    })
 }
 
 /// The decode team for the coming step: the fixed team, or the candidate the
@@ -182,23 +181,40 @@ impl Runner {
         if config.weight_layout == WeightLayout::PhasePacked {
             model.prepare_phase_packed();
         }
-        let decode = Decode::Fixed(crate::team::Team::new(pool.current_num_threads())?);
-        Ok(Self {
+        let pool_threads = pool.current_num_threads();
+        let speculation = config
+            .speculation
+            .map(|s| (s.max_draft.min(crate::head_screen::MAX_ROWS - 1), s.min_match.max(1)));
+        let decode = match config.decode_threads {
+            DecodeThreads::Auto => Decode::Auto(auto_threads(pool_threads, speculation.is_some())?),
+            DecodeThreads::Fixed(threads) => {
+                ensure!(
+                    (1..=pool_threads).contains(&threads),
+                    "decode threads must be between 1 and the runner's thread count"
+                );
+                Decode::Fixed(crate::team::Team::new(threads)?)
+            }
+            DecodeThreads::Pool => Decode::Fixed(crate::team::Team::new(pool_threads)?),
+        };
+        let head = config.head;
+        let mut runner = Self {
             model,
             tokenizer,
             pool,
-            config,
             head: HeadMode::Full,
-            repetition_stop: false,
+            repetition_stop: config.repetition_stop,
             decode,
-            speculation: None,
-            document: None,
-        })
+            speculation,
+            document: config.document_drafts.then(Default::default),
+            config,
+        };
+        runner.set_head_mode(head)?;
+        Ok(runner)
     }
     /// Stop greedy generation once it repeats a cycle of at most 128 tokens
     /// for at least `max(256, 4 * cycle)` tokens (`FinishReason::Repetition`).
-    /// Output up to that step is unchanged. Off by default; never applied to
-    /// teacher-forced traces.
+    /// Output up to that step is unchanged. On in the automatic configuration,
+    /// off in `RunnerConfig::reference`; never applied to teacher-forced traces.
     pub fn set_repetition_stop(&mut self, enabled: bool) {
         self.repetition_stop = enabled;
     }
@@ -222,30 +238,11 @@ impl Runner {
     /// of this runner time a few team sizes (`crate::tune`) and keep the
     /// smallest one within 2% of the fastest. Tokens never depend on it.
     pub fn set_decode_threads_auto(&mut self) -> Result<()> {
-        let mut sizes = crate::tune::candidate_sizes(
-            crate::cpu::physical_cores(),
-            crate::cpu::logical_cpus(),
-            self.pool.current_num_threads(),
-        );
-        // Draft verification is compute-heavy (5-row steps: 7.6 ms on 12 of
-        // 16 cores, 9.1 ms on 8), while single steps are bandwidth-bound and
-        // time the same on half and three quarters of the cores; with
-        // speculation on, the half-core candidate is dropped. Call after
-        // `set_speculation`.
-        if self.speculation.is_some() && sizes.len() > 1 {
-            sizes.remove(0);
-        }
-        let physical = crate::cpu::physical_cores().min(self.pool.current_num_threads());
-        let start = sizes.iter().position(|&s| s >= physical).unwrap_or(sizes.len() - 1);
-        let teams = sizes
-            .iter()
-            .map(|&size| crate::team::Team::new(size))
-            .collect::<std::io::Result<Vec<_>>>()?;
         // Replaces the fixed team, so only the candidates keep workers.
-        self.decode = Decode::Auto(AutoThreads {
-            teams,
-            tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
-        });
+        self.decode = Decode::Auto(auto_threads(
+            self.pool.current_num_threads(),
+            self.speculation.is_some(),
+        )?);
         Ok(())
     }
     /// Speculative decoding for single-page generation with the attempt

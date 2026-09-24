@@ -24,7 +24,7 @@ fn mixed_batches_preserve_tokens_order_stops_and_limits() {
         RunnerConfig {
             threads: 4,
             batch_size: 1,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();
@@ -44,7 +44,7 @@ fn mixed_batches_preserve_tokens_order_stops_and_limits() {
                 threads: 4,
                 batch_size: size,
                 backend: Backend::Auto,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         )
         .unwrap();

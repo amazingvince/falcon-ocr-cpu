@@ -93,7 +93,7 @@ fn mixed_batch_workspace_trace() {
             batch_size: 4,
             backend: Backend::Avx2,
             cache_layout,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();
