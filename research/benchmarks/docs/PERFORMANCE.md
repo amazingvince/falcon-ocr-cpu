@@ -1,5 +1,7 @@
 # Performance evidence
 
+> **Archived 2026-09-24.** Measurements of 2026-09-21 on the 256x128 fixture, kept as written. Full-page numbers for the current runner are in [docs/PERFORMANCE.md](../../../docs/PERFORMANCE.md).
+
 The current measurements establish improvements on a small fixture. They do not
 establish representative full-page throughput or bare-metal Linux performance.
 The user deferred bare-metal Linux measurements; WSL is used for functionality.

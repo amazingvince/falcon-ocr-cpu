@@ -1,5 +1,7 @@
 # Attempt 3 — integrated Falcon-OCR v1.5 CPU experiment
 
+> **Archived 2026-09-24.** This README described the attempt-3 source drop of 2026-09-21 before it had been compiled; the status line below is historical. The code was integrated, measured and reworked into the runner ([RESULTS-V3.md](RESULTS-V3.md), [HILLCLIMB.md](HILLCLIMB.md)); what shipped is in [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md).
+
 **Status: experimental source, NOT a compiled or performance-qualified release.**
 
 This package extends the uploaded `falcon-ocr-source.zip`. It keeps the model-specific Rust executor, full-page bidirectional image prefill, original reference CLI, and archived experiment results. It adds opt-in weight/cache profiles and a controlled measurement route. It does not replace the model with cropped-region OCR or adopt a general serving framework.

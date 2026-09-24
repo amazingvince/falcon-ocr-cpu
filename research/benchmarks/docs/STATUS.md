@@ -1,5 +1,7 @@
 # Qualification status
 
+> **Archived 2026-09-24.** Qualification status as of 2026-09-21, kept as written. The runner's current state is in [docs/MODES.md](../../../docs/MODES.md), [docs/PERFORMANCE.md](../../../docs/PERFORMANCE.md) and [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md); the three defaults that changed since carry an inline *[superseded]* note.
+
 Updated 2026-09-21. The persistent goal remains active.
 
 Commit `95daabc0` promoted two measured, exact-output candidates into the FP32
@@ -231,7 +233,7 @@ also passed.
   another 25.4375 MiB saved on the mixed fixture. This excludes mapped weights and
   native allocations. Both layouts pass warmed single/batch zero-allocation tests
   on Windows and Linux. Expanded caches remain the default pending performance
-  qualification. See `reference/shared-prefill-workspace.json` and
+  qualification. *[superseded 2026-09-23: exact mode seals the prefix into a split FP32 cache; near-exact and fast use Q16/Q8 caches]* See `reference/shared-prefill-workspace.json` and
   `reference/compact-cache-parity.json` for the Linux measurements.
 - An isolated prefix-key storage candidate shares identical temporal halves
   while preserving all spatial heads and existing attention arithmetic. Eight
@@ -386,7 +388,7 @@ CPU/GPU jobs and brackets candidates with repeated controls. On the small fixtur
 joint decoding improves group-8 throughput by 1.93–1.94x; single-page latency is
 1.2–2.5% slower. Control drift is at most 1.28%, and every output ID matches.
 Full-page/mixed-length performance qualification is still pending. Compact cache
-batch speed gains are below 5% here, so Expanded remains the default.
+batch speed gains are below 5% here, so Expanded remains the default. *[superseded 2026-09-23: see the note above]*
 
 A native Windows Ryzen 7950X run of the 256x128 three-line fixture (144 prompt
 tokens, 17 emitted tokens) took about 513 ms after model loading at 16 threads:
@@ -403,7 +405,7 @@ quiet, matched runs are still required for performance promotion.
 Operator sample reports are under ignored `artifacts/benchmarks/`, with source and
 dependency hashes. Small-row custom GEMV removed substantial observed packing
 overhead. These measurements do not qualify whole-model performance or promote
-AVX-512 as the default.
+AVX-512 as the default. *[superseded 2026-09-24: `--backend auto` uses 16-lane AVX-512 prefill tiles and AVX512-BF16 attention when the CPU has them]*
 
 ## Required work still outstanding
 

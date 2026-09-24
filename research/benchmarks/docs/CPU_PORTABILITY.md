@@ -1,5 +1,7 @@
 # Running fast on a broad base of CPUs
 
+> **Archived 2026-09-24.** Superseded by [docs/PORTABILITY.md](../../../docs/PORTABILITY.md). The roadmap items below were done in the 2026-09-23/24 work (panel GEMM and the fused norm+RoPE row generic over the SIMD trait, `--backend auto`, libjpeg-turbo as a cargo feature) or dropped; the M4 checklist is `tools/m4_check.sh`.
+
 Status: design plus the first implementation steps (Phase 4, 2026-09-22).
 
 - Quality bar: token selection, not bit-exact math. Selected tokens must be the same or nearly the same as the FP32 reference.

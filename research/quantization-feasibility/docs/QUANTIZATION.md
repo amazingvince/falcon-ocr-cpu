@@ -1,5 +1,7 @@
 # INT8 / INT4 feasibility, 2026-09-20
 
+> **Archived 2026-09-24.** Feasibility notes of 2026-09-20. What shipped is described in [docs/MODES.md](../../../docs/MODES.md): 16-bit and GPTQ 8-bit body weights, Q16/Q8 KV caches and an INT8 screened head; no 4-bit format was adopted.
+
 Start with an isolated **W4A32** experiment: groupwise INT4 weights, FP32
 activations/dequantization/accumulation, and the existing FP32 graph around each
 linear operator. Compare a W8A32 control before adding activation quantization.

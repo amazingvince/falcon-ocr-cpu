@@ -1,6 +1,7 @@
 # Overnight hill climb log (2026-09-23)
 
-Plan: `C:\Users\amazi\.claude\plans\i-want-you-to-enumerated-candle.md`.
+> **Archived 2026-09-24.** The log of the 2026-09-23 hill climb, kept as written; every attempt is listed whether accepted or not. Accepted rows became the defaults described in [docs/MODES.md](../../../docs/MODES.md) and [docs/PERFORMANCE.md](../../../docs/PERFORMANCE.md). S5's fixed decode team was superseded by T2 (`--decode-threads auto`).
+
 - **Goal:** a better quantized fast mode (closer to FP32 at the same speed), plus speed wins in both modes.
 - Every attempt is listed, accepted or not.
 - **Fidelity metric:** `falcon-ocr-attempt agree`. Each page is teacher-forced with the FP32 calibration tokens (`artifacts/phase4/checks/calibration-reference.json`), and we count the steps where the profile's own greedy choice differs.
@@ -105,7 +106,7 @@ Pages: 15 better, 4 worse, 5 the same. The capture pages are disjoint from the s
 
 | # | Change | Evidence | Decision |
 |---|---|---|---|
-| S5 | Hybrid threads: 32-thread prefill pool, 16-thread decode team (`--threads 32 --decode-threads 16`) | Journal A/B at 01:48, 3 rounds, tokens identical (`artifacts/phase4/ab-hybrid`). Fast (GPTQ weights) 16.38 → **14.85 s** (prefill 6.22 → 4.74 s, decode unchanged at 8.8 ms/tok). Exact split 39.77 → **38.35 s**. | **Accepted: −9.3% fast, −3.6% exact.** Main-binary defaults: `--threads` = logical CPUs, `--decode-threads` = physical cores (`src/cpu.rs`, which detects 32/16 here). |
+| S5 | Hybrid threads: 32-thread prefill pool, 16-thread decode team (`--threads 32 --decode-threads 16`) | Journal A/B at 01:48, 3 rounds, tokens identical (`artifacts/phase4/ab-hybrid`). Fast (GPTQ weights) 16.38 → **14.85 s** (prefill 6.22 → 4.74 s, decode unchanged at 8.8 ms/tok). Exact split 39.77 → **38.35 s**. | **Accepted: −9.3% fast, −3.6% exact.** Main-binary defaults: `--threads` = logical CPUs, `--decode-threads` = physical cores (`src/cpu.rs`, which detects 32/16 here). *[superseded by T2: the decode team is timed and chosen automatically]* |
 | S6 | Per-channel key scales (`w8-body-kv-q8-kc`) for speed | Journal A/B, 4 rounds (`artifacts/phase4/ab-kc`): 14.97 → 14.79 s (−1.2%; attention 4.32 → 4.15 ms). | **Not adopted**: under 2% and flip-neutral. It stays available as a profile. |
 
 ## Confirmation: free-running on the 55 calibration pages outside the Gram capture set (`artifacts/phase4/checks/eval55-*.json`)

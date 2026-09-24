@@ -1,5 +1,7 @@
 # A better quantized Falcon-OCR v1.5, and faster exact and fast modes (2026-09-23)
 
+> **Archived 2026-09-24.** The report of the 2026-09-23 hill climb, kept as written. Since then the fixed physical-core decode team became `--decode-threads auto` (T2), near-exact (T5: `w16-body-kv-q16`) became the default mode, adaptive drafting (T7), kernel-ready packed files (T12) and the fused AVX-512 BF16 softmax (T22) landed, and the runner was reorganized. Current numbers: [docs/MODES.md](../../../docs/MODES.md), [docs/PERFORMANCE.md](../../../docs/PERFORMANCE.md).
+
 **Status:** measured overnight on a quiet Ryzen 9 7950X (16 cores / 32 threads, DDR5, Windows 11).
 - Quality evidence: the v3 calibration pages, plus one pre-registered run of fast mode on the 200 held-out pages (section 6: **FAIL** on handwriting and degraded scans).
 - Every attempt, including rejected ones, is in [HILLCLIMB.md](HILLCLIMB.md).
@@ -93,7 +95,7 @@ All A/Bs are on the journal page, interleaved fresh processes, on a quiet host.
 |---|---|---|
 | Split FP32 cache for exact mode (bit-identical to compact) | 42.8 → 39.6 s | **default for `--mode exact run`** |
 | 32 threads for everything | prefill −22%, decode +50–60% | rejected as a single setting |
-| **Hybrid threads**: prefill on all logical CPUs, decode on one per physical core (`src/cpu.rs`) | fast 16.4 → 14.9 s, exact 39.8 → 38.4 s | **default** |
+| **Hybrid threads**: prefill on all logical CPUs, decode on one per physical core (`src/cpu.rs`) | fast 16.4 → 14.9 s, exact 39.8 → 38.4 s | **default** *[superseded by T2: decode team chosen automatically]* |
 | AVX-512F prefill tiles (bitwise identical to AVX2) | attention 2.64 → 2.41 s (under 1% total on Zen 4) | on for AVX-512 hosts; Intel should gain more |
 | gemm AVX-512 kernels | under 2% | rejected |
 | 4-bit screened head | fell back to the full head on every step (bound too wide) | reverted |
@@ -118,7 +120,7 @@ bash tools/make_gptq_overlay.sh                        # (re)build artifacts/mod
 falcon-ocr doctor                                          # shows logical CPUs / physical cores
 ```
 
-- `--threads` defaults to all logical CPUs and `--decode-threads` to the physical cores. Override either explicitly.
+- `--threads` defaults to all logical CPUs and `--decode-threads` to the physical cores. Override either explicitly. *[superseded: `--decode-threads` defaults to `auto`]*
 - Without the overlay file, `--mode fast` falls back to round-to-nearest W8 at load, and says so on stderr.
 
 ## 6. Held-out qualification: **FAIL** (2026-09-23)
@@ -209,7 +211,7 @@ The section 6 budget measures against FP32. Measured that way, production itself
 
 A different BF16 implementation does not approximate production better than FP32 math. BF16 rounding noise is specific to each implementation.
 
-**LLM judge** (`research/phase4-hillclimb/attempt3/judge_pages.py`, `artifacts/phase4/judge/`). Blinded, shuffled outputs of the four systems were judged against the page image, with the ground truth as an aid, for content errors vs formatting-only differences. Rubric in `RUBRIC.md`. Five pages per category were re-judged under new letters: the mean score change was 1.5 (handwriting) and 0.4 (degraded) points, with the same verdict 34/34 times.
+**LLM judge** (`research/phase4-hillclimb/attempt3/judge_pages.py`, `artifacts/phase4/judge/`). Blinded, shuffled outputs of the four systems were judged against the page image, with the ground truth as an aid, for content errors vs formatting-only differences. Rubric: `artifacts/phase4/judge/<category>/RUBRIC.md` (an ignored artifact, not in the repository). Five pages per category were re-judged under new letters: the mean score change was 1.5 (handwriting) and 0.4 (degraded) points, with the same verdict 34/34 times.
 
 | Content score (0–100), mean over 25 pages | Production BF16 | FP32 | Fast (current) | Fast (BF16-source) |
 |---|---:|---:|---:|---:|
