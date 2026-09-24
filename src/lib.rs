@@ -19,7 +19,10 @@ pub mod tokenizer;
 pub mod trace;
 mod tune;
 
-pub use config::{Backend, CacheLayout, GenerationOptions, HeadMode, ModelConfig, RunnerConfig, WeightLayout};
+pub use config::{
+    Backend, CacheLayout, ExpMode, GenerationOptions, HeadMode, ModelConfig, PrefillBf16, RunnerConfig, Tuning,
+    WeightLayout,
+};
 pub use model::Model;
 pub use runner::{FinishReason, OcrResult, Runner, Timings};
 

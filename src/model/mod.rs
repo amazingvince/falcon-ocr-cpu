@@ -11,7 +11,7 @@ use rayon::prelude::*;
 use crate::{
     config::{ModelConfig, WeightLayout},
     head_screen::Screened,
-    kernels,
+    kernels::{self, Bf16Kv},
     packed_kernels::PhasePackedLinear,
     trace::Trace,
 };
@@ -317,7 +317,11 @@ impl Model {
         let c = &self.config;
         let rows = positions.len();
         // Decode steps only (prefill reports its own phases).
-        let _head_clock = if rows == 1 { HeadClock::new(rows) } else { None };
+        let _head_clock = if rows == 1 {
+            HeadClock::new(rows, session.tuning.phases)
+        } else {
+            None
+        };
         let simd = session.simd;
         let work = &mut session.workspace;
         // Generation needs only the final token's vocabulary projection.
@@ -387,12 +391,14 @@ impl Model {
         let qkv_width = qdim + 2 * kdim;
         let offset = session.len;
         let simd = session.simd;
+        let exp = session.exp;
+        let tuning = session.tuning;
         let work = &mut session.workspace;
         work.resize(rows, c);
         if trace.enabled() {
             trace.tensor(&format!("{phase}.embedding"), &[rows, c.dim], h)?;
         }
-        let mut clock = PhaseClock::new(rows);
+        let mut clock = PhaseClock::new(rows, tuning.phases);
         // RoPE factors are shared by all transformer layers.
         rotary_factors(
             c,
@@ -418,14 +424,17 @@ impl Model {
         fn quantized(w: &Weight) -> &crate::attempt::quant::Q8Linear {
             w.quantized.as_deref().expect("checked above")
         }
-        // 8-bit bodies (fast mode) also run prefill attention in BF16 where
-        // the CPU has AVX512-BF16 (`kernels::attention_compact_prefill_bf16`).
-        let bf16_attention = panel
-            && kernels::panel_bf16::attention()
+        // 8-bit bodies (fast mode) also run prefill attention, and with
+        // `Tuning::prefill_bf16 = All` the projections, in BF16 where the CPU
+        // has AVX512-BF16 (`kernels::attention_compact_prefill_bf16`).
+        let eight_bit = panel
+            && kernels::bf16_available()
             && self
                 .layers
                 .iter()
                 .all(|l| [&l.qkv, &l.wo, &l.w13, &l.w2].iter().all(|w| quantized(w).bits() == 8));
+        let bf16_attention = eight_bit && tuning.prefill_bf16 != crate::config::PrefillBf16::Off;
+        let bf16_projections = eight_bit && tuning.prefill_bf16 == crate::config::PrefillBf16::All;
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             if panel {
@@ -436,6 +445,7 @@ impl Model {
                     Some(&work.row_scale),
                     kernels::panel_gemm::Epilogue::Store(&mut work.qkv),
                     &mut work.quant_scratch,
+                    bf16_projections,
                 );
             } else {
                 kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
@@ -560,6 +570,13 @@ impl Model {
             }
             clock.mark(3);
             let cache = &mut session.layers[i];
+            let bf16_kv = if !bf16_attention {
+                None
+            } else if stored_bf16 {
+                Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values))
+            } else {
+                Some(Bf16Kv::Convert(&mut work.bf16_keys, &mut work.bf16_values))
+            };
             cache.attention(
                 &work.q,
                 rows,
@@ -571,8 +588,9 @@ impl Model {
                 self.w(&layer.sinks),
                 &mut work.attn,
                 simd,
-                bf16_attention,
-                stored_bf16.then_some((&work.bf16_keys[..], &work.bf16_values[..])),
+                bf16_kv,
+                exp,
+                tuning.prefill_profile,
             );
             clock.mark(4);
             if trace.enabled() {
@@ -585,6 +603,7 @@ impl Model {
                     None,
                     kernels::panel_gemm::Epilogue::Add(h),
                     &mut work.quant_scratch,
+                    bf16_projections,
                 );
                 clock.mark(5);
                 row_scales(h, c.dim, &mut work.row_scale);
@@ -594,6 +613,7 @@ impl Model {
                     Some(&work.row_scale),
                     kernels::panel_gemm::Epilogue::Glu(&mut work.gated),
                     &mut work.quant_scratch,
+                    bf16_projections,
                 );
                 clock.mark(6);
                 quantized(&layer.w2).prefill(
@@ -602,6 +622,7 @@ impl Model {
                     None,
                     kernels::panel_gemm::Epilogue::Add(h),
                     &mut work.quant_scratch,
+                    bf16_projections,
                 );
                 clock.mark(7);
             } else {
@@ -660,7 +681,7 @@ impl Model {
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;
         if rows > 8 {
-            kernels::report_prefill_stage_cycles();
+            kernels::report_prefill_stage_cycles(tuning.prefill_profile);
         }
         Ok(())
     }
@@ -685,7 +706,7 @@ impl Model {
         );
         let text = vec![[f32::NAN; 2]; rows];
         self.forward_layers(h, positions, &text, session, &mut crate::trace::NoTrace, "")?;
-        let _head_clock = HeadClock::new(rows);
+        let _head_clock = HeadClock::new(rows, session.tuning.phases);
         let c = &self.config;
         let simd = session.simd;
         let work = &mut session.workspace;
@@ -856,8 +877,9 @@ impl Model {
                     self.w(&layer.sinks),
                     &mut work.attn[range],
                     simd,
-                    false,
                     None,
+                    session.exp,
+                    false,
                 );
             }
             if trace.enabled() {

@@ -2,11 +2,11 @@
 """Interleaved A/B/... runs of attempt binaries on pages, with per-arm env.
 
   python attempt3/ab.py --out DIR --rounds 3 --reference-dir artifacts/phase4/control-default-4096 \
-      --arm "base=path/to/a.exe" --arm "fast=path/to/b.exe;FALCON_OCR_EXP=fast;--threads 32" \
+      --arm "base=path/to/a.exe" --arm "fast=path/to/b.exe;--exp fast;--threads 32" \
       --args "--profile w8-body-kv-q8 --head screened --w8-artifact X" -- page1.png page2.png
 
 Each run is a fresh process (`bench --warmup 0 --samples 1`) with
-FALCON_OCR_PHASES=1; stderr is kept. An arm is `name=binary` followed by
+`--tune phases=1`; stderr is kept. An arm is `name=binary` followed by
 `;KEY=VALUE` environment entries and `;--option value` global options, which
 replace `--args` options of the same name (for example `;--threads 32`). Prints per-arm median prefill, decode
 ms/token and total, plus token agreement with the reference token IDs.
@@ -52,7 +52,7 @@ def main() -> None:
             report = a.out / f"{name}-r{r}.json"
             if report.exists():
                 report.unlink()
-            base = ["--threads", a.threads, *shlex.split(a.args)]
+            base = ["--threads", a.threads, "--tune", "phases=1", *shlex.split(a.args)]
             for option in options:
                 if option[0] in base:
                     at = base.index(option[0])
@@ -60,7 +60,7 @@ def main() -> None:
                 base += option
             cmd = [binary, *base, "bench", *a.pages,
                    "--warmup", "0", "--samples", "1", "--report", str(report)]
-            e = dict(os.environ, FALCON_OCR_PHASES="1", **env)
+            e = dict(os.environ, **env)
             t0 = time.time()
             with open(a.out / f"{name}-r{r}.stderr", "w", encoding="utf-8") as err:
                 code = subprocess.call(cmd, env=e, stdout=subprocess.DEVNULL, stderr=err)

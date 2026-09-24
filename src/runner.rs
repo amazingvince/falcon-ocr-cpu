@@ -488,6 +488,8 @@ impl Runner {
                 image_end,
                 simd,
                 self.config.cache_layout,
+                self.config.exp,
+                self.config.tuning,
             )?;
             if let Some(previous) = sessions.last_mut() {
                 session.reuse_workspace_from(previous);
@@ -625,7 +627,7 @@ impl Runner {
         }
         trace.decode_end();
         drop(team);
-        crate::model::report_decode_phases();
+        crate::model::report_decode_phases(self.config.tuning.phases);
         states
             .into_iter()
             .map(|state| {
@@ -690,6 +692,8 @@ impl Runner {
             image_end,
             simd,
             self.config.cache_layout,
+            self.config.exp,
+            self.config.tuning,
         )?;
         let mut hidden = Vec::new();
         let image_projection_ms = self.model.embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
@@ -832,7 +836,7 @@ impl Runner {
             if let Some(history) = history.as_mut() {
                 history.push_page(&generated);
             }
-            if std::env::var_os("FALCON_OCR_PHASES").is_some() {
+            if self.config.tuning.phases {
                 let (singles, single_ms, verifies, verify_ms, drafted, accepted) = stats;
                 eprintln!(
                     "speculation: {} tokens; {singles} single steps ({:.2} ms), {verifies} verify steps ({:.2} ms),                      drafted {drafted}, accepted {accepted} ({:.0}%)",
@@ -894,7 +898,7 @@ impl Runner {
         }
         trace.decode_end();
         drop(team);
-        crate::model::report_decode_phases();
+        crate::model::report_decode_phases(self.config.tuning.phases);
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
         let text = self.tokenizer.decode(&generated)?;
         Ok(OcrResult {

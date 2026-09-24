@@ -68,7 +68,7 @@ fi
 log "prefill + decode phase profile (FP32 exact and W8+Q8), ${PERF_CORES} and ${ALL_CORES} threads"
 for threads in "$PERF_CORES" "$ALL_CORES"; do
   for profile in reference w8-body-kv-q8; do
-    FALCON_OCR_PHASES=1 ./target/release/falcon-ocr-eval --model artifacts/model \
+    ./target/release/falcon-ocr-eval --tune phases=1 --model artifacts/model \
       --threads "$threads" --profile "$profile" --head screened \
       bench "$IMG" --max-new-tokens 200 --warmup 0 --samples 1 \
       --report "$OUT/phases-$profile-t$threads.json" 2>&1 \

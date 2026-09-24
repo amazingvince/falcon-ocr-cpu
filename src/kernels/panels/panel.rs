@@ -31,12 +31,8 @@ pub(crate) enum Epilogue<'a> {
 }
 
 /// Whether [`gemm`] runs natively here for this backend (otherwise callers
-/// keep their existing path). `FALCON_OCR_PANEL_GEMM=0` disables it (A/B).
+/// keep their existing path).
 pub(crate) fn available(simd: crate::kernels::Simd) -> bool {
-    static DISABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if *DISABLED.get_or_init(|| std::env::var("FALCON_OCR_PANEL_GEMM").is_ok_and(|v| v == "0")) {
-        return false;
-    }
     #[cfg(target_arch = "x86_64")]
     {
         simd.resolved() != crate::kernels::Simd::Scalar

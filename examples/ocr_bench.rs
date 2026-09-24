@@ -179,6 +179,7 @@ fn main() -> Result<()> {
                 backend: args.backend,
                 cache_layout: args.cache_layout,
                 weight_layout: args.weight_layout,
+                ..Default::default()
             },
         )?;
         let pages = (0..batch).map(|i| images[i % images.len()].clone()).collect::<Vec<_>>();

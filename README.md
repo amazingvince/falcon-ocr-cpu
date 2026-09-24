@@ -63,7 +63,7 @@ cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 
 - **Packed files.** `falcon-ocr --mode near-exact|fast pack --output F` writes a kernel-ready file, and `--model-file F` maps it and uses it in place. Loading takes about 10 ms instead of about 2 s, peak memory drops by about 1 GB, and tokens are identical. Published files: [huggingface.co/amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu).
 - **Speculative decoding.** `--speculate 4` is the default. Up to 4 tokens are drafted from the output so far and verified in one step. Every accepted token is the model's own greedy choice, so outputs are unchanged. The verify step decodes the KV cache and the weights once for all its rows (about 17–20 ms for 4 drafts against 9 ms for one token). Drafting switches itself off while it doesn't pay (most prose) and on for tables, lists and loops: a table page 45.3 → 30.5 s, a looping page 44.3 → 19.2 s. With several images per `run`, drafts also continue 4-token matches from the earlier pages (`--document-drafts`, default on; about 2% on an 8-page document).
-- **BF16 prefill (fast mode).** On CPUs with AVX512-BF16 (Zen 4, Sapphire Rapids and later), fast mode's prefill attention multiplies in BF16 (`vdpbf16ps`, twice the FP32 rate) while scores, softmax and outputs stay FP32: prefill 4.0 → 2.9 s with no measurable fidelity change against FP32. `FALCON_OCR_PREFILL_BF16=1` also runs the projections in BF16 (2.3 s) at +17% KL; `=0` turns BF16 off.
+- **BF16 prefill (fast mode).** On CPUs with AVX512-BF16 (Zen 4, Sapphire Rapids and later), fast mode's prefill attention multiplies in BF16 (`vdpbf16ps`, twice the FP32 rate) while scores, softmax and outputs stay FP32: prefill 4.0 → 2.9 s with no measurable fidelity change against FP32. `--tune prefill-bf16=all` also runs the projections in BF16 (2.3 s) at +17% KL; `--tune prefill-bf16=off` turns BF16 off.
 - **Decode threads.** `--decode-threads auto` is the default: the first decode steps time a few team sizes and keep the fastest.
 - **Image size.** `--max-dimension 1280` (default 1536) is about 20% faster. On 64 calibration pages it made no difference to accuracy on pages that end normally; this is not yet validated on held-out pages.
 - **Held-out check of fast mode.** On the 200 held-out pages, fast mode failed its pre-registered budget against FP32 on handwriting (loops) and degraded scans. Production BF16 fails the same budget by more. A blinded LLM judge rated fast mode's content equal to FP32 and production except for loop pages. See `attempt3/RESULTS-V3.md` §6 and §8.
@@ -71,7 +71,7 @@ cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 All modes use the exact screened head (`--head screened`, the default; it
 selects the same tokens as `--head full`) and a portable vector exp in prefill
 attention, which is token-identical to the platform exp on all calibration
-pages. Set `FALCON_OCR_EXP=exact` to keep the platform exp; `trace` always does.
+pages. Pass `--exp exact` to keep the platform exp; `trace` always does.
 
 `--mode fast` loads the GPTQ overlay `<model>/w8-gptq.safetensors`. Build it
 once with `bash attempt3/make_gptq_overlay.sh` (about 20 min). The overlay

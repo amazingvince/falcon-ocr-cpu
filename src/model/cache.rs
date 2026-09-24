@@ -2,8 +2,8 @@
 use anyhow::{Context, Result, bail, ensure};
 
 use crate::{
-    config::{CacheLayout, ModelConfig},
-    kernels,
+    config::{CacheLayout, ExpMode, ModelConfig, Tuning},
+    kernels::{self, Bf16Kv},
 };
 
 use super::Model;
@@ -43,6 +43,10 @@ pub(crate) struct Session {
     pub(super) image_start: usize,
     pub(super) image_end: usize,
     pub(super) simd: kernels::Simd,
+    /// Prefill exp of this request (`RunnerConfig::exp`).
+    pub(super) exp: ExpMode,
+    /// Experiment knobs of this request (`RunnerConfig::tuning`).
+    pub(super) tuning: Tuning,
 }
 pub(super) enum LayerCache {
     Split(crate::attempt::prefix::SplitPrefix),
@@ -100,8 +104,9 @@ impl LayerCache {
         sinks: &[f32],
         output: &mut [f32],
         simd: kernels::Simd,
-        bf16: bool,
-        converted: Option<(&[u32], &[u32])>,
+        bf16: Option<Bf16Kv<'_>>,
+        exp: ExpMode,
+        profile: bool,
     ) {
         match self {
             Self::Split(cache) => {
@@ -134,7 +139,7 @@ impl LayerCache {
                 v,
                 ..
             } => {
-                if bf16
+                if let Some(kv) = bf16
                     && generated_k.is_empty()
                     && kernels::attention_compact_prefill_bf16(
                         q,
@@ -150,12 +155,14 @@ impl LayerCache {
                         image_end,
                         sinks,
                         output,
-                        converted,
+                        kv,
+                        exp,
+                        profile,
                     )
                 {
                     return;
                 }
-                kernels::attention_compact_with_simd(
+                kernels::attention_compact_prefill_with(
                     q,
                     prefix_k,
                     generated_k,
@@ -172,6 +179,8 @@ impl LayerCache {
                     sinks,
                     output,
                     simd,
+                    exp,
+                    profile,
                 )
             }
         }
@@ -267,6 +276,7 @@ impl Session {
                     self.capacity,
                     c,
                     mode,
+                    self.tuning.split_chunks,
                 )?;
                 *layer = LayerCache::Split(packed);
             } else {
@@ -299,6 +309,7 @@ impl Session {
         self.workspace = Workspace::default();
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         c: &ModelConfig,
         capacity: usize,
@@ -307,6 +318,8 @@ impl Session {
         image_end: usize,
         simd: kernels::Simd,
         cache_layout: CacheLayout,
+        exp: ExpMode,
+        tuning: Tuning,
     ) -> Result<Self> {
         ensure!(capacity <= c.max_seq_len, "capacity exceeds model context");
         ensure!(
@@ -343,6 +356,8 @@ impl Session {
             image_start,
             image_end,
             simd,
+            exp,
+            tuning,
         })
     }
 }
@@ -369,7 +384,7 @@ pub(super) struct Workspace {
     /// Per-row RMS-norm factors folded into prefill GEMMs.
     pub(super) row_scale: Vec<f32>,
     /// One layer's prefill keys and value pairs in the BF16 attention
-    /// layouts, written by the fused QKV pass.
+    /// layouts, written by the fused QKV pass or converted by the kernel.
     pub(super) bf16_keys: Vec<u32>,
     pub(super) bf16_values: Vec<u32>,
 }

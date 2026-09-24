@@ -1,11 +1,11 @@
-//! Opt-in wall-clock phase split of forwards (`FALCON_OCR_PHASES=1`).
-use std::{sync::OnceLock, time::Instant};
+//! Opt-in wall-clock phase split of forwards (`Tuning::phases`).
+use std::time::Instant;
 
 use super::PARALLEL_ROWS;
 
-/// Opt-in wall-clock split of forwards (`FALCON_OCR_PHASES=1`) on stderr.
-/// Prefill-sized forwards print immediately; decode steps accumulate on the
-/// calling thread until `report_decode_phases`. Disabled, a mark is a branch.
+/// Opt-in wall-clock split of forwards on stderr. Prefill-sized forwards
+/// print immediately; decode steps accumulate on the calling thread until
+/// `report_decode_phases`. Disabled, a mark is a branch.
 pub(super) struct PhaseClock {
     enabled: bool,
     rows: usize,
@@ -38,8 +38,8 @@ pub(super) struct HeadClock {
     start: Instant,
 }
 impl HeadClock {
-    pub(super) fn new(rows: usize) -> Option<Self> {
-        phases_enabled().then(|| Self {
+    pub(super) fn new(rows: usize, enabled: bool) -> Option<Self> {
+        enabled.then(|| Self {
             rows,
             start: Instant::now(),
         })
@@ -55,14 +55,10 @@ impl Drop for HeadClock {
         });
     }
 }
-fn phases_enabled() -> bool {
-    static ENABLED: OnceLock<bool> = OnceLock::new();
-    *ENABLED.get_or_init(|| std::env::var_os("FALCON_OCR_PHASES").is_some())
-}
 impl PhaseClock {
-    pub(super) fn new(rows: usize) -> Self {
+    pub(super) fn new(rows: usize, enabled: bool) -> Self {
         Self {
-            enabled: phases_enabled(),
+            enabled,
             rows,
             last: Instant::now(),
             totals: [0.0; PHASES],
@@ -108,9 +104,10 @@ fn format_phases(totals: &[f64; PHASES], steps: usize) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
-/// Print and reset this thread's accumulated decode-step phases (per step).
-pub(crate) fn report_decode_phases() {
-    if !phases_enabled() {
+/// Print and reset this thread's accumulated decode-step phases (per step);
+/// a no-op unless `enabled`.
+pub(crate) fn report_decode_phases(enabled: bool) {
+    if !enabled {
         return;
     }
     DECODE_PHASES.with(|cell| {

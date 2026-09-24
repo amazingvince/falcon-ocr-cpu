@@ -3,6 +3,17 @@
 #[cfg(target_arch = "x86_64")]
 use super::panel_bf16;
 use super::{Simd, avx2_available, avx512_available, elements, native_vector};
+use crate::config::ExpMode;
+
+/// BF16 copies of a prefill's keys and values for the BF16 attention kernel:
+/// either written by the fused QKV pass (`Converted`) or converted by the
+/// kernel into the caller's scratch buffers (`Convert`).
+pub(crate) enum Bf16Kv<'a> {
+    /// Keys `[head][total][32]` pairs and value pairs `[kv_head][total / 2][64]`.
+    Converted(&'a [u32], &'a [u32]),
+    /// Scratch buffers the kernel resizes and fills.
+    Convert(&'a mut Vec<u32>, &'a mut Vec<u32>),
+}
 
 #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 mod decode64;
@@ -186,7 +197,8 @@ pub fn attention_compact(
 /// BF16 form of the pure-prefill compact attention (fast mode on AVX512-BF16
 /// CPUs, see `prefill64::bf16`): Q, K, V and the probabilities round to BF16;
 /// scores, softmax and outputs stay FP32. Returns false, writing nothing,
-/// when the CPU or the shape does not qualify.
+/// when the CPU or the shape does not qualify. `exp` selects the softmax exp
+/// and `profile` the stage cycle counters.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn attention_compact_prefill_bf16(
     q: &[f32],
@@ -202,7 +214,9 @@ pub(crate) fn attention_compact_prefill_bf16(
     image_end: usize,
     sinks: &[f32],
     output: &mut [f32],
-    converted: Option<(&[u32], &[u32])>,
+    kv: Bf16Kv<'_>,
+    exp: ExpMode,
+    profile: bool,
 ) -> bool {
     #[cfg(target_arch = "x86_64")]
     if query_len >= 4
@@ -219,7 +233,7 @@ pub(crate) fn attention_compact_prefill_bf16(
         && image_end <= total_len
         && avx2_available()
         && avx512_available()
-        && panel_bf16::attention()
+        && panel_bf16::available()
     {
         // SAFETY: AVX2/FMA/AVX-512F/AVX512-BF16 detected; shapes checked.
         unsafe {
@@ -235,13 +249,15 @@ pub(crate) fn attention_compact_prefill_bf16(
                 image_end,
                 sinks,
                 output,
-                converted,
+                kv,
+                exp,
+                profile,
             );
         }
         return true;
     }
     let _ = (q, prefix_k, v, query_len, total_len, n_heads, n_kv_heads, head_dim);
-    let _ = (query_offset, image_start, image_end, sinks, output, converted);
+    let _ = (query_offset, image_start, image_end, sinks, output, kv, exp, profile);
     false
 }
 
@@ -250,8 +266,7 @@ pub(crate) fn attention_compact_prefill_bf16(
 pub(crate) fn prefill_bf16_rows_available() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        panel_bf16::attention() && *ON.get_or_init(|| std::is_x86_feature_detected!("avx512bw"))
+        panel_bf16::available() && std::is_x86_feature_detected!("avx512bw")
     }
     #[cfg(not(target_arch = "x86_64"))]
     false
@@ -288,6 +303,7 @@ pub(crate) unsafe fn store_prefill_bf16_row(
 /// Arithmetic order matches expanded-cache attention. A key tile crossing the
 /// prefix boundary is gathered before GEMM, preserving its original tile width
 /// and softmax reduction order. Single-token decode never allocates scratch.
+/// Prefill tiles use the platform-exact exp (`ExpMode::Exact`).
 #[allow(clippy::too_many_arguments)]
 pub fn attention_compact_with_simd(
     q: &[f32],
@@ -306,6 +322,51 @@ pub fn attention_compact_with_simd(
     sinks: &[f32],
     output: &mut [f32],
     simd: Simd,
+) {
+    attention_compact_prefill_with(
+        q,
+        prefix_k,
+        generated_k,
+        v,
+        query_len,
+        prefix_len,
+        total_len,
+        n_heads,
+        n_kv_heads,
+        head_dim,
+        query_offset,
+        image_start,
+        image_end,
+        sinks,
+        output,
+        simd,
+        ExpMode::Exact,
+        false,
+    );
+}
+
+/// [`attention_compact_with_simd`] with the prefill tiles' exp (`exp`) and
+/// stage profiling (`profile`) chosen by the caller; decode paths ignore both.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn attention_compact_prefill_with(
+    q: &[f32],
+    prefix_k: &[f32],
+    generated_k: &[f32],
+    v: &[f32],
+    query_len: usize,
+    prefix_len: usize,
+    total_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    head_dim: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    output: &mut [f32],
+    simd: Simd,
+    exp: ExpMode,
+    profile: bool,
 ) {
     assert!(
         head_dim > 0 && n_heads > 0 && n_kv_heads > 0,
@@ -354,6 +415,8 @@ pub fn attention_compact_with_simd(
         unsafe {
             prefill64::compact_prefill(
                 cfg!(target_arch = "x86_64") && matches!(simd, Simd::Auto | Simd::Avx512) && avx512_available(),
+                exp,
+                profile,
                 q,
                 prefix_k,
                 v,
@@ -369,6 +432,7 @@ pub fn attention_compact_with_simd(
         }
         return;
     }
+    let _ = (exp, profile);
     if query_len >= 4 && selected != Simd::Scalar {
         attention_gemm_compact(
             q,

@@ -15,7 +15,7 @@ for arm in "$@"; do
   [ -n "${artifact:-}" ] && extra=(--w8-artifact "$artifact")
   rm -f "$out/$name.json"
   start=$(date +%s)
-  FALCON_OCR_EXP=fast "$bin" --threads "${AGREE_THREADS:-16}" --backend avx2 --profile "$profile" "${extra[@]}" \
+  "$bin" --exp fast --threads "${AGREE_THREADS:-16}" --backend avx2 --profile "$profile" "${extra[@]}" \
     agree "${PAGES[@]}" --reference "$ref" --max-steps "$steps" --report "$out/$name.json" \
     > "$out/$name.stdout" 2> "$out/$name.stderr"
   echo "$name exit=$? seconds=$(( $(date +%s) - start )) $(tail -c 200 "$out/$name.stdout")"

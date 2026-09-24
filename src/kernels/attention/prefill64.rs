@@ -29,10 +29,10 @@
 //! row (PV). Key blocks stay at 8 rows: key rows are 4 KB apart, so more rows
 //! per block would exceed the 8 ways of an L1 set.
 //!
-//! `kernels::ExpMode::Fast` (`set_exp_mode`, or `FALCON_OCR_EXP=fast`)
-//! switches x86 to the portable fast exp (`simd::Avx2Fast`): no scalar
-//! fix-ups, bitwise equal to the NEON and portable instantiations, but no
-//! longer equal to the platform `expf`.
+//! `ExpMode::Fast` (`RunnerConfig::exp`) switches x86 to the portable fast
+//! exp (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
+//! portable instantiations, but no longer equal to the platform `expf`.
+use crate::config::ExpMode;
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;
 
@@ -67,16 +67,12 @@ impl OutputPtr {
     }
 }
 
-/// Cycle counters of the main-path stages (probe; FALCON_OCR_PREFILL_PROFILE=1).
+/// Cycle counters of the main-path stages (probe; `Tuning::prefill_profile`).
 static STAGE_CYCLES: [std::sync::atomic::AtomicU64; 3] = [
     std::sync::atomic::AtomicU64::new(0),
     std::sync::atomic::AtomicU64::new(0),
     std::sync::atomic::AtomicU64::new(0),
 ];
-fn profile_enabled() -> bool {
-    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("FALCON_OCR_PREFILL_PROFILE").is_some())
-}
 #[inline(always)]
 fn cycles() -> u64 {
     #[cfg(target_arch = "x86_64")]
@@ -86,9 +82,10 @@ fn cycles() -> u64 {
     #[cfg(not(target_arch = "x86_64"))]
     0
 }
-/// Print and reset the stage split (QK, mask+softmax, PV).
-pub(crate) fn report_stage_cycles() {
-    if !profile_enabled() {
+/// Print and reset the stage split (QK, mask+softmax, PV); a no-op unless
+/// `enabled`.
+pub(crate) fn report_stage_cycles(enabled: bool) {
+    if !enabled {
         return;
     }
     #[cfg(target_arch = "x86_64")]
@@ -119,6 +116,8 @@ struct Shape {
     image_start: usize,
     image_end: usize,
     scale: f32,
+    /// Accumulate the stage cycle counters (`Tuning::prefill_profile`).
+    profile: bool,
 }
 
 /// Pure prefill (no generated keys): `k` is `[total][n_heads][64]`, `v` is
@@ -131,6 +130,8 @@ struct Shape {
 #[allow(clippy::too_many_arguments)]
 pub(super) unsafe fn compact_prefill(
     wide: bool,
+    exp: ExpMode,
+    profile: bool,
     q: &[f32],
     k: &[f32],
     v: &[f32],
@@ -144,7 +145,7 @@ pub(super) unsafe fn compact_prefill(
     output: &mut [f32],
 ) {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = match (crate::kernels::exp_mode() == crate::kernels::ExpMode::Fast, wide) {
+    let tile: TileFn = match (exp == ExpMode::Fast, wide) {
         (true, true) => tile_head_fast_wide,
         (true, false) => tile_head_fast,
         (false, true) => tile_head_native_wide,
@@ -152,12 +153,13 @@ pub(super) unsafe fn compact_prefill(
     };
     #[cfg(not(target_arch = "x86_64"))]
     let tile: TileFn = {
-        let _ = wide;
+        let _ = (wide, exp);
         tile_head_native
     };
     unsafe {
         compact_prefill_with(
             tile,
+            profile,
             q,
             k,
             v,
@@ -179,6 +181,7 @@ type TileFn = unsafe fn(&[f32], &[f32], &[f32], &Shape, usize, usize, usize, usi
 #[allow(clippy::too_many_arguments)]
 unsafe fn compact_prefill_with(
     tile_head: TileFn,
+    profile: bool,
     q: &[f32],
     k: &[f32],
     v: &[f32],
@@ -198,6 +201,7 @@ unsafe fn compact_prefill_with(
         image_start,
         image_end,
         scale: (HEAD_DIM as f32).sqrt().recip(),
+        profile,
     };
     let repeat = n_heads / n_kv_heads;
     let tiles = query_len.div_ceil(QUERY_TILE);
@@ -368,7 +372,7 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
         let key_rows = unsafe { k.as_ptr().add(key_start * shape.query_width + head * HEAD_DIM) };
         let value_rows = unsafe { v.as_ptr().add(key_start * shape.kv_width + kv_head * HEAD_DIM) };
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
-            let profile = profile_enabled();
+            let profile = shape.profile;
             let t0 = if profile { cycles() } else { 0 };
             let mut t1 = 0;
             let mut t2 = 0;
@@ -987,7 +991,7 @@ mod tests {
         let mut out = vec![f32::NAN; q.len()];
         unsafe {
             compact_prefill_with(
-                tile, &q, &k, &v, query_len, 16, 8, 0, image.0, image.1, &sinks, &mut out,
+                tile, false, &q, &k, &v, query_len, 16, 8, 0, image.0, image.1, &sinks, &mut out,
             );
         }
         out
@@ -1351,6 +1355,8 @@ mod tests {
             let mut actual = vec![f32::NAN; q.len()];
             unsafe {
                 compact_prefill(
+                    false,
+                    ExpMode::Exact,
                     false,
                     &q,
                     &k,

@@ -14,64 +14,31 @@ mod panels;
 #[cfg(test)]
 mod tests;
 
+pub(crate) use attention::{
+    Bf16Kv, attention_compact_prefill_bf16, attention_compact_prefill_with, prefill_bf16_rows_available,
+    store_prefill_bf16_row,
+};
 pub use attention::{attention, attention_compact, attention_compact_with_simd, attention_with_simd};
-pub(crate) use attention::{attention_compact_prefill_bf16, prefill_bf16_rows_available, store_prefill_bf16_row};
 pub(crate) use exp as vexp;
 pub(crate) use panels::panel as panel_gemm;
 #[cfg(target_arch = "x86_64")]
 pub(crate) use panels::panel_bf16;
 
-/// Prefill attention stage split (probe, `FALCON_OCR_PREFILL_PROFILE`).
-pub(crate) fn report_prefill_stage_cycles() {
-    attention::prefill64::report_stage_cycles();
+/// Prefill attention stage split (`Tuning::prefill_profile`); a no-op unless
+/// `enabled`.
+pub(crate) fn report_prefill_stage_cycles(enabled: bool) {
+    attention::prefill64::report_stage_cycles(enabled);
 }
 
-/// Vector exp in the prefill attention tiles on x86.
-///
-/// `Exact` reproduces the platform `expf` bit for bit (`kernels::vexp`), so
-/// hidden states match earlier results on this host. `Fast` is the portable
-/// polynomial that NEON and the portable path use: at most a few ulp from
-/// `Exact` in rare lanes, about 1 s faster per full page, and token-identical
-/// to `Exact` on all 67 calibration pages (93,249 tokens). NEON always uses
-/// the fast exp.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExpMode {
-    Exact,
-    Fast,
-}
-
-const EXP_UNSET: u8 = 0;
-const EXP_EXACT: u8 = 1;
-const EXP_FAST: u8 = 2;
-static EXP_MODE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(EXP_UNSET);
-
-/// Select the prefill exp for this process. Without a call, `Exact` is used
-/// unless the environment sets `FALCON_OCR_EXP=fast`.
-pub fn set_exp_mode(mode: ExpMode) {
-    let value = match mode {
-        ExpMode::Exact => EXP_EXACT,
-        ExpMode::Fast => EXP_FAST,
-    };
-    EXP_MODE.store(value, std::sync::atomic::Ordering::Relaxed);
-}
-
-/// The selected prefill exp mode.
-pub fn exp_mode() -> ExpMode {
-    use std::sync::atomic::Ordering::Relaxed;
-    let mut value = EXP_MODE.load(Relaxed);
-    if value == EXP_UNSET {
-        let fast = std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "fast");
-        value = if fast { EXP_FAST } else { EXP_EXACT };
-        // A concurrent explicit `set_exp_mode` wins over the environment.
-        value = match EXP_MODE.compare_exchange(EXP_UNSET, value, Relaxed, Relaxed) {
-            Ok(_) => value,
-            Err(current) => current,
-        };
+/// Whether this CPU runs the BF16 prefill kernels (AVX-512F and AVX512-BF16).
+pub(crate) fn bf16_available() -> bool {
+    #[cfg(target_arch = "x86_64")]
+    {
+        panel_bf16::available()
     }
-    if value == EXP_FAST {
-        ExpMode::Fast
-    } else {
-        ExpMode::Exact
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        false
     }
 }
 
@@ -222,7 +189,7 @@ pub fn linear_with_simd(
     }
     let in_stride = isize::try_from(in_dim).expect("linear input stride too large");
     let out_stride = isize::try_from(out_dim).expect("linear output stride too large");
-    let threads = gemm_threads().unwrap_or_else(rayon::current_num_threads);
+    let threads = rayon::current_num_threads();
     let parallelism = if threads == 1 {
         gemm::Parallelism::None
     } else {
@@ -254,18 +221,6 @@ pub fn linear_with_simd(
             parallelism,
         );
     }
-}
-
-/// Experiment override of the prefill GEMM's thread count
-/// (`FALCON_OCR_GEMM_THREADS`, read once); scheduling only, same arithmetic.
-fn gemm_threads() -> Option<usize> {
-    static THREADS: std::sync::OnceLock<Option<usize>> = std::sync::OnceLock::new();
-    *THREADS.get_or_init(|| {
-        std::env::var("FALCON_OCR_GEMM_THREADS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .filter(|&n: &usize| n >= 1)
-    })
 }
 
 /// Normalize each contiguous `width`-element row in FP32.

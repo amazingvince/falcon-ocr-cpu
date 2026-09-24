@@ -499,7 +499,8 @@ impl Q8Linear {
 
     /// Prefill product through `kernels::panel_gemm` with a folded row scale
     /// (RMS norm) and a fused epilogue (store, gate or residual add). The
-    /// caller checks `panel_gemm` first.
+    /// caller checks `panel_gemm` first. With `bf16_projections`, 8-bit
+    /// matrices use the BF16 panels where the CPU has AVX512-BF16.
     pub(crate) fn prefill(
         &self,
         input: &[f32],
@@ -507,13 +508,15 @@ impl Q8Linear {
         row_scale: Option<&[f32]>,
         epilogue: crate::kernels::panel_gemm::Epilogue<'_>,
         scratch: &mut Scratch,
+        bf16_projections: bool,
     ) {
         use crate::kernels::{panel_bf16, panel_gemm};
         assert_eq!(input.len(), rows * self.in_dim, "prefill input shape");
         if let Codes::I8(codes) = &self.codes
             && self.group_size == 64
             && self.out_dim.is_multiple_of(panel_bf16::NR)
-            && panel_bf16::projections()
+            && bf16_projections
+            && panel_bf16::available()
         {
             // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
             // throughput and only the activations round (see `panel_bf16`).

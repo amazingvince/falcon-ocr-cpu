@@ -2,7 +2,7 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout,
+    Backend, CacheLayout, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, Tuning, WeightLayout,
     attempt::{Profile, Telemetry},
     trace::TensorTrace,
 };
@@ -66,6 +66,14 @@ struct Cli {
     /// Cross-page drafts: the images of one bench sample are one document.
     #[arg(long, global = true)]
     document_drafts: bool,
+    /// Prefill exp: `exact` (the platform expf, default) or `fast` (the
+    /// portable polynomial the `falcon-ocr run` command uses).
+    #[arg(long, value_enum, default_value = "exact", global = true)]
+    exp: ExpMode,
+    /// Experiment knobs as `key=value` (`prefill-bf16=off|attention|all`,
+    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`); repeatable.
+    #[arg(long = "tune", value_name = "KEY=VALUE", global = true)]
+    tune: Vec<String>,
     #[command(subcommand)]
     command: Command,
 }
@@ -459,6 +467,8 @@ fn main() -> Result<()> {
             backend: args.backend,
             cache_layout: CacheLayout::Compact,
             weight_layout: WeightLayout::Unpacked,
+            exp: args.exp,
+            tuning: Tuning::from_pairs(&args.tune)?,
         },
     )?;
     runner.set_head_mode(args.head)?;
@@ -677,7 +687,7 @@ fn main() -> Result<()> {
             }
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":args.profile,
                 "reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
-                "exp_mode":format!("{:?}", falcon_ocr::kernels::exp_mode()),
+                "exp_mode":format!("{:?}", args.exp),
                 "binary_sha256":digest(&std::env::current_exe()?)?,"threads":args.threads,"backend":args.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
                 "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,

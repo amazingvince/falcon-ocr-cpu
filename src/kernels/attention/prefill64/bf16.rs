@@ -8,22 +8,19 @@
 //! bitwise equal to the FP32 kernel; fidelity is measured against the FP32
 //! anchor like any lossy fast-mode change.
 use super::{
-    HEAD_DIM, KEY_TILE, OutputPtr, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes, profile_enabled,
-    pv_uses_main_path, qk_uses_main_path, reference_key_tile, softmax_lanes,
+    HEAD_DIM, KEY_TILE, OutputPtr, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes, pv_uses_main_path,
+    qk_uses_main_path, reference_key_tile, softmax_lanes,
 };
+use crate::config::ExpMode;
+use crate::kernels::Bf16Kv;
 use rayon::prelude::*;
 use std::arch::x86_64::*;
 
-/// Time spent converting K/V to BF16 (probe; FALCON_OCR_PREFILL_PROFILE=1).
+/// Time spent converting K/V to BF16 (probe; `Tuning::prefill_profile`).
 pub(in crate::kernels) static CONVERT_NS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// Pairs of BF16 values per 64-wide row.
 const PAIRS: usize = HEAD_DIM / 2;
-
-/// Converted keys (`[head][total][32]`, two dimensions per `u32`) and value
-/// pairs (`[kv_head][total / 2][64]`, two keys per `u32`) when the caller
-/// has not converted them, reused across calls.
-static SCRATCH: std::sync::Mutex<(Vec<u32>, Vec<u32>)> = std::sync::Mutex::new((Vec::new(), Vec::new()));
 
 /// Writes prefill row `row` of `total` in the BF16 layouts above: its keys
 /// (`k`, `[heads][64]`) into `keys` and its half of each value pair (`v`,
@@ -70,6 +67,9 @@ pub(crate) unsafe fn store_row(
 /// `v` is `[total][n_kv_heads][64]`, `q`/`output` are
 /// `[query_len][n_heads][64]`).
 ///
+/// `kv` supplies the BF16 key/value copies or the scratch to convert them
+/// into; `exp` selects the softmax exp and `profile` the stage counters.
+///
 /// # Safety
 /// AVX2, FMA, AVX-512F and AVX512-BF16 must be available; shapes as in the
 /// parent's `compact_prefill`.
@@ -86,7 +86,9 @@ pub(in crate::kernels) unsafe fn compact_prefill(
     image_end: usize,
     sinks: &[f32],
     output: &mut [f32],
-    converted: Option<(&[u32], &[u32])>,
+    kv: Bf16Kv<'_>,
+    exp: ExpMode,
+    profile: bool,
 ) {
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
@@ -95,18 +97,17 @@ pub(in crate::kernels) unsafe fn compact_prefill(
         image_start,
         image_end,
         scale: (HEAD_DIM as f32).sqrt().recip(),
+        profile,
     };
     let total = k.len() / shape.query_width;
     let pairs = total.div_ceil(2);
     let convert_start = std::time::Instant::now();
-    let mut scratch = SCRATCH.lock().unwrap_or_else(|e| e.into_inner());
-    let (keys_bf16, value_pairs): (&[u32], &[u32]) = match converted {
-        Some((keys, values)) => {
+    let (keys_bf16, value_pairs): (&[u32], &[u32]) = match kv {
+        Bf16Kv::Converted(keys, values) => {
             assert!(keys.len() == n_heads * total * PAIRS && values.len() == n_kv_heads * pairs * HEAD_DIM);
             (keys, values)
         }
-        None => {
-            let (keys_bf16, value_pairs) = &mut *scratch;
+        Bf16Kv::Convert(keys_bf16, value_pairs) => {
             keys_bf16.resize(n_heads * total * PAIRS, 0);
             value_pairs.resize(n_kv_heads * pairs * HEAD_DIM, 0);
             keys_bf16
@@ -134,13 +135,13 @@ pub(in crate::kernels) unsafe fn compact_prefill(
             (&keys_bf16[..], &value_pairs[..])
         }
     };
-    if profile_enabled() {
+    if profile {
         CONVERT_NS.fetch_add(
             convert_start.elapsed().as_nanos() as u64,
             std::sync::atomic::Ordering::Relaxed,
         );
     }
-    let fast = crate::kernels::exp_mode() == crate::kernels::ExpMode::Fast;
+    let fast = exp == ExpMode::Fast;
     let repeat = n_heads / n_kv_heads;
     let tiles = query_len.div_ceil(QUERY_TILE);
     let out = OutputPtr(output.as_mut_ptr());
@@ -247,13 +248,9 @@ unsafe fn tile_head_fast(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        if fused_softmax() {
-            tile_head::<crate::simd::Avx2Fast, true>(operands, shape, tile, queries, head, kv_head, sinks, output)
-        } else {
-            tile_head::<crate::simd::Avx2Fast, false>(operands, shape, tile, queries, head, kv_head, sinks, output)
-        }
-    }
+    // The fused softmax (accepted A/B); the separate-pass form stays as the
+    // oracle of `fused_softmax_matches_separate_passes`.
+    unsafe { tile_head::<crate::simd::Avx2Fast, true>(operands, shape, tile, queries, head, kv_head, sinks, output) }
 }
 
 /// One (query tile, head) across all visible key tiles: the parent's
@@ -303,7 +300,7 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
     for key_start in (0..visible_end).step_by(KEY_TILE) {
         let keys = (visible_end - key_start).min(KEY_TILE);
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
-            let profile = profile_enabled();
+            let profile = shape.profile;
             let t0 = if profile { cycles() } else { 0 };
             let (mut t1, mut t2) = (0, 0);
             unsafe {
@@ -402,13 +399,6 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
             *value = (*value / denominators[r]) * sink_scale;
         }
     }
-}
-
-/// The fused softmax (`FALCON_OCR_BF16_SOFTMAX=0` keeps the separate passes
-/// for A/B runs).
-fn fused_softmax() -> bool {
-    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| !std::env::var("FALCON_OCR_BF16_SOFTMAX").is_ok_and(|v| v == "0"))
 }
 
 /// The parent's `softmax_lanes` with the fast exp, 16 queries per vector,
@@ -705,6 +695,7 @@ mod tests {
                 image_start,
                 image_end,
                 scale: 0.125,
+                profile: false,
             };
             let total = query_len;
             let pairs = total.div_ceil(2);
@@ -819,6 +810,7 @@ mod tests {
             }
             let mut own = vec![f32::NAN; q.len()];
             let mut stored = vec![f32::NAN; q.len()];
+            let (mut scratch_keys, mut scratch_values) = (Vec::new(), Vec::new());
             unsafe {
                 compact_prefill(
                     &q,
@@ -832,7 +824,9 @@ mod tests {
                     image_end,
                     &sinks,
                     &mut own,
-                    None,
+                    Bf16Kv::Convert(&mut scratch_keys, &mut scratch_values),
+                    ExpMode::Exact,
+                    false,
                 );
                 compact_prefill(
                     &q,
@@ -846,7 +840,9 @@ mod tests {
                     image_end,
                     &sinks,
                     &mut stored,
-                    Some((&keys, &value_pairs)),
+                    Bf16Kv::Converted(&keys, &value_pairs),
+                    ExpMode::Exact,
+                    false,
                 );
             }
             for (i, (a, b)) in own.iter().zip(&stored).enumerate() {
@@ -882,6 +878,7 @@ mod tests {
             let v = values(query_len * kv_heads * 64, 23 + query_len as u32, 3.0);
             let sinks = values(heads, 29, 2.0);
             let mut out = vec![f32::NAN; q.len()];
+            let (mut scratch_keys, mut scratch_values) = (Vec::new(), Vec::new());
             pool.install(|| unsafe {
                 compact_prefill(
                     &q,
@@ -895,7 +892,9 @@ mod tests {
                     image_end,
                     &sinks,
                     &mut out,
-                    None,
+                    Bf16Kv::Convert(&mut scratch_keys, &mut scratch_values),
+                    ExpMode::Exact,
+                    false,
                 )
             });
             let mut worst = 0.0_f64;

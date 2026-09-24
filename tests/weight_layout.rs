@@ -48,6 +48,7 @@ fn phase_packed_preserves_single_mixed_and_full_batch_traces() {
                 backend: Backend::Avx2,
                 cache_layout,
                 weight_layout: layout,
+                ..Default::default()
             },
         )
         .unwrap()

@@ -5,8 +5,8 @@
 //! exact in BF16, so the weights stay exact: each 64-input group accumulates
 //! code products separately and its FP32 scale is applied with one FMA per
 //! column. Only the activations round to BF16 (ties to even; the RMS-norm
-//! factor is applied first). Opt-in for 8-bit models (see [`projections`]):
-//! it changes results at the level of BF16 activation rounding.
+//! factor is applied first). Opt-in for 8-bit models (`Tuning::prefill_bf16 =
+//! All`): it changes results at the level of BF16 activation rounding.
 use rayon::prelude::*;
 
 use super::panel::Epilogue;
@@ -29,30 +29,6 @@ pub(crate) fn available() -> bool {
         #[cfg(not(target_arch = "x86_64"))]
         false
     })
-}
-
-/// Which 8-bit prefill stages use BF16 on a capable CPU. By default only
-/// attention does: measured against the FP32 anchor it is fidelity-neutral,
-/// while BF16 projections add about 17% KL. `FALCON_OCR_PREFILL_BF16` =
-/// `1` (projections too), `proj`, `attn` or `0` (neither) overrides it.
-fn stages() -> (bool, bool) {
-    static STAGES: std::sync::OnceLock<(bool, bool)> = std::sync::OnceLock::new();
-    *STAGES.get_or_init(|| match std::env::var("FALCON_OCR_PREFILL_BF16").as_deref() {
-        Ok("0") => (false, false),
-        Ok("1") => (true, true),
-        Ok("proj") => (true, false),
-        _ => (false, true),
-    })
-}
-
-/// BF16 prefill projections for 8-bit weights here.
-pub(crate) fn projections() -> bool {
-    available() && stages().0
-}
-
-/// BF16 prefill attention for 8-bit models here.
-pub(crate) fn attention() -> bool {
-    available() && stages().1
 }
 
 /// Packed weights: codes as BF16 pairs `[panel][k / 2][32][2]` and scales

@@ -92,19 +92,17 @@ pub(crate) struct SplitPrefix {
     tail_len: usize,
 }
 
-/// Default position chunks: exact for FP32, split (rounding-level) for lossy storage.
-/// `FALCON_OCR_SPLIT_CHUNKS=1|2|4` overrides it once, at sealing, for experiments.
-fn default_chunks(mode: PrefixMode) -> usize {
-    let requested = std::env::var("FALCON_OCR_SPLIT_CHUNKS")
-        .ok()
-        .and_then(|v| v.parse::<usize>().ok())
-        .filter(|n| [1, 2, 4].contains(n));
+/// Default position chunks: exact for FP32, split (rounding-level) for lossy
+/// storage; `requested` (`Tuning::split_chunks`, 1..=4) overrides it.
+fn default_chunks(mode: PrefixMode, requested: Option<usize>) -> usize {
     // Four chunks (32 tasks) measured ~13% faster attention than two on a
     // 16-thread 7950X at a 6.5k prefix; FP32 keeps the exact single scan.
-    requested.unwrap_or(match mode {
-        PrefixMode::SplitF32 => 1,
-        _ => 4,
-    })
+    requested
+        .filter(|n| (1..=MAX_CHUNKS).contains(n))
+        .unwrap_or(match mode {
+            PrefixMode::SplitF32 => 1,
+            _ => 4,
+        })
 }
 
 impl Records {
@@ -214,6 +212,8 @@ fn q8_code(value: f32, scale: f32) -> i8 {
 }
 
 impl SplitPrefix {
+    /// Seals a compact prefix into `mode`'s record format; `chunks` overrides
+    /// the position chunking of decode attention (`Tuning::split_chunks`).
     pub fn from_compact(
         k: &[f32],
         v: &[f32],
@@ -221,6 +221,7 @@ impl SplitPrefix {
         capacity: usize,
         c: &ModelConfig,
         mode: PrefixMode,
+        chunks: Option<usize>,
     ) -> Result<Self> {
         ensure!(
             mode != PrefixMode::Reference
@@ -433,7 +434,7 @@ impl SplitPrefix {
             prefix_len,
             heads,
             kv_heads: groups,
-            chunks: default_chunks(mode),
+            chunks: default_chunks(mode, chunks),
             tail,
             tail_capacity,
             tail_len: 0,
@@ -1520,7 +1521,7 @@ mod tests {
             ] {
                 for chunks in [1, 2, 4] {
                     for backend in backends() {
-                        let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
+                        let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode, None)
                             .unwrap()
                             .with_chunks(chunks);
                         push_rows(&mut cache, &c, &tail_k, &tail_v);
@@ -1651,7 +1652,7 @@ mod tests {
                 PrefixMode::SplitQ16,
                 PrefixMode::SplitF16,
             ] {
-                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
+                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode, None)
                     .unwrap()
                     .with_chunks(1);
                 push_rows(&mut cache, &c, &tail_k, &tail_v);
@@ -1694,7 +1695,7 @@ mod tests {
         ] {
             let mut reference = vec![0.0; c.query_dim()];
             for chunks in [1, 2, 4] {
-                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode)
+                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode, None)
                     .unwrap()
                     .with_chunks(chunks);
                 push_rows(&mut cache, &c, &tail, &tail);
@@ -1726,7 +1727,7 @@ mod tests {
             PrefixMode::SplitQ16,
             PrefixMode::SplitF16,
         ] {
-            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 1, &c, mode).unwrap();
+            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 1, &c, mode, None).unwrap();
             push_rows(&mut cache, &c, &tail, &tail);
             let mut output = vec![0.0; c.query_dim()];
             cache.attention_decode(&q, p + 1, &sinks, &mut output, Simd::Auto);
@@ -1749,7 +1750,7 @@ mod tests {
             PrefixMode::SplitQ16,
             PrefixMode::SplitF16,
         ] {
-            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 2, &c, mode).unwrap();
+            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 2, &c, mode, None).unwrap();
             let mut tail = vec![0.01; c.kv_dim()];
             push_rows(&mut cache, &c, &tail, &tail);
             tail[3] = f32::NAN;
@@ -1767,7 +1768,7 @@ mod tests {
         let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let mut k = vec![0.0; c.query_dim()];
         k[64] = 1.0;
-        assert!(SplitPrefix::from_compact(&k, &vec![0.0; c.kv_dim()], 1, 2, &c, PrefixMode::SplitF32).is_err());
+        assert!(SplitPrefix::from_compact(&k, &vec![0.0; c.kv_dim()], 1, 2, &c, PrefixMode::SplitF32, None).is_err());
     }
 }
 
@@ -1801,7 +1802,7 @@ mod probe {
         });
         let caches: Vec<SplitPrefix> = (0..layers)
             .map(|_| {
-                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 16, &c, mode).unwrap();
+                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 16, &c, mode, None).unwrap();
                 for _ in 0..generated {
                     cache.push_unique(&tail, &tail);
                 }
@@ -1868,7 +1869,7 @@ mod probe {
         ] {
             let caches: Vec<SplitPrefix> = (0..layers)
                 .map(|_| {
-                    SplitPrefix::from_compact(&k, &v, p, p + 8, &c, mode)
+                    SplitPrefix::from_compact(&k, &v, p, p + 8, &c, mode, None)
                         .unwrap()
                         .with_chunks(4)
                 })

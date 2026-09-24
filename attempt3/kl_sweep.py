@@ -42,13 +42,13 @@ def main() -> None:
         name, options = spec.split("=", 1)
         report = a.out / f"{name}.json"
         if not report.exists():
-            cmd = [binary, "--threads", a.threads, "--decode-threads", a.decode_threads, *shlex.split(options),
+            cmd = [binary, "--exp", "fast", "--threads", a.threads, "--decode-threads", a.decode_threads,
+                   *shlex.split(options),
                    "agree", *pages, "--reference", str(a.reference), "--max-steps", a.max_steps,
                    "--reference-topk", str(a.reference_topk), "--report", str(report)]
             t0 = time.time()
             with open(a.out / f"{name}.stderr", "w", encoding="utf-8") as err:
-                code = subprocess.call(cmd, env=dict(os.environ, FALCON_OCR_EXP="fast"),
-                                       stdout=subprocess.DEVNULL, stderr=err)
+                code = subprocess.call(cmd, stdout=subprocess.DEVNULL, stderr=err)
             if code != 0:
                 print(f"{name}: exit {code}", flush=True)
                 continue

@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout, trace::TensorTrace,
+    Backend, CacheLayout, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, Tuning, WeightLayout,
+    trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -93,6 +94,14 @@ struct Cli {
     /// With --model-file: check the digest of every tensor first.
     #[arg(long, global = true)]
     verify_model_file: bool,
+    /// Prefill exp: `fast` (the default for `run`; token-identical on
+    /// calibration) or `exact` (the platform expf, which `trace` always uses).
+    #[arg(long, value_enum, hide = true, global = true)]
+    exp: Option<ExpMode>,
+    /// Experiment knobs as `key=value` (`prefill-bf16=off|attention|all`,
+    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`); repeatable.
+    #[arg(long = "tune", value_name = "KEY=VALUE", hide = true, global = true)]
+    tune: Vec<String>,
     #[command(subcommand)]
     command: Command,
 }
@@ -219,6 +228,13 @@ fn main() -> Result<()> {
         .and_then(|f| f.parent())
         .filter(|d| d.join("tokenizer.json").is_file())
         .map_or_else(|| cli.model.clone(), |d| d.to_path_buf());
+    // Recognition uses the fast exp (token-identical on calibration); traces
+    // keep the platform exp so they stay bit-comparable with the references.
+    let exp = if matches!(cli.command, Command::Trace { .. }) {
+        ExpMode::Exact
+    } else {
+        cli.exp.unwrap_or(ExpMode::Fast)
+    };
     let mut runner = Runner::new(
         model,
         &tokenizer_dir,
@@ -228,6 +244,8 @@ fn main() -> Result<()> {
             batch_size: cli.batch_size,
             cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
             weight_layout: cli.weight_layout,
+            exp,
+            tuning: Tuning::from_pairs(&cli.tune)?,
         },
     )?;
     runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
@@ -239,16 +257,6 @@ fn main() -> Result<()> {
         falcon_ocr::runner::DecodeThreads::Fixed(n) if n != threads => runner.set_decode_threads(n)?,
         falcon_ocr::runner::DecodeThreads::Fixed(_) => {}
     }
-    // Recognition uses the fast exp (token-identical on calibration);
-    // FALCON_OCR_EXP=exact keeps the platform exp. Traces always keep it, so
-    // they stay bit-comparable with the recorded references.
-    let exact_exp =
-        std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "exact") || matches!(cli.command, Command::Trace { .. });
-    falcon_ocr::kernels::set_exp_mode(if exact_exp {
-        falcon_ocr::kernels::ExpMode::Exact
-    } else {
-        falcon_ocr::kernels::ExpMode::Fast
-    });
     match cli.command {
         Command::Run {
             images,

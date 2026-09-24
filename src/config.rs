@@ -1,4 +1,4 @@
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 
 pub const MODEL_REVISION: &str = "fe757d59ecd79d4d68760162306a70a015761ad9";
@@ -43,6 +43,104 @@ pub enum HeadMode {
     /// few rows that can still win. Selects the same token as `Full`.
     Screened,
 }
+/// Vector exp in the prefill attention tiles on x86.
+///
+/// `Exact` reproduces the platform `expf` bit for bit (`kernels::exp`), so
+/// hidden states match the recorded references on this host. `Fast` is the
+/// portable polynomial that NEON and the portable path use: at most a few ulp
+/// from `Exact` in rare lanes, about 1 s faster per full page, and
+/// token-identical to `Exact` on all 67 calibration pages (93,249 tokens).
+/// NEON always uses the fast exp.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum ExpMode {
+    #[default]
+    Exact,
+    Fast,
+}
+
+/// Which prefill stages of an 8-bit model use BF16 products on an
+/// AVX512-BF16 CPU. Attention alone is fidelity-neutral against the FP32
+/// anchor; the projections add about 17% KL, so they are opt-in.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum PrefillBf16 {
+    Off,
+    #[default]
+    Attention,
+    All,
+}
+
+/// Experiment and diagnostic knobs. The defaults are the accepted
+/// configuration; every field is scheduling or instrumentation only, except
+/// `prefill_bf16`, which changes fast-mode prefill rounding.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Tuning {
+    /// BF16 prefill stages of 8-bit models on AVX512-BF16 CPUs.
+    pub prefill_bf16: PrefillBf16,
+    /// Position chunks per KV group in split-cache decode attention (1..=4).
+    /// `None` keeps the mode default: one exact scan for FP32 caches, four
+    /// chunks (merged partial softmaxes, rounding-level) for quantized ones.
+    pub split_chunks: Option<usize>,
+    /// Print a wall-clock phase split of every forward pass to stderr.
+    pub phases: bool,
+    /// Accumulate cycle counters of the prefill attention stages (stderr).
+    pub prefill_profile: bool,
+}
+impl Tuning {
+    /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
+    /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`).
+    pub fn set(&mut self, pair: &str) -> Result<()> {
+        let (key, value) = pair
+            .split_once('=')
+            .with_context(|| format!("tuning knob `{pair}` is not key=value"))?;
+        let flag = |value: &str| -> Result<bool> {
+            match value {
+                "1" | "true" | "on" => Ok(true),
+                "0" | "false" | "off" => Ok(false),
+                _ => bail!("tuning knob {key}: expected true or false, got `{value}`"),
+            }
+        };
+        match key {
+            "prefill-bf16" => {
+                self.prefill_bf16 = match value {
+                    "off" | "0" => PrefillBf16::Off,
+                    "attention" | "attn" => PrefillBf16::Attention,
+                    "all" | "1" => PrefillBf16::All,
+                    _ => bail!("tuning knob prefill-bf16: expected off, attention or all, got `{value}`"),
+                }
+            }
+            "split-chunks" => {
+                let chunks: usize = value
+                    .parse()
+                    .with_context(|| format!("tuning knob split-chunks: `{value}`"))?;
+                ensure!(
+                    (1..=4).contains(&chunks),
+                    "tuning knob split-chunks: expected 1..=4, got {chunks}"
+                );
+                self.split_chunks = Some(chunks);
+            }
+            "phases" => self.phases = flag(value)?,
+            "prefill-profile" => self.prefill_profile = flag(value)?,
+            _ => bail!("unknown tuning knob `{key}` (prefill-bf16, split-chunks, phases, prefill-profile)"),
+        }
+        Ok(())
+    }
+    /// The default knobs with every `key=value` pair of `pairs` applied.
+    pub fn from_pairs<I, S>(pairs: I) -> Result<Self>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        let mut tuning = Self::default();
+        for pair in pairs {
+            tuning.set(pair.as_ref())?;
+        }
+        Ok(tuning)
+    }
+}
+
 impl Backend {
     pub(crate) fn simd(self) -> crate::kernels::Simd {
         match self {
@@ -183,6 +281,12 @@ pub struct RunnerConfig {
     /// Extra immutable packed weights; single rows and prefill stay unpacked.
     #[serde(default)]
     pub weight_layout: WeightLayout,
+    /// Vector exp of the prefill attention tiles (`Exact` for traces).
+    #[serde(default)]
+    pub exp: ExpMode,
+    /// Experiment and diagnostic knobs.
+    #[serde(default)]
+    pub tuning: Tuning,
 }
 impl Default for RunnerConfig {
     fn default() -> Self {
@@ -192,6 +296,8 @@ impl Default for RunnerConfig {
             backend: Backend::Auto,
             cache_layout: CacheLayout::Compact,
             weight_layout: WeightLayout::Unpacked,
+            exp: ExpMode::Exact,
+            tuning: Tuning::default(),
         }
     }
 }
@@ -199,6 +305,10 @@ impl RunnerConfig {
     pub fn validate(&self) -> Result<()> {
         ensure!(self.batch_size > 0, "batch_size must be positive");
         self.backend.simd().validate().map_err(anyhow::Error::msg)?;
+        ensure!(
+            self.tuning.split_chunks.is_none_or(|chunks| (1..=4).contains(&chunks)),
+            "tuning.split_chunks must be 1..=4"
+        );
         if self.weight_layout == WeightLayout::PhasePacked {
             ensure!(
                 self.backend.simd().resolved() == crate::kernels::Simd::Avx2,
@@ -222,6 +332,26 @@ mod tests {
         assert!(o.check_budget(8192, 16384).is_ok());
         assert!(o.check_budget(8193, 16384).is_err());
         assert!(o.check_budget(usize::MAX, 16384).is_err());
+    }
+    #[test]
+    fn tuning_knobs_parse_and_reject_unknown_keys() {
+        let tuning = Tuning::from_pairs(["prefill-bf16=all", "split-chunks=3", "phases=1"]).unwrap();
+        assert_eq!(tuning.prefill_bf16, PrefillBf16::All);
+        assert_eq!(tuning.split_chunks, Some(3));
+        assert!(tuning.phases && !tuning.prefill_profile);
+        assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
+        for bad in [
+            "split-chunks=5",
+            "split-chunks=x",
+            "phases=maybe",
+            "unknown=1",
+            "phases",
+        ] {
+            assert!(Tuning::from_pairs([bad]).is_err(), "{bad}");
+        }
+        let config: RunnerConfig = serde_json::from_str(r#"{"threads":2,"batch_size":1}"#).unwrap();
+        assert_eq!(config.exp, ExpMode::Exact);
+        assert_eq!(config.tuning, Tuning::default());
     }
     #[test]
     fn phase_packing_is_opt_in_and_rejects_incompatible_dispatch() {
