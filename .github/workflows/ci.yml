@@ -62,7 +62,8 @@ jobs:
         run: |
           python3 -m pip install --quiet ruff
           python3 -m ruff check tools
-          python3 -m unittest discover -s tests -p "test_*.py"
+          python3 -m unittest discover -s research/corpus-qualification/tests -p "test_*.py"
+          python3 -m unittest discover -s research/quantization-feasibility/tests -p "test_*.py"
 
   macos-arm64:
     if: github.event_name != 'schedule'
@@ -93,7 +94,7 @@ jobs:
           -- --ignored
       - name: Token agreement against the FP32 anchor (near-exact 1 flip, fast about 63 of 24,262)
         run: >-
-          bash attempt3/agree_queue.sh artifacts/phase4/agree/ci attempt3/gptq-calibration-pages.txt 8192
+          bash tools/agree_queue.sh artifacts/phase4/agree/ci tools/gptq-calibration-pages.txt 8192
           near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors
       - uses: actions/upload-artifact@v4
         with:

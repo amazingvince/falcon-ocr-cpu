@@ -6,8 +6,8 @@
 //! as the function-pointer kernels, so every output is bit-identical to the
 //! generic path; the tests below assert that.
 //!
-//! Promoted from `experiments/attention64` (expanded cache, measured
-//! 6.15-9.43% lower full-page latency) and `experiments/attention64_compact`
+//! Promoted from `research/benchmarks/experiments/attention64` (expanded cache, measured
+//! 6.15-9.43% lower full-page latency) and `research/benchmarks/experiments/attention64_compact`
 //! (compact cache, a further 6.15-6.40%).
 use super::{
     CompactKv, Geometry,

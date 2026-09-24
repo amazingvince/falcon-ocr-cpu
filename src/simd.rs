@@ -9,7 +9,7 @@
 //! AVX2, AVX-512 or NEON is bitwise equal to the [`Portable`] one on the same
 //! inputs; each machine can test its fast path against portable code.
 //!
-//! See `docs/CPU_PORTABILITY.md`.
+//! See `docs/PORTABILITY.md`.
 
 pub(crate) use crate::kernels::exp::{EXP_LN2_HI, EXP_LN2_LO, EXP_LOG2E, EXP_MAX, EXP_MIN, EXP_P, exp_poly};
 

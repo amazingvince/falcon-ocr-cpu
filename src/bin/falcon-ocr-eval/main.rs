@@ -28,7 +28,7 @@ struct Cli {
     model_file: Option<PathBuf>,
     #[arg(long, value_enum, default_value = "reference", global = true)]
     profile: Profile,
-    /// Custom W8G64 safetensors overlay, made by attempt3/convert_w8.py.
+    /// Custom W8G64 safetensors overlay, made by tools/convert_w8.py.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
     /// Body matrices kept in FP32 whatever the W8 overlay holds, by name

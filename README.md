@@ -13,7 +13,7 @@
 > On the journal benchmark page (Ryzen 9 7950X): exact ≈ 38 s, **near-exact
 > ≈ 21.5 s** (1 changed token in 24,262 against FP32), **fast ≈ 12.6 s**, down
 > from 63.8 s before Phase 4. See [Modes](#modes), the
-> [phase 5 log](attempt3/HILLCLIMB.md) and [results](attempt3/RESULTS-V3.md).
+> [phase 5 log](research/phase4-hillclimb/attempt3/HILLCLIMB.md) and [results](research/phase4-hillclimb/attempt3/RESULTS-V3.md).
 
 A model-specific Rust library and CLI for the updated Falcon-OCR v1.5 weights.
 The implementation currently runs FP32 full-page plain OCR. It is under active
@@ -29,10 +29,10 @@ numerical gate remains **open**, with ten intermediate-tensor checks failing.
 
 The project targets native Windows and Linux, single-page latency and small-batch
 throughput. It does not include PDF rendering, layout detection or HTTP serving.
-See [the implementation plan](docs/PLAN.md) and [qualification status](docs/STATUS.md).
-Measured workloads and their limits are recorded in [performance evidence](docs/PERFORMANCE.md).
-Separate [quality accounting](docs/QUALITY.md) and
-[cross-platform corpus comparisons](docs/CORPUS_SUBSET_COMPARISON.md) keep partial
+See [the implementation plan](research/reviews-2026-09-20/docs/PLAN.md) and [qualification status](research/benchmarks/docs/STATUS.md).
+Measured workloads and their limits are recorded in [performance evidence](research/benchmarks/docs/PERFORMANCE.md).
+Separate [quality accounting](research/corpus-qualification/docs/QUALITY.md) and
+[cross-platform corpus comparisons](research/corpus-qualification/docs/CORPUS_SUBSET_COMPARISON.md) keep partial
 results distinct from completed qualification.
 
 ## Build and run
@@ -66,7 +66,7 @@ cargo run --release --locked -- --threads 16 run page.png --max-new-tokens 8192
 - **BF16 prefill (fast mode).** On CPUs with AVX512-BF16 (Zen 4, Sapphire Rapids and later), fast mode's prefill attention multiplies in BF16 (`vdpbf16ps`, twice the FP32 rate) while scores, softmax and outputs stay FP32: prefill 4.0 → 2.9 s with no measurable fidelity change against FP32. `--tune prefill-bf16=all` also runs the projections in BF16 (2.3 s) at +17% KL; `--tune prefill-bf16=off` turns BF16 off.
 - **Decode threads.** `--decode-threads auto` is the default: the first decode steps time a few team sizes and keep the fastest.
 - **Image size.** `--max-dimension 1280` (default 1536) is about 20% faster. On 64 calibration pages it made no difference to accuracy on pages that end normally; this is not yet validated on held-out pages.
-- **Held-out check of fast mode.** On the 200 held-out pages, fast mode failed its pre-registered budget against FP32 on handwriting (loops) and degraded scans. Production BF16 fails the same budget by more. A blinded LLM judge rated fast mode's content equal to FP32 and production except for loop pages. See `attempt3/RESULTS-V3.md` §6 and §8.
+- **Held-out check of fast mode.** On the 200 held-out pages, fast mode failed its pre-registered budget against FP32 on handwriting (loops) and degraded scans. Production BF16 fails the same budget by more. A blinded LLM judge rated fast mode's content equal to FP32 and production except for loop pages. See `research/phase4-hillclimb/attempt3/RESULTS-V3.md` §6 and §8.
 
 All modes use the exact screened head (`--head screened`, the default; it
 selects the same tokens as `--head full`) and a portable vector exp in prefill
@@ -74,7 +74,7 @@ attention, which is token-identical to the platform exp on all calibration
 pages. Pass `--exp exact` to keep the platform exp; `trace` always does.
 
 `--mode fast` loads the GPTQ overlay `<model>/w8-gptq.safetensors`. Build it
-once with `bash attempt3/make_gptq_overlay.sh` (about 20 min). The overlay
+once with `bash tools/make_gptq_overlay.sh` (about 20 min). The overlay
 roughly triples closeness to FP32 against plain rounding: 2.7 against 8.6
 flipped greedy choices per 1,000 teacher-forced steps. Without the overlay,
 fast mode quantizes round-to-nearest at load, and `--w8-artifact` selects
@@ -94,7 +94,7 @@ times a few team sizes on the first decode steps and keeps the smallest within
 
 The build wrappers can fetch checksum-verified CMake/NASM prerequisites into
 ignored local artifacts when absent, without changing system configuration:
-`./scripts/build_windows.ps1` or `bash scripts/build_linux.sh`. Linux also needs
+`./scripts/build_windows.ps1` or `bash tools/build_linux.sh`. Linux also needs
 a C compiler and GNU make. When Windows and WSL share the checkout, the Linux
 wrapper uses a separate target directory.
 
@@ -152,14 +152,14 @@ Prefill scratch is reused across layers and batch requests.
 
 Single-query decode attention with 64-wide heads on AVX2 now uses the
 fixed-width kernels in `src/kernels/attention64.rs`, promoted from the
-[expanded-cache](experiments/attention64/RESULTS-V1.md) and
-[compact-cache](experiments/attention64_compact/RESULTS-V1.md) experiments.
+[expanded-cache](research/benchmarks/experiments/attention64/RESULTS-V1.md) and
+[compact-cache](research/benchmarks/experiments/attention64_compact/RESULTS-V1.md) experiments.
 They are bit-identical to the generic loops (eleven operator tests, the
 byte-exact 1,904-tensor smoke trace on both layouts, zero warm-decode
 allocations). The control/candidate/control promotion bracket for the new
-default is recorded in [performance evidence](docs/PERFORMANCE.md). A matched
+default is recorded in [performance evidence](research/benchmarks/docs/PERFORMANCE.md). A matched
 head-to-head against an external Rust/GGML implementation is documented in
-[docs/COMPARISON.md](docs/COMPARISON.md).
+[research/benchmarks/docs/COMPARISON.md](research/benchmarks/docs/COMPARISON.md).
 
 `--weight-layout phase-packed` adds a once-packed shared weight copy for AVX2
 batch decode. Repeated small-fixture runs reduce batch2/4/8 latency by about
@@ -215,13 +215,13 @@ label WSL explicitly. Run alternatives sequentially on an otherwise idle machine
 
 ## Sources and reproducibility
 
-See [build and replay provenance](docs/REPRODUCIBILITY.md) for preserving an
+See [build and replay provenance](research/corpus-qualification/docs/REPRODUCIBILITY.md) for preserving an
 executable, its source archive and compiler identity, and for distinguishing a
 saved-token decoder correction from fresh inference.
 
-The [full-page benchmark protocol](docs/REALISTIC_BENCHMARKS.md),
-[AOCL experiments](docs/AOCL.md), and
-[quantized operator results](experiments/quantization/RESULTS-V1.md) separate
+The [full-page benchmark protocol](research/benchmarks/docs/REALISTIC_BENCHMARKS.md),
+[AOCL experiments](research/aocl/docs/AOCL.md), and
+[quantized operator results](research/quantization-feasibility/experiments/quantization/RESULTS-V1.md) separate
 completed functional evidence from pending performance and quality qualification.
 
 - [Pinned model and model card](https://huggingface.co/tiiuae/Falcon-OCR/tree/fe757d59ecd79d4d68760162306a70a015761ad9)

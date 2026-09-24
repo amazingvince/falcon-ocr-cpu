@@ -22,7 +22,7 @@ struct Cli {
     #[arg(long, value_enum, global = true)]
     mode: Option<Mode>,
     /// W8 overlay for `--mode fast` [default: `<model>/w8-gptq.safetensors`,
-    /// built by attempt3/make_gptq_overlay.sh].
+    /// built by tools/make_gptq_overlay.sh].
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
     /// Let `--mode fast` quantize round-to-nearest at load when no GPTQ

@@ -333,7 +333,7 @@ pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
             overlay.is_some() || request.allow_rtn,
             "fast mode needs the GPTQ overlay {} (round-to-nearest quantization triples the changed tokens): \
              download falcon-ocr-v1.5-fast.safetensors from amazingvince/falcon-ocr-v1.5-cpu into the model \
-             directory, build the overlay with attempt3/make_gptq_overlay.sh, or pass --allow-rtn",
+             directory, build the overlay with tools/make_gptq_overlay.sh, or pass --allow-rtn",
             dir.join(DEFAULT_OVERLAY).display()
         );
     }
