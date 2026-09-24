@@ -1,9 +1,9 @@
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Mode, Runner, RunnerConfig, Speculation,
-    Tuning, WeightLayout,
+    CacheLayout, GenerationOptions, Mode, Runner, RunnerConfig, WeightLayout,
     auto::{ModelRequest, load_model, resolve_weights},
+    cli::{RunnerArgs, print_doctor},
     model::WeightsSource,
     trace::TensorTrace,
 };
@@ -16,9 +16,6 @@ struct Cli {
     /// files (`falcon-ocr-v1.5-<mode>.safetensors`).
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
-    /// Prefill and pool threads [default: all logical CPUs].
-    #[arg(long, global = true)]
-    threads: Option<usize>,
     /// What to optimize for [default: near-exact]. Loads the kernel-ready
     /// file for the mode from --model when present, otherwise the FP32
     /// checkpoint, quantized at load (fast mode needs the GPTQ overlay).
@@ -32,54 +29,12 @@ struct Cli {
     /// overlay exists (about three times the changed tokens of GPTQ).
     #[arg(long, global = true)]
     allow_rtn: bool,
-    /// Kernels: `auto` takes the fastest this CPU runs (AVX2 decode, AVX-512
-    /// prefill tiles and BF16 prefill attention where present, NEON on
-    /// aarch64); `avx2` is 8-lane FP32 everywhere; `scalar`.
-    #[arg(long, value_enum, default_value = "auto", global = true)]
-    backend: Backend,
-    #[arg(long, default_value_t = 1, global = true)]
-    batch_size: usize,
     /// KV cache layout [default: compact].
     #[arg(long, value_enum, global = true)]
     cache_layout: Option<CacheLayout>,
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
     #[arg(long, value_enum, default_value = "unpacked", global = true)]
     weight_layout: WeightLayout,
-    /// FP32 greedy head [default: screened]: `screened` selects the same
-    /// tokens as `full` through an exact INT8 screen (53 MB extra); traces
-    /// always record full logits.
-    #[arg(long, value_enum, global = true)]
-    head: Option<HeadMode>,
-    /// Stop a page once it repeats a cycle of at most 128 tokens for at
-    /// least max(256, 4 * cycle) tokens (finish_reason "repetition"); output
-    /// up to that step is unchanged. `--stop-repetition=false` lets loops run
-    /// to --max-new-tokens.
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, global = true)]
-    stop_repetition: bool,
-    /// Decode threads: a number, `pool` (as many as --threads) or `auto`
-    /// [default: auto]. Decode is memory-bound, so past bandwidth saturation
-    /// extra threads and SMT siblings only contend; `auto` times a few team
-    /// sizes on the first decode steps and keeps the smallest within 2% of the
-    /// fastest (tokens never depend on it). Prefill uses every thread in
-    /// --threads.
-    #[arg(long, global = true)]
-    decode_threads: Option<DecodeThreads>,
-    /// Speculative decoding: verify up to N tokens drafted from earlier output
-    /// in one step (0 = off, at most 7) [default: 4]. Every verified token is
-    /// the model's own greedy choice, so outputs are unchanged. Drafting
-    /// switches itself off while drafts are rejected too often to pay (normal
-    /// text) and on for repetitive output (tables, loops). Single pages with a
-    /// split KV cache (every `run` mode).
-    #[arg(long, default_value_t = 4, global = true)]
-    speculate: usize,
-    /// Minimum n-gram match in the earlier output for a draft.
-    #[arg(long, default_value_t = 2, global = true)]
-    speculate_min_match: usize,
-    /// Treat the images of one `run` as pages of one document: drafts may also
-    /// continue full 4-token matches from earlier pages (running headers,
-    /// names, repeated table headers). Outputs are unchanged.
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, global = true)]
-    document_drafts: bool,
     /// Kernel-ready model file written by `pack` (near-exact or fast; the
     /// file decides the mode). Mapped and used in place: fast startup, no
     /// FP32 checkpoint needed. The tokenizer is read from the file's folder
@@ -89,14 +44,8 @@ struct Cli {
     /// With --model-file: check the digest of every tensor first.
     #[arg(long, global = true)]
     verify_model_file: bool,
-    /// Prefill exp: `fast` (the default for `run`; token-identical on
-    /// calibration) or `exact` (the platform expf, which `trace` always uses).
-    #[arg(long, value_enum, hide = true, global = true)]
-    exp: Option<ExpMode>,
-    /// Experiment knobs as `key=value` (`prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`); repeatable.
-    #[arg(long = "tune", value_name = "KEY=VALUE", hide = true, global = true)]
-    tune: Vec<String>,
+    #[command(flatten)]
+    runner: RunnerArgs,
     #[command(subcommand)]
     command: Command,
 }
@@ -152,10 +101,11 @@ enum Command {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let start = Instant::now();
+    let batch_size = cli.runner.batch_size.unwrap_or(1);
     // Exact recognition uses the split FP32 cache (bit-identical to compact,
     // about 7% faster decode); traces and batches keep the reference loader.
     let split_exact = matches!(cli.command, Command::Run { .. } | Command::Doctor { .. })
-        && cli.batch_size == 1
+        && batch_size == 1
         && cli.cache_layout.is_none_or(|layout| layout == CacheLayout::Compact)
         && cli.weight_layout == WeightLayout::Unpacked;
     let mode = match (&cli.command, cli.mode) {
@@ -187,38 +137,23 @@ fn main() -> Result<()> {
         ..ModelRequest::default()
     };
     // Traces stay bit-comparable with the recorded references: the reference
-    // configuration (platform exp, full head, no speculation). Recognition
-    // uses the automatic one, with the flags above layered on top.
+    // configuration (platform exp, full head, no speculation) on every
+    // logical CPU. Recognition uses the automatic one. The flags layer on top.
     let base = if matches!(cli.command, Command::Trace { .. }) {
-        RunnerConfig::reference()
+        RunnerConfig {
+            threads: 0,
+            ..RunnerConfig::reference()
+        }
     } else {
         RunnerConfig::default()
     };
     let config = RunnerConfig {
-        threads: cli.threads.unwrap_or(0),
-        backend: cli.backend,
-        batch_size: cli.batch_size,
         cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
         weight_layout: cli.weight_layout,
-        exp: cli.exp.unwrap_or(base.exp),
-        tuning: Tuning::from_pairs(&cli.tune)?,
-        head: cli.head.unwrap_or(base.head),
-        speculation: (cli.speculate > 0).then_some(Speculation {
-            max_draft: cli.speculate,
-            min_match: cli.speculate_min_match,
-        }),
-        document_drafts: cli.document_drafts,
-        repetition_stop: cli.stop_repetition,
-        decode_threads: cli.decode_threads.unwrap_or(base.decode_threads),
+        ..cli.runner.apply(base)?
     };
     if let Command::Doctor { text, load, probe } = &cli.command {
-        let report = falcon_ocr::auto::doctor(&request, &config, *load, *probe)?;
-        if *text {
-            print!("{report}");
-        } else {
-            println!("{}", serde_json::to_string_pretty(&report)?);
-        }
-        return Ok(());
+        return print_doctor(&request, &config, *text, *load, *probe);
     }
     let plan = resolve_weights(&request)?;
     if matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }) {

@@ -4,6 +4,7 @@
 //! consult the reference reports before treating a backend as GPU-equivalent.
 pub mod auto;
 mod buf;
+pub mod cli;
 pub mod config;
 pub mod cpu;
 mod draft;

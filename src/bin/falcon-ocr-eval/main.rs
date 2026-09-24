@@ -2,8 +2,10 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig,
-    Speculation, Tuning, WeightLayout, quant::Profile, trace::TensorTrace,
+    GenerationOptions, Model, Runner, RunnerConfig,
+    cli::{RunnerArgs, print_doctor},
+    quant::Profile,
+    trace::TensorTrace,
 };
 use telemetry::Telemetry;
 
@@ -26,12 +28,6 @@ struct Cli {
     model_file: Option<PathBuf>,
     #[arg(long, value_enum, default_value = "reference", global = true)]
     profile: Profile,
-    #[arg(long, value_enum, default_value = "auto", global = true)]
-    backend: Backend,
-    #[arg(long, default_value_t = 16, global = true)]
-    threads: usize,
-    #[arg(long, default_value_t = 1, global = true)]
-    batch_size: usize,
     /// Custom W8G64 safetensors overlay, made by attempt3/convert_w8.py.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
@@ -44,38 +40,10 @@ struct Cli {
     /// serves BF16); arithmetic stays FP32.
     #[arg(long, global = true)]
     weights_bf16: bool,
-    /// FP32 greedy head evaluation; `screened` is exact (same tokens as `full`).
-    #[arg(long, value_enum, default_value = "full", global = true)]
-    head: HeadMode,
-    /// Stop a page once it repeats a cycle of at most 128 tokens for at
-    /// least max(256, 4 * cycle) tokens (finish_reason "repetition").
-    #[arg(long, global = true)]
-    stop_repetition: bool,
-    /// Decode threads: a number, `pool` (default: as many as --threads) or
-    /// `auto`. Decode is memory-bound; on SMT CPUs one thread per physical
-    /// core is usually fastest, while prefill gains from every logical CPU.
-    #[arg(long, global = true)]
-    decode_threads: Option<DecodeThreads>,
-    /// Speculative decoding: verify up to N tokens drafted from earlier output
-    /// in one step (0 = off, at most 7). Every verified token is the model's own
-    /// greedy choice, so outputs are unchanged. Needs the split cache
-    /// (near-exact, fast and attempt profiles); single pages only.
-    #[arg(long, default_value_t = 0, global = true)]
-    speculate: usize,
-    /// Minimum n-gram match in the earlier output for a draft.
-    #[arg(long, default_value_t = 2, global = true)]
-    speculate_min_match: usize,
-    /// Cross-page drafts: the images of one bench sample are one document.
-    #[arg(long, global = true)]
-    document_drafts: bool,
-    /// Prefill exp: `exact` (the platform expf, default) or `fast` (the
-    /// portable polynomial the `falcon-ocr run` command uses).
-    #[arg(long, value_enum, default_value = "exact", global = true)]
-    exp: ExpMode,
-    /// Experiment knobs as `key=value` (`prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`); repeatable.
-    #[arg(long = "tune", value_name = "KEY=VALUE", global = true)]
-    tune: Vec<String>,
+    /// The runner flags, over the reference configuration (16 threads, full
+    /// head, exact exp, pool-sized decode team, no speculation).
+    #[command(flatten)]
+    runner: RunnerArgs,
     #[command(subcommand)]
     command: Command,
 }
@@ -376,8 +344,6 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<()> {
 }
 fn main() -> Result<()> {
     let args = Cli::parse();
-    ensure!((1..=8).contains(&args.batch_size), "attempt batch_size must be 1..=8");
-    ensure!(args.threads > 0, "supply an explicit positive thread budget");
     let mut hardware = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
         "logical_cpus_visible":std::thread::available_parallelism().map(|n|n.get()).unwrap_or(1),
         "processor_identifier":std::env::var("PROCESSOR_IDENTIFIER").ok(),
@@ -389,26 +355,12 @@ fn main() -> Result<()> {
         hardware["avx512f"] = std::is_x86_feature_detected!("avx512f").into();
         hardware["avx512bf16"] = std::is_x86_feature_detected!("avx512bf16").into();
     }
-    let config = RunnerConfig {
-        threads: args.threads,
-        batch_size: args.batch_size,
-        backend: args.backend,
-        cache_layout: CacheLayout::Compact,
-        weight_layout: WeightLayout::Unpacked,
-        exp: args.exp,
-        tuning: Tuning::from_pairs(&args.tune)?,
-        head: args.head,
-        speculation: (args.speculate > 0).then_some(Speculation {
-            max_draft: args.speculate,
-            min_match: args.speculate_min_match,
-        }),
-        document_drafts: args.document_drafts,
-        repetition_stop: args.stop_repetition,
-        decode_threads: args.decode_threads.unwrap_or(DecodeThreads::Pool),
-    };
+    let config = args.runner.apply(RunnerConfig::reference())?;
+    ensure!((1..=8).contains(&config.batch_size), "batch_size must be 1..=8");
+    ensure!(config.threads > 0, "supply an explicit positive thread budget");
     if matches!(args.command, Command::Doctor) {
         // The same report as `falcon-ocr doctor`, for this profile.
-        let report = falcon_ocr::auto::doctor(
+        return print_doctor(
             &falcon_ocr::auto::ModelRequest {
                 model_dir: &args.model,
                 model_file: args.model_file.as_deref(),
@@ -421,12 +373,8 @@ fn main() -> Result<()> {
             &config,
             false,
             false,
-        )?;
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&serde_json::json!({"hardware": hardware, "doctor": report}))?
+            false,
         );
-        return Ok(());
     }
     // Fail invalid output/options before model allocation and any recognition.
     match &args.command {
@@ -496,7 +444,7 @@ fn main() -> Result<()> {
     });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.memory_report();
-    let runner = Runner::new(model.clone(), &args.model, config)?;
+    let runner = Runner::new(model.clone(), &args.model, config.clone())?;
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
         args.profile.label(),
@@ -537,11 +485,11 @@ fn main() -> Result<()> {
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-report-v1","profile":args.profile,
                 "quality_qualified":false,"model_revision":falcon_ocr::config::MODEL_REVISION,
                 "weights_sha256":model.weights_sha256(),"binary_sha256":digest(&std::env::current_exe()?)?,
-                "hardware":hardware,"threads":args.threads,"backend":args.backend,"batch_size":args.batch_size,
-                "head":args.head,"screened_head_bytes":model.screened_head_bytes(),
-                "stop_repetition":args.stop_repetition,"decode_threads":args.decode_threads.map(|d| d.to_string()),
+                "hardware":hardware,"threads":config.threads,"backend":config.backend,"batch_size":config.batch_size,
+                "head":config.head,"screened_head_bytes":model.screened_head_bytes(),
+                "stop_repetition":config.repetition_stop,"decode_threads":config.decode_threads.to_string(),
                 "decode_threads_chosen":runner.decode_threads_chosen(),
-                "speculate":args.speculate,"speculate_min_match":args.speculate_min_match,
+                "speculate":config.speculation.map_or(0, |s| s.max_draft),"speculate_min_match":config.speculation.map_or(2, |s| s.min_match),
                 "schedule":"fixed cohorts; layer-major decode; opt-in completed-cache retirement; no refill",
                 "options":options,"inputs":inputs,"warmup":warmup,"load_and_import_ms":load_ms,
                 "memory_policy":memory,"process_memory":telemetry::process_memory(),"samples":records,
@@ -707,8 +655,8 @@ fn main() -> Result<()> {
             }
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":args.profile,
                 "reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
-                "exp_mode":format!("{:?}", args.exp),
-                "binary_sha256":digest(&std::env::current_exe()?)?,"threads":args.threads,"backend":args.backend,
+                "exp_mode":format!("{:?}", config.exp),
+                "binary_sha256":digest(&std::env::current_exe()?)?,"threads":config.threads,"backend":config.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
                 "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,
                 "weights_bf16":args.weights_bf16,
