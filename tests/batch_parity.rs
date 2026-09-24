@@ -24,7 +24,7 @@ fn mixed_batches_preserve_tokens_order_stops_and_limits() {
         RunnerConfig {
             threads: 4,
             batch_size: 1,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();
@@ -33,9 +33,7 @@ fn mixed_batches_preserve_tokens_order_stops_and_limits() {
         .map(|image| sequential.recognize(image, &options).unwrap())
         .collect::<Vec<_>>();
     assert!(
-        expected
-            .iter()
-            .any(|r| r.output_tokens != expected[0].output_tokens),
+        expected.iter().any(|r| r.output_tokens != expected[0].output_tokens),
         "fixture must exercise mixed stop lengths"
     );
     for size in [2, 4, 8] {
@@ -46,27 +44,19 @@ fn mixed_batches_preserve_tokens_order_stops_and_limits() {
                 threads: 4,
                 batch_size: size,
                 backend: Backend::Auto,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         )
         .unwrap();
         // A partial final chunk also exercises output indexing and order.
-        let input = (0..7)
-            .map(|i| images[i % images.len()].clone())
-            .collect::<Vec<_>>();
+        let input = (0..7).map(|i| images[i % images.len()].clone()).collect::<Vec<_>>();
         let actual = runner.recognize_batch(&input, &options).unwrap();
         assert_eq!(actual.len(), input.len());
         for (i, result) in actual.iter().enumerate() {
             let reference = &expected[i % expected.len()];
-            assert_eq!(
-                result.token_ids, reference.token_ids,
-                "batch {size}, request {i}"
-            );
+            assert_eq!(result.token_ids, reference.token_ids, "batch {size}, request {i}");
             assert_eq!(result.finish_reason, reference.finish_reason);
-            assert_eq!(
-                (result.width, result.height),
-                (reference.width, reference.height)
-            );
+            assert_eq!((result.width, result.height), (reference.width, reference.height));
             let projection = result.timings.image_projection_ms.unwrap();
             let transformer = result.timings.transformer_prefill_ms.unwrap();
             assert!(projection.is_finite() && projection >= 0.0);
@@ -84,10 +74,7 @@ fn mixed_batches_preserve_tokens_order_stops_and_limits() {
             .unwrap();
         for (i, result) in limited.iter().enumerate() {
             let expected = &expected[i % expected.len()];
-            assert_eq!(
-                result.token_ids,
-                &expected.token_ids[..3.min(expected.token_ids.len())]
-            );
+            assert_eq!(result.token_ids, &expected.token_ids[..3.min(expected.token_ids.len())]);
             assert!(result.output_tokens <= 3);
         }
     }

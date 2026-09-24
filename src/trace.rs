@@ -84,8 +84,7 @@ impl Trace for PrefixedTrace<'_> {
         self.inner.head_screen(candidates, fallback);
     }
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
-        self.inner
-            .tensor(&format!("{}.{name}", self.prefix), shape, data)
+        self.inner.tensor(&format!("{}.{name}", self.prefix), shape, data)
     }
 }
 #[derive(Default)]
@@ -94,8 +93,7 @@ pub struct TensorTrace {
 }
 impl Trace for TensorTrace {
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
-        self.tensors
-            .insert(name.into(), (shape.to_vec(), data.to_vec()));
+        self.tensors.insert(name.into(), (shape.to_vec(), data.to_vec()));
         Ok(())
     }
 }

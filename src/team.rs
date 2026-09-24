@@ -88,9 +88,7 @@ impl Team {
                     .spawn(move || worker(&shared, index))?,
             );
         }
-        let _ = shared
-            .threads
-            .set(workers.iter().map(|w| w.thread().clone()).collect());
+        let _ = shared.threads.set(workers.iter().map(|w| w.thread().clone()).collect());
         Ok(Self {
             shared,
             workers,
@@ -108,10 +106,7 @@ impl Team {
     pub(crate) fn enter(&self) -> Option<Entered<'_>> {
         let busy = self.busy.try_lock().ok()?;
         let previous = ACTIVE.with(|active| active.replace(self as *const Team));
-        Some(Entered {
-            previous,
-            _busy: busy,
-        })
+        Some(Entered { previous, _busy: busy })
     }
 
     fn run(&self, tasks: usize, task: &(dyn Fn(usize) + Sync)) {
@@ -122,16 +117,13 @@ impl Team {
         let shared = &*self.shared;
         // SAFETY: only the lifetime is erased; `run` does not return until
         // every worker has finished with `job` (pending == 0).
-        let task_static: &'static (dyn Fn(usize) + Sync) = unsafe {
-            std::mem::transmute::<&(dyn Fn(usize) + Sync), &'static (dyn Fn(usize) + Sync)>(task)
-        };
+        let task_static: &'static (dyn Fn(usize) + Sync) =
+            unsafe { std::mem::transmute::<&(dyn Fn(usize) + Sync), &'static (dyn Fn(usize) + Sync)>(task) };
         let job = Job {
             task: task_static as *const (dyn Fn(usize) + Sync),
             tasks,
         };
-        shared
-            .job
-            .store(&job as *const Job as *mut Job, Ordering::Relaxed);
+        shared.job.store(&job as *const Job as *mut Job, Ordering::Relaxed);
         shared.next.store(0, Ordering::Relaxed);
         shared.pending.store(self.workers.len(), Ordering::Relaxed);
         // SeqCst pairs with the workers' sleeping flag protocol below.
@@ -196,11 +188,9 @@ fn worker(shared: &Shared, index: usize) {
             }
             std::hint::spin_loop();
             spins = spins.wrapping_add(1);
-            if spins % 1024 == 0 && idle_since.elapsed() > IDLE_SPIN {
+            if spins.is_multiple_of(1024) && idle_since.elapsed() > IDLE_SPIN {
                 shared.sleeping[index].store(true, Ordering::SeqCst);
-                if shared.epoch.load(Ordering::SeqCst) == seen
-                    && !shared.stop.load(Ordering::SeqCst)
-                {
+                if shared.epoch.load(Ordering::SeqCst) == seen && !shared.stop.load(Ordering::SeqCst) {
                     // Timeout is only a safety net; the publisher unparks.
                     std::thread::park_timeout(Duration::from_millis(100));
                 }
@@ -271,11 +261,7 @@ impl<T> SharedMut<T> {
 /// `granule` and at least `min_block`.
 pub(crate) fn block_size(items: usize, granule: usize, min_block: usize) -> usize {
     let target = 2 * threads();
-    items
-        .div_ceil(target)
-        .next_multiple_of(granule)
-        .max(min_block)
-        .max(1)
+    items.div_ceil(target).next_multiple_of(granule).max(min_block).max(1)
 }
 
 #[cfg(test)]

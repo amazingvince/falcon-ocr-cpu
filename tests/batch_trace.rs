@@ -1,9 +1,7 @@
 //! Batch tracing must preserve every request, including singleton chunks.
 use std::{collections::BTreeMap, sync::Arc};
 
-use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, trace::Trace,
-};
+use falcon_ocr::{Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, trace::Trace};
 use image::{Rgb, RgbImage, imageops};
 
 #[derive(Default)]
@@ -15,9 +13,7 @@ struct UniqueNames {
 impl Trace for UniqueNames {
     fn tensor(&mut self, name: &str, shape: &[usize], _: &[f32]) -> anyhow::Result<()> {
         assert!(
-            self.tensors
-                .insert(name.to_owned(), shape.to_vec())
-                .is_none(),
+            self.tensors.insert(name.to_owned(), shape.to_vec()).is_none(),
             "duplicate tensor name: {name}"
         );
         Ok(())
@@ -54,7 +50,7 @@ fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
                 batch_size,
                 backend: Backend::Avx2,
                 cache_layout: CacheLayout::Compact,
-                ..Default::default()
+                ..RunnerConfig::reference()
             },
         )
         .unwrap()
@@ -65,12 +61,7 @@ fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
         .unwrap();
     assert!(single_trace.tensors.contains_key("prefill.embedding"));
     assert!(single_trace.tensors.contains_key("decode.0.embedding"));
-    assert!(
-        !single_trace
-            .tensors
-            .keys()
-            .any(|key| key.starts_with("request."))
-    );
+    assert!(!single_trace.tensors.keys().any(|key| key.starts_with("request.")));
     assert_eq!((single_trace.starts, single_trace.ends), (1, 1));
 
     for batch_size in [1, 2] {
@@ -86,10 +77,7 @@ fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
             );
         }
         let expected_chunks = images.len().div_ceil(batch_size);
-        assert_eq!(
-            (trace.starts, trace.ends),
-            (expected_chunks, expected_chunks)
-        );
+        assert_eq!((trace.starts, trace.ends), (expected_chunks, expected_chunks));
         assert!(!trace.tensors.contains_key("prefill.embedding"));
         assert!(trace.tensors.contains_key("request.2.decode.0.embedding"));
         if batch_size == 1 {
