@@ -14,12 +14,57 @@ use super::{
 use rayon::prelude::*;
 use std::arch::x86_64::*;
 
+/// Time spent converting K/V to BF16 (probe; FALCON_OCR_PREFILL_PROFILE=1).
+pub(in crate::kernels) static CONVERT_NS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 /// Pairs of BF16 values per 64-wide row.
 const PAIRS: usize = HEAD_DIM / 2;
 
-/// Converted keys (`[head][total][64]` BF16) and value pairs
-/// (`[kv_head][total / 2][64]`, two keys per `u32`), reused across layers.
-static SCRATCH: std::sync::Mutex<(Vec<u16>, Vec<u32>)> = std::sync::Mutex::new((Vec::new(), Vec::new()));
+/// Converted keys (`[head][total][32]`, two dimensions per `u32`) and value
+/// pairs (`[kv_head][total / 2][64]`, two keys per `u32`) when the caller
+/// has not converted them, reused across calls.
+static SCRATCH: std::sync::Mutex<(Vec<u32>, Vec<u32>)> = std::sync::Mutex::new((Vec::new(), Vec::new()));
+
+/// Writes prefill row `row` of `total` in the BF16 layouts above: its keys
+/// (`k`, `[heads][64]`) into `keys` and its half of each value pair (`v`,
+/// `[kv_heads][64]`) into `values`, the same conversion as the kernel's own.
+/// Rows may be written concurrently (each writes only its own 16-bit
+/// halves). With an odd `total`, the caller zeroes the last pair's odd half.
+///
+/// # Safety
+/// AVX-512F, AVX512-BF16 and AVX512-BW must be available; `keys` holds
+/// `heads * total * 32` and `values` `kv_heads * total.div_ceil(2) * 64`
+/// elements.
+#[target_feature(enable = "avx512f,avx512bf16,avx512bw")]
+#[allow(clippy::too_many_arguments)]
+pub(crate) unsafe fn store_row(
+    k: &[f32],
+    v: &[f32],
+    row: usize,
+    total: usize,
+    heads: usize,
+    kv_heads: usize,
+    keys: *mut u32,
+    values: *mut u32,
+) {
+    debug_assert!(k.len() == heads * HEAD_DIM && v.len() == kv_heads * HEAD_DIM && row < total);
+    unsafe {
+        for h in 0..heads {
+            to_bf16(k.as_ptr().add(h * HEAD_DIM), keys.add((h * total + row) * PAIRS).cast());
+        }
+        let pairs = total.div_ceil(2);
+        let odd = row % 2 == 1;
+        let mask: __mmask32 = if odd { 0xAAAA_AAAA } else { 0x5555_5555 };
+        for g in 0..kv_heads {
+            let dst = values.add((g * pairs + row / 2) * HEAD_DIM);
+            for c in 0..HEAD_DIM / 16 {
+                let lanes = bf16_lanes(_mm512_loadu_ps(v.as_ptr().add(g * HEAD_DIM + 16 * c)));
+                let lanes = if odd { _mm512_slli_epi32::<16>(lanes) } else { lanes };
+                _mm512_mask_storeu_epi16(dst.add(16 * c).cast(), mask, lanes);
+            }
+        }
+    }
+}
 
 /// Pure prefill with the parent's shapes (`k` is `[total][n_heads][64]`,
 /// `v` is `[total][n_kv_heads][64]`, `q`/`output` are
@@ -41,6 +86,7 @@ pub(in crate::kernels) unsafe fn compact_prefill(
     image_end: usize,
     sinks: &[f32],
     output: &mut [f32],
+    converted: Option<(&[u32], &[u32])>,
 ) {
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
@@ -52,37 +98,49 @@ pub(in crate::kernels) unsafe fn compact_prefill(
     };
     let total = k.len() / shape.query_width;
     let pairs = total.div_ceil(2);
+    let convert_start = std::time::Instant::now();
     let mut scratch = SCRATCH.lock().unwrap_or_else(|e| e.into_inner());
-    let (keys_bf16, value_pairs) = &mut *scratch;
-    keys_bf16.resize(n_heads * total * HEAD_DIM, 0);
-    value_pairs.resize(n_kv_heads * pairs * HEAD_DIM, 0);
-    keys_bf16
-        .par_chunks_mut(total * HEAD_DIM)
-        .enumerate()
-        .for_each(|(head, dst)| {
-            for (t, row) in dst.chunks_exact_mut(HEAD_DIM).enumerate() {
-                let src = &k[t * shape.query_width + head * HEAD_DIM..][..HEAD_DIM];
-                // SAFETY: AVX512-BF16 checked by the caller.
-                unsafe { to_bf16(src.as_ptr(), row.as_mut_ptr()) };
-            }
-        });
-    value_pairs
-        .par_chunks_mut(pairs * HEAD_DIM)
-        .enumerate()
-        .for_each(|(kv_head, dst)| {
-            for (p, row) in dst.chunks_exact_mut(HEAD_DIM).enumerate() {
-                let even = v[2 * p * shape.kv_width + kv_head * HEAD_DIM..].as_ptr();
-                let odd = (2 * p + 1 < total)
-                    .then(|| v[(2 * p + 1) * shape.kv_width + kv_head * HEAD_DIM..].as_ptr());
-                // SAFETY: as above; both rows hold 64 values.
-                unsafe { pair_rows::<4>(even, odd, row.as_mut_ptr()) };
-            }
-        });
+    let (keys_bf16, value_pairs): (&[u32], &[u32]) = match converted {
+        Some((keys, values)) => {
+            assert!(keys.len() == n_heads * total * PAIRS && values.len() == n_kv_heads * pairs * HEAD_DIM);
+            (keys, values)
+        }
+        None => {
+            let (keys_bf16, value_pairs) = &mut *scratch;
+            keys_bf16.resize(n_heads * total * PAIRS, 0);
+            value_pairs.resize(n_kv_heads * pairs * HEAD_DIM, 0);
+            keys_bf16
+                .par_chunks_mut(total * PAIRS)
+                .enumerate()
+                .for_each(|(head, dst)| {
+                    for (t, row) in dst.chunks_exact_mut(PAIRS).enumerate() {
+                        let src = &k[t * shape.query_width + head * HEAD_DIM..][..HEAD_DIM];
+                        // SAFETY: AVX512-BF16 checked by the caller.
+                        unsafe { to_bf16(src.as_ptr(), row.as_mut_ptr().cast()) };
+                    }
+                });
+            value_pairs
+                .par_chunks_mut(pairs * HEAD_DIM)
+                .enumerate()
+                .for_each(|(kv_head, dst)| {
+                    for (p, row) in dst.chunks_exact_mut(HEAD_DIM).enumerate() {
+                        let even = v[2 * p * shape.kv_width + kv_head * HEAD_DIM..].as_ptr();
+                        let odd = (2 * p + 1 < total)
+                            .then(|| v[(2 * p + 1) * shape.kv_width + kv_head * HEAD_DIM..].as_ptr());
+                        // SAFETY: as above; both rows hold 64 values.
+                        unsafe { pair_rows::<4>(even, odd, row.as_mut_ptr()) };
+                    }
+                });
+            (&keys_bf16[..], &value_pairs[..])
+        }
+    };
+    if profile_enabled() {
+        CONVERT_NS.fetch_add(convert_start.elapsed().as_nanos() as u64, std::sync::atomic::Ordering::Relaxed);
+    }
     let fast = super::super::exp_mode() == super::super::ExpMode::Fast;
     let repeat = n_heads / n_kv_heads;
     let tiles = query_len.div_ceil(QUERY_TILE);
     let out = OutputPtr(output.as_mut_ptr());
-    let (keys_bf16, value_pairs) = (&keys_bf16[..], &value_pairs[..]);
     for kv_head in 0..n_kv_heads {
         (0..tiles * repeat).into_par_iter().for_each(|task| {
             let (tile, pair) = (task / repeat, task % repeat);
@@ -92,7 +150,7 @@ pub(in crate::kernels) unsafe fn compact_prefill(
                 q,
                 k,
                 v,
-                keys: &keys_bf16[head * total * HEAD_DIM..(head + 1) * total * HEAD_DIM],
+                keys: &keys_bf16[head * total * PAIRS..(head + 1) * total * PAIRS],
                 values: &value_pairs[kv_head * pairs * HEAD_DIM..(kv_head + 1) * pairs * HEAD_DIM],
             };
             // SAFETY: features and shapes checked by the caller; each task
@@ -112,8 +170,8 @@ struct Operands<'a> {
     q: &'a [f32],
     k: &'a [f32],
     v: &'a [f32],
-    /// This head's keys, `[total][64]` BF16.
-    keys: &'a [u16],
+    /// This head's keys, `[total][32]` BF16 pairs.
+    keys: &'a [u32],
     /// This KV head's value pairs, `[total / 2][64]`.
     values: &'a [u32],
 }
@@ -249,7 +307,7 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
                 qk_lanes(
                     &query_pairs,
                     queries,
-                    operands.keys.as_ptr().add(key_start * HEAD_DIM).cast(),
+                    operands.keys.as_ptr().add(key_start * PAIRS),
                     keys,
                     shape.scale,
                     &mut st,
@@ -629,11 +687,11 @@ mod tests {
             };
             let total = query_len;
             let pairs = total.div_ceil(2);
-            let mut keys_bf16 = vec![0_u16; heads * total * 64];
+            let mut keys_bf16 = vec![0_u32; heads * total * 32];
             let mut value_pairs = vec![0_u32; kv_heads * pairs * 64];
             for head in 0..heads {
                 for t in 0..total {
-                    unsafe { to_bf16(k[(t * heads + head) * 64..].as_ptr(), keys_bf16[(head * total + t) * 64..].as_mut_ptr()) };
+                    unsafe { to_bf16(k[(t * heads + head) * 64..].as_ptr(), keys_bf16[(head * total + t) * 32..].as_mut_ptr().cast()) };
                 }
             }
             for kv_head in 0..kv_heads {
@@ -651,7 +709,7 @@ mod tests {
                     q: &q,
                     k: &k,
                     v: &v,
-                    keys: &keys_bf16[head * total * 64..(head + 1) * total * 64],
+                    keys: &keys_bf16[head * total * 32..(head + 1) * total * 32],
                     values: &value_pairs[kv_head * pairs * 64..(kv_head + 1) * pairs * 64],
                 };
                 for tile in 0..query_len.div_ceil(QUERY_TILE) {
@@ -686,6 +744,66 @@ mod tests {
         }
     }
 
+    /// `store_row` (rows in any order) writes exactly the layouts the kernel
+    /// converts itself, so both paths give bitwise equal outputs.
+    #[test]
+    fn stored_rows_match_the_kernel_conversion() {
+        if !available() || !std::is_x86_feature_detected!("avx512bw") {
+            return;
+        }
+        for (query_len, image_start, image_end) in [(70, 3, 65), (95, 10, 90), (129, 1, 128)] {
+            let (heads, kv_heads) = (16, 8);
+            let q = values(query_len * heads * 64, 17 + query_len as u32, 3.0);
+            let k = values(query_len * heads * 64, 19 + query_len as u32, 3.0);
+            let v = values(query_len * kv_heads * 64, 23 + query_len as u32, 3.0);
+            let sinks = values(heads, 29, 2.0);
+            let pairs = query_len.div_ceil(2);
+            let mut keys = vec![u32::MAX; heads * query_len * 32];
+            let mut value_pairs = vec![u32::MAX; kv_heads * pairs * 64];
+            if query_len % 2 == 1 {
+                for g in 0..kv_heads {
+                    value_pairs[(g * pairs + pairs - 1) * 64..(g * pairs + pairs) * 64].fill(0);
+                }
+            }
+            for row in (0..query_len).rev() {
+                unsafe {
+                    store_row(
+                        &k[row * heads * 64..(row + 1) * heads * 64],
+                        &v[row * kv_heads * 64..(row + 1) * kv_heads * 64],
+                        row,
+                        query_len,
+                        heads,
+                        kv_heads,
+                        keys.as_mut_ptr(),
+                        value_pairs.as_mut_ptr(),
+                    )
+                };
+            }
+            let mut own = vec![f32::NAN; q.len()];
+            let mut stored = vec![f32::NAN; q.len()];
+            unsafe {
+                compact_prefill(&q, &k, &v, query_len, heads, kv_heads, 0, image_start, image_end, &sinks, &mut own, None);
+                compact_prefill(
+                    &q,
+                    &k,
+                    &v,
+                    query_len,
+                    heads,
+                    kv_heads,
+                    0,
+                    image_start,
+                    image_end,
+                    &sinks,
+                    &mut stored,
+                    Some((&keys, &value_pairs)),
+                );
+            }
+            for (i, (a, b)) in own.iter().zip(&stored).enumerate() {
+                assert_eq!(a.to_bits(), b.to_bits(), "query_len {query_len} index {i}");
+            }
+        }
+    }
+
     fn round(x: f32) -> f64 {
         half::bf16::from_f32(x).to_f64()
     }
@@ -707,7 +825,7 @@ mod tests {
             let sinks = values(heads, 29, 2.0);
             let mut out = vec![f32::NAN; q.len()];
             pool.install(|| unsafe {
-                compact_prefill(&q, &k, &v, query_len, heads, kv_heads, 0, image_start, image_end, &sinks, &mut out)
+                compact_prefill(&q, &k, &v, query_len, heads, kv_heads, 0, image_start, image_end, &sinks, &mut out, None)
             });
             let mut worst = 0.0_f64;
             for head in 0..heads {

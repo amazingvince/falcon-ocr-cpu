@@ -685,6 +685,8 @@ impl Model {
         self.forward_layers(h, positions, positions_hw, session, trace, phase)?;
         let c = &self.config;
         let rows = positions.len();
+        // Decode steps only (prefill reports its own phases).
+        let _head_clock = if rows == 1 { HeadClock::new(rows) } else { None };
         let simd = session.simd;
         let work = &mut session.workspace;
         // Generation needs only the final token's vocabulary projection.
@@ -797,6 +799,7 @@ impl Model {
                     .iter()
                     .all(|w| quantized(w).bits() == 8)
             });
+        let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             if panel {
                 row_scales(h, c.dim, &mut work.row_scale);
@@ -831,8 +834,16 @@ impl Model {
             let fused = rows >= PARALLEL_ROWS
                 && !trace.enabled()
                 && offset + rows <= session.layers[i].compact_prefix_len().unwrap_or(0);
+            // A whole prefix in one call also gets its BF16 attention copies
+            // from the same pass.
+            stored_bf16 = fused
+                && bf16_attention
+                && offset == 0
+                && session.layers[i].compact_prefix_len() == Some(rows)
+                && kernels::prefill_bf16_rows_available();
             if fused {
-                fused_prefix_rows(c, rows, &work.qkv, &work.rope, &mut work.q, &mut session.layers[i], simd);
+                let bf16 = stored_bf16.then_some((&mut work.bf16_keys, &mut work.bf16_values));
+                fused_prefix_rows(c, rows, &work.qkv, &work.rope, &mut work.q, &mut session.layers[i], bf16, simd);
                 clock.mark(2);
             } else {
             // Normalize each original K head before GQA expansion. Spatial rotations
@@ -938,6 +949,7 @@ impl Model {
                 &mut work.attn,
                 simd,
                 bf16_attention,
+                stored_bf16.then_some((&work.bf16_keys[..], &work.bf16_values[..])),
             );
             clock.mark(4);
             if trace.enabled() {
@@ -1054,6 +1066,7 @@ impl Model {
         );
         let text = vec![[f32::NAN; 2]; rows];
         self.forward_layers(h, positions, &text, session, &mut crate::trace::NoTrace, "")?;
+        let _head_clock = HeadClock::new(rows);
         let c = &self.config;
         let simd = session.simd;
         let work = &mut session.workspace;
@@ -1257,6 +1270,7 @@ impl Model {
                     &mut work.attn[range],
                     simd,
                     false,
+                    None,
                 );
             }
             if trace.enabled() {
@@ -1487,6 +1501,7 @@ impl LayerCache {
         output: &mut [f32],
         simd: kernels::Simd,
         bf16: bool,
+        converted: Option<(&[u32], &[u32])>,
     ) {
         match self {
             Self::Split(cache) => {
@@ -1538,6 +1553,7 @@ impl LayerCache {
                         image_end,
                         sinks,
                         output,
+                        converted,
                     )
                 {
                     return;
@@ -1776,6 +1792,7 @@ fn packed_digest<'a>(tensors: impl Iterator<Item = (&'a str, &'a [u8])>) -> Stri
 /// separate split, `rms_norm`, rotation and `LayerCache::append` passes (the
 /// AVX2 row keeps `rms_norm_row`'s reduction tree and the rotation's
 /// products, so both row kernels are bitwise equal).
+#[allow(clippy::too_many_arguments)]
 fn fused_prefix_rows(
     c: &ModelConfig,
     rows: usize,
@@ -1783,6 +1800,7 @@ fn fused_prefix_rows(
     rope: &[[f32; 2]],
     q: &mut [f32],
     cache: &mut LayerCache,
+    bf16: Option<(&mut Vec<u32>, &mut Vec<u32>)>,
     simd: kernels::Simd,
 ) {
     let LayerCache::Compact { prefix_k, v: values, .. } = cache else {
@@ -1806,6 +1824,23 @@ fn fused_prefix_rows(
         let _ = simd;
         false
     };
+    // BF16 attention copies (`kernels::store_prefill_bf16_row`): keys
+    // `[head][rows][32]`, value pairs `[kv_head][rows / 2][64]`.
+    let pairs = rows.div_ceil(2);
+    let bf16 = bf16.map(|(keys, values)| {
+        keys.resize(c.n_heads * rows * (c.head_dim / 2), 0);
+        values.resize(c.n_kv_heads * pairs * c.head_dim, 0);
+        if rows % 2 == 1 {
+            // The last pair's odd half has no row.
+            for g in 0..c.n_kv_heads {
+                values[(g * pairs + pairs - 1) * c.head_dim..(g * pairs + pairs) * c.head_dim].fill(0);
+            }
+        }
+        (
+            crate::team::SharedMut::new(&mut keys[..]),
+            crate::team::SharedMut::new(&mut values[..]),
+        )
+    });
     q[..rows * qdim]
         .par_chunks_mut(qdim)
         .enumerate()
@@ -1823,13 +1858,33 @@ fn fused_prefix_rows(
                 )
             };
             #[cfg(target_arch = "x86_64")]
-            if vector {
+            let done = vector && {
                 // SAFETY: AVX2/FMA detected above; head_dim is 64.
                 unsafe { fused_row_avx2(c, src, rope, q, k, v) };
-                return;
+                true
+            };
+            #[cfg(not(target_arch = "x86_64"))]
+            let done = false;
+            if !done {
+                let _ = vector;
+                fused_row(c, src, rope, q, k, v);
             }
-            let _ = vector;
-            fused_row(c, src, rope, q, k, v);
+            if let Some((keys, values)) = &bf16 {
+                // SAFETY: the caller checked `prefill_bf16_rows_available`;
+                // buffers sized above; each row writes only its own slots.
+                unsafe {
+                    kernels::store_prefill_bf16_row(
+                        k,
+                        v,
+                        row,
+                        rows,
+                        c.n_heads,
+                        c.n_kv_heads,
+                        keys.ptr(),
+                        values.ptr(),
+                    )
+                };
+            }
         });
     // SAFETY: every reserved slot of the new rows was written above.
     unsafe {
@@ -2160,6 +2215,10 @@ struct Workspace {
     head_rows: Vec<crate::head_screen::HeadScratch>,
     /// Per-row RMS-norm factors folded into prefill GEMMs.
     row_scale: Vec<f32>,
+    /// One layer's prefill keys and value pairs in the BF16 attention
+    /// layouts, written by the fused QKV pass.
+    bf16_keys: Vec<u32>,
+    bf16_values: Vec<u32>,
 }
 impl Workspace {
     fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
@@ -2286,9 +2345,33 @@ const PHASE_NAMES: [&str; PHASES] = [
     "w2+residual",
     "final_norm+head",
 ];
+/// Decode-step phase totals and step counts, by rows per step (1 = plain
+/// decode, 2..=8 = draft verification).
+type RowPhases = [([f64; PHASES], usize); crate::head_screen::MAX_ROWS + 1];
 thread_local! {
-    static DECODE_PHASES: std::cell::RefCell<([f64; PHASES], usize)> =
-        const { std::cell::RefCell::new(([0.0; PHASES], 0)) };
+    static DECODE_PHASES: std::cell::RefCell<RowPhases> =
+        const { std::cell::RefCell::new([([0.0; PHASES], 0); crate::head_screen::MAX_ROWS + 1]) };
+}
+/// Charges the output head (final norm, screen or full logits) of a decode
+/// step with `rows` rows to its `final_norm+head` phase when dropped.
+struct HeadClock {
+    rows: usize,
+    start: Instant,
+}
+impl HeadClock {
+    fn new(rows: usize) -> Option<Self> {
+        phases_enabled().then(|| Self { rows, start: Instant::now() })
+    }
+}
+impl Drop for HeadClock {
+    fn drop(&mut self) {
+        let ms = self.start.elapsed().as_secs_f64() * 1000.0;
+        DECODE_PHASES.with(|cell| {
+            if let Some(bucket) = cell.borrow_mut().get_mut(self.rows) {
+                bucket.0[PHASES - 1] += ms;
+            }
+        });
+    }
 }
 fn phases_enabled() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
@@ -2328,10 +2411,12 @@ impl Drop for PhaseClock {
         } else {
             DECODE_PHASES.with(|cell| {
                 let mut state = cell.borrow_mut();
-                for (total, value) in state.0.iter_mut().zip(&self.totals) {
-                    *total += value;
+                if let Some(bucket) = state.get_mut(self.rows) {
+                    for (total, value) in bucket.0.iter_mut().zip(&self.totals) {
+                        *total += value;
+                    }
+                    bucket.1 += 1;
                 }
-                state.1 += 1;
             });
         }
     }
@@ -2352,14 +2437,17 @@ pub(crate) fn report_decode_phases() {
     }
     DECODE_PHASES.with(|cell| {
         let mut state = cell.borrow_mut();
-        if state.1 > 0 {
+        for (rows, (totals, steps)) in state.iter().enumerate() {
+            if *steps == 0 {
+                continue;
+            }
+            let label = if rows == 1 { String::new() } else { format!(" ({rows} rows)") };
             eprintln!(
-                "decode phases per step over {} steps: {}",
-                state.1,
-                format_phases(&state.0, state.1)
+                "decode phases per step{label} over {steps} steps: {}",
+                format_phases(totals, *steps)
             );
         }
-        *state = ([0.0; PHASES], 0);
+        *state = [([0.0; PHASES], 0); crate::head_screen::MAX_ROWS + 1];
     });
 }
 

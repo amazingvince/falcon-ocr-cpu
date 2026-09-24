@@ -254,6 +254,10 @@ impl<T> SharedMut<T> {
     pub(crate) fn new(slice: &mut [T]) -> Self {
         Self(slice.as_mut_ptr())
     }
+    /// The base pointer, for writers of interleaved (non-contiguous) parts.
+    pub(crate) fn ptr(&self) -> *mut T {
+        self.0
+    }
     /// # Safety
     /// `start + len` must lie inside the original slice and no other task may
     /// access the range concurrently.

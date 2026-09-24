@@ -1369,10 +1369,77 @@ unsafe fn pair_native<R: RecordStore, T: RecordStore>(
     unsafe { pair::<crate::simd::Neon, R, T>(store, tail, span, part) }
 }
 
+/// Keys per sub-tile that [`pair_rows`] decodes once for all rows.
+const SUB: usize = 32;
+/// Decoded key layout in the sub-tile buffer: temporal half, then the two
+/// heads' spatial halves.
+const KEY_ROW: usize = 96;
+
+/// One record's decoded key halves into `dst` (`KEY_ROW` values).
+#[inline(always)]
+unsafe fn decode_key<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize, dst: *mut f32) {
+    unsafe {
+        for j in 0..4 {
+            S::store(dst.add(8 * j), store.load8::<S>(record, layout.temporal + 8 * j));
+            S::store(dst.add(32 + 8 * j), store.load8::<S>(record, layout.spatial[0] + 8 * j));
+            S::store(dst.add(64 + 8 * j), store.load8::<S>(record, layout.spatial[1] + 8 * j));
+        }
+    }
+}
+
+/// [`qk2`] on a decoded key (`decode_key`): the same FMA sequence and
+/// reduction per head.
+#[inline(always)]
+unsafe fn qk2_decoded<S: Isa>(key: *const f32, q0: &[f32], q1: &[f32]) -> (f32, f32) {
+    unsafe {
+        let mut a = [S::zero(); 4];
+        let mut b = [S::zero(); 4];
+        for j in 0..4 {
+            let t = S::load(key.add(8 * j));
+            a[j] = S::fma(S::load(q0.as_ptr().add(8 * j)), t, a[j]);
+            b[j] = S::fma(S::load(q1.as_ptr().add(8 * j)), t, b[j]);
+        }
+        for j in 0..4 {
+            a[j] = S::fma(S::load(q0.as_ptr().add(32 + 8 * j)), S::load(key.add(32 + 8 * j)), a[j]);
+            b[j] = S::fma(S::load(q1.as_ptr().add(32 + 8 * j)), S::load(key.add(64 + 8 * j)), b[j]);
+        }
+        (
+            S::sum(S::add(S::add(a[0], a[1]), S::add(a[2], a[3]))),
+            S::sum(S::add(S::add(b[0], b[1]), S::add(b[2], b[3]))),
+        )
+    }
+}
+
+/// One head's `pv2` updates over decoded values (`[keys][64]`) with the
+/// output held in registers, and the denominator in the same key order.
+#[inline(always)]
+unsafe fn pv_decoded<S: Isa>(values: *const f32, probabilities: &[f32], denominator: &mut f32, out: &mut [f32; 64]) {
+    unsafe {
+        let mut o = [S::zero(); 8];
+        for (c, o) in o.iter_mut().enumerate() {
+            *o = S::load(out.as_ptr().add(8 * c));
+        }
+        for (j, &p) in probabilities.iter().enumerate() {
+            *denominator += p;
+            let f = S::splat(p);
+            let v = values.add(j * 64);
+            for (c, o) in o.iter_mut().enumerate() {
+                *o = S::fma(f, S::load(v.add(8 * c)), *o);
+            }
+        }
+        for (c, o) in o.iter().enumerate() {
+            S::store(out.as_mut_ptr().add(8 * c), *o);
+        }
+    }
+}
+
 /// [`pair`] for several query rows of one group over spans that start at the
 /// same position and end at their own lengths (empty spans are skipped). Each
-/// row performs exactly [`pair`]'s operation sequence; the rows share every
-/// tile's record loads.
+/// row performs exactly [`pair`]'s operation sequence (per element: the same
+/// FMA chains in key order, reductions, softmax and denominators). The rows
+/// share the record decoding: each 32-key sub-tile's keys and values are
+/// decoded once into a small buffer, and each row then runs over it with its
+/// outputs in registers.
 #[inline(always)]
 unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
     store: &R,
@@ -1400,6 +1467,8 @@ unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
     };
     debug_assert!(spans.iter().filter(|s| live(s)).all(|s| s.start == start));
     let end = spans.iter().map(|s| s.end).max().unwrap_or(start);
+    let mut keys = [0.0_f32; SUB * KEY_ROW];
+    let mut values = [0.0_f32; SUB * 64];
     // SAFETY: records and tail offsets are within the shape-checked stores.
     unsafe {
         while start < end {
@@ -1411,22 +1480,26 @@ unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
             }
             let len = lens[..n].iter().copied().max().unwrap_or(0);
             let mut block_max = [[f32::NEG_INFINITY; 2]; MAX_ROWS];
-            for j in 0..len {
-                let key = start + j;
-                for r in 0..n {
-                    if j >= lens[r] {
-                        continue;
-                    }
-                    let span = &spans[r];
-                    let (s0, s1) = if key < prefix_len {
-                        qk2::<S, R>(store, PREFIX, first_record + key, span.q0, span.q1)
+            for sub in (0..len).step_by(SUB) {
+                let width = SUB.min(len - sub);
+                for j in 0..width {
+                    let key = start + sub + j;
+                    let dst = keys.as_mut_ptr().add(j * KEY_ROW);
+                    if key < prefix_len {
+                        decode_key::<S, R>(store, PREFIX, first_record + key, dst);
                     } else {
-                        qk2::<S, T>(tail, TAIL, tail_record(key), span.q0, span.q1)
-                    };
-                    logits[r][0][j] = s0 * scale;
-                    block_max[r][0] = block_max[r][0].max(logits[r][0][j]);
-                    logits[r][1][j] = s1 * scale;
-                    block_max[r][1] = block_max[r][1].max(logits[r][1][j]);
+                        decode_key::<S, T>(tail, TAIL, tail_record(key), dst);
+                    }
+                }
+                for r in 0..n {
+                    let span = &spans[r];
+                    for j in sub..lens[r].min(sub + width) {
+                        let (s0, s1) = qk2_decoded::<S>(keys.as_ptr().add((j - sub) * KEY_ROW), span.q0, span.q1);
+                        logits[r][0][j] = s0 * scale;
+                        block_max[r][0] = block_max[r][0].max(logits[r][0][j]);
+                        logits[r][1][j] = s1 * scale;
+                        block_max[r][1] = block_max[r][1].max(logits[r][1][j]);
+                    }
                 }
             }
             let mut new_max = [[0.0_f32; 2]; MAX_ROWS];
@@ -1451,23 +1524,32 @@ unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
                 S::exp_shifted(&mut l0[..lens[r]], new_max[r][0]);
                 S::exp_shifted(&mut l1[..lens[r]], new_max[r][1]);
             }
-            for j in 0..len {
-                let key = start + j;
-                let value = if key < prefix_len {
-                    record_value::<S, R>(store, PREFIX, first_record + key)
-                } else {
-                    record_value::<S, T>(tail, TAIL, tail_record(key))
-                };
+            for sub in (0..len).step_by(SUB) {
+                let width = SUB.min(len - sub);
+                for j in 0..width {
+                    let key = start + sub + j;
+                    let value = if key < prefix_len {
+                        record_value::<S, R>(store, PREFIX, first_record + key)
+                    } else {
+                        record_value::<S, T>(tail, TAIL, tail_record(key))
+                    };
+                    for (c, v) in value.into_iter().enumerate() {
+                        S::store(values.as_mut_ptr().add(j * 64 + 8 * c), v);
+                    }
+                }
                 for r in 0..n {
-                    if j >= lens[r] {
+                    let hi = lens[r].min(sub + width);
+                    if hi <= sub {
                         continue;
                     }
-                    let p0 = logits[r][0][j];
-                    denominator[r][0] += p0;
-                    let p1 = logits[r][1][j];
-                    denominator[r][1] += p1;
-                    let [o0, o1] = &mut parts[r].out;
-                    pv2::<S>(value, p0, p1, o0, o1);
+                    for h in 0..2 {
+                        pv_decoded::<S>(
+                            values.as_ptr(),
+                            &logits[r][h][sub..hi],
+                            &mut denominator[r][h],
+                            &mut parts[r].out[h],
+                        );
+                    }
                 }
             }
             for r in 0..n {
@@ -1812,6 +1894,68 @@ mod tests {
 #[cfg(test)]
 mod probe {
     use super::*;
+
+    /// Verification attention time per step by row count (22 layers of Q8
+    /// caches, 6,544 prefix positions, 12 threads): the cost of each extra
+    /// drafted row.
+    #[test]
+    #[ignore = "timing probe; run in release with --nocapture"]
+    fn verify_rows_probe() {
+        let c: ModelConfig =
+            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let (p, layers, generated) = (6544, 22, 8);
+        let k: Vec<f32> = (0..p * c.query_dim())
+            .map(|i| {
+                let (t, rest) = (i / c.query_dim(), i % c.query_dim());
+                let (h, d) = (rest / 64, rest % 64);
+                let identity = if d < 32 { h / 2 } else { h };
+                ((t * 31 + identity * 17 + d * 7) % 101) as f32 / 151.0 - 0.3
+            })
+            .collect();
+        let v: Vec<f32> = (0..p * c.kv_dim()).map(|i| (i % 73) as f32 / 97.0 - 0.2).collect();
+        let tail: Vec<f32> = (0..c.kv_dim()).map(|i| (i % 29) as f32 / 41.0 - 0.3).collect();
+        let sinks = vec![0.0_f32; c.n_heads];
+        let mode = std::env::var("PROBE_MODE").map_or(PrefixMode::SplitQ8, |m| match m.as_str() {
+            "q16" => PrefixMode::SplitQ16,
+            "f32" => PrefixMode::SplitF32,
+            _ => PrefixMode::SplitQ8,
+        });
+        let caches: Vec<SplitPrefix> = (0..layers)
+            .map(|_| {
+                let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 16, &c, mode).unwrap();
+                for _ in 0..generated {
+                    cache.push_unique(&tail, &tail);
+                }
+                cache
+            })
+            .collect();
+        let threads = std::env::var("PROBE_THREADS").ok().and_then(|t| t.parse().ok()).unwrap_or(12);
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+        println!("{threads} threads");
+        pool.install(|| {
+            let mut base = 0.0;
+            for rows in [1, 2, 3, 5, 8] {
+                let q: Vec<f32> = (0..rows * c.query_dim()).map(|i| (i % 61) as f32 / 21.0 - 1.4).collect();
+                let mut out = vec![0.0; q.len()];
+                for cache in &caches {
+                    cache.attention_decode_rows(&q, rows, &sinks, &mut out, Simd::Auto);
+                }
+                let rounds = 10;
+                let t = std::time::Instant::now();
+                for _ in 0..rounds {
+                    for cache in &caches {
+                        cache.attention_decode_rows(&q, rows, &sinks, &mut out, Simd::Auto);
+                    }
+                }
+                let ms = t.elapsed().as_secs_f64() * 1e3 / rounds as f64;
+                if rows == 1 {
+                    base = ms;
+                }
+                let extra = if rows > 1 { (ms - base) / (rows - 1) as f64 } else { 0.0 };
+                println!("{mode:?} rows {rows}: {ms:.2} ms/step, {extra:.2} ms per extra row");
+            }
+        });
+    }
 
     /// Decode attention time per token over 22 layers' worth of caches (so the
     /// records stream from memory) by record format and thread count.

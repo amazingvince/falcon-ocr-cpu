@@ -517,12 +517,22 @@ impl Q8Linear {
         let out = OutputPtr(gated.as_mut_ptr());
         let in_dim = self.in_dim;
         let dot = self.dot_fn(simd);
+        let dot_rows = if rows > 1 { self.dot_rows_fn(simd) } else { DotRows::None };
         let tasks = balanced_tasks(ffn);
         let block = ffn.div_ceil(tasks);
         crate::team::for_each(ffn.div_ceil(block), |b| {
             let out = out.get();
+            let (mut gates, mut ups) = ([0.0_f32; 8], [0.0_f32; 8]);
             for i in b * block..((b + 1) * block).min(ffn) {
                 let (gate_row, up_row) = (2 * i, 2 * i + 1);
+                if self.rows_dot(dot_rows, input, rows, gate_row, &mut gates) {
+                    self.rows_dot(dot_rows, input, rows, up_row, &mut ups);
+                    for row in 0..rows {
+                        // SAFETY: (row, i) lies inside `rows * ffn`; disjoint tasks.
+                        unsafe { *out.add(row * ffn + i) = crate::kernels::squared_relu_glu(gates[row], ups[row]) };
+                    }
+                    continue;
+                }
                 for row in 0..rows {
                     let x = &input[row * in_dim..(row + 1) * in_dim];
                     let gate = self.row_dot(dot, x, gate_row);
@@ -582,6 +592,31 @@ impl Q8Linear {
         }
     }
 
+    /// The multi-row dot kernel for this matrix (`DotRows::None` where the
+    /// backend has none).
+    fn dot_rows_fn(&self, simd: crate::kernels::Simd) -> DotRows {
+        match self.codes {
+            Codes::I8(_) => select_dot_rows::<i8>(self.group_size, simd).map_or(DotRows::None, DotRows::I8),
+            Codes::I16(_) => select_dot_rows::<i16>(self.group_size, simd).map_or(DotRows::None, DotRows::I16),
+        }
+    }
+
+    /// `row_dot` of every row of `input` (`rows <= 8`) with output row
+    /// `channel` into `out`, bitwise per row; false if `dot` is `None`.
+    #[inline(always)]
+    fn rows_dot(&self, dot: DotRows, input: &[f32], rows: usize, channel: usize, out: &mut [f32; 8]) -> bool {
+        let (in_dim, groups) = (self.in_dim, self.in_dim.div_ceil(self.group_size));
+        let scales = &self.scales[channel * groups..(channel + 1) * groups];
+        let span = channel * in_dim..(channel + 1) * in_dim;
+        match (dot, &self.codes) {
+            (DotRows::I8(f), Codes::I8(codes)) => f(input, in_dim, rows, &codes[span], scales, out),
+            (DotRows::I16(f), Codes::I16(codes)) => f(input, in_dim, rows, &codes[span], scales, out),
+            (DotRows::None, _) => return false,
+            _ => unreachable!("dot kernel selected for another code type"),
+        }
+        true
+    }
+
     /// `dot` of `x` with output row `channel`.
     #[inline(always)]
     fn row_dot(&self, dot: Dot, x: &[f32], channel: usize) -> f32 {
@@ -606,9 +641,18 @@ impl Q8Linear {
     ) {
         let (in_dim, out_dim) = (self.in_dim, self.out_dim);
         let dot = self.dot_fn(simd);
+        // Several rows (draft verification) decode each weight chunk once.
+        let dot_rows = if rows > 1 { self.dot_rows_fn(simd) } else { DotRows::None };
         let block = out_dim.div_ceil(balanced_tasks(out_dim));
         crate::team::for_each(out_dim.div_ceil(block), |b| {
+            let mut values = [0.0_f32; 8];
             for channel in b * block..((b + 1) * block).min(out_dim) {
+                if self.rows_dot(dot_rows, input, rows, channel, &mut values) {
+                    for (row, &value) in values[..rows].iter().enumerate() {
+                        write(channel, row, value);
+                    }
+                    continue;
+                }
                 for row in 0..rows {
                     write(
                         channel,
@@ -622,6 +666,17 @@ impl Q8Linear {
 }
 
 type DotQ<C> = fn(&[f32], &[C], &[f32]) -> f32;
+/// `out[r] = dot(x[r * stride..], codes, scales)` for `rows <= 8`, bitwise
+/// the single-row [`DotQ`] per row, decoding the weights once.
+type DotRowsQ<C> = fn(&[f32], usize, usize, &[C], &[f32], &mut [f32; 8]);
+
+/// A multi-row dot kernel, where the backend has one.
+#[derive(Clone, Copy)]
+enum DotRows {
+    I8(DotRowsQ<i8>),
+    I16(DotRowsQ<i16>),
+    None,
+}
 
 #[derive(Clone, Copy)]
 enum Dot {
@@ -666,6 +721,82 @@ fn select_dot<C: crate::simd::QCode>(group: usize, simd: crate::kernels::Simd) -
         64 => dot_q_scalar::<C, 64>,
         _ => dot_q_scalar::<C, 128>,
     }
+}
+
+/// The multi-row dot for code type `C`, `group` and the selected backend
+/// (vector backends only; the scalar path keeps per-row dots).
+fn select_dot_rows<C: crate::simd::QCode>(group: usize, simd: crate::kernels::Simd) -> Option<DotRowsQ<C>> {
+    let selected = simd.resolved();
+    #[cfg(target_arch = "x86_64")]
+    if selected != crate::kernels::Simd::Scalar
+        && std::is_x86_feature_detected!("avx2")
+        && std::is_x86_feature_detected!("fma")
+    {
+        return Some(match group {
+            // SAFETY (all): AVX2/FMA detected above.
+            32 => |x, st, n, c, s, o| unsafe { dot_rows_avx2::<C, 32>(x, st, n, c, s, o) },
+            64 => |x, st, n, c, s, o| unsafe { dot_rows_avx2::<C, 64>(x, st, n, c, s, o) },
+            _ => |x, st, n, c, s, o| unsafe { dot_rows_avx2::<C, 128>(x, st, n, c, s, o) },
+        });
+    }
+    #[cfg(target_arch = "aarch64")]
+    if selected == crate::kernels::Simd::Neon {
+        return Some(match group {
+            // SAFETY (all): NEON is baseline on aarch64.
+            32 => |x, st, n, c, s, o| unsafe { dot_rows::<crate::simd::Neon, C, 32>(x, st, n, c, s, o) },
+            64 => |x, st, n, c, s, o| unsafe { dot_rows::<crate::simd::Neon, C, 64>(x, st, n, c, s, o) },
+            _ => |x, st, n, c, s, o| unsafe { dot_rows::<crate::simd::Neon, C, 128>(x, st, n, c, s, o) },
+        });
+    }
+    let _ = (group, selected);
+    None
+}
+
+/// Rows in groups of up to three (12 accumulators fit AVX2's registers).
+#[inline(always)]
+unsafe fn dot_rows<S: crate::simd::Simd, C: crate::simd::QCode, const G: usize>(
+    x: &[f32],
+    stride: usize,
+    rows: usize,
+    codes: &[C],
+    scales: &[f32],
+    out: &mut [f32; 8],
+) {
+    use crate::simd::dot_q_rows;
+    debug_assert!(rows <= 8);
+    let mut r = 0;
+    unsafe {
+        while r < rows {
+            let x = &x[r * stride..];
+            match rows - r {
+                1 => {
+                    out[r] = dot_q_rows::<S, C, G, 1>(x, stride, codes, scales)[0];
+                    r += 1;
+                }
+                2 => {
+                    out[r..r + 2].copy_from_slice(&dot_q_rows::<S, C, G, 2>(x, stride, codes, scales));
+                    r += 2;
+                }
+                _ => {
+                    out[r..r + 3].copy_from_slice(&dot_q_rows::<S, C, G, 3>(x, stride, codes, scales));
+                    r += 3;
+                }
+            }
+        }
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn dot_rows_avx2<C: crate::simd::QCode, const G: usize>(
+    x: &[f32],
+    stride: usize,
+    rows: usize,
+    codes: &[C],
+    scales: &[f32],
+    out: &mut [f32; 8],
+) {
+    unsafe { dot_rows::<crate::simd::Avx2, C, G>(x, stride, rows, codes, scales, out) }
 }
 
 /// About two equal channel blocks per pool thread (multiples of 4 channels):
@@ -762,6 +893,32 @@ mod integrated_tests {
             }
         }
     }
+    #[test]
+    fn dot_rows_are_bitwise_single_dots() {
+        for (k, group) in [(768, 64), (1024, 64), (2304, 64), (65, 64), (31, 32), (100, 32), (768, 128)] {
+            let x: Vec<f32> = (0..8 * k).map(|i| ((i * 37 % 101) as f32 - 50.0) / 17.0).collect();
+            for bits in [8, 16] {
+                let w: Vec<f32> = (0..3 * k).map(|i| ((i * 13 % 89) as f32 - 44.0) / 23.0).collect();
+                let q = Q8Linear::quantize_bits(&w, 3, k, group, bits).unwrap();
+                for simd in [crate::kernels::Simd::Auto, crate::kernels::Simd::Scalar] {
+                    let (dot, dot_rows) = (q.dot_fn(simd), q.dot_rows_fn(simd));
+                    for rows in 1..=8 {
+                        for channel in 0..3 {
+                            let mut values = [f32::NAN; 8];
+                            if !q.rows_dot(dot_rows, &x[..rows * k], rows, channel, &mut values) {
+                                continue;
+                            }
+                            for row in 0..rows {
+                                let single = q.row_dot(dot, &x[row * k..(row + 1) * k], channel);
+                                assert_eq!(values[row].to_bits(), single.to_bits(), "k {k} bits {bits} rows {rows}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn small_m_is_bitwise_fp32_on_dequantized_weights() {
         // The oracle for every W8 decode result: the FP32 GEMV on fl(code*scale).

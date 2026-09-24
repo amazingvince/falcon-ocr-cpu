@@ -63,6 +63,9 @@ struct Cli {
     /// Minimum n-gram match in the earlier output for a draft.
     #[arg(long, default_value_t = 2, global = true)]
     speculate_min_match: usize,
+    /// Cross-page drafts: the images of one bench sample are one document.
+    #[arg(long, global = true)]
+    document_drafts: bool,
     #[command(subcommand)]
     command: Command,
 }
@@ -487,6 +490,7 @@ fn main() -> Result<()> {
     runner.set_head_mode(args.head)?;
     runner.set_repetition_stop(args.stop_repetition);
     runner.set_speculation(args.speculate, args.speculate_min_match);
+    runner.set_document_drafts(args.document_drafts);
     match args.decode_threads {
         Some(falcon_ocr::runner::DecodeThreads::Auto) => runner.set_decode_threads_auto()?,
         Some(falcon_ocr::runner::DecodeThreads::Fixed(threads)) => runner.set_decode_threads(threads)?,

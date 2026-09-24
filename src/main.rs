@@ -83,6 +83,11 @@ struct Cli {
     /// Minimum n-gram match in the earlier output for a draft.
     #[arg(long, default_value_t = 2, global = true)]
     speculate_min_match: usize,
+    /// Treat the images of one `run` as pages of one document: drafts may also
+    /// continue full 4-token matches from earlier pages (running headers,
+    /// names, repeated table headers). Outputs are unchanged.
+    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, global = true)]
+    document_drafts: bool,
     /// Kernel-ready model file written by `pack` (near-exact or fast; the
     /// file decides the mode). Mapped and used in place: fast startup, no
     /// FP32 checkpoint needed. The tokenizer is read from the file's folder
@@ -245,6 +250,7 @@ fn main() -> Result<()> {
     runner.set_head_mode(cli.head.unwrap_or(HeadMode::Screened))?;
     runner.set_repetition_stop(cli.stop_repetition);
     runner.set_speculation(cli.speculate, cli.speculate_min_match);
+    runner.set_document_drafts(cli.document_drafts);
     match cli
         .decode_threads
         .unwrap_or(falcon_ocr::runner::DecodeThreads::Auto)

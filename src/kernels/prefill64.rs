@@ -91,6 +91,13 @@ pub(crate) fn report_stage_cycles() {
     if !profile_enabled() {
         return;
     }
+    #[cfg(target_arch = "x86_64")]
+    {
+        let ns = bf16::CONVERT_NS.swap(0, std::sync::atomic::Ordering::Relaxed);
+        if ns > 0 {
+            eprintln!("prefill attention BF16 K/V conversion: {:.1} ms", ns as f64 / 1e6);
+        }
+    }
     let v: Vec<u64> = STAGE_CYCLES.iter().map(|c| c.swap(0, std::sync::atomic::Ordering::Relaxed)).collect();
     let total = v.iter().sum::<u64>().max(1) as f64;
     eprintln!(

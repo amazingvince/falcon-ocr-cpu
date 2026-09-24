@@ -736,6 +736,64 @@ pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(
     }
 }
 
+/// [`dot_q`] of `R` input rows (`x[r * stride..][..codes.len()]`) with one
+/// weight row: each 8-weight chunk is decoded once and feeds every row's
+/// accumulators. Per row this is exactly `dot_q`'s operation sequence
+/// (phase accumulators, tree, vector and scalar tails), so each result is
+/// bitwise the single-row one.
+#[inline(always)]
+pub(crate) unsafe fn dot_q_rows<S: Simd, C: QCode, const G: usize, const R: usize>(
+    x: &[f32],
+    stride: usize,
+    codes: &[C],
+    scales: &[f32],
+) -> [f32; R] {
+    let len = codes.len();
+    debug_assert!(R >= 1 && x.len() >= (R - 1) * stride + len);
+    debug_assert_eq!(G % 32, 0);
+    unsafe {
+        let (xp, cp) = (x.as_ptr(), codes.as_ptr());
+        let w = |i: usize, s: S::V| S::mul(C::load8::<S>(cp.add(i)), s);
+        let mut a = [[S::zero(); 4]; R];
+        let mut i = 0;
+        while i + 32 <= len {
+            let s = S::splat(*scales.get_unchecked(i / G));
+            let weights = [w(i, s), w(i + 8, s), w(i + 16, s), w(i + 24, s)];
+            for (r, a) in a.iter_mut().enumerate() {
+                let xr = xp.add(r * stride + i);
+                for (j, (a, weight)) in a.iter_mut().zip(weights).enumerate() {
+                    *a = S::fma(S::load(xr.add(8 * j)), weight, *a);
+                }
+            }
+            i += 32;
+        }
+        let mut acc = [S::zero(); R];
+        for (acc, a) in acc.iter_mut().zip(&a) {
+            *acc = S::add(S::add(a[0], a[1]), S::add(a[2], a[3]));
+        }
+        while i + 8 <= len {
+            let s = S::splat(*scales.get_unchecked(i / G));
+            let weight = w(i, s);
+            for (r, acc) in acc.iter_mut().enumerate() {
+                *acc = S::fma(S::load(xp.add(r * stride + i)), weight, *acc);
+            }
+            i += 8;
+        }
+        let mut total = [0.0_f32; R];
+        for (total, acc) in total.iter_mut().zip(acc) {
+            *total = S::sum(acc);
+        }
+        while i < len {
+            let weight = codes[i].to_f32() * scales[i / G];
+            for (r, total) in total.iter_mut().enumerate() {
+                *total += x[r * stride + i] * weight;
+            }
+            i += 1;
+        }
+        total
+    }
+}
+
 /// `y += a * x` with one FMA per element in eight-wide chunks and an unfused
 /// scalar tail (`kernels::x86::axpy_avx2` order).
 #[inline(always)]

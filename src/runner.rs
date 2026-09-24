@@ -109,6 +109,9 @@ pub struct Runner {
     /// Speculative decoding (`set_speculation`): at most this many drafted
     /// tokens per step and the minimum n-gram match; `None` is off.
     speculation: Option<(usize, usize)>,
+    /// Drafts from earlier pages of the current `recognize_files` call
+    /// (`set_document_drafts`).
+    document: Option<std::sync::Mutex<crate::draft::DocumentHistory>>,
 }
 
 struct AutoThreads {
@@ -195,6 +198,7 @@ impl Runner {
             team,
             auto_threads: None,
             speculation: None,
+            document: None,
         })
     }
     /// Stop greedy generation once it repeats a cycle of at most 128 tokens
@@ -225,11 +229,19 @@ impl Runner {
     /// of this runner time a few team sizes (`crate::tune`) and keep the
     /// smallest one within 2% of the fastest. Tokens never depend on it.
     pub fn set_decode_threads_auto(&mut self) -> Result<()> {
-        let sizes = crate::tune::candidate_sizes(
+        let mut sizes = crate::tune::candidate_sizes(
             crate::cpu::physical_cores(),
             crate::cpu::logical_cpus(),
             self.pool.current_num_threads(),
         );
+        // Draft verification is compute-heavy (5-row steps: 7.6 ms on 12 of
+        // 16 cores, 9.1 ms on 8), while single steps are bandwidth-bound and
+        // time the same on half and three quarters of the cores; with
+        // speculation on, the half-core candidate is dropped. Call after
+        // `set_speculation`.
+        if self.speculation.is_some() && sizes.len() > 1 {
+            sizes.remove(0);
+        }
         let physical = crate::cpu::physical_cores().min(self.pool.current_num_threads());
         let start = sizes.iter().position(|&s| s >= physical).unwrap_or(sizes.len() - 1);
         let teams = sizes
@@ -253,6 +265,17 @@ impl Runner {
             max_draft.min(crate::head_screen::MAX_ROWS - 1),
             min_match.max(1),
         ));
+    }
+    /// Treat the pages of one `recognize_files` call as one document:
+    /// speculative drafts may also continue full n-gram matches from its
+    /// earlier pages. Outputs are unchanged (drafts are verified).
+    pub fn set_document_drafts(&mut self, enabled: bool) {
+        self.document = enabled.then(Default::default);
+    }
+    fn document_history(&self) -> Option<std::sync::MutexGuard<'_, crate::draft::DocumentHistory>> {
+        self.document
+            .as_ref()
+            .map(|d| d.lock().unwrap_or_else(|e| e.into_inner()))
     }
     /// The automatically chosen decode thread count, once tuning finished.
     pub fn decode_threads_chosen(&self) -> Option<usize> {
@@ -418,6 +441,10 @@ impl Runner {
         trace: &mut dyn Trace,
     ) -> Result<Vec<OcrResult>> {
         options.validate()?;
+        // Each call is one document for cross-page drafts.
+        if let Some(mut history) = self.document_history() {
+            history.clear();
+        }
         let mut results = Vec::with_capacity(paths.len());
         for (chunk_index, chunk) in paths.chunks(self.config.batch_size).enumerate() {
             if chunk.len() == 1 {
@@ -769,6 +796,7 @@ impl Runner {
             .filter(|_| teacher_tokens.is_empty() && !trace.enabled() && session.is_split());
         if let Some((max_draft, min_match)) = speculate {
             let mut drafter = crate::draft::NgramDrafter::new(min_match);
+            let mut history = self.document_history();
             let mut draft = Vec::with_capacity(max_draft);
             let mut inputs = Vec::with_capacity(max_draft + 1);
             let mut positions = Vec::with_capacity(max_draft + 1);
@@ -795,7 +823,7 @@ impl Runner {
                     .min(options.max_new_tokens - generated.len() - 1)
                     .min(session.remaining_capacity().saturating_sub(1));
                 if policy.should_draft() {
-                    drafter.propose(&generated, limit, &mut draft);
+                    drafter.propose(&generated, limit, history.as_deref(), &mut draft);
                 } else {
                     draft.clear();
                 }
@@ -862,6 +890,9 @@ impl Runner {
                     }
                 }
                 next_token = predicted[accepted];
+            }
+            if let Some(history) = history.as_mut() {
+                history.push_page(&generated);
             }
             if std::env::var_os("FALCON_OCR_PHASES").is_some() {
                 let (singles, single_ms, verifies, verify_ms, drafted, accepted) = stats;

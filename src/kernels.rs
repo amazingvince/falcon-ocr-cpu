@@ -867,6 +867,7 @@ pub(crate) fn attention_compact_prefill_bf16(
     image_end: usize,
     sinks: &[f32],
     output: &mut [f32],
+    converted: Option<(&[u32], &[u32])>,
 ) -> bool {
     #[cfg(target_arch = "x86_64")]
     if query_len >= 4
@@ -899,13 +900,54 @@ pub(crate) fn attention_compact_prefill_bf16(
                 image_end,
                 sinks,
                 output,
+                converted,
             );
         }
         return true;
     }
     let _ = (q, prefix_k, v, query_len, total_len, n_heads, n_kv_heads, head_dim);
-    let _ = (query_offset, image_start, image_end, sinks, output);
+    let _ = (query_offset, image_start, image_end, sinks, output, converted);
     false
+}
+
+/// Whether prefill rows can be written straight into the BF16 attention
+/// layouts ([`store_prefill_bf16_row`]).
+pub(crate) fn prefill_bf16_rows_available() -> bool {
+    #[cfg(target_arch = "x86_64")]
+    {
+        static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        panel_bf16::attention() && *ON.get_or_init(|| std::is_x86_feature_detected!("avx512bw"))
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    false
+}
+
+/// Writes one prefill row's keys and values in the BF16 attention layouts
+/// (see `prefill64::bf16::store_row`).
+///
+/// # Safety
+/// [`prefill_bf16_rows_available`] returned true; buffer sizes as in
+/// `store_row`; concurrent callers write different rows.
+#[allow(clippy::too_many_arguments)]
+pub(crate) unsafe fn store_prefill_bf16_row(
+    k: &[f32],
+    v: &[f32],
+    row: usize,
+    total: usize,
+    heads: usize,
+    kv_heads: usize,
+    keys: *mut u32,
+    values: *mut u32,
+) {
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        prefill64::bf16::store_row(k, v, row, total, heads, kv_heads, keys, values)
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        let _ = (k, v, row, total, heads, kv_heads, keys, values);
+        unreachable!("BF16 rows are x86-only")
+    }
 }
 
 /// Arithmetic order matches expanded-cache attention. A key tile crossing the
