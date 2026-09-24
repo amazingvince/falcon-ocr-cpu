@@ -1,8 +1,6 @@
 //! Integration tests require the explicitly downloaded pinned model/reference.
 //! Run `cargo test --release --test gpu_parity -- --ignored` after GPU export.
-use falcon_ocr::{
-    Backend, FinishReason, GenerationOptions, Model, Runner, RunnerConfig, kernels::Simd,
-};
+use falcon_ocr::{Backend, FinishReason, GenerationOptions, Model, Runner, RunnerConfig, kernels::Simd};
 use std::{path::Path, sync::Arc};
 
 #[test]
@@ -11,15 +9,11 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
     let model_dir = Path::new("artifacts/model");
     let reference = Path::new("artifacts/reference/smoke-fp32");
     let metadata: serde_json::Value =
-        serde_json::from_reader(std::fs::File::open(reference.join("metadata.json")).unwrap())
-            .unwrap();
+        serde_json::from_reader(std::fs::File::open(reference.join("metadata.json")).unwrap()).unwrap();
     assert_eq!(metadata["precision"], "fp32");
     assert_eq!(metadata["tf32"], false);
     assert_eq!(metadata["teacher_forced"], false);
-    assert_eq!(
-        metadata["model_revision"],
-        falcon_ocr::config::MODEL_REVISION
-    );
+    assert_eq!(metadata["model_revision"], falcon_ocr::config::MODEL_REVISION);
     let expected: Vec<u32> = serde_json::from_value(metadata["token_ids"].clone()).unwrap();
     let model = Arc::new(Model::load(model_dir).unwrap());
     let runner = Runner::new(
@@ -28,7 +22,7 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         RunnerConfig {
             threads: 4,
             batch_size: 1,
-            ..Default::default()
+            ..RunnerConfig::reference()
         },
     )
     .unwrap();
@@ -36,6 +30,7 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         max_dimension: metadata["max_dimension"].as_u64().unwrap() as u32,
         min_dimension: metadata["min_dimension"].as_u64().unwrap() as u32,
         max_new_tokens: metadata["max_new_tokens"].as_u64().unwrap() as usize,
+        fit_budget: false,
     };
     let result = runner
         .recognize_file(reference.join("canonical-rgb.png"), &options)
@@ -58,23 +53,23 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         .unwrap();
     assert_eq!(limited.token_ids, &expected[..3]);
     assert_eq!(limited.finish_reason, FinishReason::Length);
-    for (backend, simd) in [(Backend::Avx2, Simd::Avx2), (Backend::Avx512, Simd::Avx512)] {
-        if simd.validate().is_err() {
-            continue;
-        }
+    // The explicit 8-lane backend (no AVX-512 prefill tiles) is bit-identical.
+    if Simd::Avx2.validate().is_ok() {
         let runner = Runner::new(
             model.clone(),
             model_dir,
             RunnerConfig {
                 threads: 1,
-                backend,
-                ..Default::default()
+                backend: Backend::Avx2,
+                ..RunnerConfig::reference()
             },
         )
         .unwrap();
         let result = runner
             .recognize_file(reference.join("canonical-rgb.png"), &options)
             .unwrap();
-        assert_eq!(result.token_ids, expected, "explicit backend {backend:?}");
+        assert_eq!(result.token_ids, expected, "explicit backend avx2");
+        assert_eq!(result.backend, "avx2");
+        assert_eq!(result.precision, "fp32");
     }
 }

@@ -1,7 +1,5 @@
 //! One test per binary keeps the process-wide counter isolated from other tests.
-use falcon_ocr::{
-    CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout, trace::Trace,
-};
+use falcon_ocr::{CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout, trace::Trace};
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     sync::{
@@ -72,34 +70,39 @@ fn warm_fp32_decode_has_no_heap_allocations() {
         max_new_tokens: 24,
         ..Default::default()
     };
-    for cache_layout in [CacheLayout::Expanded, CacheLayout::Compact] {
-        for weight_layout in [WeightLayout::Unpacked, WeightLayout::PhasePacked] {
-            let runner = Runner::new(
+    for (cache_layout, weight_layout, head) in [
+        (CacheLayout::Expanded, WeightLayout::Unpacked, HeadMode::Full),
+        (CacheLayout::Expanded, WeightLayout::PhasePacked, HeadMode::Full),
+        (CacheLayout::Compact, WeightLayout::Unpacked, HeadMode::Full),
+        (CacheLayout::Compact, WeightLayout::PhasePacked, HeadMode::Full),
+        (CacheLayout::Compact, WeightLayout::Unpacked, HeadMode::Screened),
+        (CacheLayout::Compact, WeightLayout::PhasePacked, HeadMode::Screened),
+    ] {
+        {
+            let mut runner = Runner::new(
                 model.clone(),
                 "artifacts/model",
                 RunnerConfig {
                     threads: 4,
                     cache_layout,
                     weight_layout,
-                    ..Default::default()
+                    ..RunnerConfig::reference()
                 },
             )
             .unwrap();
+            runner.set_head_mode(head).unwrap();
             runner.recognize(&image, &options).unwrap();
             let result = runner.recognize_with_trace(&image, &options, &mut Probe);
             ACTIVE.store(false, Ordering::SeqCst);
             let result = result.unwrap();
-            assert_eq!(
-                result.output_tokens, 17,
-                "test must exercise all smoke decode steps"
-            );
+            assert_eq!(result.output_tokens, 17, "test must exercise all smoke decode steps");
             assert_eq!(
                 CALLS.load(Ordering::SeqCst),
                 0,
                 "{cache_layout:?}: {} bytes allocated during decode",
                 BYTES.load(Ordering::SeqCst)
             );
-            let batch_runner = Runner::new(
+            let mut batch_runner = Runner::new(
                 model.clone(),
                 "artifacts/model",
                 RunnerConfig {
@@ -107,10 +110,11 @@ fn warm_fp32_decode_has_no_heap_allocations() {
                     batch_size: 4,
                     cache_layout,
                     weight_layout,
-                    ..Default::default()
+                    ..RunnerConfig::reference()
                 },
             )
             .unwrap();
+            batch_runner.set_head_mode(head).unwrap();
             let pages = [image.clone(), image.clone(), image.clone(), image.clone()];
             batch_runner.recognize_batch(&pages, &options).unwrap();
             let result = batch_runner.recognize_batch_with_trace(&pages, &options, &mut Probe);

@@ -1,0 +1,31 @@
+{
+  "schema": "falcon-ocr-phase4-quality-budget-v1",
+  "registered_at": "2026-09-23T12:09:29-04:00",
+  "approved_by": "user, 2026-09-23 (\"lets do the 200 pages\" after the proposal in attempt3/RESULTS-V3.md section 6)",
+  "candidate": {
+    "mode": "fast",
+    "profile": "w8-body-kv-q8",
+    "weights_overlay": "artifacts/model/w8-gptq.safetensors",
+    "weights_overlay_sha256": "60808bbf24e506497da3a828318085a1e3211bb974f02a3c5375721d1b22f996",
+    "overlay_build": "attempt3/make_gptq_overlay.sh (GPTQ act-order W8G64; Gram from the 12 pages in attempt3/gptq-calibration-pages.txt, all calibration pages)",
+    "binary": "falcon-ocr-attempt built from commit bcd9ffa (code identical at 0897da9)",
+    "binary_sha256": "b71ef3a65477cc5422aa48968ac83ff6886e6f7e1f9d78498f9fe873e8af8911",
+    "options": "FALCON_OCR_EXP=fast --backend auto --head screened --threads 32 --decode-threads 16 --stop-repetition; max-dimension 1536, max-new-tokens 4096, batch 1"
+  },
+  "reference": "artifacts/cpu/corpus-v3-fp32-4096 (FP32 outputs of the same 200 pages, same limits), texts re-decoded with the current tokenizer decoder",
+  "pages": "reference/corpus-v3-evaluation-lock.json, 200 held-out pages, run once; never used for tuning",
+  "scope": "pages where the FP32 reference ends at EOS (181 of 200)",
+  "cer": "raw-text Levenshtein distance to ground-truth.txt divided by ground-truth length, micro-averaged over characters, same treatment for both runs",
+  "criteria": {
+    "overall_micro_cer_increase_max_points": 0.25,
+    "per_category_micro_cer_increase_max_points": 1.0,
+    "repetition_stop_fires_on_fp32_eos_pages": 0
+  },
+  "reported_not_gated": [
+    "pages token-identical to FP32",
+    "token edits",
+    "EOS to length flips",
+    "runaway pages and repetition stops",
+    "wall time"
+  ]
+}

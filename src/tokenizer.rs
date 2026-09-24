@@ -24,8 +24,8 @@ impl OcrTokenizer {
             &path,
             "4a9892af2b1ef021a421f140c7e3c064f5b255f7d75ba18c883996d86e1cf15a",
         )?;
-        let tokenizer = Tokenizer::from_bytes(&tokenizer_bytes)
-            .map_err(|error| anyhow!("loading {}: {error}", path.display()))?;
+        let tokenizer =
+            Tokenizer::from_bytes(&tokenizer_bytes).map_err(|error| anyhow!("loading {}: {error}", path.display()))?;
         let config_path = model_dir.join("tokenizer_config.json");
         let config: serde_json::Value = serde_json::from_slice(&pinned_file(
             &config_path,
@@ -50,9 +50,7 @@ impl OcrTokenizer {
             );
         }
         ensure!(
-            config
-                .get("bos_token")
-                .is_none_or(serde_json::Value::is_null),
+            config.get("bos_token").is_none_or(serde_json::Value::is_null),
             "the pinned tokenizer does not prepend BOS; unexpected bos_token metadata"
         );
         let empty = tokenizer
@@ -78,10 +76,7 @@ impl OcrTokenizer {
     }
 
     pub fn prompt(&self, patch_count: usize) -> Result<Vec<u32>> {
-        ensure!(
-            patch_count > 0,
-            "an OCR prompt requires at least one image patch"
-        );
+        ensure!(patch_count > 0, "an OCR prompt requires at least one image patch");
         let capacity = patch_count
             .checked_add(6)
             .and_then(|v| v.checked_add(self.prompt_suffix.len()))
@@ -145,20 +140,14 @@ mod tests {
             "\u{1c}\u{85} Date . . . \n\u{1f}".trim_matches(python_whitespace),
             "Date . . ."
         );
-        assert_eq!(
-            "\u{200b}x\u{feff}".trim_matches(python_whitespace),
-            "\u{200b}x\u{feff}"
-        );
+        assert_eq!("\u{200b}x\u{feff}".trim_matches(python_whitespace), "\u{200b}x\u{feff}");
     }
 
     #[test]
     fn rejects_modified_tokenizer_artifacts() {
         let directory = tempfile::tempdir().unwrap();
         std::fs::write(directory.path().join("tokenizer.json"), b"{}").unwrap();
-        let error = OcrTokenizer::load(directory.path())
-            .err()
-            .unwrap()
-            .to_string();
+        let error = OcrTokenizer::load(directory.path()).err().unwrap().to_string();
         assert!(error.contains("SHA-256 mismatch"));
     }
 
@@ -170,10 +159,7 @@ mod tests {
             .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/model"));
         let tokenizer = OcrTokenizer::load(&dir).unwrap();
         let ids = tokenizer.prompt(4).unwrap();
-        assert_eq!(
-            &ids[..10],
-            &[244, 245, 246, 247, 248, 227, 227, 227, 227, 230]
-        );
+        assert_eq!(&ids[..10], &[244, 245, 246, 247, 248, 227, 227, 227, 227, 230]);
         assert_eq!(ids.last(), Some(&257));
         assert_eq!(tokenizer.stop_ids(), vec![11, 263]);
         let encoded = tokenizer

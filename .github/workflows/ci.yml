@@ -1,0 +1,102 @@
+name: ci
+
+on:
+  push:
+    branches: [master, phase4-attempt3, worktree-cleanup]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Nightly weights gates on the self-hosted runner.
+    - cron: "17 3 * * *"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    if: github.event_name != 'schedule'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned toolchain (rust-toolchain.toml)
+        run: rustup show
+      - name: NASM (libjpeg-turbo SIMD)
+        run: |
+          choco install nasm --no-progress -y
+          echo "ASM_NASM=C:\Program Files\NASM\nasm.exe" >> $env:GITHUB_ENV
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --release --all-targets --locked -- -D warnings
+      - run: cargo test --release --lib --locked
+      - name: Integration tests that need no weights
+        run: cargo test --release --locked --tests
+      - run: cargo build --release --locked --bins --examples
+      - name: Without libjpeg-turbo
+        run: cargo clippy --release --locked --no-default-features --all-targets -- -D warnings
+
+  ubuntu:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned toolchain (rust-toolchain.toml)
+        run: rustup show
+      - name: NASM, CMake, aarch64 cross tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm cmake gcc-aarch64-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --release --all-targets --locked -- -D warnings
+      - run: cargo test --release --lib --locked
+      - name: Integration tests that need no weights
+        run: cargo test --release --locked --tests
+      - run: cargo build --release --locked --bins --examples
+      - name: Without libjpeg-turbo
+        run: cargo clippy --release --locked --no-default-features --all-targets -- -D warnings
+      - name: aarch64 Linux compiles (NEON kernels)
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo check --locked --target aarch64-unknown-linux-gnu --no-default-features --all-targets
+      - name: Python tools and tests
+        run: |
+          python3 -m pip install --quiet ruff pillow rapidfuzz numpy
+          python3 -m ruff check tools
+          python3 -m unittest discover -s research/corpus-qualification/tests -p "test_*.py"
+          python3 -m unittest discover -s research/quantization-feasibility/tests -p "test_*.py"
+
+  macos-arm64:
+    if: github.event_name != 'schedule'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned toolchain (rust-toolchain.toml)
+        run: rustup show
+      - run: brew install cmake
+      - name: NEON kernels against the portable oracles
+        run: cargo test --release --lib --locked
+      - run: cargo build --release --locked --bins
+
+  weights:
+    # A machine with `artifacts/` (pinned checkpoint, GPTQ overlay, packed
+    # files, the GPU smoke reference and the corpus): the ignored gates.
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: [self-hosted, falcon-weights]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - run: cargo build --release --locked --bins
+      - name: Mode, parity, cache, batch, allocation and head gates
+        run: >-
+          cargo test --release --locked
+          --test modes --test gpu_parity --test cache_layout --test batch_parity
+          --test batch_trace --test decode_allocations --test head_screen
+          -- --ignored
+      - name: Token agreement against the FP32 anchor (near-exact 1 flip, fast about 63 of 24,262)
+        run: >-
+          bash tools/agree_queue.sh artifacts/phase4/agree/ci tools/gptq-calibration-pages.txt 8192
+          near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agreement-reports
+          path: artifacts/phase4/agree/ci/*.json

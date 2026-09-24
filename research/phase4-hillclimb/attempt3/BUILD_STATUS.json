@@ -1,0 +1,83 @@
+{
+  "schema": "falcon-ocr-attempt3-validation-v1",
+  "created_utc": "2026-09-21T20:24:21.570709+00:00",
+  "status": "UNCOMPILED_EXPERIMENTAL_SOURCE",
+  "quality_qualified": false,
+  "native_build": {
+    "status": "not_run",
+    "reason": "cargo and rustc are not installed in this environment"
+  },
+  "native_unit_tests": {
+    "status": "not_run",
+    "reason": "no Rust toolchain"
+  },
+  "checkpoint_inference": {
+    "status": "not_run",
+    "reason": "checkpoint and Rust toolchain unavailable"
+  },
+  "target_hardware_benchmarks": {
+    "status": "not_run",
+    "target": "Ryzen 9 7950X, native Windows; not this container"
+  },
+  "rustfmt": {
+    "status": "not_run",
+    "reason": "Rust toolchain unavailable"
+  },
+  "windows_powershell_wrapper": {
+    "status": "not_run",
+    "reason": "no Windows PowerShell runtime in container"
+  },
+  "source_archive_sha256": "eb90e3d3e35fe57badc5d7413ff0264928f4b4b405ca8c52bb57611b45ad4b73",
+  "local_snapshot_base_commit": "2d09bd941beb62a12664c71e94f9edd5d12b99f7",
+  "base_commit_is_upstream_commit": false,
+  "original_source_provenance": "uploaded source based on author 95daabc tree plus edits; preserve original receipts",
+  "environment": {
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+    "cargo": null,
+    "rustc": null
+  },
+  "python_suites": [
+    {
+      "suite": "scripts",
+      "tests_run": 102,
+      "successful_test_methods": 87,
+      "failures": 0,
+      "error_records": 8,
+      "skipped": 9,
+      "was_successful": false
+    },
+    {
+      "suite": "tests",
+      "tests_run": 70,
+      "successful_test_methods": 70,
+      "failures": 0,
+      "error_records": 0,
+      "skipped": 0,
+      "was_successful": true
+    },
+    {
+      "suite": "attempt3",
+      "tests_run": 25,
+      "successful_test_methods": 25,
+      "failures": 0,
+      "error_records": 0,
+      "skipped": 0,
+      "was_successful": true
+    }
+  ],
+  "python_scope": "artifact encoding/roundtrip math, independent synthetic attention algebra, mocked bracket execution, comparison fail-closed policy, source wiring and existing tooling; NOT native Rust inference",
+  "historical_numerical_gate": "unchanged; ten original intermediate failures not resolved or reclassified",
+  "measurements": [],
+  "target_page_seconds": 20,
+  "target_is_measured": false,
+  "preserved_limitations": [
+    "Original FP32 mapping remains; not a standalone compact loader",
+    "Generated KV tail stays FP32",
+    "Q8 prefix scales are FP32, not FP16",
+    "W8 arithmetic is W8A32, not W8A8",
+    "Fixed cohorts only; no continuous refill or concurrent image ingestion",
+    "No calibration-derived quality guarantee",
+    "Original scripts suite has errors from omitted artifacts; see validation logs"
+  ]
+}

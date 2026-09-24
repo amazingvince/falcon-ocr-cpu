@@ -1,0 +1,82 @@
+{
+  "suite": "scripts",
+  "tests_run": 102,
+  "successful_test_methods": 87,
+  "failures": 0,
+  "error_records": 8,
+  "skipped": 9,
+  "was_successful": false,
+  "errors": [
+    {
+      "test": "setUpClass (test_bf16_ptx_observer.ObserverTests)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_bf16_ptx_observer.py\", line 19, in setUpClass\n    cls.original = (ROOT / \"artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx\").read_bytes()\n                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 625, in read_bytes\n    with self.open(mode='rb') as f:\n         ~~~~~~~~~^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx'\n"
+    },
+    {
+      "test": "setUpClass (test_bf16_ptx_observer_v2.ObserverTests)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_bf16_ptx_observer_v2.py\", line 19, in setUpClass\n    cls.original = (ROOT / \"artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx\").read_bytes()\n                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 625, in read_bytes\n    with self.open(mode='rb') as f:\n         ~~~~~~~~~^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/bf16-ptx-roundtrip-v1/original.ptx'\n"
+    },
+    {
+      "test": "test_new_run_and_identical_resume (test_reference_run_identity.StartupIdentityTests.test_new_run_and_identical_resume)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py\", line 18, in setUp\n    run = json.loads((self.root / \"artifacts/reference/corpus-v3-fp32-4096/run.json\").read_text(encoding=\"utf-8\"))\n                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 548, in read_text\n    return PathBase.read_text(self, encoding, errors, newline)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 632, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'\n"
+    },
+    {
+      "test": "test_new_source_identity_cannot_resume_old_run (test_reference_run_identity.StartupIdentityTests.test_new_source_identity_cannot_resume_old_run)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py\", line 18, in setUp\n    run = json.loads((self.root / \"artifacts/reference/corpus-v3-fp32-4096/run.json\").read_text(encoding=\"utf-8\"))\n                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 548, in read_text\n    return PathBase.read_text(self, encoding, errors, newline)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 632, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'\n"
+    },
+    {
+      "test": "test_old_run_without_archive_cannot_be_retrofitted (test_reference_run_identity.StartupIdentityTests.test_old_run_without_archive_cannot_be_retrofitted)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py\", line 18, in setUp\n    run = json.loads((self.root / \"artifacts/reference/corpus-v3-fp32-4096/run.json\").read_text(encoding=\"utf-8\"))\n                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 548, in read_text\n    return PathBase.read_text(self, encoding, errors, newline)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 632, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'\n"
+    },
+    {
+      "test": "test_source_mutation_rejected (test_reference_run_identity.StartupIdentityTests.test_source_mutation_rejected)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py\", line 18, in setUp\n    run = json.loads((self.root / \"artifacts/reference/corpus-v3-fp32-4096/run.json\").read_text(encoding=\"utf-8\"))\n                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 548, in read_text\n    return PathBase.read_text(self, encoding, errors, newline)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 632, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'\n"
+    },
+    {
+      "test": "test_source_path_injection_rejected (test_reference_run_identity.StartupIdentityTests.test_source_path_injection_rejected)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py\", line 18, in setUp\n    run = json.loads((self.root / \"artifacts/reference/corpus-v3-fp32-4096/run.json\").read_text(encoding=\"utf-8\"))\n                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 548, in read_text\n    return PathBase.read_text(self, encoding, errors, newline)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 632, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'\n"
+    },
+    {
+      "test": "test_unset_or_changed_actual_cublas_environment_rejected (test_reference_run_identity.StartupIdentityTests.test_unset_or_changed_actual_cublas_environment_rejected)",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/falcon_attempt3_work/falcon-ocr/scripts/test_reference_run_identity.py\", line 18, in setUp\n    run = json.loads((self.root / \"artifacts/reference/corpus-v3-fp32-4096/run.json\").read_text(encoding=\"utf-8\"))\n                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 548, in read_text\n    return PathBase.read_text(self, encoding, errors, newline)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_abc.py\", line 632, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.13/pathlib/_local.py\", line 539, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/mnt/data/falcon_attempt3_work/falcon-ocr/artifacts/reference/corpus-v3-fp32-4096/run.json'\n"
+    }
+  ],
+  "failure_details": [],
+  "skip_details": [
+    {
+      "test": "test_real_code_section_and_truncation (test_cuda_ptx_reference.AbiTests.test_real_code_section_and_truncation)",
+      "reason": "Pinned cubin required"
+    },
+    {
+      "test": "test_all_actual_native_pages_preserve_inference (test_validate_text_replay.NativeReplayTests.test_all_actual_native_pages_preserve_inference)",
+      "reason": "Pass --replay for actual native-Windows-produced artifact validation"
+    },
+    {
+      "test": "test_one_ulp_timing_mutation_rejected (test_validate_text_replay.NativeReplayTests.test_one_ulp_timing_mutation_rejected)",
+      "reason": "Pass --replay for actual native-Windows-produced artifact validation"
+    },
+    {
+      "test": "test_token_and_original_text_mutations_rejected (test_validate_text_replay.NativeReplayTests.test_token_and_original_text_mutations_rejected)",
+      "reason": "Pass --replay for actual native-Windows-produced artifact validation"
+    },
+    {
+      "test": "test_changed_shuffle_offset_fails (test_verify_bf16_reduction_lowering.LoweringTests.test_changed_shuffle_offset_fails)",
+      "reason": "Preserved pinned compiler artifacts required"
+    },
+    {
+      "test": "test_missing_artifact_fails (test_verify_bf16_reduction_lowering.LoweringTests.test_missing_artifact_fails)",
+      "reason": "Preserved pinned compiler artifacts required"
+    },
+    {
+      "test": "test_original_is_positive_control (test_verify_bf16_reduction_lowering.LoweringTests.test_original_is_positive_control)",
+      "reason": "Preserved pinned compiler artifacts required"
+    },
+    {
+      "test": "test_partial_observer_changes_only_debug_sum_store (test_verify_bf16_reduction_lowering.LoweringTests.test_partial_observer_changes_only_debug_sum_store)",
+      "reason": "Preserved pinned compiler artifacts required"
+    },
+    {
+      "test": "test_rejected_v4_fails_both_structural_checks (test_verify_bf16_reduction_lowering.LoweringTests.test_rejected_v4_fails_both_structural_checks)",
+      "reason": "Preserved pinned compiler artifacts required"
+    }
+  ]
+}

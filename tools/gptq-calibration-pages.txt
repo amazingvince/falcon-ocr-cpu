@@ -1,0 +1,12 @@
+artifacts/corpus/v3/f95f6b08d34c9238/canonical-rgb.png
+artifacts/corpus/v3/473170b9584d89e0/canonical-rgb.png
+artifacts/corpus/v3/21f364982bf08dfc/canonical-rgb.png
+artifacts/corpus/v3/278259ab4fff8ac3/canonical-rgb.png
+artifacts/corpus/v3/28771ae93521e1a4/canonical-rgb.png
+artifacts/corpus/v3/645afe9af4068404/canonical-rgb.png
+artifacts/corpus/v3/5c1405fc14f10702/canonical-rgb.png
+artifacts/corpus/v3/e09e67d01007daa3/canonical-rgb.png
+artifacts/corpus/v3/8355ce458414e089/canonical-rgb.png
+artifacts/corpus/v3/108dbe18e355e785/canonical-rgb.png
+artifacts/corpus/v3/5a64e637f4a66b9c/canonical-rgb.png
+artifacts/corpus/v3/bef302ac0b743baa/canonical-rgb.png

@@ -2,9 +2,7 @@
 //! model loading are measured separately, and never hidden in warm OCR samples.
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, ValueEnum};
-use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout,
-};
+use falcon_ocr::{Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::{
@@ -95,11 +93,7 @@ fn memory() -> serde_json::Value {
         }
         #[link(name = "psapi")]
         unsafe extern "system" {
-            fn GetProcessMemoryInfo(
-                process: *mut std::ffi::c_void,
-                counters: *mut Counters,
-                cb: u32,
-            ) -> i32;
+            fn GetProcessMemoryInfo(process: *mut std::ffi::c_void, counters: *mut Counters, cb: u32) -> i32;
         }
         #[link(name = "kernel32")]
         unsafe extern "system" {
@@ -143,6 +137,7 @@ fn main() -> Result<()> {
         min_dimension: args.min_dimension,
         max_dimension: args.max_dimension,
         max_new_tokens: args.max_new_tokens,
+        fit_budget: false,
     };
     options.validate()?;
     let start = Instant::now();
@@ -185,11 +180,10 @@ fn main() -> Result<()> {
                 backend: args.backend,
                 cache_layout: args.cache_layout,
                 weight_layout: args.weight_layout,
+                ..RunnerConfig::reference()
             },
         )?;
-        let pages = (0..batch)
-            .map(|i| images[i % images.len()].clone())
-            .collect::<Vec<_>>();
+        let pages = (0..batch).map(|i| images[i % images.len()].clone()).collect::<Vec<_>>();
         for _ in 0..args.warmup {
             runner.recognize_batch(&pages, &options)?;
         }
@@ -201,10 +195,7 @@ fn main() -> Result<()> {
             let start = Instant::now();
             let results = runner.recognize_batch(&pages, &options)?;
             let elapsed = start.elapsed().as_secs_f64() * 1000.;
-            let ids = results
-                .iter()
-                .map(|r| r.token_ids.clone())
-                .collect::<Vec<_>>();
+            let ids = results.iter().map(|r| r.token_ids.clone()).collect::<Vec<_>>();
             // Outside the timed interval: preserve the actual decoder output
             // and require the same stop semantics in every measured repetition.
             let outputs = results
@@ -239,10 +230,7 @@ fn main() -> Result<()> {
                 expected = Some(ids);
             }
             if let Some(previous) = &expected_outputs {
-                ensure!(
-                    previous == &outputs,
-                    "nondeterministic text or stop during benchmark"
-                );
+                ensure!(previous == &outputs, "nondeterministic text or stop during benchmark");
             } else {
                 expected_outputs = Some(outputs);
             }
@@ -268,8 +256,8 @@ fn main() -> Result<()> {
         "model_revision":falcon_ocr::config::MODEL_REVISION,"weights_sha256":model.weights_sha256(),
         "images":image_manifest,"loaded_memory":loaded_memory,"cases":cases,
         "cargo_lock_sha256":hash(include_bytes!("../Cargo.lock")),
-        "source_sha256":{"model":hash(include_bytes!("../src/model.rs")),"kernels":hash(include_bytes!("../src/kernels.rs")),
-            "runner":hash(include_bytes!("../src/runner.rs")),"preprocess":hash(include_bytes!("../src/preprocess.rs")),
+        "source_sha256":{"model":hash(include_bytes!("../src/model/mod.rs")),"kernels":hash(include_bytes!("../src/kernels/mod.rs")),
+            "runner":hash(include_bytes!("../src/runner/mod.rs")),"preprocess":hash(include_bytes!("../src/preprocess.rs")),
             "packed_kernels":hash(include_bytes!("../src/packed_kernels.rs")),
             "config":hash(include_bytes!("../src/config.rs")),"tokenizer":hash(include_bytes!("../src/tokenizer.rs")),
             "trace":hash(include_bytes!("../src/trace.rs")),"lib":hash(include_bytes!("../src/lib.rs")),

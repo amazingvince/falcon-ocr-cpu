@@ -1,0 +1,3 @@
+# Versions used for this package's offline Python tests. CPU inference is Rust-only.
+numpy==2.3.5
+safetensors==0.7.0

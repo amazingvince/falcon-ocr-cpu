@@ -11,6 +11,31 @@ pub trait Trace: Send {
     /// allocation/profiling instruments to observe the steady decode loop.
     fn decode_start(&mut self) {}
     fn decode_end(&mut self) {}
+    fn decode_step(&mut self, _rows: usize, _ms: f64, _kv_bytes: usize) {}
+    fn prefix_sealed(&mut self, _before: usize, _after: usize, _ms: f64) {}
+    fn cache_retired(&mut self, _bytes: usize) {}
+    /// One screened vocabulary-head selection: rows recomputed exactly, and
+    /// whether the step fell back to the full FP32 head.
+    fn head_screen(&mut self, _candidates: usize, _fallback: bool) {}
+    /// Whether teacher-forced runs should also compute the model's own greedy
+    /// choice at every step and report it through [`Trace::teacher_step`].
+    fn scores_teacher(&self) -> bool {
+        false
+    }
+    /// Teacher-forced step `step`: the forced token and the token greedy
+    /// decoding would have selected from the same prefix.
+    fn teacher_step(&mut self, _step: usize, _forced: u32, _predicted: u32) {}
+    /// Full next-token logits of teacher-forced step `step` (only when
+    /// [`Trace::scores_teacher`] is true and the step evaluated the full head).
+    fn teacher_logits(&mut self, _step: usize, _logits: &[f32]) {}
+    /// Whether single-request forward passes should report every projection
+    /// input through [`Trace::linear_input`] (quantization calibration).
+    fn captures_linear_inputs(&self) -> bool {
+        false
+    }
+    /// Row-major input `[rows, width]` of projection `site` (`qkv`, `wo`,
+    /// `w13` or `w2`) in `layer`.
+    fn linear_input(&mut self, _layer: usize, _site: &'static str, _rows: usize, _data: &[f32]) {}
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()>;
 }
 pub struct NoTrace;
@@ -46,9 +71,20 @@ impl Trace for PrefixedTrace<'_> {
     fn decode_end(&mut self) {
         self.inner.decode_end();
     }
+    fn decode_step(&mut self, rows: usize, ms: f64, kv_bytes: usize) {
+        self.inner.decode_step(rows, ms, kv_bytes);
+    }
+    fn prefix_sealed(&mut self, before: usize, after: usize, ms: f64) {
+        self.inner.prefix_sealed(before, after, ms);
+    }
+    fn cache_retired(&mut self, bytes: usize) {
+        self.inner.cache_retired(bytes);
+    }
+    fn head_screen(&mut self, candidates: usize, fallback: bool) {
+        self.inner.head_screen(candidates, fallback);
+    }
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
-        self.inner
-            .tensor(&format!("{}.{name}", self.prefix), shape, data)
+        self.inner.tensor(&format!("{}.{name}", self.prefix), shape, data)
     }
 }
 #[derive(Default)]
@@ -57,8 +93,7 @@ pub struct TensorTrace {
 }
 impl Trace for TensorTrace {
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
-        self.tensors
-            .insert(name.into(), (shape.to_vec(), data.to_vec()));
+        self.tensors.insert(name.into(), (shape.to_vec(), data.to_vec()));
         Ok(())
     }
 }
