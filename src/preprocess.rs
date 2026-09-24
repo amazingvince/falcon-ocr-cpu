@@ -87,8 +87,8 @@ pub fn prepare_file_timed(path: &Path, min_dimension: u32, max_dimension: u32) -
         matches!(format, ImageFormat::Png | ImageFormat::Jpeg),
         "only PNG and JPEG files are supported"
     );
-    let cmyk = if format == ImageFormat::Jpeg && jpeg_components(&bytes)? == 4 {
-        Some(decode_jpeg_cmyk(&bytes)?)
+    let cmyk = if format == ImageFormat::Jpeg {
+        decode_jpeg_cmyk(&bytes)?
     } else {
         None
     };
@@ -155,9 +155,24 @@ pub fn prepare_file_timed(path: &Path, min_dimension: u32, max_dimension: u32) -
     Ok((prepare_resized_rgb(&first)?, decode_ms))
 }
 
+/// Without the `turbojpeg` feature: the `image` crate's JPEG decoder, which
+/// converts CMYK itself. Not Pillow-exact (`auto::Resolved::image_decoder`
+/// says so).
+#[cfg(not(feature = "turbojpeg"))]
 fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
-    if jpeg_components(bytes)? == 4 {
-        return Ok(cmyk_to_rgb(&decode_jpeg_cmyk(bytes)?));
+    Ok(image::load_from_memory_with_format(bytes, ImageFormat::Jpeg)?.to_rgb8())
+}
+
+/// Without the `turbojpeg` feature, four-component JPEGs take the RGB path.
+#[cfg(not(feature = "turbojpeg"))]
+fn decode_jpeg_cmyk(_bytes: &[u8]) -> Result<Option<RgbaImage>> {
+    Ok(None)
+}
+
+#[cfg(feature = "turbojpeg")]
+fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
+    if let Some(cmyk) = decode_jpeg_cmyk(bytes)? {
+        return Ok(cmyk_to_rgb(&cmyk));
     }
     // libjpeg-turbo uses the accurate integer IDCT and fancy chroma upsampling
     // by default, as does the pinned Pillow JPEG decoder.
@@ -167,7 +182,12 @@ fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
         .context("inconsistent JPEG dimensions")
 }
 
-fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<RgbaImage> {
+/// The inverted CMYK samples of a four-component JPEG (`None` for others).
+#[cfg(feature = "turbojpeg")]
+fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<Option<RgbaImage>> {
+    if jpeg_components(bytes)? != 4 {
+        return Ok(None);
+    }
     let mut decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::CMYK)?;
     ensure!(decoded.pitch == decoded.width * 4, "unexpected CMYK row stride");
     // Pillow raw mode CMYK;I inverts libjpeg's CMYK samples before resizing.
@@ -176,6 +196,7 @@ fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<RgbaImage> {
     }
     RgbaImage::from_raw(decoded.width.try_into()?, decoded.height.try_into()?, decoded.pixels)
         .context("inconsistent CMYK dimensions")
+        .map(Some)
 }
 
 fn cmyk_to_rgb(source: &RgbaImage) -> RgbImage {
@@ -237,6 +258,7 @@ fn resize_premultiplied(input: &RgbaImage, width: u32, height: u32) -> RgbImage 
     })
 }
 
+#[cfg(feature = "turbojpeg")]
 fn jpeg_components(bytes: &[u8]) -> Result<u8> {
     let mut offset = 2;
     while offset + 1 < bytes.len() {
@@ -578,6 +600,7 @@ mod tests {
         assert!(failures.is_empty(), "PNG parity failures: {failures:?}");
     }
 
+    #[cfg(feature = "turbojpeg")]
     #[test]
     fn jpeg_decoder_matches_pillow() {
         let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();

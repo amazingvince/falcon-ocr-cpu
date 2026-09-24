@@ -21,9 +21,14 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["float_roundtrip"] }
 sha2 = "0.10"
 tokenizers = { version = "=0.22.2", default-features = false, features = ["onig"] }
-turbojpeg = { version = "=1.5.1", default-features = false, features = ["cmake", "require-simd"] }
+turbojpeg = { version = "=1.5.1", optional = true, default-features = false, features = ["cmake", "require-simd"] }
 
 [features]
+default = ["turbojpeg"]
+# libjpeg-turbo for JPEG input: byte-identical to the pinned Pillow decoder
+# (accurate integer IDCT, fancy upsampling, CMYK). Without it the `image`
+# crate decodes JPEG, which is not Pillow-exact; PNG is unaffected.
+turbojpeg = ["dep:turbojpeg"]
 # gemm's AVX-512 kernels (runtime-detected) for prefill projections. Changes
 # prefill rounding on AVX-512 machines, so it is token-checked, and the
 # bitwise gemm-emulation tests in `kernels::prefill64` do not apply.

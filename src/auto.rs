@@ -546,7 +546,12 @@ impl Resolved {
             },
             kv_cache: kv_cache_label(profile).to_owned(),
             bytes: byte_budget(&facts.config, profile, config.head),
-            image_decoder: "libjpeg-turbo (Pillow-exact)".to_owned(),
+            image_decoder: if cfg!(feature = "turbojpeg") {
+                "libjpeg-turbo (Pillow-exact)"
+            } else {
+                "image-rs (not Pillow-exact)"
+            }
+            .to_owned(),
             tuning: config.tuning,
         }
     }
