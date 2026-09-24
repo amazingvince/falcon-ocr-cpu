@@ -116,7 +116,7 @@ pub(super) fn attention_gemm(q: &[f32], kv: &CompactKv<'_>, geometry: Geometry, 
                         let rescale = if maxima[row] == f32::NEG_INFINITY {
                             0.0
                         } else {
-                            (maxima[row] - new_max).exp()
+                            exp_scalar(maxima[row] - new_max)
                         };
                         let out_row =
                             &mut out[row * query_width + head * head_dim..row * query_width + (head + 1) * head_dim];
@@ -171,8 +171,10 @@ pub(super) fn attention_gemm(q: &[f32], kv: &CompactKv<'_>, geometry: Geometry, 
         });
 }
 
-/// `values[i] = (values[i] - shift).exp()`, vectorized where available with a
-/// bitwise-identical exp (see `vexp`).
+/// `values[i] = exp(values[i] - shift)` with the exp of this architecture's
+/// tile kernels: on x86 the platform `expf` (the AVX2 vector exp reproduces
+/// it bit for bit, see `vexp`), on aarch64 the portable fast exp that the
+/// NEON prefill tiles compute, so compact and expanded caches agree bitwise.
 fn exp_shifted(values: &mut [f32], shift: f32) {
     #[cfg(target_arch = "x86_64")]
     if avx2_available() {
@@ -180,7 +182,26 @@ fn exp_shifted(values: &mut [f32], shift: f32) {
         unsafe { vexp::exp_shifted_in_place(values, shift) };
         return;
     }
+    #[cfg(target_arch = "aarch64")]
+    {
+        // SAFETY: NEON is part of the aarch64 baseline.
+        unsafe { <crate::simd::Neon as crate::simd::Simd>::exp_shifted(values, shift) };
+    }
+    #[cfg(not(target_arch = "aarch64"))]
     for value in values {
         *value = (*value - shift).exp();
+    }
+}
+
+/// Scalar `exp` matching [`exp_shifted`]'s vector exp on this architecture.
+#[inline(always)]
+fn exp_scalar(x: f32) -> f32 {
+    #[cfg(target_arch = "aarch64")]
+    {
+        crate::simd::exp_poly(x)
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        x.exp()
     }
 }

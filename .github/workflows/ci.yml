@@ -60,7 +60,7 @@ jobs:
         run: cargo check --locked --target aarch64-unknown-linux-gnu --no-default-features --all-targets
       - name: Python tools and tests
         run: |
-          python3 -m pip install --quiet ruff
+          python3 -m pip install --quiet ruff pillow rapidfuzz numpy
           python3 -m ruff check tools
           python3 -m unittest discover -s research/corpus-qualification/tests -p "test_*.py"
           python3 -m unittest discover -s research/quantization-feasibility/tests -p "test_*.py"
