@@ -6,6 +6,84 @@ use crate::{config::ModelConfig, kernels};
 
 use super::PARALLEL_ROWS;
 
+/// Split the fused QKV rows (`work.qkv`) into per-head Q, GQA-expanded K
+/// and V, apply the per-head RMS norms to Q and K, then RoPE from
+/// `work.rope`. Each original K head is normalized before expansion; the
+/// spatial rotations then differ for paired heads, so expanded keys are
+/// intentional. The arithmetic per element is the same whether the rows run
+/// in parallel or serially (decode, up to eight rows, stays serial).
+pub(super) fn split_norm_rope(c: &ModelConfig, rows: usize, work: &mut super::cache::Workspace, parallel: bool) {
+    let qdim = c.query_dim();
+    let kdim = c.kv_dim();
+    let qkv_width = qdim + 2 * kdim;
+    let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
+        for head in 0..c.n_heads {
+            let dst = head * c.head_dim;
+            q[dst..dst + c.head_dim].copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
+            let kvhead = head / (c.n_heads / c.n_kv_heads);
+            let kstart = qdim + kvhead * c.head_dim;
+            k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
+            let vstart = qdim + kdim + kvhead * c.head_dim;
+            v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
+        }
+    };
+    if parallel {
+        work.qkv
+            .par_chunks(qkv_width)
+            .zip(work.q.par_chunks_mut(qdim))
+            .zip(work.k.par_chunks_mut(qdim))
+            .zip(work.v.par_chunks_mut(qdim))
+            .for_each(|(((qkv, q), k), v)| split(qkv, q, k, v));
+    } else {
+        for (((qkv, q), k), v) in work
+            .qkv
+            .chunks(qkv_width)
+            .zip(work.q.chunks_mut(qdim))
+            .zip(work.k.chunks_mut(qdim))
+            .zip(work.v.chunks_mut(qdim))
+        {
+            split(qkv, q, k, v);
+        }
+    }
+    // Normalize all heads in two calls; avoid creating a Rayon operation
+    // for each individual 64-element head.
+    kernels::rms_norm(&work.q, &mut work.attn, c.head_dim, f32::EPSILON, None);
+    std::mem::swap(&mut work.q, &mut work.attn);
+    kernels::rms_norm(&work.k, &mut work.attn, c.head_dim, f32::EPSILON, None);
+    std::mem::swap(&mut work.k, &mut work.attn);
+    let rotate = |rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32]| {
+        for head in 0..c.n_heads {
+            let dst = head * c.head_dim;
+            for pair in 0..c.head_dim / 2 {
+                let [cos, sin] = rope[head * (c.head_dim / 2) + pair];
+                for vector in [&mut *q, &mut *k] {
+                    let p = dst + 2 * pair;
+                    let a = vector[p];
+                    let b = vector[p + 1];
+                    vector[p] = a * cos - b * sin;
+                    vector[p + 1] = a * sin + b * cos;
+                }
+            }
+        }
+    };
+    let rope_width = c.n_heads * (c.head_dim / 2);
+    if parallel {
+        work.rope[..rows * rope_width]
+            .par_chunks(rope_width)
+            .zip(work.q.par_chunks_mut(qdim))
+            .zip(work.k.par_chunks_mut(qdim))
+            .for_each(|((rope, q), k)| rotate(rope, q, k));
+    } else {
+        for ((rope, q), k) in work.rope[..rows * rope_width]
+            .chunks(rope_width)
+            .zip(work.q.chunks_mut(qdim))
+            .zip(work.k.chunks_mut(qdim))
+        {
+            rotate(rope, q, k);
+        }
+    }
+}
+
 pub(crate) fn temporal_factors(c: &ModelConfig) -> Vec<[f32; 2]> {
     let pairs = c.head_dim / 4;
     let mut result = Vec::with_capacity(c.max_seq_len * pairs);

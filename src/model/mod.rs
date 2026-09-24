@@ -6,7 +6,6 @@ use std::{
 
 use anyhow::{Context, Result, ensure};
 use memmap2::Mmap;
-use rayon::prelude::*;
 
 use crate::{
     config::{ModelConfig, WeightLayout},
@@ -61,7 +60,7 @@ pub(crate) use rope::{image_range, positions};
 
 use fused::fused_prefix_rows;
 use profile::{HeadClock, PhaseClock};
-use rope::{add_residual, rotary_factors, row_scales};
+use rope::{add_residual, rotary_factors, row_scales, split_norm_rope};
 
 #[derive(Clone)]
 struct Weight {
@@ -414,6 +413,97 @@ impl Model {
         Ok(Next::Logits(&work.logits))
     }
 
+    /// RMS norm of `h` and the fused QKV projection into `work.qkv`.
+    fn project_qkv(
+        &self,
+        layer: &Layer,
+        h: &[f32],
+        rows: usize,
+        work: &mut cache::Workspace,
+        step: &LayerStep<'_>,
+        trace: &mut dyn Trace,
+    ) -> Result<()> {
+        let c = &self.config;
+        kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
+        if step.capture {
+            trace.linear_input(step.index, "qkv", rows, &work.normalized);
+        }
+        self.linear(
+            &work.normalized,
+            rows,
+            c.dim,
+            &layer.qkv,
+            step.packed.map(|p| &p.qkv),
+            c.query_dim() + 2 * c.kv_dim(),
+            &mut work.qkv,
+            &mut work.quant_scratch,
+            step.simd,
+        )
+    }
+
+    /// The output projection of `work.attn` with its residual, then the
+    /// gated FFN with its residual, both into `h`.
+    fn attention_out_ffn(
+        &self,
+        layer: &Layer,
+        h: &mut [f32],
+        rows: usize,
+        work: &mut cache::Workspace,
+        step: &LayerStep<'_>,
+        trace: &mut dyn Trace,
+        clock: &mut PhaseClock,
+    ) -> Result<()> {
+        let c = &self.config;
+        if step.capture {
+            trace.linear_input(step.index, "wo", rows, &work.attn);
+        }
+        self.linear(
+            &work.attn,
+            rows,
+            c.query_dim(),
+            &layer.wo,
+            step.packed.map(|p| &p.wo),
+            c.dim,
+            &mut work.projected,
+            &mut work.quant_scratch,
+            step.simd,
+        )?;
+        add_residual(h, &work.projected, c.dim);
+        clock.mark(5);
+        kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
+        if step.capture {
+            trace.linear_input(step.index, "w13", rows, &work.normalized);
+        }
+        self.linear_glu(
+            &work.normalized,
+            rows,
+            &layer.w13,
+            step.packed.map(|p| &p.w13),
+            &mut work.ffn_packed,
+            &mut work.gated,
+            &mut work.quant_scratch,
+            step.simd,
+        )?;
+        clock.mark(6);
+        if step.capture {
+            trace.linear_input(step.index, "w2", rows, &work.gated);
+        }
+        self.linear(
+            &work.gated,
+            rows,
+            c.ffn_dim,
+            &layer.w2,
+            step.packed.map(|p| &p.w2),
+            c.dim,
+            &mut work.projected,
+            &mut work.quant_scratch,
+            step.simd,
+        )?;
+        add_residual(h, &work.projected, c.dim);
+        clock.mark(7);
+        Ok(())
+    }
+
     /// The transformer layers of `forward_next`: appends the rows' keys and
     /// values to the session and leaves the final hidden states in `h`.
     fn forward_layers(
@@ -440,8 +530,6 @@ impl Model {
             "RoPE position exceeds context"
         );
         let qdim = c.query_dim();
-        let kdim = c.kv_dim();
-        let qkv_width = qdim + 2 * kdim;
         let offset = session.len;
         let simd = session.simd;
         let exp = session.exp;
@@ -470,39 +558,20 @@ impl Model {
         // kernels a body and CPU get (`auto::Resolved` reports the same plan).
         let plan = kernels::prefill_plan(self.body_bits(), simd, tuning.prefill_bf16);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
-        fn quantized(w: &Weight) -> &crate::quant::linear::QuantLinear {
-            w.quantized.as_deref().expect("body_bits checked every body matrix")
-        }
         let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;
         let bf16_projections = panel && plan.projection == kernels::PrefillProjection::PanelBf16;
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
+            let step = LayerStep {
+                index: i,
+                packed: None,
+                simd,
+                capture,
+            };
             if panel {
-                row_scales(h, c.dim, &mut work.row_scale);
-                quantized(&layer.qkv).prefill(
-                    h,
-                    rows,
-                    Some(&work.row_scale),
-                    kernels::panel_gemm::Epilogue::Store(&mut work.qkv),
-                    &mut work.quant_scratch,
-                    bf16_projections,
-                );
+                panel_qkv(c, layer, h, rows, work, bf16_projections);
             } else {
-                kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-                if capture {
-                    trace.linear_input(i, "qkv", rows, &work.normalized);
-                }
-                self.linear(
-                    &work.normalized,
-                    rows,
-                    c.dim,
-                    &layer.qkv,
-                    None,
-                    qkv_width,
-                    &mut work.qkv,
-                    &mut work.quant_scratch,
-                    simd,
-                )?;
+                self.project_qkv(layer, h, rows, work, &step, trace)?;
             }
             clock.mark(1);
             // Prefill rows into a compact cache: split, per-head norms, RoPE and
@@ -532,74 +601,7 @@ impl Model {
                 );
                 clock.mark(2);
             } else {
-                // Normalize each original K head before GQA expansion. Spatial rotations
-                // subsequently differ for paired heads, so expanded keys are intentional.
-                let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
-                    for head in 0..c.n_heads {
-                        let dst = head * c.head_dim;
-                        q[dst..dst + c.head_dim].copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
-                        let kvhead = head / (c.n_heads / c.n_kv_heads);
-                        let kstart = qdim + kvhead * c.head_dim;
-                        k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
-                        let vstart = qdim + kdim + kvhead * c.head_dim;
-                        v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
-                    }
-                };
-                if rows >= PARALLEL_ROWS {
-                    work.qkv
-                        .par_chunks(qkv_width)
-                        .zip(work.q.par_chunks_mut(qdim))
-                        .zip(work.k.par_chunks_mut(qdim))
-                        .zip(work.v.par_chunks_mut(qdim))
-                        .for_each(|(((qkv, q), k), v)| split(qkv, q, k, v));
-                } else {
-                    for (((qkv, q), k), v) in work
-                        .qkv
-                        .chunks(qkv_width)
-                        .zip(work.q.chunks_mut(qdim))
-                        .zip(work.k.chunks_mut(qdim))
-                        .zip(work.v.chunks_mut(qdim))
-                    {
-                        split(qkv, q, k, v);
-                    }
-                }
-                // Normalize all heads in two calls; avoid creating a Rayon operation
-                // for each individual 64-element head.
-                kernels::rms_norm(&work.q, &mut work.attn, c.head_dim, f32::EPSILON, None);
-                std::mem::swap(&mut work.q, &mut work.attn);
-                kernels::rms_norm(&work.k, &mut work.attn, c.head_dim, f32::EPSILON, None);
-                std::mem::swap(&mut work.k, &mut work.attn);
-                let rotate = |rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32]| {
-                    for head in 0..c.n_heads {
-                        let dst = head * c.head_dim;
-                        for pair in 0..c.head_dim / 2 {
-                            let [cos, sin] = rope[head * (c.head_dim / 2) + pair];
-                            for vector in [&mut *q, &mut *k] {
-                                let p = dst + 2 * pair;
-                                let a = vector[p];
-                                let b = vector[p + 1];
-                                vector[p] = a * cos - b * sin;
-                                vector[p + 1] = a * sin + b * cos;
-                            }
-                        }
-                    }
-                };
-                let rope_width = c.n_heads * (c.head_dim / 2);
-                if rows >= PARALLEL_ROWS {
-                    work.rope[..rows * rope_width]
-                        .par_chunks(rope_width)
-                        .zip(work.q.par_chunks_mut(qdim))
-                        .zip(work.k.par_chunks_mut(qdim))
-                        .for_each(|((rope, q), k)| rotate(rope, q, k));
-                } else {
-                    for ((rope, q), k) in work.rope[..rows * rope_width]
-                        .chunks(rope_width)
-                        .zip(work.q.chunks_mut(qdim))
-                        .zip(work.k.chunks_mut(qdim))
-                    {
-                        rotate(rope, q, k);
-                    }
-                }
+                split_norm_rope(c, rows, work, rows >= PARALLEL_ROWS);
                 if trace.enabled() {
                     trace.tensor(&format!("{phase}.layer.{i}.q"), &[rows, c.n_heads, c.head_dim], &work.q)?;
                     trace.tensor(&format!("{phase}.layer.{i}.k"), &[rows, c.n_heads, c.head_dim], &work.k)?;
@@ -637,82 +639,9 @@ impl Model {
                 trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
             if panel {
-                quantized(&layer.wo).prefill(
-                    &work.attn,
-                    rows,
-                    None,
-                    kernels::panel_gemm::Epilogue::Add(h),
-                    &mut work.quant_scratch,
-                    bf16_projections,
-                );
-                clock.mark(5);
-                row_scales(h, c.dim, &mut work.row_scale);
-                quantized(&layer.w13).prefill(
-                    h,
-                    rows,
-                    Some(&work.row_scale),
-                    kernels::panel_gemm::Epilogue::Glu(&mut work.gated),
-                    &mut work.quant_scratch,
-                    bf16_projections,
-                );
-                clock.mark(6);
-                quantized(&layer.w2).prefill(
-                    &work.gated,
-                    rows,
-                    None,
-                    kernels::panel_gemm::Epilogue::Add(h),
-                    &mut work.quant_scratch,
-                    bf16_projections,
-                );
-                clock.mark(7);
+                panel_out_ffn(c, layer, h, rows, work, bf16_projections, &mut clock);
             } else {
-                if capture {
-                    trace.linear_input(i, "wo", rows, &work.attn);
-                }
-                self.linear(
-                    &work.attn,
-                    rows,
-                    qdim,
-                    &layer.wo,
-                    None,
-                    c.dim,
-                    &mut work.projected,
-                    &mut work.quant_scratch,
-                    simd,
-                )?;
-                add_residual(h, &work.projected, c.dim);
-                clock.mark(5);
-                kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-                if capture {
-                    trace.linear_input(i, "w13", rows, &work.normalized);
-                }
-                self.linear_glu(
-                    &work.normalized,
-                    rows,
-                    &layer.w13,
-                    None,
-                    &mut work.ffn_packed,
-                    &mut work.gated,
-                    &mut work.quant_scratch,
-                    simd,
-                )?;
-                clock.mark(6);
-                if capture {
-                    trace.linear_input(i, "w2", rows, &work.gated);
-                }
-                self.linear(
-                    &work.gated,
-                    rows,
-                    c.ffn_dim,
-                    &layer.w2,
-                    None,
-                    c.dim,
-                    &mut work.projected,
-                    &mut work.quant_scratch,
-                    simd,
-                )?;
-                add_residual(h, &work.projected, c.dim);
-                clock.mark(7);
+                self.attention_out_ffn(layer, h, rows, work, &step, trace, &mut clock)?;
             }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
@@ -849,52 +778,17 @@ impl Model {
             trace.tensor(&format!("{phase}.embedding"), &[rows, c.dim], h)?;
         }
         let qdim = c.query_dim();
-        let kdim = c.kv_dim();
-        let qkv_width = qdim + 2 * kdim;
+        // Batch steps report no phases.
+        let mut clock = PhaseClock::new(rows, false);
         for (i, layer) in self.layers.iter().enumerate() {
-            kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            self.linear(
-                &work.normalized,
-                rows,
-                c.dim,
-                &layer.qkv,
-                packed.map(|p| &p.layers[i].qkv),
-                qkv_width,
-                &mut work.qkv,
-                &mut work.quant_scratch,
+            let step = LayerStep {
+                index: i,
+                packed: packed.map(|p| &p.layers[i]),
                 simd,
-            )?;
-            for row in 0..rows {
-                let qkv = &work.qkv[row * qkv_width..(row + 1) * qkv_width];
-                for head in 0..c.n_heads {
-                    let dst = (row * c.n_heads + head) * c.head_dim;
-                    work.q[dst..dst + c.head_dim].copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
-                    let kvhead = head / (c.n_heads / c.n_kv_heads);
-                    let kstart = qdim + kvhead * c.head_dim;
-                    work.k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
-                    let vstart = qdim + kdim + kvhead * c.head_dim;
-                    work.v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
-                }
-            }
-            kernels::rms_norm(&work.q, &mut work.attn, c.head_dim, f32::EPSILON, None);
-            std::mem::swap(&mut work.q, &mut work.attn);
-            kernels::rms_norm(&work.k, &mut work.attn, c.head_dim, f32::EPSILON, None);
-            std::mem::swap(&mut work.k, &mut work.attn);
-            for row in 0..rows {
-                for head in 0..c.n_heads {
-                    let dst = (row * c.n_heads + head) * c.head_dim;
-                    for pair in 0..c.head_dim / 2 {
-                        let [cos, sin] = work.rope[(row * c.n_heads + head) * (c.head_dim / 2) + pair];
-                        for vector in [&mut work.q, &mut work.k] {
-                            let p = dst + 2 * pair;
-                            let a = vector[p];
-                            let b = vector[p + 1];
-                            vector[p] = a * cos - b * sin;
-                            vector[p + 1] = a * sin + b * cos;
-                        }
-                    }
-                }
-            }
+                capture: false,
+            };
+            self.project_qkv(layer, h, rows, work, &step, trace)?;
+            split_norm_rope(c, rows, work, false);
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.q"), &[rows, c.n_heads, c.head_dim], &work.q)?;
                 trace.tensor(&format!("{phase}.layer.{i}.k"), &[rows, c.n_heads, c.head_dim], &work.k)?;
@@ -925,41 +819,7 @@ impl Model {
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
-            self.linear(
-                &work.attn,
-                rows,
-                qdim,
-                &layer.wo,
-                packed.map(|p| &p.layers[i].wo),
-                c.dim,
-                &mut work.projected,
-                &mut work.quant_scratch,
-                simd,
-            )?;
-            add_residual(h, &work.projected, c.dim);
-            kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            self.linear_glu(
-                &work.normalized,
-                rows,
-                &layer.w13,
-                packed.map(|p| &p.layers[i].w13),
-                &mut work.ffn_packed,
-                &mut work.gated,
-                &mut work.quant_scratch,
-                simd,
-            )?;
-            self.linear(
-                &work.gated,
-                rows,
-                c.ffn_dim,
-                &layer.w2,
-                packed.map(|p| &p.layers[i].w2),
-                c.dim,
-                &mut work.projected,
-                &mut work.quant_scratch,
-                simd,
-            )?;
-            add_residual(h, &work.projected, c.dim);
+            self.attention_out_ffn(layer, h, rows, work, &step, trace, &mut clock)?;
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
@@ -1039,6 +899,76 @@ fn decode_linear(
     } else {
         kernels::linear_with_simd(input, rows, input_dim, weights, output_dim, output, simd);
     }
+}
+
+/// Per-layer context of the projection helpers.
+struct LayerStep<'a> {
+    index: usize,
+    /// Phase-packed FP32 copies for AVX2 batch decode, when prepared.
+    packed: Option<&'a PackedLayer>,
+    simd: kernels::Simd,
+    /// Record the linear inputs (`Trace::captures_linear_inputs`).
+    capture: bool,
+}
+
+fn quantized(w: &Weight) -> &crate::quant::linear::QuantLinear {
+    w.quantized.as_deref().expect("body_bits checked every body matrix")
+}
+
+/// Panel-GEMM QKV projection of a quantized body: the RMS norm folds into
+/// the row scales, with the same per-element operations as the separate
+/// passes.
+fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut cache::Workspace, bf16: bool) {
+    row_scales(h, c.dim, &mut work.row_scale);
+    quantized(&layer.qkv).prefill(
+        h,
+        rows,
+        Some(&work.row_scale),
+        kernels::panel_gemm::Epilogue::Store(&mut work.qkv),
+        &mut work.quant_scratch,
+        bf16,
+    );
+}
+
+/// Panel-GEMM output projection and gated FFN of a quantized body: the
+/// residual adds fold into the epilogues.
+fn panel_out_ffn(
+    c: &ModelConfig,
+    layer: &Layer,
+    h: &mut [f32],
+    rows: usize,
+    work: &mut cache::Workspace,
+    bf16: bool,
+    clock: &mut PhaseClock,
+) {
+    quantized(&layer.wo).prefill(
+        &work.attn,
+        rows,
+        None,
+        kernels::panel_gemm::Epilogue::Add(h),
+        &mut work.quant_scratch,
+        bf16,
+    );
+    clock.mark(5);
+    row_scales(h, c.dim, &mut work.row_scale);
+    quantized(&layer.w13).prefill(
+        h,
+        rows,
+        Some(&work.row_scale),
+        kernels::panel_gemm::Epilogue::Glu(&mut work.gated),
+        &mut work.quant_scratch,
+        bf16,
+    );
+    clock.mark(6);
+    quantized(&layer.w2).prefill(
+        &work.gated,
+        rows,
+        None,
+        kernels::panel_gemm::Epilogue::Add(h),
+        &mut work.quant_scratch,
+        bf16,
+    );
+    clock.mark(7);
 }
 
 /// Row count from which per-row elementwise prefill work uses the pool.
