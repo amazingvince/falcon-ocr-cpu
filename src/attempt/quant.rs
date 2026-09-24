@@ -290,6 +290,7 @@ mod tests {
 #[derive(Default)]
 pub(crate) struct Scratch {
     pub dense: Vec<f32>,
+    pub bf16: crate::kernels::panel_bf16::Panels,
 }
 impl Q8Linear {
     /// Import the exact custom W8G64 encoding, not GGML Q8_0/Q8_K.
@@ -545,8 +546,19 @@ impl Q8Linear {
         epilogue: crate::kernels::panel_gemm::Epilogue<'_>,
         scratch: &mut Scratch,
     ) {
-        use crate::kernels::panel_gemm;
+        use crate::kernels::{panel_bf16, panel_gemm};
         assert_eq!(input.len(), rows * self.in_dim, "prefill input shape");
+        if let Codes::I8(codes) = &self.codes
+            && self.group_size == 64
+            && self.out_dim % panel_bf16::NR == 0
+            && panel_bf16::projections()
+        {
+            // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
+            // throughput and only the activations round (see `panel_bf16`).
+            panel_bf16::pack(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.bf16);
+            panel_bf16::gemm(input, rows, self.in_dim, &scratch.bf16, self.out_dim, row_scale, epilogue);
+            return;
+        }
         panel_gemm::pack_panels(
             self.out_dim,
             self.in_dim,

@@ -788,6 +788,15 @@ impl Model {
         fn quantized(w: &Weight) -> &crate::attempt::quant::Q8Linear {
             w.quantized.as_deref().expect("checked above")
         }
+        // 8-bit bodies (fast mode) also run prefill attention in BF16 where
+        // the CPU has AVX512-BF16 (`kernels::attention_compact_prefill_bf16`).
+        let bf16_attention = panel
+            && kernels::panel_bf16::attention()
+            && self.layers.iter().all(|l| {
+                [&l.qkv, &l.wo, &l.w13, &l.w2]
+                    .iter()
+                    .all(|w| quantized(w).bits() == 8)
+            });
         for (i, layer) in self.layers.iter().enumerate() {
             if panel {
                 row_scales(h, c.dim, &mut work.row_scale);
@@ -928,6 +937,7 @@ impl Model {
                 self.w(&layer.sinks),
                 &mut work.attn,
                 simd,
+                bf16_attention,
             );
             clock.mark(4);
             if trace.enabled() {
@@ -1246,6 +1256,7 @@ impl Model {
                     self.w(&layer.sinks),
                     &mut work.attn[range],
                     simd,
+                    false,
                 );
             }
             if trace.enabled() {
@@ -1475,6 +1486,7 @@ impl LayerCache {
         sinks: &[f32],
         output: &mut [f32],
         simd: kernels::Simd,
+        bf16: bool,
     ) {
         match self {
             Self::Split(cache) => {
@@ -1509,24 +1521,46 @@ impl LayerCache {
                 generated_k,
                 v,
                 ..
-            } => kernels::attention_compact_with_simd(
-                q,
-                prefix_k,
-                generated_k,
-                v,
-                rows,
-                prefix_k.len() / c.query_dim(),
-                total_len,
-                c.n_heads,
-                c.n_kv_heads,
-                c.head_dim,
-                offset,
-                image_start,
-                image_end,
-                sinks,
-                output,
-                simd,
-            ),
+            } => {
+                if bf16
+                    && generated_k.is_empty()
+                    && kernels::attention_compact_prefill_bf16(
+                        q,
+                        prefix_k,
+                        v,
+                        rows,
+                        total_len,
+                        c.n_heads,
+                        c.n_kv_heads,
+                        c.head_dim,
+                        offset,
+                        image_start,
+                        image_end,
+                        sinks,
+                        output,
+                    )
+                {
+                    return;
+                }
+                kernels::attention_compact_with_simd(
+                    q,
+                    prefix_k,
+                    generated_k,
+                    v,
+                    rows,
+                    prefix_k.len() / c.query_dim(),
+                    total_len,
+                    c.n_heads,
+                    c.n_kv_heads,
+                    c.head_dim,
+                    offset,
+                    image_start,
+                    image_end,
+                    sinks,
+                    output,
+                    simd,
+                )
+            }
         }
     }
 }

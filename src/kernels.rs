@@ -13,6 +13,7 @@ mod attention64;
 mod prefill64;
 // Bitwise equal to the platform expf on the softmax domain (exhaustive test).
 #[cfg(target_arch = "x86_64")]
+pub(crate) mod panel_bf16;
 pub(crate) mod panel_gemm;
 /// Prefill attention stage split (probe, `FALCON_OCR_PREFILL_PROFILE`).
 pub(crate) fn report_prefill_stage_cycles() {
@@ -847,6 +848,66 @@ pub fn attention_compact(
 /// `[total_len, n_kv_heads, head_dim]`. Query head `h` uses KV head
 /// `h / (n_heads / n_kv_heads)`. The entire image interval must be in the prefix.
 ///
+/// BF16 form of the pure-prefill compact attention (fast mode on AVX512-BF16
+/// CPUs, see `prefill64::bf16`): Q, K, V and the probabilities round to BF16;
+/// scores, softmax and outputs stay FP32. Returns false, writing nothing,
+/// when the CPU or the shape does not qualify.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn attention_compact_prefill_bf16(
+    q: &[f32],
+    prefix_k: &[f32],
+    v: &[f32],
+    query_len: usize,
+    total_len: usize,
+    n_heads: usize,
+    n_kv_heads: usize,
+    head_dim: usize,
+    query_offset: usize,
+    image_start: usize,
+    image_end: usize,
+    sinks: &[f32],
+    output: &mut [f32],
+) -> bool {
+    #[cfg(target_arch = "x86_64")]
+    if query_len >= 4
+        && head_dim == 64
+        && n_heads % n_kv_heads.max(1) == 0
+        && query_offset == 0
+        && query_len == total_len
+        && prefix_k.len() == total_len * n_heads * 64
+        && v.len() == total_len * n_kv_heads * 64
+        && q.len() == query_len * n_heads * 64
+        && output.len() == q.len()
+        && sinks.len() == n_heads
+        && image_start <= image_end
+        && image_end <= total_len
+        && avx2_available()
+        && avx512_available()
+        && panel_bf16::attention()
+    {
+        // SAFETY: AVX2/FMA/AVX-512F/AVX512-BF16 detected; shapes checked.
+        unsafe {
+            prefill64::bf16::compact_prefill(
+                q,
+                prefix_k,
+                v,
+                query_len,
+                n_heads,
+                n_kv_heads,
+                query_offset,
+                image_start,
+                image_end,
+                sinks,
+                output,
+            );
+        }
+        return true;
+    }
+    let _ = (q, prefix_k, v, query_len, total_len, n_heads, n_kv_heads, head_dim);
+    let _ = (query_offset, image_start, image_end, sinks, output);
+    false
+}
+
 /// Arithmetic order matches expanded-cache attention. A key tile crossing the
 /// prefix boundary is gathered before GEMM, preserving its original tile width
 /// and softmax reduction order. Single-token decode never allocates scratch.

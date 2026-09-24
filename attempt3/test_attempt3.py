@@ -251,7 +251,9 @@ class WiringTests(unittest.TestCase):
         model=(ROOT/"src/model.rs").read_text()
         block=model[model.index("pub(crate) fn forward"):model.index("fn decode_linear")]
         # W13 routes through linear_glu, which itself dispatches via self.linear.
-        self.assertEqual(block.count("self.linear(")+block.count("self.linear_glu("),10)
+        # 11 = forward_layers' prefill/decode projections, the forward_next and
+        # verify_next heads, and the batched step.
+        self.assertEqual(block.count("self.linear(")+block.count("self.linear_glu("),11)
         glu=model[model.index("fn linear_glu("):model.index("fn w(&self")]
         self.assertEqual(glu.count("self.linear("),1)
         self.assertNotIn("self.w(&layer.qkv)",block)

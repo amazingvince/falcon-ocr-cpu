@@ -108,12 +108,12 @@ pub(crate) fn exp_poly(x: f32) -> f32 {
     let y = p.mul_add(r * r, r) + 1.0;
     y * f32::from_bits(((n as i32 + 127) as u32) << 23)
 }
-const EXP_MIN: f32 = -87.0;
-const EXP_MAX: f32 = 88.722_83;
-const EXP_LOG2E: f32 = std::f32::consts::LOG2_E;
-const EXP_LN2_HI: f32 = 0.693_359_4;
-const EXP_LN2_LO: f32 = -2.121_944_4e-4;
-const EXP_P: [f32; 6] = [
+pub(crate) const EXP_MIN: f32 = -87.0;
+pub(crate) const EXP_MAX: f32 = 88.722_83;
+pub(crate) const EXP_LOG2E: f32 = std::f32::consts::LOG2_E;
+pub(crate) const EXP_LN2_HI: f32 = 0.693_359_4;
+pub(crate) const EXP_LN2_LO: f32 = -2.121_944_4e-4;
+pub(crate) const EXP_P: [f32; 6] = [
     1.987_569_1e-4,
     1.398_199_9e-3,
     8.333_452e-3,

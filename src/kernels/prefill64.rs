@@ -36,6 +36,9 @@
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;
 
+#[cfg(target_arch = "x86_64")]
+pub(super) mod bf16;
+
 pub(super) const QUERY_TILE: usize = 32;
 pub(super) const KEY_TILE: usize = 128;
 const HEAD_DIM: usize = 64;
@@ -647,7 +650,8 @@ unsafe fn softmax_lanes<S: Isa>(
             let skip_bits = S::mask_bits(skip);
             for (lane, &factor) in factors.iter().enumerate() {
                 let r = lane0 + lane;
-                if r >= queries || skip_bits & (1 << lane) != 0 {
+                // A factor of exactly 1 leaves the row unchanged (`x * 1 == x`).
+                if r >= queries || skip_bits & (1 << lane) != 0 || factor == 1.0 {
                     continue;
                 }
                 let row = std::slice::from_raw_parts_mut(out.add(r * out_stride), HEAD_DIM);
