@@ -486,7 +486,7 @@ impl Q8Linear {
             rows.checked_mul(self.in_dim) == Some(input.len()),
             "W8 input shape"
         );
-        ensure!(self.out_dim % 2 == 0, "GLU needs interleaved gate/up rows");
+        ensure!(self.out_dim.is_multiple_of(2), "GLU needs interleaved gate/up rows");
         let ffn = self.out_dim / 2;
         ensure!(rows.checked_mul(ffn) == Some(gated.len()), "W8 GLU shape");
         simd.validate().map_err(anyhow::Error::msg)?;
@@ -560,7 +560,7 @@ impl Q8Linear {
         assert_eq!(input.len(), rows * self.in_dim, "prefill input shape");
         if let Codes::I8(codes) = &self.codes
             && self.group_size == 64
-            && self.out_dim % panel_bf16::NR == 0
+            && self.out_dim.is_multiple_of(panel_bf16::NR)
             && panel_bf16::projections()
         {
             // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
@@ -581,7 +581,7 @@ impl Q8Linear {
     /// Whether large-M products use `kernels::panel_gemm` here.
     pub(crate) fn panel_gemm(&self, simd: crate::kernels::Simd) -> bool {
         crate::kernels::panel_gemm::available(simd)
-            && self.out_dim % crate::kernels::panel_gemm::NR == 0
+            && self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
     }
 
     /// The dot kernel for this matrix's code type, group size and backend.

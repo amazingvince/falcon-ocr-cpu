@@ -29,11 +29,11 @@ try {
     if (-not $SkipBuild) {
         & cargo +1.94.0 test --locked --lib
         if ($LASTEXITCODE -ne 0) { throw "Rust unit tests failed. Preserve the failure; do not relax thresholds." }
-        & cargo +1.94.0 build --release --locked --bin falcon-ocr-attempt
+        & cargo +1.94.0 build --release --locked --bin falcon-ocr-eval
         if ($LASTEXITCODE -ne 0) { throw "Native build failed." }
     }
     $target = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { "target" }
-    $binary = Join-Path $target 'release/falcon-ocr-attempt.exe'
+    $binary = Join-Path $target 'release/falcon-ocr-eval.exe'
     if (-not (Test-Path -LiteralPath $binary)) { throw "Native binary not found at $binary" }
     & $binary doctor
     if ($LASTEXITCODE -ne 0) { throw "Native CPU capability probe failed." }

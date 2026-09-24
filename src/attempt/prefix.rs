@@ -471,7 +471,7 @@ impl SplitPrefix {
     /// `[rows][heads][64]`, identical within each GQA pair (text positions).
     pub fn append(&mut self, k: &[f32], v: &[f32]) {
         let width = self.heads * 64;
-        assert!(k.len() == v.len() && k.len() % width == 0, "tail row shape");
+        assert!(k.len() == v.len() && k.len().is_multiple_of(width), "tail row shape");
         let mut key = [0.0_f32; MAX_GROUPS * 64];
         let mut value = [0.0_f32; MAX_GROUPS * 64];
         let unique = self.kv_heads * 64;
@@ -961,6 +961,7 @@ impl SplitPrefix {
     }
 
     #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
+    #[allow(clippy::needless_range_loop)] // rows are grouped by index into fixed-size arrays
     fn attention_pairs_rows(
         &self,
         q: &[f32],
@@ -1279,6 +1280,7 @@ unsafe fn record_value<S: Isa, R: RecordStore>(
 /// Both heads of one KV group over positions `[start, end)` (tile aligned),
 /// prefix positions from `store` and generated ones from `tail`.
 #[inline(always)]
+#[allow(clippy::needless_range_loop)] // key index j addresses both heads' logits and the record
 unsafe fn pair<S: Isa, R: RecordStore, T: RecordStore>(
     store: &R,
     tail: &T,
@@ -1441,6 +1443,7 @@ unsafe fn pv_decoded<S: Isa>(values: *const f32, probabilities: &[f32], denomina
 /// decoded once into a small buffer, and each row then runs over it with its
 /// outputs in registers.
 #[inline(always)]
+#[allow(clippy::needless_range_loop)] // key index j addresses every row's logits and the record
 unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
     store: &R,
     tail: &T,

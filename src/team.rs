@@ -196,7 +196,7 @@ fn worker(shared: &Shared, index: usize) {
             }
             std::hint::spin_loop();
             spins = spins.wrapping_add(1);
-            if spins % 1024 == 0 && idle_since.elapsed() > IDLE_SPIN {
+            if spins.is_multiple_of(1024) && idle_since.elapsed() > IDLE_SPIN {
                 shared.sleeping[index].store(true, Ordering::SeqCst);
                 if shared.epoch.load(Ordering::SeqCst) == seen
                     && !shared.stop.load(Ordering::SeqCst)

@@ -38,7 +38,7 @@ cargo test --release --locked --lib 2>&1 | tee "$OUT/unit-tests.log" | grep -E "
 
 log "doctor"
 ./target/release/falcon-ocr doctor | tee -a "$OUT/summary.txt"
-./target/release/falcon-ocr-attempt doctor | tee -a "$OUT/summary.txt"
+./target/release/falcon-ocr-eval doctor | tee -a "$OUT/summary.txt"
 
 if [ -f artifacts/reference/smoke-fp32/trace.safetensors ]; then
   log "model gates: GPU smoke tokens, cache layouts, screened head, zero decode allocations"
@@ -68,7 +68,7 @@ fi
 log "prefill + decode phase profile (FP32 exact and W8+Q8), ${PERF_CORES} and ${ALL_CORES} threads"
 for threads in "$PERF_CORES" "$ALL_CORES"; do
   for profile in reference w8-body-kv-q8; do
-    FALCON_OCR_PHASES=1 ./target/release/falcon-ocr-attempt --model artifacts/model \
+    FALCON_OCR_PHASES=1 ./target/release/falcon-ocr-eval --model artifacts/model \
       --threads "$threads" --profile "$profile" --head screened \
       bench "$IMG" --max-new-tokens 200 --warmup 0 --samples 1 \
       --report "$OUT/phases-$profile-t$threads.json" 2>&1 \
@@ -80,9 +80,9 @@ if [ "${QUICK:-0}" = "1" ]; then log "QUICK=1: stopping before the bracket"; exi
 
 log "bracket with token agreement (journal page, full output)"
 python3 attempt3/make_manifest.py "$IMG" --sibling-ground-truth --output "$OUT/cases.json"
-python3 attempt3/bench.py --binary target/release/falcon-ocr-attempt --model artifacts/model \
+python3 attempt3/bench.py --binary target/release/falcon-ocr-eval --model artifacts/model \
   --manifest "$OUT/cases.json" --candidate-args "--head screened" \
-  --profiles reference w8-body-kv-bf16 w8-body-kv-q8 --schedule interleaved --control-every 2 \
+  --profiles reference w16-body-kv-q16 w8-body-kv-q8 --schedule interleaved --control-every 2 \
   --warmup 1 --samples 2 --threads "$ALL_CORES" --output "$OUT/bracket" 2>&1 | tail -8 \
   | tee -a "$OUT/summary.txt"
 

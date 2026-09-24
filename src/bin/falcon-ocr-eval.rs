@@ -143,6 +143,8 @@ enum Command {
 
 /// Log-probabilities kept per step by `--dump-topk`.
 const TOP_K: usize = 32;
+/// One page's per-step top-K `(token id, log-probability)` lists.
+type PageTopK = Vec<Vec<(u32, f32)>>;
 
 /// `log softmax(logits)` in f64.
 fn log_softmax(logits: &[f32]) -> Vec<f64> {
@@ -608,7 +610,7 @@ fn main() -> Result<()> {
             dump_topk,
             reference_topk,
         } => {
-            let reference_top: Option<std::collections::HashMap<String, Vec<Vec<(u32, f32)>>>> =
+            let reference_top: Option<std::collections::HashMap<String, PageTopK>> =
                 match &reference_topk {
                     Some(path) => {
                         let value: serde_json::Value =

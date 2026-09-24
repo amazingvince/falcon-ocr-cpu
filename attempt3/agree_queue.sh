@@ -5,7 +5,7 @@
 set -u
 out=$1 pages=$2 steps=$3
 shift 3
-bin=${AGREE_BIN:-./artifacts/phase4/bin/falcon-ocr-attempt-agree.exe}
+bin=${AGREE_BIN:-./target/release/falcon-ocr-eval.exe}
 ref=${AGREE_REFERENCE:-artifacts/phase4/checks/calibration-reference.json}
 mkdir -p "$out"
 mapfile -t PAGES < <(tr -d '\r' < "$pages")

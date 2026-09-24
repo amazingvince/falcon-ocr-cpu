@@ -66,7 +66,7 @@ pub(crate) struct Panels {
 /// Pack `n x k` 8-bit codes with one scale per 64 inputs (`scales` is
 /// `[n][k / 64]`). `n` must be a multiple of [`NR`] and `k` of 64.
 pub(crate) fn pack(n: usize, k: usize, codes: &[i8], scales: &[f32], out: &mut Panels) {
-    assert!(n % NR == 0 && k % GROUP == 0, "BF16 panel shape");
+    assert!(n.is_multiple_of(NR) && k.is_multiple_of(GROUP), "BF16 panel shape");
     assert_eq!(codes.len(), n * k);
     let groups = k / GROUP;
     assert_eq!(scales.len(), n * groups);
@@ -110,7 +110,7 @@ pub(crate) fn gemm(
 ) {
     assert!(available(), "AVX512-BF16 required");
     assert_eq!(a.len(), m * k);
-    assert!(n % NR == 0 && k % GROUP == 0);
+    assert!(n.is_multiple_of(NR) && k.is_multiple_of(GROUP));
     let (out, mode) = match epilogue {
         Epilogue::Store(out) => (out, 0),
         Epilogue::Glu(out) => (out, 1),

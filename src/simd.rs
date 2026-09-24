@@ -204,7 +204,7 @@ impl Simd for Portable {
     #[inline(always)]
     unsafe fn mask_bits(mask: Self::V) -> u32 {
         (0..8).fold(0, |bits, i| {
-            bits | (u32::from(mask[i].to_bits() >> 31) << i)
+            bits | ((mask[i].to_bits() >> 31) << i)
         })
     }
     #[inline(always)]
@@ -903,7 +903,7 @@ mod tests {
     #[test]
     fn native_matches_portable_bitwise() {
         let codes: Vec<i8> = (0..2400)
-            .map(|i| ((i * 37 % 255) as i32 - 127) as i8)
+            .map(|i| (i * 37 % 255 - 127) as i8)
             .collect();
         let scales = values(2400 / 64 + 1, 9)
             .iter()

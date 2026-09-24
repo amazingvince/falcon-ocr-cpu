@@ -27,8 +27,8 @@ const FAST_MAX: f32 = 88.0;
 const UNCERTAIN: i64 = 1 << 20;
 
 const LOG2E: f64 = std::f64::consts::LOG2_E;
-const LN2_HI: f64 = 6.931_471_803_691_238_164_9e-1;
-const LN2_LO: f64 = 1.908_214_929_270_587_700_02e-10;
+const LN2_HI: f64 = 0.693_147_180_369_123_8;
+const LN2_LO: f64 = 1.908_214_929_270_587_7e-10;
 
 /// `exp` of four f64 lanes to < 1e-11 relative error (degree-9 Taylor on
 /// |r| <= ln2/2, Estrin form), plus the lanes' distance (in f64 ulps) from an

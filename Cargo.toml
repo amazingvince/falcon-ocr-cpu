@@ -32,6 +32,13 @@ gemm-avx512 = ["gemm/x86-v4"]
 [dev-dependencies]
 tempfile = "3.23"
 
+# `cargo clippy -- -D warnings` is the CI gate; see tools/check.sh.
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
+[lints.clippy]
+all = "warn"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
@@ -42,5 +49,5 @@ name = "falcon-ocr"
 path = "src/main.rs"
 
 [[bin]]
-name = "falcon-ocr-attempt"
-path = "src/bin/falcon-ocr-attempt.rs"
+name = "falcon-ocr-eval"
+path = "src/bin/falcon-ocr-eval.rs"

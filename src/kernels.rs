@@ -862,7 +862,7 @@ pub(crate) fn attention_compact_prefill_bf16(
     #[cfg(target_arch = "x86_64")]
     if query_len >= 4
         && head_dim == 64
-        && n_heads % n_kv_heads.max(1) == 0
+        && n_heads.is_multiple_of(n_kv_heads.max(1))
         && query_offset == 0
         && query_len == total_len
         && prefix_k.len() == total_len * n_heads * 64

@@ -164,6 +164,9 @@ impl OutputColumns {
 mod x86 {
     use std::arch::x86_64::*;
 
+    // Accumulator arrays are indexed by the row/phase loop variables on purpose:
+    // the const-generic bounds keep every index in registers.
+    #[allow(clippy::needless_range_loop)]
     #[target_feature(enable = "avx2,fma")]
     pub(super) unsafe fn column<const B: usize, const P: usize>(
         input: &[f32],

@@ -7,7 +7,7 @@
 # About 10 min for step 1 and 10 min for step 2 on a 16-core desktop.
 #   BIN=... GRAM_DIR=... OUT=... bash attempt3/make_gptq_overlay.sh
 set -eu
-bin=${BIN:-target/release/falcon-ocr-attempt.exe}
+bin=${BIN:-target/release/falcon-ocr-eval.exe}
 pages=${PAGES:-attempt3/gptq-calibration-pages.txt}
 gram=${GRAM_DIR:-artifacts/w8/gram}
 out=${OUT:-artifacts/model/w8-gptq.safetensors}  # the default overlay of --mode fast

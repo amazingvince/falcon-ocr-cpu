@@ -84,7 +84,7 @@ impl ScreenedHead {
     /// Quantize and verify `weights` (`[vocab][dim]`, row-major FP32).
     pub(crate) fn build(weights: &[f32], vocab: usize, dim: usize) -> Result<Self> {
         ensure!(
-            vocab > 0 && dim > 0 && dim % GROUP == 0,
+            vocab > 0 && dim > 0 && dim.is_multiple_of(GROUP),
             "screened head needs a nonempty head with 64-channel groups"
         );
         ensure!(
@@ -134,7 +134,7 @@ impl ScreenedHead {
         weight_abs_max: f32,
         kappa: f32,
     ) -> Result<Self> {
-        ensure!(vocab > 0 && dim > 0 && dim % GROUP == 0, "mapped screen shape");
+        ensure!(vocab > 0 && dim > 0 && dim.is_multiple_of(GROUP), "mapped screen shape");
         ensure!(
             weight_abs_max.is_finite() && kappa.is_finite() && kappa > 0.0 && kappa < 0.53,
             "mapped screen constants"
