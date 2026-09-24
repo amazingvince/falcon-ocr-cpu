@@ -11,10 +11,10 @@ use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    attempt::{PrefixMode, Profile},
     config::{DecodeThreads, ExpMode, HeadMode, ModelConfig, RunnerConfig, Speculation, Tuning},
     kernels::PrefillPlan,
     model::{Model, WeightsSource},
+    quant::{Kv, Profile, Weights},
 };
 
 /// What the runner optimizes for. `near-exact` is the default: 16-bit body
@@ -51,18 +51,18 @@ impl Mode {
     /// about 7% faster decode).
     pub fn profile(self, split_exact: bool) -> Profile {
         match self {
-            Self::Exact if split_exact => Profile::SplitF32,
-            Self::Exact => Profile::Reference,
-            Self::NearExact => Profile::W16BodyKvQ16,
-            Self::Fast => Profile::W8BodyKvQ8,
+            Self::Exact if split_exact => Profile::SPLIT_F32,
+            Self::Exact => Profile::REFERENCE,
+            Self::NearExact => Profile::W16_BODY_KV_Q16,
+            Self::Fast => Profile::W8_BODY_KV_Q8,
         }
     }
     /// The mode a profile belongs to, if it is one of the shipped ones.
     pub fn of_profile(profile: Profile) -> Option<Self> {
-        match profile {
-            Profile::Reference | Profile::SplitF32 => Some(Self::Exact),
-            Profile::W16BodyKvQ16 => Some(Self::NearExact),
-            Profile::W8BodyKvQ8 => Some(Self::Fast),
+        match (profile.weights, profile.kv) {
+            (Weights::F32, Kv::Compact | Kv::F32Split) => Some(Self::Exact),
+            (Weights::Int16, Kv::Q16) => Some(Self::NearExact),
+            (Weights::Int8, Kv::Q8) => Some(Self::Fast),
             _ => None,
         }
     }
@@ -381,10 +381,10 @@ pub fn load_model(plan: &WeightsPlan, verify: bool) -> Result<Model> {
     match &plan.source {
         WeightsSource::Packed { path } => Model::load_packed(path, verify),
         WeightsSource::Checkpoint { dir, overlay, .. } => {
-            if plan.profile == Profile::Reference {
+            if plan.profile == Profile::REFERENCE {
                 Model::load(dir)
             } else {
-                Model::load_attempt(dir, plan.profile, overlay.as_deref())
+                Model::load_profile(dir, plan.profile, overlay.as_deref())
             }
         }
     }
@@ -446,7 +446,7 @@ impl Model {
     pub fn facts(&self) -> ModelFacts {
         ModelFacts {
             source: self.source().clone(),
-            profile: self.attempt_profile(),
+            profile: self.profile(),
             config: self.config().clone(),
             body_bits: self.body_bits(),
             overlay_sha256: self.overlay_sha256().map(str::to_owned),
@@ -553,13 +553,11 @@ impl Resolved {
 }
 
 fn kv_cache_label(profile: Profile) -> &'static str {
-    match profile.prefix_mode() {
-        PrefixMode::Reference => "f32-compact",
-        PrefixMode::SplitF32 => "f32-split",
-        PrefixMode::SplitBf16 => "bf16-split",
-        PrefixMode::SplitQ8 | PrefixMode::SplitQ8Kc => "q8",
-        PrefixMode::SplitQ16 => "q16",
-        PrefixMode::SplitF16 => "f16-split",
+    match profile.kv {
+        Kv::Compact => "f32-compact",
+        Kv::F32Split => "f32-split",
+        Kv::Q16 => "q16",
+        Kv::Q8 => "q8",
     }
 }
 
@@ -581,12 +579,11 @@ fn byte_budget(c: &ModelConfig, profile: Profile, head: HeadMode) -> ByteBudget 
     // Split records hold 160 elements per KV group and position (the shared
     // temporal key half, both heads' spatial halves and the value); the coded
     // formats add one 16-bit scale per 32 elements.
-    let record = match profile.prefix_mode() {
-        PrefixMode::Reference => (qdim + kdim) * 4 / c.n_kv_heads,
-        PrefixMode::SplitF32 => 160 * 4,
-        PrefixMode::SplitBf16 | PrefixMode::SplitF16 => 160 * 2,
-        PrefixMode::SplitQ16 => 160 * 2 + 5 * 2,
-        PrefixMode::SplitQ8 | PrefixMode::SplitQ8Kc => 160 + 5 * 2,
+    let record = match profile.kv {
+        Kv::Compact => (qdim + kdim) * 4 / c.n_kv_heads,
+        Kv::F32Split => 160 * 4,
+        Kv::Q16 => 160 * 2 + 5 * 2,
+        Kv::Q8 => 160 + 5 * 2,
     };
     ByteBudget {
         weights_per_token,
@@ -852,9 +849,9 @@ mod tests {
             assert_eq!(Mode::of_profile(mode.profile(false)), Some(mode));
             assert_eq!(serde_json::to_value(mode).unwrap(), serde_json::json!(mode.label()));
         }
-        assert_eq!(Mode::Exact.profile(true), Profile::SplitF32);
-        assert_eq!(Mode::Exact.profile(false), Profile::Reference);
-        assert_eq!(Mode::of_profile(Profile::W8Body), None);
+        assert_eq!(Mode::Exact.profile(true), Profile::SPLIT_F32);
+        assert_eq!(Mode::Exact.profile(false), Profile::REFERENCE);
+        assert_eq!(Mode::of_profile(Profile::W8_BODY), None);
         assert_eq!(Mode::Exact.packed_file_name(), None);
         assert!(Mode::Fast.packed_file_name().unwrap().contains("fast"));
     }
@@ -879,7 +876,7 @@ mod tests {
         let plan = resolve_weights(&request).unwrap();
         assert_eq!(
             (plan.mode, plan.profile),
-            (Some(Mode::NearExact), Profile::W16BodyKvQ16)
+            (Some(Mode::NearExact), Profile::W16_BODY_KV_Q16)
         );
         assert!(matches!(
             plan.source,
@@ -934,12 +931,12 @@ mod tests {
             split_exact: true,
             ..ModelRequest::default()
         };
-        assert_eq!(resolve_weights(&exact).unwrap().profile, Profile::SplitF32);
+        assert_eq!(resolve_weights(&exact).unwrap().profile, Profile::SPLIT_F32);
         let exact = ModelRequest {
             split_exact: false,
             ..exact
         };
-        assert_eq!(resolve_weights(&exact).unwrap().profile, Profile::Reference);
+        assert_eq!(resolve_weights(&exact).unwrap().profile, Profile::REFERENCE);
         // A packed file next to the checkpoint wins for its mode, unless the
         // caller wants the checkpoint (pack).
         let packed = root.join(Mode::NearExact.packed_file_name().unwrap());
@@ -948,7 +945,7 @@ mod tests {
         assert_eq!(plan.source, WeightsSource::Packed { path: packed.clone() });
         assert_eq!(
             (plan.mode, plan.profile),
-            (Some(Mode::NearExact), Profile::W16BodyKvQ16)
+            (Some(Mode::NearExact), Profile::W16_BODY_KV_Q16)
         );
         assert!(matches!(
             resolve_weights(&ModelRequest {
@@ -987,15 +984,15 @@ mod tests {
             ..explicit.clone()
         })
         .unwrap();
-        assert_eq!((research.mode, research.profile), (None, Profile::W8Body));
+        assert_eq!((research.mode, research.profile), (None, Profile::W8_BODY));
         // A named research profile reads the checkpoint (8-bit: overlay or RTN).
         let named = ModelRequest {
             model_dir: root,
-            profile: Some(Profile::KvQ8),
+            profile: Some(Profile::KV_Q8),
             ..ModelRequest::default()
         };
         let named_plan = resolve_weights(&named).unwrap();
-        assert_eq!((named_plan.mode, named_plan.profile), (None, Profile::KvQ8));
+        assert_eq!((named_plan.mode, named_plan.profile), (None, Profile::KV_Q8));
         assert!(matches!(
             named_plan.source,
             WeightsSource::Checkpoint {
@@ -1005,7 +1002,7 @@ mod tests {
             }
         ));
         let named = ModelRequest {
-            profile: Some(Profile::W8BodyKvQ8),
+            profile: Some(Profile::W8_BODY_KV_Q8),
             ..named
         };
         let named_plan = resolve_weights(&named).unwrap();
@@ -1033,22 +1030,22 @@ mod tests {
     #[test]
     fn byte_budget_matches_the_documented_figures() {
         let c: ModelConfig = serde_json::from_str(include_str!("../tests/fixtures/model-config.json")).unwrap();
-        let fast = byte_budget(&c, Profile::W8BodyKvQ8, HeadMode::Screened);
+        let fast = byte_budget(&c, Profile::W8_BODY_KV_Q8, HeadMode::Screened);
         // 168.7M body parameters as INT8 plus FP32 scales per 64; the INT8
         // screen of the 50.3M-parameter head plus its scales.
         assert_eq!(fast.weights_per_token, 179_232_768);
         assert_eq!(fast.head_per_token, 53_477_376);
         // 22 layers x 8 groups x 170 bytes: 196 MB at the 6,544-token journal page.
         assert_eq!(fast.kv_per_position, 29_920);
-        let near = byte_budget(&c, Profile::W16BodyKvQ16, HeadMode::Screened);
+        let near = byte_budget(&c, Profile::W16_BODY_KV_Q16, HeadMode::Screened);
         assert_eq!(near.weights_per_token, 2 * 168_689_664 + 10_543_104);
         assert_eq!(near.kv_per_position, 22 * 8 * 330);
-        let exact = byte_budget(&c, Profile::SplitF32, HeadMode::Full);
+        let exact = byte_budget(&c, Profile::SPLIT_F32, HeadMode::Full);
         assert_eq!(exact.weights_per_token, 4 * 168_689_664);
         assert_eq!(exact.head_per_token, 4 * 65536 * 768);
         assert_eq!(exact.kv_per_position, 22 * 8 * 640);
         assert_eq!(
-            byte_budget(&c, Profile::Reference, HeadMode::Full).kv_per_position,
+            byte_budget(&c, Profile::REFERENCE, HeadMode::Full).kv_per_position,
             22 * 1536 * 4
         );
     }

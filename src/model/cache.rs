@@ -49,7 +49,7 @@ pub(crate) struct Session {
     pub(super) tuning: Tuning,
 }
 pub(super) enum LayerCache {
-    Split(crate::attempt::prefix::SplitPrefix),
+    Split(crate::quant::kv::SplitPrefix),
     Expanded {
         k: Vec<f32>,
         v: Vec<f32>,
@@ -205,7 +205,7 @@ fn append_unique_heads(output: &mut Vec<f32>, expanded: &[f32], c: &ModelConfig)
 }
 impl Session {
     /// Drop the newest positions so that `len` remain (rejected draft
-    /// tokens). Needs the split cache of the attempt profiles.
+    /// tokens). Needs a split cache.
     pub(crate) fn truncate(&mut self, len: usize) -> Result<()> {
         ensure!(
             len >= self.image_end && len <= self.len,
@@ -253,8 +253,8 @@ impl Session {
         self.capacity = 0;
         bytes
     }
-    pub(crate) fn seal_prefix(&mut self, c: &ModelConfig, mode: crate::attempt::PrefixMode) -> Result<()> {
-        if mode == crate::attempt::PrefixMode::Reference {
+    pub(crate) fn seal_prefix(&mut self, c: &ModelConfig, mode: crate::quant::Kv) -> Result<()> {
+        if mode == crate::quant::Kv::Compact {
             return Ok(());
         }
         for layer in &mut self.layers {
@@ -269,7 +269,7 @@ impl Session {
                     self.len == *prefix_len,
                     "seal only a complete prefix, before any text decode"
                 );
-                let packed = crate::attempt::prefix::SplitPrefix::from_compact(
+                let packed = crate::quant::kv::SplitPrefix::from_compact(
                     prefix_k,
                     v,
                     *prefix_len,
@@ -280,7 +280,7 @@ impl Session {
                 )?;
                 *layer = LayerCache::Split(packed);
             } else {
-                bail!("attempt prefix sealing requires an unsealed compact cache");
+                bail!("prefix sealing requires an unsealed compact cache");
             }
         }
         Ok(())
@@ -364,7 +364,7 @@ impl Session {
 
 #[derive(Default)]
 pub(super) struct Workspace {
-    pub(super) quant_scratch: crate::attempt::quant::Scratch,
+    pub(super) quant_scratch: crate::quant::linear::Scratch,
     pub(super) normalized: Vec<f32>,
     pub(super) qkv: Vec<f32>,
     pub(super) q: Vec<f32>,

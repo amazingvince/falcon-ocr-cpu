@@ -1,8 +1,8 @@
-//! Integrated W8A32 / W16A32 experiment, derived from q8_reference.rs: signed
-//! row-major codes in [-127,127] (8-bit) or [-32767,32767] (16-bit), an FP32
-//! absmax/qmax scale per K group, ties-to-even, FP32 dequant and ascending-K
-//! FMA. Neither activations nor accumulators are integer/BF16; this is not
-//! W8A8. 16-bit codes are effectively lossless against the FP32 weights
+//! Quantized linear layers (W8A32 / W16A32): signed row-major codes in
+//! [-127,127] (8-bit) or [-32767,32767] (16-bit), an FP32 absmax/qmax scale
+//! per K group, ties-to-even, FP32 dequant and ascending-K FMA. Neither
+//! activations nor accumulators are integer/BF16; this is not W8A8. 16-bit
+//! codes are effectively lossless against the FP32 weights
 //! (activation-weighted output error about 2.5e-5 relative).
 
 use anyhow::ensure;
@@ -16,10 +16,9 @@ enum Codes {
     I16(crate::buf::Buf<i16>),
 }
 
-/// A quantized linear layer with 8- or 16-bit codes (the name predates
-/// 16-bit support).
+/// A quantized linear layer with 8- or 16-bit codes.
 #[derive(Debug)]
-pub struct Q8Linear {
+pub struct QuantLinear {
     out_dim: usize,
     in_dim: usize,
     group_size: usize,
@@ -27,8 +26,8 @@ pub struct Q8Linear {
     scales: crate::buf::Buf<f32>,
 }
 
-impl Q8Linear {
-    /// 8-bit codes; see [`Q8Linear::quantize_bits`].
+impl QuantLinear {
+    /// 8-bit codes; see [`QuantLinear::quantize_bits`].
     pub fn quantize(weights: &[f32], out_dim: usize, in_dim: usize, group_size: usize) -> Result<Self, &'static str> {
         Self::quantize_bits(weights, out_dim, in_dim, group_size, 8)
     }
@@ -181,7 +180,7 @@ mod tests {
     fn codes_ties_zero_and_signed_endpoints() {
         let mut weights = vec![0.; 128];
         weights[..8].copy_from_slice(&[254., -254., 1., 3., 5., -1., -3., -5.]);
-        let q = Q8Linear::quantize(&weights, 1, 128, 64).unwrap();
+        let q = QuantLinear::quantize(&weights, 1, 128, 64).unwrap();
         assert_eq!(q.scales(), &[2., 0.]);
         assert_eq!(&q.codes()[..8], &[127, -127, 0, 2, 2, 0, -2, -2]);
         let mut restored = vec![0.; 128];
@@ -195,7 +194,7 @@ mod tests {
         for k in [1usize, 31, 65, 127, 129, 257] {
             for g in [64, 128] {
                 let weights: Vec<_> = (0..3 * k).map(|i| ((i * 137 % 127) as f32 - 63.) / 19.).collect();
-                let q = Q8Linear::quantize(&weights, 3, k, g).unwrap();
+                let q = QuantLinear::quantize(&weights, 3, k, g).unwrap();
                 assert_eq!(q.payload_bytes(), 3 * k + 12 * k.div_ceil(g));
                 for row in 0..3 {
                     let mut restored = vec![0.; k];
@@ -215,7 +214,7 @@ mod tests {
         for k in [768usize, 1024, 2304] {
             for g in [64, 128] {
                 let weights: Vec<_> = (0..7 * k).map(|i| ((i * 67 % 199) as f32 - 99.) / 31.).collect();
-                let q = Q8Linear::quantize(&weights, 7, k, g).unwrap();
+                let q = QuantLinear::quantize(&weights, 7, k, g).unwrap();
                 for rows in [1, 2, 4, 8] {
                     let x: Vec<_> = (0..rows * k).map(|i| ((i * 101 % 257) as f32 - 128.) / 37.).collect();
                     let mut y = vec![0.; rows * 7];
@@ -243,17 +242,17 @@ mod tests {
     #[test]
     fn finite_checks_subnormals_and_overflow() {
         let tiny = f32::from_bits(1);
-        let q = Q8Linear::quantize(&[tiny, -tiny], 1, 2, 64).unwrap();
+        let q = QuantLinear::quantize(&[tiny, -tiny], 1, 2, 64).unwrap();
         let mut restored = [0.; 2];
         q.dequantize_row(0, &mut restored);
         assert_eq!(restored, [tiny, -tiny]);
         for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-            assert!(Q8Linear::quantize(&[value], 1, 1, 64).is_err());
+            assert!(QuantLinear::quantize(&[value], 1, 1, 64).is_err());
         }
-        assert!(Q8Linear::quantize(&[], usize::MAX, 2, 64).is_err());
-        assert!(Q8Linear::quantize(&[], 0, 0, 64).is_err());
-        assert!(Q8Linear::quantize(&[1.], 1, 1, 16).is_err());
-        let q = Q8Linear::quantize(&[2., 2.], 1, 2, 64).unwrap();
+        assert!(QuantLinear::quantize(&[], usize::MAX, 2, 64).is_err());
+        assert!(QuantLinear::quantize(&[], 0, 0, 64).is_err());
+        assert!(QuantLinear::quantize(&[1.], 1, 1, 16).is_err());
+        let q = QuantLinear::quantize(&[2., 2.], 1, 2, 64).unwrap();
         assert!(q.linear_f32(&[f32::NAN, 1.], 1, &mut [0.]).is_err());
         assert!(q.linear_f32(&[f32::MAX, f32::MAX], 1, &mut [0.]).is_err());
         assert!(q.linear_f32(&[], usize::MAX, &mut []).is_err());
@@ -266,7 +265,7 @@ pub(crate) struct Scratch {
     pub dense: Vec<f32>,
     pub bf16: crate::kernels::panel_bf16::Panels,
 }
-impl Q8Linear {
+impl QuantLinear {
     /// Import the exact custom W8G64 encoding, not GGML Q8_0/Q8_K.
     pub fn from_parts(
         out_dim: usize,
@@ -833,7 +832,7 @@ mod integrated_tests {
         for k in [31, 64, 65, 768, 1024, 2304] {
             let n = 9;
             let w: Vec<_> = (0..n * k).map(|i| ((i * 137 % 193) as f32 - 96.0) / 113.0).collect();
-            let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
+            let q = QuantLinear::quantize(&w, n, k, 64).unwrap();
             for rows in [1, 2, 4, 8, 9, 17] {
                 let x: Vec<_> = (0..rows * k).map(|i| ((i * 31 % 151) as f32 - 75.0) / 97.0).collect();
                 let mut dense = vec![0.0; n * k];
@@ -877,7 +876,7 @@ mod integrated_tests {
             let x: Vec<f32> = (0..8 * k).map(|i| ((i * 37 % 101) as f32 - 50.0) / 17.0).collect();
             for bits in [8, 16] {
                 let w: Vec<f32> = (0..3 * k).map(|i| ((i * 13 % 89) as f32 - 44.0) / 23.0).collect();
-                let q = Q8Linear::quantize_bits(&w, 3, k, group, bits).unwrap();
+                let q = QuantLinear::quantize_bits(&w, 3, k, group, bits).unwrap();
                 for simd in [crate::kernels::Simd::Auto, crate::kernels::Simd::Scalar] {
                     let (dot, dot_rows) = (q.dot_fn(simd), q.dot_rows_fn(simd));
                     for rows in 1..=8 {
@@ -913,7 +912,7 @@ mod integrated_tests {
             let w: Vec<_> = (0..n * k)
                 .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
                 .collect();
-            let q = Q8Linear::quantize(&w, n, k, group).unwrap();
+            let q = QuantLinear::quantize(&w, n, k, group).unwrap();
             let mut dense = vec![0.0; n * k];
             for r in 0..n {
                 q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
@@ -943,7 +942,7 @@ mod integrated_tests {
             let w: Vec<_> = (0..n * k)
                 .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
                 .collect();
-            let q = Q8Linear::quantize_bits(&w, n, k, 64, 16).unwrap();
+            let q = QuantLinear::quantize_bits(&w, n, k, 64, 16).unwrap();
             assert_eq!(q.bits(), 16);
             assert_eq!(q.payload_bytes(), 2 * n * k + 4 * n * k.div_ceil(64));
             let mut dense = vec![0.0; n * k];
@@ -978,7 +977,7 @@ mod integrated_tests {
         for (ffn, k) in [(19, 768), (5, 65), (3, 2304)] {
             let n = 2 * ffn;
             let w: Vec<_> = (0..n * k).map(|i| ((i * 6007 % 1999) as f32 - 999.0) / 613.0).collect();
-            let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
+            let q = QuantLinear::quantize(&w, n, k, 64).unwrap();
             for backend in [Simd::Scalar, Simd::Auto] {
                 for rows in 1..=8 {
                     let x: Vec<_> = (0..rows * k)
@@ -1013,12 +1012,12 @@ mod integrated_tests {
             ("w2", 768, 2304),
         ] {
             let copies = (96 << 20) / (n * k) + 1;
-            let mats: Vec<Q8Linear> = (0..copies)
+            let mats: Vec<QuantLinear> = (0..copies)
                 .map(|c| {
                     let w: Vec<f32> = (0..n * k)
                         .map(|i| (((i + c) * 2654435761usize) % 2001) as f32 / 1000.0 - 1.0)
                         .collect();
-                    Q8Linear::quantize(&w, n, k, 64).unwrap()
+                    QuantLinear::quantize(&w, n, k, 64).unwrap()
                 })
                 .collect();
             let x: Vec<f32> = (0..k).map(|i| (i % 13) as f32 / 13.0).collect();
@@ -1043,8 +1042,8 @@ mod integrated_tests {
     }
     #[test]
     fn artifact_validation() {
-        assert!(Q8Linear::from_parts(1, 1, 64, vec![-128], vec![1.0]).is_err());
-        assert!(Q8Linear::from_parts(1, 1, 64, vec![1], vec![0.0]).is_err());
-        assert!(Q8Linear::from_parts(1, 1, 64, vec![0], vec![f32::NAN]).is_err());
+        assert!(QuantLinear::from_parts(1, 1, 64, vec![-128], vec![1.0]).is_err());
+        assert!(QuantLinear::from_parts(1, 1, 64, vec![1], vec![0.0]).is_err());
+        assert!(QuantLinear::from_parts(1, 1, 64, vec![0], vec![f32::NAN]).is_err());
     }
 }

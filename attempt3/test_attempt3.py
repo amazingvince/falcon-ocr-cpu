@@ -257,19 +257,19 @@ class WiringTests(unittest.TestCase):
         glu=model[model.index("fn linear_glu("):model.index("fn w(&self")]
         self.assertEqual(glu.count("self.linear("),1)
         self.assertNotIn("self.w(&layer.qkv)",block)
-        self.assertIn("scratch.dense",(ROOT/"src/attempt/quant.rs").read_text())
+        self.assertIn("scratch.dense",(ROOT/"src/quant/linear.rs").read_text())
 
     def test_reference_loader_still_default(self):
-        self.assertIn("attempt_profile: crate::attempt::Profile::Reference",(ROOT/"src/model/load.rs").read_text())
+        self.assertIn("profile: crate::quant::Profile::REFERENCE",(ROOT/"src/model/load.rs").read_text())
         auto=(ROOT/"src/auto.rs").read_text()
         # Exact mode with the reference profile goes through the pinned loader.
-        self.assertIn("plan.profile == Profile::Reference",auto)
+        self.assertIn("plan.profile == Profile::REFERENCE",auto)
         self.assertIn("Model::load(dir)",auto)
-        self.assertIn("Profile::Exact => Profile::Reference",auto.replace("Self::Exact","Profile::Exact"))
+        self.assertIn("Self::Exact => Profile::REFERENCE",auto)
 
     def test_cache_seal_and_retirement_wired(self):
         runner=(ROOT/"src/runner.rs").read_text()
-        self.assertEqual(runner.count("self.seal_for_attempt(&mut session, trace)?"),2)
+        self.assertEqual(runner.count("self.seal_session(&mut session, trace)?"),2)
         self.assertIn("trace.cache_retired(sessions[index].retire_cache())",runner)
         self.assertIn("session.prepare_small_decode(c)",runner)
         self.assertIn("drop(prepared.patches)",runner)

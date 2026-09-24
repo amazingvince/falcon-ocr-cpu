@@ -15,8 +15,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-PROFILES = {"reference", "hygiene", "split-f32", "kv-bf16", "kv-q8", "w8-body", "w8-all",
-            "w8-body-kv-bf16", "w8-body-kv-q8", "w8-all-kv-bf16", "w8-all-kv-q8"}
+PROFILES = {"reference", "split-f32", "kv-q16", "kv-q8", "w16-body-compact", "w16-body", "w16-body-kv-q16",
+            "w16-body-kv-q8", "w8-body", "w8-body-split-f32", "w8-body-kv-q16", "w8-body-kv-q8"}
 
 def load_manifest(path: Path) -> list[dict[str, Any]]:
     document = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -253,7 +253,7 @@ def run_arm(args, case: dict, mode: str, directory: Path, name: str, control: bo
         "bench", *case["images"], "--max-new-tokens", str(case["max_new_tokens"]),
         "--max-dimension", str(case["max_dimension"]), "--warmup", str(args.warmup),
         "--samples", str(args.samples), "--report", str(report)]
-    artifact = args.w8_all_artifact if mode.startswith("w8-all") else args.w8_body_artifact if mode.startswith("w8-body") else None
+    artifact = args.w8_body_artifact if mode.startswith("w8-body") else None
     if artifact is not None:
         at = command.index("bench")
         command[at:at] = ["--w8-artifact", str(artifact.resolve())]
@@ -303,7 +303,6 @@ def main() -> None:
     parser.add_argument("--profiles", nargs="+", choices=sorted(PROFILES), default=["hygiene"])
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--w8-body-artifact", type=Path, help="optional body-only W8G64 safetensors overlay")
-    parser.add_argument("--w8-all-artifact", type=Path, help="optional body+head W8G64 safetensors overlay")
     parser.add_argument("--threads", type=int, default=16)
     parser.add_argument("--backend", choices=["auto", "scalar", "avx2"], default="auto")
     parser.add_argument("--warmup", type=int, default=1)
@@ -325,7 +324,7 @@ def main() -> None:
         parser.error("check binary, fresh output directory, positive threads/samples and nonnegative warmup")
     if args.control_every <= 0:
         parser.error("control-every must be positive")
-    for artifact in (args.w8_body_artifact, args.w8_all_artifact):
+    for artifact in (args.w8_body_artifact,):
         if artifact is not None and not artifact.is_file():
             parser.error(f"missing W8 overlay: {artifact}")
     if args.timeout_seconds <= 0:

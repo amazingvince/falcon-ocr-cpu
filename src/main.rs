@@ -233,7 +233,7 @@ fn main() -> Result<()> {
             "wrote {} ({:.0} MB, {})",
             output.display(),
             std::fs::metadata(output)?.len() as f64 / 1e6,
-            model.attempt_profile().label()
+            model.profile().label()
         );
         return Ok(());
     }

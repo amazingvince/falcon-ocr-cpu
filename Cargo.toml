@@ -50,4 +50,4 @@ path = "src/main.rs"
 
 [[bin]]
 name = "falcon-ocr-eval"
-path = "src/bin/falcon-ocr-eval.rs"
+path = "src/bin/falcon-ocr-eval/main.rs"

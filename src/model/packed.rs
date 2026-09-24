@@ -30,11 +30,8 @@ impl Model {
     /// head screen and its bound constants), so `load_packed` maps it with no
     /// conversion. Needs a quantized body and a prepared screened head.
     pub fn write_packed(&self, path: impl AsRef<Path>) -> Result<()> {
-        let profile = self.attempt_profile;
-        ensure!(
-            profile.quantizes_body() && !profile.quantizes_head(),
-            "packing needs a quantized body and FP32 head"
-        );
+        let profile = self.profile;
+        ensure!(profile.quantizes_body(), "packing needs a quantized body and FP32 head");
         let screen = self
             .screened
             .get()
@@ -122,7 +119,7 @@ impl Model {
             format!("{:08x}", weight_abs_max.to_bits()),
         );
         metadata.insert("screen_kappa".to_owned(), format!("{:08x}", kappa.to_bits()));
-        if let Some(sha) = &self.attempt_artifact_sha256 {
+        if let Some(sha) = &self.overlay_sha256 {
             metadata.insert("w8_artifact_sha256".to_owned(), sha.clone());
         }
         metadata.insert(
@@ -144,7 +141,7 @@ impl Model {
 
     /// The profile a kernel-ready model file holds, from its header alone
     /// (the tensors are not read).
-    pub fn packed_profile(path: impl AsRef<Path>) -> Result<crate::attempt::Profile> {
+    pub fn packed_profile(path: impl AsRef<Path>) -> Result<crate::quant::Profile> {
         let path = path.as_ref();
         let meta = packed_metadata(path).with_context(|| format!("read {}", path.display()))?;
         ensure!(
@@ -153,7 +150,7 @@ impl Model {
             path.display()
         );
         let profile = meta.get("profile").context("packed metadata profile missing")?;
-        <crate::attempt::Profile as clap::ValueEnum>::from_str(profile, false)
+        <crate::quant::Profile as clap::ValueEnum>::from_str(profile, false)
             .map_err(|e| anyhow::anyhow!("packed profile: {e}"))
     }
 
@@ -185,7 +182,7 @@ impl Model {
         );
         let config: ModelConfig = serde_json::from_str(get("config")?)?;
         config.validate()?;
-        let profile = <crate::attempt::Profile as clap::ValueEnum>::from_str(get("profile")?, false)
+        let profile = <crate::quant::Profile as clap::ValueEnum>::from_str(get("profile")?, false)
             .map_err(|e| anyhow::anyhow!("packed profile: {e}"))?;
         let bits: u32 = get("weight_bits")?.parse()?;
         ensure!(
@@ -231,7 +228,7 @@ impl Model {
             for (name, &(out, input)) in BODY.iter().zip(&shapes) {
                 let codes = find(&format!("layers.{i}.{name}.__codes"), code_dtype, &[out, input])?;
                 let scales = find(&format!("layers.{i}.{name}.__scales"), Dtype::F32, &[out, input / 64])?;
-                let q = crate::attempt::quant::Q8Linear::from_mapped(out, input, 64, bits, &map, codes, scales)?;
+                let q = crate::quant::linear::QuantLinear::from_mapped(out, input, 64, bits, &map, codes, scales)?;
                 // Quantized matrices are only read through their codes.
                 body.push(Weight {
                     range: 0..0,
@@ -285,9 +282,9 @@ impl Model {
             layers,
             packed: OnceLock::new(),
             screened,
-            attempt_profile: profile,
-            attempt_setup_ms: started.elapsed().as_secs_f64() * 1000.0,
-            attempt_artifact_sha256: meta.get("w8_artifact_sha256").cloned(),
+            profile,
+            quantize_ms: started.elapsed().as_secs_f64() * 1000.0,
+            overlay_sha256: meta.get("w8_artifact_sha256").cloned(),
             source: super::WeightsSource::Packed {
                 path: path.as_ref().to_path_buf(),
             },

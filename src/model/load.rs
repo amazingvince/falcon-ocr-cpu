@@ -102,9 +102,9 @@ impl Model {
             layers,
             packed: OnceLock::new(),
             screened: OnceLock::new(),
-            attempt_profile: crate::attempt::Profile::Reference,
-            attempt_setup_ms: 0.0,
-            attempt_artifact_sha256: None,
+            profile: crate::quant::Profile::REFERENCE,
+            quantize_ms: 0.0,
+            overlay_sha256: None,
             source: super::WeightsSource::Checkpoint {
                 dir: dir.to_path_buf(),
                 overlay: None,
@@ -144,33 +144,33 @@ impl Model {
         self.map = Store::Owned(words);
     }
 
-    pub fn load_attempt(
+    pub fn load_profile(
         dir: impl AsRef<Path>,
-        profile: crate::attempt::Profile,
+        profile: crate::quant::Profile,
         artifact: Option<&Path>,
     ) -> Result<Self> {
-        Self::load_attempt_with(dir, profile, artifact, &[])
+        Self::load_profile_with(dir, profile, artifact, &[])
     }
 
-    /// [`Model::load_attempt`] that also keeps every body matrix whose name
+    /// [`Model::load_profile`] that also keeps every body matrix whose name
     /// matches one of `keep_fp32` (`*` matches any run of characters) in
     /// FP32, whatever the overlay holds: mixed precision without writing a
     /// new overlay.
-    pub fn load_attempt_with(
+    pub fn load_profile_with(
         dir: impl AsRef<Path>,
-        profile: crate::attempt::Profile,
+        profile: crate::quant::Profile,
         artifact: Option<&Path>,
         keep_fp32: &[String],
     ) -> Result<Self> {
-        Self::load_attempt_bf16(dir, profile, artifact, keep_fp32, false)
+        Self::load_profile_bf16(dir, profile, artifact, keep_fp32, false)
     }
 
-    /// [`Model::load_attempt_with`], optionally on BF16-rounded weights
+    /// [`Model::load_profile_with`], optionally on BF16-rounded weights
     /// ([`Model::round_weights_to_bf16`]), which unquantized matrices,
     /// embeddings, norms and the head then use.
-    pub fn load_attempt_bf16(
+    pub fn load_profile_bf16(
         dir: impl AsRef<Path>,
-        profile: crate::attempt::Profile,
+        profile: crate::quant::Profile,
         artifact: Option<&Path>,
         keep_fp32: &[String],
         weights_bf16: bool,
@@ -180,7 +180,7 @@ impl Model {
         if weights_bf16 {
             model.round_weights_to_bf16();
         }
-        model.attempt_profile = profile;
+        model.profile = profile;
         ensure!(
             artifact.is_none() || profile.quantizes_body(),
             "W8 artifact supplied to an FP32 profile"
@@ -221,7 +221,7 @@ impl Model {
             check("format", "falcon-ocr-attempt3-w8g64-v1")?;
             check("source_sha256", WEIGHTS_SHA256)?;
             check("model_revision", crate::config::MODEL_REVISION)?;
-            check("include_head", if profile.quantizes_head() { "true" } else { "false" })?;
+            check("include_head", "false")?;
             group_size = match meta.get("group_size").and_then(|v| v.as_str()) {
                 Some("32") => 32,
                 Some("64") => 64,
@@ -234,8 +234,8 @@ impl Model {
                 "W8 metadata rounding missing"
             );
             check("activation_dtype", "f32")?;
-            model.attempt_artifact_sha256 = Some(format!("{:x}", Sha256::digest(bytes)));
-            let expected = 2 * (4 * model.config.n_layers + (profile.quantizes_head() as usize));
+            model.overlay_sha256 = Some(format!("{:x}", Sha256::digest(bytes)));
+            let expected = 8 * model.config.n_layers;
             let count = tensors.as_ref().unwrap().len();
             ensure!(
                 count == expected || (partial && count < expected && count % 2 == 0),
@@ -248,8 +248,8 @@ impl Model {
                     w: &Weight,
                     input: usize,
                     output: usize|
-         -> Result<Option<Arc<crate::attempt::quant::Q8Linear>>> {
-            use crate::attempt::quant::Q8Linear;
+         -> Result<Option<Arc<crate::quant::linear::QuantLinear>>> {
+            use crate::quant::linear::QuantLinear;
             if keep_fp32.iter().any(|pattern| glob_match(pattern, name)) {
                 return Ok(None);
             }
@@ -274,9 +274,9 @@ impl Model {
                     .chunks_exact(4)
                     .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
                     .collect();
-                Q8Linear::from_parts(output, input, group_size, codes, scales)?
+                QuantLinear::from_parts(output, input, group_size, codes, scales)?
             } else {
-                Q8Linear::quantize_bits(model.w(w), output, input, 64, profile.weight_bits())
+                QuantLinear::quantize_bits(model.w(w), output, input, 64, profile.weight_bits())
                     .map_err(anyhow::Error::msg)?
             };
             Ok(Some(Arc::new(q)))
@@ -308,9 +308,6 @@ impl Model {
                 c.dim,
             )?);
         }
-        if profile.quantizes_head() {
-            prepared.push(make("output.weight", &model.output, c.dim, c.vocab_size)?);
-        }
         let mut prepared = prepared.into_iter();
         for l in &mut model.layers {
             l.qkv.quantized = prepared.next().flatten();
@@ -318,38 +315,46 @@ impl Model {
             l.w13.quantized = prepared.next().flatten();
             l.w2.quantized = prepared.next().flatten();
         }
-        if profile.quantizes_head() {
-            model.output.quantized = prepared.next().flatten();
-        }
-        model.attempt_setup_ms = started.elapsed().as_secs_f64() * 1000.0;
+        model.quantize_ms = started.elapsed().as_secs_f64() * 1000.0;
         Ok(model)
     }
-    pub fn attempt_profile(&self) -> crate::attempt::Profile {
-        self.attempt_profile
+    pub fn profile(&self) -> crate::quant::Profile {
+        self.profile
     }
-    pub fn attempt_memory_report(&self) -> serde_json::Value {
+    /// Weight storage of this model (`falcon-ocr-eval` reports it).
+    pub fn memory_report(&self) -> MemoryReport {
         let qbytes = |w: &Weight| w.quantized.as_ref().map_or(0, |q| q.payload_bytes());
         let effective = |w: &Weight| w.quantized.as_ref().map_or(w.range.len(), |q| q.payload_bytes());
-        let quantized = self
-            .layers
-            .iter()
-            .map(|l| qbytes(&l.qkv) + qbytes(&l.wo) + qbytes(&l.w13) + qbytes(&l.w2))
-            .sum::<usize>()
-            + qbytes(&self.output);
-        let scanned = self
-            .layers
-            .iter()
-            .map(|l| effective(&l.qkv) + effective(&l.wo) + effective(&l.w13) + effective(&l.w2))
-            .sum::<usize>()
-            + effective(&self.output);
-        serde_json::json!({"profile":self.attempt_profile,"source_mapping_bytes":self.map.bytes().len(),
-            "quantized_weight_payload_bytes":quantized,"logical_decode_weight_scan_bytes":scanned,
-            "quantization_or_import_ms":self.attempt_setup_ms,"w8_artifact_sha256":self.attempt_artifact_sha256,
-            "source_mapping_is_not_rss":true,"weights_group_size":64,"weights_scale_dtype":"f32",
-            "large_m_policy":"expand the SAME W8 values into one reusable per-operation F32 scratch matrix",
-            "w8_small_m_policy":"AVX2/FMA if available and not explicit Scalar; otherwise scalar; floating activations, not integer dot",
-            "kv_policy":"deferred compression AFTER full FP32-arithmetic prefill using the SELECTED numerical weights; generated tail F32"})
+        let body = |f: &dyn Fn(&Weight) -> usize| {
+            self.layers
+                .iter()
+                .map(|l| f(&l.qkv) + f(&l.wo) + f(&l.w13) + f(&l.w2))
+                .sum::<usize>()
+        };
+        MemoryReport {
+            profile: self.profile,
+            source_mapping_bytes: self.map.bytes().len(),
+            quantized_weight_payload_bytes: body(&qbytes),
+            logical_decode_weight_scan_bytes: body(&effective) + effective(&self.output),
+            quantize_ms: self.quantize_ms,
+            overlay_sha256: self.overlay_sha256.clone(),
+        }
     }
+}
+
+/// Weight storage of a loaded model.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct MemoryReport {
+    pub profile: crate::quant::Profile,
+    /// Bytes of the mapped (or owned) checkpoint or kernel-ready file.
+    pub source_mapping_bytes: usize,
+    /// Bytes of quantized body codes and scales.
+    pub quantized_weight_payload_bytes: usize,
+    /// Bytes one decode step scans through the body and head matrices.
+    pub logical_decode_weight_scan_bytes: usize,
+    /// Time quantizing at load or importing the overlay took.
+    pub quantize_ms: f64,
+    pub overlay_sha256: Option<String>,
 }
 
 /// FP32 bits rounded to the nearest BF16 value (ties to even), as FP32 bits.

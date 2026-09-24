@@ -24,6 +24,7 @@ mod profile;
 mod rope;
 
 pub(crate) use cache::{BatchWorkspace, Session};
+pub use load::MemoryReport;
 pub use packed::PACKED_FORMAT;
 pub(crate) use packed::packed_facts;
 
@@ -65,7 +66,7 @@ use rope::{add_residual, rotary_factors, row_scales};
 #[derive(Clone)]
 struct Weight {
     range: Range<usize>,
-    quantized: Option<Arc<crate::attempt::quant::Q8Linear>>,
+    quantized: Option<Arc<crate::quant::linear::QuantLinear>>,
 }
 struct Layer {
     qkv: Weight,
@@ -116,9 +117,9 @@ pub struct Model {
     layers: Vec<Layer>,
     packed: OnceLock<PackedWeights>,
     screened: OnceLock<crate::head_screen::ScreenedHead>,
-    attempt_profile: crate::attempt::Profile,
-    attempt_setup_ms: f64,
-    attempt_artifact_sha256: Option<String>,
+    profile: crate::quant::Profile,
+    quantize_ms: f64,
+    overlay_sha256: Option<String>,
     source: WeightsSource,
     pub(crate) weights_sha256: String,
 }
@@ -136,7 +137,7 @@ impl Model {
     }
     /// SHA-256 of the W8 overlay the body was imported from, if any.
     pub fn overlay_sha256(&self) -> Option<&str> {
-        self.attempt_artifact_sha256.as_deref()
+        self.overlay_sha256.as_deref()
     }
     /// Bit width of the quantized body when every body matrix of every layer
     /// is quantized to one width with panel-shaped output dims (the prefill
@@ -163,10 +164,6 @@ impl Model {
     /// Build and verify the INT8 screen of the FP32 vocabulary head once per
     /// model. Greedy selection through it is exact; see `head_screen`.
     pub fn prepare_screened_head(&self) -> Result<()> {
-        ensure!(
-            self.output.quantized.is_none(),
-            "the screened head requires the FP32 vocabulary head"
-        );
         if self.screened.get().is_none() {
             let c = &self.config;
             let head = crate::head_screen::ScreenedHead::build(self.w(&self.output), c.vocab_size, c.dim)?;
@@ -226,7 +223,7 @@ impl Model {
         packed: Option<&PhasePackedLinear>,
         output_dim: usize,
         output: &mut [f32],
-        scratch: &mut crate::attempt::quant::Scratch,
+        scratch: &mut crate::quant::linear::Scratch,
         simd: kernels::Simd,
     ) -> Result<()> {
         if let Some(q) = &w.quantized {
@@ -253,7 +250,7 @@ impl Model {
         packed: Option<&PhasePackedLinear>,
         intermediate: &mut [f32],
         gated: &mut [f32],
-        scratch: &mut crate::attempt::quant::Scratch,
+        scratch: &mut crate::quant::linear::Scratch,
         simd: kernels::Simd,
     ) -> Result<()> {
         let c = &self.config;
@@ -473,7 +470,7 @@ impl Model {
         // kernels a body and CPU get (`auto::Resolved` reports the same plan).
         let plan = kernels::prefill_plan(self.body_bits(), simd, tuning.prefill_bf16);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
-        fn quantized(w: &Weight) -> &crate::attempt::quant::Q8Linear {
+        fn quantized(w: &Weight) -> &crate::quant::linear::QuantLinear {
             w.quantized.as_deref().expect("body_bits checked every body matrix")
         }
         let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;

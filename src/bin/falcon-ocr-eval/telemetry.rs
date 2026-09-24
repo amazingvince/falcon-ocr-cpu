@@ -1,126 +1,5 @@
-//! Opt-in, model-specific integrated experiment. No profile is quality-qualified.
-//! FP32 graph arithmetic is unchanged unless a selected weight/cache is encoded.
-pub(crate) mod prefix;
-pub mod quant;
-
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
-#[serde(rename_all = "kebab-case")]
-pub enum Profile {
-    #[default]
-    Reference,
-    Hygiene,
-    SplitF32,
-    KvBf16,
-    KvQ8,
-    W8Body,
-    W8All,
-    W8BodyKvBf16,
-    W8BodyKvQ8,
-    W8AllKvBf16,
-    W8AllKvQ8,
-    /// FP32 weights; Q8 KV with per-channel key scales (`SplitQ8Kc`).
-    KvQ8Kc,
-    /// W8 body weights; Q8 KV with per-channel key scales (`SplitQ8Kc`).
-    W8BodyKvQ8Kc,
-    /// 16-bit body weights (absmax scale per 64 inputs, quantized from the
-    /// FP32 checkpoint at load) with the split FP32 cache: half the body
-    /// bytes of FP32, effectively lossless (not bitwise).
-    W16Body,
-    /// FP32 weights; 16-bit KV cache (`SplitQ16`).
-    KvQ16,
-    /// 16-bit body weights and 16-bit KV cache: the near-exact profile.
-    W16BodyKvQ16,
-    /// FP32 weights; IEEE FP16 KV cache (`SplitF16`).
-    KvF16,
-    /// 16-bit body weights and IEEE FP16 KV cache.
-    W16BodyKvF16,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PrefixMode {
-    Reference,
-    SplitF32,
-    SplitBf16,
-    SplitQ8,
-    /// Q8 records whose key channels share one scale per 128-record tile
-    /// (KIVI-style); values keep per-record 32-element scales.
-    SplitQ8Kc,
-    /// 16-bit codes with one absmax scale per 32-element chunk (the Q8
-    /// layout with [-32767, 32767] codes): half the bytes of FP32 records.
-    SplitQ16,
-    /// IEEE FP16 records (no scales).
-    SplitF16,
-}
-impl Profile {
-    pub fn quantizes_body(self) -> bool {
-        matches!(
-            self,
-            Self::W8Body
-                | Self::W8All
-                | Self::W8BodyKvBf16
-                | Self::W8BodyKvQ8
-                | Self::W8AllKvBf16
-                | Self::W8AllKvQ8
-                | Self::W8BodyKvQ8Kc
-                | Self::W16Body
-                | Self::W16BodyKvQ16
-                | Self::W16BodyKvF16
-        )
-    }
-    /// Bits per weight code of the quantized matrices: 16 or 8.
-    pub fn weight_bits(self) -> u32 {
-        if matches!(self, Self::W16Body | Self::W16BodyKvQ16 | Self::W16BodyKvF16) {
-            16
-        } else {
-            8
-        }
-    }
-    pub fn quantizes_head(self) -> bool {
-        matches!(self, Self::W8All | Self::W8AllKvBf16 | Self::W8AllKvQ8)
-    }
-    pub fn prefix_mode(self) -> PrefixMode {
-        match self {
-            Self::SplitF32 | Self::W16Body => PrefixMode::SplitF32,
-            Self::KvBf16 | Self::W8BodyKvBf16 | Self::W8AllKvBf16 => PrefixMode::SplitBf16,
-            Self::KvQ8 | Self::W8BodyKvQ8 | Self::W8AllKvQ8 => PrefixMode::SplitQ8,
-            Self::KvQ8Kc | Self::W8BodyKvQ8Kc => PrefixMode::SplitQ8Kc,
-            Self::KvQ16 | Self::W16BodyKvQ16 => PrefixMode::SplitQ16,
-            Self::KvF16 | Self::W16BodyKvF16 => PrefixMode::SplitF16,
-            _ => PrefixMode::Reference,
-        }
-    }
-    /// Profiles whose outputs are bit-identical to the FP32 reference.
-    pub fn is_exact(self) -> bool {
-        matches!(self, Self::Reference | Self::Hygiene | Self::SplitF32)
-    }
-    pub fn memory_hygiene(self) -> bool {
-        self != Self::Reference
-    }
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Reference => "reference",
-            Self::Hygiene => "hygiene",
-            Self::SplitF32 => "split-f32",
-            Self::KvBf16 => "kv-bf16",
-            Self::KvQ8 => "kv-q8",
-            Self::W8Body => "w8-body",
-            Self::W8All => "w8-all",
-            Self::W8BodyKvBf16 => "w8-body-kv-bf16",
-            Self::W8BodyKvQ8 => "w8-body-kv-q8",
-            Self::W8AllKvBf16 => "w8-all-kv-bf16",
-            Self::W8AllKvQ8 => "w8-all-kv-q8",
-            Self::KvQ8Kc => "kv-q8-kc",
-            Self::W8BodyKvQ8Kc => "w8-body-kv-q8-kc",
-            Self::W16Body => "w16-body",
-            Self::KvQ16 => "kv-q16",
-            Self::W16BodyKvQ16 => "w16-body-kv-q16",
-            Self::KvF16 => "kv-f16",
-            Self::W16BodyKvF16 => "w16-body-kv-f16",
-        }
-    }
-}
+//! Operational counters and process memory for the eval reports.
+use serde::Serialize;
 
 /// Process working-set and commit counters (bytes) at the time of the call.
 /// Peak values cover the whole process lifetime, including load/import.
@@ -202,7 +81,7 @@ pub struct Telemetry {
     /// Recomputed-row buckets: 1, 2-4, 5-16, 17-64, 65-256, 257-1024, >1024.
     pub head_candidates_histogram: [usize; 7],
 }
-impl crate::trace::Trace for Telemetry {
+impl falcon_ocr::trace::Trace for Telemetry {
     fn enabled(&self) -> bool {
         false
     }
@@ -250,17 +129,8 @@ impl crate::trace::Trace for Telemetry {
 mod tests {
     use super::*;
     #[test]
-    fn ablations_do_not_silently_quantize_endpoints() {
-        assert!(!Profile::KvBf16.quantizes_body());
-        assert!(Profile::W8Body.quantizes_body());
-        assert!(!Profile::W8Body.quantizes_head());
-        assert!(Profile::W8All.quantizes_head());
-        assert_eq!(Profile::W8Body.prefix_mode(), PrefixMode::Reference);
-        assert!(!Profile::Reference.memory_hygiene());
-    }
-    #[test]
     fn occupancy_counts_live_rows_not_configured_batch() {
-        use crate::trace::Trace;
+        use falcon_ocr::trace::Trace;
         let mut t = Telemetry::default();
         t.decode_step(2, 1.0, 20);
         t.decode_step(1, 2.0, 10);

@@ -183,15 +183,15 @@ impl<'a> DecodeTeam<'a> {
 impl Runner {
     pub fn new(model: Arc<Model>, model_dir: impl AsRef<Path>, config: RunnerConfig) -> Result<Self> {
         config.validate()?;
-        if model.attempt_profile() != crate::attempt::Profile::Reference {
+        if model.profile() != crate::quant::Profile::REFERENCE {
             ensure!(
                 config.cache_layout == CacheLayout::Compact,
-                "attempt profiles require compact source caches"
+                "quantized profiles require compact source caches"
             );
-            ensure!(config.batch_size <= 8, "attempt profiles support 1..=8 active rows");
+            ensure!(config.batch_size <= 8, "quantized profiles support 1..=8 active rows");
             ensure!(
                 config.weight_layout == WeightLayout::Unpacked,
-                "attempt profiles do not combine with phase-packed FP32 copies"
+                "quantized profiles do not combine with phase-packed FP32 copies"
             );
         }
         let pool = rayon::ThreadPoolBuilder::new().num_threads(config.threads).build()?;
@@ -271,7 +271,7 @@ impl Runner {
     }
     /// `fp32` for the exact profiles, else the profile label.
     fn precision(&self) -> String {
-        let profile = self.model.attempt_profile();
+        let profile = self.model.profile();
         if profile.is_exact() { "fp32" } else { profile.label() }.to_owned()
     }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
@@ -449,9 +449,9 @@ impl Runner {
         Ok(results)
     }
 
-    fn seal_for_attempt(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
-        let mode = self.model.attempt_profile().prefix_mode();
-        if mode != crate::attempt::PrefixMode::Reference {
+    fn seal_session(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
+        let mode = self.model.profile().kv;
+        if mode != crate::quant::Kv::Compact {
             let before = session.cache_bytes();
             let t = Instant::now();
             session.seal_prefix(&self.model.config, mode)?;
@@ -526,7 +526,7 @@ impl Runner {
             let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
             let token = argmax(logits)?;
             if !stops.contains(&token) && options.max_new_tokens > 1 {
-                self.seal_for_attempt(&mut session, trace)?;
+                self.seal_session(&mut session, trace)?;
             }
             let prefill_ms = prefill_started.elapsed().as_secs_f64() * 1000.;
             let first_token_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
@@ -557,7 +557,7 @@ impl Runner {
                     total_ms: if finished { first_token_ms } else { 0. },
                 },
             });
-            if finished && self.model.attempt_profile().memory_hygiene() {
+            if finished && self.model.profile().memory_hygiene() {
                 trace.cache_retired(session.retire_cache());
             }
             sessions.push(session);
@@ -634,7 +634,7 @@ impl Runner {
                 if state.finished {
                     state.timings.decode_ms = decode_started.elapsed().as_secs_f64() * 1000.;
                     state.timings.total_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
-                    if self.model.attempt_profile().memory_hygiene() {
+                    if self.model.profile().memory_hygiene() {
                         trace.cache_retired(sessions[index].retire_cache());
                     }
                 }
@@ -750,9 +750,9 @@ impl Runner {
         };
         if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token)) && options.max_new_tokens > 1
         {
-            self.seal_for_attempt(&mut session, trace)?;
+            self.seal_session(&mut session, trace)?;
         }
-        if self.model.attempt_profile().memory_hygiene() {
+        if self.model.profile().memory_hygiene() {
             session.prepare_small_decode(c);
             hidden = Vec::with_capacity(c.dim);
             drop(prepared.patches);

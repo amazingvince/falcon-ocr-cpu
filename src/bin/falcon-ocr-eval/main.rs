@@ -3,10 +3,11 @@ use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
     Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig,
-    Speculation, Tuning, WeightLayout,
-    attempt::{Profile, Telemetry},
-    trace::TensorTrace,
+    Speculation, Tuning, WeightLayout, quant::Profile, trace::TensorTrace,
 };
+use telemetry::Telemetry;
+
+mod telemetry;
 use sha2::{Digest, Sha256};
 use std::{
     io::{Read, Write},
@@ -454,7 +455,7 @@ fn main() -> Result<()> {
         Command::CaptureGram { images, output, .. } => {
             ensure!(!output.exists(), "output directory already exists");
             ensure!(
-                args.profile == Profile::Reference,
+                args.profile == Profile::REFERENCE,
                 "capture the Gram with the FP32 reference profile"
             );
             for p in images {
@@ -485,7 +486,7 @@ fn main() -> Result<()> {
     let started = Instant::now();
     let model = Arc::new(match &args.model_file {
         Some(path) => Model::load_packed(path, false)?,
-        None => Model::load_attempt_bf16(
+        None => Model::load_profile_bf16(
             &args.model,
             args.profile,
             args.w8_artifact.as_deref(),
@@ -494,7 +495,7 @@ fn main() -> Result<()> {
         )?,
     });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
-    let memory = model.attempt_memory_report();
+    let memory = model.memory_report();
     let runner = Runner::new(model.clone(), &args.model, config)?;
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
@@ -543,7 +544,7 @@ fn main() -> Result<()> {
                 "speculate":args.speculate,"speculate_min_match":args.speculate_min_match,
                 "schedule":"fixed cohorts; layer-major decode; opt-in completed-cache retirement; no refill",
                 "options":options,"inputs":inputs,"warmup":warmup,"load_and_import_ms":load_ms,
-                "memory_policy":memory,"process_memory":falcon_ocr::attempt::process_memory(),"samples":records,
+                "memory_policy":memory,"process_memory":telemetry::process_memory(),"samples":records,
                 "timing_scope":"warm model, original encoded files to all returned text; load/import excluded; report serialization excluded",
                 "limits":"KV counters are persistent-allocation snapshots, not OS RSS or transient conversion peaks. Source F32 mapping remains."});
             write_new(&report, &report_value).with_context(|| format!("write {}", report.display()))?;

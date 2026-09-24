@@ -32,11 +32,6 @@ pub(crate) trait Simd: Copy + Send + Sync + 'static {
     unsafe fn load_i8(p: *const i8) -> Self::V;
     /// Eight consecutive `i16` codes converted exactly to `f32`.
     unsafe fn load_i16(p: *const i16) -> Self::V;
-    /// Eight consecutive BF16 bit patterns widened exactly to `f32`.
-    unsafe fn load_bf16(p: *const u16) -> Self::V;
-    /// Eight consecutive IEEE FP16 bit patterns widened exactly to `f32`
-    /// (x86 callers must also enable `f16c`).
-    unsafe fn load_f16(p: *const u16) -> Self::V;
     /// `((v0+v4) + (v1+v5)) + ((v2+v6) + (v3+v7))`: the x86 `dot_avx2` tree
     /// (128-bit halves added, then two horizontal pair additions).
     unsafe fn sum(v: Self::V) -> f32;
@@ -136,16 +131,6 @@ impl Simd for Portable {
         codes.map(f32::from)
     }
     #[inline(always)]
-    unsafe fn load_bf16(p: *const u16) -> Self::V {
-        let bits = unsafe { p.cast::<[u16; 8]>().read_unaligned() };
-        bits.map(|b| f32::from_bits(u32::from(b) << 16))
-    }
-    #[inline(always)]
-    unsafe fn load_f16(p: *const u16) -> Self::V {
-        let bits = unsafe { p.cast::<[u16; 8]>().read_unaligned() };
-        bits.map(|b| half::f16::from_bits(b).to_f32())
-    }
-    #[inline(always)]
     unsafe fn sum(v: Self::V) -> f32 {
         ((v[0] + v[4]) + (v[1] + v[5])) + ((v[2] + v[6]) + (v[3] + v[7]))
     }
@@ -221,20 +206,6 @@ impl Simd for Avx2 {
     unsafe fn load_i16(p: *const i16) -> Self::V {
         use std::arch::x86_64::*;
         unsafe { _mm256_cvtepi32_ps(_mm256_cvtepi16_epi32(_mm_loadu_si128(p.cast()))) }
-    }
-    #[inline(always)]
-    unsafe fn load_bf16(p: *const u16) -> Self::V {
-        use std::arch::x86_64::*;
-        unsafe {
-            let bits = _mm_loadu_si128(p.cast());
-            _mm256_castsi256_ps(_mm256_slli_epi32::<16>(_mm256_cvtepu16_epi32(bits)))
-        }
-    }
-    #[inline(always)]
-    unsafe fn load_f16(p: *const u16) -> Self::V {
-        use std::arch::x86_64::*;
-        // F16C: exact widening; every AVX2 CPU has it (callers check).
-        unsafe { _mm256_cvtph_ps(_mm_loadu_si128(p.cast())) }
     }
     #[inline(always)]
     unsafe fn sum(v: Self::V) -> f32 {
@@ -362,14 +333,6 @@ impl Simd for Avx2Fast {
         unsafe { Avx2::load_i16(p) }
     }
     #[inline(always)]
-    unsafe fn load_bf16(p: *const u16) -> Self::V {
-        unsafe { Avx2::load_bf16(p) }
-    }
-    #[inline(always)]
-    unsafe fn load_f16(p: *const u16) -> Self::V {
-        unsafe { Avx2::load_f16(p) }
-    }
-    #[inline(always)]
     unsafe fn sum(v: Self::V) -> f32 {
         unsafe { Avx2::sum(v) }
     }
@@ -467,25 +430,6 @@ impl Simd for Neon {
                 vcvtq_f32_s32(vmovl_s16(vget_low_s16(wide))),
                 vcvtq_f32_s32(vmovl_s16(vget_high_s16(wide))),
             )
-        }
-    }
-    #[inline(always)]
-    unsafe fn load_bf16(p: *const u16) -> Self::V {
-        use std::arch::aarch64::*;
-        unsafe {
-            let bits = vld1q_u16(p);
-            (
-                vreinterpretq_f32_u32(vshll_n_u16::<16>(vget_low_u16(bits))),
-                vreinterpretq_f32_u32(vshll_n_u16::<16>(vget_high_u16(bits))),
-            )
-        }
-    }
-    #[inline(always)]
-    unsafe fn load_f16(p: *const u16) -> Self::V {
-        // Exact but scalar; a native FCVTL path needs testing on aarch64.
-        unsafe {
-            let values = Portable::load_f16(p);
-            (Self::load(values.as_ptr()).0, Self::load(values.as_ptr().add(4)).1)
         }
     }
     #[inline(always)]
