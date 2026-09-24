@@ -30,10 +30,10 @@ struct Cli {
     #[arg(long, global = true)]
     allow_rtn: bool,
     /// KV cache layout [default: compact].
-    #[arg(long, value_enum, global = true)]
+    #[arg(long, value_enum, global = true, hide = true)]
     cache_layout: Option<CacheLayout>,
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
-    #[arg(long, value_enum, default_value = "unpacked", global = true)]
+    #[arg(long, value_enum, default_value = "unpacked", global = true, hide = true)]
     weight_layout: WeightLayout,
     /// Kernel-ready model file written by `pack` (near-exact or fast; the
     /// file decides the mode). Mapped and used in place: fast startup, no
