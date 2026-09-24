@@ -108,29 +108,30 @@ mod tests {
             .collect()
     }
 
+    /// The generic kernels the AVX2 backend dispatches to against the
+    /// original hand-written intrinsics.
     #[target_feature(enable = "avx2,fma")]
     unsafe fn compare_vectors(a: &[f32], b: &[f32], factor: f32) {
         unsafe {
-            assert_eq!(
-                crate::simd::dot::<crate::simd::Avx2>(a, b).to_bits(),
-                x86::dot_avx2(a, b).to_bits()
-            );
+            assert_eq!(x86::dot_avx2(a, b).to_bits(), x86::reference::dot_avx2(a, b).to_bits());
             let mut actual = a.to_vec();
             let mut expected = a.to_vec();
-            crate::simd::axpy::<crate::simd::Avx2>(factor, b, &mut actual);
-            x86::axpy_avx2(factor, b, &mut expected);
+            x86::axpy_avx2(factor, b, &mut actual);
+            x86::reference::axpy_avx2(factor, b, &mut expected);
             exact(&actual, &expected);
         }
     }
 
     #[test]
-    fn vectors_preserve_four_accumulators_and_fma() {
+    fn generic_kernels_are_bitwise_the_handwritten_avx2_kernels() {
         supported();
         for seed in 1..=128 {
-            let a = data(64, seed, if seed % 2 == 0 { 1e10 } else { 0.03125 });
-            let b = data(64, seed + 997, if seed % 3 == 0 { 1e-10 } else { 8.0 });
-            for factor in [-4.0, -0.0, 0.0, 0.125, 3.25] {
-                unsafe { compare_vectors(&a, &b, factor) };
+            for len in [0, 1, 7, 8, 9, 31, 32, 33, 63, 64, 65, 100, 768] {
+                let a = data(len, seed, if seed % 2 == 0 { 1e10 } else { 0.03125 });
+                let b = data(len, seed + 997, if seed % 3 == 0 { 1e-10 } else { 8.0 });
+                for factor in [-4.0, -0.0, 0.0, 0.125, 3.25] {
+                    unsafe { compare_vectors(&a, &b, factor) };
+                }
             }
         }
         let a: Vec<_> = (0..64).map(|i| if i % 2 == 0 { 1.0 } else { -1.0 }).collect();

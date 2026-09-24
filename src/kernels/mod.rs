@@ -499,80 +499,98 @@ fn axpy_scalar(a: f32, x: &[f32], y: &mut [f32]) {
 
 #[cfg(target_arch = "x86_64")]
 mod x86 {
-    use std::arch::x86_64::*;
-
+    /// `simd::dot::<Avx2>` behind the AVX2/FMA target feature: the
+    /// function-pointer dot of the AVX2 backend.
     #[target_feature(enable = "avx2,fma")]
     pub(super) unsafe fn dot_avx2(a: &[f32], b: &[f32]) -> f32 {
-        debug_assert_eq!(a.len(), b.len());
-        // SAFETY: Caller checks features. Unaligned loads stay inside the two
-        // equal-sized slices; the scalar tail covers fewer than eight elements.
-        unsafe {
-            let mut acc0 = _mm256_setzero_ps();
-            let mut acc1 = _mm256_setzero_ps();
-            let mut acc2 = _mm256_setzero_ps();
-            let mut acc3 = _mm256_setzero_ps();
-            let mut i = 0;
-            while i + 32 <= a.len() {
-                acc0 = _mm256_fmadd_ps(
-                    _mm256_loadu_ps(a.as_ptr().add(i)),
-                    _mm256_loadu_ps(b.as_ptr().add(i)),
-                    acc0,
-                );
-                acc1 = _mm256_fmadd_ps(
-                    _mm256_loadu_ps(a.as_ptr().add(i + 8)),
-                    _mm256_loadu_ps(b.as_ptr().add(i + 8)),
-                    acc1,
-                );
-                acc2 = _mm256_fmadd_ps(
-                    _mm256_loadu_ps(a.as_ptr().add(i + 16)),
-                    _mm256_loadu_ps(b.as_ptr().add(i + 16)),
-                    acc2,
-                );
-                acc3 = _mm256_fmadd_ps(
-                    _mm256_loadu_ps(a.as_ptr().add(i + 24)),
-                    _mm256_loadu_ps(b.as_ptr().add(i + 24)),
-                    acc3,
-                );
-                i += 32;
-            }
-            let mut acc = _mm256_add_ps(_mm256_add_ps(acc0, acc1), _mm256_add_ps(acc2, acc3));
-            while i + 8 <= a.len() {
-                acc = _mm256_fmadd_ps(
-                    _mm256_loadu_ps(a.as_ptr().add(i)),
-                    _mm256_loadu_ps(b.as_ptr().add(i)),
-                    acc,
-                );
-                i += 8;
-            }
-            let halves = _mm_add_ps(_mm256_castps256_ps128(acc), _mm256_extractf128_ps::<1>(acc));
-            let pairs = _mm_hadd_ps(halves, halves);
-            let mut sum = _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs));
-            while i < a.len() {
-                sum += a[i] * b[i];
-                i += 1;
-            }
-            sum
-        }
+        unsafe { crate::simd::dot::<crate::simd::Avx2>(a, b) }
     }
 
+    /// `simd::axpy::<Avx2>` behind the AVX2/FMA target feature.
     #[target_feature(enable = "avx2,fma")]
     pub(super) unsafe fn axpy_avx2(a: f32, x: &[f32], y: &mut [f32]) {
-        debug_assert_eq!(x.len(), y.len());
-        unsafe {
-            let factor = _mm256_set1_ps(a);
-            let mut i = 0;
-            while i + 8 <= x.len() {
-                let value = _mm256_fmadd_ps(
-                    factor,
-                    _mm256_loadu_ps(x.as_ptr().add(i)),
-                    _mm256_loadu_ps(y.as_ptr().add(i)),
-                );
-                _mm256_storeu_ps(y.as_mut_ptr().add(i), value);
-                i += 8;
+        unsafe { crate::simd::axpy::<crate::simd::Avx2>(a, x, y) }
+    }
+
+    /// The original hand-written intrinsics kernels: the bitwise oracle of
+    /// the generic ones (`attention::decode64::tests`).
+    #[cfg(test)]
+    pub(crate) mod reference {
+        use std::arch::x86_64::*;
+
+        #[target_feature(enable = "avx2,fma")]
+        pub(crate) unsafe fn dot_avx2(a: &[f32], b: &[f32]) -> f32 {
+            debug_assert_eq!(a.len(), b.len());
+            // SAFETY: Caller checks features. Unaligned loads stay inside the two
+            // equal-sized slices; the scalar tail covers fewer than eight elements.
+            unsafe {
+                let mut acc0 = _mm256_setzero_ps();
+                let mut acc1 = _mm256_setzero_ps();
+                let mut acc2 = _mm256_setzero_ps();
+                let mut acc3 = _mm256_setzero_ps();
+                let mut i = 0;
+                while i + 32 <= a.len() {
+                    acc0 = _mm256_fmadd_ps(
+                        _mm256_loadu_ps(a.as_ptr().add(i)),
+                        _mm256_loadu_ps(b.as_ptr().add(i)),
+                        acc0,
+                    );
+                    acc1 = _mm256_fmadd_ps(
+                        _mm256_loadu_ps(a.as_ptr().add(i + 8)),
+                        _mm256_loadu_ps(b.as_ptr().add(i + 8)),
+                        acc1,
+                    );
+                    acc2 = _mm256_fmadd_ps(
+                        _mm256_loadu_ps(a.as_ptr().add(i + 16)),
+                        _mm256_loadu_ps(b.as_ptr().add(i + 16)),
+                        acc2,
+                    );
+                    acc3 = _mm256_fmadd_ps(
+                        _mm256_loadu_ps(a.as_ptr().add(i + 24)),
+                        _mm256_loadu_ps(b.as_ptr().add(i + 24)),
+                        acc3,
+                    );
+                    i += 32;
+                }
+                let mut acc = _mm256_add_ps(_mm256_add_ps(acc0, acc1), _mm256_add_ps(acc2, acc3));
+                while i + 8 <= a.len() {
+                    acc = _mm256_fmadd_ps(
+                        _mm256_loadu_ps(a.as_ptr().add(i)),
+                        _mm256_loadu_ps(b.as_ptr().add(i)),
+                        acc,
+                    );
+                    i += 8;
+                }
+                let halves = _mm_add_ps(_mm256_castps256_ps128(acc), _mm256_extractf128_ps::<1>(acc));
+                let pairs = _mm_hadd_ps(halves, halves);
+                let mut sum = _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs));
+                while i < a.len() {
+                    sum += a[i] * b[i];
+                    i += 1;
+                }
+                sum
             }
-            while i < x.len() {
-                y[i] += a * x[i];
-                i += 1;
+        }
+
+        #[target_feature(enable = "avx2,fma")]
+        pub(crate) unsafe fn axpy_avx2(a: f32, x: &[f32], y: &mut [f32]) {
+            debug_assert_eq!(x.len(), y.len());
+            unsafe {
+                let factor = _mm256_set1_ps(a);
+                let mut i = 0;
+                while i + 8 <= x.len() {
+                    let value = _mm256_fmadd_ps(
+                        factor,
+                        _mm256_loadu_ps(x.as_ptr().add(i)),
+                        _mm256_loadu_ps(y.as_ptr().add(i)),
+                    );
+                    _mm256_storeu_ps(y.as_mut_ptr().add(i), value);
+                    i += 8;
+                }
+                while i < x.len() {
+                    y[i] += a * x[i];
+                    i += 1;
+                }
             }
         }
     }
