@@ -210,7 +210,7 @@ impl Tuner {
     }
 }
 
-fn median(values: &[f64]) -> f64 {
+pub(crate) fn median(values: &[f64]) -> f64 {
     let mut v = values.to_vec();
     v.sort_by(|a, b| a.total_cmp(b));
     if v.is_empty() {

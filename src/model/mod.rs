@@ -25,6 +25,7 @@ mod rope;
 
 pub(crate) use cache::{BatchWorkspace, Session};
 pub use packed::PACKED_FORMAT;
+pub(crate) use packed::packed_facts;
 
 /// Where a model's weights came from.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

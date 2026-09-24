@@ -239,8 +239,49 @@ fn detect_performance() -> Option<usize> {
     None
 }
 
+/// Memory read bandwidth, GB/s per pass: `bytes` of memory (touched first)
+/// summed by `threads` threads, `passes` times.
+pub fn read_bandwidth_gb_s(bytes: usize, threads: usize, passes: usize) -> Vec<f64> {
+    use rayon::prelude::*;
+    let words = (bytes / 8).max(1);
+    let data: Vec<u64> = (0..words as u64).collect();
+    let threads = threads.max(1);
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build()
+        .expect("bandwidth probe pool");
+    let chunk = words.div_ceil(threads * 4).max(1024);
+    (0..passes)
+        .map(|_| {
+            let started = std::time::Instant::now();
+            let total = pool.install(|| {
+                data.par_chunks(chunk)
+                    .map(|part| {
+                        let mut acc = [0u64; 4];
+                        for lanes in part.chunks_exact(4) {
+                            for (a, v) in acc.iter_mut().zip(lanes) {
+                                *a = a.wrapping_add(*v);
+                            }
+                        }
+                        acc.iter().fold(0u64, |a, &b| a.wrapping_add(b))
+                    })
+                    .reduce(|| 0u64, u64::wrapping_add)
+            });
+            std::hint::black_box(total);
+            (words * 8) as f64 / started.elapsed().as_secs_f64() / 1e9
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn bandwidth_probe_returns_one_positive_figure_per_pass() {
+        let passes = super::read_bandwidth_gb_s(8 << 20, 2, 3);
+        assert_eq!(passes.len(), 3);
+        assert!(passes.iter().all(|&g| g.is_finite() && g > 0.0), "{passes:?}");
+    }
+
     #[test]
     fn physical_cores_are_positive_and_at_most_logical() {
         let (physical, logical) = (super::physical_cores(), super::logical_cpus());

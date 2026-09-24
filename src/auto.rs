@@ -2,7 +2,10 @@
 //! from, and the plan a [`crate::Runner`] executes. The CLI, the library and
 //! the eval binary all resolve through here, so defaults cannot drift, and
 //! `doctor` and every result report the same [`Resolved`] plan.
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
@@ -95,6 +98,22 @@ pub struct CpuFeatures {
 }
 
 impl CpuFeatures {
+    /// Names of the features present, for reports.
+    pub fn names(&self) -> Vec<&'static str> {
+        let all = [
+            ("avx2", self.avx2),
+            ("fma", self.fma),
+            ("f16c", self.f16c),
+            ("avx512f", self.avx512f),
+            ("avx512bw", self.avx512bw),
+            ("avx512bf16", self.avx512bf16),
+            ("neon", self.neon),
+            ("dotprod", self.dotprod),
+            ("i8mm", self.i8mm),
+            ("bf16", self.bf16),
+        ];
+        all.into_iter().filter(|&(_, on)| on).map(|(name, _)| name).collect()
+    }
     /// The running CPU's features.
     pub fn detect() -> Self {
         #[cfg(target_arch = "x86_64")]
@@ -165,7 +184,8 @@ impl HostInfo {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WeightsPlan {
     pub source: WeightsSource,
-    pub mode: Mode,
+    /// `None` for a research profile (`ModelRequest::profile`).
+    pub mode: Option<Mode>,
     pub profile: Profile,
 }
 
@@ -189,6 +209,11 @@ pub struct ModelRequest<'a> {
     pub split_exact: bool,
     /// Skip the packed files and read the checkpoint (`pack` writes them).
     pub from_checkpoint: bool,
+    /// Research: load this profile from the checkpoint whatever the mode
+    /// (8-bit profiles take the overlay when present, else round-to-nearest).
+    pub profile: Option<Profile>,
+    /// Research: accept a kernel-ready file of any profile.
+    pub allow_research: bool,
 }
 
 impl Default for ModelRequest<'_> {
@@ -202,6 +227,8 @@ impl Default for ModelRequest<'_> {
             allow_rtn: false,
             split_exact: false,
             from_checkpoint: false,
+            profile: None,
+            allow_research: false,
         }
     }
 }
@@ -210,15 +237,22 @@ impl Default for ModelRequest<'_> {
 /// packed file for the mode in `model_dir`, then the FP32 checkpoint (fast
 /// mode also needs the GPTQ overlay unless `allow_rtn`).
 pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
+    let dir = request.model_dir;
     if let Some(path) = request.model_file {
         let profile = Model::packed_profile(path)?;
-        let mode = Mode::of_profile(profile)
-            .with_context(|| format!("{} holds the research profile {}", path.display(), profile.label()))?;
+        let mode = Mode::of_profile(profile);
+        ensure!(
+            mode.is_some() || request.allow_research,
+            "{} holds the research profile {}",
+            path.display(),
+            profile.label()
+        );
         if let Some(requested) = request.mode {
             ensure!(
-                requested == mode,
-                "{} is a {mode} model file, but --mode {requested} was requested",
+                mode == Some(requested),
+                "{} is a {} model file, but --mode {requested} was requested",
                 path.display(),
+                mode.map_or("research", Mode::label),
             );
         }
         ensure!(
@@ -233,12 +267,41 @@ pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
             profile,
         });
     }
+    if let Some(profile) = request.profile {
+        // Research: a named profile from the checkpoint.
+        if let Some(requested) = request.mode {
+            ensure!(
+                Mode::of_profile(profile) == Some(requested),
+                "profile {} is not the {requested} mode's",
+                profile.label()
+            );
+        }
+        require_checkpoint(dir, None)?;
+        let eight_bit = profile.quantizes_body() && profile.weight_bits() == 8;
+        let overlay = if eight_bit {
+            request
+                .w8_artifact
+                .map(Path::to_path_buf)
+                .or_else(|| Some(dir.join(DEFAULT_OVERLAY)).filter(|p| p.is_file()))
+        } else {
+            ensure!(request.w8_artifact.is_none(), "--w8-artifact applies to 8-bit profiles");
+            None
+        };
+        return Ok(WeightsPlan {
+            source: WeightsSource::Checkpoint {
+                dir: dir.to_path_buf(),
+                rtn: eight_bit && overlay.is_none(),
+                overlay,
+            },
+            mode: Mode::of_profile(profile),
+            profile,
+        });
+    }
     let mode = request.mode.unwrap_or(Mode::NearExact);
     ensure!(
         request.w8_artifact.is_none() || mode == Mode::Fast,
         "--w8-artifact applies to --mode fast"
     );
-    let dir = request.model_dir;
     if let Some(name) = mode.packed_file_name()
         && !request.from_checkpoint
     {
@@ -253,28 +316,12 @@ pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
             );
             return Ok(WeightsPlan {
                 source: WeightsSource::Packed { path: packed },
-                mode,
+                mode: Some(mode),
                 profile,
             });
         }
     }
-    if !dir.join("model.safetensors").is_file() {
-        let mut remedies = vec![format!(
-            "download the FP32 checkpoint: python scripts/fetch_reference.py --output {}",
-            dir.display()
-        )];
-        if let Some(name) = mode.packed_file_name() {
-            remedies.insert(
-                0,
-                format!(
-                    "download the packed file: huggingface-cli download amazingvince/falcon-ocr-v1.5-cpu {name} \
-                     --local-dir {} (or pass --model-file)",
-                    dir.display()
-                ),
-            );
-        }
-        bail!("no {mode} model in {}: {}", dir.display(), remedies.join("; or "));
-    }
+    require_checkpoint(dir, Some(mode))?;
     let profile = mode.profile(request.split_exact);
     let mut overlay = None;
     if mode == Mode::Fast {
@@ -296,9 +343,36 @@ pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
             rtn: mode == Mode::Fast && overlay.is_none(),
             overlay,
         },
-        mode,
+        mode: Some(mode),
         profile,
     })
+}
+
+/// Fail with the download remedies when `dir` holds no FP32 checkpoint.
+fn require_checkpoint(dir: &Path, mode: Option<Mode>) -> Result<()> {
+    if dir.join("model.safetensors").is_file() {
+        return Ok(());
+    }
+    let mut remedies = vec![format!(
+        "download the FP32 checkpoint: python scripts/fetch_reference.py --output {}",
+        dir.display()
+    )];
+    if let Some(name) = mode.and_then(Mode::packed_file_name) {
+        remedies.insert(
+            0,
+            format!(
+                "download the packed file: huggingface-cli download amazingvince/falcon-ocr-v1.5-cpu {name} \
+                 --local-dir {} (or pass --model-file)",
+                dir.display()
+            ),
+        );
+    }
+    bail!(
+        "no {} model in {}: {}",
+        mode.map_or("checkpoint".to_owned(), |m| m.label().to_owned()),
+        dir.display(),
+        remedies.join("; or ")
+    )
 }
 
 /// Load the weights a plan names. `verify` checks every tensor digest of a
@@ -328,6 +402,55 @@ impl Model {
             ..ModelRequest::default()
         })?;
         load_model(&plan, false)
+    }
+}
+
+/// What [`Resolved`] needs to know about a model, from the loaded model or
+/// from a plan alone (headers only).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ModelFacts {
+    pub source: WeightsSource,
+    pub profile: Profile,
+    pub config: ModelConfig,
+    /// `Model::body_bits`: the profile's width for a plan.
+    pub body_bits: Option<u32>,
+    pub overlay_sha256: Option<String>,
+}
+
+impl ModelFacts {
+    /// From a plan without reading tensors: the checkpoint's `config.json`
+    /// or the packed file's header (which also names its overlay digest).
+    pub fn from_plan(plan: &WeightsPlan) -> Result<Self> {
+        let (config, overlay_sha256) = match &plan.source {
+            WeightsSource::Packed { path } => crate::model::packed_facts(path)?,
+            WeightsSource::Checkpoint { dir, .. } => {
+                let path = dir.join("config.json");
+                let bytes = std::fs::read(&path).with_context(|| format!("read {}", path.display()))?;
+                let config: ModelConfig = serde_json::from_slice(&bytes)?;
+                config.validate()?;
+                (config, None)
+            }
+        };
+        Ok(Self {
+            source: plan.source.clone(),
+            profile: plan.profile,
+            config,
+            body_bits: plan.profile.quantizes_body().then(|| plan.profile.weight_bits()),
+            overlay_sha256,
+        })
+    }
+}
+
+impl Model {
+    /// The facts `Resolved` reports about this model.
+    pub fn facts(&self) -> ModelFacts {
+        ModelFacts {
+            source: self.source().clone(),
+            profile: self.attempt_profile(),
+            config: self.config().clone(),
+            body_bits: self.body_bits(),
+            overlay_sha256: self.overlay_sha256().map(str::to_owned),
+        }
     }
 }
 
@@ -386,10 +509,10 @@ pub struct Resolved {
 }
 
 impl Resolved {
-    /// The plan for `config` on `host` with `model`'s weights. `config` must
-    /// be valid ([`RunnerConfig::validate`]).
-    pub fn new(host: &HostInfo, config: &RunnerConfig, model: &Model, tokenizer_dir: &Path) -> Self {
-        let profile = model.attempt_profile();
+    /// The plan for `config` on `host` for a model with `facts`. `config`
+    /// must be valid ([`RunnerConfig::validate`]).
+    pub fn new(host: &HostInfo, config: &RunnerConfig, facts: &ModelFacts, tokenizer_dir: &Path) -> Self {
+        let profile = facts.profile;
         let simd = config.backend.simd();
         let threads = if config.threads == 0 {
             host.logical_cpus
@@ -407,11 +530,11 @@ impl Resolved {
         Self {
             mode: Mode::of_profile(profile),
             profile,
-            weights: model.source().clone(),
-            overlay_sha256: model.overlay_sha256().map(str::to_owned),
+            weights: facts.source.clone(),
+            overlay_sha256: facts.overlay_sha256.clone(),
             tokenizer_dir: tokenizer_dir.to_path_buf(),
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
-            prefill: crate::kernels::prefill_plan(model.body_bits(), simd, config.tuning.prefill_bf16),
+            prefill: crate::kernels::prefill_plan(facts.body_bits, simd, config.tuning.prefill_bf16),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,
@@ -422,7 +545,7 @@ impl Resolved {
                 decode,
             },
             kv_cache: kv_cache_label(profile).to_owned(),
-            bytes: byte_budget(model.config(), profile, config.head),
+            bytes: byte_budget(&facts.config, profile, config.head),
             image_decoder: "libjpeg-turbo (Pillow-exact)".to_owned(),
             tuning: config.tuning,
         }
@@ -516,6 +639,199 @@ impl std::fmt::Display for Resolved {
     }
 }
 
+/// One file `doctor` looked for.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FileStatus {
+    pub path: PathBuf,
+    pub present: bool,
+    pub bytes: Option<u64>,
+}
+
+impl FileStatus {
+    fn of(path: PathBuf) -> Self {
+        let bytes = std::fs::metadata(&path).ok().filter(|m| m.is_file()).map(|m| m.len());
+        Self {
+            present: bytes.is_some(),
+            bytes,
+            path,
+        }
+    }
+}
+
+/// The files `doctor` looked for in the model directory.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Files {
+    pub model_file: Option<FileStatus>,
+    pub packed_near_exact: FileStatus,
+    pub packed_fast: FileStatus,
+    pub checkpoint: FileStatus,
+    pub overlay: FileStatus,
+    pub tokenizer: FileStatus,
+}
+
+/// `doctor --load`: the model was loaded and its screened head built.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LoadReport {
+    pub load_ms: f64,
+    pub screened_head_bytes: usize,
+}
+
+/// `doctor --probe`: memory read bandwidth and the decode floor it implies.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ProbeReport {
+    pub bytes: usize,
+    pub threads: usize,
+    /// GB/s of each pass.
+    pub gb_per_s: Vec<f64>,
+    pub median_gb_per_s: f64,
+    /// Milliseconds the plan's per-token weight and head bytes take at the
+    /// median bandwidth: no decode step can be faster.
+    pub decode_floor_ms: Option<f64>,
+}
+
+/// What `doctor` reports.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Doctor {
+    pub host: HostInfo,
+    pub files: Files,
+    /// The plan for the request, when its weights were found.
+    pub plan: Option<Resolved>,
+    /// Why there is no plan.
+    pub error: Option<String>,
+    pub load: Option<LoadReport>,
+    pub probe: Option<ProbeReport>,
+}
+
+/// What `auto` would do for `request` and `config` on this host, without
+/// reading tensors unless `load`; `probe` measures memory bandwidth (512 MB,
+/// five passes on the physical cores).
+pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, probe: bool) -> Result<Doctor> {
+    config.validate()?;
+    let host = HostInfo::detect().clone();
+    let dir = request.model_dir;
+    let files = Files {
+        model_file: request.model_file.map(|p| FileStatus::of(p.to_path_buf())),
+        packed_near_exact: FileStatus::of(dir.join(Mode::NearExact.packed_file_name().unwrap_or_default())),
+        packed_fast: FileStatus::of(dir.join(Mode::Fast.packed_file_name().unwrap_or_default())),
+        checkpoint: FileStatus::of(dir.join("model.safetensors")),
+        overlay: FileStatus::of(
+            request
+                .w8_artifact
+                .map_or_else(|| dir.join(DEFAULT_OVERLAY), Path::to_path_buf),
+        ),
+        tokenizer: FileStatus::of(dir.join("tokenizer.json")),
+    };
+    let (mut plan, mut error, mut load_report) = (None, None, None);
+    match resolve_weights(request) {
+        Err(e) => error = Some(format!("{e:#}")),
+        Ok(weights) => {
+            let tokenizer_dir = weights.source.tokenizer_dir(dir);
+            plan = Some(Resolved::new(
+                &host,
+                config,
+                &ModelFacts::from_plan(&weights)?,
+                &tokenizer_dir,
+            ));
+            if load {
+                let started = Instant::now();
+                let model = load_model(&weights, false)?;
+                if config.head == HeadMode::Screened {
+                    model.prepare_screened_head()?;
+                }
+                load_report = Some(LoadReport {
+                    load_ms: started.elapsed().as_secs_f64() * 1000.0,
+                    screened_head_bytes: model.screened_head_bytes(),
+                });
+                plan = Some(Resolved::new(&host, config, &model.facts(), &tokenizer_dir));
+            }
+        }
+    }
+    let probe = probe.then(|| {
+        let bytes = 512 << 20;
+        let threads = host.physical_cores;
+        let gb_per_s = crate::cpu::read_bandwidth_gb_s(bytes, threads, 5);
+        let median_gb_per_s = crate::tune::median(&gb_per_s);
+        ProbeReport {
+            bytes,
+            threads,
+            decode_floor_ms: plan
+                .as_ref()
+                .map(|p| (p.bytes.weights_per_token + p.bytes.head_per_token) as f64 / (median_gb_per_s * 1e9) * 1e3),
+            gb_per_s,
+            median_gb_per_s,
+        }
+    });
+    Ok(Doctor {
+        host,
+        files,
+        plan,
+        error,
+        load: load_report,
+        probe,
+    })
+}
+
+impl std::fmt::Display for Doctor {
+    /// The text form (`doctor --text`).
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let h = &self.host;
+        writeln!(
+            f,
+            "host: {} {}, {} logical / {} physical cores{}{}; {}",
+            h.os,
+            h.arch,
+            h.logical_cpus,
+            h.physical_cores,
+            if h.smt { " (SMT)" } else { "" },
+            h.performance_cores
+                .map_or(String::new(), |p| format!(", {p} performance cores")),
+            h.features.names().join(" ")
+        )?;
+        let files = [
+            ("model file", self.files.model_file.as_ref()),
+            ("packed near-exact", Some(&self.files.packed_near_exact)),
+            ("packed fast", Some(&self.files.packed_fast)),
+            ("checkpoint", Some(&self.files.checkpoint)),
+            ("overlay", Some(&self.files.overlay)),
+            ("tokenizer", Some(&self.files.tokenizer)),
+        ];
+        for (name, file) in files.into_iter().filter_map(|(n, f)| f.map(|f| (n, f))) {
+            let size = match file.bytes {
+                Some(b) => format!("({:.0} MB)", b as f64 / 1e6),
+                None => "(missing)".to_owned(),
+            };
+            writeln!(f, "file: {name:18} {} {size}", file.path.display())?;
+        }
+        match (&self.plan, &self.error) {
+            (Some(plan), _) => writeln!(f, "plan: {plan}")?,
+            (None, Some(error)) => writeln!(f, "plan: none ({error})")?,
+            (None, None) => {}
+        }
+        if let Some(load) = &self.load {
+            writeln!(
+                f,
+                "load: {:.0} ms, screened head {:.0} MB",
+                load.load_ms,
+                load.screened_head_bytes as f64 / 1e6
+            )?;
+        }
+        if let Some(probe) = &self.probe {
+            writeln!(
+                f,
+                "probe: {} MB x{} on {} threads: {:.1} GB/s median{}",
+                probe.bytes >> 20,
+                probe.gb_per_s.len(),
+                probe.threads,
+                probe.median_gb_per_s,
+                probe
+                    .decode_floor_ms
+                    .map_or(String::new(), |ms| format!("; decode floor {ms:.2} ms/token"))
+            )?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -561,7 +877,10 @@ mod tests {
         // A checkpoint alone: near-exact quantizes at load, fast needs the overlay.
         std::fs::write(root.join("model.safetensors"), b"stub").unwrap();
         let plan = resolve_weights(&request).unwrap();
-        assert_eq!((plan.mode, plan.profile), (Mode::NearExact, Profile::W16BodyKvQ16));
+        assert_eq!(
+            (plan.mode, plan.profile),
+            (Some(Mode::NearExact), Profile::W16BodyKvQ16)
+        );
         assert!(matches!(
             plan.source,
             WeightsSource::Checkpoint {
@@ -627,7 +946,10 @@ mod tests {
         fabricate_packed(&packed, "w16-body-kv-q16");
         let plan = resolve_weights(&request).unwrap();
         assert_eq!(plan.source, WeightsSource::Packed { path: packed.clone() });
-        assert_eq!((plan.mode, plan.profile), (Mode::NearExact, Profile::W16BodyKvQ16));
+        assert_eq!(
+            (plan.mode, plan.profile),
+            (Some(Mode::NearExact), Profile::W16BodyKvQ16)
+        );
         assert!(matches!(
             resolve_weights(&ModelRequest {
                 from_checkpoint: true,
@@ -650,7 +972,7 @@ mod tests {
             ..ModelRequest::default()
         };
         let plan = resolve_weights(&explicit).unwrap();
-        assert_eq!(plan.mode, Mode::Fast);
+        assert_eq!(plan.mode, Some(Mode::Fast));
         let conflict = ModelRequest {
             mode: Some(Mode::NearExact),
             ..explicit.clone()
@@ -660,6 +982,45 @@ mod tests {
         fabricate_packed(&file, "w8-body");
         let error = resolve_weights(&explicit).unwrap_err().to_string();
         assert!(error.contains("research profile"), "{error}");
+        let research = resolve_weights(&ModelRequest {
+            allow_research: true,
+            ..explicit.clone()
+        })
+        .unwrap();
+        assert_eq!((research.mode, research.profile), (None, Profile::W8Body));
+        // A named research profile reads the checkpoint (8-bit: overlay or RTN).
+        let named = ModelRequest {
+            model_dir: root,
+            profile: Some(Profile::KvQ8),
+            ..ModelRequest::default()
+        };
+        let named_plan = resolve_weights(&named).unwrap();
+        assert_eq!((named_plan.mode, named_plan.profile), (None, Profile::KvQ8));
+        assert!(matches!(
+            named_plan.source,
+            WeightsSource::Checkpoint {
+                rtn: false,
+                overlay: None,
+                ..
+            }
+        ));
+        let named = ModelRequest {
+            profile: Some(Profile::W8BodyKvQ8),
+            ..named
+        };
+        let named_plan = resolve_weights(&named).unwrap();
+        assert_eq!(named_plan.mode, Some(Mode::Fast));
+        assert!(matches!(
+            named_plan.source,
+            WeightsSource::Checkpoint { overlay: Some(_), .. }
+        ));
+        assert!(
+            resolve_weights(&ModelRequest {
+                mode: Some(Mode::Exact),
+                ..named
+            })
+            .is_err()
+        );
         // The tokenizer comes from the file's folder only when it holds one.
         assert_eq!(
             plan.source.tokenizer_dir(Path::new("elsewhere")),
@@ -690,6 +1051,37 @@ mod tests {
             byte_budget(&c, Profile::Reference, HeadMode::Full).kv_per_position,
             22 * 1536 * 4
         );
+    }
+
+    #[test]
+    fn doctor_reports_files_and_a_plan_without_reading_tensors() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let config = RunnerConfig::default();
+        let request = ModelRequest {
+            model_dir: root,
+            ..ModelRequest::default()
+        };
+        let report = doctor(&request, &config, false, false).unwrap();
+        assert!(report.plan.is_none() && report.error.as_deref().unwrap().contains("no near-exact model"));
+        assert!(!report.files.checkpoint.present && report.files.model_file.is_none());
+        assert!(report.to_string().contains("plan: none"));
+        // A checkpoint directory: the plan comes from config.json.
+        std::fs::write(root.join("model.safetensors"), b"stub").unwrap();
+        std::fs::write(
+            root.join("config.json"),
+            include_str!("../tests/fixtures/model-config.json"),
+        )
+        .unwrap();
+        let report = doctor(&request, &config, false, false).unwrap();
+        let plan = report.plan.as_ref().unwrap();
+        assert_eq!(plan.mode, Some(Mode::NearExact));
+        assert_eq!(plan.kv_cache, "q16");
+        assert_eq!(plan.bytes.weights_per_token, 2 * 168_689_664 + 10_543_104);
+        assert!(report.files.checkpoint.present && report.error.is_none());
+        let json = serde_json::to_value(&report).unwrap();
+        assert_eq!(json["plan"]["profile"], "w16-body-kv-q16");
+        assert!(report.to_string().starts_with("host: "));
     }
 
     #[test]

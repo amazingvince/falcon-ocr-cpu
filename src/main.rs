@@ -102,8 +102,20 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
-    /// Show CPU capabilities without loading weights.
-    Doctor,
+    /// What `auto` does here: the host, the model files found and the plan
+    /// the other flags produce. Reads no tensors unless --load.
+    Doctor {
+        /// Plain text instead of JSON.
+        #[arg(long)]
+        text: bool,
+        /// Load the model (timed) and build the screened head.
+        #[arg(long)]
+        load: bool,
+        /// Measure memory read bandwidth (512 MB, five passes) and the decode
+        /// floor it implies for the plan.
+        #[arg(long)]
+        probe: bool,
+    },
     /// Verify the checkpoint hash and tensor contract.
     Inspect,
     /// Write a kernel-ready model file for --mode near-exact (default) or fast.
@@ -139,17 +151,10 @@ enum Command {
 }
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    if matches!(cli.command, Command::Doctor) {
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&serde_json::json!({"host": falcon_ocr::HostInfo::detect()}))?
-        );
-        return Ok(());
-    }
     let start = Instant::now();
     // Exact recognition uses the split FP32 cache (bit-identical to compact,
     // about 7% faster decode); traces and batches keep the reference loader.
-    let split_exact = matches!(cli.command, Command::Run { .. })
+    let split_exact = matches!(cli.command, Command::Run { .. } | Command::Doctor { .. })
         && cli.batch_size == 1
         && cli.cache_layout.is_none_or(|layout| layout == CacheLayout::Compact)
         && cli.weight_layout == WeightLayout::Unpacked;
@@ -171,7 +176,7 @@ fn main() -> Result<()> {
         }
         (_, mode) => mode,
     };
-    let plan = resolve_weights(&ModelRequest {
+    let request = ModelRequest {
         model_dir: &cli.model,
         model_file: cli.model_file.as_deref(),
         mode,
@@ -179,7 +184,43 @@ fn main() -> Result<()> {
         allow_rtn: cli.allow_rtn,
         split_exact,
         from_checkpoint: matches!(cli.command, Command::Pack { .. }),
-    })?;
+        ..ModelRequest::default()
+    };
+    // Traces stay bit-comparable with the recorded references: the reference
+    // configuration (platform exp, full head, no speculation). Recognition
+    // uses the automatic one, with the flags above layered on top.
+    let base = if matches!(cli.command, Command::Trace { .. }) {
+        RunnerConfig::reference()
+    } else {
+        RunnerConfig::default()
+    };
+    let config = RunnerConfig {
+        threads: cli.threads.unwrap_or(0),
+        backend: cli.backend,
+        batch_size: cli.batch_size,
+        cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
+        weight_layout: cli.weight_layout,
+        exp: cli.exp.unwrap_or(base.exp),
+        tuning: Tuning::from_pairs(&cli.tune)?,
+        head: cli.head.unwrap_or(base.head),
+        speculation: (cli.speculate > 0).then_some(Speculation {
+            max_draft: cli.speculate,
+            min_match: cli.speculate_min_match,
+        }),
+        document_drafts: cli.document_drafts,
+        repetition_stop: cli.stop_repetition,
+        decode_threads: cli.decode_threads.unwrap_or(base.decode_threads),
+    };
+    if let Command::Doctor { text, load, probe } = &cli.command {
+        let report = falcon_ocr::auto::doctor(&request, &config, *load, *probe)?;
+        if *text {
+            print!("{report}");
+        } else {
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        return Ok(());
+    }
+    let plan = resolve_weights(&request)?;
     if matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }) {
         eprintln!("fast mode: quantizing round-to-nearest at load (--allow-rtn); the GPTQ overlay is closer to FP32");
     }
@@ -206,31 +247,6 @@ fn main() -> Result<()> {
         return Ok(());
     }
     let tokenizer_dir = plan.source.tokenizer_dir(&cli.model);
-    // Traces stay bit-comparable with the recorded references: the reference
-    // configuration (platform exp, full head, no speculation). Recognition
-    // uses the automatic one, with the flags above layered on top.
-    let base = if matches!(cli.command, Command::Trace { .. }) {
-        RunnerConfig::reference()
-    } else {
-        RunnerConfig::default()
-    };
-    let config = RunnerConfig {
-        threads: cli.threads.unwrap_or(0),
-        backend: cli.backend,
-        batch_size: cli.batch_size,
-        cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
-        weight_layout: cli.weight_layout,
-        exp: cli.exp.unwrap_or(base.exp),
-        tuning: Tuning::from_pairs(&cli.tune)?,
-        head: cli.head.unwrap_or(base.head),
-        speculation: (cli.speculate > 0).then_some(Speculation {
-            max_draft: cli.speculate,
-            min_match: cli.speculate_min_match,
-        }),
-        document_drafts: cli.document_drafts,
-        repetition_stop: cli.stop_repetition,
-        decode_threads: cli.decode_threads.unwrap_or(base.decode_threads),
-    };
     let runner = Runner::new(model, &tokenizer_dir, config)?;
     eprintln!("{} | loaded in {load_ms:.0} ms", runner.resolved());
     match cli.command {

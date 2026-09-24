@@ -201,7 +201,7 @@ impl Runner {
         }
         let pool_threads = pool.current_num_threads();
         let host = crate::auto::HostInfo::detect();
-        let resolved = crate::auto::Resolved::new(host, &config, &model, model_dir.as_ref());
+        let resolved = crate::auto::Resolved::new(host, &config, &model.facts(), model_dir.as_ref());
         let speculation = config
             .speculation
             .map(|s| (s.max_draft.min(crate::head_screen::MAX_ROWS - 1), s.min_match.max(1)));

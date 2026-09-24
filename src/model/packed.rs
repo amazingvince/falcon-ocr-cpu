@@ -296,6 +296,15 @@ impl Model {
     }
 }
 
+/// The model config and overlay digest a kernel-ready file's header
+/// records (the tensors are not read).
+pub(crate) fn packed_facts(path: &Path) -> Result<(ModelConfig, Option<String>)> {
+    let meta = packed_metadata(path).with_context(|| format!("read {}", path.display()))?;
+    let config: ModelConfig = serde_json::from_str(meta.get("config").context("packed metadata config missing")?)?;
+    config.validate()?;
+    Ok((config, meta.get("w8_artifact_sha256").cloned()))
+}
+
 /// The `__metadata__` map of a safetensors file (the 8-byte length prefix
 /// and the header JSON it announces), read without touching the tensors.
 fn packed_metadata(path: &Path) -> Result<HashMap<String, String>> {

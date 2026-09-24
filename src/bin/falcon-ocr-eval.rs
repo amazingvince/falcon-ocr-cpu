@@ -388,8 +388,43 @@ fn main() -> Result<()> {
         hardware["avx512f"] = std::is_x86_feature_detected!("avx512f").into();
         hardware["avx512bf16"] = std::is_x86_feature_detected!("avx512bf16").into();
     }
+    let config = RunnerConfig {
+        threads: args.threads,
+        batch_size: args.batch_size,
+        backend: args.backend,
+        cache_layout: CacheLayout::Compact,
+        weight_layout: WeightLayout::Unpacked,
+        exp: args.exp,
+        tuning: Tuning::from_pairs(&args.tune)?,
+        head: args.head,
+        speculation: (args.speculate > 0).then_some(Speculation {
+            max_draft: args.speculate,
+            min_match: args.speculate_min_match,
+        }),
+        document_drafts: args.document_drafts,
+        repetition_stop: args.stop_repetition,
+        decode_threads: args.decode_threads.unwrap_or(DecodeThreads::Pool),
+    };
     if matches!(args.command, Command::Doctor) {
-        println!("{}", serde_json::to_string_pretty(&hardware)?);
+        // The same report as `falcon-ocr doctor`, for this profile.
+        let report = falcon_ocr::auto::doctor(
+            &falcon_ocr::auto::ModelRequest {
+                model_dir: &args.model,
+                model_file: args.model_file.as_deref(),
+                profile: Some(args.profile),
+                w8_artifact: args.w8_artifact.as_deref(),
+                allow_rtn: true,
+                allow_research: true,
+                ..Default::default()
+            },
+            &config,
+            false,
+            false,
+        )?;
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({"hardware": hardware, "doctor": report}))?
+        );
         return Ok(());
     }
     // Fail invalid output/options before model allocation and any recognition.
@@ -460,27 +495,7 @@ fn main() -> Result<()> {
     });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.attempt_memory_report();
-    let runner = Runner::new(
-        model.clone(),
-        &args.model,
-        RunnerConfig {
-            threads: args.threads,
-            batch_size: args.batch_size,
-            backend: args.backend,
-            cache_layout: CacheLayout::Compact,
-            weight_layout: WeightLayout::Unpacked,
-            exp: args.exp,
-            tuning: Tuning::from_pairs(&args.tune)?,
-            head: args.head,
-            speculation: (args.speculate > 0).then_some(Speculation {
-                max_draft: args.speculate,
-                min_match: args.speculate_min_match,
-            }),
-            document_drafts: args.document_drafts,
-            repetition_stop: args.stop_repetition,
-            decode_threads: args.decode_threads.unwrap_or(DecodeThreads::Pool),
-        },
-    )?;
+    let runner = Runner::new(model.clone(), &args.model, config)?;
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
         args.profile.label(),
