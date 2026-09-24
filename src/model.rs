@@ -561,7 +561,7 @@ impl Model {
     ) -> Result<()> {
         let c = &self.config;
         if let Some(q) = &w13.quantized
-            && q.linear_glu(input, rows, gated, simd)?
+            && q.linear_glu(input, rows, gated, scratch, simd)?
         {
             return Ok(());
         }

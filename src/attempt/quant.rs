@@ -373,6 +373,26 @@ impl Q8Linear {
         if rows == 0 {
             return Ok(());
         }
+        if rows > 8 && self.panel_gemm(simd) {
+            // Prefill: dequantize once into cache-resident panels (see
+            // `kernels::panel_gemm`); rounding-level different from the path below.
+            use crate::kernels::panel_gemm;
+            panel_gemm::pack_panels(
+                self.out_dim,
+                self.in_dim,
+                |r, dst| self.dequantize_row(r, dst),
+                &mut scratch.dense,
+            );
+            panel_gemm::gemm(
+                input,
+                rows,
+                self.in_dim,
+                &scratch.dense,
+                self.out_dim,
+                panel_gemm::Epilogue::Store(output),
+            );
+            return Ok(());
+        }
         if rows > 8 {
             scratch.dense.resize(self.out_dim * self.in_dim, 0.0);
             scratch
@@ -409,6 +429,7 @@ impl Q8Linear {
         input: &[f32],
         rows: usize,
         gated: &mut [f32],
+        scratch: &mut Scratch,
         simd: crate::kernels::Simd,
     ) -> anyhow::Result<bool> {
         ensure!(
@@ -419,6 +440,26 @@ impl Q8Linear {
         let ffn = self.out_dim / 2;
         ensure!(rows.checked_mul(ffn) == Some(gated.len()), "W8 GLU shape");
         simd.validate().map_err(anyhow::Error::msg)?;
+        if rows > 8 && self.panel_gemm(simd) {
+            // Prefill: the gate runs in the GEMM epilogue, so the interleaved
+            // intermediate is never stored.
+            use crate::kernels::panel_gemm;
+            panel_gemm::pack_panels(
+                self.out_dim,
+                self.in_dim,
+                |r, dst| self.dequantize_row(r, dst),
+                &mut scratch.dense,
+            );
+            panel_gemm::gemm(
+                input,
+                rows,
+                self.in_dim,
+                &scratch.dense,
+                self.out_dim,
+                panel_gemm::Epilogue::Glu(gated),
+            );
+            return Ok(true);
+        }
         if rows == 0 || rows > 8 {
             return Ok(false);
         }
@@ -441,6 +482,12 @@ impl Q8Linear {
             }
         });
         Ok(true)
+    }
+
+    /// Whether large-M products use `kernels::panel_gemm` here.
+    fn panel_gemm(&self, simd: crate::kernels::Simd) -> bool {
+        crate::kernels::panel_gemm::available(simd)
+            && self.out_dim % crate::kernels::panel_gemm::NR == 0
     }
 
     /// The dot kernel for this matrix's code type, group size and backend.
@@ -740,7 +787,7 @@ mod integrated_tests {
                     let mut expected = vec![0.0; rows * ffn];
                     crate::kernels::squared_relu_gate(&packed, &mut expected);
                     let mut fused = vec![f32::NAN; rows * ffn];
-                    assert!(q.linear_glu(&x, rows, &mut fused, backend).unwrap());
+                    assert!(q.linear_glu(&x, rows, &mut fused, &mut Scratch::default(), backend).unwrap());
                     for (a, b) in fused.iter().zip(&expected) {
                         assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} ffn{ffn} rows{rows}");
                     }

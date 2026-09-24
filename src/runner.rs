@@ -774,6 +774,7 @@ impl Runner {
             let mut positions = Vec::with_capacity(max_draft + 1);
             // (single steps, their ms, verify steps, their ms, drafted, accepted)
             let mut stats = (0_usize, 0.0_f64, 0_usize, 0.0_f64, 0_usize, 0_usize);
+            let mut policy = crate::draft::DraftPolicy::new();
             'decode: loop {
                 let token = next_token;
                 generated.push(token);
@@ -793,7 +794,11 @@ impl Runner {
                 let limit = max_draft
                     .min(options.max_new_tokens - generated.len() - 1)
                     .min(session.remaining_capacity().saturating_sub(1));
-                drafter.propose(&generated, limit, &mut draft);
+                if policy.should_draft() {
+                    drafter.propose(&generated, limit, &mut draft);
+                } else {
+                    draft.clear();
+                }
                 team.select();
                 let step_started = Instant::now();
                 if draft.is_empty() {
@@ -811,6 +816,7 @@ impl Runner {
                     team.record(step_ms);
                     stats.0 += 1;
                     stats.1 += step_ms;
+                    policy.single_step(step_ms);
                     next_token = select(&next, 0, c.vocab_size)?;
                     trace.decode_step(1, step_ms, session.cache_bytes());
                     continue;
@@ -842,6 +848,7 @@ impl Runner {
                 stats.3 += step_ms;
                 stats.4 += draft.len();
                 stats.5 += accepted;
+                policy.verify_step(step_ms, draft.len(), accepted);
                 trace.decode_step(rows, step_ms, session.cache_bytes());
                 for &token in &draft[..accepted] {
                     generated.push(token);
