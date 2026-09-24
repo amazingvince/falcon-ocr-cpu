@@ -71,7 +71,11 @@ impl Profile {
     }
     /// Bits per weight code of the quantized matrices: 16 or 8.
     pub fn weight_bits(self) -> u32 {
-        if matches!(self, Self::W16Body | Self::W16BodyKvQ16 | Self::W16BodyKvF16) { 16 } else { 8 }
+        if matches!(self, Self::W16Body | Self::W16BodyKvQ16 | Self::W16BodyKvF16) {
+            16
+        } else {
+            8
+        }
     }
     pub fn quantizes_head(self) -> bool {
         matches!(self, Self::W8All | Self::W8AllKvBf16 | Self::W8AllKvQ8)
@@ -143,11 +147,7 @@ pub fn process_memory() -> serde_json::Value {
         }
         #[link(name = "psapi")]
         unsafe extern "system" {
-            fn GetProcessMemoryInfo(
-                process: *mut std::ffi::c_void,
-                counters: *mut Counters,
-                cb: u32,
-            ) -> i32;
+            fn GetProcessMemoryInfo(process: *mut std::ffi::c_void, counters: *mut Counters, cb: u32) -> i32;
         }
         #[link(name = "kernel32")]
         unsafe extern "system" {

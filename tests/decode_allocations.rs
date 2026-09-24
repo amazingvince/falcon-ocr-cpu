@@ -1,8 +1,5 @@
 //! One test per binary keeps the process-wide counter isolated from other tests.
-use falcon_ocr::{
-    CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout,
-    trace::Trace,
-};
+use falcon_ocr::{CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout, trace::Trace};
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     sync::{
@@ -74,32 +71,12 @@ fn warm_fp32_decode_has_no_heap_allocations() {
         ..Default::default()
     };
     for (cache_layout, weight_layout, head) in [
-        (
-            CacheLayout::Expanded,
-            WeightLayout::Unpacked,
-            HeadMode::Full,
-        ),
-        (
-            CacheLayout::Expanded,
-            WeightLayout::PhasePacked,
-            HeadMode::Full,
-        ),
+        (CacheLayout::Expanded, WeightLayout::Unpacked, HeadMode::Full),
+        (CacheLayout::Expanded, WeightLayout::PhasePacked, HeadMode::Full),
         (CacheLayout::Compact, WeightLayout::Unpacked, HeadMode::Full),
-        (
-            CacheLayout::Compact,
-            WeightLayout::PhasePacked,
-            HeadMode::Full,
-        ),
-        (
-            CacheLayout::Compact,
-            WeightLayout::Unpacked,
-            HeadMode::Screened,
-        ),
-        (
-            CacheLayout::Compact,
-            WeightLayout::PhasePacked,
-            HeadMode::Screened,
-        ),
+        (CacheLayout::Compact, WeightLayout::PhasePacked, HeadMode::Full),
+        (CacheLayout::Compact, WeightLayout::Unpacked, HeadMode::Screened),
+        (CacheLayout::Compact, WeightLayout::PhasePacked, HeadMode::Screened),
     ] {
         {
             let mut runner = Runner::new(
@@ -118,10 +95,7 @@ fn warm_fp32_decode_has_no_heap_allocations() {
             let result = runner.recognize_with_trace(&image, &options, &mut Probe);
             ACTIVE.store(false, Ordering::SeqCst);
             let result = result.unwrap();
-            assert_eq!(
-                result.output_tokens, 17,
-                "test must exercise all smoke decode steps"
-            );
+            assert_eq!(result.output_tokens, 17, "test must exercise all smoke decode steps");
             assert_eq!(
                 CALLS.load(Ordering::SeqCst),
                 0,

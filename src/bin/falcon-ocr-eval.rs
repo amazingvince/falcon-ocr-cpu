@@ -185,12 +185,7 @@ struct GramCapture {
 impl GramCapture {
     const FLUSH_ROWS: usize = 256;
     fn new(layers: usize, dim: usize, query_dim: usize, ffn_dim: usize) -> Self {
-        let widths = [
-            ("qkv", dim),
-            ("wo", query_dim),
-            ("w13", dim),
-            ("w2", ffn_dim),
-        ];
+        let widths = [("qkv", dim), ("wo", query_dim), ("w13", dim), ("w2", ffn_dim)];
         let mut sums = Vec::new();
         for _ in 0..layers {
             for (_, w) in widths {
@@ -243,12 +238,7 @@ impl GramCapture {
     fn save(&mut self, dir: &Path) -> Result<Vec<(String, usize)>> {
         self.flush();
         std::fs::create_dir_all(dir)?;
-        let names = [
-            "attention.wqkv",
-            "attention.wo",
-            "feed_forward.w13",
-            "feed_forward.w2",
-        ];
+        let names = ["attention.wqkv", "attention.wo", "feed_forward.w13", "feed_forward.w2"];
         let mut written = Vec::new();
         for slot in 0..self.sums.len() {
             let (layer, site) = (slot / 4, slot % 4);
@@ -256,9 +246,7 @@ impl GramCapture {
             let name = format!("layers.{layer}.{}.weight", names[site]);
             let n = self.rows[slot].max(1) as f64;
             let mut bytes = Vec::with_capacity(128 + 4 * width * width);
-            let header = format!(
-                "{{'descr': '<f4', 'fortran_order': False, 'shape': ({width}, {width}), }}"
-            );
+            let header = format!("{{'descr': '<f4', 'fortran_order': False, 'shape': ({width}, {width}), }}");
             let total = 10 + header.len() + 1;
             let padded = total.div_ceil(64) * 64;
             bytes.extend_from_slice(b"\x93NUMPY\x01\x00");
@@ -330,13 +318,8 @@ impl falcon_ocr::trace::Trace for Agreement {
         let log_q = log_softmax(logits);
         if let Some(dump) = &mut self.dump {
             let mut order: Vec<u32> = (0..log_q.len() as u32).collect();
-            order.select_nth_unstable_by(TOP_K, |&a, &b| {
-                log_q[b as usize].total_cmp(&log_q[a as usize])
-            });
-            let mut top: Vec<(u32, f32)> = order[..TOP_K]
-                .iter()
-                .map(|&i| (i, log_q[i as usize] as f32))
-                .collect();
+            order.select_nth_unstable_by(TOP_K, |&a, &b| log_q[b as usize].total_cmp(&log_q[a as usize]));
+            let mut top: Vec<(u32, f32)> = order[..TOP_K].iter().map(|&i| (i, log_q[i as usize] as f32)).collect();
             top.sort_by(|a, b| b.1.total_cmp(&a.1));
             debug_assert_eq!(dump.len(), step);
             dump.push(top);
@@ -376,24 +359,15 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<()> {
     if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(parent)?;
     }
-    let mut f = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?;
+    let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
     serde_json::to_writer_pretty(&mut f, value)?;
     f.write_all(b"\n")?;
     Ok(())
 }
 fn main() -> Result<()> {
     let args = Cli::parse();
-    ensure!(
-        (1..=8).contains(&args.batch_size),
-        "attempt batch_size must be 1..=8"
-    );
-    ensure!(
-        args.threads > 0,
-        "supply an explicit positive thread budget"
-    );
+    ensure!((1..=8).contains(&args.batch_size), "attempt batch_size must be 1..=8");
+    ensure!(args.threads > 0, "supply an explicit positive thread budget");
     let mut hardware = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
         "logical_cpus_visible":std::thread::available_parallelism().map(|n|n.get()).unwrap_or(1),
         "processor_identifier":std::env::var("PROCESSOR_IDENTIFIER").ok(),
@@ -454,9 +428,7 @@ fn main() -> Result<()> {
                 ensure!(p.is_file(), "missing image {}", p.display());
             }
         }
-        Command::Trace {
-            fixture, output, ..
-        } => {
+        Command::Trace { fixture, output, .. } => {
             ensure!(fixture.is_file(), "missing fixture");
             ensure!(
                 !output.exists() && !output.with_extension("json").exists(),
@@ -529,10 +501,10 @@ fn main() -> Result<()> {
             for index in 0..samples {
                 let mut telemetry = Telemetry::default();
                 let t = Instant::now();
-                let outputs =
-                    runner.recognize_files_with_trace(&images, &options, &mut telemetry)?;
+                let outputs = runner.recognize_files_with_trace(&images, &options, &mut telemetry)?;
                 let wall_ms = t.elapsed().as_secs_f64() * 1000.0;
-                records.push(serde_json::json!({"index":index,"wall_ms":wall_ms,"outputs":outputs,"telemetry":telemetry}));
+                records
+                    .push(serde_json::json!({"index":index,"wall_ms":wall_ms,"outputs":outputs,"telemetry":telemetry}));
             }
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-report-v1","profile":args.profile,
                 "quality_qualified":false,"model_revision":falcon_ocr::config::MODEL_REVISION,
@@ -547,8 +519,7 @@ fn main() -> Result<()> {
                 "memory_policy":memory,"process_memory":falcon_ocr::attempt::process_memory(),"samples":records,
                 "timing_scope":"warm model, original encoded files to all returned text; load/import excluded; report serialization excluded",
                 "limits":"KV counters are persistent-allocation snapshots, not OS RSS or transient conversion peaks. Source F32 mapping remains."});
-            write_new(&report, &report_value)
-                .with_context(|| format!("write {}", report.display()))?;
+            write_new(&report, &report_value).with_context(|| format!("write {}", report.display()))?;
             println!(
                 "{}",
                 serde_json::json!({"report":report,"profile":args.profile,"samples":samples})
@@ -610,23 +581,18 @@ fn main() -> Result<()> {
             dump_topk,
             reference_topk,
         } => {
-            let reference_top: Option<std::collections::HashMap<String, PageTopK>> =
-                match &reference_topk {
-                    Some(path) => {
-                        let value: serde_json::Value =
-                            serde_json::from_slice(&std::fs::read(path)?)?;
-                        Some(serde_json::from_value(value["pages"].clone())?)
-                    }
-                    None => None,
-                };
+            let reference_top: Option<std::collections::HashMap<String, PageTopK>> = match &reference_topk {
+                Some(path) => {
+                    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+                    Some(serde_json::from_value(value["pages"].clone())?)
+                }
+                None => None,
+            };
             let mut dumped = serde_json::Map::new();
             let (mut kl_sum, mut kl_steps) = (0.0_f64, 0_usize);
-            let reference_report: serde_json::Value =
-                serde_json::from_slice(&std::fs::read(&reference)?)?;
+            let reference_report: serde_json::Value = serde_json::from_slice(&std::fs::read(&reference)?)?;
             let mut forced = std::collections::HashMap::new();
-            let inputs = reference_report["inputs"]
-                .as_array()
-                .context("reference inputs")?;
+            let inputs = reference_report["inputs"].as_array().context("reference inputs")?;
             let outputs = reference_report["samples"][0]["outputs"]
                 .as_array()
                 .context("reference outputs")?;
@@ -660,9 +626,7 @@ fn main() -> Result<()> {
                         Some(pages) => Some(
                             pages
                                 .get(&id)
-                                .with_context(|| {
-                                    format!("page {id} missing from the top-K reference")
-                                })?
+                                .with_context(|| format!("page {id} missing from the top-K reference"))?
                                 .clone(),
                         ),
                         None => None,
@@ -719,8 +683,7 @@ fn main() -> Result<()> {
                 "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,
                 "weights_bf16":args.weights_bf16,
                 "wall_ms":started.elapsed().as_secs_f64() * 1000.0,"pages":pages});
-            write_new(&report, &report_value)
-                .with_context(|| format!("write {}", report.display()))?;
+            write_new(&report, &report_value).with_context(|| format!("write {}", report.display()))?;
             println!(
                 "{}",
                 serde_json::json!({"report":report,"profile":args.profile,"steps":total_steps,

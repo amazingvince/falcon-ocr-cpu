@@ -93,9 +93,7 @@ impl ModelConfig {
             "unsupported architecture: expected Falcon-OCR v1.5 dimensions"
         );
         ensure!(
-            self.channel_size == 3
-                && self.spatial_patch_size == 16
-                && self.temporal_patch_size == 1,
+            self.channel_size == 3 && self.spatial_patch_size == 16 && self.temporal_patch_size == 1,
             "unsupported patch configuration"
         );
         ensure!(

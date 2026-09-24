@@ -42,9 +42,7 @@ impl PhasePackedLinear {
             for phase in 0..4 {
                 for block in 0..blocks {
                     dst[phase * phase_stride + block * 8..phase * phase_stride + (block + 1) * 8]
-                        .copy_from_slice(
-                            &src[block * 32 + phase * 8..block * 32 + (phase + 1) * 8],
-                        );
+                        .copy_from_slice(&src[block * 32 + phase * 8..block * 32 + (phase + 1) * 8]);
                 }
             }
             dst[blocks * 32..].copy_from_slice(&src[blocks * 32..]);
@@ -71,19 +69,13 @@ impl PhasePackedLinear {
     /// reduction-order fallback inside this isolated experimental interface.
     pub fn linear_avx2(&self, input: &[f32], rows: usize, output: &mut [f32]) {
         assert!(rows <= 8, "phase-packed FP32 supports at most eight rows");
-        assert_eq!(
-            input.len(),
-            elements(rows, self.input_dim),
-            "packed FP32 input shape"
-        );
+        assert_eq!(input.len(), elements(rows, self.input_dim), "packed FP32 input shape");
         assert_eq!(
             output.len(),
             elements(rows, self.output_dim),
             "packed FP32 output shape"
         );
-        Simd::Avx2
-            .validate()
-            .expect("phase-packed FP32 requires AVX2/FMA");
+        Simd::Avx2.validate().expect("phase-packed FP32 requires AVX2/FMA");
         if output.is_empty() {
             return;
         }
@@ -103,8 +95,7 @@ impl PhasePackedLinear {
             .into_par_iter()
             .with_min_len(8)
             .for_each(|channel| {
-                let weight =
-                    &self.weights[channel * self.input_dim..(channel + 1) * self.input_dim];
+                let weight = &self.weights[channel * self.input_dim..(channel + 1) * self.input_dim];
                 let mut values = [0.0; 8];
                 #[cfg(target_arch = "x86_64")]
                 // SAFETY: Feature checks and exact shapes bound every SIMD load;
@@ -151,10 +142,7 @@ impl OutputColumns {
             // SAFETY: Safe entry point checked the full matrix dimensions,
             // and caller promises exclusive ownership of this column.
             unsafe {
-                self.ptr
-                    .as_ptr()
-                    .add(row * self.width + column)
-                    .write(value);
+                self.ptr.as_ptr().add(row * self.width + column).write(value);
             }
         }
     }
@@ -187,19 +175,12 @@ mod x86 {
                 let mut accumulators = [[_mm256_setzero_ps(); P]; B];
                 for block in 0..blocks {
                     for phase in 0..P {
-                        let w = _mm256_loadu_ps(
-                            weight
-                                .as_ptr()
-                                .add((first_phase + phase) * phase_stride + block * 8),
-                        );
+                        let w = _mm256_loadu_ps(weight.as_ptr().add((first_phase + phase) * phase_stride + block * 8));
                         for row in 0..B {
                             let x = _mm256_loadu_ps(
-                                input
-                                    .as_ptr()
-                                    .add(row * width + block * 32 + (first_phase + phase) * 8),
+                                input.as_ptr().add(row * width + block * 32 + (first_phase + phase) * 8),
                             );
-                            accumulators[row][phase] =
-                                _mm256_fmadd_ps(x, w, accumulators[row][phase]);
+                            accumulators[row][phase] = _mm256_fmadd_ps(x, w, accumulators[row][phase]);
                         }
                     }
                 }
@@ -228,8 +209,7 @@ mod x86 {
                     );
                     i += 8;
                 }
-                let halves =
-                    _mm_add_ps(_mm256_castps256_ps128(sum), _mm256_extractf128_ps::<1>(sum));
+                let halves = _mm_add_ps(_mm256_castps256_ps128(sum), _mm256_extractf128_ps::<1>(sum));
                 let pairs = _mm_hadd_ps(halves, halves);
                 let mut value = _mm_cvtss_f32(_mm_hadd_ps(pairs, pairs));
                 while i < width {
@@ -263,15 +243,7 @@ mod tests {
         assert_eq!(packed.packed_weight_bytes(), w.len() * 4);
         let mut actual = vec![f32::NAN; rows * output_dim];
         let mut expected = actual.clone();
-        kernels::linear_with_simd(
-            &x,
-            rows,
-            input_dim,
-            &w,
-            output_dim,
-            &mut expected,
-            Simd::Avx2,
-        );
+        kernels::linear_with_simd(&x, rows, input_dim, &w, output_dim, &mut expected, Simd::Avx2);
         packed.linear_avx2(&x, rows, &mut actual);
         for (index, (a, e)) in actual.iter().zip(&expected).enumerate() {
             assert_eq!(
@@ -287,10 +259,7 @@ mod tests {
         if Simd::Avx2.validate().is_err() {
             return;
         }
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(2)
-            .build()
-            .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(2).build().unwrap();
         pool.install(|| {
             for rows in 0..=8 {
                 for width in (0..=65).chain([127, 128, 129, 767, 768, 769, 1024, 2304]) {
@@ -305,10 +274,7 @@ mod tests {
         if Simd::Avx2.validate().is_err() {
             return;
         }
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(2)
-            .build()
-            .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(2).build().unwrap();
         pool.install(|| {
             for rows in [1, 2, 4, 8] {
                 for (input, output) in [(768, 2048), (1024, 768), (768, 4608), (2304, 768)] {
@@ -327,9 +293,7 @@ mod tests {
         let x: Vec<_> = (0..8 * width)
             .map(|i| [1.0e15, -1.0e15, -0.0, 0.0, 1.0, -2.0, 0.125][i % 7])
             .collect();
-        let w: Vec<_> = (0..19 * width)
-            .map(|i| [1.0, -1.0, 0.0, -0.0, 0.25][i % 5])
-            .collect();
+        let w: Vec<_> = (0..19 * width).map(|i| [1.0, -1.0, 0.0, -0.0, 0.25][i % 5]).collect();
         let mut expected = vec![0.0; 8 * 19];
         let mut actual = expected.clone();
         kernels::linear_with_simd(&x, 8, width, &w, 19, &mut expected, Simd::Avx2);

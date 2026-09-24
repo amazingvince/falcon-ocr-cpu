@@ -98,7 +98,10 @@ pub(crate) fn report_stage_cycles() {
             eprintln!("prefill attention BF16 K/V conversion: {:.1} ms", ns as f64 / 1e6);
         }
     }
-    let v: Vec<u64> = STAGE_CYCLES.iter().map(|c| c.swap(0, std::sync::atomic::Ordering::Relaxed)).collect();
+    let v: Vec<u64> = STAGE_CYCLES
+        .iter()
+        .map(|c| c.swap(0, std::sync::atomic::Ordering::Relaxed))
+        .collect();
     let total = v.iter().sum::<u64>().max(1) as f64;
     eprintln!(
         "prefill attention stages (thread cycles): qk {:.1}% softmax {:.1}% pv {:.1}% total {:.2e}",
@@ -171,8 +174,7 @@ pub(super) unsafe fn compact_prefill(
 }
 
 /// Entry for one (query tile, head) with a given instruction set.
-type TileFn =
-    unsafe fn(&[f32], &[f32], &[f32], &Shape, usize, usize, usize, usize, &[f32], *mut f32);
+type TileFn = unsafe fn(&[f32], &[f32], &[f32], &Shape, usize, usize, usize, usize, &[f32], *mut f32);
 
 #[allow(clippy::too_many_arguments)]
 unsafe fn compact_prefill_with(
@@ -208,18 +210,7 @@ unsafe fn compact_prefill_with(
             // SAFETY: features and shapes were checked by the caller; each
             // task owns rows [tile * 32, tile * 32 + queries) of `head`.
             unsafe {
-                tile_head(
-                    q,
-                    k,
-                    v,
-                    &shape,
-                    tile,
-                    queries,
-                    head,
-                    kv_head,
-                    sinks,
-                    out.get(),
-                );
+                tile_head(q, k, v, &shape, tile, queries, head, kv_head, sinks, out.get());
             }
         });
     }
@@ -241,11 +232,7 @@ unsafe fn tile_head_native(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        tile_head::<crate::simd::Avx2, false>(
-            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
-        )
-    }
+    unsafe { tile_head::<crate::simd::Avx2, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// AVX-512F QK/PV products with the platform-exact exp.
 #[cfg(target_arch = "x86_64")]
@@ -263,11 +250,7 @@ unsafe fn tile_head_native_wide(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        tile_head::<crate::simd::Avx2, true>(
-            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
-        )
-    }
+    unsafe { tile_head::<crate::simd::Avx2, true>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// AVX-512F QK/PV products with the portable fast exp.
 #[cfg(target_arch = "x86_64")]
@@ -285,11 +268,7 @@ unsafe fn tile_head_fast_wide(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        tile_head::<crate::simd::Avx2Fast, true>(
-            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
-        )
-    }
+    unsafe { tile_head::<crate::simd::Avx2Fast, true>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// AVX2 with the portable fast exp (`ExpMode::Fast`).
 #[cfg(target_arch = "x86_64")]
@@ -307,11 +286,7 @@ unsafe fn tile_head_fast(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        tile_head::<crate::simd::Avx2Fast, false>(
-            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
-        )
-    }
+    unsafe { tile_head::<crate::simd::Avx2Fast, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
 }
 #[cfg(target_arch = "aarch64")]
 #[allow(clippy::too_many_arguments)]
@@ -327,11 +302,7 @@ unsafe fn tile_head_native(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        tile_head::<crate::simd::Neon, false>(
-            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
-        )
-    }
+    unsafe { tile_head::<crate::simd::Neon, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// The portable instantiation (tests; bitwise equal to NEON).
 #[cfg(test)]
@@ -348,11 +319,7 @@ unsafe fn tile_head_portable(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe {
-        tile_head::<crate::simd::Portable, false>(
-            q, k, v, shape, tile, queries, head, kv_head, sinks, output,
-        )
-    }
+    unsafe { tile_head::<crate::simd::Portable, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
 }
 
 #[inline(always)]
@@ -392,21 +359,14 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
     // SAFETY: row offsets stay inside `output` for this task's rows and head.
     let out = unsafe { output.add(first_query * shape.query_width + head * HEAD_DIM) };
     for r in 0..queries {
-        unsafe { std::slice::from_raw_parts_mut(out.add(r * shape.query_width), HEAD_DIM) }
-            .fill(0.0);
+        unsafe { std::slice::from_raw_parts_mut(out.add(r * shape.query_width), HEAD_DIM) }.fill(0.0);
     }
     let mut st = [0.0_f32; KEY_TILE * QUERY_TILE];
     let mut scores = [0.0_f32; QUERY_TILE * KEY_TILE];
     for key_start in (0..visible_end).step_by(KEY_TILE) {
         let keys = (visible_end - key_start).min(KEY_TILE);
-        let key_rows = unsafe {
-            k.as_ptr()
-                .add(key_start * shape.query_width + head * HEAD_DIM)
-        };
-        let value_rows = unsafe {
-            v.as_ptr()
-                .add(key_start * shape.kv_width + kv_head * HEAD_DIM)
-        };
+        let key_rows = unsafe { k.as_ptr().add(key_start * shape.query_width + head * HEAD_DIM) };
+        let value_rows = unsafe { v.as_ptr().add(key_start * shape.kv_width + kv_head * HEAD_DIM) };
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
             let profile = profile_enabled();
             let t0 = if profile { cycles() } else { 0 };
@@ -415,36 +375,12 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
             unsafe {
                 #[cfg(target_arch = "x86_64")]
                 if WIDE {
-                    wide::qk_lanes(
-                        &qt,
-                        queries,
-                        key_rows,
-                        shape.query_width,
-                        keys,
-                        shape.scale,
-                        &mut st,
-                    );
+                    wide::qk_lanes(&qt, queries, key_rows, shape.query_width, keys, shape.scale, &mut st);
                 } else {
-                    qk_lanes::<S>(
-                        &qt,
-                        queries,
-                        key_rows,
-                        shape.query_width,
-                        keys,
-                        shape.scale,
-                        &mut st,
-                    );
+                    qk_lanes::<S>(&qt, queries, key_rows, shape.query_width, keys, shape.scale, &mut st);
                 }
                 #[cfg(not(target_arch = "x86_64"))]
-                qk_lanes::<S>(
-                    &qt,
-                    queries,
-                    key_rows,
-                    shape.query_width,
-                    keys,
-                    shape.scale,
-                    &mut st,
-                );
+                qk_lanes::<S>(&qt, queries, key_rows, shape.query_width, keys, shape.scale, &mut st);
                 if profile {
                     t1 = cycles();
                 }
@@ -465,36 +401,12 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
                 }
                 #[cfg(target_arch = "x86_64")]
                 if WIDE {
-                    wide::pv_lanes(
-                        &st,
-                        queries,
-                        keys,
-                        value_rows,
-                        shape.kv_width,
-                        out,
-                        shape.query_width,
-                    );
+                    wide::pv_lanes(&st, queries, keys, value_rows, shape.kv_width, out, shape.query_width);
                 } else {
-                    pv_lanes::<S>(
-                        &st,
-                        queries,
-                        keys,
-                        value_rows,
-                        shape.kv_width,
-                        out,
-                        shape.query_width,
-                    );
+                    pv_lanes::<S>(&st, queries, keys, value_rows, shape.kv_width, out, shape.query_width);
                 }
                 #[cfg(not(target_arch = "x86_64"))]
-                pv_lanes::<S>(
-                    &st,
-                    queries,
-                    keys,
-                    value_rows,
-                    shape.kv_width,
-                    out,
-                    shape.query_width,
-                );
+                pv_lanes::<S>(&st, queries, keys, value_rows, shape.kv_width, out, shape.query_width);
             }
             if profile {
                 use std::sync::atomic::Ordering::Relaxed;
@@ -507,8 +419,7 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
             unsafe {
                 reference_key_tile(
                     shape,
-                    q.as_ptr()
-                        .add(first_query * shape.query_width + head * HEAD_DIM),
+                    q.as_ptr().add(first_query * shape.query_width + head * HEAD_DIM),
                     first_absolute,
                     queries,
                     key_start,
@@ -524,8 +435,7 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
         }
     }
     for r in 0..queries {
-        let row =
-            unsafe { std::slice::from_raw_parts_mut(out.add(r * shape.query_width), HEAD_DIM) };
+        let row = unsafe { std::slice::from_raw_parts_mut(out.add(r * shape.query_width), HEAD_DIM) };
         let logsumexp = maxima[r] + denominators[r].ln();
         let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
         for value in row {
@@ -614,8 +524,7 @@ fn mask_lanes(
         let image_query = absolute >= shape.image_start && absolute < shape.image_end;
         for j in 0..keys {
             let key = key_start + j;
-            if key > absolute && !(image_query && key >= shape.image_start && key < shape.image_end)
-            {
+            if key > absolute && !(image_query && key >= shape.image_start && key < shape.image_end) {
                 st[j * QUERY_TILE + r] = f32::NEG_INFINITY;
             }
         }
@@ -702,10 +611,7 @@ unsafe fn softmax_lanes<S: Isa>(
                 S::store(st.as_mut_ptr().add(j * QUERY_TILE + lane0), p);
             }
             S::store(denominators.as_mut_ptr().add(lane0), denominator);
-            S::store(
-                maxima.as_mut_ptr().add(lane0),
-                S::select(skip, old_max, new_max),
-            );
+            S::store(maxima.as_mut_ptr().add(lane0), S::select(skip, old_max, new_max));
         }
     }
 }
@@ -979,8 +885,7 @@ unsafe fn reference_key_tile(
         let mut block_max = f32::NEG_INFINITY;
         for (col, score) in row_scores.iter_mut().enumerate() {
             let key = key_start + col;
-            if key > absolute && !(image_query && key >= shape.image_start && key < shape.image_end)
-            {
+            if key > absolute && !(image_query && key >= shape.image_start && key < shape.image_end) {
                 *score = f32::NEG_INFINITY;
             }
             block_max = block_max.max(*score);
@@ -995,8 +900,7 @@ unsafe fn reference_key_tile(
         } else {
             (maxima[row] - new_max).exp()
         };
-        let out_row =
-            unsafe { std::slice::from_raw_parts_mut(out.add(row * shape.query_width), HEAD_DIM) };
+        let out_row = unsafe { std::slice::from_raw_parts_mut(out.add(row * shape.query_width), HEAD_DIM) };
         for value in out_row {
             *value *= rescale;
         }
@@ -1177,15 +1081,7 @@ mod tests {
             let mut out_narrow = initial.to_vec();
             let mut out_wide = initial.to_vec();
             unsafe {
-                qk_lanes::<crate::simd::Avx2>(
-                    qt,
-                    queries,
-                    k.as_ptr(),
-                    1024,
-                    keys,
-                    0.125,
-                    &mut st_narrow,
-                );
+                qk_lanes::<crate::simd::Avx2>(qt, queries, k.as_ptr(), 1024, keys, 0.125, &mut st_narrow);
                 wide::qk_lanes(qt, queries, k.as_ptr(), 1024, keys, 0.125, &mut st_wide);
                 pv_lanes::<crate::simd::Avx2>(
                     probabilities,
@@ -1219,10 +1115,7 @@ mod tests {
         let q = values(QUERY_TILE * HEAD_DIM, 3, 4.0);
         let mut qt = [0.0_f32; HEAD_DIM * QUERY_TILE];
         let mut probabilities = [0.0_f32; KEY_TILE * QUERY_TILE];
-        for (i, p) in values(KEY_TILE * QUERY_TILE, 11, 1.0)
-            .into_iter()
-            .enumerate()
-        {
+        for (i, p) in values(KEY_TILE * QUERY_TILE, 11, 1.0).into_iter().enumerate() {
             probabilities[i] = if p < -0.7 { 0.0 } else { p.abs() };
         }
         let initial = values(QUERY_TILE * 1024, 13, 4.0);
@@ -1234,8 +1127,7 @@ mod tests {
                 }
             }
             for keys in 1..=KEY_TILE {
-                let [a, b, c, d] =
-                    unsafe { both(&qt, queries, keys, &k, &v, &probabilities, &initial) };
+                let [a, b, c, d] = unsafe { both(&qt, queries, keys, &k, &v, &probabilities, &initial) };
                 for (i, (x, y)) in a.iter().zip(&b).enumerate() {
                     assert_eq!(x.to_bits(), y.to_bits(), "qk q{queries} k{keys} {i}");
                 }
@@ -1284,18 +1176,13 @@ mod tests {
             }
         }
         let mut st = [f32::NAN; KEY_TILE * QUERY_TILE];
-        unsafe {
-            qk_lanes::<crate::simd::Avx2>(&qt, queries, k.as_ptr(), k_stride, keys, 0.125, &mut st)
-        };
+        unsafe { qk_lanes::<crate::simd::Avx2>(&qt, queries, k.as_ptr(), k_stride, keys, 0.125, &mut st) };
         st
     }
 
     #[cfg(target_arch = "x86_64")]
     #[test]
-    #[cfg_attr(
-        feature = "gemm-avx512",
-        ignore = "gemm dispatches to its AVX-512 kernels"
-    )]
+    #[cfg_attr(feature = "gemm-avx512", ignore = "gemm dispatches to its AVX-512 kernels")]
     fn qk_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
             return;
@@ -1351,10 +1238,7 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     #[test]
-    #[cfg_attr(
-        feature = "gemm-avx512",
-        ignore = "gemm dispatches to its AVX-512 kernels"
-    )]
+    #[cfg_attr(feature = "gemm-avx512", ignore = "gemm dispatches to its AVX-512 kernels")]
     fn pv_lanes_match_gemm_main_path_for_every_tile_shape() {
         if !available() {
             return;
@@ -1417,11 +1301,7 @@ mod tests {
                     );
                 }
                 for (i, (a, b)) in actual.iter().zip(&expected).enumerate() {
-                    assert_eq!(
-                        a.to_bits(),
-                        b.to_bits(),
-                        "queries {queries} keys {keys} {i}"
-                    );
+                    assert_eq!(a.to_bits(), b.to_bits(), "queries {queries} keys {keys} {i}");
                 }
                 checked += 1;
             }
@@ -1431,10 +1311,7 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     #[test]
-    #[cfg_attr(
-        feature = "gemm-avx512",
-        ignore = "gemm dispatches to its AVX-512 kernels"
-    )]
+    #[cfg_attr(feature = "gemm-avx512", ignore = "gemm dispatches to its AVX-512 kernels")]
     fn whole_prefill_matches_reference_bitwise() {
         if !available() {
             return;

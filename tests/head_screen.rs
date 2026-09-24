@@ -27,10 +27,7 @@ fn screened_head_selects_full_head_tokens() {
         "artifacts/corpus/smoke/ebac2ad1cac11a99/canonical-rgb.png",
         "artifacts/corpus/smoke/bc2882dcec9a3e02/canonical-rgb.png",
     ];
-    let images: Vec<_> = pages
-        .iter()
-        .map(|p| image::open(p).unwrap().to_rgb8())
-        .collect();
+    let images: Vec<_> = pages.iter().map(|p| image::open(p).unwrap().to_rgb8()).collect();
     let options = GenerationOptions {
         max_dimension: 512,
         max_new_tokens: 192,

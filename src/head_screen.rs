@@ -57,8 +57,7 @@ pub(crate) struct HeadScratch {
 impl HeadScratch {
     pub(crate) fn reserve(&mut self, head: &ScreenedHead) {
         self.upper.resize(head.vocab, 0.0);
-        self.lower_max
-            .resize(head.vocab.div_ceil(BLOCK), f32::NEG_INFINITY);
+        self.lower_max.resize(head.vocab.div_ceil(BLOCK), f32::NEG_INFINITY);
         self.norms.resize(head.groups, 0.0);
         self.candidates
             .reserve(CANDIDATE_LIMIT + 1 - self.candidates.len().min(CANDIDATE_LIMIT + 1));
@@ -100,16 +99,12 @@ impl ScreenedHead {
             .zip(weights.par_chunks(dim))
             .map(|((codes, scales), row)| quantize_row(row, codes, scales))
             .try_reduce(|| 0.0_f32, |a, b| Ok(a.max(b)))?;
-        ensure!(
-            weight_abs_max.is_finite(),
-            "screened head weights must be finite"
-        );
+        ensure!(weight_abs_max.is_finite(), "screened head weights must be finite");
         let n = dim;
-        let kappa = (0.5 * (1.0 + 2f64.powi(-20))
-            + gamma(n) * 127.5 * (1.0 + 2f64.powi(-20))
-            + gamma(n + groups + 8) * 127.0)
-            * (1.0 + 1e-3)
-            + 2e-3;
+        let kappa =
+            (0.5 * (1.0 + 2f64.powi(-20)) + gamma(n) * 127.5 * (1.0 + 2f64.powi(-20)) + gamma(n + groups + 8) * 127.0)
+                * (1.0 + 1e-3)
+                + 2e-3;
         ensure!(kappa < 0.53, "screened head bound is unexpectedly loose");
         let kappa_f32 = (kappa as f32).next_up();
         Ok(Self {
@@ -164,19 +159,9 @@ impl ScreenedHead {
     ///
     /// `fp32` is the authoritative `[vocab][dim]` head and `dot` the exact
     /// reference kernel used for full-head logits (`kernels::dot_kernel`).
-    pub(crate) fn select(
-        &self,
-        x: &[f32],
-        fp32: &[f32],
-        dot: Dot,
-        scratch: &mut HeadScratch,
-    ) -> Screened {
+    pub(crate) fn select(&self, x: &[f32], fp32: &[f32], dot: Dot, scratch: &mut HeadScratch) -> Screened {
         assert_eq!(x.len(), self.dim, "screened head input width");
-        assert_eq!(
-            fp32.len(),
-            self.vocab * self.dim,
-            "screened head FP32 shape"
-        );
+        assert_eq!(fp32.len(), self.vocab * self.dim, "screened head FP32 shape");
         let fallback = Screened::Fallback { candidates: 0 };
         if !self.prepare(x, scratch) {
             return fallback;
@@ -237,11 +222,7 @@ impl ScreenedHead {
     fn finish(&self, x: &[f32], fp32: &[f32], dot: Dot, scratch: &mut HeadScratch) -> Screened {
         let fallback = Screened::Fallback { candidates: 0 };
         let dim = self.dim;
-        let tau = scratch
-            .lower_max
-            .iter()
-            .copied()
-            .fold(f32::NEG_INFINITY, f32::max);
+        let tau = scratch.lower_max.iter().copied().fold(f32::NEG_INFINITY, f32::max);
         if !tau.is_finite() {
             return fallback;
         }
@@ -307,17 +288,14 @@ impl ScreenedHead {
             return;
         }
         let (groups, kappa, vocab) = (self.groups, self.kappa, self.vocab);
-        let uppers: [crate::team::SharedMut<f32>; MAX_ROWS] = std::array::from_fn(|i| {
-            crate::team::SharedMut::new(&mut scratch[live[i.min(n - 1)]].upper)
-        });
-        let lowers: [crate::team::SharedMut<f32>; MAX_ROWS] = std::array::from_fn(|i| {
-            crate::team::SharedMut::new(&mut scratch[live[i.min(n - 1)]].lower_max)
-        });
+        let uppers: [crate::team::SharedMut<f32>; MAX_ROWS] =
+            std::array::from_fn(|i| crate::team::SharedMut::new(&mut scratch[live[i.min(n - 1)]].upper));
+        let lowers: [crate::team::SharedMut<f32>; MAX_ROWS] =
+            std::array::from_fn(|i| crate::team::SharedMut::new(&mut scratch[live[i.min(n - 1)]].lower_max));
         {
             let inputs: [&[f32]; MAX_ROWS] =
                 std::array::from_fn(|i| &xs[live[i.min(n - 1)] * dim..(live[i.min(n - 1)] + 1) * dim]);
-            let norms: [&[f32]; MAX_ROWS] =
-                std::array::from_fn(|i| scratch[live[i.min(n - 1)]].norms.as_slice());
+            let norms: [&[f32]; MAX_ROWS] = std::array::from_fn(|i| scratch[live[i.min(n - 1)]].norms.as_slice());
             crate::team::for_each(vocab.div_ceil(BLOCK), |block| {
                 let start = block * BLOCK;
                 let len = BLOCK.min(vocab - start);
@@ -387,12 +365,7 @@ fn quantize_row(row: &[f32], codes: &mut [i8], scales: &mut [f32]) -> Result<f32
 /// Approximate logit `q` and `S = sum_g s_g n_g` for one INT8 row. The bound
 /// holds for any summation order, so the reduction tree is not significant.
 #[inline(always)]
-unsafe fn screen_row<S: crate::simd::Simd>(
-    x: &[f32],
-    codes: &[i8],
-    scales: &[f32],
-    norms: &[f32],
-) -> (f32, f32) {
+unsafe fn screen_row<S: crate::simd::Simd>(x: &[f32], codes: &[i8], scales: &[f32], norms: &[f32]) -> (f32, f32) {
     debug_assert_eq!(x.len(), codes.len());
     debug_assert_eq!(scales.len() * GROUP, codes.len());
     let mut row = unsafe { S::zero() };
@@ -618,10 +591,7 @@ mod tests {
                     }
                     Screened::Fallback { .. } => {
                         #[cfg(target_arch = "x86_64")]
-                        assert!(
-                            !std::is_x86_feature_detected!("avx2"),
-                            "unexpected fallback"
-                        );
+                        assert!(!std::is_x86_feature_detected!("avx2"), "unexpected fallback");
                     }
                 }
             }
@@ -674,11 +644,7 @@ mod tests {
             let x: Vec<f32> = (0..dim)
                 .map(|i| {
                     let w_hat = f32::from(codes[i]) * scales[i / GROUP];
-                    if head[row * dim + i] >= w_hat {
-                        1.0
-                    } else {
-                        -1.0
-                    }
+                    if head[row * dim + i] >= w_hat { 1.0 } else { -1.0 }
                 })
                 .collect();
             let exact: f64 = x
@@ -686,13 +652,9 @@ mod tests {
                 .zip(&head[row * dim..(row + 1) * dim])
                 .map(|(a, b)| f64::from(*a) * f64::from(*b))
                 .sum();
-            let norms: Vec<f32> = x
-                .chunks(GROUP)
-                .map(|g| g.iter().map(|v| v.abs()).sum())
-                .collect();
+            let norms: Vec<f32> = x.chunks(GROUP).map(|g| g.iter().map(|v| v.abs()).sum()).collect();
             {
-                let (q, s) =
-                    unsafe { screen_row::<crate::simd::Portable>(&x, codes, scales, &norms) };
+                let (q, s) = unsafe { screen_row::<crate::simd::Portable>(&x, codes, scales, &norms) };
                 let bound = f64::from(screened.kappa) * f64::from(s);
                 assert!((exact - f64::from(q)).abs() <= bound, "row {row}");
             }

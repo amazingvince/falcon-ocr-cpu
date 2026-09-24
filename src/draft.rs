@@ -68,12 +68,7 @@ impl DocumentHistory {
         let Some(&start) = self.index.get(&key) else {
             return false;
         };
-        out.extend(
-            self.tokens[start..]
-                .iter()
-                .take(limit)
-                .take_while(|&&t| t != SEPARATOR),
-        );
+        out.extend(self.tokens[start..].iter().take(limit).take_while(|&&t| t != SEPARATOR));
         !out.is_empty()
     }
 }
@@ -162,9 +157,7 @@ impl DraftPolicy {
     }
 
     pub(crate) fn should_draft(&mut self) -> bool {
-        let pays = self.single_ms == 0.0
-            || self.extra_ms == 0.0
-            || self.rate > self.extra_ms / self.single_ms;
+        let pays = self.single_ms == 0.0 || self.extra_ms == 0.0 || self.rate > self.extra_ms / self.single_ms;
         if pays || self.since_probe >= PROBE_EVERY {
             self.since_probe = 0;
             true

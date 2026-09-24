@@ -37,9 +37,10 @@ const LN2_LO: f64 = 1.908_214_929_270_587_7e-10;
 #[inline(always)]
 unsafe fn exp4(x: __m256d) -> (__m128, __m256i) {
     unsafe {
-        let k = _mm256_round_pd::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(
-            _mm256_mul_pd(x, _mm256_set1_pd(LOG2E)),
-        );
+        let k = _mm256_round_pd::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(_mm256_mul_pd(
+            x,
+            _mm256_set1_pd(LOG2E),
+        ));
         let r = _mm256_fnmadd_pd(k, _mm256_set1_pd(LN2_HI), x);
         let r = _mm256_fnmadd_pd(k, _mm256_set1_pd(LN2_LO), r);
         let c = |v: f64| _mm256_set1_pd(v);
@@ -173,10 +174,7 @@ unsafe fn exp_shifted_block(values: &mut [f32], shift: f32) {
             // Keep the input for flagged lanes: store the result only where
             // no fix-up is needed (blend), so the fix-up can recompute x.
             let keep = _mm256_castsi256_ps(_mm256_cmpeq_epi32(
-                _mm256_and_si256(
-                    _mm256_set1_epi32(lanes),
-                    _mm256_setr_epi32(1, 2, 4, 8, 16, 32, 64, 128),
-                ),
+                _mm256_and_si256(_mm256_set1_epi32(lanes), _mm256_setr_epi32(1, 2, 4, 8, 16, 32, 64, 128)),
                 _mm256_setzero_si256(),
             ));
             _mm256_storeu_ps(at, _mm256_blendv_ps(_mm256_loadu_ps(at), result, keep));
@@ -314,9 +312,7 @@ mod tests {
             return;
         }
         const BLOCK: u32 = 1 << 20;
-        let starts: Vec<u32> = (0x8000_0000_u32..=0xFF80_0000)
-            .step_by(BLOCK as usize)
-            .collect();
+        let starts: Vec<u32> = (0x8000_0000_u32..=0xFF80_0000).step_by(BLOCK as usize).collect();
         let (count, first) = starts
             .into_par_iter()
             .map(|s| unsafe { mismatches_in(s..s.saturating_add(BLOCK).min(0xFF80_0001)) })

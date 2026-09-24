@@ -54,11 +54,7 @@ pub struct PreparedImage {
     pub positions_hw: Vec<[f32; 2]>,
 }
 
-pub fn prepare_rgb(
-    image: &RgbImage,
-    min_dimension: u32,
-    max_dimension: u32,
-) -> Result<PreparedImage> {
+pub fn prepare_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> Result<PreparedImage> {
     let (width, height) = image.dimensions();
     ensure!(width > 0 && height > 0, "image dimensions must be nonzero");
     ensure!(
@@ -66,8 +62,7 @@ pub fn prepare_rgb(
         "expected 0 < min_dimension <= max_dimension"
     );
 
-    let (first_width, first_height) =
-        bounded_dimensions(width, height, min_dimension, max_dimension);
+    let (first_width, first_height) = bounded_dimensions(width, height, min_dimension, max_dimension);
     ensure!(
         first_width > 0 && first_height > 0,
         "the upstream aspect-preserving resize produces a zero dimension"
@@ -84,11 +79,7 @@ pub fn prepare_file(path: &Path, min_dimension: u32, max_dimension: u32) -> Resu
 
 /// Return prepared image and milliseconds spent reading/decoding the file,
 /// excluding resizing, normalization, and patch packing.
-pub fn prepare_file_timed(
-    path: &Path,
-    min_dimension: u32,
-    max_dimension: u32,
-) -> Result<(PreparedImage, f64)> {
+pub fn prepare_file_timed(path: &Path, min_dimension: u32, max_dimension: u32) -> Result<(PreparedImage, f64)> {
     let decode_started = std::time::Instant::now();
     let bytes = std::fs::read(path).with_context(|| format!("reading image {}", path.display()))?;
     let format = image::guess_format(&bytes)?;
@@ -127,9 +118,7 @@ pub fn prepare_file_timed(
             let p = cmyk.get_pixel(x, y);
             image::Rgb([p[0], p[1], p[2]])
         });
-        let blacks = RgbImage::from_fn(width, height, |x, y| {
-            image::Rgb([cmyk.get_pixel(x, y)[3]; 3])
-        });
+        let blacks = RgbImage::from_fn(width, height, |x, y| image::Rgb([cmyk.get_pixel(x, y)[3]; 3]));
         let colors = resize_bicubic(&colors, w, h);
         let blacks = resize_bicubic(&blacks, w, h);
         let resized = RgbaImage::from_fn(w, h, |x, y| {
@@ -138,10 +127,7 @@ pub fn prepare_file_timed(
         });
         cmyk_to_rgb(&resized)
     } else if format == ImageFormat::Png {
-        ensure!(
-            bytes.len() >= 29 && &bytes[12..16] == b"IHDR",
-            "missing PNG IHDR"
-        );
+        ensure!(bytes.len() >= 29 && &bytes[12..16] == b"IHDR", "missing PNG IHDR");
         let (depth, color) = (bytes[24], bytes[25]);
         if color == 0 && depth == 16 {
             let values = decoded.to_luma16();
@@ -176,34 +162,20 @@ fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
     // libjpeg-turbo uses the accurate integer IDCT and fancy chroma upsampling
     // by default, as does the pinned Pillow JPEG decoder.
     let decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::RGB)?;
-    ensure!(
-        decoded.pitch == decoded.width * 3,
-        "unexpected JPEG row stride"
-    );
-    RgbImage::from_raw(
-        decoded.width.try_into()?,
-        decoded.height.try_into()?,
-        decoded.pixels,
-    )
-    .context("inconsistent JPEG dimensions")
+    ensure!(decoded.pitch == decoded.width * 3, "unexpected JPEG row stride");
+    RgbImage::from_raw(decoded.width.try_into()?, decoded.height.try_into()?, decoded.pixels)
+        .context("inconsistent JPEG dimensions")
 }
 
 fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<RgbaImage> {
     let mut decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::CMYK)?;
-    ensure!(
-        decoded.pitch == decoded.width * 4,
-        "unexpected CMYK row stride"
-    );
+    ensure!(decoded.pitch == decoded.width * 4, "unexpected CMYK row stride");
     // Pillow raw mode CMYK;I inverts libjpeg's CMYK samples before resizing.
     for value in &mut decoded.pixels {
         *value = 255 - *value;
     }
-    RgbaImage::from_raw(
-        decoded.width.try_into()?,
-        decoded.height.try_into()?,
-        decoded.pixels,
-    )
-    .context("inconsistent CMYK dimensions")
+    RgbaImage::from_raw(decoded.width.try_into()?, decoded.height.try_into()?, decoded.pixels)
+        .context("inconsistent CMYK dimensions")
 }
 
 fn cmyk_to_rgb(source: &RgbaImage) -> RgbImage {
@@ -277,10 +249,7 @@ fn jpeg_components(bytes: &[u8]) -> Result<u8> {
         if matches!(marker, 0xd8 | 0x01 | 0xd0..=0xd7) {
             continue;
         }
-        ensure!(
-            !matches!(marker, 0xd9 | 0xda),
-            "JPEG frame header is missing"
-        );
+        ensure!(!matches!(marker, 0xd9 | 0xda), "JPEG frame header is missing");
         let length_bytes: [u8; 2] = bytes
             .get(offset..offset + 2)
             .context("truncated JPEG length")?
@@ -481,13 +450,7 @@ fn coefficients(input: u32, output: u32) -> Vec<Coefficients> {
         .collect()
 }
 
-fn resize_gray16(
-    input: &[u16],
-    input_width: u32,
-    input_height: u32,
-    width: u32,
-    height: u32,
-) -> Vec<u16> {
+fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, width: u32, height: u32) -> Vec<u16> {
     // Pillow's I;16 kernel accumulates FP64 and rounds to 16-bit after each
     // separable pass. Conversion to RGB subsequently clips to 255, not /257.
     let quantize = |value: f64| {
@@ -504,9 +467,7 @@ fn resize_gray16(
                 let value: f64 = weights
                     .iter()
                     .enumerate()
-                    .map(|(offset, &weight)| {
-                        input[y * input_width as usize + start + offset] as f64 * weight
-                    })
+                    .map(|(offset, &weight)| input[y * input_width as usize + start + offset] as f64 * weight)
                     .sum();
                 output[y * width as usize + x] = quantize(value);
             }
@@ -522,9 +483,7 @@ fn resize_gray16(
             let value: f64 = weights
                 .iter()
                 .enumerate()
-                .map(|(offset, &weight)| {
-                    horizontal[(start + offset) * width as usize + x] as f64 * weight
-                })
+                .map(|(offset, &weight)| horizontal[(start + offset) * width as usize + x] as f64 * weight)
                 .sum();
             output[y * width as usize + x] = quantize(value);
         }
@@ -542,11 +501,7 @@ fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
         let weights = coefficients(input.width(), width);
         let mut out = RgbImage::new(width, input.height());
         let src = input.as_raw();
-        for (row_index, row) in out
-            .as_mut()
-            .chunks_exact_mut(width as usize * 3)
-            .enumerate()
-        {
+        for (row_index, row) in out.as_mut().chunks_exact_mut(width as usize * 3).enumerate() {
             for (pixel, coeff) in row.chunks_exact_mut(3).zip(&weights) {
                 let mut sums = [1_i64 << (PRECISION_BITS - 1); 3];
                 let base = (row_index * input.width() as usize + coeff.start) * 3;
@@ -574,8 +529,7 @@ fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
         for (column, target) in row.iter_mut().enumerate() {
             let mut sum = 1_i64 << (PRECISION_BITS - 1);
             for (offset, &weight) in coeff.weights.iter().enumerate() {
-                sum += horizontal.as_raw()[(coeff.start + offset) * stride + column] as i64
-                    * weight as i64;
+                sum += horizontal.as_raw()[(coeff.start + offset) * stride + column] as i64 * weight as i64;
             }
             *target = clip(sum);
         }
@@ -602,8 +556,7 @@ mod tests {
 
     #[test]
     fn png_source_modes_match_pillow() {
-        let data: serde_json::Value =
-            serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
+        let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
         let mut failures = Vec::new();
         for case in data["cases"].as_array().unwrap() {
             let filename = case["file"].as_str().unwrap();
@@ -617,11 +570,7 @@ mod tests {
             let maximum = case["maximum"].as_u64().unwrap() as u32;
             let result = prepare_file(&path, minimum, maximum);
             let result = result.unwrap();
-            let bytes: Vec<_> = result
-                .patches
-                .iter()
-                .flat_map(|v| v.to_le_bytes())
-                .collect();
+            let bytes: Vec<_> = result.patches.iter().flat_map(|v| v.to_le_bytes()).collect();
             if sha256(&bytes) != case["patches_sha256"].as_str().unwrap() {
                 failures.push(format!("{filename} min={minimum} max={maximum}"));
             }
@@ -631,8 +580,7 @@ mod tests {
 
     #[test]
     fn jpeg_decoder_matches_pillow() {
-        let data: serde_json::Value =
-            serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
+        let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
         let mut failures = Vec::new();
         for case in data["cases"].as_array().unwrap() {
             let filename = case["file"].as_str().unwrap();
@@ -644,12 +592,7 @@ mod tests {
                 .join(filename);
             let rgb = decode_jpeg_rgb(&std::fs::read(&path).unwrap()).unwrap();
             let expected = std::fs::read(path.with_extension("jpg.rgb")).unwrap();
-            let changed = rgb
-                .as_raw()
-                .iter()
-                .zip(&expected)
-                .filter(|(a, b)| a != b)
-                .count();
+            let changed = rgb.as_raw().iter().zip(&expected).filter(|(a, b)| a != b).count();
             let max_abs = rgb
                 .as_raw()
                 .iter()
@@ -658,9 +601,7 @@ mod tests {
                 .max()
                 .unwrap();
             if changed > 0 {
-                failures.push(format!(
-                    "{filename}: {changed} changed bytes, max={max_abs}"
-                ));
+                failures.push(format!("{filename}: {changed} changed bytes, max={max_abs}"));
             }
         }
         assert!(failures.is_empty(), "JPEG parity failures: {failures:?}");
@@ -668,8 +609,7 @@ mod tests {
 
     #[test]
     fn jpeg_source_modes_match_pillow() {
-        let data: serde_json::Value =
-            serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
+        let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
         for case in data["cases"].as_array().unwrap() {
             let filename = case["file"].as_str().unwrap();
             if !filename.ends_with(".jpg") {
@@ -684,16 +624,8 @@ mod tests {
                 case["maximum"].as_u64().unwrap() as u32,
             )
             .unwrap();
-            let bytes: Vec<_> = result
-                .patches
-                .iter()
-                .flat_map(|v| v.to_le_bytes())
-                .collect();
-            assert_eq!(
-                sha256(&bytes),
-                case["patches_sha256"].as_str().unwrap(),
-                "{case}"
-            );
+            let bytes: Vec<_> = result.patches.iter().flat_map(|v| v.to_le_bytes()).collect();
+            assert_eq!(sha256(&bytes), case["patches_sha256"].as_str().unwrap(), "{case}");
         }
     }
 
@@ -705,11 +637,7 @@ mod tests {
             let number = |key: &str| case[key].as_u64().unwrap() as u32;
             let image = pattern(number("width"), number("height"));
             let result = resize_bicubic(&image, number("target_width"), number("target_height"));
-            assert_eq!(
-                sha256(result.as_raw()),
-                case["sha256"].as_str().unwrap(),
-                "{case}"
-            );
+            assert_eq!(sha256(result.as_raw()), case["sha256"].as_str().unwrap(), "{case}");
         }
     }
 
@@ -723,17 +651,10 @@ mod tests {
             let result = prepare_rgb(&image, number("minimum"), number("maximum")).unwrap();
             assert_eq!(
                 (result.width, result.height),
-                (
-                    number("output_width") as usize,
-                    number("output_height") as usize
-                ),
+                (number("output_width") as usize, number("output_height") as usize),
                 "{case}"
             );
-            let patch_bytes: Vec<_> = result
-                .patches
-                .iter()
-                .flat_map(|v| v.to_le_bytes())
-                .collect();
+            let patch_bytes: Vec<_> = result.patches.iter().flat_map(|v| v.to_le_bytes()).collect();
             let position_bytes: Vec<_> = result
                 .positions_hw
                 .iter()
@@ -752,9 +673,7 @@ mod tests {
             );
             let x = case["positions_x_bits"].as_array().unwrap();
             let y = case["positions_y_bits"].as_array().unwrap();
-            let bound = case["reference_spatial_max_absolute_error"]
-                .as_f64()
-                .unwrap();
+            let bound = case["reference_spatial_max_absolute_error"].as_f64().unwrap();
             for (index, position) in result.positions_hw.iter().enumerate() {
                 let reference = [
                     f32::from_bits(y[index / x.len()].as_u64().unwrap() as u32),
@@ -807,8 +726,7 @@ mod tests {
         for patch in 0..16 {
             for y in 0..16 {
                 for x in 0..16 {
-                    let pixel =
-                        image.get_pixel((patch % 4 * 16 + x) as u32, (patch / 4 * 16 + y) as u32);
+                    let pixel = image.get_pixel((patch % 4 * 16 + x) as u32, (patch / 4 * 16 + y) as u32);
                     let index = patch * PATCH_VALUES + (y * 16 + x) * 3;
                     for c in 0..3 {
                         assert_eq!(prepared.patches[index + c], normalize(pixel[c]));

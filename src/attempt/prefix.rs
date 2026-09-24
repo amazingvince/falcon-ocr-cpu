@@ -201,9 +201,7 @@ fn q16_code(value: f32, scale: f32) -> i16 {
     if scale == 0.0 {
         0
     } else {
-        (value as f64 / scale as f64)
-            .round_ties_even()
-            .clamp(-32767.0, 32767.0) as i16
+        (value as f64 / scale as f64).round_ties_even().clamp(-32767.0, 32767.0) as i16
     }
 }
 
@@ -211,9 +209,7 @@ fn q8_code(value: f32, scale: f32) -> i8 {
     if scale == 0.0 {
         0
     } else {
-        (value as f64 / scale as f64)
-            .round_ties_even()
-            .clamp(-127.0, 127.0) as i8
+        (value as f64 / scale as f64).round_ties_even().clamp(-127.0, 127.0) as i8
     }
 }
 
@@ -269,56 +265,47 @@ impl SplitPrefix {
             dst[SPATIAL[0]..SPATIAL[0] + 32].copy_from_slice(&k[a + 32..a + 64]);
             dst[SPATIAL[1]..SPATIAL[1] + 32].copy_from_slice(&k[b + 32..b + 64]);
             dst[VALUE..VALUE + 64].copy_from_slice(&v[value..value + 64]);
-            ensure!(
-                dst.iter().all(|x| x.is_finite()),
-                "nonfinite or incomplete KV group"
-            );
+            ensure!(dst.iter().all(|x| x.is_finite()), "nonfinite or incomplete KV group");
             Ok(())
         };
         let count = groups * prefix_len;
         let records = match mode {
             PrefixMode::SplitF32 => {
                 let mut data = vec![0.0_f32; count * RECORD];
-                data.par_chunks_mut(RECORD)
-                    .enumerate()
-                    .try_for_each(|(record, dst)| {
-                        let mut values = [0.0; RECORD];
-                        gather(record, &mut values)?;
-                        dst.copy_from_slice(&values);
-                        Ok::<_, anyhow::Error>(())
-                    })?;
+                data.par_chunks_mut(RECORD).enumerate().try_for_each(|(record, dst)| {
+                    let mut values = [0.0; RECORD];
+                    gather(record, &mut values)?;
+                    dst.copy_from_slice(&values);
+                    Ok::<_, anyhow::Error>(())
+                })?;
                 Records::F32(data)
             }
             PrefixMode::SplitBf16 => {
                 let mut data = vec![0_u16; count * RECORD];
-                data.par_chunks_mut(RECORD)
-                    .enumerate()
-                    .try_for_each(|(record, dst)| {
-                        let mut values = [0.0; RECORD];
-                        gather(record, &mut values)?;
-                        for (bits, &value) in dst.iter_mut().zip(&values) {
-                            let encoded = bf16::from_f32(value);
-                            ensure!(encoded.is_finite(), "BF16 KV conversion overflow");
-                            *bits = encoded.to_bits();
-                        }
-                        Ok(())
-                    })?;
+                data.par_chunks_mut(RECORD).enumerate().try_for_each(|(record, dst)| {
+                    let mut values = [0.0; RECORD];
+                    gather(record, &mut values)?;
+                    for (bits, &value) in dst.iter_mut().zip(&values) {
+                        let encoded = bf16::from_f32(value);
+                        ensure!(encoded.is_finite(), "BF16 KV conversion overflow");
+                        *bits = encoded.to_bits();
+                    }
+                    Ok(())
+                })?;
                 Records::Bf16(data)
             }
             PrefixMode::SplitF16 => {
                 let mut data = vec![0_u16; count * RECORD];
-                data.par_chunks_mut(RECORD)
-                    .enumerate()
-                    .try_for_each(|(record, dst)| {
-                        let mut values = [0.0; RECORD];
-                        gather(record, &mut values)?;
-                        for (bits, &value) in dst.iter_mut().zip(&values) {
-                            let encoded = half::f16::from_f32(value);
-                            ensure!(encoded.is_finite(), "FP16 KV conversion overflow");
-                            *bits = encoded.to_bits();
-                        }
-                        Ok(())
-                    })?;
+                data.par_chunks_mut(RECORD).enumerate().try_for_each(|(record, dst)| {
+                    let mut values = [0.0; RECORD];
+                    gather(record, &mut values)?;
+                    for (bits, &value) in dst.iter_mut().zip(&values) {
+                        let encoded = half::f16::from_f32(value);
+                        ensure!(encoded.is_finite(), "FP16 KV conversion overflow");
+                        *bits = encoded.to_bits();
+                    }
+                    Ok(())
+                })?;
                 Records::F16(data)
             }
             PrefixMode::SplitQ8 => {
@@ -341,10 +328,7 @@ impl SplitPrefix {
                             let scale = bf16_f32(stored);
                             for (code, &value) in codes.iter_mut().zip(values) {
                                 *code = q8_code(value, scale);
-                                ensure!(
-                                    (*code as f32 * scale).is_finite(),
-                                    "Q8 KV conversion overflow"
-                                );
+                                ensure!((*code as f32 * scale).is_finite(), "Q8 KV conversion overflow");
                             }
                         }
                         Ok(())
@@ -371,10 +355,7 @@ impl SplitPrefix {
                             let scale = bf16_f32(stored);
                             for (code, &value) in codes.iter_mut().zip(values) {
                                 *code = q16_code(value, scale);
-                                ensure!(
-                                    (*code as f32 * scale).is_finite(),
-                                    "Q16 KV conversion overflow"
-                                );
+                                ensure!((*code as f32 * scale).is_finite(), "Q16 KV conversion overflow");
                             }
                         }
                         Ok(())
@@ -399,18 +380,13 @@ impl SplitPrefix {
                             gather(first + r, dst)?;
                         }
                         for (c, scale) in k_scales.iter_mut().enumerate() {
-                            *scale = q8_scale_of_max(
-                                values.iter().fold(0.0_f32, |m, v| m.max(v[c].abs())),
-                            );
+                            *scale = q8_scale_of_max(values.iter().fold(0.0_f32, |m, v| m.max(v[c].abs())));
                         }
                         for (r, row) in values.iter().enumerate() {
                             let out = &mut codes[r * RECORD..(r + 1) * RECORD];
                             for c in 0..VALUE {
                                 out[c] = q8_code(row[c], k_scales[c]);
-                                ensure!(
-                                    (out[c] as f32 * k_scales[c]).is_finite(),
-                                    "Q8 KV conversion overflow"
-                                );
+                                ensure!((out[c] as f32 * k_scales[c]).is_finite(), "Q8 KV conversion overflow");
                             }
                             for h in 0..2 {
                                 let block = &row[VALUE + 32 * h..VALUE + 32 * (h + 1)];
@@ -418,10 +394,7 @@ impl SplitPrefix {
                                 v_scales[2 * r + h] = scale;
                                 for (i, &x) in block.iter().enumerate() {
                                     let code = q8_code(x, scale);
-                                    ensure!(
-                                        (code as f32 * scale).is_finite(),
-                                        "Q8 KV conversion overflow"
-                                    );
+                                    ensure!((code as f32 * scale).is_finite(), "Q8 KV conversion overflow");
                                     out[VALUE + 32 * h + i] = code;
                                 }
                             }
@@ -573,8 +546,7 @@ impl SplitPrefix {
     /// Element `offset` of the tail record of `group` at generated position
     /// `index`.
     fn tail_value(&self, group: usize, index: usize, offset: usize) -> f32 {
-        self.tail
-            .value(TAIL_RECORD, group * self.tail_capacity + index, offset)
+        self.tail.value(TAIL_RECORD, group * self.tail_capacity + index, offset)
     }
 
     /// The compact `[t][heads][64]` keys and `[t][groups][64]` values that the
@@ -602,14 +574,7 @@ impl SplitPrefix {
         (k, v)
     }
 
-    pub fn attention_decode(
-        &self,
-        q: &[f32],
-        total_len: usize,
-        sinks: &[f32],
-        output: &mut [f32],
-        simd: Simd,
-    ) {
+    pub fn attention_decode(&self, q: &[f32], total_len: usize, sinks: &[f32], output: &mut [f32], simd: Simd) {
         assert_eq!(q.len(), self.heads * 64);
         assert_eq!(output.len(), q.len());
         assert_eq!(sinks.len(), self.heads);
@@ -634,14 +599,7 @@ impl SplitPrefix {
 
     /// Portable path: one task per query head through the backend's dot/AXPY,
     /// in the compact kernel's order (bit-identical to it for FP32 records).
-    fn attention_generic(
-        &self,
-        q: &[f32],
-        total_len: usize,
-        sinks: &[f32],
-        output: &mut [f32],
-        selected: Simd,
-    ) {
+    fn attention_generic(&self, q: &[f32], total_len: usize, sinks: &[f32], output: &mut [f32], selected: Simd) {
         let dot = kernels::dot_kernel(selected);
         let axpy = kernels::axpy_kernel(selected);
         output.par_chunks_mut(64).enumerate().for_each(|(h, out)| {
@@ -742,18 +700,12 @@ impl SplitPrefix {
                     (Records::F32(d), Records::F32(t)) => {
                         pair_native(&F32Rec::<RECORD>(d), &F32Rec::<TAIL_RECORD>(t), &span, part)
                     }
-                    (Records::Bf16(d), Records::Bf16(t)) => pair_native(
-                        &Bf16Rec::<RECORD>(d),
-                        &Bf16Rec::<TAIL_RECORD>(t),
-                        &span,
-                        part,
-                    ),
-                    (Records::F16(d), Records::F16(t)) => pair_native(
-                        &F16Rec::<RECORD>(d),
-                        &F16Rec::<TAIL_RECORD>(t),
-                        &span,
-                        part,
-                    ),
+                    (Records::Bf16(d), Records::Bf16(t)) => {
+                        pair_native(&Bf16Rec::<RECORD>(d), &Bf16Rec::<TAIL_RECORD>(t), &span, part)
+                    }
+                    (Records::F16(d), Records::F16(t)) => {
+                        pair_native(&F16Rec::<RECORD>(d), &F16Rec::<TAIL_RECORD>(t), &span, part)
+                    }
                     (
                         Records::Q8 { codes, scales },
                         Records::Q8 {
@@ -863,15 +815,9 @@ impl SplitPrefix {
     unsafe fn dispatch(&self, kernel: &mut impl PairKernel) {
         unsafe {
             match (&self.records, &self.tail) {
-                (Records::F32(d), Records::F32(t)) => {
-                    kernel.run(&F32Rec::<RECORD>(d), &F32Rec::<TAIL_RECORD>(t))
-                }
-                (Records::Bf16(d), Records::Bf16(t)) => {
-                    kernel.run(&Bf16Rec::<RECORD>(d), &Bf16Rec::<TAIL_RECORD>(t))
-                }
-                (Records::F16(d), Records::F16(t)) => {
-                    kernel.run(&F16Rec::<RECORD>(d), &F16Rec::<TAIL_RECORD>(t))
-                }
+                (Records::F32(d), Records::F32(t)) => kernel.run(&F32Rec::<RECORD>(d), &F32Rec::<TAIL_RECORD>(t)),
+                (Records::Bf16(d), Records::Bf16(t)) => kernel.run(&Bf16Rec::<RECORD>(d), &Bf16Rec::<TAIL_RECORD>(t)),
+                (Records::F16(d), Records::F16(t)) => kernel.run(&F16Rec::<RECORD>(d), &F16Rec::<TAIL_RECORD>(t)),
                 (Records::Q8 { codes, scales }, Records::Q8 { codes: tc, scales: ts }) => kernel.run(
                     &Q8Rec::<RECORD> { codes, scales },
                     &Q8Rec::<TAIL_RECORD> { codes: tc, scales: ts },
@@ -916,14 +862,7 @@ impl SplitPrefix {
     /// positions (causal verification of drafted tokens in one step). Every
     /// row's output is bitwise its single-row result at that length; rows
     /// that share a position partition scan each record once.
-    pub fn attention_decode_rows(
-        &self,
-        q: &[f32],
-        rows: usize,
-        sinks: &[f32],
-        output: &mut [f32],
-        simd: Simd,
-    ) {
+    pub fn attention_decode_rows(&self, q: &[f32], rows: usize, sinks: &[f32], output: &mut [f32], simd: Simd) {
         let width = self.heads * 64;
         assert!((1..=MAX_ROWS).contains(&rows) && rows <= self.tail_len.max(1));
         assert_eq!(q.len(), rows * width);
@@ -962,14 +901,7 @@ impl SplitPrefix {
 
     #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
     #[allow(clippy::needless_range_loop)] // rows are grouped by index into fixed-size arrays
-    fn attention_pairs_rows(
-        &self,
-        q: &[f32],
-        rows: usize,
-        last: usize,
-        sinks: &[f32],
-        output: &mut [f32],
-    ) {
+    fn attention_pairs_rows(&self, q: &[f32], rows: usize, last: usize, sinks: &[f32], output: &mut [f32]) {
         let width = self.heads * 64;
         let groups = self.kv_heads;
         // The position partition `attention_pairs` uses at each length.
@@ -1204,13 +1136,7 @@ impl RecordStore for Q8KcRec<'_> {
 /// reduction tree (`(a0+a1)+(a2+a3)`, then `Simd::sum`), which is also
 /// `simd::dot` over 64 elements (the tail layout's single key).
 #[inline(always)]
-unsafe fn qk2<S: Isa, R: RecordStore>(
-    store: &R,
-    layout: Layout,
-    record: usize,
-    q0: &[f32],
-    q1: &[f32],
-) -> (f32, f32) {
+unsafe fn qk2<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize, q0: &[f32], q1: &[f32]) -> (f32, f32) {
     unsafe {
         let mut a = [S::zero(); 4];
         let mut b = [S::zero(); 4];
@@ -1244,24 +1170,14 @@ unsafe fn pv2<S: Isa>(v: [S::V; 8], p0: f32, p1: f32, o0: &mut [f32; 64], o1: &m
         let f1 = S::splat(p1);
         for (chunk, value) in v.into_iter().enumerate() {
             let i = 8 * chunk;
-            S::store(
-                o0.as_mut_ptr().add(i),
-                S::fma(f0, value, S::load(o0.as_ptr().add(i))),
-            );
-            S::store(
-                o1.as_mut_ptr().add(i),
-                S::fma(f1, value, S::load(o1.as_ptr().add(i))),
-            );
+            S::store(o0.as_mut_ptr().add(i), S::fma(f0, value, S::load(o0.as_ptr().add(i))));
+            S::store(o1.as_mut_ptr().add(i), S::fma(f1, value, S::load(o1.as_ptr().add(i))));
         }
     }
 }
 
 #[inline(always)]
-unsafe fn record_value<S: Isa, R: RecordStore>(
-    store: &R,
-    layout: Layout,
-    record: usize,
-) -> [S::V; 8] {
+unsafe fn record_value<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize) -> [S::V; 8] {
     let value = layout.value;
     unsafe {
         [
@@ -1281,12 +1197,7 @@ unsafe fn record_value<S: Isa, R: RecordStore>(
 /// prefix positions from `store` and generated ones from `tail`.
 #[inline(always)]
 #[allow(clippy::needless_range_loop)] // key index j addresses both heads' logits and the record
-unsafe fn pair<S: Isa, R: RecordStore, T: RecordStore>(
-    store: &R,
-    tail: &T,
-    span: &Span<'_>,
-    part: &mut Partial,
-) {
+unsafe fn pair<S: Isa, R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
     let scale = (64_f32).sqrt().recip();
     let [o0, o1] = &mut part.out;
     o0.fill(0.0);
@@ -1353,21 +1264,11 @@ unsafe fn pair<S: Isa, R: RecordStore, T: RecordStore>(
 /// Per-ISA entry for [`pair`] (the target features enclose the whole loop).
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma,f16c")]
-unsafe fn pair_native<R: RecordStore, T: RecordStore>(
-    store: &R,
-    tail: &T,
-    span: &Span<'_>,
-    part: &mut Partial,
-) {
+unsafe fn pair_native<R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
     unsafe { pair::<crate::simd::Avx2, R, T>(store, tail, span, part) }
 }
 #[cfg(target_arch = "aarch64")]
-unsafe fn pair_native<R: RecordStore, T: RecordStore>(
-    store: &R,
-    tail: &T,
-    span: &Span<'_>,
-    part: &mut Partial,
-) {
+unsafe fn pair_native<R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
     unsafe { pair::<crate::simd::Neon, R, T>(store, tail, span, part) }
 }
 
@@ -1595,8 +1496,7 @@ mod tests {
 
     #[test]
     fn verification_rows_are_bitwise_single_rows() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let width = c.query_dim();
         for (p, generated, rows) in [(300, 5, 5), (1000, 9, 8), (130, 3, 2), (7, 4, 4), (254, 6, 6)] {
             let (k, v, _) = fixture(&c, p, p + 3);
@@ -1630,13 +1530,7 @@ mod tests {
                             cache.truncate_tail(generated - (rows - 1 - r));
                             let mut single = vec![f32::NAN; width];
                             let total = p + cache.tail_len;
-                            cache.attention_decode(
-                                &q[r * width..(r + 1) * width],
-                                total,
-                                &sinks,
-                                &mut single,
-                                backend,
-                            );
+                            cache.attention_decode(&q[r * width..(r + 1) * width], total, &sinks, &mut single, backend);
                             for (a, b) in joint[r * width..(r + 1) * width].iter().zip(&single) {
                                 assert_eq!(
                                     a.to_bits(),
@@ -1739,8 +1633,7 @@ mod tests {
     fn records_decode_bitwise_like_compact_over_their_values() {
         // FP32 records must equal the compact kernel on the original cache;
         // BF16/Q8 records must equal it on their own dequantized values.
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         for (p, generated) in [(1, 1), (3, 2), (127, 1), (128, 5), (129, 17), (300, 130)] {
             let (k, v, q) = fixture(&c, p, p);
             let tail_k: Vec<_> = (0..generated * c.kv_dim())
@@ -1771,8 +1664,7 @@ mod tests {
                     assert_eq!(tv, tail_v);
                 }
                 for backend in backends() {
-                    let expected =
-                        compact_reference(&c, &q, &dk, &dv, &tk, &tv, p, &sinks, backend);
+                    let expected = compact_reference(&c, &q, &dk, &dv, &tk, &tv, p, &sinks, backend);
                     let mut output = vec![f32::NAN; c.query_dim()];
                     cache.attention_decode(&q, p + generated, &sinks, &mut output, backend);
                     for (a, b) in output.iter().zip(&expected) {
@@ -1785,8 +1677,7 @@ mod tests {
 
     #[test]
     fn position_chunks_change_rounding_only() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let (p, generated) = (1000, 40);
         let (k, v, q) = fixture(&c, p, 3);
         let tail: Vec<_> = (0..generated * c.kv_dim())
@@ -1822,8 +1713,7 @@ mod tests {
 
     #[test]
     fn low_precision_stays_close_to_fp32() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let p = 257;
         let (k, v, q) = fixture(&c, p, 9);
         let tail = vec![0.02; c.kv_dim()];
@@ -1841,19 +1731,13 @@ mod tests {
             let mut output = vec![0.0; c.query_dim()];
             cache.attention_decode(&q, p + 1, &sinks, &mut output, Simd::Auto);
             assert!(output.iter().all(|x| x.is_finite()));
-            assert!(
-                output
-                    .iter()
-                    .zip(&expected)
-                    .all(|(a, b)| (a - b).abs() < 0.02)
-            );
+            assert!(output.iter().zip(&expected).all(|(a, b)| (a - b).abs() < 0.02));
         }
     }
 
     #[test]
     fn nonfinite_tail_values_reach_the_output() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let p = 130;
         let (k, v, q) = fixture(&c, p, 5);
         let sinks = vec![0.5; c.n_heads];
@@ -1873,24 +1757,17 @@ mod tests {
             for backend in backends() {
                 let mut output = vec![0.0; c.query_dim()];
                 cache.attention_decode(&q, p + 2, &sinks, &mut output, backend);
-                assert!(
-                    output[..64].iter().all(|x| x.is_nan()),
-                    "{mode:?} {backend:?}"
-                );
+                assert!(output[..64].iter().all(|x| x.is_nan()), "{mode:?} {backend:?}");
             }
         }
     }
 
     #[test]
     fn refuses_nonidentical_temporal_keys() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let mut k = vec![0.0; c.query_dim()];
         k[64] = 1.0;
-        assert!(
-            SplitPrefix::from_compact(&k, &vec![0.0; c.kv_dim()], 1, 2, &c, PrefixMode::SplitF32)
-                .is_err()
-        );
+        assert!(SplitPrefix::from_compact(&k, &vec![0.0; c.kv_dim()], 1, 2, &c, PrefixMode::SplitF32).is_err());
     }
 }
 
@@ -1904,8 +1781,7 @@ mod probe {
     #[test]
     #[ignore = "timing probe; run in release with --nocapture"]
     fn verify_rows_probe() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let (p, layers, generated) = (6544, 22, 8);
         let k: Vec<f32> = (0..p * c.query_dim())
             .map(|i| {
@@ -1932,13 +1808,18 @@ mod probe {
                 cache
             })
             .collect();
-        let threads = std::env::var("PROBE_THREADS").ok().and_then(|t| t.parse().ok()).unwrap_or(12);
+        let threads = std::env::var("PROBE_THREADS")
+            .ok()
+            .and_then(|t| t.parse().ok())
+            .unwrap_or(12);
         let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
         println!("{threads} threads");
         pool.install(|| {
             let mut base = 0.0;
             for rows in [1, 2, 3, 5, 8] {
-                let q: Vec<f32> = (0..rows * c.query_dim()).map(|i| (i % 61) as f32 / 21.0 - 1.4).collect();
+                let q: Vec<f32> = (0..rows * c.query_dim())
+                    .map(|i| (i % 61) as f32 / 21.0 - 1.4)
+                    .collect();
                 let mut out = vec![0.0; q.len()];
                 for cache in &caches {
                     cache.attention_decode_rows(&q, rows, &sinks, &mut out, Simd::Auto);
@@ -1965,8 +1846,7 @@ mod probe {
     #[test]
     #[ignore = "timing probe; run in release with --nocapture"]
     fn decode_attention_bandwidth_probe() {
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let (p, layers) = (6544, 22);
         let k: Vec<f32> = (0..p * c.query_dim())
             .map(|i| {
@@ -1979,9 +1859,19 @@ mod probe {
         let v: Vec<f32> = (0..p * c.kv_dim()).map(|i| (i % 73) as f32 / 97.0 - 0.2).collect();
         let q: Vec<f32> = (0..c.query_dim()).map(|i| (i % 61) as f32 / 21.0 - 1.4).collect();
         let sinks = vec![0.0_f32; c.n_heads];
-        for mode in [PrefixMode::SplitQ8, PrefixMode::SplitQ16, PrefixMode::SplitF16, PrefixMode::SplitBf16, PrefixMode::SplitF32] {
+        for mode in [
+            PrefixMode::SplitQ8,
+            PrefixMode::SplitQ16,
+            PrefixMode::SplitF16,
+            PrefixMode::SplitBf16,
+            PrefixMode::SplitF32,
+        ] {
             let caches: Vec<SplitPrefix> = (0..layers)
-                .map(|_| SplitPrefix::from_compact(&k, &v, p, p + 8, &c, mode).unwrap().with_chunks(4))
+                .map(|_| {
+                    SplitPrefix::from_compact(&k, &v, p, p + 8, &c, mode)
+                        .unwrap()
+                        .with_chunks(4)
+                })
                 .collect();
             let bytes: usize = caches.iter().map(|x| x.records.bytes()).sum();
             for threads in [4, 8, 12, 16] {

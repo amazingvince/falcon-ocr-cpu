@@ -146,20 +146,12 @@ fn avx512_available() -> bool {
 
 #[inline]
 fn elements(rows: usize, cols: usize) -> usize {
-    rows.checked_mul(cols)
-        .expect("tensor shape overflows usize")
+    rows.checked_mul(cols).expect("tensor shape overflows usize")
 }
 
 /// Matrix multiplication with HF row-major `[out_dim, in_dim]` weights.
 /// Input and output are row-major `[rows, in_dim]` and `[rows, out_dim]`.
-pub fn linear(
-    input: &[f32],
-    rows: usize,
-    in_dim: usize,
-    weight: &[f32],
-    out_dim: usize,
-    out: &mut [f32],
-) {
+pub fn linear(input: &[f32], rows: usize, in_dim: usize, weight: &[f32], out_dim: usize, out: &mut [f32]) {
     linear_with_simd(input, rows, in_dim, weight, out_dim, out, Simd::Auto);
 }
 
@@ -178,11 +170,7 @@ pub fn linear_with_simd(
     simd: Simd,
 ) {
     assert_eq!(input.len(), elements(rows, in_dim), "linear input shape");
-    assert_eq!(
-        weight.len(),
-        elements(out_dim, in_dim),
-        "linear weight shape"
-    );
+    assert_eq!(weight.len(), elements(out_dim, in_dim), "linear weight shape");
     assert_eq!(out.len(), elements(rows, out_dim), "linear output shape");
     let selected = simd.resolved();
     if out.is_empty() {
@@ -219,14 +207,12 @@ pub fn linear_with_simd(
         return;
     }
     if selected == Simd::Scalar {
-        out.par_chunks_mut(out_dim)
-            .enumerate()
-            .for_each(|(row, dst)| {
-                let x = &input[row * in_dim..(row + 1) * in_dim];
-                for (channel, y) in dst.iter_mut().enumerate() {
-                    *y = dot_scalar(x, &weight[channel * in_dim..(channel + 1) * in_dim]);
-                }
-            });
+        out.par_chunks_mut(out_dim).enumerate().for_each(|(row, dst)| {
+            let x = &input[row * in_dim..(row + 1) * in_dim];
+            for (channel, y) in dst.iter_mut().enumerate() {
+                *y = dot_scalar(x, &weight[channel * in_dim..(channel + 1) * in_dim]);
+            }
+        });
         return;
     }
     let in_stride = isize::try_from(in_dim).expect("linear input stride too large");
@@ -385,11 +371,7 @@ pub fn linear_glu_with_simd(
     simd: Simd,
 ) -> bool {
     assert_eq!(input.len(), elements(rows, in_dim), "GLU input shape");
-    assert_eq!(
-        weight.len(),
-        elements(elements(ffn_dim, 2), in_dim),
-        "GLU weight shape"
-    );
+    assert_eq!(weight.len(), elements(elements(ffn_dim, 2), in_dim), "GLU weight shape");
     assert_eq!(gated.len(), elements(rows, ffn_dim), "GLU output shape");
     if rows == 0 || rows > 8 || in_dim == 0 {
         return false;
@@ -409,10 +391,7 @@ pub fn linear_glu_with_simd(
             let channel = index % ffn_dim;
             let x = &input[row * in_dim..(row + 1) * in_dim];
             let gate = dot(x, &weight[2 * channel * in_dim..(2 * channel + 1) * in_dim]);
-            let up = dot(
-                x,
-                &weight[(2 * channel + 1) * in_dim..(2 * channel + 2) * in_dim],
-            );
+            let up = dot(x, &weight[(2 * channel + 1) * in_dim..(2 * channel + 2) * in_dim]);
             *value = squared_relu_glu(gate, up);
         }
     });
@@ -486,11 +465,7 @@ pub fn attention_with_simd(
         "attention head dimensions must be positive"
     );
     let token_width = elements(n_heads, head_dim);
-    assert_eq!(
-        q.len(),
-        elements(query_len, token_width),
-        "attention Q shape"
-    );
+    assert_eq!(q.len(), elements(query_len, token_width), "attention Q shape");
     assert_eq!(k.len(), elements(kv_len, token_width), "attention K shape");
     assert_eq!(v.len(), k.len(), "attention V shape");
     assert_eq!(output.len(), q.len(), "attention output shape");
@@ -500,9 +475,7 @@ pub fn attention_with_simd(
         "attention image interval"
     );
     assert!(
-        query_offset
-            .checked_add(query_len)
-            .is_some_and(|end| end <= kv_len),
+        query_offset.checked_add(query_len).is_some_and(|end| end <= kv_len),
         "attention query interval"
     );
     let selected = simd.resolved();
@@ -525,17 +498,7 @@ pub fn attention_with_simd(
     if query_len == 1 && head_dim == 64 && selected == native_vector() {
         // SAFETY: the native vector ISA is available and every slice shape was checked above.
         unsafe {
-            attention64::attention(
-                q,
-                k,
-                v,
-                n_heads,
-                query_offset,
-                image_start,
-                image_end,
-                sinks,
-                output,
-            );
+            attention64::attention(q, k, v, n_heads, query_offset, image_start, image_end, sinks, output);
         }
         return;
     }
@@ -577,58 +540,51 @@ fn attention_online_softmax(
     let dot = dot_kernel(selected);
     let axpy = axpy_kernel(selected);
     let scale = (head_dim as f32).sqrt().recip();
-    output
-        .par_chunks_mut(head_dim)
-        .enumerate()
-        .for_each(|(qh, out)| {
-            let query = qh / n_heads;
-            let head = qh % n_heads;
-            let absolute_query = query_offset + query;
-            let query_in_image = absolute_query >= image_start && absolute_query < image_end;
-            let visible_end = if query_in_image {
-                image_end
+    output.par_chunks_mut(head_dim).enumerate().for_each(|(qh, out)| {
+        let query = qh / n_heads;
+        let head = qh % n_heads;
+        let absolute_query = query_offset + query;
+        let query_in_image = absolute_query >= image_start && absolute_query < image_end;
+        let visible_end = if query_in_image { image_end } else { absolute_query + 1 };
+        let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
+        out.fill(0.0);
+        let mut running_max = f32::NEG_INFINITY;
+        let mut denominator = 0.0_f32;
+        const TILE: usize = 128;
+        let mut logits = [0.0_f32; TILE];
+        for start in (0..visible_end).step_by(TILE) {
+            let len = (visible_end - start).min(TILE);
+            let mut block_max = f32::NEG_INFINITY;
+            for (j, logit) in logits[..len].iter_mut().enumerate() {
+                let key = start + j;
+                let begin = key * token_width + head * head_dim;
+                *logit = dot(qvec, &k[begin..begin + head_dim]) * scale;
+                block_max = block_max.max(*logit);
+            }
+            let new_max = running_max.max(block_max);
+            let rescale = if running_max == f32::NEG_INFINITY {
+                0.0
             } else {
-                absolute_query + 1
+                (running_max - new_max).exp()
             };
-            let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
-            out.fill(0.0);
-            let mut running_max = f32::NEG_INFINITY;
-            let mut denominator = 0.0_f32;
-            const TILE: usize = 128;
-            let mut logits = [0.0_f32; TILE];
-            for start in (0..visible_end).step_by(TILE) {
-                let len = (visible_end - start).min(TILE);
-                let mut block_max = f32::NEG_INFINITY;
-                for (j, logit) in logits[..len].iter_mut().enumerate() {
-                    let key = start + j;
-                    let begin = key * token_width + head * head_dim;
-                    *logit = dot(qvec, &k[begin..begin + head_dim]) * scale;
-                    block_max = block_max.max(*logit);
-                }
-                let new_max = running_max.max(block_max);
-                let rescale = if running_max == f32::NEG_INFINITY {
-                    0.0
-                } else {
-                    (running_max - new_max).exp()
-                };
-                for value in out.iter_mut() {
-                    *value *= rescale;
-                }
-                denominator *= rescale;
-                for (j, logit) in logits[..len].iter().enumerate() {
-                    let probability = (*logit - new_max).exp();
-                    denominator += probability;
-                    let begin = (start + j) * token_width + head * head_dim;
-                    axpy(probability, &v[begin..begin + head_dim], out);
-                }
-                running_max = new_max;
+            for value in out.iter_mut() {
+                *value *= rescale;
             }
-            let logsumexp = running_max + denominator.ln();
-            let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
-            for value in out {
-                *value = (*value / denominator) * sink_scale;
+            denominator *= rescale;
+            for (j, logit) in logits[..len].iter().enumerate() {
+                let probability = (*logit - new_max).exp();
+                denominator += probability;
+                let begin = (start + j) * token_width + head * head_dim;
+                axpy(probability, &v[begin..begin + head_dim], out);
             }
-        });
+            running_max = new_max;
+        }
+        let logsumexp = running_max + denominator.ln();
+        let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
+        for value in out {
+            *value = (*value / denominator) * sink_scale;
+        }
+    });
 }
 
 /// A flash-style CPU prefill: each Rayon task owns one contiguous query tile
@@ -676,9 +632,7 @@ fn attention_gemm(
                 maxima[..queries].fill(f32::NEG_INFINITY);
                 denominators[..queries].fill(0.0);
                 for row in 0..queries {
-                    out[row * token_width + head * head_dim
-                        ..row * token_width + (head + 1) * head_dim]
-                        .fill(0.0);
+                    out[row * token_width + head * head_dim..row * token_width + (head + 1) * head_dim].fill(0.0);
                 }
                 for key_start in (0..visible_end).step_by(KEY_TILE) {
                     let keys = (visible_end - key_start).min(KEY_TILE);
@@ -718,9 +672,7 @@ fn attention_gemm(
                         let mut block_max = f32::NEG_INFINITY;
                         for (col, score) in row_scores.iter_mut().enumerate() {
                             let key = key_start + col;
-                            if key > absolute
-                                && !(image_query && key >= image_start && key < image_end)
-                            {
+                            if key > absolute && !(image_query && key >= image_start && key < image_end) {
                                 *score = f32::NEG_INFINITY;
                             }
                             block_max = block_max.max(*score);
@@ -736,8 +688,8 @@ fn attention_gemm(
                         } else {
                             (maxima[row] - new_max).exp()
                         };
-                        let out_row = &mut out[row * token_width + head * head_dim
-                            ..row * token_width + (head + 1) * head_dim];
+                        let out_row =
+                            &mut out[row * token_width + head * head_dim..row * token_width + (head + 1) * head_dim];
                         for value in out_row {
                             *value *= rescale;
                         }
@@ -776,8 +728,8 @@ fn attention_gemm(
                     }
                 }
                 for row in 0..queries {
-                    let out_row = &mut out[row * token_width + head * head_dim
-                        ..row * token_width + (head + 1) * head_dim];
+                    let out_row =
+                        &mut out[row * token_width + head * head_dim..row * token_width + (head + 1) * head_dim];
                     let logsumexp = maxima[row] + denominators[row].ln();
                     let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
                     for value in out_row {
@@ -970,11 +922,7 @@ pub fn attention_compact_with_simd(
     assert!(prefix_len <= total_len, "compact attention prefix length");
     let query_width = elements(n_heads, head_dim);
     let kv_width = elements(n_kv_heads, head_dim);
-    assert_eq!(
-        q.len(),
-        elements(query_len, query_width),
-        "compact attention Q shape"
-    );
+    assert_eq!(q.len(), elements(query_len, query_width), "compact attention Q shape");
     assert_eq!(
         prefix_k.len(),
         elements(prefix_len, query_width),
@@ -985,11 +933,7 @@ pub fn attention_compact_with_simd(
         elements(total_len - prefix_len, kv_width),
         "compact attention generated K shape"
     );
-    assert_eq!(
-        v.len(),
-        elements(total_len, kv_width),
-        "compact attention V shape"
-    );
+    assert_eq!(v.len(), elements(total_len, kv_width), "compact attention V shape");
     assert_eq!(output.len(), q.len(), "compact attention output shape");
     assert_eq!(sinks.len(), n_heads, "compact attention sink shape");
     assert!(
@@ -997,9 +941,7 @@ pub fn attention_compact_with_simd(
         "compact attention image must be inside prefix"
     );
     assert!(
-        query_offset
-            .checked_add(query_len)
-            .is_some_and(|end| end <= total_len),
+        query_offset.checked_add(query_len).is_some_and(|end| end <= total_len),
         "compact attention query interval"
     );
     let selected = simd.resolved();
@@ -1018,9 +960,7 @@ pub fn attention_compact_with_simd(
         // generated keys.
         unsafe {
             prefill64::compact_prefill(
-                cfg!(target_arch = "x86_64")
-                    && matches!(simd, Simd::Auto | Simd::Avx512)
-                    && avx512_available(),
+                cfg!(target_arch = "x86_64") && matches!(simd, Simd::Auto | Simd::Avx512) && avx512_available(),
                 q,
                 prefix_k,
                 v,
@@ -1117,65 +1057,58 @@ fn attention_compact_online_softmax(
     let axpy = axpy_kernel(selected);
     let scale = (head_dim as f32).sqrt().recip();
     let repeat = n_heads / n_kv_heads;
-    output
-        .par_chunks_mut(head_dim)
-        .enumerate()
-        .for_each(|(qh, out)| {
-            let query = qh / n_heads;
-            let head = qh % n_heads;
-            let kv_head = head / repeat;
-            let absolute_query = query_offset + query;
-            let query_in_image = absolute_query >= image_start && absolute_query < image_end;
-            let visible_end = if query_in_image {
-                image_end
-            } else {
-                absolute_query + 1
-            };
-            let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
-            out.fill(0.0);
-            let mut running_max = f32::NEG_INFINITY;
-            let mut denominator = 0.0_f32;
-            const TILE: usize = 128;
-            let mut logits = [0.0_f32; TILE];
-            for start in (0..visible_end).step_by(TILE) {
-                let len = (visible_end - start).min(TILE);
-                let mut block_max = f32::NEG_INFINITY;
-                for (j, logit) in logits[..len].iter_mut().enumerate() {
-                    let key = start + j;
-                    let kvec = if key < prefix_len {
-                        let begin = key * query_width + head * head_dim;
-                        &prefix_k[begin..begin + head_dim]
-                    } else {
-                        let begin = (key - prefix_len) * kv_width + kv_head * head_dim;
-                        &generated_k[begin..begin + head_dim]
-                    };
-                    *logit = dot(qvec, kvec) * scale;
-                    block_max = block_max.max(*logit);
-                }
-                let new_max = running_max.max(block_max);
-                let rescale = if running_max == f32::NEG_INFINITY {
-                    0.0
+    output.par_chunks_mut(head_dim).enumerate().for_each(|(qh, out)| {
+        let query = qh / n_heads;
+        let head = qh % n_heads;
+        let kv_head = head / repeat;
+        let absolute_query = query_offset + query;
+        let query_in_image = absolute_query >= image_start && absolute_query < image_end;
+        let visible_end = if query_in_image { image_end } else { absolute_query + 1 };
+        let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
+        out.fill(0.0);
+        let mut running_max = f32::NEG_INFINITY;
+        let mut denominator = 0.0_f32;
+        const TILE: usize = 128;
+        let mut logits = [0.0_f32; TILE];
+        for start in (0..visible_end).step_by(TILE) {
+            let len = (visible_end - start).min(TILE);
+            let mut block_max = f32::NEG_INFINITY;
+            for (j, logit) in logits[..len].iter_mut().enumerate() {
+                let key = start + j;
+                let kvec = if key < prefix_len {
+                    let begin = key * query_width + head * head_dim;
+                    &prefix_k[begin..begin + head_dim]
                 } else {
-                    (running_max - new_max).exp()
+                    let begin = (key - prefix_len) * kv_width + kv_head * head_dim;
+                    &generated_k[begin..begin + head_dim]
                 };
-                for value in out.iter_mut() {
-                    *value *= rescale;
-                }
-                denominator *= rescale;
-                for (j, logit) in logits[..len].iter().enumerate() {
-                    let probability = (*logit - new_max).exp();
-                    denominator += probability;
-                    let begin = (start + j) * kv_width + kv_head * head_dim;
-                    axpy(probability, &v[begin..begin + head_dim], out);
-                }
-                running_max = new_max;
+                *logit = dot(qvec, kvec) * scale;
+                block_max = block_max.max(*logit);
             }
-            let logsumexp = running_max + denominator.ln();
-            let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
-            for value in out {
-                *value = (*value / denominator) * sink_scale;
+            let new_max = running_max.max(block_max);
+            let rescale = if running_max == f32::NEG_INFINITY {
+                0.0
+            } else {
+                (running_max - new_max).exp()
+            };
+            for value in out.iter_mut() {
+                *value *= rescale;
             }
-        });
+            denominator *= rescale;
+            for (j, logit) in logits[..len].iter().enumerate() {
+                let probability = (*logit - new_max).exp();
+                denominator += probability;
+                let begin = (start + j) * kv_width + kv_head * head_dim;
+                axpy(probability, &v[begin..begin + head_dim], out);
+            }
+            running_max = new_max;
+        }
+        let logsumexp = running_max + denominator.ln();
+        let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
+        for value in out {
+            *value = (*value / denominator) * sink_scale;
+        }
+    });
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1198,8 +1131,7 @@ fn attention_gemm_compact(
     const KEY_TILE: usize = 128;
     let query_width = n_heads * head_dim;
     let kv_width = n_kv_heads * head_dim;
-    let query_stride =
-        isize::try_from(query_width).expect("compact attention query stride too large");
+    let query_stride = isize::try_from(query_width).expect("compact attention query stride too large");
     let kv_stride = isize::try_from(kv_width).expect("compact attention KV stride too large");
     let scale = (head_dim as f32).sqrt().recip();
     let repeat = n_heads / n_kv_heads;
@@ -1229,20 +1161,13 @@ fn attention_gemm_compact(
                 maxima[..queries].fill(f32::NEG_INFINITY);
                 denominators[..queries].fill(0.0);
                 for row in 0..queries {
-                    out[row * query_width + head * head_dim
-                        ..row * query_width + (head + 1) * head_dim]
-                        .fill(0.0);
+                    out[row * query_width + head * head_dim..row * query_width + (head + 1) * head_dim].fill(0.0);
                 }
                 for key_start in (0..visible_end).step_by(KEY_TILE) {
                     let keys = (visible_end - key_start).min(KEY_TILE);
                     let q_start = first_query * query_width + head * head_dim;
-                    let (key_data, key_start_offset, key_stride) = if key_start + keys <= prefix_len
-                    {
-                        (
-                            prefix_k,
-                            key_start * query_width + head * head_dim,
-                            query_stride,
-                        )
+                    let (key_data, key_start_offset, key_stride) = if key_start + keys <= prefix_len {
+                        (prefix_k, key_start * query_width + head * head_dim, query_stride)
                     } else if key_start >= prefix_len {
                         (
                             generated_k,
@@ -1260,8 +1185,7 @@ fn attention_gemm_compact(
                                 let start = (absolute - prefix_len) * kv_width + kv_head * head_dim;
                                 &generated_k[start..start + head_dim]
                             };
-                            boundary_keys[key * head_dim..(key + 1) * head_dim]
-                                .copy_from_slice(src);
+                            boundary_keys[key * head_dim..(key + 1) * head_dim].copy_from_slice(src);
                         }
                         (boundary_keys.as_slice(), 0, head_dim as isize)
                     };
@@ -1298,9 +1222,7 @@ fn attention_gemm_compact(
                         let mut block_max = f32::NEG_INFINITY;
                         for (col, score) in row_scores.iter_mut().enumerate() {
                             let key = key_start + col;
-                            if key > absolute
-                                && !(image_query && key >= image_start && key < image_end)
-                            {
+                            if key > absolute && !(image_query && key >= image_start && key < image_end) {
                                 *score = f32::NEG_INFINITY;
                             }
                             block_max = block_max.max(*score);
@@ -1315,8 +1237,8 @@ fn attention_gemm_compact(
                         } else {
                             (maxima[row] - new_max).exp()
                         };
-                        let out_row = &mut out[row * query_width + head * head_dim
-                            ..row * query_width + (head + 1) * head_dim];
+                        let out_row =
+                            &mut out[row * query_width + head * head_dim..row * query_width + (head + 1) * head_dim];
                         for value in out_row {
                             *value *= rescale;
                         }
@@ -1355,8 +1277,8 @@ fn attention_gemm_compact(
                     }
                 }
                 for row in 0..queries {
-                    let out_row = &mut out[row * query_width + head * head_dim
-                        ..row * query_width + (head + 1) * head_dim];
+                    let out_row =
+                        &mut out[row * query_width + head * head_dim..row * query_width + (head + 1) * head_dim];
                     let logsumexp = maxima[row] + denominators[row].ln();
                     let sink_scale = 1.0 / (1.0 + (sinks[head] - logsumexp).exp());
                     for value in out_row {
@@ -1614,20 +1536,13 @@ mod tests {
         }
     }
 
-    fn linear_f64(
-        input: &[f32],
-        rows: usize,
-        in_dim: usize,
-        weights: &[f32],
-        out_dim: usize,
-    ) -> Vec<f32> {
+    fn linear_f64(input: &[f32], rows: usize, in_dim: usize, weights: &[f32], out_dim: usize) -> Vec<f32> {
         let mut out = vec![0.0; rows * out_dim];
         for row in 0..rows {
             for channel in 0..out_dim {
                 let mut sum = 0.0_f64;
                 for inner in 0..in_dim {
-                    sum += input[row * in_dim + inner] as f64
-                        * weights[channel * in_dim + inner] as f64;
+                    sum += input[row * in_dim + inner] as f64 * weights[channel * in_dim + inner] as f64;
                 }
                 out[row * out_dim + channel] = sum as f32;
             }
@@ -1648,15 +1563,7 @@ mod tests {
                 for rows in 1..=8 {
                     let input = values(rows * in_dim, 11 + rows as u32);
                     let mut packed = vec![0.0; rows * 2 * ffn_dim];
-                    linear_with_simd(
-                        &input,
-                        rows,
-                        in_dim,
-                        &weights,
-                        2 * ffn_dim,
-                        &mut packed,
-                        simd,
-                    );
+                    linear_with_simd(&input, rows, in_dim, &weights, 2 * ffn_dim, &mut packed, simd);
                     let mut expected = vec![0.0; rows * ffn_dim];
                     squared_relu_gate(&packed, &mut expected);
                     let mut fused = vec![f32::INFINITY; rows * ffn_dim];
@@ -1776,8 +1683,7 @@ mod tests {
                         .sqrt();
                     for col in 0..width {
                         let w = affine.map_or(1.0, |w| w[col]) as f64;
-                        reference[row * width + col] =
-                            (input[row * width + col] as f64 / norm * w) as f32;
+                        reference[row * width + col] = (input[row * width + col] as f64 / norm * w) as f32;
                     }
                 }
                 assert_close(&output, &reference, 2e-6, 2e-6);
@@ -1793,10 +1699,7 @@ mod tests {
         let mut output = [0.0; 4];
         squared_relu_gate(&[2.0, 3.0, -4.0, 5.0, 0.5, -8.0, 0.0, 12.0], &mut output);
         assert_eq!(output, [12.0, 0.0, -2.0, 0.0]);
-        squared_relu_gate(
-            &[f32::NAN, 1.0, 1.0, f32::NAN, -1.0, 2.0, 2.0, 0.0],
-            &mut output,
-        );
+        squared_relu_gate(&[f32::NAN, 1.0, 1.0, f32::NAN, -1.0, 2.0, 2.0, 0.0], &mut output);
         assert_eq!(output[0], 0.0);
         assert!(output[1].is_nan());
         assert_eq!(&output[2..], &[0.0, 0.0]);
@@ -1825,32 +1728,24 @@ mod tests {
                 let mut scores = vec![f64::NEG_INFINITY; kvlen];
                 for key in 0..kvlen {
                     let allowed = key <= absolute
-                        || (absolute >= image_start
-                            && absolute < image_end
-                            && key >= image_start
-                            && key < image_end);
+                        || (absolute >= image_start && absolute < image_end && key >= image_start && key < image_end);
                     if !allowed {
                         continue;
                     }
                     let mut score = 0.0_f64;
                     for d in 0..dim {
-                        score += q[(query * heads + head) * dim + d] as f64
-                            * k[(key * heads + head) * dim + d] as f64;
+                        score += q[(query * heads + head) * dim + d] as f64 * k[(key * heads + head) * dim + d] as f64;
                     }
                     scores[key] = score / (dim as f64).sqrt();
                 }
                 let max = scores.iter().copied().fold(sinks[head] as f64, f64::max);
-                let denom = (sinks[head] as f64 - max).exp()
-                    + scores.iter().map(|s| (s - max).exp()).sum::<f64>();
+                let denom = (sinks[head] as f64 - max).exp() + scores.iter().map(|s| (s - max).exp()).sum::<f64>();
                 for d in 0..dim {
                     out[(query * heads + head) * dim + d] = (scores
                         .iter()
                         .enumerate()
-                        .map(|(key, s)| {
-                            (s - max).exp() / denom * v[(key * heads + head) * dim + d] as f64
-                        })
-                        .sum::<f64>())
-                        as f32;
+                        .map(|(key, s)| (s - max).exp() / denom * v[(key * heads + head) * dim + d] as f64)
+                        .sum::<f64>()) as f32;
                 }
             }
         }
@@ -1873,9 +1768,7 @@ mod tests {
             let k = values(kvlen * heads * dim, 83);
             let v = values(kvlen * heads * dim, 117);
             let sinks = values(heads, 24);
-            let expected = attention_f64(
-                &q, &k, &v, qlen, kvlen, heads, dim, offset, start, end, &sinks,
-            );
+            let expected = attention_f64(&q, &k, &v, qlen, kvlen, heads, dim, offset, start, end, &sinks);
             for simd in implementations() {
                 let mut out = vec![f32::NAN; q.len()];
                 attention_with_simd(
@@ -1915,29 +1808,13 @@ mod tests {
 
     #[test]
     fn attention_stable_with_large_positive_and_negative_logits_and_sinks() {
-        let keys: Vec<f32> = (0..257)
-            .map(|i| if i == 140 { 1010.0 } else { -1000.0 })
-            .collect();
+        let keys: Vec<f32> = (0..257).map(|i| if i == 140 { 1010.0 } else { -1000.0 }).collect();
         let values: Vec<f32> = (0..257).map(|i| i as f32 * 0.1 - 3.0).collect();
         for sink in [-10000.0, 10000.0, 1009.0, f32::NEG_INFINITY] {
             let expected = attention_f64(&[1.0], &keys, &values, 1, 257, 1, 1, 256, 0, 0, &[sink]);
             for simd in implementations() {
                 let mut out = [f32::NAN];
-                attention_with_simd(
-                    &[1.0],
-                    &keys,
-                    &values,
-                    1,
-                    257,
-                    1,
-                    1,
-                    256,
-                    0,
-                    0,
-                    &[sink],
-                    &mut out,
-                    simd,
-                );
+                attention_with_simd(&[1.0], &keys, &values, 1, 257, 1, 1, 256, 0, 0, &[sink], &mut out, simd);
                 assert_close(&out, &expected, 1e-6, 1e-6);
                 assert!(out[0].is_finite());
             }
@@ -1946,20 +1823,7 @@ mod tests {
         let q = [1.0; 4];
         let expected = attention_f64(&q, &keys, &values, 4, 257, 1, 1, 253, 0, 0, &[-10000.0]);
         let mut out = [f32::NAN; 4];
-        attention(
-            &q,
-            &keys,
-            &values,
-            4,
-            257,
-            1,
-            1,
-            253,
-            0,
-            0,
-            &[-10000.0],
-            &mut out,
-        );
+        attention(&q, &keys, &values, 4, 257, 1, 1, 253, 0, 0, &[-10000.0], &mut out);
         assert_close(&out, &expected, 1e-6, 1e-6);
     }
 
@@ -1969,10 +1833,7 @@ mod tests {
         let weights = values(128 * 768, 122);
         let expected = linear_f64(&input, 17, 768, &weights, 128);
         for threads in [1, 2, 4] {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
             let mut out = vec![0.0; expected.len()];
             pool.install(|| {
                 assert_eq!(rayon::current_num_threads(), threads);
@@ -2001,8 +1862,7 @@ mod tests {
                 let kv_head = head / (heads / kv_heads);
                 let dst = (token * heads + head) * dim;
                 let value_src = (token * kv_heads + kv_head) * dim;
-                expanded_values[dst..dst + dim]
-                    .copy_from_slice(&values[value_src..value_src + dim]);
+                expanded_values[dst..dst + dim].copy_from_slice(&values[value_src..value_src + dim]);
                 if token >= prefix_len {
                     let src = ((token - prefix_len) * kv_heads + kv_head) * dim;
                     keys[dst..dst + dim].copy_from_slice(&generated[src..src + dim]);
@@ -2014,17 +1874,7 @@ mod tests {
 
     #[test]
     fn compact_cache_is_bit_identical_to_expanded_for_every_vector_backend() {
-        for (
-            queries,
-            prefix_len,
-            total_len,
-            heads,
-            kv_heads,
-            dim,
-            offset,
-            image_start,
-            image_end,
-        ) in [
+        for (queries, prefix_len, total_len, heads, kv_heads, dim, offset, image_start, image_end) in [
             (7, 7, 7, 2, 1, 7, 0, 1, 5),
             (144, 144, 144, 16, 8, 64, 0, 0, 133),
             (137, 137, 137, 16, 8, 64, 0, 2, 129),
@@ -2043,9 +1893,8 @@ mod tests {
             let generated = values((total_len - prefix_len) * kv_heads * dim, 37);
             let v = values(total_len * kv_heads * dim, 117);
             let sinks = values(heads, 24);
-            let (expanded_k, expanded_v) = expand_compact_cache(
-                &prefix, &generated, &v, prefix_len, total_len, heads, kv_heads, dim,
-            );
+            let (expanded_k, expanded_v) =
+                expand_compact_cache(&prefix, &generated, &v, prefix_len, total_len, heads, kv_heads, dim);
             for simd in implementations() {
                 let mut expected = vec![f32::NAN; q.len()];
                 let mut actual = vec![f32::NAN; q.len()];
@@ -2102,8 +1951,7 @@ mod tests {
         let mut generated = vec![-1000.0; total_len - prefix_len];
         generated[127] = 1010.0;
         let v = values(total_len, 131);
-        let (kfull, vfull) =
-            expand_compact_cache(&prefix, &generated, &v, prefix_len, total_len, 2, 1, 1);
+        let (kfull, vfull) = expand_compact_cache(&prefix, &generated, &v, prefix_len, total_len, 2, 1, 1);
         for simd in implementations() {
             for sinks in [[1009.0, -10000.0], [f32::NEG_INFINITY, 10000.0]] {
                 let mut actual = [f32::NAN; 8];

@@ -38,14 +38,8 @@ impl Trace for CheckedTrace {
 }
 
 fn compare(reference: &CheckedTrace, actual: &CheckedTrace) {
-    assert_eq!(
-        reference.tensors.tensors.len(),
-        actual.tensors.tensors.len()
-    );
-    assert_eq!(
-        reference.duplicate_head_tensors,
-        actual.duplicate_head_tensors
-    );
+    assert_eq!(reference.tensors.tensors.len(), actual.tensors.tensors.len());
+    assert_eq!(reference.duplicate_head_tensors, actual.duplicate_head_tensors);
     assert!(actual.duplicate_head_tensors > 0);
     for (name, (shape, values)) in &reference.tensors.tensors {
         let (actual_shape, actual_values) = &actual.tensors.tensors[name];

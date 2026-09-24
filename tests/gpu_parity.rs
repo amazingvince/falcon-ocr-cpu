@@ -1,8 +1,6 @@
 //! Integration tests require the explicitly downloaded pinned model/reference.
 //! Run `cargo test --release --test gpu_parity -- --ignored` after GPU export.
-use falcon_ocr::{
-    Backend, FinishReason, GenerationOptions, Model, Runner, RunnerConfig, kernels::Simd,
-};
+use falcon_ocr::{Backend, FinishReason, GenerationOptions, Model, Runner, RunnerConfig, kernels::Simd};
 use std::{path::Path, sync::Arc};
 
 #[test]
@@ -11,15 +9,11 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
     let model_dir = Path::new("artifacts/model");
     let reference = Path::new("artifacts/reference/smoke-fp32");
     let metadata: serde_json::Value =
-        serde_json::from_reader(std::fs::File::open(reference.join("metadata.json")).unwrap())
-            .unwrap();
+        serde_json::from_reader(std::fs::File::open(reference.join("metadata.json")).unwrap()).unwrap();
     assert_eq!(metadata["precision"], "fp32");
     assert_eq!(metadata["tf32"], false);
     assert_eq!(metadata["teacher_forced"], false);
-    assert_eq!(
-        metadata["model_revision"],
-        falcon_ocr::config::MODEL_REVISION
-    );
+    assert_eq!(metadata["model_revision"], falcon_ocr::config::MODEL_REVISION);
     let expected: Vec<u32> = serde_json::from_value(metadata["token_ids"].clone()).unwrap();
     let model = Arc::new(Model::load(model_dir).unwrap());
     let runner = Runner::new(

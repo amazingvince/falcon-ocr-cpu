@@ -8,17 +8,13 @@
 
 /// Logical CPUs available to this process (at least 1).
 pub fn logical_cpus() -> usize {
-    std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(1)
+    std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
 }
 
 /// Physical cores, or the logical CPU count when the topology is unknown.
 pub fn physical_cores() -> usize {
     let logical = logical_cpus();
-    detect()
-        .filter(|&n| n > 0)
-        .map_or(logical, |n| n.min(logical))
+    detect().filter(|&n| n > 0).map_or(logical, |n| n.min(logical))
 }
 
 #[cfg(windows)]
@@ -46,9 +42,7 @@ fn detect() -> Option<usize> {
     }
     let cores = buffer[..length as usize]
         .chunks_exact(ENTRY)
-        .filter(|entry| {
-            u32::from_le_bytes(entry[8..12].try_into().unwrap()) == RELATION_PROCESSOR_CORE
-        })
+        .filter(|entry| u32::from_le_bytes(entry[8..12].try_into().unwrap()) == RELATION_PROCESSOR_CORE)
         .count();
     Some(cores)
 }
@@ -59,10 +53,7 @@ fn detect() -> Option<usize> {
     for entry in std::fs::read_dir("/sys/devices/system/cpu").ok()?.flatten() {
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if !name.starts_with("cpu")
-            || !name[3..].chars().all(|c| c.is_ascii_digit())
-            || name.len() == 3
-        {
+        if !name.starts_with("cpu") || !name[3..].chars().all(|c| c.is_ascii_digit()) || name.len() == 3 {
             continue;
         }
         let topology = entry.path().join("topology");
@@ -110,9 +101,6 @@ mod tests {
     #[test]
     fn physical_cores_are_positive_and_at_most_logical() {
         let (physical, logical) = (super::physical_cores(), super::logical_cpus());
-        assert!(
-            physical >= 1 && physical <= logical,
-            "{physical} of {logical}"
-        );
+        assert!(physical >= 1 && physical <= logical, "{physical} of {logical}");
     }
 }

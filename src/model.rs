@@ -102,8 +102,7 @@ impl Model {
         );
         if self.screened.get().is_none() {
             let c = &self.config;
-            let head =
-                crate::head_screen::ScreenedHead::build(self.w(&self.output), c.vocab_size, c.dim)?;
+            let head = crate::head_screen::ScreenedHead::build(self.w(&self.output), c.vocab_size, c.dim)?;
             let _ = self.screened.set(head);
         }
         Ok(())
@@ -124,11 +123,7 @@ impl Model {
                 .layers
                 .iter()
                 .map(|layer| PackedLayer {
-                    qkv: PhasePackedLinear::new(
-                        self.w(&layer.qkv),
-                        c.dim,
-                        c.query_dim() + 2 * c.kv_dim(),
-                    ),
+                    qkv: PhasePackedLinear::new(self.w(&layer.qkv), c.dim, c.query_dim() + 2 * c.kv_dim()),
                     wo: PhasePackedLinear::new(self.w(&layer.wo), c.query_dim(), c.dim),
                     w13: PhasePackedLinear::new(self.w(&layer.w13), c.dim, 2 * c.ffn_dim),
                     w2: PhasePackedLinear::new(self.w(&layer.w2), c.ffn_dim, c.dim),
@@ -182,8 +177,8 @@ impl Model {
                 "{name}: expected F32, found {:?}",
                 tensor.dtype()
             );
-            let _: &[f32] = bytemuck::try_cast_slice(tensor.data())
-                .map_err(|e| anyhow::anyhow!("unaligned tensor {name}: {e}"))?;
+            let _: &[f32] =
+                bytemuck::try_cast_slice(tensor.data()).map_err(|e| anyhow::anyhow!("unaligned tensor {name}: {e}"))?;
             let start = tensor.data().as_ptr() as usize - map.as_ptr() as usize;
             weights.insert(
                 name,
@@ -197,13 +192,8 @@ impl Model {
             );
         }
         let mut take = |name: &str, shape: &[usize]| -> Result<Weight> {
-            let (actual, w) = weights
-                .remove(name)
-                .with_context(|| format!("missing tensor {name}"))?;
-            ensure!(
-                actual == shape,
-                "{name}: shape {actual:?}, expected {shape:?}"
-            );
+            let (actual, w) = weights.remove(name).with_context(|| format!("missing tensor {name}"))?;
+            ensure!(actual == shape, "{name}: shape {actual:?}, expected {shape:?}");
             Ok(w)
         };
         let c = &config;
@@ -219,18 +209,9 @@ impl Model {
                     &format!("layers.{i}.attention.wqkv.weight"),
                     &[c.query_dim() + 2 * c.kv_dim(), c.dim],
                 )?,
-                wo: take(
-                    &format!("layers.{i}.attention.wo.weight"),
-                    &[c.dim, c.query_dim()],
-                )?,
-                w13: take(
-                    &format!("layers.{i}.feed_forward.w13.weight"),
-                    &[2 * c.ffn_dim, c.dim],
-                )?,
-                w2: take(
-                    &format!("layers.{i}.feed_forward.w2.weight"),
-                    &[c.dim, c.ffn_dim],
-                )?,
+                wo: take(&format!("layers.{i}.attention.wo.weight"), &[c.dim, c.query_dim()])?,
+                w13: take(&format!("layers.{i}.feed_forward.w13.weight"), &[2 * c.ffn_dim, c.dim])?,
+                w2: take(&format!("layers.{i}.feed_forward.w2.weight"), &[c.dim, c.ffn_dim])?,
                 sinks: take(&format!("layers.{i}.attention.sinks"), &[c.n_heads])?,
             });
         }
@@ -271,21 +252,15 @@ impl Model {
         let bytes = self.map.bytes();
         let mut words = vec![0u32; bytes.len().div_ceil(4)];
         bytemuck::cast_slice_mut::<u32, u8>(&mut words)[..bytes.len()].copy_from_slice(bytes);
-        let ranges = [
-            &self.embedding,
-            &self.projector,
-            &self.norm,
-            &self.output,
-            &self.golden,
-        ]
-        .into_iter()
-        .chain(
-            self.layers
-                .iter()
-                .flat_map(|l| [&l.qkv, &l.wo, &l.w13, &l.w2, &l.sinks]),
-        )
-        .map(|w| w.range.clone())
-        .collect::<Vec<_>>();
+        let ranges = [&self.embedding, &self.projector, &self.norm, &self.output, &self.golden]
+            .into_iter()
+            .chain(
+                self.layers
+                    .iter()
+                    .flat_map(|l| [&l.qkv, &l.wo, &l.w13, &l.w2, &l.sinks]),
+            )
+            .map(|w| w.range.clone())
+            .collect::<Vec<_>>();
         for range in ranges {
             debug_assert!(range.start % 4 == 0 && range.end % 4 == 0);
             for bits in &mut words[range.start / 4..range.end / 4] {
@@ -344,10 +319,7 @@ impl Model {
             "W8 artifacts apply only to 8-bit profiles; 16-bit weights are quantized at load"
         );
         let bytes = artifact.map(std::fs::read).transpose()?;
-        let tensors = bytes
-            .as_ref()
-            .map(|b| SafeTensors::deserialize(b))
-            .transpose()?;
+        let tensors = bytes.as_ref().map(|b| SafeTensors::deserialize(b)).transpose()?;
         // Overlay options: group size 32 or 64; `partial` overlays leave every
         // matrix they omit in FP32 (mixed precision).
         let mut group_size = 64;
@@ -369,14 +341,7 @@ impl Model {
             check("format", "falcon-ocr-attempt3-w8g64-v1")?;
             check("source_sha256", WEIGHTS_SHA256)?;
             check("model_revision", crate::config::MODEL_REVISION)?;
-            check(
-                "include_head",
-                if profile.quantizes_head() {
-                    "true"
-                } else {
-                    "false"
-                },
-            )?;
+            check("include_head", if profile.quantizes_head() { "true" } else { "false" })?;
             group_size = match meta.get("group_size").and_then(|v| v.as_str()) {
                 Some("32") => 32,
                 Some("64") => 64,
@@ -420,8 +385,7 @@ impl Model {
                     "W8 codes dtype/shape for {name}"
                 );
                 ensure!(
-                    scales.dtype() == Dtype::F32
-                        && scales.shape() == [output, input.div_ceil(group_size)],
+                    scales.dtype() == Dtype::F32 && scales.shape() == [output, input.div_ceil(group_size)],
                     "W8 scales dtype/shape for {name}"
                 );
                 let codes = codes.data().iter().map(|&x| x as i8).collect();
@@ -485,11 +449,7 @@ impl Model {
     }
     pub fn attempt_memory_report(&self) -> serde_json::Value {
         let qbytes = |w: &Weight| w.quantized.as_ref().map_or(0, |q| q.payload_bytes());
-        let effective = |w: &Weight| {
-            w.quantized
-                .as_ref()
-                .map_or(w.range.len(), |q| q.payload_bytes())
-        };
+        let effective = |w: &Weight| w.quantized.as_ref().map_or(w.range.len(), |q| q.payload_bytes());
         let quantized = self
             .layers
             .iter()
@@ -530,16 +490,7 @@ impl Model {
             );
             q.linear(input, rows, output, scratch, simd)
         } else {
-            decode_linear(
-                input,
-                rows,
-                input_dim,
-                self.w(w),
-                packed,
-                output_dim,
-                output,
-                simd,
-            );
+            decode_linear(input, rows, input_dim, self.w(w), packed, output_dim, output, simd);
             Ok(())
         }
     }
@@ -568,15 +519,7 @@ impl Model {
         let packed_rows = packed.is_some() && (2..=8).contains(&rows);
         if w13.quantized.is_none()
             && !packed_rows
-            && kernels::linear_glu_with_simd(
-                input,
-                rows,
-                c.dim,
-                self.w(w13),
-                c.ffn_dim,
-                gated,
-                simd,
-            )
+            && kernels::linear_glu_with_simd(input, rows, c.dim, self.w(w13), c.ffn_dim, gated, simd)
         {
             return Ok(());
         }
@@ -646,9 +589,7 @@ impl Model {
                 row.copy_from_slice(&features[image_index * c.dim..(image_index + 1) * c.dim]);
                 image_index += 1;
             } else {
-                row.copy_from_slice(
-                    &embedding[*token as usize * c.dim..(*token as usize + 1) * c.dim],
-                );
+                row.copy_from_slice(&embedding[*token as usize * c.dim..(*token as usize + 1) * c.dim]);
             }
         }
         Ok(image_projection_ms)
@@ -744,10 +685,7 @@ impl Model {
             "invalid forward dimensions"
         );
         ensure!(
-            session
-                .len
-                .checked_add(rows)
-                .is_some_and(|n| n <= session.capacity),
+            session.len.checked_add(rows).is_some_and(|n| n <= session.capacity),
             "KV context exhausted"
         );
         ensure!(
@@ -794,11 +732,10 @@ impl Model {
         // the CPU has AVX512-BF16 (`kernels::attention_compact_prefill_bf16`).
         let bf16_attention = panel
             && kernels::panel_bf16::attention()
-            && self.layers.iter().all(|l| {
-                [&l.qkv, &l.wo, &l.w13, &l.w2]
-                    .iter()
-                    .all(|w| quantized(w).bits() == 8)
-            });
+            && self
+                .layers
+                .iter()
+                .all(|l| [&l.qkv, &l.wo, &l.w13, &l.w2].iter().all(|w| quantized(w).bits() == 8));
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             if panel {
@@ -811,21 +748,21 @@ impl Model {
                     &mut work.quant_scratch,
                 );
             } else {
-            kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            if capture {
-                trace.linear_input(i, "qkv", rows, &work.normalized);
-            }
-            self.linear(
-                &work.normalized,
-                rows,
-                c.dim,
-                &layer.qkv,
-                None,
-                qkv_width,
-                &mut work.qkv,
-                &mut work.quant_scratch,
-                simd,
-            )?;
+                kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
+                if capture {
+                    trace.linear_input(i, "qkv", rows, &work.normalized);
+                }
+                self.linear(
+                    &work.normalized,
+                    rows,
+                    c.dim,
+                    &layer.qkv,
+                    None,
+                    qkv_width,
+                    &mut work.qkv,
+                    &mut work.quant_scratch,
+                    simd,
+                )?;
             }
             clock.mark(1);
             // Prefill rows into a compact cache: split, per-head norms, RoPE and
@@ -843,97 +780,93 @@ impl Model {
                 && kernels::prefill_bf16_rows_available();
             if fused {
                 let bf16 = stored_bf16.then_some((&mut work.bf16_keys, &mut work.bf16_values));
-                fused_prefix_rows(c, rows, &work.qkv, &work.rope, &mut work.q, &mut session.layers[i], bf16, simd);
+                fused_prefix_rows(
+                    c,
+                    rows,
+                    &work.qkv,
+                    &work.rope,
+                    &mut work.q,
+                    &mut session.layers[i],
+                    bf16,
+                    simd,
+                );
                 clock.mark(2);
             } else {
-            // Normalize each original K head before GQA expansion. Spatial rotations
-            // subsequently differ for paired heads, so expanded keys are intentional.
-            let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
-                for head in 0..c.n_heads {
-                    let dst = head * c.head_dim;
-                    q[dst..dst + c.head_dim]
-                        .copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
-                    let kvhead = head / (c.n_heads / c.n_kv_heads);
-                    let kstart = qdim + kvhead * c.head_dim;
-                    k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
-                    let vstart = qdim + kdim + kvhead * c.head_dim;
-                    v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
-                }
-            };
-            if rows >= PARALLEL_ROWS {
-                work.qkv
-                    .par_chunks(qkv_width)
-                    .zip(work.q.par_chunks_mut(qdim))
-                    .zip(work.k.par_chunks_mut(qdim))
-                    .zip(work.v.par_chunks_mut(qdim))
-                    .for_each(|(((qkv, q), k), v)| split(qkv, q, k, v));
-            } else {
-                for (((qkv, q), k), v) in work
-                    .qkv
-                    .chunks(qkv_width)
-                    .zip(work.q.chunks_mut(qdim))
-                    .zip(work.k.chunks_mut(qdim))
-                    .zip(work.v.chunks_mut(qdim))
-                {
-                    split(qkv, q, k, v);
-                }
-            }
-            // Normalize all heads in two calls; avoid creating a Rayon operation
-            // for each individual 64-element head.
-            kernels::rms_norm(&work.q, &mut work.attn, c.head_dim, f32::EPSILON, None);
-            std::mem::swap(&mut work.q, &mut work.attn);
-            kernels::rms_norm(&work.k, &mut work.attn, c.head_dim, f32::EPSILON, None);
-            std::mem::swap(&mut work.k, &mut work.attn);
-            let rotate = |rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32]| {
-                for head in 0..c.n_heads {
-                    let dst = head * c.head_dim;
-                    for pair in 0..c.head_dim / 2 {
-                        let [cos, sin] = rope[head * (c.head_dim / 2) + pair];
-                        for vector in [&mut *q, &mut *k] {
-                            let p = dst + 2 * pair;
-                            let a = vector[p];
-                            let b = vector[p + 1];
-                            vector[p] = a * cos - b * sin;
-                            vector[p + 1] = a * sin + b * cos;
-                        }
+                // Normalize each original K head before GQA expansion. Spatial rotations
+                // subsequently differ for paired heads, so expanded keys are intentional.
+                let split = |qkv: &[f32], q: &mut [f32], k: &mut [f32], v: &mut [f32]| {
+                    for head in 0..c.n_heads {
+                        let dst = head * c.head_dim;
+                        q[dst..dst + c.head_dim].copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
+                        let kvhead = head / (c.n_heads / c.n_kv_heads);
+                        let kstart = qdim + kvhead * c.head_dim;
+                        k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
+                        let vstart = qdim + kdim + kvhead * c.head_dim;
+                        v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
+                    }
+                };
+                if rows >= PARALLEL_ROWS {
+                    work.qkv
+                        .par_chunks(qkv_width)
+                        .zip(work.q.par_chunks_mut(qdim))
+                        .zip(work.k.par_chunks_mut(qdim))
+                        .zip(work.v.par_chunks_mut(qdim))
+                        .for_each(|(((qkv, q), k), v)| split(qkv, q, k, v));
+                } else {
+                    for (((qkv, q), k), v) in work
+                        .qkv
+                        .chunks(qkv_width)
+                        .zip(work.q.chunks_mut(qdim))
+                        .zip(work.k.chunks_mut(qdim))
+                        .zip(work.v.chunks_mut(qdim))
+                    {
+                        split(qkv, q, k, v);
                     }
                 }
-            };
-            let rope_width = c.n_heads * (c.head_dim / 2);
-            if rows >= PARALLEL_ROWS {
-                work.rope[..rows * rope_width]
-                    .par_chunks(rope_width)
-                    .zip(work.q.par_chunks_mut(qdim))
-                    .zip(work.k.par_chunks_mut(qdim))
-                    .for_each(|((rope, q), k)| rotate(rope, q, k));
-            } else {
-                for ((rope, q), k) in work.rope[..rows * rope_width]
-                    .chunks(rope_width)
-                    .zip(work.q.chunks_mut(qdim))
-                    .zip(work.k.chunks_mut(qdim))
-                {
-                    rotate(rope, q, k);
+                // Normalize all heads in two calls; avoid creating a Rayon operation
+                // for each individual 64-element head.
+                kernels::rms_norm(&work.q, &mut work.attn, c.head_dim, f32::EPSILON, None);
+                std::mem::swap(&mut work.q, &mut work.attn);
+                kernels::rms_norm(&work.k, &mut work.attn, c.head_dim, f32::EPSILON, None);
+                std::mem::swap(&mut work.k, &mut work.attn);
+                let rotate = |rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32]| {
+                    for head in 0..c.n_heads {
+                        let dst = head * c.head_dim;
+                        for pair in 0..c.head_dim / 2 {
+                            let [cos, sin] = rope[head * (c.head_dim / 2) + pair];
+                            for vector in [&mut *q, &mut *k] {
+                                let p = dst + 2 * pair;
+                                let a = vector[p];
+                                let b = vector[p + 1];
+                                vector[p] = a * cos - b * sin;
+                                vector[p + 1] = a * sin + b * cos;
+                            }
+                        }
+                    }
+                };
+                let rope_width = c.n_heads * (c.head_dim / 2);
+                if rows >= PARALLEL_ROWS {
+                    work.rope[..rows * rope_width]
+                        .par_chunks(rope_width)
+                        .zip(work.q.par_chunks_mut(qdim))
+                        .zip(work.k.par_chunks_mut(qdim))
+                        .for_each(|((rope, q), k)| rotate(rope, q, k));
+                } else {
+                    for ((rope, q), k) in work.rope[..rows * rope_width]
+                        .chunks(rope_width)
+                        .zip(work.q.chunks_mut(qdim))
+                        .zip(work.k.chunks_mut(qdim))
+                    {
+                        rotate(rope, q, k);
+                    }
                 }
-            }
-            if trace.enabled() {
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.q"),
-                    &[rows, c.n_heads, c.head_dim],
-                    &work.q,
-                )?;
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.k"),
-                    &[rows, c.n_heads, c.head_dim],
-                    &work.k,
-                )?;
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.v"),
-                    &[rows, c.n_heads, c.head_dim],
-                    &work.v,
-                )?;
-            }
-            clock.mark(2);
-            session.layers[i].append(&work.k, &work.v, offset, c);
+                if trace.enabled() {
+                    trace.tensor(&format!("{phase}.layer.{i}.q"), &[rows, c.n_heads, c.head_dim], &work.q)?;
+                    trace.tensor(&format!("{phase}.layer.{i}.k"), &[rows, c.n_heads, c.head_dim], &work.k)?;
+                    trace.tensor(&format!("{phase}.layer.{i}.v"), &[rows, c.n_heads, c.head_dim], &work.v)?;
+                }
+                clock.mark(2);
+                session.layers[i].append(&work.k, &work.v, offset, c);
             }
             clock.mark(3);
             let cache = &mut session.layers[i];
@@ -953,11 +886,7 @@ impl Model {
             );
             clock.mark(4);
             if trace.enabled() {
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.attention"),
-                    &[rows, qdim],
-                    &work.attn,
-                )?;
+                trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
             if panel {
                 quantized(&layer.wo).prefill(
@@ -986,53 +915,53 @@ impl Model {
                 );
                 clock.mark(7);
             } else {
-            if capture {
-                trace.linear_input(i, "wo", rows, &work.attn);
-            }
-            self.linear(
-                &work.attn,
-                rows,
-                qdim,
-                &layer.wo,
-                None,
-                c.dim,
-                &mut work.projected,
-                &mut work.quant_scratch,
-                simd,
-            )?;
-            add_residual(h, &work.projected, c.dim);
-            clock.mark(5);
-            kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
-            if capture {
-                trace.linear_input(i, "w13", rows, &work.normalized);
-            }
-            self.linear_glu(
-                &work.normalized,
-                rows,
-                &layer.w13,
-                None,
-                &mut work.ffn_packed,
-                &mut work.gated,
-                &mut work.quant_scratch,
-                simd,
-            )?;
-            clock.mark(6);
-            if capture {
-                trace.linear_input(i, "w2", rows, &work.gated);
-            }
-            self.linear(
-                &work.gated,
-                rows,
-                c.ffn_dim,
-                &layer.w2,
-                None,
-                c.dim,
-                &mut work.projected,
-                &mut work.quant_scratch,
-                simd,
-            )?;
-            add_residual(h, &work.projected, c.dim);
-            clock.mark(7);
+                if capture {
+                    trace.linear_input(i, "wo", rows, &work.attn);
+                }
+                self.linear(
+                    &work.attn,
+                    rows,
+                    qdim,
+                    &layer.wo,
+                    None,
+                    c.dim,
+                    &mut work.projected,
+                    &mut work.quant_scratch,
+                    simd,
+                )?;
+                add_residual(h, &work.projected, c.dim);
+                clock.mark(5);
+                kernels::rms_norm(h, &mut work.normalized, c.dim, f32::EPSILON, None);
+                if capture {
+                    trace.linear_input(i, "w13", rows, &work.normalized);
+                }
+                self.linear_glu(
+                    &work.normalized,
+                    rows,
+                    &layer.w13,
+                    None,
+                    &mut work.ffn_packed,
+                    &mut work.gated,
+                    &mut work.quant_scratch,
+                    simd,
+                )?;
+                clock.mark(6);
+                if capture {
+                    trace.linear_input(i, "w2", rows, &work.gated);
+                }
+                self.linear(
+                    &work.gated,
+                    rows,
+                    c.ffn_dim,
+                    &layer.w2,
+                    None,
+                    c.dim,
+                    &mut work.projected,
+                    &mut work.quant_scratch,
+                    simd,
+                )?;
+                add_residual(h, &work.projected, c.dim);
+                clock.mark(7);
             }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
@@ -1079,18 +1008,8 @@ impl Model {
             }
             let mut results = [Screened::Fallback { candidates: 0 }; crate::head_screen::MAX_ROWS];
             let dot = kernels::dot_kernel(simd.resolved());
-            head.select_rows(
-                norm,
-                rows,
-                self.w(&self.output),
-                dot,
-                &mut work.head_rows,
-                &mut results,
-            );
-            if results[..rows]
-                .iter()
-                .all(|r| matches!(r, Screened::Token { .. }))
-            {
+            head.select_rows(norm, rows, self.w(&self.output), dot, &mut work.head_rows, &mut results);
+            if results[..rows].iter().all(|r| matches!(r, Screened::Token { .. })) {
                 if work.selected.len() < rows {
                     work.selected.resize(rows, 0);
                 }
@@ -1145,10 +1064,7 @@ impl Model {
         } else {
             None
         };
-        ensure!(
-            rows > 0 && active.len() == rows,
-            "invalid batch decode dimensions"
-        );
+        ensure!(rows > 0 && active.len() == rows, "invalid batch decode dimensions");
         ensure!(
             active
                 .iter()
@@ -1162,10 +1078,7 @@ impl Model {
         for (row, &index) in active.iter().enumerate() {
             let session = &sessions[index];
             ensure!(session.len < session.capacity, "KV context exhausted");
-            ensure!(
-                session.next_position < c.max_seq_len,
-                "RoPE position exceeds context"
-            );
+            ensure!(session.next_position < c.max_seq_len, "RoPE position exceeds context");
             ensure!(session.simd == simd, "mixed vector backends in one batch");
             batch.positions[row] = session.next_position;
         }
@@ -1204,15 +1117,12 @@ impl Model {
                 let qkv = &work.qkv[row * qkv_width..(row + 1) * qkv_width];
                 for head in 0..c.n_heads {
                     let dst = (row * c.n_heads + head) * c.head_dim;
-                    work.q[dst..dst + c.head_dim]
-                        .copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
+                    work.q[dst..dst + c.head_dim].copy_from_slice(&qkv[head * c.head_dim..(head + 1) * c.head_dim]);
                     let kvhead = head / (c.n_heads / c.n_kv_heads);
                     let kstart = qdim + kvhead * c.head_dim;
-                    work.k[dst..dst + c.head_dim]
-                        .copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
+                    work.k[dst..dst + c.head_dim].copy_from_slice(&qkv[kstart..kstart + c.head_dim]);
                     let vstart = qdim + kdim + kvhead * c.head_dim;
-                    work.v[dst..dst + c.head_dim]
-                        .copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
+                    work.v[dst..dst + c.head_dim].copy_from_slice(&qkv[vstart..vstart + c.head_dim]);
                 }
             }
             kernels::rms_norm(&work.q, &mut work.attn, c.head_dim, f32::EPSILON, None);
@@ -1223,8 +1133,7 @@ impl Model {
                 for head in 0..c.n_heads {
                     let dst = (row * c.n_heads + head) * c.head_dim;
                     for pair in 0..c.head_dim / 2 {
-                        let [cos, sin] =
-                            work.rope[(row * c.n_heads + head) * (c.head_dim / 2) + pair];
+                        let [cos, sin] = work.rope[(row * c.n_heads + head) * (c.head_dim / 2) + pair];
                         for vector in [&mut work.q, &mut work.k] {
                             let p = dst + 2 * pair;
                             let a = vector[p];
@@ -1236,21 +1145,9 @@ impl Model {
                 }
             }
             if trace.enabled() {
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.q"),
-                    &[rows, c.n_heads, c.head_dim],
-                    &work.q,
-                )?;
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.k"),
-                    &[rows, c.n_heads, c.head_dim],
-                    &work.k,
-                )?;
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.v"),
-                    &[rows, c.n_heads, c.head_dim],
-                    &work.v,
-                )?;
+                trace.tensor(&format!("{phase}.layer.{i}.q"), &[rows, c.n_heads, c.head_dim], &work.q)?;
+                trace.tensor(&format!("{phase}.layer.{i}.k"), &[rows, c.n_heads, c.head_dim], &work.k)?;
+                trace.tensor(&format!("{phase}.layer.{i}.v"), &[rows, c.n_heads, c.head_dim], &work.v)?;
             }
             for (row, &index) in active.iter().enumerate() {
                 let session = &mut sessions[index];
@@ -1274,11 +1171,7 @@ impl Model {
                 );
             }
             if trace.enabled() {
-                trace.tensor(
-                    &format!("{phase}.layer.{i}.attention"),
-                    &[rows, qdim],
-                    &work.attn,
-                )?;
+                trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
             self.linear(
                 &work.attn,
@@ -1323,13 +1216,7 @@ impl Model {
             sessions[index].len += 1;
             sessions[index].next_position += 1;
         }
-        kernels::rms_norm(
-            h,
-            &mut work.normalized,
-            c.dim,
-            c.norm_eps,
-            Some(self.w(&self.norm)),
-        );
+        kernels::rms_norm(h, &mut work.normalized, c.dim, c.norm_eps, Some(self.w(&self.norm)));
         if screen
             && !trace.enabled()
             && let Some(head) = self.screened.get()
@@ -1369,11 +1256,7 @@ impl Model {
             simd,
         )?;
         if trace.enabled() {
-            trace.tensor(
-                &format!("{phase}.logits"),
-                &[rows, c.vocab_size],
-                &work.logits,
-            )?;
+            trace.tensor(&format!("{phase}.logits"), &[rows, c.vocab_size], &work.logits)?;
         }
         Ok(Next::Logits(&work.logits))
     }
@@ -1476,9 +1359,7 @@ impl LayerCache {
                 v: values,
                 prefix_len,
             } => {
-                let prefix_rows = prefix_len
-                    .saturating_sub(offset)
-                    .min(k.len() / c.query_dim());
+                let prefix_rows = prefix_len.saturating_sub(offset).min(k.len() / c.query_dim());
                 let prefix_elements = prefix_rows * c.query_dim();
                 prefix_k.extend_from_slice(&k[..prefix_elements]);
                 append_unique_heads(generated_k, &k[prefix_elements..], c);
@@ -1505,10 +1386,7 @@ impl LayerCache {
     ) {
         match self {
             Self::Split(cache) => {
-                assert!(
-                    offset >= image_end,
-                    "cannot treat a partial image as causal decode"
-                );
+                assert!(offset >= image_end, "cannot treat a partial image as causal decode");
                 if rows == 1 {
                     cache.attention_decode(q, total_len, sinks, output, simd);
                 } else {
@@ -1583,12 +1461,7 @@ impl LayerCache {
 
 /// Format tag of kernel-ready model files.
 pub const PACKED_FORMAT: &str = "falcon-ocr-kernel-v1";
-const BODY: [&str; 4] = [
-    "attention.wqkv",
-    "attention.wo",
-    "feed_forward.w13",
-    "feed_forward.w2",
-];
+const BODY: [&str; 4] = ["attention.wqkv", "attention.wo", "feed_forward.w13", "feed_forward.w2"];
 
 impl Model {
     /// Write a kernel-ready model file: every tensor this quantized model
@@ -1598,32 +1471,84 @@ impl Model {
     /// conversion. Needs a quantized body and a prepared screened head.
     pub fn write_packed(&self, path: impl AsRef<Path>) -> Result<()> {
         let profile = self.attempt_profile;
-        ensure!(profile.quantizes_body() && !profile.quantizes_head(), "packing needs a quantized body and FP32 head");
-        let screen = self.screened.get().context("prepare the screened head before packing")?;
+        ensure!(
+            profile.quantizes_body() && !profile.quantizes_head(),
+            "packing needs a quantized body and FP32 head"
+        );
+        let screen = self
+            .screened
+            .get()
+            .context("prepare the screened head before packing")?;
         let c = &self.config;
         let mut tensors: Vec<(String, Dtype, Vec<usize>, &[u8])> = Vec::new();
         let fp32 = |w: &Weight| -> &[u8] { &self.map.bytes()[w.range.clone()] };
-        tensors.push(("tok_embeddings.weight".into(), Dtype::F32, vec![c.vocab_size, c.dim], fp32(&self.embedding)));
-        tensors.push(("img_projector.weight".into(), Dtype::F32, vec![c.dim, c.patch_dim()], fp32(&self.projector)));
+        tensors.push((
+            "tok_embeddings.weight".into(),
+            Dtype::F32,
+            vec![c.vocab_size, c.dim],
+            fp32(&self.embedding),
+        ));
+        tensors.push((
+            "img_projector.weight".into(),
+            Dtype::F32,
+            vec![c.dim, c.patch_dim()],
+            fp32(&self.projector),
+        ));
         tensors.push(("norm.weight".into(), Dtype::F32, vec![c.dim], fp32(&self.norm)));
-        tensors.push(("output.weight".into(), Dtype::F32, vec![c.vocab_size, c.dim], fp32(&self.output)));
-        tensors.push(("freqs_cis_golden".into(), Dtype::F32, vec![c.n_heads, c.head_dim / 4, 2], fp32(&self.golden)));
+        tensors.push((
+            "output.weight".into(),
+            Dtype::F32,
+            vec![c.vocab_size, c.dim],
+            fp32(&self.output),
+        ));
+        tensors.push((
+            "freqs_cis_golden".into(),
+            Dtype::F32,
+            vec![c.n_heads, c.head_dim / 4, 2],
+            fp32(&self.golden),
+        ));
         let mut bits = None;
         for (i, layer) in self.layers.iter().enumerate() {
-            tensors.push((format!("layers.{i}.attention.sinks"), Dtype::F32, vec![c.n_heads], fp32(&layer.sinks)));
+            tensors.push((
+                format!("layers.{i}.attention.sinks"),
+                Dtype::F32,
+                vec![c.n_heads],
+                fp32(&layer.sinks),
+            ));
             for (name, weight) in BODY.iter().zip([&layer.qkv, &layer.wo, &layer.w13, &layer.w2]) {
-                let q = weight.quantized.as_ref().with_context(|| format!("layer {i} {name} is not quantized"))?;
+                let q = weight
+                    .quantized
+                    .as_ref()
+                    .with_context(|| format!("layer {i} {name} is not quantized"))?;
                 let (out, input) = q.dimensions();
                 let (codes, scales) = q.raw_parts();
-                ensure!(*bits.get_or_insert(q.bits()) == q.bits() && q.group_size() == 64, "mixed packing formats");
+                ensure!(
+                    *bits.get_or_insert(q.bits()) == q.bits() && q.group_size() == 64,
+                    "mixed packing formats"
+                );
                 let dtype = if q.bits() == 8 { Dtype::I8 } else { Dtype::I16 };
                 tensors.push((format!("layers.{i}.{name}.__codes"), dtype, vec![out, input], codes));
-                tensors.push((format!("layers.{i}.{name}.__scales"), Dtype::F32, vec![out, input / 64], scales));
+                tensors.push((
+                    format!("layers.{i}.{name}.__scales"),
+                    Dtype::F32,
+                    vec![out, input / 64],
+                    scales,
+                ));
             }
         }
         let (screen_codes, screen_scales, weight_abs_max, kappa) = screen.raw_parts();
-        tensors.push(("output.__screen_codes".into(), Dtype::I8, vec![c.vocab_size, c.dim], screen_codes));
-        tensors.push(("output.__screen_scales".into(), Dtype::F32, vec![c.vocab_size, c.dim / 64], screen_scales));
+        tensors.push((
+            "output.__screen_codes".into(),
+            Dtype::I8,
+            vec![c.vocab_size, c.dim],
+            screen_codes,
+        ));
+        tensors.push((
+            "output.__screen_scales".into(),
+            Dtype::F32,
+            vec![c.vocab_size, c.dim / 64],
+            screen_scales,
+        ));
         let mut metadata = HashMap::new();
         metadata.insert("format".to_owned(), PACKED_FORMAT.to_owned());
         metadata.insert("profile".to_owned(), profile.label().to_owned());
@@ -1632,15 +1557,26 @@ impl Model {
         metadata.insert("source_sha256".to_owned(), self.weights_sha256.clone());
         metadata.insert("model_revision".to_owned(), crate::config::MODEL_REVISION.to_owned());
         metadata.insert("config".to_owned(), serde_json::to_string(&self.config)?);
-        metadata.insert("screen_weight_abs_max".to_owned(), format!("{:08x}", weight_abs_max.to_bits()));
+        metadata.insert(
+            "screen_weight_abs_max".to_owned(),
+            format!("{:08x}", weight_abs_max.to_bits()),
+        );
         metadata.insert("screen_kappa".to_owned(), format!("{:08x}", kappa.to_bits()));
         if let Some(sha) = &self.attempt_artifact_sha256 {
             metadata.insert("w8_artifact_sha256".to_owned(), sha.clone());
         }
-        metadata.insert("tensors_sha256".to_owned(), packed_digest(tensors.iter().map(|(n, _, _, d)| (n.as_str(), *d))));
+        metadata.insert(
+            "tensors_sha256".to_owned(),
+            packed_digest(tensors.iter().map(|(n, _, _, d)| (n.as_str(), *d))),
+        );
         let views = tensors
             .iter()
-            .map(|(name, dtype, shape, data)| Ok((name.clone(), safetensors::tensor::TensorView::new(*dtype, shape.clone(), data)?)))
+            .map(|(name, dtype, shape, data)| {
+                Ok((
+                    name.clone(),
+                    safetensors::tensor::TensorView::new(*dtype, shape.clone(), data)?,
+                ))
+            })
             .collect::<Result<Vec<_>>>()?;
         safetensors::serialize_to_file(views, Some(metadata), path.as_ref())?;
         Ok(())
@@ -1658,21 +1594,41 @@ impl Model {
         let tensors = SafeTensors::deserialize(&map)?;
         let (_, header) = SafeTensors::read_metadata(&map)?;
         let meta = header.metadata().as_ref().context("packed model metadata missing")?;
-        let get = |key: &str| meta.get(key).map(String::as_str).with_context(|| format!("packed metadata {key} missing"));
+        let get = |key: &str| {
+            meta.get(key)
+                .map(String::as_str)
+                .with_context(|| format!("packed metadata {key} missing"))
+        };
         ensure!(get("format")? == PACKED_FORMAT, "not a {PACKED_FORMAT} file");
-        ensure!(get("source_sha256")? == WEIGHTS_SHA256, "packed file comes from another checkpoint");
-        ensure!(get("model_revision")? == crate::config::MODEL_REVISION, "packed file comes from another revision");
+        ensure!(
+            get("source_sha256")? == WEIGHTS_SHA256,
+            "packed file comes from another checkpoint"
+        );
+        ensure!(
+            get("model_revision")? == crate::config::MODEL_REVISION,
+            "packed file comes from another revision"
+        );
         let config: ModelConfig = serde_json::from_str(get("config")?)?;
         config.validate()?;
         let profile = <crate::attempt::Profile as clap::ValueEnum>::from_str(get("profile")?, false)
             .map_err(|e| anyhow::anyhow!("packed profile: {e}"))?;
         let bits: u32 = get("weight_bits")?.parse()?;
-        ensure!(bits == profile.weight_bits() && get("group_size")? == "64", "packed weight format");
+        ensure!(
+            bits == profile.weight_bits() && get("group_size")? == "64",
+            "packed weight format"
+        );
         let constant = |key: &str| -> Result<f32> { Ok(f32::from_bits(u32::from_str_radix(get(key)?, 16)?)) };
         let base = map.as_ptr() as usize;
         let find = |name: &str, dtype: Dtype, shape: &[usize]| -> Result<Range<usize>> {
-            let t = tensors.tensor(name).with_context(|| format!("packed tensor {name} missing"))?;
-            ensure!(t.dtype() == dtype && t.shape() == shape, "packed tensor {name}: {:?} {:?}", t.dtype(), t.shape());
+            let t = tensors
+                .tensor(name)
+                .with_context(|| format!("packed tensor {name} missing"))?;
+            ensure!(
+                t.dtype() == dtype && t.shape() == shape,
+                "packed tensor {name}: {:?} {:?}",
+                t.dtype(),
+                t.shape()
+            );
             let start = t.data().as_ptr() as usize - base;
             Ok(start..start + t.data().len())
         };
@@ -1702,7 +1658,10 @@ impl Model {
                 let scales = find(&format!("layers.{i}.{name}.__scales"), Dtype::F32, &[out, input / 64])?;
                 let q = crate::attempt::quant::Q8Linear::from_mapped(out, input, 64, bits, &map, codes, scales)?;
                 // Quantized matrices are only read through their codes.
-                body.push(Weight { range: 0..0, quantized: Some(Arc::new(q)) });
+                body.push(Weight {
+                    range: 0..0,
+                    quantized: Some(Arc::new(q)),
+                });
             }
             let mut body = body.into_iter();
             layers.push(Layer {
@@ -1725,8 +1684,15 @@ impl Model {
         if verify {
             // `write_packed` hashes in its own tensor order; recompute in that order.
             let order = packed_order(&config);
-            ensure!(tensors.names().len() == order.len(), "packed file has unexpected tensors");
-            let digest = packed_digest(order.iter().map(|n| (n.as_str(), tensors.tensor(n).map(|t| t.data()).unwrap_or(&[]))));
+            ensure!(
+                tensors.names().len() == order.len(),
+                "packed file has unexpected tensors"
+            );
+            let digest = packed_digest(
+                order
+                    .iter()
+                    .map(|n| (n.as_str(), tensors.tensor(n).map(|t| t.data()).unwrap_or(&[]))),
+            );
             ensure!(digest == get("tensors_sha256")?, "packed tensor digest mismatch");
         }
         let screened = OnceLock::new();
@@ -1803,7 +1769,10 @@ fn fused_prefix_rows(
     bf16: Option<(&mut Vec<u32>, &mut Vec<u32>)>,
     simd: kernels::Simd,
 ) {
-    let LayerCache::Compact { prefix_k, v: values, .. } = cache else {
+    let LayerCache::Compact {
+        prefix_k, v: values, ..
+    } = cache
+    else {
         unreachable!("fused prefill needs the compact cache");
     };
     let (qdim, kdim) = (c.query_dim(), c.kv_dim());
@@ -1841,51 +1810,39 @@ fn fused_prefix_rows(
             crate::team::SharedMut::new(&mut values[..]),
         )
     });
-    q[..rows * qdim]
-        .par_chunks_mut(qdim)
-        .enumerate()
-        .for_each(|(row, q)| {
-            let src = &qkv[row * qkv_width..(row + 1) * qkv_width];
-            let rope = &rope[row * rope_width..(row + 1) * rope_width];
-            // SAFETY: rows write disjoint, reserved (uninitialized) slots,
-            // each fully overwritten before the lengths are set below.
-            let (k, v) = unsafe {
-                let k: &mut [std::mem::MaybeUninit<f32>] = k_out.slice(row * qdim, qdim);
-                let v: &mut [std::mem::MaybeUninit<f32>] = v_out.slice(row * kdim, kdim);
-                (
-                    std::slice::from_raw_parts_mut(k.as_mut_ptr().cast::<f32>(), qdim),
-                    std::slice::from_raw_parts_mut(v.as_mut_ptr().cast::<f32>(), kdim),
-                )
+    q[..rows * qdim].par_chunks_mut(qdim).enumerate().for_each(|(row, q)| {
+        let src = &qkv[row * qkv_width..(row + 1) * qkv_width];
+        let rope = &rope[row * rope_width..(row + 1) * rope_width];
+        // SAFETY: rows write disjoint, reserved (uninitialized) slots,
+        // each fully overwritten before the lengths are set below.
+        let (k, v) = unsafe {
+            let k: &mut [std::mem::MaybeUninit<f32>] = k_out.slice(row * qdim, qdim);
+            let v: &mut [std::mem::MaybeUninit<f32>] = v_out.slice(row * kdim, kdim);
+            (
+                std::slice::from_raw_parts_mut(k.as_mut_ptr().cast::<f32>(), qdim),
+                std::slice::from_raw_parts_mut(v.as_mut_ptr().cast::<f32>(), kdim),
+            )
+        };
+        #[cfg(target_arch = "x86_64")]
+        let done = vector && {
+            // SAFETY: AVX2/FMA detected above; head_dim is 64.
+            unsafe { fused_row_avx2(c, src, rope, q, k, v) };
+            true
+        };
+        #[cfg(not(target_arch = "x86_64"))]
+        let done = false;
+        if !done {
+            let _ = vector;
+            fused_row(c, src, rope, q, k, v);
+        }
+        if let Some((keys, values)) = &bf16 {
+            // SAFETY: the caller checked `prefill_bf16_rows_available`;
+            // buffers sized above; each row writes only its own slots.
+            unsafe {
+                kernels::store_prefill_bf16_row(k, v, row, rows, c.n_heads, c.n_kv_heads, keys.ptr(), values.ptr())
             };
-            #[cfg(target_arch = "x86_64")]
-            let done = vector && {
-                // SAFETY: AVX2/FMA detected above; head_dim is 64.
-                unsafe { fused_row_avx2(c, src, rope, q, k, v) };
-                true
-            };
-            #[cfg(not(target_arch = "x86_64"))]
-            let done = false;
-            if !done {
-                let _ = vector;
-                fused_row(c, src, rope, q, k, v);
-            }
-            if let Some((keys, values)) = &bf16 {
-                // SAFETY: the caller checked `prefill_bf16_rows_available`;
-                // buffers sized above; each row writes only its own slots.
-                unsafe {
-                    kernels::store_prefill_bf16_row(
-                        k,
-                        v,
-                        row,
-                        rows,
-                        c.n_heads,
-                        c.n_kv_heads,
-                        keys.ptr(),
-                        values.ptr(),
-                    )
-                };
-            }
-        });
+        }
+    });
     // SAFETY: every reserved slot of the new rows was written above.
     unsafe {
         prefix_k.set_len(k_start + rows * qdim);
@@ -1984,12 +1941,13 @@ mod fused_row_tests {
         if !(std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")) {
             return;
         }
-        let c: ModelConfig =
-            serde_json::from_str(include_str!("../tests/fixtures/model-config.json")).unwrap();
+        let c: ModelConfig = serde_json::from_str(include_str!("../tests/fixtures/model-config.json")).unwrap();
         let width = c.query_dim() + 2 * c.kv_dim();
         let mut state = 12345_u64;
         let mut next = move || {
-            state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             ((state >> 40) as f32 / (1u64 << 24) as f32) * 8.0 - 4.0
         };
         for trial in 0..50 {
@@ -2005,7 +1963,11 @@ mod fused_row_tests {
                     [t.cos(), t.sin()]
                 })
                 .collect();
-            let (mut q1, mut k1, mut v1) = (vec![0.0; c.query_dim()], vec![0.0; c.query_dim()], vec![0.0; c.kv_dim()]);
+            let (mut q1, mut k1, mut v1) = (
+                vec![0.0; c.query_dim()],
+                vec![0.0; c.query_dim()],
+                vec![0.0; c.kv_dim()],
+            );
             let (mut q2, mut k2, mut v2) = (q1.clone(), k1.clone(), v1.clone());
             fused_row(&c, &src, &rope, &mut q1, &mut k1, &mut v1);
             unsafe { fused_row_avx2(&c, &src, &rope, &mut q2, &mut k2, &mut v2) };
@@ -2082,11 +2044,7 @@ impl Session {
         self.capacity = 0;
         bytes
     }
-    pub(crate) fn seal_prefix(
-        &mut self,
-        c: &ModelConfig,
-        mode: crate::attempt::PrefixMode,
-    ) -> Result<()> {
+    pub(crate) fn seal_prefix(&mut self, c: &ModelConfig, mode: crate::attempt::PrefixMode) -> Result<()> {
         if mode == crate::attempt::PrefixMode::Reference {
             return Ok(());
         }
@@ -2152,18 +2110,13 @@ impl Session {
     ) -> Result<Self> {
         ensure!(capacity <= c.max_seq_len, "capacity exceeds model context");
         ensure!(
-            prefix_len > 0
-                && prefix_len <= capacity
-                && image_start < image_end
-                && image_end < prefix_len,
+            prefix_len > 0 && prefix_len <= capacity && image_start < image_end && image_end < prefix_len,
             "invalid cache prefix or image interval"
         );
         let reserve = |rows: usize, width: usize| -> Result<Vec<f32>> {
             let elements = rows.checked_mul(width).context("cache size overflow")?;
             let mut values = Vec::new();
-            values
-                .try_reserve_exact(elements)
-                .context("allocate KV cache")?;
+            values.try_reserve_exact(elements).context("allocate KV cache")?;
             Ok(values)
         };
         let mut layers = Vec::new();
@@ -2247,9 +2200,7 @@ pub(crate) fn temporal_factors(c: &ModelConfig) -> Vec<[f32; 2]> {
     let mut result = Vec::with_capacity(c.max_seq_len * pairs);
     for t in 0..c.max_seq_len {
         for pair in 0..pairs {
-            let freq = 1.
-                / c.rope_theta
-                    .powf((2 * pair) as f32 / (c.head_dim / 2) as f32);
+            let freq = 1. / c.rope_theta.powf((2 * pair) as f32 / (c.head_dim / 2) as f32);
             let (sin, cos) = (t as f32 * freq).sin_cos();
             result.push([cos, sin]);
         }
@@ -2310,13 +2261,11 @@ fn row_scales(h: &[f32], width: usize, out: &mut Vec<f32>) {
 
 fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
     if h.len() >= PARALLEL_ROWS * dim {
-        h.par_chunks_mut(dim)
-            .zip(projected.par_chunks(dim))
-            .for_each(|(h, a)| {
-                for (x, a) in h.iter_mut().zip(a) {
-                    *x += a;
-                }
-            });
+        h.par_chunks_mut(dim).zip(projected.par_chunks(dim)).for_each(|(h, a)| {
+            for (x, a) in h.iter_mut().zip(a) {
+                *x += a;
+            }
+        });
     } else {
         for (x, a) in h.iter_mut().zip(projected) {
             *x += a;
@@ -2360,7 +2309,10 @@ struct HeadClock {
 }
 impl HeadClock {
     fn new(rows: usize) -> Option<Self> {
-        phases_enabled().then(|| Self { rows, start: Instant::now() })
+        phases_enabled().then(|| Self {
+            rows,
+            start: Instant::now(),
+        })
     }
 }
 impl Drop for HeadClock {
@@ -2403,11 +2355,7 @@ impl Drop for PhaseClock {
         }
         self.mark(PHASES - 1);
         if self.rows >= PARALLEL_ROWS {
-            eprintln!(
-                "prefill phases rows={}: {}",
-                self.rows,
-                format_phases(&self.totals, 1)
-            );
+            eprintln!("prefill phases rows={}: {}", self.rows, format_phases(&self.totals, 1));
         } else {
             DECODE_PHASES.with(|cell| {
                 let mut state = cell.borrow_mut();
@@ -2441,7 +2389,11 @@ pub(crate) fn report_decode_phases() {
             if *steps == 0 {
                 continue;
             }
-            let label = if rows == 1 { String::new() } else { format!(" ({rows} rows)") };
+            let label = if rows == 1 {
+                String::new()
+            } else {
+                format!(" ({rows} rows)")
+            };
             eprintln!(
                 "decode phases per step{label} over {steps} steps: {}",
                 format_phases(totals, *steps)
@@ -2489,23 +2441,9 @@ mod bf16_round_tests {
     #[test]
     fn rounds_like_bf16_conversion() {
         use super::round_bf16_bits;
-        for x in [
-            1.0f32,
-            -2.5,
-            1.0e-3,
-            3.375,
-            65504.0,
-            -1.0e-30,
-            0.0,
-            -0.0,
-            7.1234e5,
-        ] {
+        for x in [1.0f32, -2.5, 1.0e-3, 3.375, 65504.0, -1.0e-30, 0.0, -0.0, 7.1234e5] {
             let expected = half::bf16::from_f32(x).to_f32();
-            assert_eq!(
-                f32::from_bits(round_bf16_bits(x.to_bits())),
-                expected,
-                "{x}"
-            );
+            assert_eq!(f32::from_bits(round_bf16_bits(x.to_bits())), expected, "{x}");
         }
         // Ties go to even: 1 + 2^-8 lies halfway between 1 and 1 + 2^-7.
         let tie = f32::from_bits(0x3F80_8000);
@@ -2541,22 +2479,14 @@ pub(crate) fn image_range(tokens: &[u32], c: &ModelConfig) -> Result<(usize, usi
         .context("missing image end token")?;
     ensure!(start < end, "invalid image token range");
     ensure!(
-        tokens
-            .iter()
-            .filter(|&&x| x == c.image_cls_token_id)
-            .count()
-            == 1
+        tokens.iter().filter(|&&x| x == c.image_cls_token_id).count() == 1
             && tokens.iter().filter(|&&x| x == c.img_end_id).count() == 1,
         "exactly one image per request is supported"
     );
     Ok((start, end))
 }
 
-pub(crate) fn positions(
-    tokens: &[u32],
-    patch_hw: &[[f32; 2]],
-    c: &ModelConfig,
-) -> Result<(Vec<usize>, Vec<[f32; 2]>)> {
+pub(crate) fn positions(tokens: &[u32], patch_hw: &[[f32; 2]], c: &ModelConfig) -> Result<(Vec<usize>, Vec<[f32; 2]>)> {
     let mut temporal = Vec::with_capacity(tokens.len());
     let mut spatial = Vec::with_capacity(tokens.len());
     let mut count = 0usize;
@@ -2675,15 +2605,11 @@ mod tests {
             .chunks_exact(8)
             .map(|x| i64::from_le_bytes(x.try_into().unwrap()) as usize)
             .collect::<Vec<_>>();
-        let hw = f32s("pos_hw")
-            .chunks_exact(2)
-            .map(|x| [x[0], x[1]])
-            .collect::<Vec<_>>();
+        let hw = f32s("pos_hw").chunks_exact(2).map(|x| [x[0], x[1]]).collect::<Vec<_>>();
         let golden = f32s("golden_freqs");
         let mut rope = Vec::new();
         rotary_factors(&c, &time, &hw, &golden, &temporal, &mut rope);
-        let mut report =
-            serde_json::json!({"temporal_table":delta(bytemuck::cast_slice(&temporal),&reference)});
+        let mut report = serde_json::json!({"temporal_table":delta(bytemuck::cast_slice(&temporal),&reference)});
         for layer in [0, 6, 12, 21] {
             for kind in ["q", "k"] {
                 let mut values = f32s(&format!("layer.{layer}.{kind}.input"));

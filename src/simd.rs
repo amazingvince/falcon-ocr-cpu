@@ -203,9 +203,7 @@ impl Simd for Portable {
     }
     #[inline(always)]
     unsafe fn mask_bits(mask: Self::V) -> u32 {
-        (0..8).fold(0, |bits, i| {
-            bits | ((mask[i].to_bits() >> 31) << i)
-        })
+        (0..8).fold(0, |bits, i| bits | ((mask[i].to_bits() >> 31) << i))
     }
     #[inline(always)]
     unsafe fn exp_fast(x: Self::V) -> Self::V {
@@ -308,23 +306,18 @@ impl Simd for Avx2 {
     unsafe fn exp_fast(x: Self::V) -> Self::V {
         use std::arch::x86_64::*;
         unsafe {
-            let n = _mm256_round_ps::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(
-                _mm256_mul_ps(x, _mm256_set1_ps(EXP_LOG2E)),
-            );
+            let n = _mm256_round_ps::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(_mm256_mul_ps(
+                x,
+                _mm256_set1_ps(EXP_LOG2E),
+            ));
             let r = _mm256_fmadd_ps(n, _mm256_set1_ps(-EXP_LN2_HI), x);
             let r = _mm256_fmadd_ps(n, _mm256_set1_ps(-EXP_LN2_LO), r);
             let mut p = _mm256_set1_ps(EXP_P[0]);
             for c in &EXP_P[1..] {
                 p = _mm256_fmadd_ps(p, r, _mm256_set1_ps(*c));
             }
-            let y = _mm256_add_ps(
-                _mm256_fmadd_ps(p, _mm256_mul_ps(r, r), r),
-                _mm256_set1_ps(1.0),
-            );
-            let bits = _mm256_slli_epi32::<23>(_mm256_add_epi32(
-                _mm256_cvtps_epi32(n),
-                _mm256_set1_epi32(127),
-            ));
+            let y = _mm256_add_ps(_mm256_fmadd_ps(p, _mm256_mul_ps(r, r), r), _mm256_set1_ps(1.0));
+            let bits = _mm256_slli_epi32::<23>(_mm256_add_epi32(_mm256_cvtps_epi32(n), _mm256_set1_epi32(127)));
             let value = _mm256_mul_ps(y, _mm256_castsi256_ps(bits));
             let value = _mm256_blendv_ps(
                 value,
@@ -449,10 +442,7 @@ pub(crate) struct Neon;
 
 #[cfg(target_arch = "aarch64")]
 impl Simd for Neon {
-    type V = (
-        std::arch::aarch64::float32x4_t,
-        std::arch::aarch64::float32x4_t,
-    );
+    type V = (std::arch::aarch64::float32x4_t, std::arch::aarch64::float32x4_t);
     #[inline(always)]
     unsafe fn zero() -> Self::V {
         use std::arch::aarch64::*;
@@ -584,12 +574,7 @@ impl Simd for Neon {
         use std::arch::aarch64::*;
         unsafe {
             let shifts = vld1q_s32([0, 1, 2, 3].as_ptr());
-            let half = |m: float32x4_t| {
-                vaddvq_u32(vshlq_u32(
-                    vshrq_n_u32::<31>(vreinterpretq_u32_f32(m)),
-                    shifts,
-                ))
-            };
+            let half = |m: float32x4_t| vaddvq_u32(vshlq_u32(vshrq_n_u32::<31>(vreinterpretq_u32_f32(m)), shifts));
             half(mask.0) | (half(mask.1) << 4)
         }
     }
@@ -610,11 +595,7 @@ impl Simd for Neon {
                 let bits = vshlq_n_s32::<23>(vaddq_s32(vcvtq_s32_f32(n), vdupq_n_s32(127)));
                 let value = vmulq_f32(y, vreinterpretq_f32_s32(bits));
                 let value = vbslq_f32(vcltq_f32(x, vdupq_n_f32(EXP_MIN)), vdupq_n_f32(0.0), value);
-                let value = vbslq_f32(
-                    vcgtq_f32(x, vdupq_n_f32(EXP_MAX)),
-                    vdupq_n_f32(f32::INFINITY),
-                    value,
-                );
+                let value = vbslq_f32(vcgtq_f32(x, vdupq_n_f32(EXP_MAX)), vdupq_n_f32(f32::INFINITY), value);
                 // NaN lanes (x != x) return x.
                 vbslq_f32(vceqq_f32(x, x), value, x)
             };
@@ -660,11 +641,7 @@ pub(crate) unsafe fn dot<S: Simd>(a: &[f32], b: &[f32]) -> f32 {
 /// broadcast once). Same operation order as [`dot`].
 #[inline(always)]
 #[allow(dead_code)] // the W8 wrapper of `dot_q`, kept for its tests
-pub(crate) unsafe fn dot_q8<S: Simd, const G: usize>(
-    x: &[f32],
-    codes: &[i8],
-    scales: &[f32],
-) -> f32 {
+pub(crate) unsafe fn dot_q8<S: Simd, const G: usize>(x: &[f32], codes: &[i8], scales: &[f32]) -> f32 {
     unsafe { dot_q::<S, i8, G>(x, codes, scales) }
 }
 
@@ -698,11 +675,7 @@ impl QCode for i16 {
 /// [`dot_q8`] for any integer code type: the same operation order over
 /// `fl(code * scale)` weights, so it too equals [`dot`] on the dequantized row.
 #[inline(always)]
-pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(
-    x: &[f32],
-    codes: &[C],
-    scales: &[f32],
-) -> f32 {
+pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
     debug_assert_eq!(x.len(), codes.len());
     debug_assert_eq!(G % 32, 0);
     unsafe {
@@ -804,10 +777,7 @@ pub(crate) unsafe fn axpy<S: Simd>(a: f32, x: &[f32], y: &mut [f32]) {
         let (xp, yp) = (x.as_ptr(), y.as_mut_ptr());
         let mut i = 0;
         while i + 8 <= x.len() {
-            S::store(
-                yp.add(i),
-                S::fma(factor, S::load(xp.add(i)), S::load(yp.add(i))),
-            );
+            S::store(yp.add(i), S::fma(factor, S::load(xp.add(i)), S::load(yp.add(i))));
             i += 8;
         }
         while i < x.len() {
@@ -838,9 +808,7 @@ mod tests {
 
     #[test]
     fn fast_exp_is_identical_across_isas_and_accurate() {
-        let mut inputs: Vec<f32> = (0..200_000)
-            .map(|i| -110.0 + 200.0 * (i as f32) / 200_000.0)
-            .collect();
+        let mut inputs: Vec<f32> = (0..200_000).map(|i| -110.0 + 200.0 * (i as f32) / 200_000.0).collect();
         inputs.extend([
             0.0,
             -0.0,
@@ -863,8 +831,7 @@ mod tests {
             for (x, y) in lanes.iter().zip(&portable) {
                 let exact = f64::from(*x).exp();
                 if x.is_finite() && *x >= -87.0 && *x <= 88.0 {
-                    let ulp =
-                        f64::from(f32::EPSILON) * exact.abs().max(f64::from(f32::MIN_POSITIVE));
+                    let ulp = f64::from(f32::EPSILON) * exact.abs().max(f64::from(f32::MIN_POSITIVE));
                     worst = worst.max((f64::from(*y) - exact).abs() / ulp);
                 }
             }
@@ -873,9 +840,7 @@ mod tests {
                 #[target_feature(enable = "avx2,fma")]
                 unsafe fn native(x: [f32; 8]) -> [f32; 8] {
                     let mut out = [0.0_f32; 8];
-                    unsafe {
-                        Avx2::store(out.as_mut_ptr(), Avx2::exp_fast(Avx2::load(x.as_ptr())))
-                    };
+                    unsafe { Avx2::store(out.as_mut_ptr(), Avx2::exp_fast(Avx2::load(x.as_ptr()))) };
                     out
                 }
                 let avx2 = unsafe { native(lanes) };
@@ -886,9 +851,7 @@ mod tests {
             #[cfg(target_arch = "aarch64")]
             {
                 let mut out = [0.0_f32; 8];
-                unsafe {
-                    Neon::store(out.as_mut_ptr(), Neon::exp_fast(Neon::load(lanes.as_ptr())))
-                };
+                unsafe { Neon::store(out.as_mut_ptr(), Neon::exp_fast(Neon::load(lanes.as_ptr()))) };
                 for (a, b) in out.iter().zip(&portable) {
                     assert!(a.to_bits() == b.to_bits() || (a.is_nan() && b.is_nan()));
                 }
@@ -902,9 +865,7 @@ mod tests {
     /// Every native implementation equals the portable one bit for bit.
     #[test]
     fn native_matches_portable_bitwise() {
-        let codes: Vec<i8> = (0..2400)
-            .map(|i| (i * 37 % 255 - 127) as i8)
-            .collect();
+        let codes: Vec<i8> = (0..2400).map(|i| (i * 37 % 255 - 127) as i8).collect();
         let scales = values(2400 / 64 + 1, 9)
             .iter()
             .map(|s| s.abs() * 0.01)
@@ -919,13 +880,7 @@ mod tests {
             #[cfg(target_arch = "x86_64")]
             if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
                 #[target_feature(enable = "avx2,fma")]
-                unsafe fn native(
-                    a: &[f32],
-                    b: &[f32],
-                    c: &[i8],
-                    s: &[f32],
-                    y: &mut [f32],
-                ) -> (f32, f32) {
+                unsafe fn native(a: &[f32], b: &[f32], c: &[i8], s: &[f32], y: &mut [f32]) -> (f32, f32) {
                     unsafe {
                         axpy::<Avx2>(0.37, a, y);
                         (dot::<Avx2>(a, b), dot_q8::<Avx2, 64>(a, c, s))
@@ -935,11 +890,7 @@ mod tests {
                 let (d, q) = unsafe { native(&a, &b, &codes[..len], &scales, &mut y) };
                 assert_eq!(d.to_bits(), portable.to_bits(), "dot len {len}");
                 assert_eq!(q.to_bits(), portable_q8.to_bits(), "dot_q8 len {len}");
-                assert!(
-                    y.iter()
-                        .zip(&portable_y)
-                        .all(|(u, v)| u.to_bits() == v.to_bits())
-                );
+                assert!(y.iter().zip(&portable_y).all(|(u, v)| u.to_bits() == v.to_bits()));
                 // The generic AVX2 instantiation is the hand-written kernel.
                 let hand = crate::kernels::dot_kernel(crate::kernels::Simd::Avx2)(&a, &b);
                 assert_eq!(d.to_bits(), hand.to_bits(), "hand-written dot len {len}");
@@ -949,18 +900,11 @@ mod tests {
                 let mut y = b.clone();
                 let (d, q) = unsafe {
                     axpy::<Neon>(0.37, &a, &mut y);
-                    (
-                        dot::<Neon>(&a, &b),
-                        dot_q8::<Neon, 64>(&a, &codes[..len], &scales),
-                    )
+                    (dot::<Neon>(&a, &b), dot_q8::<Neon, 64>(&a, &codes[..len], &scales))
                 };
                 assert_eq!(d.to_bits(), portable.to_bits(), "dot len {len}");
                 assert_eq!(q.to_bits(), portable_q8.to_bits(), "dot_q8 len {len}");
-                assert!(
-                    y.iter()
-                        .zip(&portable_y)
-                        .all(|(u, v)| u.to_bits() == v.to_bits())
-                );
+                assert!(y.iter().zip(&portable_y).all(|(u, v)| u.to_bits() == v.to_bits()));
             }
         }
     }

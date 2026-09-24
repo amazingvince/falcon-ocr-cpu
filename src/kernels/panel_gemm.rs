@@ -52,28 +52,20 @@ pub(crate) fn available(simd: crate::kernels::Simd) -> bool {
 
 /// Dequantize an `n x k` matrix into panels: `row(r, dst)` writes output
 /// channel `r` (`k` values). `n` must be a multiple of [`NR`].
-pub(crate) fn pack_panels(
-    n: usize,
-    k: usize,
-    row: impl Fn(usize, &mut [f32]) + Sync,
-    panels: &mut Vec<f32>,
-) {
+pub(crate) fn pack_panels(n: usize, k: usize, row: impl Fn(usize, &mut [f32]) + Sync, panels: &mut Vec<f32>) {
     assert_eq!(n % NR, 0, "panel GEMM needs whole panels");
     panels.resize(n * k, 0.0);
-    panels
-        .par_chunks_mut(k * NR)
-        .enumerate()
-        .for_each_init(
-            || vec![0.0_f32; k],
-            |values, (panel, dst)| {
-                for j in 0..NR {
-                    row(panel * NR + j, values);
-                    for (kk, &v) in values.iter().enumerate() {
-                        dst[kk * NR + j] = v;
-                    }
+    panels.par_chunks_mut(k * NR).enumerate().for_each_init(
+        || vec![0.0_f32; k],
+        |values, (panel, dst)| {
+            for j in 0..NR {
+                row(panel * NR + j, values);
+                for (kk, &v) in values.iter().enumerate() {
+                    dst[kk * NR + j] = v;
                 }
-            },
-        );
+            }
+        },
+    );
 }
 
 /// `C = A * W^T` for `a` (`m x k`, row-major) and `panels` from
@@ -248,16 +240,9 @@ unsafe fn kernel_avx2(k: usize, a: *const f32, b: *const f32, tile: &mut [[f32; 
             c50 = _mm256_fmadd_ps(x, b0, c50);
             c51 = _mm256_fmadd_ps(x, b1, c51);
         }
-        for (row, (lo, hi)) in [
-            (c00, c01),
-            (c10, c11),
-            (c20, c21),
-            (c30, c31),
-            (c40, c41),
-            (c50, c51),
-        ]
-        .into_iter()
-        .enumerate()
+        for (row, (lo, hi)) in [(c00, c01), (c10, c11), (c20, c21), (c30, c31), (c40, c41), (c50, c51)]
+            .into_iter()
+            .enumerate()
         {
             _mm256_storeu_ps(tile[row].as_mut_ptr(), lo);
             _mm256_storeu_ps(tile[row].as_mut_ptr().add(8), hi);
@@ -286,9 +271,7 @@ mod tests {
             let a = matrix(m * k, 1);
             let w = matrix(n * k, 2);
             let mut panels = Vec::new();
-            pool.install(|| {
-                pack_panels(n, k, |r, dst| dst.copy_from_slice(&w[r * k..(r + 1) * k]), &mut panels)
-            });
+            pool.install(|| pack_panels(n, k, |r, dst| dst.copy_from_slice(&w[r * k..(r + 1) * k]), &mut panels));
             let mut out = vec![f32::NAN; m * n];
             pool.install(|| gemm(&a, m, k, &panels, n, None, Epilogue::Store(&mut out)));
             for row in 0..m {
@@ -341,7 +324,12 @@ mod tests {
     #[ignore = "timing probe; run in release with --nocapture"]
     fn prefill_throughput_probe() {
         let m = 6544;
-        for (name, k, n) in [("qkv", 768, 2048), ("wo", 1024, 768), ("w13", 768, 4608), ("w2", 2304, 768)] {
+        for (name, k, n) in [
+            ("qkv", 768, 2048),
+            ("wo", 1024, 768),
+            ("w13", 768, 4608),
+            ("w2", 2304, 768),
+        ] {
             let a = matrix(m * k, 3);
             let w = matrix(n * k, 4);
             let mut out = vec![0.0_f32; m * n];

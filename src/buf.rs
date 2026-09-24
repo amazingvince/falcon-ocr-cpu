@@ -8,7 +8,10 @@ use memmap2::Mmap;
 pub(crate) enum Buf<T: bytemuck::Pod> {
     Owned(Vec<T>),
     /// `range` (bytes) of `map`, checked for size and alignment at creation.
-    Mapped { map: Arc<Mmap>, range: Range<usize> },
+    Mapped {
+        map: Arc<Mmap>,
+        range: Range<usize>,
+    },
 }
 
 impl<T: bytemuck::Pod> Buf<T> {

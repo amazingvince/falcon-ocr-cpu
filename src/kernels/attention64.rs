@@ -147,11 +147,7 @@ unsafe fn head_generic<S: Simd>(
         let head = qh % n_heads;
         let absolute_query = query_offset + query;
         let query_in_image = absolute_query >= image_start && absolute_query < image_end;
-        let visible_end = if query_in_image {
-            image_end
-        } else {
-            absolute_query + 1
-        };
+        let visible_end = if query_in_image { image_end } else { absolute_query + 1 };
         let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
         out.fill(0.0);
         let mut running_max = f32::NEG_INFINITY;
@@ -350,11 +346,7 @@ unsafe fn compact_head_generic<S: Simd>(
         let kv_head = head / repeat;
         let absolute_query = query_offset + query;
         let query_in_image = absolute_query >= image_start && absolute_query < image_end;
-        let visible_end = if query_in_image {
-            image_end
-        } else {
-            absolute_query + 1
-        };
+        let visible_end = if query_in_image { image_end } else { absolute_query + 1 };
         let qvec = &q[qh * head_dim..(qh + 1) * head_dim];
         out.fill(0.0);
         let mut running_max = f32::NEG_INFINITY;
@@ -405,8 +397,8 @@ unsafe fn compact_head_generic<S: Simd>(
 #[cfg(all(test, target_arch = "x86_64"))]
 mod tests {
     use super::super::{
-        Simd, attention_compact_online_softmax, attention_compact_with_simd, attention_gemm,
-        attention_gemm_compact, attention_online_softmax, attention_with_simd, x86,
+        Simd, attention_compact_online_softmax, attention_compact_with_simd, attention_gemm, attention_gemm_compact,
+        attention_online_softmax, attention_with_simd, x86,
     };
 
     fn supported() {
@@ -435,11 +427,7 @@ mod tests {
     fn exact(a: &[f32], b: &[f32]) {
         assert_eq!(a.len(), b.len());
         for (i, (x, y)) in a.iter().zip(b).enumerate() {
-            assert_eq!(
-                x.to_bits(),
-                y.to_bits(),
-                "bit difference at {i}: {x:?} vs {y:?}"
-            );
+            assert_eq!(x.to_bits(), y.to_bits(), "bit difference at {i}: {x:?} vs {y:?}");
         }
     }
 
@@ -571,9 +559,7 @@ mod tests {
                 unsafe { compare_vectors(&a, &b, factor) };
             }
         }
-        let a: Vec<_> = (0..64)
-            .map(|i| if i % 2 == 0 { 1.0 } else { -1.0 })
-            .collect();
+        let a: Vec<_> = (0..64).map(|i| if i % 2 == 0 { 1.0 } else { -1.0 }).collect();
         unsafe { compare_vectors(&a, &[1.0; 64], -0.0) };
     }
 
@@ -590,11 +576,7 @@ mod tests {
         threads: usize,
     ) {
         let heads = 16;
-        let q = data(
-            query_len * heads * width,
-            11,
-            if extreme { 100.0 } else { 0.75 },
-        );
+        let q = data(query_len * heads * width, 11, if extreme { 100.0 } else { 0.75 });
         let k = data(kv * heads * width, 23, if extreme { 100.0 } else { 0.75 });
         let v = data(kv * heads * width, 37, if extreme { 1e8 } else { 1.0 });
         let sinks: Vec<_> = (0..heads)
@@ -607,10 +589,7 @@ mod tests {
             .collect();
         let mut actual = vec![f32::NAN; q.len()];
         let mut expected = actual.clone();
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
         pool.install(|| {
             expanded_oracle(
                 &q,
@@ -649,9 +628,7 @@ mod tests {
     #[test]
     fn causal_tile_tails_are_bit_exact() {
         supported();
-        for kv in [
-            1, 2, 17, 63, 64, 127, 128, 129, 143, 144, 161, 255, 256, 257, 1025,
-        ] {
+        for kv in [1, 2, 17, 63, 64, 127, 128, 129, 143, 144, 161, 255, 256, 257, 1025] {
             compare_case(kv, kv - 1, 0, 0, 1, 64, Simd::Avx2, false, 4);
         }
     }
@@ -725,11 +702,7 @@ mod tests {
         let repeat = heads / kvheads;
         let q = data(rows * qw, 41, if extreme { 100.0 } else { 0.75 });
         let pk = data(prefix * qw, 53, if extreme { 100.0 } else { 0.75 });
-        let gk = data(
-            (total - prefix) * kw,
-            67,
-            if extreme { 100.0 } else { 0.75 },
-        );
+        let gk = data((total - prefix) * kw, 67, if extreme { 100.0 } else { 0.75 });
         let v = data(total * kw, 79, if extreme { 1e8 } else { 1.0 });
         let sinks: Vec<_> = (0..heads)
             .map(|h| match h % 4 {
@@ -758,10 +731,7 @@ mod tests {
                 expanded_v[target..target + width].copy_from_slice(&v[source..source + width]);
             }
         }
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(4)
-            .build()
-            .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(4).build().unwrap();
         pool.install(|| {
             compact_oracle(
                 &q,
@@ -823,19 +793,7 @@ mod tests {
         supported();
         for total in [1, 17, 127, 128, 129, 257] {
             for prefix in [0, total / 2, total] {
-                compact_case(
-                    total,
-                    prefix,
-                    total - 1,
-                    0,
-                    0,
-                    1,
-                    16,
-                    8,
-                    64,
-                    Simd::Avx2,
-                    false,
-                );
+                compact_case(total, prefix, total - 1, 0, 0, 1, 16, 8, 64, Simd::Avx2, false);
             }
         }
         for prefix in [127, 128, 129] {
@@ -855,19 +813,7 @@ mod tests {
     fn compact_real_prefix_full_context_and_extremes_are_bit_exact() {
         supported();
         for (total, prefix) in [(6544, 6544), (6545, 6544), (16384, 6544)] {
-            compact_case(
-                total,
-                prefix,
-                total - 1,
-                1,
-                6540,
-                1,
-                16,
-                8,
-                64,
-                Simd::Avx2,
-                false,
-            );
+            compact_case(total, prefix, total - 1, 1, 6540, 1, 16, 8, 64, Simd::Avx2, false);
         }
         compact_case(257, 129, 256, 1, 129, 1, 16, 8, 64, Simd::Avx2, true);
     }

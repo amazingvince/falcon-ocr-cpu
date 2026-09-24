@@ -1,10 +1,7 @@
 //! The explicit weight layout must preserve complete model traces and outputs.
 use std::{collections::BTreeMap, sync::Arc};
 
-use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout,
-    trace::Trace,
-};
+use falcon_ocr::{Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout, trace::Trace};
 use image::{Rgb, RgbImage, imageops};
 use sha2::{Digest, Sha256};
 
@@ -15,18 +12,13 @@ struct HashTrace {
 }
 impl Trace for HashTrace {
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> anyhow::Result<()> {
-        assert!(
-            data.iter().all(|v| v.is_finite()),
-            "nonfinite tensor {name}"
-        );
+        assert!(data.iter().all(|v| v.is_finite()), "nonfinite tensor {name}");
         if name.starts_with("batch.") && name.ends_with(".embedding") {
             self.decode_rows.push(shape[0]);
         }
         let digest = Sha256::digest(bytemuck::cast_slice(data)).into();
         assert!(
-            self.tensors
-                .insert(name.to_owned(), (shape.to_vec(), digest))
-                .is_none(),
+            self.tensors.insert(name.to_owned(), (shape.to_vec(), digest)).is_none(),
             "duplicate tensor {name}"
         );
         Ok(())
@@ -37,11 +29,7 @@ fn compare(a: &HashTrace, b: &HashTrace) {
     assert_eq!(a.tensors.len(), b.tensors.len());
     assert_eq!(a.decode_rows, b.decode_rows);
     for (name, expected) in &a.tensors {
-        assert_eq!(
-            b.tensors.get(name),
-            Some(expected),
-            "tensor bits differ: {name}"
-        );
+        assert_eq!(b.tensors.get(name), Some(expected), "tensor bits differ: {name}");
     }
 }
 
@@ -77,12 +65,8 @@ fn phase_packed_preserves_single_mixed_and_full_batch_traces() {
     let mut expected_trace = HashTrace::default();
     let mut actual_trace = HashTrace::default();
     let fixture = "artifacts/reference/smoke-fp32/trace.safetensors";
-    let expected = unpacked
-        .trace_reference(fixture, 17, &mut expected_trace)
-        .unwrap();
-    let actual = packed
-        .trace_reference(fixture, 17, &mut actual_trace)
-        .unwrap();
+    let expected = unpacked.trace_reference(fixture, 17, &mut expected_trace).unwrap();
+    let actual = packed.trace_reference(fixture, 17, &mut actual_trace).unwrap();
     assert_eq!(actual.token_ids, expected.token_ids);
     assert_eq!(actual.text, expected.text);
     assert!(actual.teacher_forced);
@@ -154,10 +138,7 @@ fn phase_packed_preserves_single_mixed_and_full_batch_traces() {
             actual.iter().map(|r| &r.token_ids).collect::<Vec<_>>()
         );
         compare(&a, &b);
-        println!(
-            "Full batch {rows}: {} bit-identical tensors",
-            b.tensors.len()
-        );
+        println!("Full batch {rows}: {} bit-identical tensors", b.tensors.len());
     }
     assert_eq!(
         model.weight_packing_ms().to_bits(),

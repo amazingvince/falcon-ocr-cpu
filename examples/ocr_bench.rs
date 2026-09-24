@@ -2,9 +2,7 @@
 //! model loading are measured separately, and never hidden in warm OCR samples.
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, ValueEnum};
-use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout,
-};
+use falcon_ocr::{Backend, CacheLayout, GenerationOptions, Model, Runner, RunnerConfig, WeightLayout};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::{
@@ -95,11 +93,7 @@ fn memory() -> serde_json::Value {
         }
         #[link(name = "psapi")]
         unsafe extern "system" {
-            fn GetProcessMemoryInfo(
-                process: *mut std::ffi::c_void,
-                counters: *mut Counters,
-                cb: u32,
-            ) -> i32;
+            fn GetProcessMemoryInfo(process: *mut std::ffi::c_void, counters: *mut Counters, cb: u32) -> i32;
         }
         #[link(name = "kernel32")]
         unsafe extern "system" {
@@ -187,9 +181,7 @@ fn main() -> Result<()> {
                 weight_layout: args.weight_layout,
             },
         )?;
-        let pages = (0..batch)
-            .map(|i| images[i % images.len()].clone())
-            .collect::<Vec<_>>();
+        let pages = (0..batch).map(|i| images[i % images.len()].clone()).collect::<Vec<_>>();
         for _ in 0..args.warmup {
             runner.recognize_batch(&pages, &options)?;
         }
@@ -201,10 +193,7 @@ fn main() -> Result<()> {
             let start = Instant::now();
             let results = runner.recognize_batch(&pages, &options)?;
             let elapsed = start.elapsed().as_secs_f64() * 1000.;
-            let ids = results
-                .iter()
-                .map(|r| r.token_ids.clone())
-                .collect::<Vec<_>>();
+            let ids = results.iter().map(|r| r.token_ids.clone()).collect::<Vec<_>>();
             // Outside the timed interval: preserve the actual decoder output
             // and require the same stop semantics in every measured repetition.
             let outputs = results
@@ -239,10 +228,7 @@ fn main() -> Result<()> {
                 expected = Some(ids);
             }
             if let Some(previous) = &expected_outputs {
-                ensure!(
-                    previous == &outputs,
-                    "nondeterministic text or stop during benchmark"
-                );
+                ensure!(previous == &outputs, "nondeterministic text or stop during benchmark");
             } else {
                 expected_outputs = Some(outputs);
             }

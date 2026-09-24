@@ -160,29 +160,20 @@ impl<'a> DecodeTeam<'a> {
 }
 
 impl Runner {
-    pub fn new(
-        model: Arc<Model>,
-        model_dir: impl AsRef<Path>,
-        config: RunnerConfig,
-    ) -> Result<Self> {
+    pub fn new(model: Arc<Model>, model_dir: impl AsRef<Path>, config: RunnerConfig) -> Result<Self> {
         config.validate()?;
         if model.attempt_profile() != crate::attempt::Profile::Reference {
             ensure!(
                 config.cache_layout == CacheLayout::Compact,
                 "attempt profiles require compact source caches"
             );
-            ensure!(
-                config.batch_size <= 8,
-                "attempt profiles support 1..=8 active rows"
-            );
+            ensure!(config.batch_size <= 8, "attempt profiles support 1..=8 active rows");
             ensure!(
                 config.weight_layout == WeightLayout::Unpacked,
                 "attempt profiles do not combine with phase-packed FP32 copies"
             );
         }
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(config.threads)
-            .build()?;
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(config.threads).build()?;
         let tokenizer = OcrTokenizer::load(model_dir.as_ref())?;
         if config.weight_layout == WeightLayout::PhasePacked {
             model.prepare_phase_packed();
@@ -261,10 +252,8 @@ impl Runner {
     /// bitwise the single-row step, so tokens are unchanged; `max_draft = 0`
     /// turns it off. Teacher forcing, tracing and batches never speculate.
     pub fn set_speculation(&mut self, max_draft: usize, min_match: usize) {
-        self.speculation = (max_draft > 0).then_some((
-            max_draft.min(crate::head_screen::MAX_ROWS - 1),
-            min_match.max(1),
-        ));
+        self.speculation =
+            (max_draft > 0).then_some((max_draft.min(crate::head_screen::MAX_ROWS - 1), min_match.max(1)));
     }
     /// Treat the pages of one `recognize_files` call as one document:
     /// speculative drafts may also continue full n-gram matches from its
@@ -302,11 +291,7 @@ impl Runner {
     pub fn config(&self) -> &RunnerConfig {
         &self.config
     }
-    pub fn recognize_file(
-        &self,
-        path: impl AsRef<Path>,
-        options: &GenerationOptions,
-    ) -> Result<OcrResult> {
+    pub fn recognize_file(&self, path: impl AsRef<Path>, options: &GenerationOptions) -> Result<OcrResult> {
         self.recognize_file_with_trace(path, options, &mut NoTrace)
     }
     pub fn recognize_file_with_trace(
@@ -317,13 +302,11 @@ impl Runner {
     ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
-        let (prepared, decode_ms) =
-            prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
+        let (prepared, decode_ms) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
-        let mut result =
-            self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
+        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
         result.timings.image_decode_ms = decode_ms;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
         result.timings.time_to_first_token_ms += decode_ms;
@@ -345,8 +328,7 @@ impl Runner {
             !teacher.is_empty() && options.max_new_tokens == teacher.len(),
             "teacher scoring needs max_new_tokens equal to the teacher length"
         );
-        let (prepared, _) =
-            prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
+        let (prepared, _) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         self.run_prepared_scoped(prepared, tokens, options, 0.0, trace, teacher)
@@ -366,18 +348,13 @@ impl Runner {
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000.;
-        let mut result =
-            self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
+        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
         Ok(result)
     }
     /// Bounded batches with independent prefill and shared decode projections.
     /// Results retain input order. Batch size one uses the single-image path.
-    pub fn recognize_batch(
-        &self,
-        images: &[RgbImage],
-        options: &GenerationOptions,
-    ) -> Result<Vec<OcrResult>> {
+    pub fn recognize_batch(&self, images: &[RgbImage], options: &GenerationOptions) -> Result<Vec<OcrResult>> {
         self.recognize_batch_with_trace(images, options, &mut NoTrace)
     }
 
@@ -413,13 +390,7 @@ impl Runner {
                 });
             }
             let mut outputs = self.pool.install(|| {
-                self.run_batch_chunk(
-                    inputs,
-                    options,
-                    started,
-                    trace,
-                    chunk_index * self.config.batch_size,
-                )
+                self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
             })?;
             results.append(&mut outputs);
         }
@@ -427,11 +398,7 @@ impl Runner {
     }
 
     /// Batch PNG/JPEG files without losing source-mode resize semantics.
-    pub fn recognize_files<P: AsRef<Path>>(
-        &self,
-        paths: &[P],
-        options: &GenerationOptions,
-    ) -> Result<Vec<OcrResult>> {
+    pub fn recognize_files<P: AsRef<Path>>(&self, paths: &[P], options: &GenerationOptions) -> Result<Vec<OcrResult>> {
         self.recognize_files_with_trace(paths, options, &mut NoTrace)
     }
     pub fn recognize_files_with_trace<P: AsRef<Path>>(
@@ -468,13 +435,7 @@ impl Runner {
                 });
             }
             let mut outputs = self.pool.install(|| {
-                self.run_batch_chunk(
-                    inputs,
-                    options,
-                    started,
-                    trace,
-                    chunk_index * self.config.batch_size,
-                )
+                self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
             })?;
             results.append(&mut outputs);
         }
@@ -487,11 +448,7 @@ impl Runner {
             let before = session.cache_bytes();
             let t = Instant::now();
             session.seal_prefix(&self.model.config, mode)?;
-            trace.prefix_sealed(
-                before,
-                session.cache_bytes(),
-                t.elapsed().as_secs_f64() * 1000.0,
-            );
+            trace.prefix_sealed(before, session.cache_bytes(), t.elapsed().as_secs_f64() * 1000.0);
         }
         Ok(())
     }
@@ -531,21 +488,18 @@ impl Runner {
             if let Some(previous) = sessions.last_mut() {
                 session.reuse_workspace_from(previous);
             }
-            let image_projection_ms = self.model.embed(
-                &input.tokens,
-                Some(&input.prepared.patches),
-                simd,
-                &mut hidden,
-            )?;
+            let image_projection_ms =
+                self.model
+                    .embed(&input.tokens, Some(&input.prepared.patches), simd, &mut hidden)?;
             let phase = if trace.enabled() {
                 format!("request.{}.prefill", request_offset + index)
             } else {
                 String::new()
             };
             let transformer_started = Instant::now();
-            let logits =
-                self.model
-                    .forward(&mut hidden, &pos_t, &pos_hw, &mut session, trace, &phase)?;
+            let logits = self
+                .model
+                .forward(&mut hidden, &pos_t, &pos_hw, &mut session, trace, &phase)?;
             let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
             let token = argmax(logits)?;
             if !stops.contains(&token) && options.max_new_tokens > 1 {
@@ -639,11 +593,7 @@ impl Runner {
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
             team.record(step_ms);
-            trace.decode_step(
-                active.len(),
-                step_ms,
-                sessions.iter().map(Session::cache_bytes).sum(),
-            );
+            trace.decode_step(active.len(), step_ms, sessions.iter().map(Session::cache_bytes).sum());
             for (row, &index) in active.iter().enumerate() {
                 let token = select(&next, row, c.vocab_size)?;
                 let state = &mut states[index];
@@ -710,9 +660,8 @@ impl Runner {
         trace: &mut dyn Trace,
         teacher_tokens: &[u32],
     ) -> Result<OcrResult> {
-        self.pool.install(|| {
-            self.run_prepared(prepared, tokens, options, prep_ms, trace, teacher_tokens)
-        })
+        self.pool
+            .install(|| self.run_prepared(prepared, tokens, options, prep_ms, trace, teacher_tokens))
     }
     fn run_prepared(
         &self,
@@ -739,23 +688,15 @@ impl Runner {
             self.config.cache_layout,
         )?;
         let mut hidden = Vec::new();
-        let image_projection_ms =
-            self.model
-                .embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
+        let image_projection_ms = self.model.embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
         let screen = self.head == HeadMode::Screened && teacher_tokens.is_empty();
         if screen {
             session.reserve_screened_head(&self.model);
         }
         let transformer_started = Instant::now();
-        let next = self.model.forward_next(
-            &mut hidden,
-            &pos_t,
-            &pos_hw,
-            &mut session,
-            trace,
-            "prefill",
-            screen,
-        )?;
+        let next = self
+            .model
+            .forward_next(&mut hidden, &pos_t, &pos_hw, &mut session, trace, "prefill", screen)?;
         let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
         let score = trace.scores_teacher();
         let mut next_token = if let Some(&forced) = teacher_tokens.first() {
@@ -769,8 +710,7 @@ impl Runner {
         } else {
             select(&next, 0, c.vocab_size)?
         };
-        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token))
-            && options.max_new_tokens > 1
+        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token)) && options.max_new_tokens > 1
         {
             self.seal_for_attempt(&mut session, trace)?;
         }
@@ -857,19 +797,13 @@ impl Runner {
                 positions.extend((0..rows).map(|r| session.next_position + r));
                 let kept = session.len;
                 self.model.embed(&inputs, None, simd, &mut hidden)?;
-                let next = self
-                    .model
-                    .verify_next(&mut hidden, &positions, &mut session, screen)?;
+                let next = self.model.verify_next(&mut hidden, &positions, &mut session, screen)?;
                 // predicted[r]: the greedy token after inputs[..=r].
                 let mut predicted = [0_u32; crate::head_screen::MAX_ROWS];
                 for (r, slot) in predicted[..rows].iter_mut().enumerate() {
                     *slot = select(&next, r, c.vocab_size)?;
                 }
-                let accepted = draft
-                    .iter()
-                    .zip(&predicted)
-                    .take_while(|(d, p)| d == p)
-                    .count();
+                let accepted = draft.iter().zip(&predicted).take_while(|(d, p)| d == p).count();
                 session.truncate(kept + 1 + accepted)?;
                 let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
                 stats.2 += 1;
@@ -1009,10 +943,7 @@ impl Runner {
                 Dtype::I64 => tensor
                     .data()
                     .chunks_exact(8)
-                    .map(|x| {
-                        u32::try_from(i64::from_le_bytes(x.try_into().unwrap()))
-                            .context("invalid token id")
-                    })
+                    .map(|x| u32::try_from(i64::from_le_bytes(x.try_into().unwrap())).context("invalid token id"))
                     .collect(),
                 Dtype::U32 => Ok(tensor
                     .data()
@@ -1032,10 +963,7 @@ impl Runner {
             .map(|x| f32::from_le_bytes(x.try_into().unwrap()))
             .collect::<Vec<_>>();
         let positions_tensor = tensors.tensor("pos_hw")?;
-        ensure!(
-            positions_tensor.dtype() == Dtype::F32,
-            "expected F32 positions"
-        );
+        ensure!(positions_tensor.dtype() == Dtype::F32, "expected F32 positions");
         let all_positions = positions_tensor
             .data()
             .chunks_exact(8)
@@ -1046,10 +974,7 @@ impl Runner {
                 ]
             })
             .collect::<Vec<_>>();
-        ensure!(
-            all_positions.len() == tokens.len(),
-            "position/token count mismatch"
-        );
+        ensure!(all_positions.len() == tokens.len(), "position/token count mismatch");
         let positions_hw = tokens
             .iter()
             .zip(all_positions)
@@ -1071,14 +996,10 @@ impl Runner {
             patches,
             positions_hw,
         };
-        let (computed_temporal, computed_spatial) =
-            positions(&tokens, &prepared.positions_hw, &self.model.config)?;
+        let (computed_temporal, computed_spatial) = positions(&tokens, &prepared.positions_hw, &self.model.config)?;
         let reference_temporal = read_ids("pos_t")?;
         ensure!(
-            computed_temporal
-                .iter()
-                .map(|&x| x as u32)
-                .eq(reference_temporal),
+            computed_temporal.iter().map(|&x| x as u32).eq(reference_temporal),
             "temporal position parity failure"
         );
         let reference_spatial = tensors.tensor("pos_hw")?;
@@ -1124,8 +1045,7 @@ struct BatchState {
 
 fn validate_prepared_bounds(prepared: &PreparedImage, options: &GenerationOptions) -> Result<()> {
     ensure!(
-        prepared.width <= options.max_dimension as usize
-            && prepared.height <= options.max_dimension as usize,
+        prepared.width <= options.max_dimension as usize && prepared.height <= options.max_dimension as usize,
         "minimum-area alignment conflicts with requested bounds: prepared {}x{} exceeds max_dimension={}; explicitly increase max_dimension",
         prepared.width,
         prepared.height,
@@ -1178,9 +1098,7 @@ mod tests {
         options.validate().unwrap();
         let prepared = prepare_rgb(&RgbImage::new(33, 49), 16, 32).unwrap();
         assert!(prepared.width > 32 || prepared.height > 32);
-        let error = validate_prepared_bounds(&prepared, &options)
-            .unwrap_err()
-            .to_string();
+        let error = validate_prepared_bounds(&prepared, &options).unwrap_err().to_string();
         assert!(error.contains("minimum-area alignment conflicts"));
         assert!(error.contains("max_dimension=32"));
         assert!(

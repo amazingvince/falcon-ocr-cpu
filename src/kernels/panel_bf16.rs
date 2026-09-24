@@ -139,7 +139,16 @@ pub(crate) fn gemm(
             let rows = block_rows.min(m - row0);
             let padded = rows.next_multiple_of(MR);
             // SAFETY: AVX512-BF16 checked by `available`; shapes checked above.
-            unsafe { pack_rows(&a[row0 * k..(row0 + rows) * k], rows, padded, k, row_scale.map(|s| &s[row0..row0 + rows]), packed) };
+            unsafe {
+                pack_rows(
+                    &a[row0 * k..(row0 + rows) * k],
+                    rows,
+                    padded,
+                    k,
+                    row_scale.map(|s| &s[row0..row0 + rows]),
+                    packed,
+                )
+            };
             let first = split * per_split;
             let last = (first + per_split).min(panels_total);
             let mut tile = [[0.0_f32; NR]; MR];
@@ -265,7 +274,9 @@ mod tests {
         }
         let pool = rayon::ThreadPoolBuilder::new().num_threads(5).build().unwrap();
         for (m, k, n) in [(7, 64, 32), (61, 768, 64), (100, 2304, 96), (13, 1024, 32)] {
-            let a: Vec<f32> = (0..m * k).map(|i| ((i * 2654435761 % 2003) as f32 - 1001.0) / 377.0).collect();
+            let a: Vec<f32> = (0..m * k)
+                .map(|i| ((i * 2654435761 % 2003) as f32 - 1001.0) / 377.0)
+                .collect();
             let codes: Vec<i8> = (0..n * k).map(|i| ((i * 7919 % 255) as i32 - 127) as i8).collect();
             let scales: Vec<f32> = (0..n * k / 64).map(|i| 0.001 + (i % 17) as f32 * 0.0007).collect();
             let row_scale: Vec<f32> = (0..m).map(|r| 0.5 + r as f32 / 13.0).collect();
@@ -283,7 +294,10 @@ mod tests {
                         mag += (x * w).abs();
                     }
                     let got = out[r * n + c] as f64;
-                    assert!((got - exact).abs() <= 1e-5 * mag + 1e-6, "m{m} k{k} n{n} ({r},{c}) {got} vs {exact}");
+                    assert!(
+                        (got - exact).abs() <= 1e-5 * mag + 1e-6,
+                        "m{m} k{k} n{n} ({r},{c}) {got} vs {exact}"
+                    );
                 }
             }
             let mut gated = vec![f32::NAN; m * n / 2];
@@ -304,7 +318,12 @@ mod tests {
             return;
         }
         let m = 6544;
-        for (name, k, n) in [("qkv", 768, 2048), ("wo", 1024, 768), ("w13", 768, 4608), ("w2", 2304, 768)] {
+        for (name, k, n) in [
+            ("qkv", 768, 2048),
+            ("wo", 1024, 768),
+            ("w13", 768, 4608),
+            ("w2", 2304, 768),
+        ] {
             let a: Vec<f32> = (0..m * k).map(|i| (i % 97) as f32 / 97.0 - 0.5).collect();
             let codes: Vec<i8> = (0..n * k).map(|i| ((i * 31 % 255) as i32 - 127) as i8).collect();
             let scales = vec![0.01_f32; n * k / 64];

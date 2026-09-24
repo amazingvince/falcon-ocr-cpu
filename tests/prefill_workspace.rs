@@ -76,8 +76,7 @@ impl Trace for Capture {
 #[ignore = "requires pinned model and FOCR_WORKSPACE_TRACE output path; writes a large trace"]
 fn mixed_batch_workspace_trace() {
     let output = PathBuf::from(
-        std::env::var_os("FOCR_WORKSPACE_TRACE")
-            .expect("set FOCR_WORKSPACE_TRACE to an output .safetensors path"),
+        std::env::var_os("FOCR_WORKSPACE_TRACE").expect("set FOCR_WORKSPACE_TRACE to an output .safetensors path"),
     );
     std::fs::create_dir_all(output.parent().unwrap()).unwrap();
     let model = Arc::new(Model::load("artifacts/model").unwrap());
@@ -150,10 +149,7 @@ fn mixed_batch_workspace_trace() {
             let expected = reference.tensor(&name).unwrap();
             assert_eq!(actual.dtype(), expected.dtype(), "{name} dtype");
             assert_eq!(actual.shape(), expected.shape(), "{name} shape");
-            assert!(
-                actual.data() == expected.data(),
-                "{name} changed tensor bits"
-            );
+            assert!(actual.data() == expected.data(), "{name} changed tensor bits");
         }
         println!("All {} tensors match baseline bit for bit", tensors.len());
     }

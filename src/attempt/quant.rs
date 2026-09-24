@@ -29,12 +29,7 @@ pub struct Q8Linear {
 
 impl Q8Linear {
     /// 8-bit codes; see [`Q8Linear::quantize_bits`].
-    pub fn quantize(
-        weights: &[f32],
-        out_dim: usize,
-        in_dim: usize,
-        group_size: usize,
-    ) -> Result<Self, &'static str> {
+    pub fn quantize(weights: &[f32], out_dim: usize, in_dim: usize, group_size: usize) -> Result<Self, &'static str> {
         Self::quantize_bits(weights, out_dim, in_dim, group_size, 8)
     }
 
@@ -79,9 +74,7 @@ impl Q8Linear {
                     let code = if scale == 0.0 {
                         0
                     } else {
-                        (value as f64 / scale as f64)
-                            .round_ties_even()
-                            .clamp(-qmax, qmax) as i32
+                        (value as f64 / scale as f64).round_ties_even().clamp(-qmax, qmax) as i32
                     };
                     if !(code as f32 * scale).is_finite() {
                         return Err("dequantized value overflows FP32");
@@ -156,15 +149,8 @@ impl Q8Linear {
         code * self.scales[row * groups + column / self.group_size]
     }
 
-    pub fn linear_f32(
-        &self,
-        input: &[f32],
-        rows: usize,
-        output: &mut [f32],
-    ) -> Result<(), &'static str> {
-        if rows.checked_mul(self.in_dim) != Some(input.len())
-            || rows.checked_mul(self.out_dim) != Some(output.len())
-        {
+    pub fn linear_f32(&self, input: &[f32], rows: usize, output: &mut [f32]) -> Result<(), &'static str> {
+        if rows.checked_mul(self.in_dim) != Some(input.len()) || rows.checked_mul(self.out_dim) != Some(output.len()) {
             return Err("linear shape overflow or mismatch");
         }
         if input.iter().any(|x| !x.is_finite()) {
@@ -208,9 +194,7 @@ mod tests {
     fn odd_rows_partial_groups_and_error_bound() {
         for k in [1usize, 31, 65, 127, 129, 257] {
             for g in [64, 128] {
-                let weights: Vec<_> = (0..3 * k)
-                    .map(|i| ((i * 137 % 127) as f32 - 63.) / 19.)
-                    .collect();
+                let weights: Vec<_> = (0..3 * k).map(|i| ((i * 137 % 127) as f32 - 63.) / 19.).collect();
                 let q = Q8Linear::quantize(&weights, 3, k, g).unwrap();
                 assert_eq!(q.payload_bytes(), 3 * k + 12 * k.div_ceil(g));
                 for row in 0..3 {
@@ -219,10 +203,7 @@ mod tests {
                     for (column, &w) in restored.iter().enumerate() {
                         let scale = q.scales()[row * k.div_ceil(g) + column / g] as f64;
                         let original = weights[row * k + column] as f64;
-                        assert!(
-                            (w as f64 - original).abs()
-                                <= scale / 2. + 2. * f32::EPSILON as f64 * original.abs()
-                        );
+                        assert!((w as f64 - original).abs() <= scale / 2. + 2. * f32::EPSILON as f64 * original.abs());
                     }
                 }
             }
@@ -233,14 +214,10 @@ mod tests {
     fn real_reduction_widths_batches_and_f64_bound() {
         for k in [768usize, 1024, 2304] {
             for g in [64, 128] {
-                let weights: Vec<_> = (0..7 * k)
-                    .map(|i| ((i * 67 % 199) as f32 - 99.) / 31.)
-                    .collect();
+                let weights: Vec<_> = (0..7 * k).map(|i| ((i * 67 % 199) as f32 - 99.) / 31.).collect();
                 let q = Q8Linear::quantize(&weights, 7, k, g).unwrap();
                 for rows in [1, 2, 4, 8] {
-                    let x: Vec<_> = (0..rows * k)
-                        .map(|i| ((i * 101 % 257) as f32 - 128.) / 37.)
-                        .collect();
+                    let x: Vec<_> = (0..rows * k).map(|i| ((i * 101 % 257) as f32 - 128.) / 37.).collect();
                     let mut y = vec![0.; rows * 7];
                     q.linear_f32(&x, rows, &mut y).unwrap();
                     for channel in 0..7 {
@@ -255,10 +232,7 @@ mod tests {
                             let sum: f64 = products.iter().sum();
                             let absolute_sum: f64 = products.iter().map(|x| x.abs()).sum();
                             let ku = k as f64 * f32::EPSILON as f64 / 2.;
-                            assert!(
-                                (y[row * 7 + channel] as f64 - sum).abs()
-                                    <= ku / (1. - ku) * absolute_sum
-                            );
+                            assert!((y[row * 7 + channel] as f64 - sum).abs() <= ku / (1. - ku) * absolute_sum);
                         }
                     }
                 }
@@ -305,18 +279,12 @@ impl Q8Linear {
             out_dim > 0 && in_dim > 0 && [32, 64].contains(&group_size),
             "invalid W8 shape/group (32 or 64)"
         );
-        ensure!(
-            out_dim.checked_mul(in_dim) == Some(codes.len()),
-            "W8 codes shape"
-        );
+        ensure!(out_dim.checked_mul(in_dim) == Some(codes.len()), "W8 codes shape");
         ensure!(
             out_dim.checked_mul(in_dim.div_ceil(group_size)) == Some(scales.len()),
             "W8 scales shape"
         );
-        ensure!(
-            codes.iter().all(|&v| v != -128),
-            "W8 code -128 is outside [-127,127]"
-        );
+        ensure!(codes.iter().all(|&v| v != -128), "W8 code -128 is outside [-127,127]");
         ensure!(
             scales
                 .iter()
@@ -328,10 +296,7 @@ impl Q8Linear {
                 if scales[row * in_dim.div_ceil(group_size) + g] == 0.0 {
                     let a = row * in_dim + g * group_size;
                     let b = (a + group_size).min((row + 1) * in_dim);
-                    ensure!(
-                        codes[a..b].iter().all(|&v| v == 0),
-                        "nonzero code in zero-scale group"
-                    );
+                    ensure!(codes[a..b].iter().all(|&v| v == 0), "nonzero code in zero-scale group");
                 }
             }
         }
@@ -410,14 +375,8 @@ impl Q8Linear {
         scratch: &mut Scratch,
         simd: crate::kernels::Simd,
     ) -> anyhow::Result<()> {
-        ensure!(
-            rows.checked_mul(self.in_dim) == Some(input.len()),
-            "W8 input shape"
-        );
-        ensure!(
-            rows.checked_mul(self.out_dim) == Some(output.len()),
-            "W8 output shape"
-        );
+        ensure!(rows.checked_mul(self.in_dim) == Some(input.len()), "W8 input shape");
+        ensure!(rows.checked_mul(self.out_dim) == Some(output.len()), "W8 output shape");
         simd.validate().map_err(anyhow::Error::msg)?;
         if rows == 0 {
             return Ok(());
@@ -450,15 +409,7 @@ impl Q8Linear {
                 .par_chunks_mut(self.in_dim)
                 .enumerate()
                 .for_each(|(row, dst)| self.dequantize_row(row, dst));
-            crate::kernels::linear_with_simd(
-                input,
-                rows,
-                self.in_dim,
-                &scratch.dense,
-                self.out_dim,
-                output,
-                simd,
-            );
+            crate::kernels::linear_with_simd(input, rows, self.in_dim, &scratch.dense, self.out_dim, output, simd);
             return Ok(());
         }
         let output = &OutputCell(output.as_mut_ptr());
@@ -482,10 +433,7 @@ impl Q8Linear {
         scratch: &mut Scratch,
         simd: crate::kernels::Simd,
     ) -> anyhow::Result<bool> {
-        ensure!(
-            rows.checked_mul(self.in_dim) == Some(input.len()),
-            "W8 input shape"
-        );
+        ensure!(rows.checked_mul(self.in_dim) == Some(input.len()), "W8 input shape");
         ensure!(self.out_dim.is_multiple_of(2), "GLU needs interleaved gate/up rows");
         let ffn = self.out_dim / 2;
         ensure!(rows.checked_mul(ffn) == Some(gated.len()), "W8 GLU shape");
@@ -517,7 +465,11 @@ impl Q8Linear {
         let out = OutputPtr(gated.as_mut_ptr());
         let in_dim = self.in_dim;
         let dot = self.dot_fn(simd);
-        let dot_rows = if rows > 1 { self.dot_rows_fn(simd) } else { DotRows::None };
+        let dot_rows = if rows > 1 {
+            self.dot_rows_fn(simd)
+        } else {
+            DotRows::None
+        };
         let tasks = balanced_tasks(ffn);
         let block = ffn.div_ceil(tasks);
         crate::team::for_each(ffn.div_ceil(block), |b| {
@@ -566,7 +518,15 @@ impl Q8Linear {
             // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
             // throughput and only the activations round (see `panel_bf16`).
             panel_bf16::pack(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.bf16);
-            panel_bf16::gemm(input, rows, self.in_dim, &scratch.bf16, self.out_dim, row_scale, epilogue);
+            panel_bf16::gemm(
+                input,
+                rows,
+                self.in_dim,
+                &scratch.bf16,
+                self.out_dim,
+                row_scale,
+                epilogue,
+            );
             return;
         }
         panel_gemm::pack_panels(
@@ -575,13 +535,20 @@ impl Q8Linear {
             |r, dst| self.dequantize_row(r, dst),
             &mut scratch.dense,
         );
-        panel_gemm::gemm(input, rows, self.in_dim, &scratch.dense, self.out_dim, row_scale, epilogue);
+        panel_gemm::gemm(
+            input,
+            rows,
+            self.in_dim,
+            &scratch.dense,
+            self.out_dim,
+            row_scale,
+            epilogue,
+        );
     }
 
     /// Whether large-M products use `kernels::panel_gemm` here.
     pub(crate) fn panel_gemm(&self, simd: crate::kernels::Simd) -> bool {
-        crate::kernels::panel_gemm::available(simd)
-            && self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
+        crate::kernels::panel_gemm::available(simd) && self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
     }
 
     /// The dot kernel for this matrix's code type, group size and backend.
@@ -642,7 +609,11 @@ impl Q8Linear {
         let (in_dim, out_dim) = (self.in_dim, self.out_dim);
         let dot = self.dot_fn(simd);
         // Several rows (draft verification) decode each weight chunk once.
-        let dot_rows = if rows > 1 { self.dot_rows_fn(simd) } else { DotRows::None };
+        let dot_rows = if rows > 1 {
+            self.dot_rows_fn(simd)
+        } else {
+            DotRows::None
+        };
         let block = out_dim.div_ceil(balanced_tasks(out_dim));
         crate::team::for_each(out_dim.div_ceil(block), |b| {
             let mut values = [0.0_f32; 8];
@@ -842,11 +813,7 @@ fn dot_q_scalar<C: crate::simd::QCode, const G: usize>(x: &[f32], codes: &[C], s
 /// `simd::dot_q` (same phase accumulators, tree and tails) under AVX2/FMA.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
-unsafe fn dot_q_avx2<C: crate::simd::QCode, const G: usize>(
-    x: &[f32],
-    codes: &[C],
-    scales: &[f32],
-) -> f32 {
+unsafe fn dot_q_avx2<C: crate::simd::QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
     unsafe { crate::simd::dot_q::<crate::simd::Avx2, C, G>(x, codes, scales) }
 }
 
@@ -858,14 +825,10 @@ mod integrated_tests {
     fn integrated_shapes_and_phase_values() {
         for k in [31, 64, 65, 768, 1024, 2304] {
             let n = 9;
-            let w: Vec<_> = (0..n * k)
-                .map(|i| ((i * 137 % 193) as f32 - 96.0) / 113.0)
-                .collect();
+            let w: Vec<_> = (0..n * k).map(|i| ((i * 137 % 193) as f32 - 96.0) / 113.0).collect();
             let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
             for rows in [1, 2, 4, 8, 9, 17] {
-                let x: Vec<_> = (0..rows * k)
-                    .map(|i| ((i * 31 % 151) as f32 - 75.0) / 97.0)
-                    .collect();
+                let x: Vec<_> = (0..rows * k).map(|i| ((i * 31 % 151) as f32 - 75.0) / 97.0).collect();
                 let mut dense = vec![0.0; n * k];
                 for r in 0..n {
                     q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
@@ -895,7 +858,15 @@ mod integrated_tests {
     }
     #[test]
     fn dot_rows_are_bitwise_single_dots() {
-        for (k, group) in [(768, 64), (1024, 64), (2304, 64), (65, 64), (31, 32), (100, 32), (768, 128)] {
+        for (k, group) in [
+            (768, 64),
+            (1024, 64),
+            (2304, 64),
+            (65, 64),
+            (31, 32),
+            (100, 32),
+            (768, 128),
+        ] {
             let x: Vec<f32> = (0..8 * k).map(|i| ((i * 37 % 101) as f32 - 50.0) / 17.0).collect();
             for bits in [8, 16] {
                 let w: Vec<f32> = (0..3 * k).map(|i| ((i * 13 % 89) as f32 - 44.0) / 23.0).collect();
@@ -949,24 +920,11 @@ mod integrated_tests {
                         .map(|i| ((i * 104729 % 1009) as f32 - 504.0) / 311.0)
                         .collect();
                     let mut expected = vec![0.0; rows * n];
-                    crate::kernels::linear_with_simd(
-                        &x,
-                        rows,
-                        k,
-                        &dense,
-                        n,
-                        &mut expected,
-                        backend,
-                    );
+                    crate::kernels::linear_with_simd(&x, rows, k, &dense, n, &mut expected, backend);
                     let mut out = vec![f32::NAN; rows * n];
-                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend)
-                        .unwrap();
+                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend).unwrap();
                     for (a, b) in out.iter().zip(&expected) {
-                        assert_eq!(
-                            a.to_bits(),
-                            b.to_bits(),
-                            "{backend:?} n{n} k{k} g{group} rows{rows}"
-                        );
+                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} g{group} rows{rows}");
                     }
                 }
             }
@@ -1000,8 +958,7 @@ mod integrated_tests {
                     let mut expected = vec![0.0; rows * n];
                     crate::kernels::linear_with_simd(&x, rows, k, &dense, n, &mut expected, backend);
                     let mut out = vec![f32::NAN; rows * n];
-                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend)
-                        .unwrap();
+                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend).unwrap();
                     for (a, b) in out.iter().zip(&expected) {
                         assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} rows{rows}");
                     }
@@ -1013,9 +970,7 @@ mod integrated_tests {
     fn fused_glu_is_bitwise_linear_then_gate() {
         for (ffn, k) in [(19, 768), (5, 65), (3, 2304)] {
             let n = 2 * ffn;
-            let w: Vec<_> = (0..n * k)
-                .map(|i| ((i * 6007 % 1999) as f32 - 999.0) / 613.0)
-                .collect();
+            let w: Vec<_> = (0..n * k).map(|i| ((i * 6007 % 1999) as f32 - 999.0) / 613.0).collect();
             let q = Q8Linear::quantize(&w, n, k, 64).unwrap();
             for backend in [Simd::Scalar, Simd::Auto] {
                 for rows in 1..=8 {
@@ -1028,7 +983,10 @@ mod integrated_tests {
                     let mut expected = vec![0.0; rows * ffn];
                     crate::kernels::squared_relu_gate(&packed, &mut expected);
                     let mut fused = vec![f32::NAN; rows * ffn];
-                    assert!(q.linear_glu(&x, rows, &mut fused, &mut Scratch::default(), backend).unwrap());
+                    assert!(
+                        q.linear_glu(&x, rows, &mut fused, &mut Scratch::default(), backend)
+                            .unwrap()
+                    );
                     for (a, b) in fused.iter().zip(&expected) {
                         assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} ffn{ffn} rows{rows}");
                     }
@@ -1040,10 +998,7 @@ mod integrated_tests {
     #[test]
     #[ignore = "timing probe; run in release with --nocapture"]
     fn decode_gemv_throughput_probe() {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(16)
-            .build()
-            .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(16).build().unwrap();
         for (name, n, k) in [
             ("wo", 768, 1024),
             ("qkv", 2048, 768),
@@ -1063,15 +1018,13 @@ mod integrated_tests {
             let mut out = vec![0.0; n];
             pool.install(|| {
                 for m in &mats {
-                    m.linear(&x, 1, &mut out, &mut Scratch::default(), Simd::Auto)
-                        .unwrap();
+                    m.linear(&x, 1, &mut out, &mut Scratch::default(), Simd::Auto).unwrap();
                 }
                 let rounds = 5;
                 let t = std::time::Instant::now();
                 for _ in 0..rounds {
                     for m in &mats {
-                        m.linear(&x, 1, &mut out, &mut Scratch::default(), Simd::Auto)
-                            .unwrap();
+                        m.linear(&x, 1, &mut out, &mut Scratch::default(), Simd::Auto).unwrap();
                     }
                 }
                 let calls = (rounds * mats.len()) as f64;

@@ -8,8 +8,8 @@
 //! bitwise equal to the FP32 kernel; fidelity is measured against the FP32
 //! anchor like any lossy fast-mode change.
 use super::{
-    HEAD_DIM, KEY_TILE, OutputPtr, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes,
-    profile_enabled, pv_uses_main_path, qk_uses_main_path, reference_key_tile, softmax_lanes,
+    HEAD_DIM, KEY_TILE, OutputPtr, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes, profile_enabled,
+    pv_uses_main_path, qk_uses_main_path, reference_key_tile, softmax_lanes,
 };
 use rayon::prelude::*;
 use std::arch::x86_64::*;
@@ -135,7 +135,10 @@ pub(in crate::kernels) unsafe fn compact_prefill(
         }
     };
     if profile_enabled() {
-        CONVERT_NS.fetch_add(convert_start.elapsed().as_nanos() as u64, std::sync::atomic::Ordering::Relaxed);
+        CONVERT_NS.fetch_add(
+            convert_start.elapsed().as_nanos() as u64,
+            std::sync::atomic::Ordering::Relaxed,
+        );
     }
     let fast = super::super::exp_mode() == super::super::ExpMode::Fast;
     let repeat = n_heads / n_kv_heads;
@@ -331,7 +334,15 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
                         &mut probability_pairs,
                     );
                 } else {
-                    softmax_lanes::<S>(queries, keys, &mut st, &mut maxima, &mut denominators, out, shape.query_width);
+                    softmax_lanes::<S>(
+                        queries,
+                        keys,
+                        &mut st,
+                        &mut maxima,
+                        &mut denominators,
+                        out,
+                        shape.query_width,
+                    );
                     for kp in 0..key_pairs {
                         let odd = (2 * kp + 1 < keys).then(|| st.as_ptr().add((2 * kp + 1) * QUERY_TILE));
                         pair_rows::<2>(
@@ -365,7 +376,10 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
             unsafe {
                 reference_key_tile(
                     shape,
-                    operands.q.as_ptr().add(first_query * shape.query_width + head * HEAD_DIM),
+                    operands
+                        .q
+                        .as_ptr()
+                        .add(first_query * shape.query_width + head * HEAD_DIM),
                     first_absolute,
                     queries,
                     key_start,
@@ -462,7 +476,10 @@ unsafe fn softmax_pairs(
                 );
             }
             _mm512_storeu_ps(denominators.as_mut_ptr().add(lane0), denominator);
-            _mm512_storeu_ps(maxima.as_mut_ptr().add(lane0), _mm512_mask_blend_ps(skip, new_max, old_max));
+            _mm512_storeu_ps(
+                maxima.as_mut_ptr().add(lane0),
+                _mm512_mask_blend_ps(skip, new_max, old_max),
+            );
         }
     }
 }
@@ -561,7 +578,9 @@ unsafe fn qk_keys<const V: usize, const N: usize>(
         for p in 0..PAIRS {
             let mut q = [bh(_mm512_setzero_si512()); V];
             for (v, q) in q.iter_mut().enumerate() {
-                *q = bh(_mm512_loadu_si512(query_pairs.as_ptr().add(p * QUERY_TILE + 16 * v).cast()));
+                *q = bh(_mm512_loadu_si512(
+                    query_pairs.as_ptr().add(p * QUERY_TILE + 16 * v).cast(),
+                ));
             }
             for (n, acc) in acc.iter_mut().enumerate() {
                 let kv = bh(_mm512_set1_epi32(*keys_ptr.add((key + n) * PAIRS + p) as i32));
@@ -649,7 +668,9 @@ mod tests {
     use super::*;
 
     fn available() -> bool {
-        crate::kernels::panel_bf16::available() && std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
+        crate::kernels::panel_bf16::available()
+            && std::is_x86_feature_detected!("avx2")
+            && std::is_x86_feature_detected!("fma")
     }
 
     fn values(n: usize, seed: u32, range: f32) -> Vec<f32> {
@@ -691,7 +712,12 @@ mod tests {
             let mut value_pairs = vec![0_u32; kv_heads * pairs * 64];
             for head in 0..heads {
                 for t in 0..total {
-                    unsafe { to_bf16(k[(t * heads + head) * 64..].as_ptr(), keys_bf16[(head * total + t) * 32..].as_mut_ptr().cast()) };
+                    unsafe {
+                        to_bf16(
+                            k[(t * heads + head) * 64..].as_ptr(),
+                            keys_bf16[(head * total + t) * 32..].as_mut_ptr().cast(),
+                        )
+                    };
                 }
             }
             for kv_head in 0..kv_heads {
@@ -715,7 +741,17 @@ mod tests {
                 for tile in 0..query_len.div_ceil(QUERY_TILE) {
                     let queries = (query_len - tile * QUERY_TILE).min(QUERY_TILE);
                     unsafe {
-                        both(&operands, &shape, tile, queries, head, kv_head, &sinks, fused.as_mut_ptr(), separate.as_mut_ptr());
+                        both(
+                            &operands,
+                            &shape,
+                            tile,
+                            queries,
+                            head,
+                            kv_head,
+                            &sinks,
+                            fused.as_mut_ptr(),
+                            separate.as_mut_ptr(),
+                        );
                     }
                 }
             }
@@ -739,7 +775,9 @@ mod tests {
         ) {
             unsafe {
                 tile_head::<crate::simd::Avx2Fast, true>(operands, shape, tile, queries, head, kv_head, sinks, fused);
-                tile_head::<crate::simd::Avx2Fast, false>(operands, shape, tile, queries, head, kv_head, sinks, separate);
+                tile_head::<crate::simd::Avx2Fast, false>(
+                    operands, shape, tile, queries, head, kv_head, sinks, separate,
+                );
             }
         }
     }
@@ -782,7 +820,20 @@ mod tests {
             let mut own = vec![f32::NAN; q.len()];
             let mut stored = vec![f32::NAN; q.len()];
             unsafe {
-                compact_prefill(&q, &k, &v, query_len, heads, kv_heads, 0, image_start, image_end, &sinks, &mut own, None);
+                compact_prefill(
+                    &q,
+                    &k,
+                    &v,
+                    query_len,
+                    heads,
+                    kv_heads,
+                    0,
+                    image_start,
+                    image_end,
+                    &sinks,
+                    &mut own,
+                    None,
+                );
                 compact_prefill(
                     &q,
                     &k,
@@ -817,7 +868,14 @@ mod tests {
             return;
         }
         let pool = rayon::ThreadPoolBuilder::new().num_threads(4).build().unwrap();
-        for (query_len, image_start, image_end) in [(70, 3, 65), (300, 5, 262), (257, 0, 257), (129, 1, 128), (40, 0, 3), (95, 10, 90)] {
+        for (query_len, image_start, image_end) in [
+            (70, 3, 65),
+            (300, 5, 262),
+            (257, 0, 257),
+            (129, 1, 128),
+            (40, 0, 3),
+            (95, 10, 90),
+        ] {
             let (heads, kv_heads) = (16, 8);
             let q = values(query_len * heads * 64, 17 + query_len as u32, 3.0);
             let k = values(query_len * heads * 64, 19 + query_len as u32, 3.0);
@@ -825,7 +883,20 @@ mod tests {
             let sinks = values(heads, 29, 2.0);
             let mut out = vec![f32::NAN; q.len()];
             pool.install(|| unsafe {
-                compact_prefill(&q, &k, &v, query_len, heads, kv_heads, 0, image_start, image_end, &sinks, &mut out, None)
+                compact_prefill(
+                    &q,
+                    &k,
+                    &v,
+                    query_len,
+                    heads,
+                    kv_heads,
+                    0,
+                    image_start,
+                    image_end,
+                    &sinks,
+                    &mut out,
+                    None,
+                )
             });
             let mut worst = 0.0_f64;
             for head in 0..heads {
@@ -836,7 +907,9 @@ mod tests {
                     for key in 0..query_len {
                         if key <= row || (image_query && key >= image_start && key < image_end) {
                             let dot: f64 = (0..64)
-                                .map(|d| round(q[(row * heads + head) * 64 + d]) * round(k[(key * heads + head) * 64 + d]))
+                                .map(|d| {
+                                    round(q[(row * heads + head) * 64 + d]) * round(k[(key * heads + head) * 64 + d])
+                                })
                                 .sum();
                             logits.push((key, dot / 8.0));
                         }
@@ -857,7 +930,10 @@ mod tests {
             }
             // Probabilities round to BF16 (relative 2^-9) against |v| <= 3,
             // plus FP32 accumulation of logits up to ~70.
-            assert!(worst <= 3.0 * 2f64.powi(-9) + 2e-3, "query_len {query_len}: worst {worst}");
+            assert!(
+                worst <= 3.0 * 2f64.powi(-9) + 2e-3,
+                "query_len {query_len}: worst {worst}"
+            );
             eprintln!("query_len {query_len}: worst {worst:.2e}");
         }
     }

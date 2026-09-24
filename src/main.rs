@@ -1,8 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout,
-    trace::TensorTrace,
+    Backend, CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout, trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -157,9 +156,7 @@ fn main() -> Result<()> {
     // about 7% faster decode); traces and batches keep the reference loader.
     let split_exact = matches!(cli.command, Command::Run { .. })
         && cli.batch_size == 1
-        && cli
-            .cache_layout
-            .is_none_or(|layout| layout == CacheLayout::Compact)
+        && cli.cache_layout.is_none_or(|layout| layout == CacheLayout::Compact)
         && cli.weight_layout == WeightLayout::Unpacked;
     anyhow::ensure!(
         !matches!(cli.command, Command::Pack { .. }) || (cli.mode != Mode::Exact && cli.model_file.is_none()),
@@ -176,13 +173,9 @@ fn main() -> Result<()> {
             );
             model
         }
-        Mode::Exact if split_exact => {
-            Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::SplitF32, None)?
-        }
+        Mode::Exact if split_exact => Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::SplitF32, None)?,
         Mode::Exact => Model::load(&cli.model)?,
-        Mode::NearExact => {
-            Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::W16BodyKvQ16, None)?
-        }
+        Mode::NearExact => Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::W16BodyKvQ16, None)?,
         Mode::Fast => {
             let overlay = cli
                 .w8_artifact
@@ -194,11 +187,7 @@ fn main() -> Result<()> {
                     "fast mode: no {DEFAULT_OVERLAY} in the model directory; quantizing                      round-to-nearest at load (GPTQ is closer to FP32:                      attempt3/make_gptq_overlay.sh)"
                 ),
             }
-            Model::load_attempt(
-                &cli.model,
-                falcon_ocr::attempt::Profile::W8BodyKvQ8,
-                overlay.as_deref(),
-            )?
+            Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::W8BodyKvQ8, overlay.as_deref())?
         }
     });
     let load_ms = start.elapsed().as_secs_f64() * 1000.;
@@ -245,10 +234,7 @@ fn main() -> Result<()> {
     runner.set_repetition_stop(cli.stop_repetition);
     runner.set_speculation(cli.speculate, cli.speculate_min_match);
     runner.set_document_drafts(cli.document_drafts);
-    match cli
-        .decode_threads
-        .unwrap_or(falcon_ocr::runner::DecodeThreads::Auto)
-    {
+    match cli.decode_threads.unwrap_or(falcon_ocr::runner::DecodeThreads::Auto) {
         falcon_ocr::runner::DecodeThreads::Auto => runner.set_decode_threads_auto()?,
         falcon_ocr::runner::DecodeThreads::Fixed(n) if n != threads => runner.set_decode_threads(n)?,
         falcon_ocr::runner::DecodeThreads::Fixed(_) => {}
@@ -256,8 +242,8 @@ fn main() -> Result<()> {
     // Recognition uses the fast exp (token-identical on calibration);
     // FALCON_OCR_EXP=exact keeps the platform exp. Traces always keep it, so
     // they stay bit-comparable with the recorded references.
-    let exact_exp = std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "exact")
-        || matches!(cli.command, Command::Trace { .. });
+    let exact_exp =
+        std::env::var("FALCON_OCR_EXP").is_ok_and(|v| v == "exact") || matches!(cli.command, Command::Trace { .. });
     falcon_ocr::kernels::set_exp_mode(if exact_exp {
         falcon_ocr::kernels::ExpMode::Exact
     } else {
@@ -295,10 +281,7 @@ fn main() -> Result<()> {
             let mut trace = TensorTrace::default();
             let result = runner.trace_reference(fixture, max_new_tokens, &mut trace)?;
             trace.save(&output)?;
-            std::fs::write(
-                output.with_extension("json"),
-                serde_json::to_vec_pretty(&result)?,
-            )?;
+            std::fs::write(output.with_extension("json"), serde_json::to_vec_pretty(&result)?)?;
             println!("{}", serde_json::to_string(&result)?);
         }
         _ => unreachable!(),

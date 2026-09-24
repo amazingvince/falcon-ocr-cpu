@@ -2,8 +2,10 @@
 //!
 //! Numerical correctness and performance qualification are tracked separately;
 //! consult the reference reports before treating a backend as GPU-equivalent.
+mod buf;
 pub mod config;
 pub mod cpu;
+mod draft;
 mod head_screen;
 pub mod kernels;
 pub mod model;
@@ -13,15 +15,11 @@ mod repetition;
 pub mod runner;
 mod simd;
 mod team;
-mod tune;
-mod buf;
-mod draft;
 pub mod tokenizer;
 pub mod trace;
+mod tune;
 
-pub use config::{
-    Backend, CacheLayout, GenerationOptions, HeadMode, ModelConfig, RunnerConfig, WeightLayout,
-};
+pub use config::{Backend, CacheLayout, GenerationOptions, HeadMode, ModelConfig, RunnerConfig, WeightLayout};
 pub use model::Model;
 pub use runner::{FinishReason, OcrResult, Runner, Timings};
 
