@@ -105,6 +105,11 @@ impl Model {
             attempt_profile: crate::attempt::Profile::Reference,
             attempt_setup_ms: 0.0,
             attempt_artifact_sha256: None,
+            source: super::WeightsSource::Checkpoint {
+                dir: dir.to_path_buf(),
+                overlay: None,
+                rtn: false,
+            },
             weights_sha256: hash,
         })
     }
@@ -170,6 +175,7 @@ impl Model {
         keep_fp32: &[String],
         weights_bf16: bool,
     ) -> Result<Self> {
+        let dir = dir.as_ref();
         let mut model = Self::load(dir)?;
         if weights_bf16 {
             model.round_weights_to_bf16();
@@ -179,6 +185,11 @@ impl Model {
             artifact.is_none() || profile.quantizes_body(),
             "W8 artifact supplied to an FP32 profile"
         );
+        model.source = super::WeightsSource::Checkpoint {
+            dir: dir.to_path_buf(),
+            overlay: artifact.map(Path::to_path_buf),
+            rtn: artifact.is_none() && profile.quantizes_body() && profile.weight_bits() == 8,
+        };
         if !profile.quantizes_body() {
             return Ok(model);
         }

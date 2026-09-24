@@ -137,6 +137,7 @@ fn main() -> Result<()> {
         min_dimension: args.min_dimension,
         max_dimension: args.max_dimension,
         max_new_tokens: args.max_new_tokens,
+        fit_budget: false,
     };
     options.validate()?;
     let start = Instant::now();

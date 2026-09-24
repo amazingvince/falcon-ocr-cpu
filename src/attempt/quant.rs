@@ -551,7 +551,11 @@ impl Q8Linear {
 
     /// Whether large-M products use `kernels::panel_gemm` here.
     pub(crate) fn panel_gemm(&self, simd: crate::kernels::Simd) -> bool {
-        crate::kernels::panel_gemm::available(simd) && self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
+        crate::kernels::panel_gemm::available(simd) && self.panel_shaped()
+    }
+    /// Whether the output dimension fills whole panels (`kernels::panel_gemm::NR`).
+    pub(crate) fn panel_shaped(&self) -> bool {
+        self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
     }
 
     /// The dot kernel for this matrix's code type, group size and backend.

@@ -25,6 +25,35 @@ mod rope;
 
 pub(crate) use cache::{BatchWorkspace, Session};
 pub use packed::PACKED_FORMAT;
+
+/// Where a model's weights came from.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "source", rename_all = "snake_case")]
+pub enum WeightsSource {
+    /// A kernel-ready file written by `pack`.
+    Packed { path: std::path::PathBuf },
+    /// The FP32 checkpoint directory; quantized profiles are built at load
+    /// from the GPTQ `overlay`, or round-to-nearest (`rtn`).
+    Checkpoint {
+        dir: std::path::PathBuf,
+        overlay: Option<std::path::PathBuf>,
+        rtn: bool,
+    },
+}
+
+impl WeightsSource {
+    /// The folder whose `tokenizer.json` serves this model: a kernel-ready
+    /// file's folder when it ships one, otherwise `model_dir`.
+    pub fn tokenizer_dir(&self, model_dir: &std::path::Path) -> std::path::PathBuf {
+        if let Self::Packed { path } = self
+            && let Some(dir) = path.parent()
+            && dir.join("tokenizer.json").is_file()
+        {
+            return dir.to_path_buf();
+        }
+        model_dir.to_path_buf()
+    }
+}
 pub(crate) use profile::report_decode_phases;
 pub(crate) use rope::{image_range, positions};
 
@@ -89,6 +118,7 @@ pub struct Model {
     attempt_profile: crate::attempt::Profile,
     attempt_setup_ms: f64,
     attempt_artifact_sha256: Option<String>,
+    source: WeightsSource,
     pub(crate) weights_sha256: String,
 }
 
@@ -98,6 +128,31 @@ impl Model {
     }
     pub fn weights_sha256(&self) -> &str {
         &self.weights_sha256
+    }
+    /// Where the weights came from.
+    pub fn source(&self) -> &WeightsSource {
+        &self.source
+    }
+    /// SHA-256 of the W8 overlay the body was imported from, if any.
+    pub fn overlay_sha256(&self) -> Option<&str> {
+        self.attempt_artifact_sha256.as_deref()
+    }
+    /// Bit width of the quantized body when every body matrix of every layer
+    /// is quantized to one width with panel-shaped output dims (the prefill
+    /// GEMM's precondition); `None` for an FP32 or mixed body.
+    pub fn body_bits(&self) -> Option<u32> {
+        let mut bits = None;
+        for layer in &self.layers {
+            for w in [&layer.qkv, &layer.wo, &layer.w13, &layer.w2] {
+                let q = w.quantized.as_ref().filter(|q| q.panel_shaped())?;
+                match bits {
+                    None => bits = Some(q.bits()),
+                    Some(b) if b == q.bits() => {}
+                    Some(_) => return None,
+                }
+            }
+        }
+        bits
     }
     /// Actual additional shared tensor payload, excluding allocator metadata.
     /// This remains resident if another Runner on this Model enabled packing.
@@ -413,28 +468,15 @@ impl Model {
         // Quantized prefill: the RMS norms fold into the GEMM's row packing and
         // the residual adds into its epilogue, with the same per-element
         // operations as the separate passes.
-        let panel = rows > 8
-            && !capture
-            && !trace.enabled()
-            && self.layers.iter().all(|l| {
-                [&l.qkv, &l.wo, &l.w13, &l.w2]
-                    .iter()
-                    .all(|w| w.quantized.as_ref().is_some_and(|q| q.panel_gemm(simd)))
-            });
+        // `kernels::prefill_plan` is the one place that decides which prefill
+        // kernels a body and CPU get (`auto::Resolved` reports the same plan).
+        let plan = kernels::prefill_plan(self.body_bits(), simd, tuning.prefill_bf16);
+        let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
         fn quantized(w: &Weight) -> &crate::attempt::quant::Q8Linear {
-            w.quantized.as_deref().expect("checked above")
+            w.quantized.as_deref().expect("body_bits checked every body matrix")
         }
-        // 8-bit bodies (fast mode) also run prefill attention, and with
-        // `Tuning::prefill_bf16 = All` the projections, in BF16 where the CPU
-        // has AVX512-BF16 (`kernels::attention_compact_prefill_bf16`).
-        let eight_bit = panel
-            && kernels::bf16_available()
-            && self
-                .layers
-                .iter()
-                .all(|l| [&l.qkv, &l.wo, &l.w13, &l.w2].iter().all(|w| quantized(w).bits() == 8));
-        let bf16_attention = eight_bit && tuning.prefill_bf16 != crate::config::PrefillBf16::Off;
-        let bf16_projections = eight_bit && tuning.prefill_bf16 == crate::config::PrefillBf16::All;
+        let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;
+        let bf16_projections = panel && plan.projection == kernels::PrefillProjection::PanelBf16;
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             if panel {

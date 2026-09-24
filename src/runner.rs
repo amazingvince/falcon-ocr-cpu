@@ -15,7 +15,7 @@ use std::{path::Path, sync::Arc, time::Instant};
 pub enum FinishReason {
     Eos,
     Length,
-    /// Stopped by the opt-in repetition stop (`Runner::set_repetition_stop`).
+    /// Stopped by the repetition stop (`RunnerConfig::repetition_stop`).
     Repetition,
 }
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -59,6 +59,10 @@ pub struct OcrResult {
     #[serde(default)]
     pub weight_packing_ms: f64,
     pub teacher_forced: bool,
+    /// `max_new_tokens` was lowered to fit the context
+    /// (`GenerationOptions::fit_budget`).
+    #[serde(default)]
+    pub budget_clamped: bool,
     pub timings: Timings,
 }
 
@@ -73,18 +77,20 @@ pub struct Runner {
     tokenizer: OcrTokenizer,
     pool: rayon::ThreadPool,
     config: RunnerConfig,
+    /// What this runner will do, for reports (`Runner::resolved`).
+    resolved: crate::auto::Resolved,
     head: HeadMode,
-    /// Opt-in stop for degenerate repetition loops (`crate::repetition`).
+    /// Stop for degenerate repetition loops (`crate::repetition`).
     repetition_stop: bool,
     /// Spin-waiting workers for decode steps (prefill keeps using `pool`): one
     /// fixed team, or one team per candidate size with the tuner choosing
-    /// between them (`set_decode_threads_auto`).
+    /// between them (`DecodeThreads::Auto`).
     decode: Decode,
-    /// Speculative decoding (`set_speculation`): at most this many drafted
-    /// tokens per step and the minimum n-gram match; `None` is off.
+    /// Speculative decoding (`RunnerConfig::speculation`): at most this many
+    /// drafted tokens per step and the minimum n-gram match; `None` is off.
     speculation: Option<(usize, usize)>,
     /// Drafts from earlier pages of the current `recognize_files` call
-    /// (`set_document_drafts`).
+    /// (`RunnerConfig::document_drafts`).
     document: Option<std::sync::Mutex<crate::draft::DocumentHistory>>,
 }
 
@@ -99,19 +105,9 @@ struct AutoThreads {
 }
 
 /// One spin team per candidate decode size for a `pool_threads`-thread prefill
-/// pool, and the tuner that picks between them (`crate::tune`).
-fn auto_threads(pool_threads: usize, speculating: bool) -> std::io::Result<AutoThreads> {
-    let mut sizes =
-        crate::tune::candidate_sizes(crate::cpu::physical_cores(), crate::cpu::logical_cpus(), pool_threads);
-    // Draft verification is compute-heavy (5-row steps: 7.6 ms on 12 of 16
-    // cores, 9.1 ms on 8), while single steps are bandwidth-bound and time
-    // the same on half and three quarters of the cores; with speculation on,
-    // the half-core candidate is dropped.
-    if speculating && sizes.len() > 1 {
-        sizes.remove(0);
-    }
-    let physical = crate::cpu::physical_cores().min(pool_threads);
-    let start = sizes.iter().position(|&s| s >= physical).unwrap_or(sizes.len() - 1);
+/// pool on `host`, and the tuner that picks between them (`crate::tune`).
+fn auto_threads(host: &crate::auto::HostInfo, pool_threads: usize, speculating: bool) -> std::io::Result<AutoThreads> {
+    let (sizes, start) = crate::tune::auto_candidates(host, pool_threads, speculating);
     let teams = sizes
         .iter()
         .map(|&size| crate::team::Team::new(size))
@@ -182,11 +178,13 @@ impl Runner {
             model.prepare_phase_packed();
         }
         let pool_threads = pool.current_num_threads();
+        let host = crate::auto::HostInfo::detect();
+        let resolved = crate::auto::Resolved::new(host, &config, &model, model_dir.as_ref());
         let speculation = config
             .speculation
             .map(|s| (s.max_draft.min(crate::head_screen::MAX_ROWS - 1), s.min_match.max(1)));
         let decode = match config.decode_threads {
-            DecodeThreads::Auto => Decode::Auto(auto_threads(pool_threads, speculation.is_some())?),
+            DecodeThreads::Auto => Decode::Auto(auto_threads(host, pool_threads, speculation.is_some())?),
             DecodeThreads::Fixed(threads) => {
                 ensure!(
                     (1..=pool_threads).contains(&threads),
@@ -207,59 +205,14 @@ impl Runner {
             speculation,
             document: config.document_drafts.then(Default::default),
             config,
+            resolved,
         };
         runner.set_head_mode(head)?;
         Ok(runner)
     }
-    /// Stop greedy generation once it repeats a cycle of at most 128 tokens
-    /// for at least `max(256, 4 * cycle)` tokens (`FinishReason::Repetition`).
-    /// Output up to that step is unchanged. On in the automatic configuration,
-    /// off in `RunnerConfig::reference`; never applied to teacher-forced traces.
-    pub fn set_repetition_stop(&mut self, enabled: bool) {
-        self.repetition_stop = enabled;
-    }
+    /// Whether generation stops on repetition loops (`RunnerConfig::repetition_stop`).
     pub fn repetition_stop(&self) -> bool {
         self.repetition_stop
-    }
-    /// Size the decode spin team separately from the prefill pool. Prefill is
-    /// compute-bound and gains from SMT siblings; decode is memory-bound and
-    /// loses when both siblings of a core stream (on a 16-core/32-thread
-    /// Ryzen 7950X: prefill 32 threads 22% faster, decode 32 threads 60%
-    /// slower than 16). `threads` must be between 1 and the pool size.
-    pub fn set_decode_threads(&mut self, threads: usize) -> Result<()> {
-        ensure!(
-            (1..=self.pool.current_num_threads()).contains(&threads),
-            "decode threads must be between 1 and the runner's thread count"
-        );
-        self.decode = Decode::Fixed(crate::team::Team::new(threads)?);
-        Ok(())
-    }
-    /// Choose the decode thread count automatically: the first decode steps
-    /// of this runner time a few team sizes (`crate::tune`) and keep the
-    /// smallest one within 2% of the fastest. Tokens never depend on it.
-    pub fn set_decode_threads_auto(&mut self) -> Result<()> {
-        // Replaces the fixed team, so only the candidates keep workers.
-        self.decode = Decode::Auto(auto_threads(
-            self.pool.current_num_threads(),
-            self.speculation.is_some(),
-        )?);
-        Ok(())
-    }
-    /// Speculative decoding for single-page generation with the attempt
-    /// profiles' split cache: up to `max_draft` tokens (at most 7) drafted
-    /// from earlier output (`crate::draft`, n-gram match of at least
-    /// `min_match` tokens) are verified in one multi-row step. Every row is
-    /// bitwise the single-row step, so tokens are unchanged; `max_draft = 0`
-    /// turns it off. Teacher forcing, tracing and batches never speculate.
-    pub fn set_speculation(&mut self, max_draft: usize, min_match: usize) {
-        self.speculation =
-            (max_draft > 0).then_some((max_draft.min(crate::head_screen::MAX_ROWS - 1), min_match.max(1)));
-    }
-    /// Treat the pages of one `recognize_files` call as one document:
-    /// speculative drafts may also continue full n-gram matches from its
-    /// earlier pages. Outputs are unchanged (drafts are verified).
-    pub fn set_document_drafts(&mut self, enabled: bool) {
-        self.document = enabled.then(Default::default);
     }
     fn document_history(&self) -> Option<std::sync::MutexGuard<'_, crate::draft::DocumentHistory>> {
         self.document
@@ -282,6 +235,7 @@ impl Runner {
             self.pool.install(|| model.prepare_screened_head())?;
         }
         self.head = mode;
+        self.resolved.head = mode;
         Ok(())
     }
     pub fn head_mode(&self) -> HeadMode {
@@ -291,6 +245,10 @@ impl Runner {
     /// validated CPU feature selection are established when constructing Runner.
     pub fn config(&self) -> &RunnerConfig {
         &self.config
+    }
+    /// What this runner does on this host: mode, weights, kernels, threads.
+    pub fn resolved(&self) -> &crate::auto::Resolved {
+        &self.resolved
     }
     pub fn recognize_file(&self, path: impl AsRef<Path>, options: &GenerationOptions) -> Result<OcrResult> {
         self.recognize_file_with_trace(path, options, &mut NoTrace)
@@ -469,10 +427,24 @@ impl Runner {
         let mut sessions = Vec::with_capacity(count);
         let mut states = Vec::with_capacity(count);
         let mut hidden = Vec::new();
-        // Validate every budget before expensive prefill or KV allocation.
+        // Validate every budget before expensive prefill or KV allocation. A
+        // batch shares one step loop, so it runs to the smallest fitted budget.
+        let mut budget = options.max_new_tokens;
         for input in &inputs {
-            options.check_budget(input.tokens.len(), c.max_seq_len)?;
+            budget = budget.min(options.budget(input.tokens.len(), c.max_seq_len)?);
         }
+        let budget_clamped = budget != options.max_new_tokens;
+        if budget_clamped {
+            eprintln!(
+                "max_new_tokens lowered to {budget}: the longest input of {} tokens leaves no more room in the {}-token context",
+                inputs.iter().map(|i| i.tokens.len()).max().unwrap_or(0),
+                c.max_seq_len
+            );
+        }
+        let options = &GenerationOptions {
+            max_new_tokens: budget,
+            ..options.clone()
+        };
         for (index, input) in inputs.into_iter().enumerate() {
             let prefill_started = Instant::now();
             let (image_start, image_end) = image_range(&input.tokens, c)?;
@@ -648,6 +620,7 @@ impl Runner {
                     packed_weight_bytes: self.model.packed_weight_bytes(),
                     weight_packing_ms: self.model.weight_packing_ms(),
                     teacher_forced: false,
+                    budget_clamped,
                     timings: state.timings,
                 })
             })
@@ -677,7 +650,19 @@ impl Runner {
     ) -> Result<OcrResult> {
         let start = Instant::now();
         let c = &self.model.config;
-        options.check_budget(tokens.len(), c.max_seq_len)?;
+        let budget = options.budget(tokens.len(), c.max_seq_len)?;
+        let budget_clamped = budget != options.max_new_tokens;
+        if budget_clamped {
+            eprintln!(
+                "max_new_tokens lowered to {budget}: {} input tokens leave no more room in the {}-token context",
+                tokens.len(),
+                c.max_seq_len
+            );
+        }
+        let options = &GenerationOptions {
+            max_new_tokens: budget,
+            ..options.clone()
+        };
         let (image_start, image_end) = image_range(&tokens, c)?;
         let (pos_t, pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
         let simd = self.config.backend.simd();
@@ -917,6 +902,7 @@ impl Runner {
             packed_weight_bytes: self.model.packed_weight_bytes(),
             weight_packing_ms: self.model.weight_packing_ms(),
             teacher_forced: !teacher_tokens.is_empty(),
+            budget_clamped,
             timings: Timings {
                 image_decode_ms: 0.,
                 preprocessing_ms: prep_ms,
@@ -1099,6 +1085,7 @@ mod tests {
             min_dimension: 16,
             max_dimension: 32,
             max_new_tokens: 1,
+            fit_budget: false,
         };
         options.validate().unwrap();
         let prepared = prepare_rgb(&RgbImage::new(33, 49), 16, 32).unwrap();

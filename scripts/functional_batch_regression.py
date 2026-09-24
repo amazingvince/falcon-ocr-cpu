@@ -148,8 +148,8 @@ def validate_build(path, current=True):
 def command(binary, workload, job):
     runtime = workload["runtime"]
     mode = job["mode"]
-    return [str(binary), "--model", str(ROOT / workload["model"]["directory"]), "--threads", str(runtime["threads"]),
-            "--backend", "avx2", "--batch-size", str(job["batch_size"]),
+    return [str(binary), "--model", str(ROOT / workload["model"]["directory"]), "--mode", "exact",
+            "--threads", str(runtime["threads"]), "--backend", "avx2", "--batch-size", str(job["batch_size"]),
             "--cache-layout", mode["cache_layout"], "--weight-layout", mode["weight_layout"], "run",
             "--min-dimension", "64", "--max-dimension", "1536", "--max-new-tokens", "4096"] + [
             str(ROOT / workload["inputs"][key]["canonical_path"]) for key in job["request_keys"]]

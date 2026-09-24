@@ -394,7 +394,7 @@ class Runner:
 
 
 def ours_common_flags(args) -> list[str]:
-    return ["--model", str(args.ours_model), "--threads", str(args.ours_threads),
+    return ["--model", str(args.ours_model), "--mode", "exact", "--threads", str(args.ours_threads),
             "--backend", args.ours_backend, "--cache-layout", args.ours_cache_layout,
             "--weight-layout", args.ours_weight_layout]
 

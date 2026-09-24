@@ -30,16 +30,111 @@ pub(crate) fn report_prefill_stage_cycles(enabled: bool) {
     attention::prefill64::report_stage_cycles(enabled);
 }
 
-/// Whether this CPU runs the BF16 prefill kernels (AVX-512F and AVX512-BF16).
+/// Whether this CPU runs the BF16 prefill kernels (AVX2/FMA, AVX-512F and
+/// AVX512-BF16).
 pub(crate) fn bf16_available() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        panel_bf16::available()
+        avx2_available() && panel_bf16::available()
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
         false
     }
+}
+
+/// Whether the FP32 prefill attention runs the 16-lane AVX-512 tile
+/// (`Simd::Auto` or an explicit AVX-512 backend on an AVX-512F CPU).
+pub(crate) fn wide_attention(simd: Simd) -> bool {
+    cfg!(target_arch = "x86_64") && matches!(simd, Simd::Auto | Simd::Avx512) && avx512_available()
+}
+
+/// Prefill projection kernel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PrefillProjection {
+    /// FP32 GEMM (the `gemm` crate) over FP32 weights.
+    GemmF32,
+    /// Quantized codes dequantized into FP32 panels, AVX2/FMA tiles.
+    PanelAvx2,
+    /// Quantized codes into BF16 panels, AVX512-BF16 dot products.
+    PanelBf16,
+}
+
+/// Prefill attention kernel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PrefillAttention {
+    Scalar,
+    /// 8-lane FP32 tiles.
+    Avx2,
+    /// 16-lane FP32 tiles.
+    Avx512Wide,
+    /// BF16 keys and values, AVX512-BF16 dot products.
+    Bf16,
+    Neon,
+}
+
+/// The prefill kernels a body and CPU get.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PrefillPlan {
+    pub projection: PrefillProjection,
+    pub attention: PrefillAttention,
+}
+
+impl std::fmt::Display for PrefillProjection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::GemmF32 => "gemm-f32",
+            Self::PanelAvx2 => "panel-avx2",
+            Self::PanelBf16 => "panel-bf16",
+        })
+    }
+}
+
+impl std::fmt::Display for PrefillAttention {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Scalar => "scalar",
+            Self::Avx2 => "avx2",
+            Self::Avx512Wide => "avx512-wide",
+            Self::Bf16 => "bf16",
+            Self::Neon => "neon",
+        })
+    }
+}
+
+/// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
+/// for FP32) on this CPU with the `simd` backend: the single predicate set
+/// behind `Model::forward_layers` and `auto::Resolved`. Traces, linear-input
+/// captures and prefills of at most 8 rows take the FP32 path regardless.
+pub fn prefill_plan(body_bits: Option<u32>, simd: Simd, prefill_bf16: crate::config::PrefillBf16) -> PrefillPlan {
+    use crate::config::PrefillBf16;
+    let panel = body_bits.is_some() && panel_gemm::available(simd);
+    // 8-bit bodies (fast mode) also run prefill attention, and with
+    // `prefill_bf16 = All` the projections, in BF16 where the CPU has
+    // AVX512-BF16 (`attention_compact_prefill_bf16`).
+    let eight_bit = panel && body_bits == Some(8) && bf16_available();
+    let projection = if !panel {
+        PrefillProjection::GemmF32
+    } else if eight_bit && prefill_bf16 == PrefillBf16::All {
+        PrefillProjection::PanelBf16
+    } else {
+        PrefillProjection::PanelAvx2
+    };
+    let attention = if eight_bit && prefill_bf16 != PrefillBf16::Off {
+        PrefillAttention::Bf16
+    } else if wide_attention(simd) {
+        PrefillAttention::Avx512Wide
+    } else {
+        match simd.resolved() {
+            Simd::Scalar => PrefillAttention::Scalar,
+            Simd::Avx2 | Simd::Avx512 => PrefillAttention::Avx2,
+            Simd::Neon => PrefillAttention::Neon,
+            Simd::Auto => unreachable!("resolved"),
+        }
+    };
+    PrefillPlan { projection, attention }
 }
 
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.

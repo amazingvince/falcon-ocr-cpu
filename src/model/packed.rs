@@ -3,6 +3,7 @@
 use std::{
     collections::HashMap,
     fs::File,
+    io::Read,
     ops::Range,
     path::Path,
     sync::{Arc, OnceLock},
@@ -141,6 +142,21 @@ impl Model {
         Ok(())
     }
 
+    /// The profile a kernel-ready model file holds, from its header alone
+    /// (the tensors are not read).
+    pub fn packed_profile(path: impl AsRef<Path>) -> Result<crate::attempt::Profile> {
+        let path = path.as_ref();
+        let meta = packed_metadata(path).with_context(|| format!("read {}", path.display()))?;
+        ensure!(
+            meta.get("format").map(String::as_str) == Some(PACKED_FORMAT),
+            "{} is not a {PACKED_FORMAT} file",
+            path.display()
+        );
+        let profile = meta.get("profile").context("packed metadata profile missing")?;
+        <crate::attempt::Profile as clap::ValueEnum>::from_str(profile, false)
+            .map_err(|e| anyhow::anyhow!("packed profile: {e}"))
+    }
+
     /// Map a kernel-ready model file written by [`Model::write_packed`] and
     /// use every tensor in place: no conversion, and no hash of the whole
     /// file unless `verify` (a digest of every tensor against the header).
@@ -272,8 +288,28 @@ impl Model {
             attempt_profile: profile,
             attempt_setup_ms: started.elapsed().as_secs_f64() * 1000.0,
             attempt_artifact_sha256: meta.get("w8_artifact_sha256").cloned(),
+            source: super::WeightsSource::Packed {
+                path: path.as_ref().to_path_buf(),
+            },
             weights_sha256: WEIGHTS_SHA256.to_owned(),
         })
+    }
+}
+
+/// The `__metadata__` map of a safetensors file (the 8-byte length prefix
+/// and the header JSON it announces), read without touching the tensors.
+fn packed_metadata(path: &Path) -> Result<HashMap<String, String>> {
+    let mut file = File::open(path)?;
+    let mut prefix = [0u8; 8];
+    file.read_exact(&mut prefix)?;
+    let length = usize::try_from(u64::from_le_bytes(prefix))?;
+    ensure!(length <= 64 << 20, "safetensors header of {length} bytes");
+    let mut bytes = vec![0u8; length];
+    file.read_exact(&mut bytes)?;
+    let mut header: serde_json::Map<String, serde_json::Value> = serde_json::from_slice(&bytes)?;
+    match header.remove("__metadata__") {
+        Some(meta) => Ok(serde_json::from_value(meta)?),
+        None => Ok(HashMap::new()),
     }
 }
 

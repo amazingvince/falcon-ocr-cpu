@@ -409,6 +409,7 @@ fn main() -> Result<()> {
                 max_new_tokens: *max_new_tokens,
                 min_dimension: *min_dimension,
                 max_dimension: *max_dimension,
+                fit_budget: false,
             }
             .validate()?;
             for p in images {
@@ -499,6 +500,7 @@ fn main() -> Result<()> {
                 max_new_tokens,
                 max_dimension,
                 min_dimension,
+                fit_budget: false,
             };
             let inputs = images
                 .iter()
@@ -563,6 +565,7 @@ fn main() -> Result<()> {
                 max_new_tokens,
                 max_dimension,
                 min_dimension: 64,
+                fit_budget: false,
             };
             for image in &images {
                 let t = Instant::now();
@@ -629,6 +632,7 @@ fn main() -> Result<()> {
                     max_new_tokens: teacher.len(),
                     max_dimension,
                     min_dimension,
+                    fit_budget: false,
                 };
                 let mut agreement = Agreement {
                     dump: dump_topk.as_ref().map(|_| Vec::new()),

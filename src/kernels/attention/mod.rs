@@ -414,7 +414,7 @@ pub(crate) fn attention_compact_prefill_with(
         // generated keys.
         unsafe {
             prefill64::compact_prefill(
-                cfg!(target_arch = "x86_64") && matches!(simd, Simd::Auto | Simd::Avx512) && avx512_available(),
+                super::wide_attention(simd),
                 exp,
                 profile,
                 q,

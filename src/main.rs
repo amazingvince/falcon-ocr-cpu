@@ -1,47 +1,37 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Model, Runner, RunnerConfig,
-    Speculation, Tuning, WeightLayout, trace::TensorTrace,
+    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, Mode, Runner, RunnerConfig, Speculation,
+    Tuning, WeightLayout,
+    auto::{ModelRequest, load_model, resolve_weights},
+    model::WeightsSource,
+    trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
-
-/// What the FP32 runner optimizes for (see `attempt3/RESULTS-V2.md`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
-enum Mode {
-    /// FP32 weights and caches. Tokens identical to the FP32 reference on
-    /// the 67-page calibration set.
-    Exact,
-    /// 16-bit body weights and 16-bit KV cache (absmax scale per 64 weights
-    /// or 32 cache values, quantized at load): about 1.9x faster decode than
-    /// exact. Not bitwise: 1 token in 24,262 differed from FP32 when
-    /// teacher-forcing 55 calibration pages (KL 9e-8 per token).
-    NearExact,
-    /// 8-bit body weights (W8G64) and 8-bit KV cache: about 3x faster
-    /// decode. Ground-truth neutral on calibration pages that end at EOS,
-    /// but different tokens on most pages; pair with --stop-repetition.
-    Fast,
-}
-
-/// GPTQ overlay that `--mode fast` loads from the model directory by default.
-const DEFAULT_OVERLAY: &str = "w8-gptq.safetensors";
 
 #[derive(Parser)]
 #[command(version, about = "Falcon-OCR v1.5 CPU runner")]
 struct Cli {
+    /// Model directory: the FP32 checkpoint and/or the published kernel-ready
+    /// files (`falcon-ocr-v1.5-<mode>.safetensors`).
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
     /// Prefill and pool threads [default: all logical CPUs].
     #[arg(long, global = true)]
     threads: Option<usize>,
-    /// FP32 runner mode.
-    #[arg(long, value_enum, default_value = "exact", global = true)]
-    mode: Mode,
-    /// W8 overlay for `--mode fast`. Default: `<model>/w8-gptq.safetensors`
-    /// when present (GPTQ, built by attempt3/make_gptq_overlay.sh), otherwise
-    /// round-to-nearest quantization at load.
+    /// What to optimize for [default: near-exact]. Loads the kernel-ready
+    /// file for the mode from --model when present, otherwise the FP32
+    /// checkpoint, quantized at load (fast mode needs the GPTQ overlay).
+    #[arg(long, value_enum, global = true)]
+    mode: Option<Mode>,
+    /// W8 overlay for `--mode fast` [default: `<model>/w8-gptq.safetensors`,
+    /// built by attempt3/make_gptq_overlay.sh].
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
+    /// Let `--mode fast` quantize round-to-nearest at load when no GPTQ
+    /// overlay exists (about three times the changed tokens of GPTQ).
+    #[arg(long, global = true)]
+    allow_rtn: bool,
     /// Vector backend for the GEMV and attention kernels.
     #[arg(long, value_enum, default_value = "auto", global = true)]
     backend: Backend,
@@ -114,7 +104,7 @@ enum Command {
     Doctor,
     /// Verify the checkpoint hash and tensor contract.
     Inspect,
-    /// Write a kernel-ready model file for --mode near-exact or fast.
+    /// Write a kernel-ready model file for --mode near-exact (default) or fast.
     Pack {
         #[arg(long)]
         output: PathBuf,
@@ -123,8 +113,11 @@ enum Command {
     Run {
         #[arg(required = true)]
         images: Vec<PathBuf>,
-        #[arg(long, default_value_t = 8192)]
-        max_new_tokens: usize,
+        /// Output token cap [default: 8192, lowered with a warning when the
+        /// page's input tokens leave less room in the 16384-token context; an
+        /// explicit value that does not fit is an error].
+        #[arg(long)]
+        max_new_tokens: Option<usize>,
         #[arg(long, default_value_t = 64)]
         min_dimension: u32,
         #[arg(long, default_value_t = 1536)]
@@ -145,24 +138,12 @@ enum Command {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     if matches!(cli.command, Command::Doctor) {
-        let mut features = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
-            "logical_cpus":falcon_ocr::cpu::logical_cpus(),"physical_cores":falcon_ocr::cpu::physical_cores(),
-            "gpu_parity_qualified":false});
-        #[cfg(target_arch = "x86_64")]
-        {
-            features["avx2"] = std::is_x86_feature_detected!("avx2").into();
-            features["fma"] = std::is_x86_feature_detected!("fma").into();
-            features["avx512f"] = std::is_x86_feature_detected!("avx512f").into();
-            features["avx512bf16"] = std::is_x86_feature_detected!("avx512bf16").into();
-            features["avx512vnni"] = std::is_x86_feature_detected!("avx512vnni").into();
-        }
-        println!("{}", serde_json::to_string_pretty(&features)?);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({"host": falcon_ocr::HostInfo::detect()}))?
+        );
         return Ok(());
     }
-    anyhow::ensure!(
-        cli.w8_artifact.is_none() || cli.mode == Mode::Fast,
-        "--w8-artifact applies to --mode fast"
-    );
     let start = Instant::now();
     // Exact recognition uses the split FP32 cache (bit-identical to compact,
     // about 7% faster decode); traces and batches keep the reference loader.
@@ -170,38 +151,37 @@ fn main() -> Result<()> {
         && cli.batch_size == 1
         && cli.cache_layout.is_none_or(|layout| layout == CacheLayout::Compact)
         && cli.weight_layout == WeightLayout::Unpacked;
-    anyhow::ensure!(
-        !matches!(cli.command, Command::Pack { .. }) || (cli.mode != Mode::Exact && cli.model_file.is_none()),
-        "pack writes --mode near-exact or fast from the checkpoint"
-    );
-    let model = Arc::new(match cli.mode {
-        _ if cli.model_file.is_some() => {
-            let path = cli.model_file.as_ref().unwrap();
-            let model = Model::load_packed(path, cli.verify_model_file)?;
-            eprintln!(
-                "kernel-ready model {} ({})",
-                path.display(),
-                model.attempt_profile().label()
+    let mode = match (&cli.command, cli.mode) {
+        // Traces stay bit-comparable with the recorded FP32 references.
+        (Command::Trace { .. }, Some(mode)) if mode != Mode::Exact => {
+            bail!("trace compares tensors with the FP32 reference and runs in exact mode; drop --mode {mode}")
+        }
+        (Command::Trace { .. }, _) => Some(Mode::Exact),
+        (Command::Pack { .. }, Some(Mode::Exact)) => {
+            bail!("pack writes a near-exact or fast model file from the checkpoint")
+        }
+        (Command::Pack { .. }, mode) => {
+            ensure!(
+                cli.model_file.is_none(),
+                "pack reads the FP32 checkpoint, not a kernel-ready file"
             );
-            model
+            Some(mode.unwrap_or(Mode::NearExact))
         }
-        Mode::Exact if split_exact => Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::SplitF32, None)?,
-        Mode::Exact => Model::load(&cli.model)?,
-        Mode::NearExact => Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::W16BodyKvQ16, None)?,
-        Mode::Fast => {
-            let overlay = cli
-                .w8_artifact
-                .clone()
-                .or_else(|| Some(cli.model.join(DEFAULT_OVERLAY)).filter(|p| p.is_file()));
-            match &overlay {
-                Some(path) => eprintln!("fast mode: W8 weights from {}", path.display()),
-                None => eprintln!(
-                    "fast mode: no {DEFAULT_OVERLAY} in the model directory; quantizing                      round-to-nearest at load (GPTQ is closer to FP32:                      attempt3/make_gptq_overlay.sh)"
-                ),
-            }
-            Model::load_attempt(&cli.model, falcon_ocr::attempt::Profile::W8BodyKvQ8, overlay.as_deref())?
-        }
-    });
+        (_, mode) => mode,
+    };
+    let plan = resolve_weights(&ModelRequest {
+        model_dir: &cli.model,
+        model_file: cli.model_file.as_deref(),
+        mode,
+        w8_artifact: cli.w8_artifact.as_deref(),
+        allow_rtn: cli.allow_rtn,
+        split_exact,
+        from_checkpoint: matches!(cli.command, Command::Pack { .. }),
+    })?;
+    if matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }) {
+        eprintln!("fast mode: quantizing round-to-nearest at load (--allow-rtn); the GPTQ overlay is closer to FP32");
+    }
+    let model = Arc::new(load_model(&plan, cli.verify_model_file)?);
     let load_ms = start.elapsed().as_secs_f64() * 1000.;
     if let Command::Pack { output } = &cli.command {
         model.prepare_screened_head()?;
@@ -218,19 +198,12 @@ fn main() -> Result<()> {
         println!(
             "{}",
             serde_json::to_string_pretty(&serde_json::json!({"config":model.config(),
-            "weights_sha256":model.weights_sha256(),"load_ms":load_ms}))?
+            "weights_sha256":model.weights_sha256(),"load_ms":load_ms,"weights":plan.source,
+            "profile":plan.profile,"mode":plan.mode}))?
         );
         return Ok(());
     }
-    eprintln!("Verified model loaded in {load_ms:.1} ms");
-    let threads = cli.threads.unwrap_or_else(falcon_ocr::cpu::logical_cpus);
-    // A kernel-ready file ships with its tokenizer: prefer the file's folder.
-    let tokenizer_dir = cli
-        .model_file
-        .as_ref()
-        .and_then(|f| f.parent())
-        .filter(|d| d.join("tokenizer.json").is_file())
-        .map_or_else(|| cli.model.clone(), |d| d.to_path_buf());
+    let tokenizer_dir = plan.source.tokenizer_dir(&cli.model);
     // Traces stay bit-comparable with the recorded references: the reference
     // configuration (platform exp, full head, no speculation). Recognition
     // uses the automatic one, with the flags above layered on top.
@@ -240,7 +213,7 @@ fn main() -> Result<()> {
         RunnerConfig::default()
     };
     let config = RunnerConfig {
-        threads,
+        threads: cli.threads.unwrap_or(0),
         backend: cli.backend,
         batch_size: cli.batch_size,
         cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Compact),
@@ -257,6 +230,7 @@ fn main() -> Result<()> {
         decode_threads: cli.decode_threads.unwrap_or(base.decode_threads),
     };
     let runner = Runner::new(model, &tokenizer_dir, config)?;
+    eprintln!("{} | loaded in {load_ms:.0} ms", runner.resolved());
     match cli.command {
         Command::Run {
             images,
@@ -266,9 +240,11 @@ fn main() -> Result<()> {
             text,
         } => {
             let options = GenerationOptions {
-                max_new_tokens,
+                max_new_tokens: max_new_tokens.unwrap_or(8192),
                 min_dimension,
                 max_dimension,
+                // Without an explicit cap, long pages get what the context leaves.
+                fit_budget: max_new_tokens.is_none(),
             };
             for result in runner
                 .recognize_files(&images, &options)

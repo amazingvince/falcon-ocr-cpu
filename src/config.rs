@@ -230,6 +230,11 @@ pub struct GenerationOptions {
     pub min_dimension: u32,
     pub max_dimension: u32,
     pub max_new_tokens: usize,
+    /// Lower `max_new_tokens` to what the context leaves after the input
+    /// instead of failing (the result reports `budget_clamped`). Off by
+    /// default; the CLI turns it on when `--max-new-tokens` is omitted.
+    #[serde(default)]
+    pub fit_budget: bool,
 }
 impl Default for GenerationOptions {
     fn default() -> Self {
@@ -237,6 +242,7 @@ impl Default for GenerationOptions {
             min_dimension: 64,
             max_dimension: 1536,
             max_new_tokens: 8192,
+            fit_budget: false,
         }
     }
 }
@@ -253,15 +259,23 @@ impl GenerationOptions {
         ensure!(self.max_new_tokens > 0, "max_new_tokens must be positive");
         Ok(())
     }
-    pub fn check_budget(&self, input_tokens: usize, context: usize) -> Result<()> {
+    /// The output budget for `input_tokens` in a `context`-token window:
+    /// `max_new_tokens` when it fits, else what the context leaves when
+    /// `fit_budget` (and the input leaves anything), else an error.
+    pub fn budget(&self, input_tokens: usize, context: usize) -> Result<usize> {
+        if input_tokens
+            .checked_add(self.max_new_tokens)
+            .is_some_and(|n| n <= context)
+        {
+            return Ok(self.max_new_tokens);
+        }
+        let remaining = context.saturating_sub(input_tokens);
         ensure!(
-            input_tokens
-                .checked_add(self.max_new_tokens)
-                .is_some_and(|n| n <= context),
+            self.fit_budget && remaining > 0,
             "context budget conflict: {input_tokens} input tokens + {} requested output tokens exceeds {context}; explicitly lower max_dimension or max_new_tokens",
             self.max_new_tokens
         );
-        Ok(())
+        Ok(remaining)
     }
 }
 
@@ -431,9 +445,15 @@ mod tests {
     #[test]
     fn token_budget_is_exact_and_checked() {
         let o = GenerationOptions::default();
-        assert!(o.check_budget(8192, 16384).is_ok());
-        assert!(o.check_budget(8193, 16384).is_err());
-        assert!(o.check_budget(usize::MAX, 16384).is_err());
+        assert_eq!(o.budget(8192, 16384).unwrap(), 8192);
+        assert!(o.budget(8193, 16384).is_err());
+        assert!(o.budget(usize::MAX, 16384).is_err());
+        let fit = GenerationOptions { fit_budget: true, ..o };
+        assert_eq!(fit.budget(8192, 16384).unwrap(), 8192);
+        assert_eq!(fit.budget(8193, 16384).unwrap(), 8191);
+        assert_eq!(fit.budget(16383, 16384).unwrap(), 1);
+        assert!(fit.budget(16384, 16384).is_err());
+        assert!(fit.budget(usize::MAX, 16384).is_err());
     }
     #[test]
     fn tuning_knobs_parse_and_reject_unknown_keys() {

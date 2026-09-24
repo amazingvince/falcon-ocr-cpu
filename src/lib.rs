@@ -2,6 +2,7 @@
 //!
 //! Numerical correctness and performance qualification are tracked separately;
 //! consult the reference reports before treating a backend as GPU-equivalent.
+pub mod auto;
 mod buf;
 pub mod config;
 pub mod cpu;
@@ -19,11 +20,12 @@ pub mod tokenizer;
 pub mod trace;
 mod tune;
 
+pub use auto::{HostInfo, Mode, Resolved};
 pub use config::{
     Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, ModelConfig, PrefillBf16, RunnerConfig,
     Speculation, Tuning, WeightLayout,
 };
-pub use model::Model;
+pub use model::{Model, WeightsSource};
 pub use runner::{FinishReason, OcrResult, Runner, Timings};
 
 pub mod attempt;

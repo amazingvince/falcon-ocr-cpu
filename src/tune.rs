@@ -34,6 +34,22 @@ pub(crate) fn candidate_sizes(physical: usize, logical: usize, limit: usize) -> 
     sizes
 }
 
+/// The candidate decode team sizes for a `limit`-thread prefill pool on
+/// `host`, and the index of the size the tuner starts on (the physical core
+/// count). Draft verification is compute-heavy (5-row steps: 7.6 ms on 12 of
+/// 16 cores, 9.1 ms on 8), while single steps are bandwidth-bound and time
+/// the same on half and three quarters of the cores; with speculation on, the
+/// half-core candidate is dropped.
+pub(crate) fn auto_candidates(host: &crate::auto::HostInfo, limit: usize, speculating: bool) -> (Vec<usize>, usize) {
+    let mut sizes = candidate_sizes(host.physical_cores, host.logical_cpus, limit);
+    if speculating && sizes.len() > 1 {
+        sizes.remove(0);
+    }
+    let physical = host.physical_cores.min(limit);
+    let start = sizes.iter().position(|&s| s >= physical).unwrap_or(sizes.len() - 1);
+    (sizes, start)
+}
+
 pub(crate) struct Tuner {
     sizes: Vec<usize>,
     samples: Vec<Vec<f64>>,
@@ -133,6 +149,24 @@ mod tests {
         assert_eq!(candidate_sizes(8, 8, 8), vec![4, 6, 8]);
         assert_eq!(candidate_sizes(16, 32, 12), vec![8, 12]);
         assert_eq!(candidate_sizes(1, 1, 1), vec![1]);
+    }
+
+    #[test]
+    fn auto_candidates_start_on_the_physical_cores_and_drop_the_half_team_when_speculating() {
+        let host = |physical, logical| crate::auto::HostInfo {
+            os: "test".into(),
+            arch: "test".into(),
+            logical_cpus: logical,
+            physical_cores: physical,
+            smt: logical > physical,
+            performance_cores: None,
+            features: Default::default(),
+        };
+        assert_eq!(auto_candidates(&host(16, 32), 32, false), (vec![8, 12, 16, 24], 2));
+        assert_eq!(auto_candidates(&host(16, 32), 32, true), (vec![12, 16, 24], 1));
+        assert_eq!(auto_candidates(&host(8, 8), 8, false), (vec![4, 6, 8], 2));
+        assert_eq!(auto_candidates(&host(16, 32), 12, true), (vec![12], 0));
+        assert_eq!(auto_candidates(&host(1, 1), 1, true), (vec![1], 0));
     }
 
     #[test]
