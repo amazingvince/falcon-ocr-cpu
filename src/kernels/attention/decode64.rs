@@ -398,8 +398,9 @@ unsafe fn compact_head_generic<S: Simd>(
 mod tests {
     use super::super::{
         Simd, attention_compact_online_softmax, attention_compact_with_simd, attention_gemm, attention_gemm_compact,
-        attention_online_softmax, attention_with_simd, x86,
+        attention_online_softmax, attention_with_simd,
     };
+    use crate::kernels::x86;
 
     fn supported() {
         assert!(

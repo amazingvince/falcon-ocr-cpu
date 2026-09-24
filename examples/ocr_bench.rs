@@ -254,7 +254,7 @@ fn main() -> Result<()> {
         "model_revision":falcon_ocr::config::MODEL_REVISION,"weights_sha256":model.weights_sha256(),
         "images":image_manifest,"loaded_memory":loaded_memory,"cases":cases,
         "cargo_lock_sha256":hash(include_bytes!("../Cargo.lock")),
-        "source_sha256":{"model":hash(include_bytes!("../src/model.rs")),"kernels":hash(include_bytes!("../src/kernels.rs")),
+        "source_sha256":{"model":hash(include_bytes!("../src/model/mod.rs")),"kernels":hash(include_bytes!("../src/kernels/mod.rs")),
             "runner":hash(include_bytes!("../src/runner.rs")),"preprocess":hash(include_bytes!("../src/preprocess.rs")),
             "packed_kernels":hash(include_bytes!("../src/packed_kernels.rs")),
             "config":hash(include_bytes!("../src/config.rs")),"tokenizer":hash(include_bytes!("../src/tokenizer.rs")),

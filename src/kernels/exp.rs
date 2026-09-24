@@ -198,6 +198,51 @@ unsafe fn exp_shifted_block(values: &mut [f32], shift: f32) {
     }
 }
 
+/// Portable single-precision exp (Cephes coefficients, about 1-2 ulp):
+/// `exp(x) = 2^n * e^r`, `n = round(x * log2 e)`, `r = x - n ln 2` in two
+/// FMA steps, `e^r = 1 + r + r^2 * P(r)`. Arguments below -87 return 0 (no
+/// subnormal results, so no flush-to-zero dependence), above [`EXP_MAX`]
+/// (88.376) return infinity, NaN returns NaN. The true exp stays finite up to
+/// 88.72, but the `2^n` bit construction below overflows once `n` rounds to
+/// 128, which happens from 88.3763 on; the ceiling stops short of that. Every
+/// caller is a softmax with non-positive arguments. Every ISA's `exp_fast`
+/// performs exactly these IEEE operations, so the results are bit-identical
+/// across machines.
+#[inline(always)]
+pub(crate) fn exp_poly(x: f32) -> f32 {
+    if x.is_nan() {
+        return x;
+    }
+    if x < EXP_MIN {
+        return 0.0;
+    }
+    if x > EXP_MAX {
+        return f32::INFINITY;
+    }
+    let n = (x * EXP_LOG2E).round_ties_even();
+    let r = n.mul_add(-EXP_LN2_HI, x);
+    let r = n.mul_add(-EXP_LN2_LO, r);
+    let mut p = EXP_P[0];
+    for c in &EXP_P[1..] {
+        p = p.mul_add(r, *c);
+    }
+    let y = p.mul_add(r * r, r) + 1.0;
+    y * f32::from_bits(((n as i32 + 127) as u32) << 23)
+}
+pub(crate) const EXP_MIN: f32 = -87.0;
+pub(crate) const EXP_MAX: f32 = 88.376;
+pub(crate) const EXP_LOG2E: f32 = std::f32::consts::LOG2_E;
+pub(crate) const EXP_LN2_HI: f32 = 0.693_359_4;
+pub(crate) const EXP_LN2_LO: f32 = -2.121_944_4e-4;
+pub(crate) const EXP_P: [f32; 6] = [
+    1.987_569_1e-4,
+    1.398_199_9e-3,
+    8.333_452e-3,
+    4.166_579_6e-2,
+    0.166_666_65,
+    0.5,
+];
+
 /// Scalar convenience wrapper for tests and tails.
 #[cfg(test)]
 #[target_feature(enable = "avx2,fma")]

@@ -144,7 +144,7 @@ pub(super) unsafe fn compact_prefill(
     output: &mut [f32],
 ) {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = match (super::exp_mode() == super::ExpMode::Fast, wide) {
+    let tile: TileFn = match (crate::kernels::exp_mode() == crate::kernels::ExpMode::Fast, wide) {
         (true, true) => tile_head_fast_wide,
         (true, false) => tile_head_fast,
         (false, true) => tile_head_native_wide,

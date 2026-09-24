@@ -9,7 +9,7 @@
 //! it changes results at the level of BF16 activation rounding.
 use rayon::prelude::*;
 
-use super::panel_gemm::Epilogue;
+use super::panel::Epilogue;
 
 /// Output channels per panel (two 16-lane vectors).
 pub(crate) const NR: usize = 32;

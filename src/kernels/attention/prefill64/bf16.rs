@@ -140,7 +140,7 @@ pub(in crate::kernels) unsafe fn compact_prefill(
             std::sync::atomic::Ordering::Relaxed,
         );
     }
-    let fast = super::super::exp_mode() == super::super::ExpMode::Fast;
+    let fast = crate::kernels::exp_mode() == crate::kernels::ExpMode::Fast;
     let repeat = n_heads / n_kv_heads;
     let tiles = query_len.div_ceil(QUERY_TILE);
     let out = OutputPtr(output.as_mut_ptr());
