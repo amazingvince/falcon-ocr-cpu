@@ -344,6 +344,7 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<()> {
 }
 fn main() -> Result<()> {
     let args = Cli::parse();
+    #[cfg_attr(not(any(target_arch = "x86_64", target_arch = "aarch64")), allow(unused_mut))]
     let mut hardware = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
         "logical_cpus_visible":std::thread::available_parallelism().map(|n|n.get()).unwrap_or(1),
         "processor_identifier":std::env::var("PROCESSOR_IDENTIFIER").ok(),
@@ -354,6 +355,12 @@ fn main() -> Result<()> {
         hardware["fma"] = std::is_x86_feature_detected!("fma").into();
         hardware["avx512f"] = std::is_x86_feature_detected!("avx512f").into();
         hardware["avx512bf16"] = std::is_x86_feature_detected!("avx512bf16").into();
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        hardware["neon"] = true.into();
+        hardware["dotprod"] = std::arch::is_aarch64_feature_detected!("dotprod").into();
+        hardware["i8mm"] = std::arch::is_aarch64_feature_detected!("i8mm").into();
     }
     let config = args.runner.apply(RunnerConfig::reference())?;
     ensure!((1..=8).contains(&config.batch_size), "batch_size must be 1..=8");

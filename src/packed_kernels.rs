@@ -96,7 +96,9 @@ impl PhasePackedLinear {
             .into_par_iter()
             .with_min_len(8)
             .for_each(|channel| {
+                #[cfg_attr(not(target_arch = "x86_64"), allow(unused_variables))]
                 let weight = &self.weights[channel * self.input_dim..(channel + 1) * self.input_dim];
+                #[cfg_attr(not(target_arch = "x86_64"), allow(unused_mut))]
                 let mut values = [0.0; 8];
                 #[cfg(target_arch = "x86_64")]
                 // SAFETY: Feature checks and exact shapes bound every SIMD load;

@@ -547,6 +547,8 @@ mod tests {
 
     fn backends() -> Vec<Simd> {
         let mut result = vec![Simd::Scalar];
+        #[cfg(target_arch = "aarch64")]
+        result.push(Simd::Neon);
         #[cfg(target_arch = "x86_64")]
         {
             if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {

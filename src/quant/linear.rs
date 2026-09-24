@@ -263,6 +263,7 @@ mod tests {
 #[derive(Default)]
 pub(crate) struct Scratch {
     pub dense: Vec<f32>,
+    #[cfg(target_arch = "x86_64")]
     pub bf16: crate::kernels::panel_bf16::Panels,
 }
 impl QuantLinear {
@@ -509,28 +510,34 @@ impl QuantLinear {
         scratch: &mut Scratch,
         bf16_projections: bool,
     ) {
-        use crate::kernels::{panel_bf16, panel_gemm};
+        use crate::kernels::panel_gemm;
         assert_eq!(input.len(), rows * self.in_dim, "prefill input shape");
-        if let Codes::I8(codes) = &self.codes
-            && self.group_size == 64
-            && self.out_dim.is_multiple_of(panel_bf16::NR)
-            && bf16_projections
-            && panel_bf16::available()
+        #[cfg(target_arch = "x86_64")]
         {
-            // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
-            // throughput and only the activations round (see `panel_bf16`).
-            panel_bf16::pack(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.bf16);
-            panel_bf16::gemm(
-                input,
-                rows,
-                self.in_dim,
-                &scratch.bf16,
-                self.out_dim,
-                row_scale,
-                epilogue,
-            );
-            return;
+            use crate::kernels::panel_bf16;
+            if let Codes::I8(codes) = &self.codes
+                && self.group_size == 64
+                && self.out_dim.is_multiple_of(panel_bf16::NR)
+                && bf16_projections
+                && panel_bf16::available()
+            {
+                // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
+                // throughput and only the activations round (see `panel_bf16`).
+                panel_bf16::pack(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.bf16);
+                panel_bf16::gemm(
+                    input,
+                    rows,
+                    self.in_dim,
+                    &scratch.bf16,
+                    self.out_dim,
+                    row_scale,
+                    epilogue,
+                );
+                return;
+            }
         }
+        #[cfg(not(target_arch = "x86_64"))]
+        let _ = bf16_projections;
         panel_gemm::pack_panels(
             self.out_dim,
             self.in_dim,

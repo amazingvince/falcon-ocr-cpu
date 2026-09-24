@@ -33,6 +33,7 @@
 //! exp (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
 //! portable instantiations, but no longer equal to the platform `expf`.
 use super::{CompactKv, Geometry, PrefillOptions};
+#[cfg(target_arch = "x86_64")]
 use crate::config::ExpMode;
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;

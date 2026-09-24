@@ -18,6 +18,7 @@ pub(crate) use attention::{
     Bf16Kv, attention_prefill_bf16, attention_with, prefill_bf16_rows_available, store_prefill_bf16_row,
 };
 pub use attention::{CompactKv, Geometry, PrefillOptions, attention, attention_with_simd};
+#[cfg(target_arch = "x86_64")]
 pub(crate) use exp as vexp;
 pub(crate) use panels::panel as panel_gemm;
 #[cfg(target_arch = "x86_64")]

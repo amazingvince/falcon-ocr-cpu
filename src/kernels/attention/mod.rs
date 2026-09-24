@@ -9,13 +9,16 @@
 //! prefill uses blocked GEMM (or the fixed-width tiles) for QK and PV, decode
 //! uses vector dot products. Nothing materializes a sequence-squared matrix.
 #[cfg(target_arch = "x86_64")]
+use super::avx512_available;
+#[cfg(target_arch = "x86_64")]
 use super::panel_bf16;
-use super::{Simd, avx2_available, avx512_available, elements, native_vector};
+use super::{Simd, avx2_available, elements, native_vector};
 use crate::config::ExpMode;
 
 /// BF16 copies of a prefill's keys and values for the BF16 attention kernel:
 /// either written by the fused QKV pass (`Converted`) or converted by the
 /// kernel into the caller's scratch buffers (`Convert`).
+#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))] // only the x86 BF16 kernel reads it
 pub(crate) enum Bf16Kv<'a> {
     /// Keys `[head][total][32]` pairs and value pairs `[kv_head][total / 2][64]`.
     Converted(&'a [u32], &'a [u32]),

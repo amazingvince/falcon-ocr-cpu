@@ -10,12 +10,15 @@
 //! rounds correctly outside that window; `exhaustive_platform_agreement`
 //! checks every non-positive f32 against the platform library, which is the
 //! only domain the softmax uses (`score - running_max <= 0`).
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
 /// Arguments below this may produce f32 subnormals; they take the scalar path.
+#[cfg(target_arch = "x86_64")]
 const FAST_MIN: f32 = -87.0;
 /// Arguments above this overflow f32 (and would overflow the f64 exponent
 /// construction for very large inputs); they take the scalar path.
+#[cfg(target_arch = "x86_64")]
 const FAST_MAX: f32 = 88.0;
 /// Midpoint window, in f64 ulps of the evaluated value (29 bits are dropped
 /// when rounding a normal f64 to f32; the midpoint pattern is 1 << 28).
@@ -24,10 +27,14 @@ const FAST_MAX: f32 = 88.0;
 /// (2^18.3 f64 ulps) from a midpoint. The polynomial adds at most ~2^15 f64
 /// ulps, so 2^20 keeps a 3x margin; about 0.4% of lanes take the scalar path.
 /// Other C libraries must pass `exhaustive_platform_agreement` first.
+#[cfg(target_arch = "x86_64")]
 const UNCERTAIN: i64 = 1 << 20;
 
+#[cfg(target_arch = "x86_64")]
 const LOG2E: f64 = std::f64::consts::LOG2_E;
+#[cfg(target_arch = "x86_64")]
 const LN2_HI: f64 = 0.693_147_180_369_123_8;
+#[cfg(target_arch = "x86_64")]
 const LN2_LO: f64 = 1.908_214_929_270_587_7e-10;
 
 /// `exp` of four f64 lanes to < 1e-11 relative error (degree-9 Taylor on
@@ -35,6 +42,7 @@ const LN2_LO: f64 = 1.908_214_929_270_587_7e-10;
 /// f32 rounding midpoint. The error is ~275x below the `UNCERTAIN` window,
 /// which is all the rounding decision needs.
 #[inline(always)]
+#[cfg(target_arch = "x86_64")]
 unsafe fn exp4(x: __m256d) -> (__m128, __m256i) {
     unsafe {
         let k = _mm256_round_pd::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(_mm256_mul_pd(
@@ -68,6 +76,7 @@ unsafe fn exp4(x: __m256d) -> (__m128, __m256i) {
 
 /// Four 64-bit lane masks -> four 32-bit lane masks (low dwords, in order).
 #[inline(always)]
+#[cfg(target_arch = "x86_64")]
 unsafe fn pack_mask(m: __m256) -> __m128 {
     unsafe {
         let permuted = _mm256_permutevar8x32_ps(m, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7));
@@ -77,6 +86,7 @@ unsafe fn pack_mask(m: __m256) -> __m128 {
 
 /// Lanes whose distance to an f32 midpoint is inside the uncertainty window.
 #[inline(always)]
+#[cfg(target_arch = "x86_64")]
 unsafe fn uncertain(distance: __m256i) -> __m256i {
     unsafe {
         let above = _mm256_cmpgt_epi64(distance, _mm256_set1_epi64x(-UNCERTAIN));
@@ -89,6 +99,7 @@ unsafe fn uncertain(distance: __m256i) -> __m256i {
 /// recomputed with scalar `f32::exp` (midpoint window, subnormal/overflow
 /// range, NaN). No branches; callers batch the rare fix-ups.
 #[inline(always)]
+#[cfg(target_arch = "x86_64")]
 pub(crate) unsafe fn exp8_raw(x: __m256) -> (__m256, i32) {
     unsafe {
         let (lo, lo_distance) = exp4(_mm256_cvtps_pd(_mm256_castps256_ps128(x)));
@@ -111,6 +122,7 @@ pub(crate) unsafe fn exp8_raw(x: __m256) -> (__m256, i32) {
 /// # Safety
 /// AVX2/FMA must be available.
 #[inline(always)]
+#[cfg(target_arch = "x86_64")]
 pub(crate) unsafe fn exp8(x: __m256) -> __m256 {
     unsafe {
         let (lo, lo_distance) = exp4(_mm256_cvtps_pd(_mm256_castps256_ps128(x)));
@@ -149,6 +161,7 @@ pub(crate) unsafe fn exp8(x: __m256) -> __m256 {
 /// # Safety
 /// AVX2/FMA must be available.
 #[target_feature(enable = "avx2,fma")]
+#[cfg(target_arch = "x86_64")]
 pub(crate) unsafe fn exp_shifted_in_place(values: &mut [f32], shift: f32) {
     unsafe {
         for block in values.chunks_mut(BLOCK) {
@@ -158,9 +171,11 @@ pub(crate) unsafe fn exp_shifted_in_place(values: &mut [f32], shift: f32) {
 }
 
 /// Values per branch-free block (64 vectors).
+#[cfg(target_arch = "x86_64")]
 const BLOCK: usize = 512;
 
 #[inline(always)]
+#[cfg(target_arch = "x86_64")]
 unsafe fn exp_shifted_block(values: &mut [f32], shift: f32) {
     debug_assert!(values.len() <= BLOCK);
     unsafe {
@@ -246,11 +261,12 @@ pub(crate) const EXP_P: [f32; 6] = [
 /// Scalar convenience wrapper for tests and tails.
 #[cfg(test)]
 #[target_feature(enable = "avx2,fma")]
+#[cfg(target_arch = "x86_64")]
 unsafe fn exp1(x: f32) -> f32 {
     unsafe { _mm256_cvtss_f32(exp8(_mm256_set1_ps(x))) }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_arch = "x86_64"))]
 mod tests {
     use super::*;
     use rayon::prelude::*;
