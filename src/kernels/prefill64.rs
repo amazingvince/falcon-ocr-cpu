@@ -64,6 +64,41 @@ impl OutputPtr {
     }
 }
 
+/// Cycle counters of the main-path stages (probe; FALCON_OCR_PREFILL_PROFILE=1).
+static STAGE_CYCLES: [std::sync::atomic::AtomicU64; 3] = [
+    std::sync::atomic::AtomicU64::new(0),
+    std::sync::atomic::AtomicU64::new(0),
+    std::sync::atomic::AtomicU64::new(0),
+];
+fn profile_enabled() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("FALCON_OCR_PREFILL_PROFILE").is_some())
+}
+#[inline(always)]
+fn cycles() -> u64 {
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        std::arch::x86_64::_rdtsc()
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    0
+}
+/// Print and reset the stage split (QK, mask+softmax, PV).
+pub(crate) fn report_stage_cycles() {
+    if !profile_enabled() {
+        return;
+    }
+    let v: Vec<u64> = STAGE_CYCLES.iter().map(|c| c.swap(0, std::sync::atomic::Ordering::Relaxed)).collect();
+    let total = v.iter().sum::<u64>().max(1) as f64;
+    eprintln!(
+        "prefill attention stages (thread cycles): qk {:.1}% softmax {:.1}% pv {:.1}% total {:.2e}",
+        100.0 * v[0] as f64 / total,
+        100.0 * v[1] as f64 / total,
+        100.0 * v[2] as f64 / total,
+        total
+    );
+}
+
 struct Shape {
     query_width: usize,
     kv_width: usize,
@@ -363,6 +398,10 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
                 .add(key_start * shape.kv_width + kv_head * HEAD_DIM)
         };
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
+            let profile = profile_enabled();
+            let t0 = if profile { cycles() } else { 0 };
+            let mut t1 = 0;
+            let mut t2 = 0;
             unsafe {
                 #[cfg(target_arch = "x86_64")]
                 if WIDE {
@@ -396,6 +435,9 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
                     shape.scale,
                     &mut st,
                 );
+                if profile {
+                    t1 = cycles();
+                }
                 if !all_image {
                     mask_lanes(shape, first_absolute, queries, key_start, keys, &mut st);
                 }
@@ -408,6 +450,9 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
                     out,
                     shape.query_width,
                 );
+                if profile {
+                    t2 = cycles();
+                }
                 #[cfg(target_arch = "x86_64")]
                 if WIDE {
                     wide::pv_lanes(
@@ -440,6 +485,13 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
                     out,
                     shape.query_width,
                 );
+            }
+            if profile {
+                use std::sync::atomic::Ordering::Relaxed;
+                let t3 = cycles();
+                STAGE_CYCLES[0].fetch_add(t1 - t0, Relaxed);
+                STAGE_CYCLES[1].fetch_add(t2 - t1, Relaxed);
+                STAGE_CYCLES[2].fetch_add(t3 - t2, Relaxed);
             }
         } else {
             unsafe {

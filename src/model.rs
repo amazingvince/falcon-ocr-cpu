@@ -1018,6 +1018,9 @@ impl Model {
         }
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;
+        if rows > 8 {
+            kernels::report_prefill_stage_cycles();
+        }
         Ok(())
     }
 

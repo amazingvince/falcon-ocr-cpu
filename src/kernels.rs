@@ -14,6 +14,10 @@ mod prefill64;
 // Bitwise equal to the platform expf on the softmax domain (exhaustive test).
 #[cfg(target_arch = "x86_64")]
 pub(crate) mod panel_gemm;
+/// Prefill attention stage split (probe, `FALCON_OCR_PREFILL_PROFILE`).
+pub(crate) fn report_prefill_stage_cycles() {
+    prefill64::report_stage_cycles();
+}
 pub(crate) mod vexp;
 
 /// Vector exp in the prefill attention tiles on x86.
