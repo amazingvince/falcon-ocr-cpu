@@ -2591,10 +2591,6 @@ pub(crate) fn positions(
 }
 
 #[cfg(test)]
-#[path = "model_diagnostics.rs"]
-mod diagnostics;
-
-#[cfg(test)]
 mod tests {
     use super::*;
     fn config() -> ModelConfig {

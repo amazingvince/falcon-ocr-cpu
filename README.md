@@ -166,12 +166,6 @@ batch decode. Repeated small-fixture runs reduce batch2/4/8 latency by about
 18%, 28–30% and 21–24%, at an additional 835.5 MiB. It remains opt-in pending
 full-page measurements. The default is `unpacked`.
 
-An experimental single-request BF16 path is available with `--precision bf16`.
-It has explicit BF16 weights/activations/KV storage and an AVX-512BF16 backend,
-but has not passed the frozen numerical gates. See [BF16 evidence](docs/BF16.md).
-INT8/INT4 remain isolated experiments; [quantization research](docs/QUANTIZATION.md)
-records CPU instruction support, candidate libraries, exact storage costs and gates.
-
 ## Validation
 
 ```sh

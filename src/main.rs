@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    Backend, Bf16Model, Bf16Runner, CacheLayout, GenerationOptions, HeadMode, Model, Precision,
-    Runner, RunnerConfig, WeightLayout, trace::TensorTrace,
+    Backend, CacheLayout, GenerationOptions, HeadMode, Model, Runner, RunnerConfig, WeightLayout,
+    trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
 
@@ -42,15 +42,12 @@ struct Cli {
     /// round-to-nearest quantization at load.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
-    /// BF16 is an experimental single-request graph, separate from FP32 defaults.
-    #[arg(long, value_enum, default_value = "fp32", global = true)]
-    precision: Precision,
-    /// Under BF16, avx512 requires AVX-512F and AVX-512BF16; avx2 is unsupported.
+    /// Vector backend for the GEMV and attention kernels.
     #[arg(long, value_enum, default_value = "auto", global = true)]
     backend: Backend,
     #[arg(long, default_value_t = 1, global = true)]
     batch_size: usize,
-    /// FP32 defaults to `compact`; the experimental BF16 graph defaults to `expanded`.
+    /// KV cache layout [default: compact].
     #[arg(long, value_enum, global = true)]
     cache_layout: Option<CacheLayout>,
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
@@ -139,7 +136,7 @@ fn main() -> Result<()> {
     if matches!(cli.command, Command::Doctor) {
         let mut features = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
             "logical_cpus":falcon_ocr::cpu::logical_cpus(),"physical_cores":falcon_ocr::cpu::physical_cores(),
-            "precision":cli.precision,"gpu_parity_qualified":false});
+            "gpu_parity_qualified":false});
         #[cfg(target_arch = "x86_64")]
         {
             features["avx2"] = std::is_x86_feature_detected!("avx2").into();
@@ -150,9 +147,6 @@ fn main() -> Result<()> {
         }
         println!("{}", serde_json::to_string_pretty(&features)?);
         return Ok(());
-    }
-    if cli.precision == Precision::Bf16 {
-        return execute_bf16(cli);
     }
     anyhow::ensure!(
         cli.w8_artifact.is_none() || cli.mode == Mode::Fast,
@@ -290,80 +284,6 @@ fn main() -> Result<()> {
                     println!("{}", result.text);
                 } else {
                     println!("{}", serde_json::to_string(&result)?);
-                }
-            }
-        }
-        Command::Trace {
-            fixture,
-            output,
-            max_new_tokens,
-        } => {
-            let mut trace = TensorTrace::default();
-            let result = runner.trace_reference(fixture, max_new_tokens, &mut trace)?;
-            trace.save(&output)?;
-            std::fs::write(
-                output.with_extension("json"),
-                serde_json::to_vec_pretty(&result)?,
-            )?;
-            println!("{}", serde_json::to_string(&result)?);
-        }
-        _ => unreachable!(),
-    }
-    Ok(())
-}
-
-fn execute_bf16(cli: Cli) -> Result<()> {
-    anyhow::ensure!(
-        cli.head.is_none_or(|head| head == HeadMode::Full),
-        "the experimental BF16 graph has no screened head"
-    );
-    anyhow::ensure!(
-        cli.mode == Mode::Exact && cli.w8_artifact.is_none(),
-        "--mode fast and --w8-artifact apply to the FP32 runner"
-    );
-    let config = RunnerConfig {
-        threads: cli.threads.unwrap_or(16),
-        backend: cli.backend,
-        batch_size: cli.batch_size,
-        cache_layout: cli.cache_layout.unwrap_or(CacheLayout::Expanded),
-        weight_layout: cli.weight_layout,
-    };
-    Bf16Runner::validate_config(&config)?;
-    let start = Instant::now();
-    let model = Arc::new(Bf16Model::load(&cli.model)?);
-    let load_ms = start.elapsed().as_secs_f64() * 1000.;
-    if matches!(cli.command, Command::Inspect) {
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&serde_json::json!({"config":model.config(),
-            "precision":"bf16","experimental":true,"gpu_parity_qualified":false,
-            "weights_sha256":model.weights_sha256(),"weight_tensor_bytes":model.weight_tensor_bytes(),"load_ms":load_ms}))?
-        );
-        return Ok(());
-    }
-    eprintln!("Experimental BF16 model loaded in {load_ms:.1} ms; GPU qualification is incomplete");
-    let runner = Bf16Runner::new(model, &cli.model, config)?;
-    match cli.command {
-        Command::Run {
-            images,
-            max_new_tokens,
-            min_dimension,
-            max_dimension,
-            text,
-        } => {
-            let options = GenerationOptions {
-                max_new_tokens,
-                min_dimension,
-                max_dimension,
-            };
-            for output in runner
-                .recognize_files(&images, &options)
-                .context("recognize input images with experimental BF16")?
-            {
-                if text {
-                    println!("{}", output.result.text);
-                } else {
-                    println!("{}", serde_json::to_string(&output)?);
                 }
             }
         }

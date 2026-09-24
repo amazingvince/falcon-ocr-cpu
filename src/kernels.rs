@@ -184,12 +184,6 @@ pub fn linear_with_simd(
         "linear weight shape"
     );
     assert_eq!(out.len(), elements(rows, out_dim), "linear output shape");
-    #[cfg(test)]
-    if crate::numerical_diagnostics::aocl_prefill_w2_override(
-        input, rows, in_dim, weight, out_dim, out,
-    ) {
-        return;
-    }
     let selected = simd.resolved();
     if out.is_empty() {
         return;
@@ -295,10 +289,6 @@ pub fn rms_norm(input: &[f32], out: &mut [f32], width: usize, eps: f32, weight: 
     );
     if let Some(w) = weight {
         assert_eq!(w.len(), width, "RMSNorm affine shape");
-    }
-    #[cfg(test)]
-    if crate::numerical_diagnostics::rms_override(input, out, width, eps, weight) {
-        return;
     }
     // Decode-sized inputs (one hidden row, or 16 query/key heads of up to eight
     // rows) cost less than waking the pool; each row's arithmetic is identical.

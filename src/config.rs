@@ -5,15 +5,6 @@ pub const MODEL_REVISION: &str = "fe757d59ecd79d4d68760162306a70a015761ad9";
 pub const WEIGHTS_SHA256: &str = "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16";
 pub const CONFIG_SHA256: &str = "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf";
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
-#[serde(rename_all = "snake_case")]
-pub enum Precision {
-    #[default]
-    Fp32,
-    /// Experimental single-request BF16 graph; GPU qualification is incomplete.
-    Bf16,
-}
-
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum Backend {
