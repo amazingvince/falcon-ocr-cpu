@@ -166,13 +166,24 @@ fn packed_files_round_trip_the_checkpoint_loader_and_match_the_published_ones() 
         assert_eq!(reloaded.profile(), model.profile());
         let published = Path::new(PACKED_DIR).join(mode.packed_file_name().unwrap());
         let (ours, theirs) = (safetensors_metadata(&file), safetensors_metadata(&published));
-        for key in ["format", "profile", "weight_bits", "tensors_sha256", "source_sha256", "model_revision"] {
+        for key in [
+            "format",
+            "profile",
+            "weight_bits",
+            "tensors_sha256",
+            "source_sha256",
+            "model_revision",
+        ] {
             assert_eq!(ours[key], theirs[key], "{mode} packed metadata {key}");
         }
         let from_checkpoint = tokens(&runner(model, MODEL_DIR, RunnerConfig::default()), JOURNAL, 300);
         let from_file = tokens(&runner(reloaded, MODEL_DIR, RunnerConfig::default()), JOURNAL, 300);
         assert_eq!(from_file, from_checkpoint, "{mode}");
-        let from_published = tokens(&runner(packed_model(mode), PACKED_DIR, RunnerConfig::default()), JOURNAL, 300);
+        let from_published = tokens(
+            &runner(packed_model(mode), PACKED_DIR, RunnerConfig::default()),
+            JOURNAL,
+            300,
+        );
         assert_eq!(from_published, from_checkpoint, "{mode} published file");
     }
 }
