@@ -122,8 +122,8 @@ struct Shape {
     profile: bool,
 }
 
-/// Pure prefill (no generated keys) of `cache` (`head_dim == 64`,
-/// `prefix_len == total_len`); `wide` selects the 16-lane tiles.
+/// Prefill of `cache` (`head_dim == 64`): a pure prefix, or one with generated
+/// keys past the prefix (read from their own rows); `wide` selects the 16-lane tiles.
 ///
 /// # Safety
 /// AVX2/FMA (NEON on aarch64) must be available and the shapes must satisfy
@@ -154,7 +154,7 @@ pub(super) unsafe fn compact_prefill(
 }
 
 /// Entry for one (query tile, head) with a given instruction set.
-type TileFn = unsafe fn(&[f32], &[f32], &[f32], &Shape, usize, usize, usize, usize, &[f32], *mut f32);
+type TileFn = unsafe fn(&[f32], &CompactKv<'_>, &Shape, usize, usize, usize, usize, &[f32], *mut f32);
 
 unsafe fn compact_prefill_with(
     tile_head: TileFn,
@@ -166,7 +166,7 @@ unsafe fn compact_prefill_with(
     output: &mut [f32],
     profile: bool,
 ) {
-    let (k, v, n_heads, n_kv_heads) = (cache.prefix_k, cache.v, cache.n_heads, cache.n_kv_heads);
+    let (n_heads, n_kv_heads) = (cache.n_heads, cache.n_kv_heads);
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
         kv_width: n_kv_heads * HEAD_DIM,
@@ -187,7 +187,7 @@ unsafe fn compact_prefill_with(
             // SAFETY: features and shapes were checked by the caller; each
             // task owns rows [tile * 32, tile * 32 + queries) of `head`.
             unsafe {
-                tile_head(q, k, v, &shape, tile, queries, head, kv_head, sinks, out.get());
+                tile_head(q, cache, &shape, tile, queries, head, kv_head, sinks, out.get());
             }
         });
     }
@@ -199,8 +199,7 @@ unsafe fn compact_prefill_with(
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head_native(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -209,7 +208,7 @@ unsafe fn tile_head_native(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe { tile_head::<crate::simd::Avx2, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
+    unsafe { tile_head::<crate::simd::Avx2, false>(q, cache, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// AVX-512F QK/PV products with the platform-exact exp.
 #[cfg(target_arch = "x86_64")]
@@ -217,8 +216,7 @@ unsafe fn tile_head_native(
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head_native_wide(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -227,7 +225,7 @@ unsafe fn tile_head_native_wide(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe { tile_head::<crate::simd::Avx2, true>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
+    unsafe { tile_head::<crate::simd::Avx2, true>(q, cache, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// AVX-512F QK/PV products with the portable fast exp.
 #[cfg(target_arch = "x86_64")]
@@ -235,8 +233,7 @@ unsafe fn tile_head_native_wide(
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head_fast_wide(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -245,7 +242,7 @@ unsafe fn tile_head_fast_wide(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe { tile_head::<crate::simd::Avx2Fast, true>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
+    unsafe { tile_head::<crate::simd::Avx2Fast, true>(q, cache, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// AVX2 with the portable fast exp (`ExpMode::Fast`).
 #[cfg(target_arch = "x86_64")]
@@ -253,8 +250,7 @@ unsafe fn tile_head_fast_wide(
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head_fast(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -263,14 +259,13 @@ unsafe fn tile_head_fast(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe { tile_head::<crate::simd::Avx2Fast, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
+    unsafe { tile_head::<crate::simd::Avx2Fast, false>(q, cache, shape, tile, queries, head, kv_head, sinks, output) }
 }
 #[cfg(target_arch = "aarch64")]
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head_native(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -279,15 +274,14 @@ unsafe fn tile_head_native(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe { tile_head::<crate::simd::Neon, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
+    unsafe { tile_head::<crate::simd::Neon, false>(q, cache, shape, tile, queries, head, kv_head, sinks, output) }
 }
 /// The portable instantiation (tests; bitwise equal to NEON).
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head_portable(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -296,15 +290,14 @@ unsafe fn tile_head_portable(
     sinks: &[f32],
     output: *mut f32,
 ) {
-    unsafe { tile_head::<crate::simd::Portable, false>(q, k, v, shape, tile, queries, head, kv_head, sinks, output) }
+    unsafe { tile_head::<crate::simd::Portable, false>(q, cache, shape, tile, queries, head, kv_head, sinks, output) }
 }
 
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 unsafe fn tile_head<S: Isa, const WIDE: bool>(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    cache: &CompactKv<'_>,
     shape: &Shape,
     tile: usize,
     queries: usize,
@@ -340,10 +333,28 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
     }
     let mut st = [0.0_f32; KEY_TILE * QUERY_TILE];
     let mut scores = [0.0_f32; QUERY_TILE * KEY_TILE];
+    // The keys of a tile: the expanded prefix rows, the generated rows of
+    // this KV head, or (for the one tile crossing the prefix boundary) a
+    // gathered copy, so the tile width and the reduction order are those
+    // of the expanded layout, as in `tiled::attention_gemm`. Pure prefixes
+    // never gather.
+    let mut gathered = Vec::<f32>::new();
     for key_start in (0..visible_end).step_by(KEY_TILE) {
         let keys = (visible_end - key_start).min(KEY_TILE);
-        let key_rows = unsafe { k.as_ptr().add(key_start * shape.query_width + head * HEAD_DIM) };
-        let value_rows = unsafe { v.as_ptr().add(key_start * shape.kv_width + kv_head * HEAD_DIM) };
+        let (key_rows, key_stride) = if key_start + keys <= cache.prefix_len {
+            let at = key_start * shape.query_width + head * HEAD_DIM;
+            (unsafe { cache.prefix_k.as_ptr().add(at) }, shape.query_width)
+        } else if key_start >= cache.prefix_len {
+            let at = (key_start - cache.prefix_len) * shape.kv_width + kv_head * HEAD_DIM;
+            (unsafe { cache.generated_k.as_ptr().add(at) }, shape.kv_width)
+        } else {
+            gathered.resize(keys * HEAD_DIM, 0.0);
+            for key in 0..keys {
+                gathered[key * HEAD_DIM..(key + 1) * HEAD_DIM].copy_from_slice(cache.key(key_start + key, head));
+            }
+            (gathered.as_ptr(), HEAD_DIM)
+        };
+        let value_rows = unsafe { cache.v.as_ptr().add(key_start * shape.kv_width + kv_head * HEAD_DIM) };
         if qk_uses_main_path(queries, keys) && pv_uses_main_path(queries, keys) {
             let profile = shape.profile;
             let t0 = if profile { cycles() } else { 0 };
@@ -352,12 +363,12 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
             unsafe {
                 #[cfg(target_arch = "x86_64")]
                 if WIDE {
-                    wide::qk_lanes(&qt, queries, key_rows, shape.query_width, keys, shape.scale, &mut st);
+                    wide::qk_lanes(&qt, queries, key_rows, key_stride, keys, shape.scale, &mut st);
                 } else {
-                    qk_lanes::<S>(&qt, queries, key_rows, shape.query_width, keys, shape.scale, &mut st);
+                    qk_lanes::<S>(&qt, queries, key_rows, key_stride, keys, shape.scale, &mut st);
                 }
                 #[cfg(not(target_arch = "x86_64"))]
-                qk_lanes::<S>(&qt, queries, key_rows, shape.query_width, keys, shape.scale, &mut st);
+                qk_lanes::<S>(&qt, queries, key_rows, key_stride, keys, shape.scale, &mut st);
                 if profile {
                     t1 = cycles();
                 }
@@ -402,6 +413,7 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
                     key_start,
                     keys,
                     key_rows,
+                    key_stride,
                     value_rows,
                     &mut scores,
                     &mut maxima,
@@ -825,6 +837,7 @@ unsafe fn reference_key_tile(
     key_start: usize,
     keys: usize,
     key_rows: *const f32,
+    key_stride: usize,
     value_rows: *const f32,
     scores: &mut [f32; QUERY_TILE * KEY_TILE],
     maxima: &mut [f32; QUERY_TILE],
@@ -845,7 +858,7 @@ unsafe fn reference_key_tile(
             1,
             query_stride,
             key_rows,
-            query_stride,
+            key_stride as isize,
             1,
             0.0_f32,
             shape.scale,
@@ -996,6 +1009,69 @@ mod tests {
                     (a - b).abs() <= 1e-5 * (1.0 + b.abs()),
                     "query_len {query_len} index {i}: {a} vs {b}"
                 );
+            }
+        }
+    }
+
+    /// With generated keys the tiles gather the boundary tile like the tiled
+    /// GEMM path and stay bitwise equal to it (on x86 the two share their
+    /// arithmetic order); this is the path aarch64 takes for both layouts.
+    #[cfg(target_arch = "x86_64")]
+    #[test]
+    fn mixed_cache_tiles_match_tiled_gemm_bitwise() {
+        if !available() {
+            return;
+        }
+        // (queries, prefix, total, query offset, image start, image end)
+        for (query_len, prefix_len, total_len, offset, image_start, image_end) in [
+            (4, 137, 141, 137, 1, 129),
+            (9, 128, 137, 128, 1, 129),
+            (33, 100, 133, 100, 1, 90),
+            (40, 3, 43, 3, 1, 40),
+            (5, 250, 300, 295, 0, 0),
+        ] {
+            let q = values(query_len * 16 * 64, 71, 3.0);
+            let prefix = values(prefix_len * 16 * 64, 83, 3.0);
+            let generated = values((total_len - prefix_len) * 8 * 64, 37, 3.0);
+            let v = values(total_len * 8 * 64, 117, 3.0);
+            let sinks = values(16, 29, 2.0);
+            let cache = CompactKv {
+                prefix_k: &prefix,
+                generated_k: &generated,
+                v: &v,
+                prefix_len,
+                total_len,
+                n_heads: 16,
+                n_kv_heads: 8,
+                head_dim: 64,
+            };
+            let geometry = Geometry::new(offset, image_start, image_end);
+            let mut expected = vec![f32::NAN; q.len()];
+            super::super::tiled::attention_gemm(&q, &cache, geometry, &sinks, &mut expected);
+            for wide in [false, true] {
+                if wide && !std::is_x86_feature_detected!("avx512f") {
+                    continue;
+                }
+                let mut actual = vec![f32::NAN; q.len()];
+                unsafe {
+                    compact_prefill(
+                        &q,
+                        &cache,
+                        query_len,
+                        geometry,
+                        &sinks,
+                        &mut actual,
+                        wide,
+                        PrefillOptions::EXACT,
+                    );
+                }
+                for (i, (a, e)) in actual.iter().zip(&expected).enumerate() {
+                    assert_eq!(
+                        a.to_bits(),
+                        e.to_bits(),
+                        "Q={query_len} prefix={prefix_len} total={total_len} wide={wide} index {i}: {a} vs {e}"
+                    );
+                }
             }
         }
     }

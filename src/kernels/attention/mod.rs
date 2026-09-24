@@ -255,11 +255,14 @@ pub(crate) fn attention_with(
     kv.validate(q, query_len, &geometry, sinks, output);
     let selected = simd.resolved();
     // The fixed-width prefill tiles: AVX2 on x86 (16-lane tiles under
-    // `auto` with AVX-512F), NEON on aarch64; pure prefixes only.
+    // `auto` with AVX-512F), NEON on aarch64. On x86 a cache with generated
+    // keys takes the tiled GEMM below, which is bitwise the same there; on
+    // aarch64 the tiles serve both layouts, because the `gemm` crate's NEON
+    // order differs from the tiles' and the layouts must agree bit for bit.
     #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
     if query_len >= 4
         && kv.head_dim == 64
-        && kv.total_len == kv.prefix_len
+        && (kv.total_len == kv.prefix_len || cfg!(target_arch = "aarch64"))
         && if cfg!(target_arch = "x86_64") {
             selected != Simd::Scalar && avx2_available()
         } else {

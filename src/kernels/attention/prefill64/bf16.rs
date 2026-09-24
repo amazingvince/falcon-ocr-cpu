@@ -374,6 +374,7 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
                     key_start,
                     keys,
                     operands.k.as_ptr().add(key_start * shape.query_width + head * HEAD_DIM),
+                    shape.query_width,
                     operands.v.as_ptr().add(key_start * shape.kv_width + kv_head * HEAD_DIM),
                     &mut scores,
                     &mut maxima,
