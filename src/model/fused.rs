@@ -38,16 +38,7 @@ pub(super) fn fused_prefix_rows(
     let (k_start, v_start) = (prefix_k.len(), values.len());
     let k_out = crate::team::SharedMut::new(prefix_k.spare_capacity_mut());
     let v_out = crate::team::SharedMut::new(values.spare_capacity_mut());
-    #[cfg(target_arch = "x86_64")]
-    let vector = c.head_dim == 64
-        && simd.resolved() != kernels::Simd::Scalar
-        && std::is_x86_feature_detected!("avx2")
-        && std::is_x86_feature_detected!("fma");
-    #[cfg(not(target_arch = "x86_64"))]
-    let vector = {
-        let _ = simd;
-        false
-    };
+    let vector = c.head_dim == 64 && simd.resolved() != kernels::Simd::Scalar && native_row_available();
     // BF16 attention copies (`kernels::store_prefill_bf16_row`): keys
     // `[head][rows][32]`, value pairs `[kv_head][rows / 2][64]`.
     let pairs = rows.div_ceil(2);
@@ -78,16 +69,10 @@ pub(super) fn fused_prefix_rows(
                 std::slice::from_raw_parts_mut(v.as_mut_ptr().cast::<f32>(), kdim),
             )
         };
-        #[cfg(target_arch = "x86_64")]
-        let done = vector && {
-            // SAFETY: AVX2/FMA detected above; head_dim is 64.
-            unsafe { fused_row_avx2(c, src, rope, q, k, v) };
-            true
-        };
-        #[cfg(not(target_arch = "x86_64"))]
-        let done = false;
-        if !done {
-            let _ = vector;
+        if vector {
+            // SAFETY: the native vector ISA was detected above; head_dim is 64.
+            unsafe { fused_row_native(c, src, rope, q, k, v) };
+        } else {
             fused_row(c, src, rope, q, k, v);
         }
         if let Some((keys, values)) = &bf16 {
@@ -129,11 +114,68 @@ fn fused_row(c: &ModelConfig, src: &[f32], rope: &[[f32; 2]], q: &mut [f32], k: 
     v.copy_from_slice(&src[qdim + kdim..qdim + 2 * kdim]);
 }
 
-/// `fused_row` for 64-wide heads with AVX2: the same reduction tree and
-/// products, so bitwise equal.
+/// Whether `fused_row_native` runs on this CPU.
+fn native_row_available() -> bool {
+    #[cfg(target_arch = "x86_64")]
+    {
+        std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        true
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    {
+        false
+    }
+}
+
+/// `fused_row_vector` on the native instruction set.
+///
+/// # Safety
+/// [`native_row_available`] returned true; `head_dim == 64`.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
-unsafe fn fused_row_avx2(c: &ModelConfig, src: &[f32], rope: &[[f32; 2]], q: &mut [f32], k: &mut [f32], v: &mut [f32]) {
+unsafe fn fused_row_native(
+    c: &ModelConfig,
+    src: &[f32],
+    rope: &[[f32; 2]],
+    q: &mut [f32],
+    k: &mut [f32],
+    v: &mut [f32],
+) {
+    unsafe { fused_row_vector::<crate::simd::Avx2>(c, src, rope, q, k, v) }
+}
+#[cfg(target_arch = "aarch64")]
+unsafe fn fused_row_native(
+    c: &ModelConfig,
+    src: &[f32],
+    rope: &[[f32; 2]],
+    q: &mut [f32],
+    k: &mut [f32],
+    v: &mut [f32],
+) {
+    unsafe { fused_row_vector::<crate::simd::Neon>(c, src, rope, q, k, v) }
+}
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+unsafe fn fused_row_native(_: &ModelConfig, _: &[f32], _: &[[f32; 2]], _: &mut [f32], _: &mut [f32], _: &mut [f32]) {
+    unreachable!("no native vector row on this architecture")
+}
+
+/// `fused_row` for 64-wide heads on instruction set `S`: the same reduction
+/// tree and products as the portable row, so bitwise equal to it.
+///
+/// # Safety
+/// `S`'s instruction set is enabled in the caller; `head_dim == 64`.
+#[inline(always)]
+unsafe fn fused_row_vector<S: crate::simd::Simd>(
+    c: &ModelConfig,
+    src: &[f32],
+    rope: &[[f32; 2]],
+    q: &mut [f32],
+    k: &mut [f32],
+    v: &mut [f32],
+) {
     let qdim = c.query_dim();
     let group = c.n_heads / c.n_kv_heads;
     let rope = rope.as_ptr().cast::<f32>();
@@ -141,61 +183,53 @@ unsafe fn fused_row_avx2(c: &ModelConfig, src: &[f32], rope: &[[f32; 2]], q: &mu
     unsafe {
         for head in 0..c.n_heads {
             let factors = rope.add(head * 64);
-            norm_rope_head_avx2(src.as_ptr().add(head * 64), factors, q.as_mut_ptr().add(head * 64));
+            norm_rope_head::<S>(src.as_ptr().add(head * 64), factors, q.as_mut_ptr().add(head * 64));
             let key = qdim + (head / group) * 64;
-            norm_rope_head_avx2(src.as_ptr().add(key), factors, k.as_mut_ptr().add(head * 64));
+            norm_rope_head::<S>(src.as_ptr().add(key), factors, k.as_mut_ptr().add(head * 64));
         }
     }
     v.copy_from_slice(&src[qdim + c.kv_dim()..qdim + 2 * c.kv_dim()]);
 }
 
 /// `rms_norm_row` (width 64, no weight) then the pairwise rotation of one head.
-#[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx2,fma")]
-unsafe fn norm_rope_head_avx2(x: *const f32, rope: *const f32, out: *mut f32) {
-    use std::arch::x86_64::*;
-    // `sum_squares_pairwise` on 32 values: squares, then lanes i += i + 16,
-    // i += i + 8, i += i + 4, i += i + 2, i += i + 1.
-    unsafe fn leaf(x: *const f32) -> f32 {
-        unsafe {
-            let square = |i: usize| {
-                let v = _mm256_loadu_ps(x.add(i));
-                _mm256_mul_ps(v, v)
-            };
-            let a = _mm256_add_ps(square(0), square(16));
-            let b = _mm256_add_ps(square(8), square(24));
-            let w = _mm256_add_ps(a, b);
-            let h = _mm_add_ps(_mm256_castps256_ps128(w), _mm256_extractf128_ps(w, 1));
-            let h = _mm_add_ps(h, _mm_movehl_ps(h, h));
-            _mm_cvtss_f32(_mm_add_ss(h, _mm_shuffle_ps(h, h, 1)))
-        }
-    }
+#[inline(always)]
+unsafe fn norm_rope_head<S: crate::simd::Simd>(x: *const f32, rope: *const f32, out: *mut f32) {
     unsafe {
+        // `sum_squares_pairwise` on 32 values: squares, then lanes i += i + 16,
+        // i += i + 8, i += i + 4, i += i + 2, i += i + 1.
+        let leaf = |x: *const f32| {
+            let square = |i: usize| {
+                let v = S::load(x.add(i));
+                S::mul(v, v)
+            };
+            let a = S::add(square(0), square(16));
+            let b = S::add(square(8), square(24));
+            S::sum_tree(S::add(a, b))
+        };
         let sum = leaf(x) + leaf(x.add(32));
-        let scale = _mm256_set1_ps((sum / 64.0 + f32::EPSILON).sqrt().recip());
+        let scale = S::splat((sum / 64.0 + f32::EPSILON).sqrt().recip());
         for j in 0..8 {
-            let v = _mm256_mul_ps(_mm256_loadu_ps(x.add(8 * j)), scale);
+            let v = S::mul(S::load(x.add(8 * j)), scale);
             // Four [cos, sin] pairs: duplicate cos and sin into both lanes of a pair.
-            let factors = _mm256_loadu_ps(rope.add(8 * j));
-            let cos = _mm256_moveldup_ps(factors);
-            let sin = _mm256_movehdup_ps(factors);
-            let swapped = _mm256_permute_ps(v, 0b1011_0001);
+            let factors = S::load(rope.add(8 * j));
+            let cos = S::dup_even(factors);
+            let sin = S::dup_odd(factors);
+            let swapped = S::swap_pairs(v);
             // Even lanes a*cos - b*sin, odd lanes b*cos + a*sin.
-            let rotated = _mm256_addsub_ps(_mm256_mul_ps(v, cos), _mm256_mul_ps(swapped, sin));
-            _mm256_storeu_ps(out.add(8 * j), rotated);
+            let rotated = S::addsub(S::mul(v, cos), S::mul(swapped, sin));
+            S::store(out.add(8 * j), rotated);
         }
     }
 }
 
-#[cfg(all(test, target_arch = "x86_64"))]
+#[cfg(test)]
 mod fused_row_tests {
     use super::*;
 
+    /// The native and portable instantiations of the vector row against the
+    /// scalar row.
     #[test]
-    fn avx2_row_is_bitwise_the_portable_row() {
-        if !(std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")) {
-            return;
-        }
+    fn vector_rows_are_bitwise_the_portable_row() {
         let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         let width = c.query_dim() + 2 * c.kv_dim();
         let mut state = 12345_u64;
@@ -225,9 +259,15 @@ mod fused_row_tests {
             );
             let (mut q2, mut k2, mut v2) = (q1.clone(), k1.clone(), v1.clone());
             fused_row(&c, &src, &rope, &mut q1, &mut k1, &mut v1);
-            unsafe { fused_row_avx2(&c, &src, &rope, &mut q2, &mut k2, &mut v2) };
+            unsafe { fused_row_vector::<crate::simd::Portable>(&c, &src, &rope, &mut q2, &mut k2, &mut v2) };
             for (a, b) in q1.iter().chain(&k1).chain(&v1).zip(q2.iter().chain(&k2).chain(&v2)) {
-                assert_eq!(a.to_bits(), b.to_bits(), "trial {trial}");
+                assert_eq!(a.to_bits(), b.to_bits(), "portable trial {trial}");
+            }
+            if native_row_available() {
+                unsafe { fused_row_native(&c, &src, &rope, &mut q2, &mut k2, &mut v2) };
+                for (a, b) in q1.iter().chain(&k1).chain(&v1).zip(q2.iter().chain(&k2).chain(&v2)) {
+                    assert_eq!(a.to_bits(), b.to_bits(), "native trial {trial}");
+                }
             }
         }
     }

@@ -35,6 +35,21 @@ pub(crate) trait Simd: Copy + Send + Sync + 'static {
     /// `((v0+v4) + (v1+v5)) + ((v2+v6) + (v3+v7))`: the x86 `dot_avx2` tree
     /// (128-bit halves added, then two horizontal pair additions).
     unsafe fn sum(v: Self::V) -> f32;
+    /// `((v0+v4) + (v2+v6)) + ((v1+v5) + (v3+v7))`: the `sum_squares_pairwise`
+    /// tree of the fused QKV row (halves added, then lanes 0+2 and 1+3, then
+    /// those two). Distinct from [`Simd::sum`].
+    unsafe fn sum_tree(v: Self::V) -> f32;
+    /// Each even lane duplicated into the odd lane after it:
+    /// `[v0, v0, v2, v2, ..]` (x86 `moveldup`).
+    unsafe fn dup_even(v: Self::V) -> Self::V;
+    /// Each odd lane duplicated into the even lane before it:
+    /// `[v1, v1, v3, v3, ..]` (x86 `movehdup`).
+    unsafe fn dup_odd(v: Self::V) -> Self::V;
+    /// Adjacent lanes swapped: `[v1, v0, v3, v2, ..]`.
+    unsafe fn swap_pairs(v: Self::V) -> Self::V;
+    /// Even lanes `a - b`, odd lanes `a + b` (x86 `addsub`; `a + (-b)` is
+    /// bitwise `a - b`, so every ISA agrees).
+    unsafe fn addsub(a: Self::V, b: Self::V) -> Self::V;
     /// Lane-wise `if a > b { a } else { b }`: x86 `maxps(a, b)` semantics
     /// (`b` when either is NaN or both are zeros), identical on every ISA.
     unsafe fn max(a: Self::V, b: Self::V) -> Self::V;
@@ -88,6 +103,26 @@ pub(crate) struct Portable;
 
 impl Simd for Portable {
     type V = [f32; 8];
+    #[inline(always)]
+    unsafe fn sum_tree(v: Self::V) -> f32 {
+        ((v[0] + v[4]) + (v[2] + v[6])) + ((v[1] + v[5]) + (v[3] + v[7]))
+    }
+    #[inline(always)]
+    unsafe fn dup_even(v: Self::V) -> Self::V {
+        std::array::from_fn(|i| v[i & !1])
+    }
+    #[inline(always)]
+    unsafe fn dup_odd(v: Self::V) -> Self::V {
+        std::array::from_fn(|i| v[i | 1])
+    }
+    #[inline(always)]
+    unsafe fn swap_pairs(v: Self::V) -> Self::V {
+        std::array::from_fn(|i| v[i ^ 1])
+    }
+    #[inline(always)]
+    unsafe fn addsub(a: Self::V, b: Self::V) -> Self::V {
+        std::array::from_fn(|i| if i % 2 == 0 { a[i] - b[i] } else { a[i] + b[i] })
+    }
     #[inline(always)]
     unsafe fn zero() -> Self::V {
         [0.0; 8]
@@ -165,6 +200,31 @@ pub(crate) struct Avx2;
 #[cfg(target_arch = "x86_64")]
 impl Simd for Avx2 {
     type V = std::arch::x86_64::__m256;
+    #[inline(always)]
+    unsafe fn sum_tree(v: Self::V) -> f32 {
+        use std::arch::x86_64::*;
+        unsafe {
+            let h = _mm_add_ps(_mm256_castps256_ps128(v), _mm256_extractf128_ps::<1>(v));
+            let h = _mm_add_ps(h, _mm_movehl_ps(h, h));
+            _mm_cvtss_f32(_mm_add_ss(h, _mm_shuffle_ps::<1>(h, h)))
+        }
+    }
+    #[inline(always)]
+    unsafe fn dup_even(v: Self::V) -> Self::V {
+        unsafe { std::arch::x86_64::_mm256_moveldup_ps(v) }
+    }
+    #[inline(always)]
+    unsafe fn dup_odd(v: Self::V) -> Self::V {
+        unsafe { std::arch::x86_64::_mm256_movehdup_ps(v) }
+    }
+    #[inline(always)]
+    unsafe fn swap_pairs(v: Self::V) -> Self::V {
+        unsafe { std::arch::x86_64::_mm256_permute_ps::<0b1011_0001>(v) }
+    }
+    #[inline(always)]
+    unsafe fn addsub(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { std::arch::x86_64::_mm256_addsub_ps(a, b) }
+    }
     #[inline(always)]
     unsafe fn zero() -> Self::V {
         unsafe { std::arch::x86_64::_mm256_setzero_ps() }
@@ -293,6 +353,26 @@ pub(crate) struct Avx2Fast;
 impl Simd for Avx2Fast {
     type V = <Avx2 as Simd>::V;
     #[inline(always)]
+    unsafe fn sum_tree(v: Self::V) -> f32 {
+        unsafe { Avx2::sum_tree(v) }
+    }
+    #[inline(always)]
+    unsafe fn dup_even(v: Self::V) -> Self::V {
+        unsafe { Avx2::dup_even(v) }
+    }
+    #[inline(always)]
+    unsafe fn dup_odd(v: Self::V) -> Self::V {
+        unsafe { Avx2::dup_odd(v) }
+    }
+    #[inline(always)]
+    unsafe fn swap_pairs(v: Self::V) -> Self::V {
+        unsafe { Avx2::swap_pairs(v) }
+    }
+    #[inline(always)]
+    unsafe fn addsub(a: Self::V, b: Self::V) -> Self::V {
+        unsafe { Avx2::addsub(a, b) }
+    }
+    #[inline(always)]
     unsafe fn zero() -> Self::V {
         unsafe { Avx2::zero() }
     }
@@ -366,6 +446,42 @@ pub(crate) struct Neon;
 #[cfg(target_arch = "aarch64")]
 impl Simd for Neon {
     type V = (std::arch::aarch64::float32x4_t, std::arch::aarch64::float32x4_t);
+    #[inline(always)]
+    unsafe fn sum_tree(v: Self::V) -> f32 {
+        use std::arch::aarch64::*;
+        unsafe {
+            // [v0+v4, v1+v5, v2+v6, v3+v7] -> (h0+h2), (h1+h3) -> their sum.
+            let h = vaddq_f32(v.0, v.1);
+            let h02 = vgetq_lane_f32::<0>(h) + vgetq_lane_f32::<2>(h);
+            let h13 = vgetq_lane_f32::<1>(h) + vgetq_lane_f32::<3>(h);
+            h02 + h13
+        }
+    }
+    #[inline(always)]
+    unsafe fn dup_even(v: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe { (vtrn1q_f32(v.0, v.0), vtrn1q_f32(v.1, v.1)) }
+    }
+    #[inline(always)]
+    unsafe fn dup_odd(v: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe { (vtrn2q_f32(v.0, v.0), vtrn2q_f32(v.1, v.1)) }
+    }
+    #[inline(always)]
+    unsafe fn swap_pairs(v: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe { (vrev64q_f32(v.0), vrev64q_f32(v.1)) }
+    }
+    #[inline(always)]
+    unsafe fn addsub(a: Self::V, b: Self::V) -> Self::V {
+        use std::arch::aarch64::*;
+        unsafe {
+            // Negate the even lanes of `b`, then add: `a + (-b)` is `a - b`.
+            let sign = vreinterpretq_u32_f32(vld1q_f32([-0.0, 0.0, -0.0, 0.0].as_ptr()));
+            let flip = |x: float32x4_t| vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(x), sign));
+            (vaddq_f32(a.0, flip(b.0)), vaddq_f32(a.1, flip(b.1)))
+        }
+    }
     #[inline(always)]
     unsafe fn zero() -> Self::V {
         use std::arch::aarch64::*;
@@ -701,6 +817,49 @@ mod tests {
                 }
             })
             .collect()
+    }
+
+    #[test]
+    fn pair_and_tree_operations_agree_across_isas() {
+        fn check<S: Simd>() {
+            let a = values(8, 5);
+            let b = values(8, 9);
+            unsafe {
+                let (va, vb) = (S::load(a.as_ptr()), S::load(b.as_ptr()));
+                let mut out = [0.0_f32; 8];
+                let expect = |name: &str, actual: [f32; 8], expected: [f32; 8]| {
+                    assert_eq!(actual.map(f32::to_bits), expected.map(f32::to_bits), "{name}");
+                };
+                S::store(out.as_mut_ptr(), S::dup_even(va));
+                expect("dup_even", out, std::array::from_fn(|i| a[i & !1]));
+                S::store(out.as_mut_ptr(), S::dup_odd(va));
+                expect("dup_odd", out, std::array::from_fn(|i| a[i | 1]));
+                S::store(out.as_mut_ptr(), S::swap_pairs(va));
+                expect("swap_pairs", out, std::array::from_fn(|i| a[i ^ 1]));
+                S::store(out.as_mut_ptr(), S::addsub(va, vb));
+                expect(
+                    "addsub",
+                    out,
+                    std::array::from_fn(|i| if i % 2 == 0 { a[i] - b[i] } else { a[i] + b[i] }),
+                );
+                assert_eq!(
+                    S::sum_tree(va).to_bits(),
+                    (((a[0] + a[4]) + (a[2] + a[6])) + ((a[1] + a[5]) + (a[3] + a[7]))).to_bits()
+                );
+            }
+        }
+        check::<Portable>();
+        #[cfg(target_arch = "x86_64")]
+        if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
+            #[target_feature(enable = "avx2,fma")]
+            unsafe fn native() {
+                check::<Avx2>();
+                check::<Avx2Fast>();
+            }
+            unsafe { native() };
+        }
+        #[cfg(target_arch = "aarch64")]
+        check::<Neon>();
     }
 
     #[test]
