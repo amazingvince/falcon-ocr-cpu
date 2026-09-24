@@ -60,6 +60,10 @@ pub struct OcrResult {
     /// Everything `auto` decided for the runner (`Runner::resolved`).
     #[serde(default)]
     pub plan: Option<crate::auto::Resolved>,
+    /// The decode-thread tuner's measurements, on the page during which it
+    /// chose (`Runner::decode_tuning` has it afterwards).
+    #[serde(default)]
+    pub decode_tuning: Option<crate::tune::TuneReport>,
     /// Records written before compact caches existed were expanded.
     #[serde(default = "legacy_cache_layout")]
     pub cache_layout: CacheLayout,
@@ -162,10 +166,16 @@ impl<'a> DecodeTeam<'a> {
             self.index = index;
         }
     }
-    /// Report the step just run on the selected team.
+    /// Report the single-row step just run on the selected team.
     fn record(&self, ms: f64) {
         if let Decode::Auto(auto) = &self.runner.decode {
             auto.tuner.lock().unwrap().record(self.index, ms);
+        }
+    }
+    /// Report a draft-verification step (several rows) on the selected team.
+    fn record_verify(&self, ms: f64) {
+        if let Decode::Auto(auto) = &self.runner.decode {
+            auto.tuner.lock().unwrap().record_verify(self.index, ms);
         }
     }
 }
@@ -235,6 +245,20 @@ impl Runner {
     pub fn decode_threads_chosen(&self) -> Option<usize> {
         match &self.decode {
             Decode::Auto(auto) => auto.tuner.lock().unwrap().chosen(),
+            Decode::Fixed(_) => None,
+        }
+    }
+    /// What the automatic decode-thread tuner measured and chose, once it has.
+    pub fn decode_tuning(&self) -> Option<crate::tune::TuneReport> {
+        match &self.decode {
+            Decode::Auto(auto) => auto.tuner.lock().unwrap().report().cloned(),
+            Decode::Fixed(_) => None,
+        }
+    }
+    /// The tuner's report, the first time after it chose (one page carries it).
+    fn take_decode_tuning(&self) -> Option<crate::tune::TuneReport> {
+        match &self.decode {
+            Decode::Auto(auto) => auto.tuner.lock().unwrap().take_report(),
             Decode::Fixed(_) => None,
         }
     }
@@ -638,6 +662,7 @@ impl Runner {
                     mode: self.resolved.mode,
                     decode_threads: self.decode_threads_used(),
                     plan: Some(self.resolved.clone()),
+                    decode_tuning: self.take_decode_tuning(),
                     cache_layout: self.config.cache_layout,
                     weight_layout: self.config.weight_layout,
                     packed_weight_bytes: self.model.packed_weight_bytes(),
@@ -819,6 +844,7 @@ impl Runner {
                 let accepted = draft.iter().zip(&predicted).take_while(|(d, p)| d == p).count();
                 session.truncate(kept + 1 + accepted)?;
                 let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
+                team.record_verify(step_ms);
                 stats.2 += 1;
                 stats.3 += step_ms;
                 stats.4 += draft.len();
@@ -919,6 +945,7 @@ impl Runner {
             mode: self.resolved.mode,
             decode_threads: self.decode_threads_used(),
             plan: Some(self.resolved.clone()),
+            decode_tuning: self.take_decode_tuning(),
             cache_layout: self.config.cache_layout,
             weight_layout: self.config.weight_layout,
             packed_weight_bytes: self.model.packed_weight_bytes(),

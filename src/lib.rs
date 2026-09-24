@@ -27,5 +27,6 @@ pub use config::{
 };
 pub use model::{Model, WeightsSource};
 pub use runner::{FinishReason, OcrResult, Runner, Timings};
+pub use tune::TuneReport;
 
 pub mod attempt;

@@ -248,7 +248,7 @@ class HarnessWorkflowTests(unittest.TestCase):
 
 class WiringTests(unittest.TestCase):
     def test_no_silent_switch_to_original_weights(self):
-        model=(ROOT/"src/model.rs").read_text()
+        model=(ROOT/"src/model/mod.rs").read_text()
         block=model[model.index("pub(crate) fn forward"):model.index("fn decode_linear")]
         # W13 routes through linear_glu, which itself dispatches via self.linear.
         # 11 = forward_layers' prefill/decode projections, the forward_next and
@@ -260,9 +260,12 @@ class WiringTests(unittest.TestCase):
         self.assertIn("scratch.dense",(ROOT/"src/attempt/quant.rs").read_text())
 
     def test_reference_loader_still_default(self):
-        model=(ROOT/"src/model.rs").read_text()
-        self.assertIn("attempt_profile: crate::attempt::Profile::Reference",model)
-        self.assertIn("Model::load(&cli.model)",(ROOT/"src/main.rs").read_text())
+        self.assertIn("attempt_profile: crate::attempt::Profile::Reference",(ROOT/"src/model/load.rs").read_text())
+        auto=(ROOT/"src/auto.rs").read_text()
+        # Exact mode with the reference profile goes through the pinned loader.
+        self.assertIn("plan.profile == Profile::Reference",auto)
+        self.assertIn("Model::load(dir)",auto)
+        self.assertIn("Profile::Exact => Profile::Reference",auto.replace("Self::Exact","Profile::Exact"))
 
     def test_cache_seal_and_retirement_wired(self):
         runner=(ROOT/"src/runner.rs").read_text()
@@ -272,9 +275,9 @@ class WiringTests(unittest.TestCase):
         self.assertIn("drop(prepared.patches)",runner)
 
     def test_source_model_identity_not_relaxed(self):
-        s=(ROOT/"src/model.rs").read_text()
+        s=(ROOT/"src/model/load.rs").read_text()
         self.assertIn('hash == WEIGHTS_SHA256',s)
         self.assertIn('"config.json SHA-256 mismatch"',s)
-        self.assertIn('"phase-packed FP32 weights cannot override W8 numerical weights"',s)
+        self.assertIn('"phase-packed FP32 weights cannot override W8 numerical weights"',(ROOT/"src/model/mod.rs").read_text())
 
 if __name__=="__main__":unittest.main()

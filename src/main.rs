@@ -252,6 +252,9 @@ fn main() -> Result<()> {
                 .recognize_files(&images, &options)
                 .context("recognize input images")?
             {
+                if let Some(tuning) = &result.decode_tuning {
+                    eprintln!("{tuning}");
+                }
                 if text {
                     println!("{}", result.text);
                 } else {
