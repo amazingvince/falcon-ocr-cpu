@@ -32,7 +32,9 @@ struct Cli {
     /// overlay exists (about three times the changed tokens of GPTQ).
     #[arg(long, global = true)]
     allow_rtn: bool,
-    /// Vector backend for the GEMV and attention kernels.
+    /// Kernels: `auto` takes the fastest this CPU runs (AVX2 decode, AVX-512
+    /// prefill tiles and BF16 prefill attention where present, NEON on
+    /// aarch64); `avx2` is 8-lane FP32 everywhere; `scalar`.
     #[arg(long, value_enum, default_value = "auto", global = true)]
     backend: Backend,
     #[arg(long, default_value_t = 1, global = true)]

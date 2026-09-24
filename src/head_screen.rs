@@ -552,9 +552,6 @@ mod tests {
             if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
                 result.push(Simd::Avx2);
             }
-            if std::is_x86_feature_detected!("avx512f") {
-                result.push(Simd::Avx512);
-            }
         }
         result
     }

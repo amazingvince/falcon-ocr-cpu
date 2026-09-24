@@ -671,11 +671,7 @@ mod tests {
     #[test]
     fn other_shapes_backends_and_prefill_stay_on_generic_path() {
         supported();
-        for simd in [Simd::Scalar, Simd::Avx512] {
-            if simd.validate().is_ok() {
-                compare_case(17, 16, 1, 16, 1, 64, simd, false, 4);
-            }
-        }
+        compare_case(17, 16, 1, 16, 1, 64, Simd::Scalar, false, 4);
         for width in [31, 63, 65, 80] {
             compare_case(17, 16, 1, 16, 1, width, Simd::Avx2, false, 4);
         }
@@ -836,10 +832,6 @@ mod tests {
         for rows in [2, 3, 4, 17] {
             compact_case(17, 9, 17 - rows, 1, 8, rows, 16, 8, 64, Simd::Avx2, false);
         }
-        for simd in [Simd::Scalar, Simd::Avx512] {
-            if simd.validate().is_ok() {
-                compact_case(17, 9, 16, 1, 8, 1, 16, 8, 64, simd, false);
-            }
-        }
+        compact_case(17, 9, 16, 1, 8, 1, 16, 8, 64, Simd::Scalar, false);
     }
 }

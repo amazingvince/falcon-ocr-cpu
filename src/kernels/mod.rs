@@ -43,10 +43,11 @@ pub(crate) fn bf16_available() -> bool {
     }
 }
 
-/// Whether the FP32 prefill attention runs the 16-lane AVX-512 tile
-/// (`Simd::Auto` or an explicit AVX-512 backend on an AVX-512F CPU).
+/// Whether the FP32 prefill attention runs the 16-lane AVX-512 tiles: the
+/// `auto` backend on an AVX-512F CPU (bitwise identical to the 8-lane tiles;
+/// an explicit `avx2` backend keeps 8 lanes everywhere).
 pub(crate) fn wide_attention(simd: Simd) -> bool {
-    cfg!(target_arch = "x86_64") && matches!(simd, Simd::Auto | Simd::Avx512) && avx512_available()
+    cfg!(target_arch = "x86_64") && simd == Simd::Auto && avx512_available()
 }
 
 /// Prefill projection kernel.
@@ -106,15 +107,17 @@ impl std::fmt::Display for PrefillAttention {
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
 /// for FP32) on this CPU with the `simd` backend: the single predicate set
-/// behind `Model::forward_layers` and `auto::Resolved`. Traces, linear-input
-/// captures and prefills of at most 8 rows take the FP32 path regardless.
+/// behind `Model::forward_layers` and `auto::Resolved`. Only the `auto`
+/// backend takes the AVX-512 paths (wide FP32 tiles, BF16 for 8-bit bodies);
+/// `avx2` is 8-lane FP32 throughout. Traces, linear-input captures and
+/// prefills of at most 8 rows take the FP32 path regardless.
 pub fn prefill_plan(body_bits: Option<u32>, simd: Simd, prefill_bf16: crate::config::PrefillBf16) -> PrefillPlan {
     use crate::config::PrefillBf16;
     let panel = body_bits.is_some() && panel_gemm::available(simd);
     // 8-bit bodies (fast mode) also run prefill attention, and with
     // `prefill_bf16 = All` the projections, in BF16 where the CPU has
     // AVX512-BF16 (`attention_compact_prefill_bf16`).
-    let eight_bit = panel && body_bits == Some(8) && bf16_available();
+    let eight_bit = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
     let projection = if !panel {
         PrefillProjection::GemmF32
     } else if eight_bit && prefill_bf16 == PrefillBf16::All {
@@ -129,7 +132,7 @@ pub fn prefill_plan(body_bits: Option<u32>, simd: Simd, prefill_bf16: crate::con
     } else {
         match simd.resolved() {
             Simd::Scalar => PrefillAttention::Scalar,
-            Simd::Avx2 | Simd::Avx512 => PrefillAttention::Avx2,
+            Simd::Avx2 => PrefillAttention::Avx2,
             Simd::Neon => PrefillAttention::Neon,
             Simd::Auto => unreachable!("resolved"),
         }
@@ -140,14 +143,15 @@ pub fn prefill_plan(body_bits: Option<u32>, simd: Simd, prefill_bf16: crate::con
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.
 ///
 /// Explicit unavailable variants return an error from [`Simd::validate`] and
-/// panic if passed directly to a kernel. `Auto` currently selects AVX2/FMA; the
-/// AVX-512 candidate is explicit until whole-model benchmarks justify promotion.
+/// panic if passed directly to a kernel. `Auto` resolves to AVX2/FMA on x86-64
+/// (decode kernels are 8-lane; AVX-512F only widens the prefill attention
+/// tiles, bitwise identically, and AVX512-BF16 serves the 8-bit prefill) and
+/// to NEON on aarch64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Simd {
     Auto,
     Scalar,
     Avx2,
-    Avx512,
     /// aarch64 Advanced SIMD (always present on aarch64).
     Neon,
 }
@@ -157,9 +161,7 @@ impl Simd {
         match self {
             Self::Auto | Self::Scalar => Ok(()),
             Self::Avx2 if avx2_available() => Ok(()),
-            Self::Avx512 if avx512_available() => Ok(()),
             Self::Avx2 => Err("AVX2 and FMA are unavailable on this CPU"),
-            Self::Avx512 => Err("AVX-512F is unavailable on this CPU"),
             Self::Neon if cfg!(target_arch = "aarch64") => Ok(()),
             Self::Neon => Err("NEON requires an aarch64 CPU"),
         }
@@ -464,8 +466,6 @@ pub(crate) fn dot_kernel(simd: Simd) -> Dot {
             // slice lengths. The implementation loads only full vector chunks.
             unsafe { x86::dot_avx2(a, b) }
         },
-        #[cfg(target_arch = "x86_64")]
-        Simd::Avx512 => |a, b| unsafe { x86::dot_avx512(a, b) },
         #[cfg(target_arch = "aarch64")]
         // SAFETY: NEON is baseline on aarch64; equal slice lengths.
         Simd::Neon => |a, b| unsafe { crate::simd::dot::<crate::simd::Neon>(a, b) },
@@ -478,8 +478,6 @@ pub(crate) fn axpy_kernel(simd: Simd) -> Axpy {
     match simd {
         #[cfg(target_arch = "x86_64")]
         Simd::Avx2 => |a, x, y| unsafe { x86::axpy_avx2(a, x, y) },
-        #[cfg(target_arch = "x86_64")]
-        Simd::Avx512 => |a, x, y| unsafe { x86::axpy_avx512(a, x, y) },
         #[cfg(target_arch = "aarch64")]
         // SAFETY: NEON is baseline on aarch64; equal slice lengths.
         Simd::Neon => |a, x, y| unsafe { crate::simd::axpy::<crate::simd::Neon>(a, x, y) },
@@ -572,78 +570,6 @@ mod x86 {
                 );
                 _mm256_storeu_ps(y.as_mut_ptr().add(i), value);
                 i += 8;
-            }
-            while i < x.len() {
-                y[i] += a * x[i];
-                i += 1;
-            }
-        }
-    }
-
-    #[target_feature(enable = "avx512f")]
-    pub(super) unsafe fn dot_avx512(a: &[f32], b: &[f32]) -> f32 {
-        debug_assert_eq!(a.len(), b.len());
-        unsafe {
-            let mut acc0 = _mm512_setzero_ps();
-            let mut acc1 = _mm512_setzero_ps();
-            let mut acc2 = _mm512_setzero_ps();
-            let mut acc3 = _mm512_setzero_ps();
-            let mut i = 0;
-            while i + 64 <= a.len() {
-                acc0 = _mm512_fmadd_ps(
-                    _mm512_loadu_ps(a.as_ptr().add(i)),
-                    _mm512_loadu_ps(b.as_ptr().add(i)),
-                    acc0,
-                );
-                acc1 = _mm512_fmadd_ps(
-                    _mm512_loadu_ps(a.as_ptr().add(i + 16)),
-                    _mm512_loadu_ps(b.as_ptr().add(i + 16)),
-                    acc1,
-                );
-                acc2 = _mm512_fmadd_ps(
-                    _mm512_loadu_ps(a.as_ptr().add(i + 32)),
-                    _mm512_loadu_ps(b.as_ptr().add(i + 32)),
-                    acc2,
-                );
-                acc3 = _mm512_fmadd_ps(
-                    _mm512_loadu_ps(a.as_ptr().add(i + 48)),
-                    _mm512_loadu_ps(b.as_ptr().add(i + 48)),
-                    acc3,
-                );
-                i += 64;
-            }
-            let mut acc = _mm512_add_ps(_mm512_add_ps(acc0, acc1), _mm512_add_ps(acc2, acc3));
-            while i + 16 <= a.len() {
-                acc = _mm512_fmadd_ps(
-                    _mm512_loadu_ps(a.as_ptr().add(i)),
-                    _mm512_loadu_ps(b.as_ptr().add(i)),
-                    acc,
-                );
-                i += 16;
-            }
-            let mut sum = _mm512_reduce_add_ps(acc);
-            while i < a.len() {
-                sum += a[i] * b[i];
-                i += 1;
-            }
-            sum
-        }
-    }
-
-    #[target_feature(enable = "avx512f")]
-    pub(super) unsafe fn axpy_avx512(a: f32, x: &[f32], y: &mut [f32]) {
-        debug_assert_eq!(x.len(), y.len());
-        unsafe {
-            let factor = _mm512_set1_ps(a);
-            let mut i = 0;
-            while i + 16 <= x.len() {
-                let value = _mm512_fmadd_ps(
-                    factor,
-                    _mm512_loadu_ps(x.as_ptr().add(i)),
-                    _mm512_loadu_ps(y.as_ptr().add(i)),
-                );
-                _mm512_storeu_ps(y.as_mut_ptr().add(i), value);
-                i += 16;
             }
             while i < x.len() {
                 y[i] += a * x[i];

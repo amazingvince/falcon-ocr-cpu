@@ -178,7 +178,7 @@ def validate_results(results, workload, job):
         item = workload["inputs"][key]
         require([result["width"], result["height"]] == item["prepared_dimensions_expected"], key + ": prepared dimensions differ")
         require(result["input_tokens"] == item["input_tokens_expected"], key + ": prefix differs")
-        require(result.get("backend") == "rust-gemm/avx2", key + ": wrong backend")
+        require(result.get("backend") in ("avx2", "rust-gemm/avx2"), key + ": wrong backend")
         require(result.get("cache_layout") == job["mode"]["cache_layout"], key + ": wrong cache layout")
         require(result.get("weight_layout") == job["mode"]["weight_layout"].replace("-", "_"), key + ": wrong weight layout")
         packed = result.get("packed_weight_bytes")

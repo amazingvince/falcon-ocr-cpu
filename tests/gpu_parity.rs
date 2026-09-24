@@ -53,16 +53,14 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         .unwrap();
     assert_eq!(limited.token_ids, &expected[..3]);
     assert_eq!(limited.finish_reason, FinishReason::Length);
-    for (backend, simd) in [(Backend::Avx2, Simd::Avx2), (Backend::Avx512, Simd::Avx512)] {
-        if simd.validate().is_err() {
-            continue;
-        }
+    // The explicit 8-lane backend (no AVX-512 prefill tiles) is bit-identical.
+    if Simd::Avx2.validate().is_ok() {
         let runner = Runner::new(
             model.clone(),
             model_dir,
             RunnerConfig {
                 threads: 1,
-                backend,
+                backend: Backend::Avx2,
                 ..RunnerConfig::reference()
             },
         )
@@ -70,6 +68,8 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         let result = runner
             .recognize_file(reference.join("canonical-rgb.png"), &options)
             .unwrap();
-        assert_eq!(result.token_ids, expected, "explicit backend {backend:?}");
+        assert_eq!(result.token_ids, expected, "explicit backend avx2");
+        assert_eq!(result.backend, "avx2");
+        assert_eq!(result.precision, "fp32");
     }
 }

@@ -8,11 +8,16 @@ pub const CONFIG_SHA256: &str = "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum Backend {
+    /// The fastest kernels this CPU runs: AVX2/FMA decode, 16-lane AVX-512F
+    /// prefill tiles and BF16 prefill attention (8-bit bodies) where present,
+    /// NEON on aarch64. Records written with the retired `avx512` backend
+    /// read as `auto`, which is what it computed.
     #[default]
+    #[serde(alias = "avx512")]
     Auto,
     Scalar,
+    /// 8-lane FP32 kernels everywhere, whatever else the CPU has.
     Avx2,
-    Avx512,
     /// aarch64 Advanced SIMD; `auto` selects it on aarch64.
     Neon,
 }
@@ -147,7 +152,6 @@ impl Backend {
             Self::Auto => crate::kernels::Simd::Auto,
             Self::Scalar => crate::kernels::Simd::Scalar,
             Self::Avx2 => crate::kernels::Simd::Avx2,
-            Self::Avx512 => crate::kernels::Simd::Avx512,
             Self::Neon => crate::kernels::Simd::Neon,
         }
     }
@@ -524,17 +528,15 @@ mod tests {
     fn phase_packing_is_opt_in_and_rejects_incompatible_dispatch() {
         let legacy: RunnerConfig = serde_json::from_str(r#"{"threads":2,"batch_size":4}"#).unwrap();
         assert_eq!(legacy.weight_layout, WeightLayout::Unpacked);
-        for backend in [Backend::Scalar, Backend::Avx512] {
-            assert!(
-                RunnerConfig {
-                    backend,
-                    weight_layout: WeightLayout::PhasePacked,
-                    ..Default::default()
-                }
-                .validate()
-                .is_err()
-            );
-        }
+        assert!(
+            RunnerConfig {
+                backend: Backend::Scalar,
+                weight_layout: WeightLayout::PhasePacked,
+                ..Default::default()
+            }
+            .validate()
+            .is_err()
+        );
         if crate::kernels::Simd::Avx2.validate().is_ok() {
             for backend in [Backend::Auto, Backend::Avx2] {
                 for batch_size in [1, 2, 4, 8] {

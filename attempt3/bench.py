@@ -305,7 +305,7 @@ def main() -> None:
     parser.add_argument("--w8-body-artifact", type=Path, help="optional body-only W8G64 safetensors overlay")
     parser.add_argument("--w8-all-artifact", type=Path, help="optional body+head W8G64 safetensors overlay")
     parser.add_argument("--threads", type=int, default=16)
-    parser.add_argument("--backend", choices=["auto", "scalar", "avx2", "avx512"], default="auto")
+    parser.add_argument("--backend", choices=["auto", "scalar", "avx2"], default="auto")
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--samples", type=int, default=3)
     parser.add_argument("--schedule", choices=["bracket", "interleaved"], default="bracket",

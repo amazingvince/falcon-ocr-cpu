@@ -12,7 +12,7 @@ fn values(n: usize, seed: u32) -> Vec<f32> {
 }
 
 fn implementations() -> Vec<Simd> {
-    [Simd::Scalar, Simd::Auto, Simd::Avx2, Simd::Avx512]
+    [Simd::Scalar, Simd::Auto, Simd::Avx2]
         .into_iter()
         .filter(|simd| simd.validate().is_ok())
         .collect()

@@ -22,7 +22,7 @@
 //! equal. Tests compare the kernels with gemm for every tile shape and the
 //! whole function with `attention_gemm_compact`.
 //!
-//! With AVX-512F (and backend `auto` or `avx512`), the QK and PV products use
+//! With AVX-512F (and backend `auto`), the QK and PV products use
 //! 16-lane `wide` kernels: every element keeps the same FMA chain and epilogue,
 //! so results are bitwise identical to the AVX2 kernels, while 32 registers
 //! let each broadcast feed all 32 queries of a tile (QK) or a whole 64-wide

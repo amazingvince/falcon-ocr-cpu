@@ -46,8 +46,20 @@ pub struct OcrResult {
     pub height: usize,
     pub input_tokens: usize,
     pub output_tokens: usize,
+    /// `fp32` for the exact profiles, else the weight/cache profile label.
     pub precision: String,
+    /// Instruction set of the decode kernels (`avx2`, `neon`, `scalar`).
     pub backend: String,
+    /// The mode the page ran in (`null` for a research profile).
+    #[serde(default)]
+    pub mode: Option<crate::auto::Mode>,
+    /// The decode team this page used: the fixed size, or the size the tuner
+    /// chose (`null` while it was still measuring).
+    #[serde(default)]
+    pub decode_threads: Option<usize>,
+    /// Everything `auto` decided for the runner (`Runner::resolved`).
+    #[serde(default)]
+    pub plan: Option<crate::auto::Resolved>,
     /// Records written before compact caches existed were expanded.
     #[serde(default = "legacy_cache_layout")]
     pub cache_layout: CacheLayout,
@@ -225,6 +237,18 @@ impl Runner {
             Decode::Auto(auto) => auto.tuner.lock().unwrap().chosen(),
             Decode::Fixed(_) => None,
         }
+    }
+    /// The decode team in use: the fixed size, or the tuner's choice once made.
+    fn decode_threads_used(&self) -> Option<usize> {
+        match &self.decode {
+            Decode::Fixed(team) => Some(team.size()),
+            Decode::Auto(_) => self.decode_threads_chosen(),
+        }
+    }
+    /// `fp32` for the exact profiles, else the profile label.
+    fn precision(&self) -> String {
+        let profile = self.model.attempt_profile();
+        if profile.is_exact() { "fp32" } else { profile.label() }.to_owned()
     }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
     /// builds and verifies an INT8 copy of the FP32 head once per `Model`
@@ -609,12 +633,11 @@ impl Runner {
                     width: state.width,
                     height: state.height,
                     input_tokens: state.input_tokens,
-                    precision: if self.model.attempt_profile().is_exact() {
-                        "fp32".into()
-                    } else {
-                        format!("attempt3/{}", self.model.attempt_profile().label())
-                    },
-                    backend: format!("rust-gemm/{:?}", simd.resolved()).to_lowercase(),
+                    precision: self.precision(),
+                    backend: self.resolved.decode_isa.clone(),
+                    mode: self.resolved.mode,
+                    decode_threads: self.decode_threads_used(),
+                    plan: Some(self.resolved.clone()),
                     cache_layout: self.config.cache_layout,
                     weight_layout: self.config.weight_layout,
                     packed_weight_bytes: self.model.packed_weight_bytes(),
@@ -891,12 +914,11 @@ impl Runner {
             width: prepared.width,
             height: prepared.height,
             input_tokens: tokens.len(),
-            precision: if self.model.attempt_profile().is_exact() {
-                "fp32".into()
-            } else {
-                format!("attempt3/{}", self.model.attempt_profile().label())
-            },
-            backend: format!("rust-gemm/{:?}", simd.resolved()).to_lowercase(),
+            precision: self.precision(),
+            backend: self.resolved.decode_isa.clone(),
+            mode: self.resolved.mode,
+            decode_threads: self.decode_threads_used(),
+            plan: Some(self.resolved.clone()),
             cache_layout: self.config.cache_layout,
             weight_layout: self.config.weight_layout,
             packed_weight_bytes: self.model.packed_weight_bytes(),

@@ -7,7 +7,7 @@ param(
     [string[]]$Profiles = @("hygiene"),
     [string]$Output = "artifacts/attempt3/first-bracket",
     [ValidateRange(1,256)][int]$Threads = 16,
-    [ValidateSet("auto","scalar","avx2","avx512")][string]$Backend = "auto",
+    [ValidateSet("auto","scalar","avx2")][string]$Backend = "auto",
     [ValidateRange(1,100)][int]$Samples = 3,
     [ValidateRange(0,100)][int]$Warmup = 1,
     [string]$Python = "python",
