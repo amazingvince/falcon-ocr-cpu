@@ -22,7 +22,6 @@ pub(crate) trait Simd: Copy + Send + Sync + 'static {
     unsafe fn load(p: *const f32) -> Self::V;
     unsafe fn store(p: *mut f32, v: Self::V);
     unsafe fn add(a: Self::V, b: Self::V) -> Self::V;
-    #[allow(dead_code)] // used by the generic prefill kernels to come
     unsafe fn sub(a: Self::V, b: Self::V) -> Self::V;
     unsafe fn mul(a: Self::V, b: Self::V) -> Self::V;
     /// `a * b + c` with a single rounding.
@@ -84,9 +83,13 @@ pub(crate) trait Simd: Copy + Send + Sync + 'static {
 /// Portable single-precision exp (Cephes coefficients, about 1-2 ulp):
 /// `exp(x) = 2^n * e^r`, `n = round(x * log2 e)`, `r = x - n ln 2` in two
 /// FMA steps, `e^r = 1 + r + r^2 * P(r)`. Arguments below -87 return 0 (no
-/// subnormal results, so no flush-to-zero dependence), above 88.72 return
-/// infinity, NaN returns NaN. Every ISA's `exp_fast` performs exactly these
-/// IEEE operations, so the results are bit-identical across machines.
+/// subnormal results, so no flush-to-zero dependence), above [`EXP_MAX`]
+/// (88.376) return infinity, NaN returns NaN. The true exp stays finite up to
+/// 88.72, but the `2^n` bit construction below overflows once `n` rounds to
+/// 128, which happens from 88.3763 on; the ceiling stops short of that. Every
+/// caller is a softmax with non-positive arguments. Every ISA's `exp_fast`
+/// performs exactly these IEEE operations, so the results are bit-identical
+/// across machines.
 #[inline(always)]
 pub(crate) fn exp_poly(x: f32) -> f32 {
     if x.is_nan() {
@@ -109,7 +112,7 @@ pub(crate) fn exp_poly(x: f32) -> f32 {
     y * f32::from_bits(((n as i32 + 127) as u32) << 23)
 }
 pub(crate) const EXP_MIN: f32 = -87.0;
-pub(crate) const EXP_MAX: f32 = 88.722_83;
+pub(crate) const EXP_MAX: f32 = 88.376;
 pub(crate) const EXP_LOG2E: f32 = std::f32::consts::LOG2_E;
 pub(crate) const EXP_LN2_HI: f32 = 0.693_359_4;
 pub(crate) const EXP_LN2_LO: f32 = -2.121_944_4e-4;
@@ -636,15 +639,6 @@ pub(crate) unsafe fn dot<S: Simd>(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-/// Dot product with `fl(code * scale)` weights, one scale per `G` inputs
-/// (`G` a multiple of 32, so each 32-element block uses one scale, loaded and
-/// broadcast once). Same operation order as [`dot`].
-#[inline(always)]
-#[allow(dead_code)] // the W8 wrapper of `dot_q`, kept for its tests
-pub(crate) unsafe fn dot_q8<S: Simd, const G: usize>(x: &[f32], codes: &[i8], scales: &[f32]) -> f32 {
-    unsafe { dot_q::<S, i8, G>(x, codes, scales) }
-}
-
 /// Integer weight codes that [`dot_q`] converts exactly to `f32`.
 pub(crate) trait QCode: Copy + Send + Sync + 'static {
     /// Eight consecutive codes as `f32` lanes.
@@ -672,8 +666,10 @@ impl QCode for i16 {
     }
 }
 
-/// [`dot_q8`] for any integer code type: the same operation order over
-/// `fl(code * scale)` weights, so it too equals [`dot`] on the dequantized row.
+/// Dot product with `fl(code * scale)` weights for any integer code type, one
+/// scale per `G` inputs (`G` a multiple of 32, so each 32-element block uses
+/// one scale, loaded and broadcast once). The same operation order as
+/// [`dot`], so it equals [`dot`] on the dequantized row.
 #[inline(always)]
 pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
     debug_assert_eq!(x.len(), codes.len());
@@ -815,8 +811,9 @@ mod tests {
             -87.0,
             -86.999,
             -87.001,
+            88.375,
+            88.377,
             88.72,
-            88.73,
             f32::NEG_INFINITY,
             f32::INFINITY,
             f32::NAN,
@@ -830,9 +827,13 @@ mod tests {
             let portable = unsafe { Portable::exp_fast(lanes) };
             for (x, y) in lanes.iter().zip(&portable) {
                 let exact = f64::from(*x).exp();
-                if x.is_finite() && *x >= -87.0 && *x <= 88.0 {
+                if x.is_finite() && *x >= EXP_MIN && *x <= EXP_MAX {
+                    // Finite and close everywhere up to the ceiling itself.
+                    assert!(y.is_finite(), "exp_poly({x}) = {y}");
                     let ulp = f64::from(f32::EPSILON) * exact.abs().max(f64::from(f32::MIN_POSITIVE));
                     worst = worst.max((f64::from(*y) - exact).abs() / ulp);
+                } else if *x > EXP_MAX {
+                    assert_eq!(*y, f32::INFINITY, "exp_poly({x})");
                 }
             }
             #[cfg(target_arch = "x86_64")]
@@ -860,6 +861,11 @@ mod tests {
         assert!(worst < 3.0, "exp_poly error {worst} ulp");
         assert_eq!(exp_poly(f32::NEG_INFINITY), 0.0);
         assert!(exp_poly(f32::NAN).is_nan());
+        // The ceiling sits below the first input whose 2^n construction
+        // overflows (88.3763); the largest finite f32 exp argument is 88.72.
+        assert!(exp_poly(EXP_MAX).is_finite());
+        assert_eq!(exp_poly(EXP_MAX.next_up()), f32::INFINITY);
+        assert!((f64::from(EXP_MAX) * std::f64::consts::LOG2_E).round() <= 127.0);
     }
 
     /// Every native implementation equals the portable one bit for bit.
@@ -874,7 +880,7 @@ mod tests {
             let a = values(len, 1 + len as u32);
             let b = values(len, 7 + len as u32);
             let portable = unsafe { dot::<Portable>(&a, &b) };
-            let portable_q8 = unsafe { dot_q8::<Portable, 64>(&a, &codes[..len], &scales) };
+            let portable_q8 = unsafe { dot_q::<Portable, i8, 64>(&a, &codes[..len], &scales) };
             let mut portable_y = b.clone();
             unsafe { axpy::<Portable>(0.37, &a, &mut portable_y) };
             #[cfg(target_arch = "x86_64")]
@@ -883,7 +889,7 @@ mod tests {
                 unsafe fn native(a: &[f32], b: &[f32], c: &[i8], s: &[f32], y: &mut [f32]) -> (f32, f32) {
                     unsafe {
                         axpy::<Avx2>(0.37, a, y);
-                        (dot::<Avx2>(a, b), dot_q8::<Avx2, 64>(a, c, s))
+                        (dot::<Avx2>(a, b), dot_q::<Avx2, i8, 64>(a, c, s))
                     }
                 }
                 let mut y = b.clone();
@@ -900,7 +906,7 @@ mod tests {
                 let mut y = b.clone();
                 let (d, q) = unsafe {
                     axpy::<Neon>(0.37, &a, &mut y);
-                    (dot::<Neon>(&a, &b), dot_q8::<Neon, 64>(&a, &codes[..len], &scales))
+                    (dot::<Neon>(&a, &b), dot_q::<Neon, i8, 64>(&a, &codes[..len], &scales))
                 };
                 assert_eq!(d.to_bits(), portable.to_bits(), "dot len {len}");
                 assert_eq!(q.to_bits(), portable_q8.to_bits(), "dot_q8 len {len}");

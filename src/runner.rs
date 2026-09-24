@@ -101,17 +101,21 @@ pub struct Runner {
     head: HeadMode,
     /// Opt-in stop for degenerate repetition loops (`crate::repetition`).
     repetition_stop: bool,
-    /// Spin-waiting workers for decode steps; prefill keeps using `pool`.
-    team: crate::team::Team,
-    /// Automatic decode thread count (`set_decode_threads_auto`): one team
-    /// per candidate size and the tuner choosing between them.
-    auto_threads: Option<AutoThreads>,
+    /// Spin-waiting workers for decode steps (prefill keeps using `pool`): one
+    /// fixed team, or one team per candidate size with the tuner choosing
+    /// between them (`set_decode_threads_auto`).
+    decode: Decode,
     /// Speculative decoding (`set_speculation`): at most this many drafted
     /// tokens per step and the minimum n-gram match; `None` is off.
     speculation: Option<(usize, usize)>,
     /// Drafts from earlier pages of the current `recognize_files` call
     /// (`set_document_drafts`).
     document: Option<std::sync::Mutex<crate::draft::DocumentHistory>>,
+}
+
+enum Decode {
+    Fixed(crate::team::Team),
+    Auto(AutoThreads),
 }
 
 struct AutoThreads {
@@ -138,12 +142,12 @@ impl<'a> DecodeTeam<'a> {
     }
     /// Enter the team for the next step (a no-op unless the tuner switches).
     fn select(&mut self) {
-        let (index, team) = match &self.runner.auto_threads {
-            Some(auto) => {
+        let (index, team) = match &self.runner.decode {
+            Decode::Auto(auto) => {
                 let index = auto.tuner.lock().unwrap().current();
                 (index, &auto.teams[index])
             }
-            None => (0, &self.runner.team),
+            Decode::Fixed(team) => (0, team),
         };
         if index != self.index {
             self.entered = None;
@@ -153,7 +157,7 @@ impl<'a> DecodeTeam<'a> {
     }
     /// Report the step just run on the selected team.
     fn record(&self, ms: f64) {
-        if let Some(auto) = &self.runner.auto_threads {
+        if let Decode::Auto(auto) = &self.runner.decode {
             auto.tuner.lock().unwrap().record(self.index, ms);
         }
     }
@@ -178,7 +182,7 @@ impl Runner {
         if config.weight_layout == WeightLayout::PhasePacked {
             model.prepare_phase_packed();
         }
-        let team = crate::team::Team::new(pool.current_num_threads())?;
+        let decode = Decode::Fixed(crate::team::Team::new(pool.current_num_threads())?);
         Ok(Self {
             model,
             tokenizer,
@@ -186,8 +190,7 @@ impl Runner {
             config,
             head: HeadMode::Full,
             repetition_stop: false,
-            team,
-            auto_threads: None,
+            decode,
             speculation: None,
             document: None,
         })
@@ -212,8 +215,7 @@ impl Runner {
             (1..=self.pool.current_num_threads()).contains(&threads),
             "decode threads must be between 1 and the runner's thread count"
         );
-        self.team = crate::team::Team::new(threads)?;
-        self.auto_threads = None;
+        self.decode = Decode::Fixed(crate::team::Team::new(threads)?);
         Ok(())
     }
     /// Choose the decode thread count automatically: the first decode steps
@@ -239,7 +241,8 @@ impl Runner {
             .iter()
             .map(|&size| crate::team::Team::new(size))
             .collect::<std::io::Result<Vec<_>>>()?;
-        self.auto_threads = Some(AutoThreads {
+        // Replaces the fixed team, so only the candidates keep workers.
+        self.decode = Decode::Auto(AutoThreads {
             teams,
             tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
         });
@@ -268,9 +271,10 @@ impl Runner {
     }
     /// The automatically chosen decode thread count, once tuning finished.
     pub fn decode_threads_chosen(&self) -> Option<usize> {
-        self.auto_threads
-            .as_ref()
-            .and_then(|auto| auto.tuner.lock().unwrap().chosen())
+        match &self.decode {
+            Decode::Auto(auto) => auto.tuner.lock().unwrap().chosen(),
+            Decode::Fixed(_) => None,
+        }
     }
     /// Choose how greedy decoding evaluates the vocabulary head. `Screened`
     /// builds and verifies an INT8 copy of the FP32 head once per `Model`

@@ -240,7 +240,9 @@ unsafe fn kernel(k: usize, a: &[u16], codes: &[u16], scales: &[f32], tile: &mut 
                 let b0: __m512bh = std::mem::transmute(_mm512_loadu_si512(b.add(2 * kp)));
                 let b1: __m512bh = std::mem::transmute(_mm512_loadu_si512(b.add(2 * kp + 1)));
                 for (r, part) in part.iter_mut().enumerate() {
-                    let x: __m512bh = std::mem::transmute(_mm512_set1_epi32(*a32.add(r * pairs + kp) as i32));
+                    // The packed rows are u16; the pair may sit at a 2-byte boundary.
+                    let pair = a32.add(r * pairs + kp).read_unaligned();
+                    let x: __m512bh = std::mem::transmute(_mm512_set1_epi32(pair as i32));
                     part[0] = _mm512_dpbf16_ps(part[0], x, b0);
                     part[1] = _mm512_dpbf16_ps(part[1], x, b1);
                 }

@@ -6,8 +6,9 @@
 //! scheduling of independent accumulators changes. Weights are persisted as
 //! `[output_channel, accumulator_phase, K_block, lane]` with an unpacked tail.
 //! This lets batches of four/eight share each weight load without retaining
-//! sixteen/thirty-two live vector accumulators. These kernels are not wired
-//! into the runner and have no measured performance promotion.
+//! sixteen/thirty-two live vector accumulators. `WeightLayout::PhasePacked`
+//! routes 2–8 live AVX2 decode rows here (`model::decode_linear`); the
+//! full-page measurements that would make it a default are still pending.
 
 use rayon::prelude::*;
 use std::ptr::NonNull;
