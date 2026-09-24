@@ -41,7 +41,11 @@ pub(crate) fn available(simd: crate::kernels::Simd) -> bool {
             && std::is_x86_feature_detected!("avx2")
             && std::is_x86_feature_detected!("fma")
     }
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(target_arch = "aarch64")]
+    {
+        simd.resolved() == crate::kernels::Simd::Neon
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
     {
         let _ = simd;
         false
@@ -124,23 +128,59 @@ pub(crate) fn gemm(
     driver::tiled_gemm(&F32Panels(panels), a, m, k, n, row_scale, epilogue);
 }
 
-/// One 6x16 tile over the whole reduction.
+/// One 6x16 tile over the whole reduction, on the native instruction set.
 #[inline(always)]
 unsafe fn kernel(k: usize, a: &[f32], b: &[f32], tile: &mut [[f32; NR]; MR]) {
     #[cfg(target_arch = "x86_64")]
     unsafe {
         kernel_avx2(k, a.as_ptr(), b.as_ptr(), tile)
     }
-    #[cfg(not(target_arch = "x86_64"))]
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        kernel_generic::<crate::simd::Neon>(k, a.as_ptr(), b.as_ptr(), tile)
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
     {
         let _ = (k, a, b, tile);
-        unreachable!("panel GEMM is x86-only for now")
+        unreachable!("panel GEMM needs AVX2 or NEON")
+    }
+}
+
+/// The 6x16 tile for instruction set `S`: twelve accumulators, every output
+/// one FMA chain over ascending `k`. `S::splat` of an `A` element has the
+/// lanes of `_mm256_broadcast_ss`, so the AVX2 instantiation is bitwise the
+/// original intrinsics kernel (`tests::generic_kernel_is_bitwise_the_portable_and_handwritten_kernels`).
+#[inline(always)]
+unsafe fn kernel_generic<S: crate::simd::Simd>(k: usize, a: *const f32, b: *const f32, tile: &mut [[f32; NR]; MR]) {
+    unsafe {
+        let mut c = [[S::zero(); 2]; MR];
+        for kk in 0..k {
+            let b0 = S::load(b.add(kk * NR));
+            let b1 = S::load(b.add(kk * NR + 8));
+            let ap = a.add(kk * MR);
+            for (r, acc) in c.iter_mut().enumerate() {
+                let x = S::splat(*ap.add(r));
+                acc[0] = S::fma(x, b0, acc[0]);
+                acc[1] = S::fma(x, b1, acc[1]);
+            }
+        }
+        for (row, acc) in c.iter().enumerate() {
+            S::store(tile[row].as_mut_ptr(), acc[0]);
+            S::store(tile[row].as_mut_ptr().add(8), acc[1]);
+        }
     }
 }
 
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma")]
 unsafe fn kernel_avx2(k: usize, a: *const f32, b: *const f32, tile: &mut [[f32; NR]; MR]) {
+    unsafe { kernel_generic::<crate::simd::Avx2>(k, a, b, tile) }
+}
+
+/// The original hand-written AVX2 kernel: the bitwise oracle of the generic one.
+#[cfg(all(test, target_arch = "x86_64"))]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn kernel_avx2_reference(k: usize, a: *const f32, b: *const f32, tile: &mut [[f32; NR]; MR]) {
     use std::arch::x86_64::*;
     unsafe {
         let mut c00 = _mm256_setzero_ps();
@@ -254,6 +294,33 @@ mod tests {
             let mut again = vec![f32::NAN; m * n];
             single.install(|| gemm(&a, m, k, &panels, n, None, Epilogue::Store(&mut again)));
             assert!(out.iter().zip(&again).all(|(x, y)| x.to_bits() == y.to_bits()));
+        }
+    }
+
+    /// The generic kernel on the native instruction set against the
+    /// portable instantiation and, on x86, the original intrinsics.
+    #[test]
+    fn generic_kernel_is_bitwise_the_portable_and_handwritten_kernels() {
+        if !available(Simd::Auto) {
+            return;
+        }
+        for k in [7, 64, 768, 2304] {
+            let a = matrix(k * MR, 5);
+            let b = matrix(k * NR, 6);
+            let mut native = [[f32::NAN; NR]; MR];
+            let mut portable = native;
+            unsafe {
+                kernel(k, &a, &b, &mut native);
+                kernel_generic::<crate::simd::Portable>(k, a.as_ptr(), b.as_ptr(), &mut portable);
+            }
+            let bits = |tile: &[[f32; NR]; MR]| tile.map(|row| row.map(f32::to_bits));
+            assert_eq!(bits(&native), bits(&portable), "k {k}");
+            #[cfg(target_arch = "x86_64")]
+            {
+                let mut reference = [[f32::NAN; NR]; MR];
+                unsafe { kernel_avx2_reference(k, a.as_ptr(), b.as_ptr(), &mut reference) };
+                assert_eq!(bits(&native), bits(&reference), "k {k}");
+            }
         }
     }
 
