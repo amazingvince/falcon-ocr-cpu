@@ -10,6 +10,11 @@ use image::RgbImage;
 use serde::{Deserialize, Serialize};
 use std::{path::Path, sync::Arc, time::Instant};
 
+mod generate;
+mod speculate;
+
+use generate::{DecodeLoop, Generation, Page};
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum FinishReason {
@@ -530,21 +535,13 @@ impl Runner {
             }
             let prefill_ms = prefill_started.elapsed().as_secs_f64() * 1000.;
             let first_token_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
-            let mut generated = Vec::with_capacity(options.max_new_tokens);
-            generated.push(token);
-            let reason = if stops.contains(&token) {
-                FinishReason::Eos
-            } else {
-                FinishReason::Length
-            };
-            let finished = reason == FinishReason::Eos || options.max_new_tokens == 1;
+            let mut generation = Generation::new(options.max_new_tokens, self.repetition_stop);
+            let finished = generation.push(token, &stops);
             states.push(BatchState {
                 width: input.prepared.width,
                 height: input.prepared.height,
                 input_tokens: input.tokens.len(),
-                generated,
-                repetition: crate::repetition::RepetitionStop::new(),
-                reason,
+                generation,
                 finished,
                 timings: Timings {
                     image_decode_ms: input.image_decode_ms,
@@ -588,7 +585,7 @@ impl Runner {
         while !active.is_empty() {
             tokens.clear();
             for &index in &active {
-                tokens.push(*states[index].generated.last().unwrap());
+                tokens.push(states[index].generation.last());
             }
             let phase = if trace.enabled() {
                 format!("batch.{request_offset}.decode.{step}")
@@ -620,17 +617,7 @@ impl Runner {
             for (row, &index) in active.iter().enumerate() {
                 let token = select(&next, row, c.vocab_size)?;
                 let state = &mut states[index];
-                state.generated.push(token);
-                if stops.contains(&token) {
-                    state.reason = FinishReason::Eos;
-                    state.finished = true;
-                } else if self.repetition_stop && state.repetition.push(&state.generated) {
-                    state.reason = FinishReason::Repetition;
-                    state.finished = true;
-                }
-                if state.generated.len() == options.max_new_tokens {
-                    state.finished = true;
-                }
+                state.finished = state.generation.push(token, &stops);
                 if state.finished {
                     state.timings.decode_ms = decode_started.elapsed().as_secs_f64() * 1000.;
                     state.timings.total_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
@@ -648,25 +635,12 @@ impl Runner {
         states
             .into_iter()
             .map(|state| {
-                let text = self.tokenizer.decode(&state.generated)?;
-                Ok(OcrResult {
-                    text,
-                    output_tokens: state.generated.len(),
-                    token_ids: state.generated,
-                    finish_reason: state.reason,
+                self.finish_result(Page {
+                    tokens: state.generation.tokens,
+                    reason: state.generation.reason,
                     width: state.width,
                     height: state.height,
                     input_tokens: state.input_tokens,
-                    precision: self.precision(),
-                    backend: self.resolved.decode_isa.clone(),
-                    mode: self.resolved.mode,
-                    decode_threads: self.decode_threads_used(),
-                    plan: Some(self.resolved.clone()),
-                    decode_tuning: self.take_decode_tuning(),
-                    cache_layout: self.config.cache_layout,
-                    weight_layout: self.config.weight_layout,
-                    packed_weight_bytes: self.model.packed_weight_bytes(),
-                    weight_packing_ms: self.model.weight_packing_ms(),
                     teacher_forced: false,
                     budget_clamped,
                     timings: state.timings,
@@ -737,7 +711,7 @@ impl Runner {
             .forward_next(&mut hidden, &pos_t, &pos_hw, &mut session, trace, "prefill", screen)?;
         let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
         let score = trace.scores_teacher();
-        let mut next_token = if let Some(&forced) = teacher_tokens.first() {
+        let next_token = if let Some(&forced) = teacher_tokens.first() {
             if score {
                 trace.teacher_step(0, forced, select(&next, 0, c.vocab_size)?);
                 if let Next::Logits(logits) = &next {
@@ -763,193 +737,40 @@ impl Runner {
         let prefill_ms = start.elapsed().as_secs_f64() * 1000.;
         let decode_start = Instant::now();
         let stops = self.tokenizer.stop_ids();
-        let mut generated = Vec::with_capacity(options.max_new_tokens);
-        let mut reason = FinishReason::Length;
-        let mut repetition = crate::repetition::RepetitionStop::new();
         let stop_loops = self.repetition_stop && teacher_tokens.is_empty();
+        let mut generation = Generation::new(options.max_new_tokens, stop_loops);
         let mut team = DecodeTeam::new(self);
         trace.decode_start();
         let speculate = self
             .speculation
             .filter(|_| teacher_tokens.is_empty() && !trace.enabled() && session.is_split());
-        if let Some((max_draft, min_match)) = speculate {
-            let mut drafter = crate::draft::NgramDrafter::new(min_match);
-            let mut history = self.document_history();
-            let mut draft = Vec::with_capacity(max_draft);
-            let mut inputs = Vec::with_capacity(max_draft + 1);
-            let mut positions = Vec::with_capacity(max_draft + 1);
-            // (single steps, their ms, verify steps, their ms, drafted, accepted)
-            let mut stats = (0_usize, 0.0_f64, 0_usize, 0.0_f64, 0_usize, 0_usize);
-            let mut policy = crate::draft::DraftPolicy::new();
-            'decode: loop {
-                let token = next_token;
-                generated.push(token);
-                if stops.contains(&token) {
-                    reason = FinishReason::Eos;
-                    break;
-                }
-                if stop_loops && repetition.push(&generated) {
-                    reason = FinishReason::Repetition;
-                    break;
-                }
-                if generated.len() == options.max_new_tokens {
-                    break;
-                }
-                // Accepted drafts plus the next token stay within the budget
-                // and the cache.
-                let limit = max_draft
-                    .min(options.max_new_tokens - generated.len() - 1)
-                    .min(session.remaining_capacity().saturating_sub(1));
-                if policy.should_draft() {
-                    drafter.propose(&generated, limit, history.as_deref(), &mut draft);
-                } else {
-                    draft.clear();
-                }
-                team.select();
-                let step_started = Instant::now();
-                if draft.is_empty() {
-                    self.model.embed(&[token], None, simd, &mut hidden)?;
-                    let next = self.model.forward_next(
-                        &mut hidden,
-                        &[session.next_position],
-                        &[[f32::NAN; 2]],
-                        &mut session,
-                        trace,
-                        "",
-                        screen,
-                    )?;
-                    let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-                    team.record(step_ms);
-                    stats.0 += 1;
-                    stats.1 += step_ms;
-                    policy.single_step(step_ms);
-                    next_token = select(&next, 0, c.vocab_size)?;
-                    trace.decode_step(1, step_ms, session.cache_bytes());
-                    continue;
-                }
-                inputs.clear();
-                inputs.push(token);
-                inputs.extend_from_slice(&draft);
-                let rows = inputs.len();
-                positions.clear();
-                positions.extend((0..rows).map(|r| session.next_position + r));
-                let kept = session.len;
-                self.model.embed(&inputs, None, simd, &mut hidden)?;
-                let next = self.model.verify_next(&mut hidden, &positions, &mut session, screen)?;
-                // predicted[r]: the greedy token after inputs[..=r].
-                let mut predicted = [0_u32; crate::head_screen::MAX_ROWS];
-                for (r, slot) in predicted[..rows].iter_mut().enumerate() {
-                    *slot = select(&next, r, c.vocab_size)?;
-                }
-                let accepted = draft.iter().zip(&predicted).take_while(|(d, p)| d == p).count();
-                session.truncate(kept + 1 + accepted)?;
-                let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-                team.record_verify(step_ms);
-                stats.2 += 1;
-                stats.3 += step_ms;
-                stats.4 += draft.len();
-                stats.5 += accepted;
-                policy.verify_step(step_ms, draft.len(), accepted);
-                trace.decode_step(rows, step_ms, session.cache_bytes());
-                for &token in &draft[..accepted] {
-                    generated.push(token);
-                    if stops.contains(&token) {
-                        reason = FinishReason::Eos;
-                        break 'decode;
-                    }
-                    if stop_loops && repetition.push(&generated) {
-                        reason = FinishReason::Repetition;
-                        break 'decode;
-                    }
-                }
-                next_token = predicted[accepted];
-            }
-            if let Some(history) = history.as_mut() {
-                history.push_page(&generated);
-            }
-            if self.config.tuning.phases {
-                let (singles, single_ms, verifies, verify_ms, drafted, accepted) = stats;
-                eprintln!(
-                    "speculation: {} tokens; {singles} single steps ({:.2} ms), {verifies} verify steps ({:.2} ms),                      drafted {drafted}, accepted {accepted} ({:.0}%)",
-                    generated.len(),
-                    single_ms / singles.max(1) as f64,
-                    verify_ms / verifies.max(1) as f64,
-                    100.0 * accepted as f64 / drafted.max(1) as f64,
-                );
-            }
-        }
-        for step in 0..options.max_new_tokens {
-            if speculate.is_some() {
-                break;
-            }
-            let token = next_token;
-            generated.push(token);
-            if stops.contains(&token) && teacher_tokens.is_empty() {
-                reason = FinishReason::Eos;
-                break;
-            }
-            if stop_loops && repetition.push(&generated) {
-                reason = FinishReason::Repetition;
-                break;
-            }
-            if step + 1 == options.max_new_tokens {
-                break;
-            }
-            team.select();
-            let step_started = Instant::now();
-            self.model.embed(&[token], None, simd, &mut hidden)?;
-            let phase = if trace.enabled() {
-                format!("decode.{step}")
-            } else {
-                String::new()
-            };
-            let next = self.model.forward_next(
-                &mut hidden,
-                &[session.next_position],
-                &[[f32::NAN; 2]],
-                &mut session,
-                trace,
-                &phase,
-                screen,
-            )?;
-            let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-            team.record(step_ms);
-            next_token = if let Some(&forced) = teacher_tokens.get(step + 1) {
-                if score {
-                    trace.teacher_step(step + 1, forced, select(&next, 0, c.vocab_size)?);
-                    if let Next::Logits(logits) = &next {
-                        trace.teacher_logits(step + 1, &logits[..c.vocab_size]);
-                    }
-                }
-                forced
-            } else {
-                select(&next, 0, c.vocab_size)?
-            };
-            trace.decode_step(1, step_ms, session.cache_bytes());
+        // Teacher forcing runs through its whole script; EOS never stops it.
+        let eos: &[u32] = if teacher_tokens.is_empty() { &stops } else { &[] };
+        let mut decode = DecodeLoop {
+            session: &mut session,
+            hidden: &mut hidden,
+            generation: &mut generation,
+            team: &mut team,
+            trace: &mut *trace,
+            stops: eos,
+            screen,
+            simd,
+            next_token,
+        };
+        match speculate {
+            Some((max_draft, min_match)) => self.decode_speculative(&mut decode, max_draft, min_match)?,
+            None => self.decode_plain(&mut decode, teacher_tokens, score)?,
         }
         trace.decode_end();
         drop(team);
         crate::model::report_decode_phases(self.config.tuning.phases);
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
-        let text = self.tokenizer.decode(&generated)?;
-        Ok(OcrResult {
-            text,
-            output_tokens: generated.len(),
-            token_ids: generated,
-            finish_reason: reason,
+        self.finish_result(Page {
+            tokens: generation.tokens,
+            reason: generation.reason,
             width: prepared.width,
             height: prepared.height,
             input_tokens: tokens.len(),
-            precision: self.precision(),
-            backend: self.resolved.decode_isa.clone(),
-            mode: self.resolved.mode,
-            decode_threads: self.decode_threads_used(),
-            plan: Some(self.resolved.clone()),
-            decode_tuning: self.take_decode_tuning(),
-            cache_layout: self.config.cache_layout,
-            weight_layout: self.config.weight_layout,
-            packed_weight_bytes: self.model.packed_weight_bytes(),
-            weight_packing_ms: self.model.weight_packing_ms(),
             teacher_forced: !teacher_tokens.is_empty(),
             budget_clamped,
             timings: Timings {
@@ -1076,9 +897,7 @@ struct BatchState {
     width: usize,
     height: usize,
     input_tokens: usize,
-    generated: Vec<u32>,
-    repetition: crate::repetition::RepetitionStop,
-    reason: FinishReason,
+    generation: Generation,
     finished: bool,
     timings: Timings,
 }
