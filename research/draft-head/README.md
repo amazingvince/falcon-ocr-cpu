@@ -19,6 +19,13 @@ page's tokens equal the no-speculation run.
 | **stage-2 head, int8 drafter KV, confidence 0.35** | **139.9 s** | **95.1 s** | **1.47x** | 75% |
 | stage-2 head, rank-384 vocabulary head | 139.2 s | 94.5 s | 1.48x | 72% |
 
+Stage 3 (48k pages; the stage-2 head trained one more seven-step epoch), a
+later run on the same pages: none 181.2 s, stage-2 head 138.3 s (1.46x),
+**stage-3 head 135.7 s (decode 1.50x, acceptance 76%)**; on the calibration
+pages 182.0 → 176.4 s. Retraining instead (one step-1 epoch, then one
+seven-step epoch on the 48k pages) reached only 74.7% / 40.8% first- and
+second-draft calibration accuracy against 75.0% / 44.6%.
+
 Calibration-page sweeps (16 English pages) behind the defaults: confidence
 0.35 (0.25-0.45 and the product-of-probabilities gate are within 2%), at most
 4 drafts (6 gains nothing), int8 drafter keys and values (-1.7% decode against
@@ -31,7 +38,7 @@ steps (23% acceptance); the seven-step phase is essential.
 
 | Step | File | Notes |
 |---|---|---|
-| Raw sources | [data/download.py](data/download.py) | English, permissively licensed only (`--stage 1/2/3`); the head is published |
+| Raw sources | [data/download.py](data/download.py) | English, permissively licensed only (`--stage 1/2/3`), so the head can be published |
 | Page images | [data/build_pages.py](data/build_pages.py) | pHash dedup and blocklist of every evaluation image ([data/make_blocklist.py](data/make_blocklist.py)) |
 | Transcripts | [data/serve_vllm.sh](data/serve_vllm.sh), [../vllm-serving/scripts/request_vllm_draftgen.py](../vllm-serving/scripts/request_vllm_draftgen.py) | the official Falcon-OCR vLLM image, greedy |
 | Decontamination | [data/decontam_13gram.py](data/decontam_13gram.py) | pages sharing 13-grams with OmniDocBench are excluded |
@@ -44,10 +51,8 @@ steps (23% acceptance); the seven-step phase is essential.
 Data sets: stage 1 about 4.7k pages, stage 2 about 24.5k, stage 3 48,069
 (olmOCR-mix, PDFA, IDL, DocLayNet, LoC newspapers, Zenodo slides, NoTeS-Bank,
 HumynLabs notes; 106 pages excluded by the 13-gram check). Data, heads and
-runs live outside the repository (D:/falcon-draft: `heads/s2-16k.safetensors`
-is the current best head; `cpu-ab/` holds every A/B). Stage-3 heads are in
-training (continuation of the stage-2 head, and a two-phase run from its
-step-1 checkpoint).
+runs live outside the repository (D:/falcon-draft: `heads/s3-16k-cont.safetensors`
+is the current best head; `cpu-ab/` holds every A/B).
 
 ## Lessons
 
@@ -55,7 +60,10 @@ step-1 checkpoint).
   calibration first-draft accuracy from 62% to 73% and held-out decode from
   1.28x to 1.47x; every architecture change tried (image attention, draft
   vocabulary size, low-rank head, attention window, gating rule) was worth
-  2% or less. Validation accuracy was still rising at the end of stage 2.
+  2% or less. Stage 3 (48k pages) added 1.9 points first-draft and 5.5
+  points second-draft accuracy and cut held-out page totals by another 1.9%;
+  the chain skill accumulates over seven-step epochs (continuing beat
+  retraining).
 - Train on chains. The seven-step phase makes the head's confidence honest on
   its own drafts; without it the confidence gate lets bad chains through.
 - CPU speculation is not GPU speculation. A verify row costs about 1.1 ms

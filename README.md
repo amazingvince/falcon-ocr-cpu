@@ -160,7 +160,7 @@ the cache (30–113 KB per position). At the 7950X's 52 GB/s that floor is 8.2,
 compute-bound (about 6 TFLOP per full page): 2.9 s in fast mode with BF16
 attention, 4.1 s in FP32. N-gram speculation pays on tables and loops (a
 looping page 44 → 19 s), not on prose; a trained draft head also drafts prose:
-16 held-out pages 184.5 → 139.9 s in fast mode (decode 1.47×), tokens
+16 held-out pages 181.2 → 135.7 s in fast mode (decode 1.50×), tokens
 unchanged. [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 lists every accepted and rejected change with its measurement.
 

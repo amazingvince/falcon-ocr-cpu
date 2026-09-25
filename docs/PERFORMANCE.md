@@ -49,7 +49,7 @@ attention tiles run QK at about 75% and PV at about 90% of FP32 peak.
 | 16-lane AVX-512 prefill tiles (bitwise) | attention −9%; under 1% end to end on Zen 4 |
 | BF16 scales in the Q8/Q16 caches | decode −2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
-| Trained draft head (`--draft-head`, stage-2 head, INT8 drafter KV; 16 English held-out pages, fast mode) | 184.5 → 139.9 s page total, decode 1.47× (n-gram drafts: 172.7 s, 1.09×); tokens identical |
+| Trained draft head (`--draft-head`, stage-2 head, INT8 drafter KV; 16 English held-out pages, fast mode) | 184.5 → 139.9 s page total, decode 1.47× (n-gram drafts: 172.7 s, 1.09×); stage-3 head (48k pages), a later run: 181.2 → 135.7 s, decode 1.50×; tokens identical |
 
 ## Rejected or unadopted
 
