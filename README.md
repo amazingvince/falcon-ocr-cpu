@@ -76,6 +76,7 @@ None of these change tokens (gated by `tests/modes.rs`).
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
+| `--draft-head F` | A trained draft head ([research/draft-head](research/draft-head/README.md); not yet published); `--drafter ngram\|head\|both` (default `head` with a file, else `ngram`), `--draft-confidence P` (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
 | `--batch-size N` | Pages decoded jointly (1..=8) |
@@ -157,8 +158,10 @@ Decode streams the weights, the head screen and the KV cache once per token:
 the cache (30–113 KB per position). At the 7950X's 52 GB/s that floor is 8.2,
 15 and 31 ms per token; the runner measures 8.5, 15 and 29. Prefill is
 compute-bound (about 6 TFLOP per full page): 2.9 s in fast mode with BF16
-attention, 4.1 s in FP32. Speculation pays on tables and loops (a looping
-page 44 → 19 s), not on prose. [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
+attention, 4.1 s in FP32. N-gram speculation pays on tables and loops (a
+looping page 44 → 19 s), not on prose; a trained draft head also drafts prose:
+16 held-out pages 184.5 → 139.9 s in fast mode (decode 1.47×), tokens
+unchanged. [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 lists every accepted and rejected change with its measurement.
 
 ## Platform support

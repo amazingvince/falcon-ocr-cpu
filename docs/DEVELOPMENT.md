@@ -52,6 +52,12 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   and matches the published files; speculation, the decode team, drafts, the
   head and the explicit AVX2 backend never change tokens; the repetition stop
   yields a prefix; the three trace hashes are pinned.
+- **Draft head** (needs an exported head file and `artifacts/model`):
+  `FALCON_OCR_DRAFT_HEAD=<head>.safetensors cargo test --release --lib
+  draft_head -- --ignored --nocapture` checks the Rust chain against the
+  PyTorch fixture written by `export_head.py` (equal tokens up to the first
+  near tie) with FP32 and INT8 drafter caches, and prints the draft-step
+  timing probe (warm and cold).
 - **Token agreement** against the FP32 anchor: `bash
   tools/agree_queue.sh <out> tools/gptq-calibration-pages.txt 8192
   near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors`
