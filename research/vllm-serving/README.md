@@ -12,6 +12,7 @@ Production-style BF16 serving with vLLM and the held-out comparisons made throug
 | [scripts/inspect_vllm_image.py](scripts/inspect_vllm_image.py) | Read immutable public OCI metadata; never pulls large image layers | history |
 | [scripts/podman_reference.sh](scripts/podman_reference.sh) | Project-specific rootful Podman storage. This WSL VHD is backed by D | history |
 | [scripts/prepare_serving_fullpages.py](scripts/prepare_serving_fullpages.py) | Freeze a bounded serving sample from visual evidence, before serving outputs | history |
+| [scripts/request_vllm_draftgen.py](scripts/request_vllm_draftgen.py) | Greedy full-page transcripts of a page manifest for draft-head training (concurrent, resumable) | active |
 | [scripts/request_vllm_fullpages.py](scripts/request_vllm_fullpages.py) | Run bounded natural full-page HTTP requests against the pinned vLLM fork | history |
 | [scripts/request_vllm_heldout.py](scripts/request_vllm_heldout.py) | Greedy full-page requests against a running vLLM server | history |
 | [scripts/request_vllm_reference.py](scripts/request_vllm_reference.py) | Make and preserve an actual direct-vLLM multimodal serving smoke request | history |
