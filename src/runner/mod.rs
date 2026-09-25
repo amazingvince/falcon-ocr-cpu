@@ -113,6 +113,8 @@ pub struct Runner {
     /// Drafts from earlier pages of the current `recognize_files` call
     /// (`RunnerConfig::document_drafts`).
     document: Option<std::sync::Mutex<crate::draft::DocumentHistory>>,
+    /// The trained draft head, when the drafter uses one.
+    draft_head: Option<Arc<crate::draft_head::DraftHead>>,
 }
 
 enum Decode {
@@ -222,6 +224,12 @@ impl Runner {
             DecodeThreads::Pool => Decode::Fixed(crate::team::Team::new(pool_threads)?),
         };
         let head = config.head;
+        let draft_head = match (&config.draft_head, config.drafter) {
+            (Some(path), crate::config::Drafter::Head | crate::config::Drafter::Both) => {
+                Some(Arc::new(crate::draft_head::DraftHead::load(path)?))
+            }
+            _ => None,
+        };
         let mut runner = Self {
             model,
             tokenizer,
@@ -231,6 +239,7 @@ impl Runner {
             decode,
             speculation,
             document: config.document_drafts.then(Default::default),
+            draft_head,
             config,
             resolved,
         };
@@ -699,6 +708,13 @@ impl Runner {
             self.config.exp,
             self.config.tuning,
         )?;
+        if let Some(head) = &self.draft_head
+            && self.speculation.is_some()
+            && teacher_tokens.is_empty()
+            && !trace.enabled()
+        {
+            session.capture_features(&head.layers());
+        }
         let mut hidden = Vec::new();
         let image_projection_ms = self.model.embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
         let screen = self.head == HeadMode::Screened && teacher_tokens.is_empty();

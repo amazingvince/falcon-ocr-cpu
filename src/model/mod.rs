@@ -284,6 +284,12 @@ impl Model {
         bytemuck::cast_slice(&self.map.bytes()[weight.range.clone()])
     }
 
+    /// The input embedding of `token`.
+    pub(crate) fn embedding_row(&self, token: u32) -> &[f32] {
+        let d = self.config.dim;
+        &self.w(&self.embedding)[token as usize * d..(token as usize + 1) * d]
+    }
+
     pub(crate) fn embed(
         &self,
         tokens: &[u32],
@@ -536,6 +542,9 @@ impl Model {
         let tuning = session.tuning;
         let work = &mut session.workspace;
         work.resize(rows, c);
+        if let Some(capture) = session.features.as_mut() {
+            capture.begin(rows, c.dim);
+        }
         if trace.enabled() {
             trace.tensor(&format!("{phase}.embedding"), &[rows, c.dim], h)?;
         }
@@ -642,6 +651,9 @@ impl Model {
                 panel_out_ffn(c, layer, h, rows, work, bf16_projections, &mut clock);
             } else {
                 self.attention_out_ffn(layer, h, rows, work, &step, trace, &mut clock)?;
+            }
+            if let Some(capture) = session.features.as_mut() {
+                capture.record(i, h, rows);
             }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;

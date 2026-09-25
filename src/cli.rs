@@ -6,7 +6,7 @@ use clap::{ArgAction, Args};
 
 use crate::{
     auto::{self, ModelRequest},
-    config::{Backend, DecodeThreads, ExpMode, HeadMode, RunnerConfig, Speculation, Tuning},
+    config::{Backend, DecodeThreads, Drafter, ExpMode, HeadMode, RunnerConfig, Speculation, Tuning},
 };
 
 /// Runner flags of both binaries. Every flag is optional: an unset flag keeps
@@ -63,6 +63,19 @@ pub struct RunnerArgs {
     /// recognition, off for falcon-ocr-eval].
     #[arg(long, num_args = 0..=1, require_equals = true, default_missing_value = "true", action = ArgAction::Set, global = true)]
     pub document_drafts: Option<bool>,
+    /// A trained draft head file for speculative decoding
+    /// (`research/draft-head`); selects `--drafter head` unless set.
+    #[arg(long, global = true)]
+    pub draft_head: Option<std::path::PathBuf>,
+    /// Draft source: `ngram` (matches in earlier output), `head` (the
+    /// --draft-head model) or `both` (n-gram matches first) [default: head
+    /// with --draft-head, otherwise ngram]. Outputs are unchanged.
+    #[arg(long, value_enum, global = true)]
+    pub drafter: Option<Drafter>,
+    /// The draft head drafts while its top token's probability is at least
+    /// this [default: 0.35, the best of 0.25-0.6 on calibration pages].
+    #[arg(long, global = true)]
+    pub draft_confidence: Option<f32>,
     /// Prefill exp: `fast` (token-identical on calibration; the recognition
     /// default) or `exact` (the platform expf, which traces use).
     #[arg(long, value_enum, hide = true, global = true)]
@@ -94,6 +107,13 @@ impl RunnerArgs {
             decode_threads: self.decode_threads.unwrap_or(base.decode_threads),
             speculation,
             document_drafts: self.document_drafts.unwrap_or(base.document_drafts),
+            drafter: self.drafter.unwrap_or(if self.draft_head.is_some() {
+                Drafter::Head
+            } else {
+                base.drafter
+            }),
+            draft_head: self.draft_head.clone().or(base.draft_head.clone()),
+            draft_confidence: self.draft_confidence.unwrap_or(base.draft_confidence),
             exp: self.exp.unwrap_or(base.exp),
             tuning: Tuning::from_pairs(&self.tune)?,
             ..base

@@ -47,6 +47,43 @@ pub(crate) struct Session {
     pub(super) exp: ExpMode,
     /// Experiment knobs of this request (`RunnerConfig::tuning`).
     pub(super) tuning: Tuning,
+    /// Hidden states after chosen layers for a trained draft head, when enabled.
+    pub(super) features: Option<FeatureCapture>,
+}
+
+/// Hidden states after chosen layers for the rows of the latest forward
+/// pass (only the last row of a prefill), for a trained draft head: row `r`
+/// holds the chosen layers' outputs side by side (`layers * dim` values).
+pub(crate) struct FeatureCapture {
+    layers: Vec<usize>,
+    dim: usize,
+    rows: usize,
+    data: Vec<f32>,
+}
+impl FeatureCapture {
+    /// Size the capture for a forward of `rows` rows.
+    pub(super) fn begin(&mut self, rows: usize, dim: usize) {
+        self.dim = dim;
+        self.rows = if rows > crate::head_screen::MAX_ROWS { 1 } else { rows };
+        self.data.resize(self.rows * self.layers.len() * dim, 0.0);
+    }
+    /// Copy layer `layer`'s output rows `h` (all `rows` of the forward).
+    pub(super) fn record(&mut self, layer: usize, h: &[f32], rows: usize) {
+        let Some(slot) = self.layers.iter().position(|&l| l == layer) else {
+            return;
+        };
+        let (dim, width) = (self.dim, self.layers.len() * self.dim);
+        let first = rows - self.rows;
+        for r in 0..self.rows {
+            let src = &h[(first + r) * dim..(first + r + 1) * dim];
+            self.data[r * width + slot * dim..r * width + (slot + 1) * dim].copy_from_slice(src);
+        }
+    }
+    /// Row `r` of the latest forward (the last row for a prefill).
+    pub(crate) fn row(&self, r: usize) -> &[f32] {
+        let width = self.layers.len() * self.dim;
+        &self.data[r * width..(r + 1) * width]
+    }
 }
 pub(super) enum LayerCache {
     Split(crate::quant::kv::SplitPrefix),
@@ -321,7 +358,20 @@ impl Session {
             simd,
             exp,
             tuning,
+            features: None,
         })
+    }
+    /// Capture the outputs of `layers` on every forward (for a draft head).
+    pub(crate) fn capture_features(&mut self, layers: &[usize]) {
+        self.features = Some(FeatureCapture {
+            layers: layers.to_vec(),
+            dim: 0,
+            rows: 0,
+            data: Vec::new(),
+        });
+    }
+    pub(crate) fn features(&self) -> Option<&FeatureCapture> {
+        self.features.as_ref()
     }
 }
 
