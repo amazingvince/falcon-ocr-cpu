@@ -1,0 +1,203 @@
+{
+ "schema": "falcon-ocr-english-gate-v1-masked-diagnostic",
+ "status": "POST HOC DIAGNOSTIC, not a gate verdict: the masking was designed after both English gates failed on figure pages; reference/english-gate-v1-results.json (fast mode) and reference/router-english-gate-v1-results.json (router) stay FAIL",
+ "question": "how much of the two failures is the figure artifact (content the ground truth leaves out) and how much is real",
+ "masking": "research/corpus-qualification/scripts/mask_excluded.py: every figure and OmniDocBench *_mask block that contributes no ground-truth text painted white, minus every block that does; ground truth unchanged; 35 of 118 pages masked (34 change pixels), median 17.5% of the page; lock reference/english-gate-v1-masked-lock.json",
+ "runs": "the 34 changed pages rerun with fast at 1536, the router and FP32 (D:/falcon-draft/english-gate/masked/, 8 threads, below-normal priority; tokens do not depend on either) and merged with the original runs of the other 84 pages (merge_reports.py), then checked with check_heldout.py and the original budgets",
+ "criteria": {
+  "router": "reference/router-english-gate-v1-budget.json",
+  "fast": "reference/english-gate-v1-budget.json"
+ },
+ "router_vs_fast_1536": {
+  "gates": {
+   "overall": true,
+   "per_category": true,
+   "repetition_stop_on_eos": true
+  },
+  "pass": true,
+  "eos_micro_cer": {
+   "fp32": 0.12474293002074315,
+   "candidate": 0.12530515501134806
+  },
+  "eos_categories": {
+   "exam": {
+    "pages": 5,
+    "fp32": 0.10410325094362596,
+    "candidate": 0.10142457080238645,
+    "gated": false
+   },
+   "formulas": {
+    "pages": 25,
+    "fp32": 0.18799181782128618,
+    "candidate": 0.19660189108518233,
+    "gated": true
+   },
+   "multi_column": {
+    "pages": 25,
+    "fp32": 0.0779821073558648,
+    "candidate": 0.07369781312127237,
+    "gated": true
+   },
+   "ordinary": {
+    "pages": 19,
+    "fp32": 0.17151825417585292,
+    "candidate": 0.17379769066925752,
+    "gated": true
+   },
+   "slides": {
+    "pages": 15,
+    "fp32": 0.07225169197000184,
+    "candidate": 0.07042253521126761,
+    "gated": true
+   },
+   "tables": {
+    "pages": 24,
+    "fp32": 0.09735592350147607,
+    "candidate": 0.09479955504214264,
+    "gated": true
+   },
+   "tiny_text": {
+    "pages": 4,
+    "fp32": 0.17860906217070602,
+    "candidate": 0.17939936775553214,
+    "gated": false
+   }
+  },
+  "repetition_stop_on_fp32_eos_pages": [],
+  "identical_pages": 51,
+  "all_pages_micro_cer": {
+   "fp32": 0.13783838991369673,
+   "candidate": 0.13837743064815392
+  }
+ },
+ "fast_1536_vs_fp32": {
+  "gates": {
+   "overall": true,
+   "per_category": true,
+   "repetition_stop_on_eos": true
+  },
+  "pass": true,
+  "eos_micro_cer": {
+   "fp32": 0.1257963621084029,
+   "candidate": 0.12474293002074315
+  },
+  "eos_categories": {
+   "exam": {
+    "pages": 5,
+    "fp32": 0.10410325094362596,
+    "candidate": 0.10410325094362596,
+    "gated": false
+   },
+   "formulas": {
+    "pages": 25,
+    "fp32": 0.19095577031455468,
+    "candidate": 0.18799181782128618,
+    "gated": true
+   },
+   "multi_column": {
+    "pages": 25,
+    "fp32": 0.07809145129224652,
+    "candidate": 0.0779821073558648,
+    "gated": true
+   },
+   "ordinary": {
+    "pages": 19,
+    "fp32": 0.17133141511901648,
+    "candidate": 0.17151825417585292,
+    "gated": true
+   },
+   "slides": {
+    "pages": 15,
+    "fp32": 0.07225169197000184,
+    "candidate": 0.07225169197000184,
+    "gated": true
+   },
+   "tables": {
+    "pages": 24,
+    "fp32": 0.09631840157446626,
+    "candidate": 0.09735592350147607,
+    "gated": true
+   },
+   "tiny_text": {
+    "pages": 4,
+    "fp32": 0.2000790305584826,
+    "candidate": 0.17860906217070602,
+    "gated": false
+   }
+  },
+  "repetition_stop_on_fp32_eos_pages": [],
+  "identical_pages": 93,
+  "all_pages_micro_cer": {
+   "fp32": 0.13884838202667968,
+   "candidate": 0.13783838991369673
+  }
+ },
+ "router_vs_fp32_reported": {
+  "gates": {
+   "overall": true,
+   "per_category": true,
+   "repetition_stop_on_eos": true
+  },
+  "pass": true,
+  "eos_micro_cer": {
+   "fp32": 0.1257963621084029,
+   "candidate": 0.12530515501134806
+  },
+  "eos_categories": {
+   "exam": {
+    "pages": 5,
+    "fp32": 0.10410325094362596,
+    "candidate": 0.10142457080238645,
+    "gated": false
+   },
+   "formulas": {
+    "pages": 25,
+    "fp32": 0.19095577031455468,
+    "candidate": 0.19660189108518233,
+    "gated": true
+   },
+   "multi_column": {
+    "pages": 25,
+    "fp32": 0.07809145129224652,
+    "candidate": 0.07369781312127237,
+    "gated": true
+   },
+   "ordinary": {
+    "pages": 19,
+    "fp32": 0.17133141511901648,
+    "candidate": 0.17379769066925752,
+    "gated": true
+   },
+   "slides": {
+    "pages": 15,
+    "fp32": 0.07225169197000184,
+    "candidate": 0.07042253521126761,
+    "gated": true
+   },
+   "tables": {
+    "pages": 24,
+    "fp32": 0.09631840157446626,
+    "candidate": 0.09479955504214264,
+    "gated": true
+   },
+   "tiny_text": {
+    "pages": 4,
+    "fp32": 0.2000790305584826,
+    "candidate": 0.17939936775553214,
+    "gated": false
+   }
+  },
+  "repetition_stop_on_fp32_eos_pages": [],
+  "identical_pages": 42,
+  "all_pages_micro_cer": {
+   "fp32": 0.13884838202667968,
+   "candidate": 0.13837743064815392
+  }
+ },
+ "reading": [
+  "masked, the router is +0.06 pt overall against fast at 1536 (unmasked +0.29) and within every category limit (ordinary +0.23, slides -0.18, formulas +0.86, tables -0.26, multi-column -0.43): the figure artifact explains the router's failure; formula pages at 1024 remain its weakest spot",
+  "masked, fast mode is -0.11 pt overall against FP32 and ordinary +0.02 pt (unmasked +2.48): the commutative-diagram page explained that failure entirely",
+  "masking lowers every arm's CER (fast at 1536: 13.38% -> 12.47%) because figure transcriptions no longer count against any system"
+ ],
+ "consequence": "figure masking becomes the standard for future pre-registered gates on OmniDocBench pages; a router verdict still needs fresh held-out pages"
+}

@@ -91,6 +91,13 @@ mode matches FP32 on printed English. English OmniDocBench has almost no
 handwriting or degraded scans, so those stay unqualified. Details:
 `reference/english-gate-v1-results.json`.
 
+A later, post-hoc check confirms the reading: with every figure region that
+the ground truth leaves out painted white on all systems' input
+(`mask_excluded.py`, 35 of the 118 pages), fast mode is −0.11 pt against FP32
+overall and +0.02 pt on ordinary pages. Future gates on OmniDocBench pages
+use figure-masked pages from the start
+(`reference/english-gate-v1-masked-results.json`).
+
 ## Resolution routing
 
 `--max-dimension auto` lets the runner choose each page's maximum dimension:
@@ -127,7 +134,10 @@ rest is real: a sidebar dropped at 768 and weaker LaTeX at 1024. The
 development set's improvement did not replicate, so read the router as about a
 quarter less CPU time for roughly +0.3 pt CER on printed English. It stays
 opt-in; it changes the output, so exact and near-exact comparisons use a fixed
-resolution. Details: `research/resolution-router/README.md`,
+resolution. With figures masked (the post-hoc check above) the router is
++0.06 pt against fast at 1536 and within every category limit, formulas
+(+0.86 pt) being the closest, so the figure artifact explains the failure; a
+verdict still needs fresh pages. Details: `research/resolution-router/README.md`,
 `reference/router-english-gate-v1-results.json`.
 
 ## Loops and the repetition stop

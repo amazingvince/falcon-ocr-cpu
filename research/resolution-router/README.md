@@ -99,6 +99,28 @@ English gate pages are spent for router work; with the development set they
 cover every English OmniDocBench page with ground truth outside the corpora,
 so a next router version needs new held-out pages.
 
+**Figure-masked diagnostic (post hoc).** Painting white every figure region
+the ground truth leaves out, on every system's input
+(`research/corpus-qualification/scripts/mask_excluded.py`; 35 of the 118
+pages, median 17.5% of the page), and rerunning the 34 changed pages:
+
+| | fast at 1536 | auto | change | limit |
+|---|---|---|---|---|
+| overall | 12.47% | 12.53% | +0.06 pt | +0.25 pass |
+| formulas | 18.80% | 19.66% | +0.86 pt | +1.0 pass |
+| multi-column | 7.80% | 7.37% | −0.43 pt | pass |
+| ordinary | 17.15% | 17.38% | +0.23 pt | pass |
+| slides | 7.23% | 7.04% | −0.18 pt | pass |
+| tables | 9.74% | 9.48% | −0.26 pt | pass |
+
+So the figure artifact explains the failure, and the router is about neutral
+on fresh printed English while saving about a quarter of the CPU time; formula
+pages at 1024 are its weakest spot. This was designed after seeing the failure
+and uses spent pages, so it is a diagnostic, not a pass
+(`reference/english-gate-v1-masked-results.json`). The same masking takes fast
+mode's own English gate from +2.48 pt to +0.02 pt on ordinary pages. Future
+gates use figure-masked pages from the start.
+
 ## Where it wins and loses
 
 [analyze_losses.py](analyze_losses.py) on the development set (the router's
