@@ -64,6 +64,32 @@ Checks:
   (decoding once, two first resizes, the statistics). A quiet-host timing
   belongs to Phase 3.
 
+## Where it wins and loses
+
+[analyze_losses.py](analyze_losses.py) on the development set (the router's
+own pages, so for understanding only). The routed pages gain 15,919 error
+characters and lose 6,357 against 1536.
+
+- **Gains** are mostly pages that 1536 itself gets badly wrong, where the
+  lower resolution reads the whole page: academic tables (31% → 3.6% CER,
+  19% → 2.9%, 14% → 0.7%) and long formula pages that 1536 cut short (an
+  exam paper at 57% → 5.7%, 1,852 → 3,858 characters). Tables net −2.7 pt
+  over their 54 pages.
+- **Losses** are spread thin (the largest 15 hold 58% of them) and are not
+  near the decision boundary: pages scored 0–0.5 above it gain as much as
+  pages scored 0.5–1.0, so a stricter threshold would mostly give back gains.
+  The largest real loss is small magazine print at 1024 (15-px lines, 10 px
+  there), where one page drops a sidebar. Much of the rest is formatting:
+  curly for straight apostrophes, line breaks, `#` markers, and two slides
+  whose ground truth is 41 characters while the model writes the slide's
+  table as HTML (pretty-printed at 768). Normalizing whitespace, quotes and
+  markdown markers leaves the result at −0.63 pt (19.75% → 19.12%) and pages
+  more than 2 pt worse at 27 instead of 35.
+- **Category** "other" (magazines, newspapers, textbooks) nets +0.09 pt;
+  every other category improves. A confidence probe at the routed resolution
+  (AUC 0.85 in Phase 1) is the natural way to catch the small-print pages;
+  any such change needs pages the router has not seen.
+
 ## What was learned on the way
 
 - **Serving is not deterministic.** Two 1536 runs of the same page through
@@ -100,6 +126,7 @@ Checks:
 | 2 | [train_trees.py](train_trees.py) | version-2 statistics, the shipped trees, their export (`src/router/trees.json`) and the development probabilities |
 | 2 | [../../tests/generate_router_fixtures.py](../../tests/generate_router_fixtures.py) | the parity fixtures for `src/router` |
 | 2 | [check_auto.py](check_auto.py) | `--max-dimension auto` end to end against the fixed runs |
+| 2 | [analyze_losses.py](analyze_losses.py) | where the router gains and loses on the development set |
 
 Labels come from BF16 vLLM serving while the runner is FP32-anchored; the
 development set measures the runner itself. Data lives outside the
