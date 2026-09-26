@@ -1,0 +1,40 @@
+{
+  "schema": "falcon-ocr-english-gate-v1",
+  "registered_at": "2026-09-25T20:00:09-04:00",
+  "approved_by": "user, 2026-09-25 (\"Lets validate fast mode on English pages.\"); criteria reused unchanged from reference/phase4-quality-budget.json (approved 2026-09-23), plus the minimum-size rule below, fixed before any candidate output existed",
+  "pages": "reference/english-gate-v1-evaluation-lock.json: 118 English OmniDocBench pages outside corpus v1/v2/v3 and every v3 document family, one page per family (research/corpus-qualification/scripts/select_english_gate.py); never used for tuning",
+  "binary": {
+    "path": "target/release/falcon-ocr-eval.exe",
+    "sha256": "480bf1f991146f5f07f21339c54a7fa43934897c8e2205e0190f2b824efd8e21",
+    "source": "branch draft-head at 8fbf9cb plus uncommitted kernel work; fast-mode outputs bitwise equal to 8fbf9cb (tests/modes.rs)"
+  },
+  "reference": {
+    "name": "fp32",
+    "command": "falcon-ocr-eval --speculate 4 --threads 32 --decode-threads 12 bench <118 canonical paths> --max-new-tokens 4096 --max-dimension 1536 --warmup 0 --samples 1 --profile reference",
+    "note": "FP32 checkpoint, exact exp, full head; n-gram speculation never changes tokens"
+  },
+  "candidates": {
+    "fast": {
+      "command": "falcon-ocr-eval --exp fast --head screened --speculate 4 --stop-repetition --threads 32 --decode-threads 12 bench <118 canonical paths> --max-new-tokens 4096 --max-dimension 1536 --warmup 0 --samples 1 --model-file artifacts/packed/falcon-ocr-v1.5-fast.safetensors --profile w8-body-kv-q8",
+      "model_file_sha256": "b560ce3129e8ea856f38775e877fec0c341cf488a1f44684b2e3ba73753b4cc7"
+    },
+    "fast-poly-exp": {
+      "command": "the fast command plus --tune decode-exp=fast (portable polynomial exp in decode attention)"
+    }
+  },
+  "scope": "pages where the FP32 reference ends at EOS",
+  "cer": "raw-text Levenshtein distance to ground-truth.txt divided by ground-truth length, micro-averaged over characters, same treatment for both runs (research/phase4-hillclimb/attempt3/check_heldout.py)",
+  "criteria": {
+    "overall_micro_cer_increase_max_points": 0.25,
+    "per_category_micro_cer_increase_max_points": 1.0,
+    "repetition_stop_fires_on_fp32_eos_pages": 0,
+    "min_category_fp32_eos_pages_gated": 10
+  },
+  "reported_not_gated": [
+    "categories with fewer than 10 FP32-EOS pages (expected: tiny_text 4, exam 5)",
+    "pages token-identical to FP32",
+    "token edits",
+    "stop-reason changes",
+    "wall time"
+  ]
+}

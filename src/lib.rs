@@ -8,6 +8,7 @@ pub mod cli;
 pub mod config;
 pub mod cpu;
 mod draft;
+mod draft_head;
 mod head_screen;
 pub mod kernels;
 pub mod model;
@@ -23,8 +24,8 @@ mod tune;
 
 pub use auto::{HostInfo, Mode, Resolved};
 pub use config::{
-    Backend, CacheLayout, DecodeThreads, ExpMode, GenerationOptions, HeadMode, ModelConfig, PrefillBf16, RunnerConfig,
-    Speculation, Tuning, WeightLayout,
+    Backend, CacheLayout, DecodeThreads, DraftKv, Drafter, ExpMode, GenerationOptions, HeadMode, ModelConfig,
+    PrefillBf16, RunnerConfig, Speculation, Tuning, WeightLayout,
 };
 pub use model::{Model, WeightsSource};
 pub use runner::{FinishReason, OcrResult, Runner, Timings};

@@ -32,7 +32,9 @@ def micro(pages, key):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--candidate", type=Path, required=True)
-    ap.add_argument("--reference-dir", type=Path, required=True)
+    source = ap.add_mutually_exclusive_group(required=True)
+    source.add_argument("--reference-dir", type=Path, help="per-page FP32 records (<page>.json with a `result`)")
+    source.add_argument("--reference-report", type=Path, help="an FP32 `bench` report of the same pages")
     ap.add_argument("--lock", type=Path, required=True)
     ap.add_argument("--budget", type=Path, required=True)
     ap.add_argument("--output", type=Path)
@@ -41,12 +43,20 @@ def main() -> None:
     lock = json.loads(a.lock.read_text(encoding="utf-8"))["pages"]
     report = json.loads(a.candidate.read_text(encoding="utf-8"))
     cand = {Path(i["path"]).parent.name: o for i, o in zip(report["inputs"], report["samples"][0]["outputs"])}
+    ref_report = None
+    if a.reference_report:
+        r = json.loads(a.reference_report.read_text(encoding="utf-8"))
+        ref_report = {Path(i["path"]).parent.name: o for i, o in zip(r["inputs"], r["samples"][0]["outputs"])}
     pages = []
     for entry in lock:
         path = Path(entry["canonical_path"])
         pid = path.parent.name
-        ref_record = json.loads((a.reference_dir / f"{pid}.json").read_text(encoding="utf-8"))
-        ref = ref_record["result"]
+        if ref_report is not None:
+            ref = ref_report[pid]
+            ref_record = {"wall_ms": ref["timings"]["total_ms"]}
+        else:
+            ref_record = json.loads((a.reference_dir / f"{pid}.json").read_text(encoding="utf-8"))
+            ref = ref_record["result"]
         c = cand[pid]
         truth = (path.parent / "ground-truth.txt").read_text(encoding="utf-8")
         pages.append({
@@ -70,13 +80,16 @@ def main() -> None:
     by_cat = defaultdict(list)
     for p in eos:
         by_cat[p["category"]].append(p)
-    categories = {c: {"pages": len(ps), "fp32": micro(ps, "cer_reference"), "candidate": micro(ps, "cer_candidate")}
+    # Categories below the budget's minimum size (if it sets one) are reported, not gated.
+    min_pages = budget.get("min_category_fp32_eos_pages_gated", 0)
+    categories = {c: {"pages": len(ps), "fp32": micro(ps, "cer_reference"), "candidate": micro(ps, "cer_candidate"),
+                      "gated": len(ps) >= min_pages}
                   for c, ps in sorted(by_cat.items())}
     stop_on_eos = [p["page"] for p in eos if p["candidate_stop"] == "repetition"]
     gates = {
         "overall": (overall_cand - overall_ref) * 100 <= budget["overall_micro_cer_increase_max_points"],
         "per_category": all((v["candidate"] - v["fp32"]) * 100 <= budget["per_category_micro_cer_increase_max_points"]
-                            for v in categories.values()),
+                            for v in categories.values() if v["gated"]),
         "repetition_stop_on_eos": len(stop_on_eos) <= budget["repetition_stop_fires_on_fp32_eos_pages"],
     }
     summary = {
@@ -105,8 +118,8 @@ def main() -> None:
           f"{'PASS' if gates['overall'] else 'FAIL'}")
     for c, v in categories.items():
         d = (v["candidate"] - v["fp32"]) * 100
-        print(f"GATE {c:>13} ({v['pages']:3d} pages): {v['fp32']:.3%} -> {v['candidate']:.3%} ({d:+.3f} pt) "
-              f"{'PASS' if d <= budget['per_category_micro_cer_increase_max_points'] else 'FAIL'}")
+        verdict = ("PASS" if d <= budget["per_category_micro_cer_increase_max_points"] else "FAIL") if v["gated"]             else "reported, not gated"
+        print(f"GATE {c:>13} ({v['pages']:3d} pages): {v['fp32']:.3%} -> {v['candidate']:.3%} ({d:+.3f} pt) {verdict}")
     print(f"GATE repetition stop on FP32-EOS pages: {len(stop_on_eos)} {stop_on_eos} "
           f"{'PASS' if gates['repetition_stop_on_eos'] else 'FAIL'}")
     print(f"=> {'PASS' if summary['pass'] else 'FAIL'}")

@@ -1,6 +1,6 @@
 # Performance
 
-Status: current as of 2026-09-24. Host: Ryzen 9 7950X (16 cores, 32
+Status: current as of 2026-09-25. Host: Ryzen 9 7950X (16 cores, 32
 threads, DDR5, AVX-512 with BF16), Windows 11. Page: the journal benchmark
 page, 6,544 image tokens. Earlier measurements on the tiny 256×128 fixture
 are archived in `research/benchmarks/docs/PERFORMANCE.md`.
@@ -49,6 +49,8 @@ attention tiles run QK at about 75% and PV at about 90% of FP32 peak.
 | 16-lane AVX-512 prefill tiles (bitwise) | attention −9%; under 1% end to end on Zen 4 |
 | BF16 scales in the Q8/Q16 caches | decode −2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
+| Portable polynomial exp in fast mode's decode attention (8-bit caches under `ExpMode::Fast`; `--tune decode-exp`) | verification attention −3/−7/−9/−10% at 2/3/4/5 rows, single rows unchanged; page totals with the draft head −2.1% (calibration) and −0.6% (held-out); flips vs FP32 92 → 94 of 78,282 |
+| Trained draft head (`--draft-head`, stage-2 head, INT8 drafter KV; 16 English held-out pages, fast mode) | 184.5 → 139.9 s page total, decode 1.47× (n-gram drafts: 172.7 s, 1.09×); stage-3 head (48k pages), a later run: 181.2 → 135.7 s, decode 1.50×; tokens identical |
 
 ## Rejected or unadopted
 
@@ -65,6 +67,24 @@ dominates short pages. `--max-dimension 1280` is about 20% faster and was
 accuracy-neutral on 64 calibration pages but is not validated on held-out
 pages; the default stays 1536.
 
+Draft head (research/draft-head, 16 calibration pages): other confidence
+thresholds and a product-of-probabilities gate (within 2%), 6 drafts per step
+(no gain over 4), a 24k draft vocabulary (same acceptance, larger head), an
+attention window of 256 positions (−4 points acceptance), a rank-384
+vocabulary head (−1%, within noise on held-out pages), 16 decode threads with
+speculation (+3%), and a head trained on next-token prediction only (23%
+acceptance: overconfident on later chain steps).
+
+Decode attention kernels (bitwise-identical rewrites, research/draft-head
+probes): one scale load per 32 cached values and both heads' PV per value
+load in the verification kernel (−1% of 3–5-row attention, no end-to-end
+gain); the same PV with register accumulators in the single-row kernel
+(21% faster on cache-resident data, **25% slower** in real decode, where the
+cache streams from memory); eight keys' horizontal sums at once (register
+spills on AVX2's 16 registers). Two instantiations of the kernel behind a
+runtime choice inside one `#[target_feature]` function made the exact path
+53% slower; each instantiation now has its own entry function.
+
 ## Measuring
 
 - `falcon-ocr doctor --probe --text`: bandwidth and the decode floor.
@@ -74,6 +94,10 @@ pages; the default stays 1536.
   attention stage cycles).
 - `python research/phase4-hillclimb/attempt3/ab.py`: interleaved A/B of two binaries
   on the same pages; compare arms within one run only, on a quiet host.
+- `python research/draft-head/cpu_ab.py`: interleaved A/B of drafter settings
+  with page totals and token identity against no speculation. A running GPU
+  job (training, vLLM) slows CPU decode by about 30%; time only on a quiet
+  host.
 - `cargo test --release --lib panels::panel::tests::prefill_throughput_probe
   -- --ignored --nocapture`: the panel GEMM against the `gemm` crate at
   prefill shapes (1.7–1.8 TFLOP/s here).
