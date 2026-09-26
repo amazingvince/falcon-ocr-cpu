@@ -468,7 +468,7 @@ impl Runner {
         if mode != crate::quant::Kv::Compact {
             let before = session.cache_bytes();
             let t = Instant::now();
-            session.seal_prefix(&self.model.config, mode)?;
+            session.seal_prefix(&self.model.config, mode, self.config.exp)?;
             trace.prefix_sealed(before, session.cache_bytes(), t.elapsed().as_secs_f64() * 1000.0);
         }
         Ok(())

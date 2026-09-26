@@ -49,6 +49,7 @@ attention tiles run QK at about 75% and PV at about 90% of FP32 peak.
 | 16-lane AVX-512 prefill tiles (bitwise) | attention −9%; under 1% end to end on Zen 4 |
 | BF16 scales in the Q8/Q16 caches | decode −2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
+| Portable polynomial exp in fast mode's decode attention (8-bit caches under `ExpMode::Fast`; `--tune decode-exp`) | verification attention −3/−7/−9/−10% at 2/3/4/5 rows, single rows unchanged; page totals with the draft head −2.1% (calibration) and −0.6% (held-out); flips vs FP32 92 → 94 of 78,282 |
 | Trained draft head (`--draft-head`, stage-2 head, INT8 drafter KV; 16 English held-out pages, fast mode) | 184.5 → 139.9 s page total, decode 1.47× (n-gram drafts: 172.7 s, 1.09×); stage-3 head (48k pages), a later run: 181.2 → 135.7 s, decode 1.50×; tokens identical |
 
 ## Rejected or unadopted
@@ -73,6 +74,16 @@ attention window of 256 positions (−4 points acceptance), a rank-384
 vocabulary head (−1%, within noise on held-out pages), 16 decode threads with
 speculation (+3%), and a head trained on next-token prediction only (23%
 acceptance: overconfident on later chain steps).
+
+Decode attention kernels (bitwise-identical rewrites, research/draft-head
+probes): one scale load per 32 cached values and both heads' PV per value
+load in the verification kernel (−1% of 3–5-row attention, no end-to-end
+gain); the same PV with register accumulators in the single-row kernel
+(21% faster on cache-resident data, **25% slower** in real decode, where the
+cache streams from memory); eight keys' horizontal sums at once (register
+spills on AVX2's 16 registers). Two instantiations of the kernel behind a
+runtime choice inside one `#[target_feature]` function made the exact path
+53% slower; each instantiation now has its own entry function.
 
 ## Measuring
 

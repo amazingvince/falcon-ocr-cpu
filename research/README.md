@@ -7,8 +7,8 @@ Status: indexed on 2026-09-24. Nothing here is built or tested by CI; it is the 
 | [aocl/](aocl/README.md) | 8 | AOCL/BLIS and matrix-backend experiments (source only, not compiled). |
 | [benchmarks/](benchmarks/README.md) | 177 | Benchmark harnesses and the performance evidence before the phase-4 work. |
 | [bf16-graph/](bf16-graph/README.md) | 40 | The retired experimental BF16 execution graph (source only, not compiled). |
-| [corpus-qualification/](corpus-qualification/README.md) | 46 | Building and qualifying the evaluation corpus, the 200-page quality gate and its Python tests. |
-| [draft-head/](draft-head/README.md) | 12 | The trained speculative draft head (EAGLE-3 style): data pipeline, training, export, CPU A/Bs and lessons. Active. |
+| [corpus-qualification/](corpus-qualification/README.md) | 47 | Building and qualifying the evaluation corpus, the 200-page quality gate and its Python tests. |
+| [draft-head/](draft-head/README.md) | 13 | The trained speculative draft head (EAGLE-3 style): data pipeline, training, export, CPU A/Bs and lessons. Active. |
 | [gpu-reference/](gpu-reference/README.md) | 91 | The strict FP32 GPU export, reference capture and comparison protocol whose receipts live in `reference/`. |
 | [phase4-hillclimb/](phase4-hillclimb/README.md) | 29 | The phase-4/5 hill climb of 2026-09-23: GPTQ overlay, near-exact and fast modes, speculation, packed files; every accepted and rejected attempt with its receipt. |
 | [quantization-feasibility/](quantization-feasibility/README.md) | 22 | Early quantized-operator feasibility experiments (source only, not compiled). |

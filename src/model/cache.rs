@@ -253,7 +253,12 @@ impl Session {
         self.capacity = 0;
         bytes
     }
-    pub(crate) fn seal_prefix(&mut self, c: &ModelConfig, mode: crate::quant::Kv) -> Result<()> {
+    pub(crate) fn seal_prefix(
+        &mut self,
+        c: &ModelConfig,
+        mode: crate::quant::Kv,
+        exp: crate::config::ExpMode,
+    ) -> Result<()> {
         if mode == crate::quant::Kv::Compact {
             return Ok(());
         }
@@ -277,7 +282,12 @@ impl Session {
                     c,
                     mode,
                     self.tuning.split_chunks,
-                )?;
+                )?
+                .with_fast_exp(crate::quant::kv::default_fast_exp(
+                    mode,
+                    exp == crate::config::ExpMode::Fast,
+                    self.tuning.decode_fast_exp,
+                ));
                 *layer = LayerCache::Split(packed);
             } else {
                 bail!("prefix sealing requires an unsealed compact cache");

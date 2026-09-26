@@ -45,7 +45,7 @@ steps (23% acceptance); the seven-step phase is essential.
 | Training | [train/eagle3.py](train/eagle3.py) | features from the frozen target online; step-1 phase (window 2048), then 7 steps (window 512, weights 0.5^j) |
 | Export | [train/export_head.py](train/export_head.py) | safetensors + parity fixture for `draft_head::tests::matches_the_pytorch_chain` |
 | Low-rank head | [train/lowrank_head.py](train/lowrank_head.py), `eagle3.py --head-rank R --head-only` | SVD, then head-only distillation |
-| CPU A/B | [cpu_ab.py](cpu_ab.py) | alternating rounds, page totals, token identity; never time while a GPU job runs (it slows CPU decode ~30%) |
+| CPU A/B | [cpu_ab.py](cpu_ab.py), [compare_pages.py](compare_pages.py) | alternating rounds, page totals, token identity (`@<exe>` runs another binary per arm); never time while a GPU job runs (it slows CPU decode ~30%); compare_pages.py lists the pages two arms disagree on, with CER against the FP32 reference |
 | Cost model | [train/cost_model.py](train/cost_model.py), [train/check_alignment.py](train/check_alignment.py) | offline acceptance and gated-speedup estimates |
 
 Data sets: stage 1 about 4.7k pages, stage 2 about 24.5k, stage 3 48,069

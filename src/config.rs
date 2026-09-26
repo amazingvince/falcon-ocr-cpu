@@ -116,11 +116,18 @@ pub struct Tuning {
     /// The draft head stops when the product of its chain's probabilities
     /// (rather than one token's) falls below `RunnerConfig::draft_confidence`.
     pub draft_path_gate: bool,
+    /// Decode attention over sealed (split) caches uses the portable
+    /// polynomial exp on x86, as the NEON kernels do, instead of the
+    /// platform-exact exp: faster softmax, different rounding. `None` keeps
+    /// the default: polynomial for 8-bit caches under `ExpMode::Fast` (fast
+    /// mode), exact otherwise.
+    pub decode_fast_exp: Option<bool>,
 }
 impl Tuning {
     /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
     /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
-    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`).
+    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`,
+    /// `decode-exp=exact|fast`).
     pub fn set(&mut self, pair: &str) -> Result<()> {
         let (key, value) = pair
             .split_once('=')
@@ -177,9 +184,16 @@ impl Tuning {
                     _ => bail!("tuning knob draft-gate: expected token or path, got `{value}`"),
                 }
             }
+            "decode-exp" => {
+                self.decode_fast_exp = match value {
+                    "exact" => Some(false),
+                    "fast" => Some(true),
+                    _ => bail!("tuning knob decode-exp: expected exact or fast, got `{value}`"),
+                }
+            }
             _ => bail!(
                 "unknown tuning knob `{key}` (prefill-bf16, split-chunks, phases, prefill-profile, draft-backoff, \
-                 draft-window, draft-kv, draft-gate)"
+                 draft-window, draft-kv, draft-gate, decode-exp)"
             ),
         }
         Ok(())
@@ -552,8 +566,10 @@ mod tests {
             "draft-window=256",
             "draft-kv=f32",
             "draft-gate=path",
+            "decode-exp=fast",
         ])
         .unwrap();
+        assert_eq!(tuning.decode_fast_exp, Some(true));
         assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
         assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::All);

@@ -30,7 +30,12 @@ calibration pages outside the GPTQ capture set, 24,262 steps
 
 Every mode uses the exact screened head and the portable vector exp in
 prefill attention (token-identical to the platform exp on all calibration
-pages; traces use the platform exp). Exact mode is bit-identical to the FP32
+pages; traces use the platform exp). Fast mode also uses it in decode
+attention over its 8-bit cache, as the NEON kernels always do
+(`--tune decode-exp=exact|fast` overrides): teacher-forced on the 55 anchor
+pages up to 8,192 steps (78,282 steps) it has 94 flips against 92 with the
+platform exp, the English gate below is unchanged, and verification steps'
+attention is 3–10% faster. Exact mode is bit-identical to the FP32
 reference: the smoke trace and the GPU parity test hold under both the
 reference and the automatic configuration.
 

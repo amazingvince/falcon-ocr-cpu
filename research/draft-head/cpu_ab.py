@@ -36,7 +36,8 @@ def main() -> None:
     ap.add_argument("--confidence", default="0.45")
     ap.add_argument("--max-new-tokens", default="4096")
     ap.add_argument("--arm", action="append", default=[],
-                    help="name=extra flags (replaces the default arms; `nospec` is always added)")
+                    help="name=extra flags (replaces the default arms; `nospec` is always added); "
+                         "a first flag `@<exe>` runs that binary instead of target/release")
     a = ap.parse_args()
     pages = [p.strip() for p in a.pages.read_text().splitlines() if p.strip()]
     arms = {
@@ -58,9 +59,13 @@ def main() -> None:
         for name in order:
             # An arm may set its own --decode-threads.
             threads = [] if "--decode-threads" in arms[name] else ["--decode-threads", a.decode_threads]
-            base = [BINARY, "--mode", "fast", "--model-file", MODEL, *threads,
+            flags = arms[name]
+            binary = BINARY
+            if flags and flags[0].startswith("@"):
+                binary, flags = str(Path(flags[0][1:]).resolve()), flags[1:]
+            base = [binary, "--mode", "fast", "--model-file", MODEL, *threads,
                     "--document-drafts=false", "--tune", "phases=1"]
-            cmd = base + arms[name] + ["run", *pages, "--max-new-tokens", a.max_new_tokens]
+            cmd = base + flags + ["run", *pages, "--max-new-tokens", a.max_new_tokens]
             out, err = a.out / f"{name}-r{r}.jsonl", a.out / f"{name}-r{r}.stderr"
             t0 = time.time()
             with out.open("w", encoding="utf-8") as fo, err.open("w", encoding="utf-8") as fe:

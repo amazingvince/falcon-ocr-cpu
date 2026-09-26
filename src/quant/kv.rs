@@ -74,6 +74,18 @@ pub(crate) struct SplitPrefix {
     tail: Records,
     tail_capacity: usize,
     tail_len: usize,
+    /// x86: the softmax uses the portable polynomial exp (the NEON kernels'
+    /// exp) instead of the platform-exact one (see [`default_fast_exp`]).
+    fast_exp: bool,
+}
+
+/// Default decode exp: the polynomial one for 8-bit caches when the run
+/// allows fast exps (`ExpMode::Fast`, i.e. fast mode: token agreement with
+/// FP32 and the English gate unchanged, verification attention 3-10%
+/// faster), the platform-exact one otherwise; `requested`
+/// (`Tuning::decode_fast_exp`) overrides it.
+pub(crate) fn default_fast_exp(mode: Kv, fast_exps: bool, requested: Option<bool>) -> bool {
+    requested.unwrap_or(fast_exps && mode == Kv::Q8)
 }
 
 /// Default position chunks: exact for FP32, split (rounding-level) for lossy
@@ -320,7 +332,16 @@ impl SplitPrefix {
             tail,
             tail_capacity,
             tail_len: 0,
+            fast_exp: false,
         })
+    }
+
+    /// Use the portable polynomial exp in decode attention (x86; NEON always
+    /// does). Single-row and verification steps switch together, so rows stay
+    /// bitwise the single-row steps.
+    pub(crate) fn with_fast_exp(mut self, fast: bool) -> Self {
+        self.fast_exp = fast;
+        self
     }
 
     /// Appends generated positions. `k` and `v` are expanded
@@ -569,16 +590,20 @@ impl SplitPrefix {
             // and the record stores were shape-checked at construction and entry.
             unsafe {
                 match (&self.records, &self.tail) {
-                    (Records::F32(d), Records::F32(t)) => {
-                        pair_native(&F32Rec::<RECORD>(d), &F32Rec::<TAIL_RECORD>(t), &span, part)
-                    }
+                    (Records::F32(d), Records::F32(t)) => pair_entry(
+                        &F32Rec::<RECORD>(d),
+                        &F32Rec::<TAIL_RECORD>(t),
+                        &span,
+                        part,
+                        self.fast_exp,
+                    ),
                     (
                         Records::Q8 { codes, scales },
                         Records::Q8 {
                             codes: tail_codes,
                             scales: tail_scales,
                         },
-                    ) => pair_native(
+                    ) => pair_entry(
                         &Q8Rec::<RECORD> { codes, scales },
                         &Q8Rec::<TAIL_RECORD> {
                             codes: tail_codes,
@@ -586,6 +611,7 @@ impl SplitPrefix {
                         },
                         &span,
                         part,
+                        self.fast_exp,
                     ),
                     (
                         Records::Q16 { codes, scales },
@@ -593,7 +619,7 @@ impl SplitPrefix {
                             codes: tail_codes,
                             scales: tail_scales,
                         },
-                    ) => pair_native(
+                    ) => pair_entry(
                         &Q16Rec::<RECORD> { codes, scales },
                         &Q16Rec::<TAIL_RECORD> {
                             codes: tail_codes,
@@ -601,6 +627,7 @@ impl SplitPrefix {
                         },
                         &span,
                         part,
+                        self.fast_exp,
                     ),
                     _ => unreachable!("tail storage matches the prefix"),
                 }
@@ -778,6 +805,7 @@ impl SplitPrefix {
                     self.dispatch(&mut RowsKernel {
                         spans: &spans[..n],
                         parts: &mut local[..n],
+                        fast_exp: self.fast_exp,
                     })
                 };
                 for (i, part) in local[..n].iter().enumerate() {
@@ -806,11 +834,18 @@ trait PairKernel {
 struct RowsKernel<'a, 'b> {
     spans: &'a [Span<'b>],
     parts: &'a mut [Partial],
+    fast_exp: bool,
 }
 impl PairKernel for RowsKernel<'_, '_> {
     #[inline(always)]
     unsafe fn run<R: RecordStore, T: RecordStore>(&mut self, store: &R, tail: &T) {
-        unsafe { pair_rows_native(store, tail, self.spans, self.parts) }
+        unsafe {
+            if self.fast_exp {
+                pair_rows_native_fast(store, tail, self.spans, self.parts)
+            } else {
+                pair_rows_native(store, tail, self.spans, self.parts)
+            }
+        }
     }
 }
 
@@ -1045,14 +1080,44 @@ unsafe fn pair<S: Isa, R: RecordStore, T: RecordStore>(store: &R, tail: &T, span
 }
 
 /// Per-ISA entry for [`pair`] (the target features enclose the whole loop).
+/// Each entry holds one instantiation: a runtime choice inside one
+/// `#[target_feature]` function made the exact kernel ~50% slower.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2,fma,f16c")]
 unsafe fn pair_native<R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
     unsafe { pair::<crate::simd::Avx2, R, T>(store, tail, span, part) }
 }
+/// [`pair_native`] with the portable polynomial exp.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma,f16c")]
+unsafe fn pair_native_fast<R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
+    unsafe { pair::<crate::simd::Avx2Fast, R, T>(store, tail, span, part) }
+}
 #[cfg(target_arch = "aarch64")]
 unsafe fn pair_native<R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
     unsafe { pair::<crate::simd::Neon, R, T>(store, tail, span, part) }
+}
+/// NEON's exp is already the polynomial one.
+#[cfg(target_arch = "aarch64")]
+unsafe fn pair_native_fast<R: RecordStore, T: RecordStore>(store: &R, tail: &T, span: &Span<'_>, part: &mut Partial) {
+    unsafe { pair_native(store, tail, span, part) }
+}
+/// [`pair_native`] or [`pair_native_fast`] (`SplitPrefix::with_fast_exp`).
+#[inline(always)]
+unsafe fn pair_entry<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    span: &Span<'_>,
+    part: &mut Partial,
+    fast_exp: bool,
+) {
+    unsafe {
+        if fast_exp {
+            pair_native_fast(store, tail, span, part)
+        } else {
+            pair_native(store, tail, span, part)
+        }
+    }
 }
 
 /// Keys per sub-tile that [`pair_rows`] decodes once for all rows.
@@ -1263,6 +1328,17 @@ unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
 ) {
     unsafe { pair_rows::<crate::simd::Avx2, R, T>(store, tail, spans, parts) }
 }
+/// [`pair_rows_native`] with the portable polynomial exp.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma,f16c")]
+unsafe fn pair_rows_native_fast<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    unsafe { pair_rows::<crate::simd::Avx2Fast, R, T>(store, tail, spans, parts) }
+}
 #[cfg(target_arch = "aarch64")]
 unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
     store: &R,
@@ -1272,10 +1348,33 @@ unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
 ) {
     unsafe { pair_rows::<crate::simd::Neon, R, T>(store, tail, spans, parts) }
 }
+/// NEON's exp is already the polynomial one.
+#[cfg(target_arch = "aarch64")]
+unsafe fn pair_rows_native_fast<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    unsafe { pair_rows_native(store, tail, spans, parts) }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fast_decode_exp_defaults_to_8_bit_caches_under_fast_exps() {
+        assert!(default_fast_exp(Kv::Q8, true, None));
+        assert!(
+            !default_fast_exp(Kv::Q8, false, None),
+            "the reference configuration stays exact"
+        );
+        assert!(!default_fast_exp(Kv::Q16, true, None), "near-exact stays exact");
+        assert!(!default_fast_exp(Kv::F32Split, true, None));
+        assert!(!default_fast_exp(Kv::Q8, true, Some(false)));
+        assert!(default_fast_exp(Kv::Q16, false, Some(true)));
+    }
 
     #[test]
     fn verification_rows_are_bitwise_single_rows() {
@@ -1293,12 +1392,16 @@ mod tests {
                 .map(|i| ((i * 7 + 3) % 61) as f32 / 21.0 - 1.4)
                 .collect();
             let sinks: Vec<_> = (0..c.n_heads).map(|h| h as f32 * 0.25 - 1.0).collect();
-            for mode in [Kv::F32Split, Kv::Q8, Kv::Q16] {
+            for (mode, fast_exp) in [Kv::F32Split, Kv::Q8, Kv::Q16]
+                .into_iter()
+                .flat_map(|m| [(m, false), (m, true)])
+            {
                 for chunks in [1, 2, 4] {
                     for backend in backends() {
                         let mut cache = SplitPrefix::from_compact(&k, &v, p, p + generated, &c, mode, None)
                             .unwrap()
-                            .with_chunks(chunks);
+                            .with_chunks(chunks)
+                            .with_fast_exp(fast_exp);
                         push_rows(&mut cache, &c, &tail_k, &tail_v);
                         let mut joint = vec![f32::NAN; rows * width];
                         cache.attention_decode_rows(&q, rows, &sinks, &mut joint, backend);
@@ -1311,7 +1414,7 @@ mod tests {
                                 assert_eq!(
                                     a.to_bits(),
                                     b.to_bits(),
-                                    "{mode:?} chunks {chunks} {backend:?} p{p} row {r}"
+                                    "{mode:?} fast exp {fast_exp} chunks {chunks} {backend:?} p{p} row {r}"
                                 );
                             }
                         }
