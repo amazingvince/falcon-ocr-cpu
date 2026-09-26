@@ -40,6 +40,7 @@ Building and qualifying the evaluation corpus, the 200-page quality gate and its
 | [scripts/run_official_evaluation.py](scripts/run_official_evaluation.py) | Preflight both complete runs, prepare fresh inputs, audit evaluation, compare | history |
 | [scripts/select_corpus.py](scripts/select_corpus.py) | Build a frozen research evaluation split from pinned OmniDocBench annotations | superseded by scripts/select_corpus_v3.py |
 | [scripts/select_corpus_v3.py](scripts/select_corpus_v3.py) | Freeze a visually reviewed v3 while preserving every v1/v2 artifact | history |
+| [scripts/select_english_gate.py](scripts/select_english_gate.py) | Select the fresh English fast-mode gate set (118 OmniDocBench pages outside v1/v2/v3 and every v3 family; `reference/english-gate-v1-*`) | active |
 | [scripts/setup_evaluation.sh](scripts/setup_evaluation.sh) | Keep evaluator Python and packages isolated from the GPU reference runtime | history |
 | [scripts/snapshot_cpu_corpus.py](scripts/snapshot_cpu_corpus.py) | Copy an exact completed manifest prefix without changing saved inference bytes | history |
 | [scripts/test_corpus_comparison.py](scripts/test_corpus_comparison.py) | Mutation tests for explicit subset provenance and cross-platform outputs | history |
