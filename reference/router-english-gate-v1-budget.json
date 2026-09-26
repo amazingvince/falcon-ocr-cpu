@@ -1,0 +1,37 @@
+{
+  "schema": "falcon-ocr-router-english-gate-v1",
+  "registered_at": "2026-09-26T13:15:00-04:00",
+  "approved_by": "user, 2026-09-26 (\"yes do 1 and 2 then 3\", after the proposal to write the budget down before running); criteria reused unchanged from reference/english-gate-v1-budget.json, with fast mode at 1536 as the reference so that the router's effect is gated in isolation; fixed before any router output on these pages existed",
+  "pages": "reference/english-gate-v1-evaluation-lock.json: the 118 English gate pages (never used to train or tune the router; the router was tuned on reference/router-dev-v1-*)",
+  "binary": {
+    "path": "D:/falcon-draft/english-gate/falcon-ocr-eval-router.exe",
+    "sha256": "0910dad379cc6726982fe4a79991b61105ce7648d8ae460d8e5e677bba7b9bc7",
+    "source": "branch resolution-router at 3961176 (router trees src/router/trees.json, version 2, 13,176 nodes); the same binary as the development-set run D:/falcon-draft/router-dev/fast-auto.json"
+  },
+  "reference": {
+    "name": "fast-1536",
+    "report": "D:/falcon-draft/english-gate/fast-poly-exp.json (sha256 654e945b732041f566565626c37ff5695b74b90a189e56722ed4c05b2b306005)",
+    "command": "falcon-ocr-eval --exp fast --head screened --speculate 4 --stop-repetition --threads 32 --decode-threads 12 --tune decode-exp=fast bench <118 canonical paths> --max-new-tokens 4096 --max-dimension 1536 --warmup 0 --samples 1 --model-file artifacts/packed/falcon-ocr-v1.5-fast.safetensors --profile w8-body-kv-q8",
+    "note": "the English gate v1 fast-poly-exp run; its decode exp is today's fast-mode default (9a57076), so these are the tokens fast mode produces at 1536"
+  },
+  "candidate": {
+    "name": "fast-auto",
+    "command": "falcon-ocr-eval --exp fast --head screened --speculate 4 --stop-repetition --threads 8 --decode-threads 6 bench <118 canonical paths> --max-new-tokens 4096 --max-dimension auto --warmup 0 --samples 1 --model-file artifacts/packed/falcon-ocr-v1.5-fast.safetensors --profile w8-body-kv-q8",
+    "note": "fewer threads and below-normal priority because the host is in use; tokens never depend on the thread counts or speculation, so only timing is affected (not gated)"
+  },
+  "scope": "pages where the reference (fast at 1536) ends at EOS",
+  "cer": "raw-text Levenshtein distance to ground-truth.txt divided by ground-truth length, micro-averaged over characters, same treatment for both runs (research/phase4-hillclimb/attempt3/check_heldout.py --reference-report)",
+  "criteria": {
+    "overall_micro_cer_increase_max_points": 0.25,
+    "per_category_micro_cer_increase_max_points": 1.0,
+    "repetition_stop_fires_on_fp32_eos_pages": 0,
+    "min_category_fp32_eos_pages_gated": 10
+  },
+  "criteria_note": "check_heldout.py names the reference `fp32`; here it is fast at 1536, so `repetition_stop_fires_on_fp32_eos_pages` counts repetition stops on pages where fast at 1536 ends at EOS",
+  "reported_not_gated": [
+    "categories with fewer than 10 reference-EOS pages (expected: tiny_text, exam)",
+    "the same comparison against the FP32 anchor (D:/falcon-draft/english-gate/fp32.json)",
+    "route mix, safety-net reruns, pages token-identical to the reference",
+    "modelled CPU time saved from the development-set timing; measured time is not comparable (fewer threads, host in use)"
+  ]
+}

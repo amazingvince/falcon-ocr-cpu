@@ -30,6 +30,8 @@ the `image` crate with Pillow's 16-bit truncation.
 
 ```text
 image file -> decode, resize, patches, tokens and positions   (preprocess.rs)
+  (--max-dimension auto: the router picks the first resize's cap
+   from the page at 1536 before the resize                   (router/))
   -> image projection and full bidirectional prefill in FP32 arithmetic
      with the mode's weights                                    (model/)
   -> first token from the pre-sealing logits
@@ -48,11 +50,12 @@ finalized; nothing treats partial image strips as causal prompts.
 
 | Module | Holds |
 |---|---|
-| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget`), `RunnerConfig` (`Default` = automatic, `reference()` = bit-exact), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DraftKv`, `DecodeThreads` |
+| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget` and `route`), `MaxDimension`, `RunnerConfig` (`Default` = automatic, `reference()` = bit-exact), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DraftKv`, `DecodeThreads` |
 | `auto.rs` | `HostInfo::detect`, `Mode`, `resolve_weights` (packed file, then checkpoint), `Resolved` (the plan a runner executes), `doctor` |
 | `cli.rs` | `RunnerArgs` shared by both binaries and `print_doctor` |
 | `main.rs`, `bin/falcon-ocr-eval/` | The CLI; the research binary (profiles, bench, agree, trace, Gram capture) with its telemetry |
-| `preprocess.rs`, `tokenizer.rs` | Pillow-exact image preparation; the pinned tokenizer and stop ids |
+| `preprocess.rs`, `tokenizer.rs` | Pillow-exact image preparation (`SourceImage`: one decode, the first resize at any cap; 8-bit bilinear and bicubic for the router); the pinned tokenizer and stop ids |
+| `router/` | The resolution router (`--max-dimension auto`, `research/resolution-router`): 26 image statistics of the page after the first resize at 1536, bit-exact with the Python specification; the two embedded gradient-boosted tree models (`trees.json`); the 768/1024/1536 choice with its 8-px text-line floor; the safety-net record |
 | `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, panel prefill, multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |

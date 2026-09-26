@@ -55,6 +55,11 @@ pub struct PreparedImage {
 }
 
 pub fn prepare_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> Result<PreparedImage> {
+    prepare_resized_rgb(&first_resize_rgb(image, min_dimension, max_dimension)?)
+}
+
+/// The processor's first (aspect-preserving) resize of an RGB image.
+pub fn first_resize_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> Result<RgbImage> {
     let (width, height) = image.dimensions();
     ensure!(width > 0 && height > 0, "image dimensions must be nonzero");
     ensure!(
@@ -67,8 +72,12 @@ pub fn prepare_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> 
         first_width > 0 && first_height > 0,
         "the upstream aspect-preserving resize produces a zero dimension"
     );
-    let first = resize_bicubic(image, first_width, first_height);
-    prepare_resized_rgb(&first)
+    Ok(resize_bicubic(image, first_width, first_height))
+}
+
+/// The second resize, normalization and patch packing of a first-resized page.
+pub fn prepare_first(first: &RgbImage) -> Result<PreparedImage> {
+    prepare_resized_rgb(first)
 }
 
 /// Decode a PNG or JPEG and preserve Pillow's source-mode first resize.
@@ -80,6 +89,25 @@ pub fn prepare_file(path: &Path, min_dimension: u32, max_dimension: u32) -> Resu
 /// Return prepared image and milliseconds spent reading/decoding the file,
 /// excluding resizing, normalization, and patch packing.
 pub fn prepare_file_timed(path: &Path, min_dimension: u32, max_dimension: u32) -> Result<(PreparedImage, f64)> {
+    let (source, decode_ms) = decode_file(path)?;
+    Ok((
+        prepare_resized_rgb(&source.first_resize(min_dimension, max_dimension)?)?,
+        decode_ms,
+    ))
+}
+
+/// A decoded PNG or JPEG in the form the processor's first resize starts
+/// from (its source mode), so one decode can serve several resizes.
+pub struct SourceImage {
+    decoded: DynamicImage,
+    /// The inverted CMYK samples of a four-component JPEG.
+    cmyk: Option<RgbaImage>,
+    /// PNG bit depth and colour type from IHDR.
+    png: Option<(u8, u8)>,
+}
+
+/// Read and decode a PNG or JPEG; also returns the milliseconds spent.
+pub fn decode_file(path: &Path) -> Result<(SourceImage, f64)> {
     let decode_started = std::time::Instant::now();
     let bytes = std::fs::read(path).with_context(|| format!("reading image {}", path.display()))?;
     let format = image::guess_format(&bytes)?;
@@ -99,60 +127,74 @@ pub fn prepare_file_timed(path: &Path, min_dimension: u32, max_dimension: u32) -
     } else {
         image::load_from_memory_with_format(&bytes, format)?
     };
-    let decode_ms = decode_started.elapsed().as_secs_f64() * 1000.0;
-    let width = decoded.width();
-    let height = decoded.height();
-    ensure!(
-        min_dimension > 0 && min_dimension <= max_dimension,
-        "expected 0 < min_dimension <= max_dimension"
-    );
-    ensure!(width > 0 && height > 0, "image dimensions must be nonzero");
-    let (w, h) = bounded_dimensions(width, height, min_dimension, max_dimension);
-    ensure!(
-        w > 0 && h > 0,
-        "the upstream aspect-preserving resize produces a zero dimension"
-    );
-    let resize = (w, h) != (width, height);
-    let first = if let Some(cmyk) = &cmyk {
-        let colors = RgbImage::from_fn(width, height, |x, y| {
-            let p = cmyk.get_pixel(x, y);
-            image::Rgb([p[0], p[1], p[2]])
-        });
-        let blacks = RgbImage::from_fn(width, height, |x, y| image::Rgb([cmyk.get_pixel(x, y)[3]; 3]));
-        let colors = resize_bicubic(&colors, w, h);
-        let blacks = resize_bicubic(&blacks, w, h);
-        let resized = RgbaImage::from_fn(w, h, |x, y| {
-            let c = colors.get_pixel(x, y);
-            image::Rgba([c[0], c[1], c[2], blacks.get_pixel(x, y)[0]])
-        });
-        cmyk_to_rgb(&resized)
-    } else if format == ImageFormat::Png {
+    let png = if format == ImageFormat::Png {
         ensure!(bytes.len() >= 29 && &bytes[12..16] == b"IHDR", "missing PNG IHDR");
-        let (depth, color) = (bytes[24], bytes[25]);
-        if color == 0 && depth == 16 {
-            let values = decoded.to_luma16();
-            let values = resize_gray16(values.as_raw(), width, height, w, h);
-            RgbImage::from_fn(w, h, |x, y| {
-                image::Rgb([values[(y * w + x) as usize].min(255) as u8; 3])
-            })
-        } else if color == 3 || (color == 0 && depth == 1) {
-            let rgb = decoded.to_rgb8();
-            // Pillow always uses nearest for modes P and 1 on this first call.
-            resize_nearest(&rgb, w, h)
-        } else if matches!(color, 4 | 6) && resize {
-            let rgba = pillow_rgba8(&decoded, depth);
-            resize_premultiplied(&rgba, w, h)
-        } else {
-            // tRNS metadata on RGB/L is ignored by PIL.convert("RGB"); do not
-            // mistakenly treat expanded tRNS pixels as an original RGBA mode.
-            let rgba = pillow_rgba8(&decoded, depth);
-            let rgb = DynamicImage::ImageRgba8(rgba).to_rgb8();
-            resize_bicubic(&rgb, w, h)
-        }
+        Some((bytes[24], bytes[25]))
     } else {
-        resize_bicubic(&decoded.to_rgb8(), w, h)
+        None
     };
-    Ok((prepare_resized_rgb(&first)?, decode_ms))
+    let decode_ms = decode_started.elapsed().as_secs_f64() * 1000.0;
+    Ok((SourceImage { decoded, cmyk, png }, decode_ms))
+}
+
+impl SourceImage {
+    pub fn dimensions(&self) -> (u32, u32) {
+        (self.decoded.width(), self.decoded.height())
+    }
+
+    /// The processor's first resize in the source mode, then RGB (Pillow-exact).
+    pub fn first_resize(&self, min_dimension: u32, max_dimension: u32) -> Result<RgbImage> {
+        let (width, height) = self.dimensions();
+        let decoded = &self.decoded;
+        ensure!(
+            min_dimension > 0 && min_dimension <= max_dimension,
+            "expected 0 < min_dimension <= max_dimension"
+        );
+        ensure!(width > 0 && height > 0, "image dimensions must be nonzero");
+        let (w, h) = bounded_dimensions(width, height, min_dimension, max_dimension);
+        ensure!(
+            w > 0 && h > 0,
+            "the upstream aspect-preserving resize produces a zero dimension"
+        );
+        let resize = (w, h) != (width, height);
+        Ok(if let Some(cmyk) = &self.cmyk {
+            let colors = RgbImage::from_fn(width, height, |x, y| {
+                let p = cmyk.get_pixel(x, y);
+                image::Rgb([p[0], p[1], p[2]])
+            });
+            let blacks = RgbImage::from_fn(width, height, |x, y| image::Rgb([cmyk.get_pixel(x, y)[3]; 3]));
+            let colors = resize_bicubic(&colors, w, h);
+            let blacks = resize_bicubic(&blacks, w, h);
+            let resized = RgbaImage::from_fn(w, h, |x, y| {
+                let c = colors.get_pixel(x, y);
+                image::Rgba([c[0], c[1], c[2], blacks.get_pixel(x, y)[0]])
+            });
+            cmyk_to_rgb(&resized)
+        } else if let Some((depth, color)) = self.png {
+            if color == 0 && depth == 16 {
+                let values = decoded.to_luma16();
+                let values = resize_gray16(values.as_raw(), width, height, w, h);
+                RgbImage::from_fn(w, h, |x, y| {
+                    image::Rgb([values[(y * w + x) as usize].min(255) as u8; 3])
+                })
+            } else if color == 3 || (color == 0 && depth == 1) {
+                let rgb = decoded.to_rgb8();
+                // Pillow always uses nearest for modes P and 1 on this first call.
+                resize_nearest(&rgb, w, h)
+            } else if matches!(color, 4 | 6) && resize {
+                let rgba = pillow_rgba8(decoded, depth);
+                resize_premultiplied(&rgba, w, h)
+            } else {
+                // tRNS metadata on RGB/L is ignored by PIL.convert("RGB"); do not
+                // mistakenly treat expanded tRNS pixels as an original RGBA mode.
+                let rgba = pillow_rgba8(decoded, depth);
+                let rgb = DynamicImage::ImageRgba8(rgba).to_rgb8();
+                resize_bicubic(&rgb, w, h)
+            }
+        } else {
+            resize_bicubic(&decoded.to_rgb8(), w, h)
+        })
+    }
 }
 
 /// Without the `turbojpeg` feature: the `image` crate's JPEG decoder, which
@@ -431,11 +473,38 @@ fn cubic(x: f64) -> f64 {
     }
 }
 
-fn coefficients_f64(input: u32, output: u32) -> Vec<(usize, Vec<f64>)> {
+fn triangle(x: f64) -> f64 {
+    let x = x.abs();
+    if x < 1.0 { 1.0 - x } else { 0.0 }
+}
+
+/// Pillow's resampling filters (`Image.BILINEAR`, `Image.BICUBIC`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Filter {
+    Bilinear,
+    Bicubic,
+}
+
+impl Filter {
+    fn support(self) -> f64 {
+        match self {
+            Filter::Bilinear => 1.0,
+            Filter::Bicubic => 2.0,
+        }
+    }
+    fn weight(self, x: f64) -> f64 {
+        match self {
+            Filter::Bilinear => triangle(x),
+            Filter::Bicubic => cubic(x),
+        }
+    }
+}
+
+fn coefficients_f64(input: u32, output: u32, filter: Filter) -> Vec<(usize, Vec<f64>)> {
     // Pillow stores the crop box as floats even for a full-image resize.
     let scale = input as f32 as f64 / output as f64;
     let filter_scale = scale.max(1.0);
-    let support = 2.0 * filter_scale;
+    let support = filter.support() * filter_scale;
     let inverse_scale = 1.0 / filter_scale;
     (0..output)
         .map(|index| {
@@ -443,7 +512,7 @@ fn coefficients_f64(input: u32, output: u32) -> Vec<(usize, Vec<f64>)> {
             let start = ((center - support + 0.5) as i64).max(0) as usize;
             let end = ((center + support + 0.5) as usize).min(input as usize);
             let mut weights: Vec<f64> = (start..end)
-                .map(|x| cubic((x as f64 - center + 0.5) * inverse_scale))
+                .map(|x| filter.weight((x as f64 - center + 0.5) * inverse_scale))
                 .collect();
             let sum: f64 = weights.iter().sum();
             if sum != 0.0 {
@@ -456,8 +525,8 @@ fn coefficients_f64(input: u32, output: u32) -> Vec<(usize, Vec<f64>)> {
         .collect()
 }
 
-fn coefficients(input: u32, output: u32) -> Vec<Coefficients> {
-    coefficients_f64(input, output)
+fn coefficients(input: u32, output: u32, filter: Filter) -> Vec<Coefficients> {
+    coefficients_f64(input, output, filter)
         .into_iter()
         .map(|(start, weights)| Coefficients {
             start,
@@ -482,7 +551,7 @@ fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, width: u32,
     let horizontal = if width == input_width {
         input.to_vec()
     } else {
-        let coeff = coefficients_f64(input_width, width);
+        let coeff = coefficients_f64(input_width, width, Filter::Bicubic);
         let mut output = vec![0u16; width as usize * input_height as usize];
         for y in 0..input_height as usize {
             for (x, (start, weights)) in coeff.iter().enumerate() {
@@ -500,7 +569,10 @@ fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, width: u32,
         return horizontal;
     }
     let mut output = vec![0u16; width as usize * height as usize];
-    for (y, (start, weights)) in coefficients_f64(input_height, height).iter().enumerate() {
+    for (y, (start, weights)) in coefficients_f64(input_height, height, Filter::Bicubic)
+        .iter()
+        .enumerate()
+    {
         for x in 0..width as usize {
             let value: f64 = weights
                 .iter()
@@ -517,10 +589,60 @@ fn clip(value: i64) -> u8 {
     (value >> PRECISION_BITS).clamp(0, 255) as u8
 }
 
+/// Pillow-compatible 8-bit resampling of a grayscale (mode L) image:
+/// the horizontal pass, rounded to 8 bits, then the vertical pass.
+pub(crate) fn resize_gray(
+    input: &[u8],
+    input_width: u32,
+    input_height: u32,
+    width: u32,
+    height: u32,
+    filter: Filter,
+) -> Vec<u8> {
+    // Pillow's 8-bit kernels accumulate in 32 bits: 255 times the positive
+    // lobe (at most about 1.2) in 22-bit fixed point stays below 2^31.
+    let clip = |sum: i32| (sum >> PRECISION_BITS).clamp(0, 255) as u8;
+    let (iw, w) = (input_width as usize, width as usize);
+    let horizontal = if width == input_width {
+        input.to_vec()
+    } else {
+        let weights = coefficients(input_width, width, filter);
+        let mut out = vec![0u8; w * input_height as usize];
+        for (source, row) in input.chunks_exact(iw).zip(out.chunks_exact_mut(w)) {
+            for (target, coeff) in row.iter_mut().zip(&weights) {
+                let mut sum = 1_i32 << (PRECISION_BITS - 1);
+                for (&value, &weight) in source[coeff.start..].iter().zip(&coeff.weights) {
+                    sum += value as i32 * weight;
+                }
+                *target = clip(sum);
+            }
+        }
+        out
+    };
+    if height == input_height {
+        return horizontal;
+    }
+    let mut out = vec![0u8; w * height as usize];
+    let mut sums = vec![0_i32; w];
+    for (row, coeff) in out.chunks_exact_mut(w).zip(&coefficients(input_height, height, filter)) {
+        sums.fill(1 << (PRECISION_BITS - 1));
+        for (offset, &weight) in coeff.weights.iter().enumerate() {
+            let source = &horizontal[(coeff.start + offset) * w..][..w];
+            for (sum, &value) in sums.iter_mut().zip(source) {
+                *sum += value as i32 * weight;
+            }
+        }
+        for (target, &sum) in row.iter_mut().zip(&sums) {
+            *target = clip(sum);
+        }
+    }
+    out
+}
+
 /// Pillow-compatible bicubic resampling of a complete RGB image.
 fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
     let horizontal = if input.width() != width {
-        let weights = coefficients(input.width(), width);
+        let weights = coefficients(input.width(), width, Filter::Bicubic);
         let mut out = RgbImage::new(width, input.height());
         let src = input.as_raw();
         for (row_index, row) in out.as_mut().chunks_exact_mut(width as usize * 3).enumerate() {
@@ -544,7 +666,7 @@ fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
     if input.height() == height {
         return horizontal;
     }
-    let weights = coefficients(input.height(), height);
+    let weights = coefficients(input.height(), height, Filter::Bicubic);
     let mut out = RgbImage::new(width, height);
     let stride = width as usize * 3;
     for (row, coeff) in out.as_mut().chunks_exact_mut(stride).zip(&weights) {

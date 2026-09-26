@@ -1,0 +1,182 @@
+{
+ "schema": "falcon-ocr-router-english-gate-v1-results",
+ "budget": "reference/router-english-gate-v1-budget.json",
+ "lock": "reference/english-gate-v1-evaluation-lock.json",
+ "runs": "D:/falcon-draft/english-gate/ (fast-auto.json, fast-poly-exp.json as the reference, fp32.json; router-gate-summary.json and router-gate-vs-fp32-summary.json from check_heldout.py); copies in artifacts/phase4/checks/router-english-gate-v1/",
+ "verdict": "FAIL (pre-registered): overall +0.286 pt (limit +0.25), ordinary +1.45 pt and slides +6.66 pt (limit +1.0); formulas +0.90, tables -0.11, multi-column -0.53 pass; no repetition stop",
+ "note_on_keys": "check_heldout.py labels the reference `fp32`; in `gated` it is fast mode at 1536",
+ "routes": {
+  "768": 23,
+  "1024": 54,
+  "1536": 41,
+  "safety_net_reruns": 1,
+  "note": "the same mix as the development set (19/48/34% there, 19/46/35% here); time was not measured (8 threads, below-normal priority, host in use)"
+ },
+ "gated": {
+  "pages": 118,
+  "fp32_eos_pages": 117,
+  "gates": {
+   "overall": false,
+   "per_category": false,
+   "repetition_stop_on_eos": true
+  },
+  "pass": false,
+  "eos_micro_cer": {
+   "fp32": 0.13375332526491154,
+   "candidate": 0.13660883640140498
+  },
+  "eos_categories": {
+   "exam": {
+    "pages": 5,
+    "fp32": 0.16169487398027518,
+    "candidate": 0.15950322659198832,
+    "gated": false
+   },
+   "formulas": {
+    "pages": 25,
+    "fp32": 0.19098707967187795,
+    "candidate": 0.20000417458097644,
+    "gated": true
+   },
+   "multi_column": {
+    "pages": 25,
+    "fp32": 0.07855864811133201,
+    "candidate": 0.07324055666003976,
+    "gated": true
+   },
+   "ordinary": {
+    "pages": 19,
+    "fp32": 0.2584357834161653,
+    "candidate": 0.2729718620380404,
+    "gated": true
+   },
+   "slides": {
+    "pages": 15,
+    "fp32": 0.07536125845985,
+    "candidate": 0.14194256447777576,
+    "gated": true
+   },
+   "tables": {
+    "pages": 24,
+    "fp32": 0.09715269755701023,
+    "candidate": 0.09609378342531981,
+    "gated": true
+   },
+   "tiny_text": {
+    "pages": 4,
+    "fp32": 0.16583245521601686,
+    "candidate": 0.16583245521601686,
+    "gated": false
+   }
+  },
+  "repetition_stop_on_fp32_eos_pages": [],
+  "identical_pages": 53,
+  "identical_eos_pages": 52,
+  "eos_token_edits": 7566,
+  "eos_reference_tokens": 112452,
+  "stop_changes": [],
+  "all_pages_micro_cer": {
+   "fp32": 0.14647722694749743,
+   "candidate": 0.14921498646724052
+  },
+  "tokens": {
+   "fp32": 116548,
+   "candidate": 115395
+  }
+ },
+ "reported_against_fp32": {
+  "gates": {
+   "overall": false,
+   "per_category": false,
+   "repetition_stop_on_eos": true
+  },
+  "pass": false,
+  "eos_micro_cer": {
+   "fp32": 0.13361424855670928,
+   "candidate": 0.13660883640140498
+  },
+  "eos_categories": {
+   "exam": {
+    "pages": 5,
+    "fp32": 0.1625471812979423,
+    "candidate": 0.15950322659198832,
+    "gated": false
+   },
+   "formulas": {
+    "pages": 25,
+    "fp32": 0.1915402116512555,
+    "candidate": 0.20000417458097644,
+    "gated": true
+   },
+   "multi_column": {
+    "pages": 25,
+    "fp32": 0.07933399602385686,
+    "candidate": 0.07324055666003976,
+    "gated": true
+   },
+   "ordinary": {
+    "pages": 19,
+    "fp32": 0.23366092447965323,
+    "candidate": 0.2729718620380404,
+    "gated": true
+   },
+   "slides": {
+    "pages": 15,
+    "fp32": 0.07536125845985,
+    "candidate": 0.14194256447777576,
+    "gated": true
+   },
+   "tables": {
+    "pages": 24,
+    "fp32": 0.09685320669148162,
+    "candidate": 0.09609378342531981,
+    "gated": true
+   },
+   "tiny_text": {
+    "pages": 4,
+    "fp32": 0.23248155953635405,
+    "candidate": 0.16583245521601686,
+    "gated": false
+   }
+  },
+  "all_pages_micro_cer": {
+   "fp32": 0.14634388529213171,
+   "candidate": 0.14921498646724052
+  }
+ },
+ "analysis": {
+  "largest_losses": [
+   {
+    "page": "04cd1aee03fa83b4",
+    "category": "slides",
+    "route": 1024,
+    "error_chars": 370,
+    "what": "the routed run transcribes the slide's diagram as an HTML table; the ground truth leaves the figure out (1536 wrote only its caption); carries most of the slides result"
+   },
+   {
+    "page": "59ff402ead7dbaa3",
+    "category": "ordinary",
+    "route": 1024,
+    "error_chars": 356,
+    "what": "a reaction scheme's substituent list written as a pretty-printed HTML table instead of plain lines; the ground truth leaves the scheme out"
+   },
+   {
+    "page": "39a67181633e352b",
+    "category": "tables",
+    "route": 768,
+    "error_chars": 374,
+    "what": "a textbook sidebar (\"Study Central ... tarvol2.glencoe.com\") is dropped: a real loss, like the magazine sidebar on the development set"
+   },
+   {
+    "page": "42ed40f39c5cb34c",
+    "category": "formulas",
+    "route": 1024,
+    "error_chars": 331,
+    "what": "weaker LaTeX (symbols, \\mathbf) and 400 characters shorter: a real loss"
+   }
+  ],
+  "figure_pages_share": "the two figure pages account for about 0.2 of the 0.29 pt overall change",
+  "normalized": "normalizing whitespace, quotes and markdown markers leaves +0.24 pt overall, so the result is not formatting; the development set's -0.69 pt improvement did not replicate"
+ },
+ "consequence": "the router stays opt-in and unvalidated; it is not made the fast-mode default. The English gate pages are now spent for router work (together with the development set they cover every English OmniDocBench page with ground truth outside the corpora)."
+}

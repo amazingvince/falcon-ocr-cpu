@@ -91,6 +91,55 @@ mode matches FP32 on printed English. English OmniDocBench has almost no
 handwriting or degraded scans, so those stay unqualified. Details:
 `reference/english-gate-v1-results.json`.
 
+A later, post-hoc check confirms the reading: with every figure region that
+the ground truth leaves out painted white on all systems' input
+(`mask_excluded.py`, 35 of the 118 pages), fast mode is −0.11 pt against FP32
+overall and +0.02 pt on ordinary pages. Future gates on OmniDocBench pages
+use figure-masked pages from the start
+(`reference/english-gate-v1-masked-results.json`).
+
+## Resolution routing
+
+`--max-dimension auto` lets the runner choose each page's maximum dimension:
+768, 1024 or 1536. Prefill and decode both scale with the image token count,
+and most printed English pages read as well at a lower resolution. The router
+(`src/router`, ~12 ms per page) computes 26 image statistics of the page after
+the processor's first resize at 1536 (size, ink, contrast, a projection-profile
+estimate of the text lines, column gaps, and how much the ink changes when the
+page is scaled to 1024 or 768 and back), scores two gradient-boosted tree
+models, and takes the smallest resolution whose model says the page is
+routable and at which the median text line stays at least 8 px tall. A routed
+page is exactly the input `--max-dimension 768` or `1024` would give it. If
+the routed run loops or reaches the length limit, the page is rerun at 1536
+(the safety net; the result's `route.safety_net` records the first attempt).
+
+On the router development set (389 English OmniDocBench pages with ground
+truth, none in any corpus or the English gate; fast mode with the draft head)
+it routed 73 pages to 768 and 185 to 1024, reran 2, and changed micro CER
+against the ground truth from 20.89% to 20.20% (−0.69 pt; 95% bootstrap
+[−1.35, −0.18]) while saving about a quarter of the CPU time (24.7% from the
+fixed-resolution runs; 26.4% measured over the part of the end-to-end run
+before other load appeared on the host). Lower resolution often reads better
+(tables, textbooks, multi-column pages); dense small print (magazines,
+newspapers) stays at 1536. The router was tuned on this set.
+
+On the held-out English gate pages (the 118 pages above, against fast mode at
+1536, pre-registered with the same criteria) the router **failed**: overall
++0.29 pt (limit +0.25), ordinary +1.45 pt and slides +6.66 pt (limit +1.0);
+formulas +0.90, tables −0.11 and multi-column −0.53 pt passed, with no
+repetition stop and the same route mix as the development set. About two
+thirds of the overall change comes from two pages where the routed run
+transcribes a figure as an HTML table that the ground truth leaves out; the
+rest is real: a sidebar dropped at 768 and weaker LaTeX at 1024. The
+development set's improvement did not replicate, so read the router as about a
+quarter less CPU time for roughly +0.3 pt CER on printed English. It stays
+opt-in; it changes the output, so exact and near-exact comparisons use a fixed
+resolution. With figures masked (the post-hoc check above) the router is
++0.06 pt against fast at 1536 and within every category limit, formulas
+(+0.86 pt) being the closest, so the figure artifact explains the failure; a
+verdict still needs fresh pages. Details: `research/resolution-router/README.md`,
+`reference/router-english-gate-v1-results.json`.
+
 ## Loops and the repetition stop
 
 The stop (`--stop-repetition`, on by default) ends a page once it repeats a

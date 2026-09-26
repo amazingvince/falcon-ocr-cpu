@@ -51,6 +51,18 @@ resampled at 16-bit precision then clipped during RGB conversion, and CMYK JPEG
 channels are resized before the RGB conversion. No blanket equivalence claim is
 made for untested bitstreams or uncommon codec features.
 
+`router.json` pins the resolution router (`src/router`) against its Python
+specification, `research/resolution-router/router_features.py`, and the
+exported trees: the 26 statistics, both raw tree scores and the route, compared
+bit for bit, for eight synthetic pages (a formula mirrored in the Rust test)
+and for every decode fixture after the first resize at the 1536 cap. Regenerate
+it whenever `src/router/trees.json` or the specification changes:
+
+```powershell
+wsl.exe -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- /home/amazi/falcon-ocr-rust-reference/.venv/bin/python tests/generate_router_fixtures.py
+cargo test --lib router
+```
+
 Windows builds/tests can use the local-tool bootstrap wrapper:
 
 ```powershell
