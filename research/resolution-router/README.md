@@ -64,6 +64,41 @@ Checks:
   (decoding once, two first resizes, the statistics). A quiet-host timing
   belongs to Phase 3.
 
+## Phase 3: the held-out English gate (failed)
+
+The 118 English gate pages, `--max-dimension auto` against fast mode at 1536,
+with the English gate's criteria registered before the run
+(`reference/router-english-gate-v1-budget.json`; results in
+`reference/router-english-gate-v1-results.json`):
+
+| | fast at 1536 | auto | change | limit |
+|---|---|---|---|---|
+| overall (117 EOS pages) | 13.38% | 13.66% | +0.29 pt | +0.25 **FAIL** |
+| formulas (25) | 19.10% | 20.00% | +0.90 pt | +1.0 pass |
+| multi-column (25) | 7.86% | 7.32% | −0.53 pt | pass |
+| ordinary (19) | 25.84% | 27.30% | +1.45 pt | +1.0 **FAIL** |
+| slides (15) | 7.54% | 14.19% | +6.66 pt | +1.0 **FAIL** |
+| tables (24) | 9.72% | 9.61% | −0.11 pt | pass |
+
+Routes 23 / 54 / 41 (768 / 1024 / 1536; the development set's mix), one
+safety-net rerun, no repetition stop. Two pages carry about two thirds of the
+overall change: on a slide and on a chemistry abstract the routed run
+transcribes a figure (a diagram, a reaction scheme's substituent list) as an
+HTML table that the ground truth leaves out. That is the artifact that also
+failed fast mode's English gate, but the verdict stands as registered. The
+real losses match the development set's: a sidebar dropped at 768 and weaker
+LaTeX on formula pages at 1024. Normalizing whitespace, quotes and markdown
+markers leaves +0.24 pt, so the development set's −0.69 pt did not replicate:
+there, the gains came from pages where 1536 itself fails badly (academic
+tables, long formula pages cut short), and the fresh pages have few of those
+(fast at 1536 reads them at 13.4% CER against 20.9% on the development set).
+
+Consequence: the router stays opt-in, not the fast-mode default, and reads as
+about a quarter less CPU time for about +0.3 pt CER on printed English. The
+English gate pages are spent for router work; with the development set they
+cover every English OmniDocBench page with ground truth outside the corpora,
+so a next router version needs new held-out pages.
+
 ## Where it wins and loses
 
 [analyze_losses.py](analyze_losses.py) on the development set (the router's

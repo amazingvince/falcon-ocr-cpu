@@ -114,10 +114,21 @@ against the ground truth from 20.89% to 20.20% (−0.69 pt; 95% bootstrap
 fixed-resolution runs; 26.4% measured over the part of the end-to-end run
 before other load appeared on the host). Lower resolution often reads better
 (tables, textbooks, multi-column pages); dense small print (magazines,
-newspapers) stays at 1536. The router was tuned on this set and is **not yet
-validated** on held-out pages, so it is opt-in; it changes the output, so
-exact and near-exact comparisons use a fixed resolution. Details:
-`research/resolution-router/README.md`.
+newspapers) stays at 1536. The router was tuned on this set.
+
+On the held-out English gate pages (the 118 pages above, against fast mode at
+1536, pre-registered with the same criteria) the router **failed**: overall
++0.29 pt (limit +0.25), ordinary +1.45 pt and slides +6.66 pt (limit +1.0);
+formulas +0.90, tables −0.11 and multi-column −0.53 pt passed, with no
+repetition stop and the same route mix as the development set. About two
+thirds of the overall change comes from two pages where the routed run
+transcribes a figure as an HTML table that the ground truth leaves out; the
+rest is real: a sidebar dropped at 768 and weaker LaTeX at 1024. The
+development set's improvement did not replicate, so read the router as about a
+quarter less CPU time for roughly +0.3 pt CER on printed English. It stays
+opt-in; it changes the output, so exact and near-exact comparisons use a fixed
+resolution. Details: `research/resolution-router/README.md`,
+`reference/router-english-gate-v1-results.json`.
 
 ## Loops and the repetition stop
 

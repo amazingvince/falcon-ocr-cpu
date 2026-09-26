@@ -67,8 +67,8 @@ dominates short pages. `--max-dimension 1280` is about 20% faster and was
 accuracy-neutral on 64 calibration pages but is not validated on held-out
 pages; the default stays 1536. The per-page resolution router
 (`--max-dimension auto`, [MODES.md](MODES.md#resolution-routing)) saves about
-a quarter of the CPU time on its development set without losing accuracy;
-it awaits held-out validation.
+a quarter of the CPU time; it improved CER on its development set but failed
+the held-out English gate (+0.29 pt), so it stays opt-in.
 
 Draft head (research/draft-head, 16 calibration pages): other confidence
 thresholds and a product-of-probabilities gate (within 2%), 6 drafts per step
