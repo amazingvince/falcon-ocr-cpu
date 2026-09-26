@@ -81,6 +81,7 @@ None of these change tokens (gated by `tests/modes.rs`).
 | `--head screened\|full` | Both select the same token |
 | `--batch-size N` | Pages decoded jointly (1..=8) |
 | `run --min-dimension 64 --max-dimension 1536 --max-new-tokens 8192 --text` | Image size bounds, output cap, text only |
+| `run --max-dimension auto` | The resolution router picks 768, 1024 or 1536 per page ([docs/MODES.md](docs/MODES.md#resolution-routing); changes the output) |
 | `pack --output F`, `inspect`, `trace`, `doctor [--text] [--load] [--probe]` | Write a packed file; verify the checkpoint; capture tensors; show the plan |
 
 `falcon-ocr-eval` is the research binary: any weights × KV profile, timed

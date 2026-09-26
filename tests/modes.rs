@@ -52,6 +52,7 @@ fn options(max_new_tokens: usize) -> GenerationOptions {
         min_dimension: 64,
         max_dimension: 1536,
         fit_budget: false,
+        route: false,
     }
 }
 
@@ -116,6 +117,7 @@ fn exact_mode_under_the_automatic_config_matches_the_gpu_smoke_tokens() {
                 min_dimension: metadata["min_dimension"].as_u64().unwrap() as u32,
                 max_new_tokens: metadata["max_new_tokens"].as_u64().unwrap() as usize,
                 fit_budget: false,
+                route: false,
             },
         )
         .unwrap();
@@ -143,6 +145,7 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
                     min_dimension: fixture.min_dimension,
                     max_dimension: fixture.max_dimension,
                     fit_budget: false,
+                    route: false,
                 },
             )
             .unwrap();
@@ -315,4 +318,43 @@ fn tensor_traces_are_bitwise_pinned() {
     let overlay = Path::new(MODEL_DIR).join("w8-gptq.safetensors");
     let w8 = Arc::new(Model::load_profile(MODEL_DIR, Profile::W8_BODY_KV_Q8, Some(&overlay)).unwrap());
     assert_eq!(trace_hash(w8, eval, "w8.safetensors"), W8_TRACE_SHA256);
+}
+
+/// `--max-dimension auto`: a routed page is exactly the fixed run at the
+/// size the router chose, and a routed page that stops by length is rerun at
+/// the cap (the result is then the fixed 1536 run).
+#[test]
+#[ignore = "needs artifacts/packed and the corpus"]
+fn routed_pages_are_the_fixed_run_at_the_chosen_size() {
+    use falcon_ocr::router::CAP;
+    let runner = runner(packed_model(Mode::Fast), MODEL_DIR, RunnerConfig::default());
+    for (page, max_new_tokens) in [(SHORT, 4096), (JOURNAL, 48)] {
+        let auto = GenerationOptions {
+            route: true,
+            ..options(max_new_tokens)
+        };
+        let routed = runner.recognize_file(page, &auto).unwrap();
+        let route = routed.route.clone().unwrap();
+        let size = match &route.safety_net {
+            Some(attempt) => {
+                assert!(route.max_dimension < CAP, "{page}");
+                assert!(matches!(
+                    attempt.finish_reason,
+                    FinishReason::Repetition | FinishReason::Length
+                ));
+                CAP
+            }
+            None => {
+                assert!(
+                    route.max_dimension == CAP || routed.finish_reason == FinishReason::Eos,
+                    "{page}"
+                );
+                route.max_dimension
+            }
+        };
+        let fixed = runner.recognize_file(page, &auto.at(size)).unwrap();
+        assert_eq!(routed.token_ids, fixed.token_ids, "{page} at {size}");
+        assert_eq!((routed.width, routed.height), (fixed.width, fixed.height), "{page}");
+        assert!(fixed.route.is_none());
+    }
 }

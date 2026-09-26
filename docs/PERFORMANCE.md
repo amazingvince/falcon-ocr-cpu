@@ -65,7 +65,10 @@ projections by default (+17% KL for 0.6 s). Multi-page batching in fast mode
 is available (`--batch-size`; +14% pages per hour on short pages) but prefill
 dominates short pages. `--max-dimension 1280` is about 20% faster and was
 accuracy-neutral on 64 calibration pages but is not validated on held-out
-pages; the default stays 1536.
+pages; the default stays 1536. The per-page resolution router
+(`--max-dimension auto`, [MODES.md](MODES.md#resolution-routing)) saves about
+a quarter of the CPU time on its development set without losing accuracy;
+it awaits held-out validation.
 
 Draft head (research/draft-head, 16 calibration pages): other confidence
 thresholds and a product-of-probabilities gate (within 2%), 6 drafts per step

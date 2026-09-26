@@ -2,7 +2,7 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    GenerationOptions, Model, Runner, RunnerConfig,
+    GenerationOptions, MaxDimension, Model, Runner, RunnerConfig,
     cli::{RunnerArgs, print_doctor},
     quant::Profile,
     trace::TensorTrace,
@@ -50,13 +50,22 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     Doctor,
+    /// The resolution router's choice for each image (no model): JSON lines
+    /// with the route and, with --statistics, the 26 image statistics.
+    Route {
+        #[arg(required = true)]
+        images: Vec<PathBuf>,
+        #[arg(long)]
+        statistics: bool,
+    },
     Bench {
         #[arg(required = true)]
         images: Vec<PathBuf>,
         #[arg(long, default_value_t = 4096)]
         max_new_tokens: usize,
-        #[arg(long, default_value_t = 1536)]
-        max_dimension: u32,
+        /// Resolution cap in pixels, or `auto` (the resolution router).
+        #[arg(long, default_value = "1536")]
+        max_dimension: MaxDimension,
         #[arg(long, default_value_t = 64)]
         min_dimension: u32,
         #[arg(long, default_value_t = 1)]
@@ -362,6 +371,19 @@ fn main() -> Result<()> {
         hardware["dotprod"] = std::arch::is_aarch64_feature_detected!("dotprod").into();
         hardware["i8mm"] = std::arch::is_aarch64_feature_detected!("i8mm").into();
     }
+    if let Command::Route { images, statistics } = &args.command {
+        for path in images {
+            let (source, decode_ms) = falcon_ocr::preprocess::decode_file(path)?;
+            let capped = source.first_resize(64, falcon_ocr::router::CAP)?;
+            let route = falcon_ocr::router::route(&capped);
+            let mut line = serde_json::json!({"path":path,"decode_ms":decode_ms,"route":route});
+            if *statistics {
+                line["statistics"] = falcon_ocr::router::statistics(&capped).to_vec().into();
+            }
+            println!("{line}");
+        }
+        return Ok(());
+    }
     let config = args.runner.apply(RunnerConfig::reference())?;
     ensure!((1..=8).contains(&config.batch_size), "batch_size must be 1..=8");
     ensure!(config.threads > 0, "supply an explicit positive thread budget");
@@ -396,13 +418,13 @@ fn main() -> Result<()> {
         } => {
             ensure!(*samples > 0, "samples must be positive");
             ensure!(!report.exists(), "report already exists");
-            GenerationOptions {
+            let mut options = GenerationOptions {
                 max_new_tokens: *max_new_tokens,
                 min_dimension: *min_dimension,
-                max_dimension: *max_dimension,
-                fit_budget: false,
-            }
-            .validate()?;
+                ..GenerationOptions::default()
+            };
+            max_dimension.apply(&mut options);
+            options.validate()?;
             for p in images {
                 ensure!(p.is_file(), "missing image {}", p.display());
             }
@@ -436,7 +458,7 @@ fn main() -> Result<()> {
                 "trace or sidecar already exists"
             );
         }
-        Command::Doctor => unreachable!(),
+        Command::Doctor | Command::Route { .. } => unreachable!(),
     }
     let started = Instant::now();
     let model = Arc::new(match &args.model_file {
@@ -467,12 +489,12 @@ fn main() -> Result<()> {
             samples,
             report,
         } => {
-            let options = GenerationOptions {
+            let mut options = GenerationOptions {
                 max_new_tokens,
-                max_dimension,
                 min_dimension,
-                fit_budget: false,
+                ..GenerationOptions::default()
             };
+            max_dimension.apply(&mut options);
             let inputs = images
                 .iter()
                 .map(|p| Ok(serde_json::json!({"path":p,"sha256":digest(p)?})))
@@ -537,6 +559,7 @@ fn main() -> Result<()> {
                 max_dimension,
                 min_dimension: 64,
                 fit_budget: false,
+                route: false,
             };
             for image in &images {
                 let t = Instant::now();
@@ -604,6 +627,7 @@ fn main() -> Result<()> {
                     max_dimension,
                     min_dimension,
                     fit_budget: false,
+                    route: false,
                 };
                 let mut agreement = Agreement {
                     dump: dump_topk.as_ref().map(|_| Vec::new()),
@@ -675,7 +699,7 @@ fn main() -> Result<()> {
                     "flips":total_flips,"flips_per_1000":per_thousand,"kl_mean":kl_mean})
             );
         }
-        Command::Doctor => unreachable!(),
+        Command::Doctor | Command::Route { .. } => unreachable!(),
     }
     Ok(())
 }
