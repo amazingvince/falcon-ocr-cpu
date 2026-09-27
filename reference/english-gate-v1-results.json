@@ -1,0 +1,155 @@
+{
+  "schema": "falcon-ocr-english-gate-v1-results",
+  "budget": "reference/english-gate-v1-budget.json",
+  "lock": "reference/english-gate-v1-evaluation-lock.json",
+  "runs": "artifacts/phase4/checks/english-gate-v1/ (fp32.json, fast.json, fast-poly-exp.json and the check_heldout.py summaries)",
+  "arms": {
+    "fast": {
+      "pages": 118,
+      "fp32_eos_pages": 117,
+      "gates": {
+        "overall": true,
+        "per_category": false,
+        "repetition_stop_on_eos": true
+      },
+      "pass": false,
+      "eos_micro_cer": {
+        "fp32": 0.13361424855670928,
+        "candidate": 0.13372077539703442
+      },
+      "eos_categories": {
+        "exam": {
+          "pages": 5,
+          "fp32": 0.1625471812979423,
+          "candidate": 0.1625471812979423,
+          "gated": false
+        },
+        "formulas": {
+          "pages": 25,
+          "fp32": 0.1915402116512555,
+          "candidate": 0.1909348974096725,
+          "gated": true
+        },
+        "multi_column": {
+          "pages": 25,
+          "fp32": 0.07933399602385686,
+          "candidate": 0.0785685884691849,
+          "gated": true
+        },
+        "ordinary": {
+          "pages": 19,
+          "fp32": 0.23366092447965323,
+          "candidate": 0.2584357834161653,
+          "gated": true
+        },
+        "slides": {
+          "pages": 15,
+          "fp32": 0.07536125845985,
+          "candidate": 0.07536125845985,
+          "gated": true
+        },
+        "tables": {
+          "pages": 24,
+          "fp32": 0.09685320669148162,
+          "candidate": 0.09700295212424592,
+          "gated": true
+        },
+        "tiny_text": {
+          "pages": 4,
+          "fp32": 0.23248155953635405,
+          "candidate": 0.16583245521601686,
+          "gated": false
+        }
+      },
+      "repetition_stop_on_fp32_eos_pages": [],
+      "identical_pages": 89,
+      "identical_eos_pages": 88,
+      "eos_token_edits": 1394,
+      "eos_reference_tokens": 111742,
+      "stop_changes": [],
+      "all_pages_micro_cer": {
+        "fp32": 0.14634388529213171,
+        "candidate": 0.14644601932602885
+      },
+      "tokens": {
+        "fp32": 115838,
+        "candidate": 116550
+      }
+    },
+    "fast-poly-exp": {
+      "pages": 118,
+      "fp32_eos_pages": 117,
+      "gates": {
+        "overall": true,
+        "per_category": false,
+        "repetition_stop_on_eos": true
+      },
+      "pass": false,
+      "eos_micro_cer": {
+        "fp32": 0.13361424855670928,
+        "candidate": 0.13375332526491154
+      },
+      "eos_categories": {
+        "exam": {
+          "pages": 5,
+          "fp32": 0.1625471812979423,
+          "candidate": 0.16169487398027518,
+          "gated": false
+        },
+        "formulas": {
+          "pages": 25,
+          "fp32": 0.1915402116512555,
+          "candidate": 0.19098707967187795,
+          "gated": true
+        },
+        "multi_column": {
+          "pages": 25,
+          "fp32": 0.07933399602385686,
+          "candidate": 0.07855864811133201,
+          "gated": true
+        },
+        "ordinary": {
+          "pages": 19,
+          "fp32": 0.23366092447965323,
+          "candidate": 0.2584357834161653,
+          "gated": true
+        },
+        "slides": {
+          "pages": 15,
+          "fp32": 0.07536125845985,
+          "candidate": 0.07536125845985,
+          "gated": true
+        },
+        "tables": {
+          "pages": 24,
+          "fp32": 0.09685320669148162,
+          "candidate": 0.09715269755701023,
+          "gated": true
+        },
+        "tiny_text": {
+          "pages": 4,
+          "fp32": 0.23248155953635405,
+          "candidate": 0.16583245521601686,
+          "gated": false
+        }
+      },
+      "repetition_stop_on_fp32_eos_pages": [],
+      "identical_pages": 86,
+      "identical_eos_pages": 85,
+      "eos_token_edits": 1392,
+      "eos_reference_tokens": 111742,
+      "stop_changes": [],
+      "all_pages_micro_cer": {
+        "fp32": 0.14634388529213171,
+        "candidate": 0.14647722694749743
+      },
+      "tokens": {
+        "fp32": 115838,
+        "candidate": 116548
+      }
+    }
+  },
+  "verdict": "FAIL for both arms, as pre-registered: ordinary +2.48 pt against the +1.0 pt per-category limit; every other gated category within +/-0.08 pt, overall +0.011 pt (poly exp +0.014 pt), no repetition stop.",
+  "diagnosis": "Page 117d3ee20f5e258f (omnidocbench page-d209d5c0..., a math book page, OmniDocBench subset equation_hard) contributes +2.17 of the +2.48 pt: fast mode transcribes its three commutative diagrams (8.9), (8.10), (8.12) as LaTeX arrays that match the drawn arrows and labels, FP32 writes only the equation numbers, and the ground truth annotates the diagrams as empty `figure` blocks, so the extra content counts as insertions. Page 758ff91993349b8d adds +0.30 pt (an inserted figure label '(II)' and blank lines). Post hoc and not a change of verdict: without the diagram page the category is about +0.31 pt.",
+  "reading": "On English print fast mode reads like FP32 (user, 2026-09-25: 'fast mode is qualitative good'). English OmniDocBench has almost no handwriting or degraded scans, the categories fast mode failed on the 200-page held-out set (all Chinese there); those stay untested in English."
+}

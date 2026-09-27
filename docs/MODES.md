@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-09-24. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-09-25. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 image tokens).
 
 ## The metric
@@ -30,7 +30,12 @@ calibration pages outside the GPTQ capture set, 24,262 steps
 
 Every mode uses the exact screened head and the portable vector exp in
 prefill attention (token-identical to the platform exp on all calibration
-pages; traces use the platform exp). Exact mode is bit-identical to the FP32
+pages; traces use the platform exp). Fast mode also uses it in decode
+attention over its 8-bit cache, as the NEON kernels always do
+(`--tune decode-exp=exact|fast` overrides): teacher-forced on the 55 anchor
+pages up to 8,192 steps (78,282 steps) it has 94 flips against 92 with the
+platform exp, the English gate below is unchanged, and verification steps'
+attention is 3–10% faster. Exact mode is bit-identical to the FP32
 reference: the smoke trace and the GPU parity test hold under both the
 reference and the automatic configuration.
 
@@ -68,6 +73,23 @@ post-hoc comparison with production BF16 serving found that FP32 itself
 would fail the same per-category budget against production, and a blinded
 LLM judge rated the four systems' content equal except on loop pages.
 Details: `research/phase4-hillclimb/attempt3/RESULTS-V3.md` §6 and §8.
+
+## Fast mode on English print
+
+The model is trained on English only, and every failure above sat on Chinese
+pages, so fast mode also ran a fresh English gate: 118 English OmniDocBench
+pages never used before (outside corpus v1–v3 and every v3 document, one page
+per document; `reference/english-gate-v1-*`), pre-registered with the same
+criteria. It passed overall (micro CER +0.01 pt), on formulas (−0.06 pt),
+tables (+0.02), multi-column (−0.08) and slides (0.00), with no repetition
+stop, and **failed** the per-category limit on ordinary pages (+2.48 pt over
+19 pages). One math-book page accounts for +2.17 pt: fast mode transcribes its
+three commutative diagrams as LaTeX arrays that match the page, FP32 writes
+only the equation numbers, and the ground truth marks the diagrams as empty
+figures. The recorded verdict stays a fail; read as a quality statement, fast
+mode matches FP32 on printed English. English OmniDocBench has almost no
+handwriting or degraded scans, so those stay unqualified. Details:
+`reference/english-gate-v1-results.json`.
 
 ## Loops and the repetition stop
 

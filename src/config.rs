@@ -76,6 +76,18 @@ pub enum PrefillBf16 {
     All,
 }
 
+/// Storage of the draft head's keys and values (`Tuning::draft_kv`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DraftKv {
+    F32,
+    /// Int8 with one scale per 64 values: a quarter of the bytes per draft
+    /// step, acceptance within 0.5 point of FP32, and faster page totals
+    /// (calibration and held-out A/Bs, research/draft-head).
+    #[default]
+    Q8,
+}
+
 /// Experiment and diagnostic knobs. The defaults are the accepted
 /// configuration; every field is scheduling or instrumentation only, except
 /// `prefill_bf16`, which changes fast-mode prefill rounding.
@@ -92,10 +104,30 @@ pub struct Tuning {
     pub phases: bool,
     /// Accumulate cycle counters of the prefill attention stages (stderr).
     pub prefill_profile: bool,
+    /// After consecutive draft-head attempts that drafted nothing, skip up
+    /// to this many tokens before trying again (1, 2, 4, ... tokens); 0 tries
+    /// at every token.
+    pub draft_backoff: usize,
+    /// The draft head attends to at most this many newest verified
+    /// positions (0: all).
+    pub draft_window: usize,
+    /// Storage of the draft head's keys and values.
+    pub draft_kv: DraftKv,
+    /// The draft head stops when the product of its chain's probabilities
+    /// (rather than one token's) falls below `RunnerConfig::draft_confidence`.
+    pub draft_path_gate: bool,
+    /// Decode attention over sealed (split) caches uses the portable
+    /// polynomial exp on x86, as the NEON kernels do, instead of the
+    /// platform-exact exp: faster softmax, different rounding. `None` keeps
+    /// the default: polynomial for 8-bit caches under `ExpMode::Fast` (fast
+    /// mode), exact otherwise.
+    pub decode_fast_exp: Option<bool>,
 }
 impl Tuning {
     /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`).
+    /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
+    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`,
+    /// `decode-exp=exact|fast`).
     pub fn set(&mut self, pair: &str) -> Result<()> {
         let (key, value) = pair
             .split_once('=')
@@ -128,7 +160,41 @@ impl Tuning {
             }
             "phases" => self.phases = flag(value)?,
             "prefill-profile" => self.prefill_profile = flag(value)?,
-            _ => bail!("unknown tuning knob `{key}` (prefill-bf16, split-chunks, phases, prefill-profile)"),
+            "draft-backoff" => {
+                self.draft_backoff = value
+                    .parse()
+                    .with_context(|| format!("tuning knob draft-backoff: `{value}`"))?;
+            }
+            "draft-window" => {
+                self.draft_window = value
+                    .parse()
+                    .with_context(|| format!("tuning knob draft-window: `{value}`"))?;
+            }
+            "draft-kv" => {
+                self.draft_kv = match value {
+                    "f32" => DraftKv::F32,
+                    "q8" | "int8" => DraftKv::Q8,
+                    _ => bail!("tuning knob draft-kv: expected f32 or q8, got `{value}`"),
+                }
+            }
+            "draft-gate" => {
+                self.draft_path_gate = match value {
+                    "token" => false,
+                    "path" => true,
+                    _ => bail!("tuning knob draft-gate: expected token or path, got `{value}`"),
+                }
+            }
+            "decode-exp" => {
+                self.decode_fast_exp = match value {
+                    "exact" => Some(false),
+                    "fast" => Some(true),
+                    _ => bail!("tuning knob decode-exp: expected exact or fast, got `{value}`"),
+                }
+            }
+            _ => bail!(
+                "unknown tuning knob `{key}` (prefill-bf16, split-chunks, phases, prefill-profile, draft-backoff, \
+                 draft-window, draft-kv, draft-gate, decode-exp)"
+            ),
         }
         Ok(())
     }
@@ -340,6 +406,19 @@ impl Default for Speculation {
     }
 }
 
+/// Where speculative drafts come from.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum Drafter {
+    /// n-gram matches in the output so far (and earlier pages of a document).
+    #[default]
+    Ngram,
+    /// A trained draft head (`RunnerConfig::draft_head`).
+    Head,
+    /// The n-gram draft when there is one, otherwise the draft head.
+    Both,
+}
+
 /// Everything a [`crate::Runner`] decides about; `Default` is the automatic
 /// configuration and [`RunnerConfig::reference`] the bit-exact one.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -368,6 +447,14 @@ pub struct RunnerConfig {
     /// Let drafts continue full n-gram matches from earlier pages of one
     /// `recognize_files` call (outputs unchanged).
     pub document_drafts: bool,
+    /// Where speculative drafts come from.
+    pub drafter: Drafter,
+    /// A trained draft head file (`research/draft-head`), for `Drafter::Head`
+    /// and `Drafter::Both`.
+    pub draft_head: Option<std::path::PathBuf>,
+    /// The draft head keeps drafting while its top token's probability is at
+    /// least this.
+    pub draft_confidence: f32,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at least
     /// `max(256, 4 * cycle)` tokens (`FinishReason::Repetition`). Never
     /// applied to teacher-forced runs.
@@ -391,6 +478,9 @@ impl Default for RunnerConfig {
             head: HeadMode::Screened,
             speculation: Some(Speculation::default()),
             document_drafts: true,
+            drafter: Drafter::Ngram,
+            draft_head: None,
+            draft_confidence: 0.35,
             repetition_stop: true,
             decode_threads: DecodeThreads::Auto,
         }
@@ -425,6 +515,14 @@ impl RunnerConfig {
                 "speculation needs 1..=7 drafts and a minimum match of at least 1"
             );
         }
+        ensure!(
+            self.drafter == Drafter::Ngram || self.draft_head.is_some(),
+            "the draft-head drafters need a draft head file"
+        );
+        ensure!(
+            (0.0..=1.0).contains(&self.draft_confidence),
+            "draft confidence must be between 0 and 1"
+        );
         ensure!(
             !matches!(self.decode_threads, DecodeThreads::Fixed(0)),
             "decode_threads must be at least 1"
@@ -461,7 +559,19 @@ mod tests {
     }
     #[test]
     fn tuning_knobs_parse_and_reject_unknown_keys() {
-        let tuning = Tuning::from_pairs(["prefill-bf16=all", "split-chunks=3", "phases=1"]).unwrap();
+        let tuning = Tuning::from_pairs([
+            "prefill-bf16=all",
+            "split-chunks=3",
+            "phases=1",
+            "draft-window=256",
+            "draft-kv=f32",
+            "draft-gate=path",
+            "decode-exp=fast",
+        ])
+        .unwrap();
+        assert_eq!(tuning.decode_fast_exp, Some(true));
+        assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
+        assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::All);
         assert_eq!(tuning.split_chunks, Some(3));
         assert!(tuning.phases && !tuning.prefill_profile);
@@ -470,6 +580,8 @@ mod tests {
             "split-chunks=5",
             "split-chunks=x",
             "phases=maybe",
+            "draft-kv=f16",
+            "draft-window=-1",
             "unknown=1",
             "phases",
         ] {

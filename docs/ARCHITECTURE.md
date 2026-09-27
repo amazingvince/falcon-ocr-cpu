@@ -48,18 +48,19 @@ finalized; nothing treats partial image strips as causal prompts.
 
 | Module | Holds |
 |---|---|
-| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget`), `RunnerConfig` (`Default` = automatic, `reference()` = bit-exact), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `DecodeThreads` |
+| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget`), `RunnerConfig` (`Default` = automatic, `reference()` = bit-exact), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DraftKv`, `DecodeThreads` |
 | `auto.rs` | `HostInfo::detect`, `Mode`, `resolve_weights` (packed file, then checkpoint), `Resolved` (the plan a runner executes), `doctor` |
 | `cli.rs` | `RunnerArgs` shared by both binaries and `print_doctor` |
 | `main.rs`, `bin/falcon-ocr-eval/` | The CLI; the research binary (profiles, bench, agree, trace, Gram capture) with its telemetry |
 | `preprocess.rs`, `tokenizer.rs` | Pillow-exact image preparation; the pinned tokenizer and stop ids |
-| `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
+| `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, panel prefill, multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
 | `runner/` | `Runner` (prefill, sealing, batches), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
 | `team.rs`, `tune.rs`, `cpu.rs` | The decode spin team; the automatic team-size tuner and its report; host topology, performance cores, the bandwidth probe |
 | `head_screen.rs`, `draft.rs`, `repetition.rs` | The exact INT8 vocabulary screen; n-gram drafts, the adaptive draft policy and document history; the repetition stop |
+| `draft_head.rs` | The trained draft head (EAGLE-3 style, `research/draft-head`): INT8 projections on the decode kernels, its own INT8 key/value cache of verified positions, confidence-gated draft chains, an optional low-rank vocabulary head |
 | `trace.rs`, `packed_kernels.rs`, `buf.rs` | Tensor traces and callbacks; the opt-in phase-packed batch-decode weights; mapped or owned buffers |
 
 ## Kernels: one source per operation, instantiated per ISA
@@ -104,10 +105,13 @@ parallel loops of a step without Rayon's wake-up latency; `tune.rs` times a
 few team sizes on the first steps and keeps the smallest within 2% of the
 fastest (tokens never depend on it). The screened head selects the argmax
 through an INT8 copy with a proven error bound and recomputes only the rows
-that can still win. Speculative decoding drafts up to four tokens from the
-output so far and verifies them in one multi-row step whose rows are bitwise
-the single-row steps; `draft::DraftPolicy` turns drafting off while it does
-not pay. The repetition stop ends a page once it repeats a cycle of at most
+that can still win. Speculative decoding drafts up to four tokens and
+verifies them in one multi-row step whose rows are bitwise the single-row
+steps; `draft::DraftPolicy` turns drafting off while it does not pay. Drafts
+come from n-gram matches in the output so far or, with `--draft-head`, from a
+trained head that reads the outputs of target layers 2, 11 and 19 at every
+verified position (captured during the forward) and drafts while its top
+token's probability is at least 0.35. The repetition stop ends a page once it repeats a cycle of at most
 128 tokens for at least `max(256, 4 × cycle)` tokens.
 
 ## Automatic configuration

@@ -15,7 +15,9 @@ for arm in "$@"; do
   [ -n "${artifact:-}" ] && extra=(--w8-artifact "$artifact")
   rm -f "$out/$name.json"
   start=$(date +%s)
-  "$bin" --exp fast --threads "${AGREE_THREADS:-16}" --backend avx2 --profile "$profile" "${extra[@]}" \
+  # AGREE_EXTRA: more runner flags for every arm (e.g. "--tune decode-exp=fast").
+  # shellcheck disable=SC2086
+  "$bin" --exp fast --threads "${AGREE_THREADS:-16}" --backend avx2 --profile "$profile" "${extra[@]}" ${AGREE_EXTRA:-} \
     agree "${PAGES[@]}" --reference "$ref" --max-steps "$steps" --report "$out/$name.json" \
     > "$out/$name.stdout" 2> "$out/$name.stderr"
   echo "$name exit=$? seconds=$(( $(date +%s) - start )) $(tail -c 200 "$out/$name.stdout")"

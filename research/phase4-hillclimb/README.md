@@ -12,7 +12,7 @@ The phase-4/5 hill climb of 2026-09-23: GPTQ overlay, near-exact and fast modes,
 | [attempt3/RESULTS-V3.md](attempt3/RESULTS-V3.md) | A better quantized Falcon-OCR v1.5, and faster exact and fast modes (2026-09-23) | history |
 | [attempt3/ab.py](attempt3/ab.py) | Interleaved A/B/... runs of attempt binaries on pages, with per-arm env | history |
 | [attempt3/bench.py](attempt3/bench.py) | Bracketed full-page experiment runner. Each arm is a fresh native process | history |
-| [attempt3/check_heldout.py](attempt3/check_heldout.py) | Check a held-out run against the pre-registered quality budget | history |
+| [attempt3/check_heldout.py](attempt3/check_heldout.py) | Check a held-out run against a pre-registered quality budget (the 200-page held-out set; English gate v1 with `--reference-report`) | active |
 | [attempt3/compare_profiles.py](attempt3/compare_profiles.py) | Token agreement and speed of candidate profiles against an FP32 run | history |
 | [attempt3/compare_runs.py](attempt3/compare_runs.py) | Compare several full-page runs of the same pages against one baseline run | history |
 | [attempt3/draft_sim.py](attempt3/draft_sim.py) | Offline simulation of speculative drafting on reference token sequences | history |
