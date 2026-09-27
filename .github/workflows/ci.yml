@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [master, phase4-attempt3, worktree-cleanup]
+    branches: [main, phase4-attempt3]
   pull_request:
   workflow_dispatch:
   schedule:
