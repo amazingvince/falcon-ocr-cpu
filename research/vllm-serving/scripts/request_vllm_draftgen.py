@@ -65,8 +65,9 @@ def main():
         if (args.output / (page["id"].replace("/", "__") + ".json")).exists():
             return  # written meanwhile by another client
         image = pathlib.Path(page["path"])
+        mime = "png" if image.suffix.lower() == ".png" else "jpeg"
         body = {"model": "falcon-ocr", "messages": [{"role": "user", "content": [
-            {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(image.read_bytes()).decode()}},
+            {"type": "image_url", "image_url": {"url": f"data:image/{mime};base64," + base64.b64encode(image.read_bytes()).decode()}},
             {"type": "text", "text": PROMPT}]}],
             "temperature": 0, "seed": 0, "max_tokens": args.max_tokens, "stop_token_ids": STOP_IDS,
             "logprobs": True, "top_logprobs": 1, "return_tokens_as_token_ids": True}

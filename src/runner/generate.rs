@@ -152,6 +152,7 @@ impl Runner {
             weight_packing_ms: self.model.weight_packing_ms(),
             teacher_forced: page.teacher_forced,
             budget_clamped: page.budget_clamped,
+            route: None,
             timings: page.timings,
         })
     }

@@ -1,8 +1,8 @@
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
-    CacheLayout, GenerationOptions, Mode, Runner, RunnerConfig, WeightLayout,
-    auto::{ModelRequest, load_model, resolve_weights},
+    CacheLayout, GenerationOptions, MaxDimension, Mode, Runner, RunnerConfig, WeightLayout,
+    auto::{ModelRequest, load_model, model_files_dir, resolve_weights, with_default_draft_head},
     cli::{RunnerArgs, print_doctor},
     model::WeightsSource,
     trace::TensorTrace,
@@ -83,8 +83,11 @@ enum Command {
         max_new_tokens: Option<usize>,
         #[arg(long, default_value_t = 64)]
         min_dimension: u32,
-        #[arg(long, default_value_t = 1536)]
-        max_dimension: u32,
+        /// Resolution cap in pixels, or `auto`: the resolution router picks
+        /// 768, 1024 or 1536 per page (fast mode; changes the output) and
+        /// reruns a routed page at 1536 if it loops or hits the length limit.
+        #[arg(long, default_value = "1536")]
+        max_dimension: MaxDimension,
         #[arg(long)]
         text: bool,
     },
@@ -152,6 +155,10 @@ fn main() -> Result<()> {
         weight_layout: cli.weight_layout,
         ..cli.runner.apply(base)?
     };
+    // The published draft head next to the model files drafts unless a
+    // drafter was chosen; traces run without speculation, so never use it.
+    let explicit = cli.runner.drafter.is_some() || cli.runner.draft_head.is_some();
+    let config = with_default_draft_head(config, &model_files_dir(&request), explicit);
     if let Command::Doctor { text, load, probe } = &cli.command {
         return print_doctor(&request, &config, *text, *load, *probe);
     }
@@ -192,13 +199,15 @@ fn main() -> Result<()> {
             max_dimension,
             text,
         } => {
-            let options = GenerationOptions {
+            let mut options = GenerationOptions {
                 max_new_tokens: max_new_tokens.unwrap_or(8192),
                 min_dimension,
-                max_dimension,
                 // Without an explicit cap, long pages get what the context leaves.
                 fit_budget: max_new_tokens.is_none(),
+                ..GenerationOptions::default()
             };
+            max_dimension.apply(&mut options);
+            options.validate()?;
             for result in runner
                 .recognize_files(&images, &options)
                 .context("recognize input images")?

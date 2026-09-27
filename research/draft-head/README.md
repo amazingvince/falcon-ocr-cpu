@@ -3,9 +3,15 @@
 A trained speculative drafter for the CPU runner: an EAGLE-3-style draft head
 (one decoder block over the target's layers 2, 11 and 19, text only, a
 16,384-token draft vocabulary) that the Rust runner loads with
-`--draft-head <file>` (`src/draft_head.rs`). Drafts only change speed: the
-model verifies every drafted token, and every A/B below checks that each
-page's tokens equal the no-speculation run.
+`--draft-head <file>` (`src/draft_head.rs`), or by itself when
+`falcon-ocr-v1.5-draft-head.safetensors` sits next to the model files. Drafts
+only change speed: the model verifies every drafted token, and every A/B
+below checks that each page's tokens equal the no-speculation run.
+
+The stage-3 head is published as `falcon-ocr-v1.5-draft-head.safetensors` in
+[amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu)
+(the tensors of `s3-16k-cont`, with the local training path removed from its
+metadata; `matches_the_pytorch_chain` passes on it).
 
 ## Results (fast mode, packed model, 12 decode threads, Ryzen 9 7950X)
 
@@ -34,6 +40,21 @@ speculation), a 16k draft vocabulary (24k: same acceptance, larger head). A
 head trained on next-token prediction only is overconfident on later chain
 steps (23% acceptance); the seven-step phase is essential.
 
+### Other modes (2026-09-26)
+
+The same 16 held-out pages with the published head (`cpu_ab.py --mode`;
+tokens identical in every arm):
+
+| Mode | none | n-gram | head | decode vs none |
+|---|---:|---:|---:|---:|
+| near-exact (2 rounds) | 334.8 s | 277.4 s | **208.1 s** | 1.87x (acceptance 77%) |
+| exact (1 round) | 612.6 s | 531.0 s | **392.5 s** | 1.67x |
+
+The head pays more in the slower modes: a verified draft saves a whole
+16-bit or FP32 decode step, while drafting costs the same. The runner
+therefore uses the published head in every mode when it sits next to the
+model files.
+
 ## Pipeline
 
 | Step | File | Notes |
@@ -49,8 +70,23 @@ steps (23% acceptance); the seven-step phase is essential.
 | Cost model | [train/cost_model.py](train/cost_model.py), [train/check_alignment.py](train/check_alignment.py) | offline acceptance and gated-speedup estimates |
 
 Data sets: stage 1 about 4.7k pages, stage 2 about 24.5k, stage 3 48,069
-(olmOCR-mix, PDFA, IDL, DocLayNet, LoC newspapers, Zenodo slides, NoTeS-Bank,
-HumynLabs notes; 106 pages excluded by the 13-gram check). Data, heads and
+(106 pages excluded by the 13-gram check). Every page records its source's
+license in the stage manifests; the stage-3 pages by source:
+
+| Source (Hugging Face) | Pages | License or terms |
+|---|---:|---|
+| `allenai/olmOCR-mix-1025` (documents, books, LoC transcripts, National Archives) | 25,841 | ODC-BY-1.0 (the card adds: intended for research and educational use under Ai2's Responsible Use Guidelines) |
+| `pixparse/pdfa-eng-wds` | 12,000 | card license "other": Common Crawl terms of use and Digital Corpora terms of use |
+| `pixparse/idl-wds` | 7,000 | card license "other" (UCSF Industry Documents Library; the linked license file is missing on the Hub) |
+| `docling-project/DocLayNet-v1.2` | 1,937 | CDLA-Permissive-1.0 |
+| `biglam/loc_beyond_words` | 500 | CC0-1.0 |
+| `NoTeS-Bank/ICDAR_2025_Handwritten_Notes_Understanding_Challenge` | 392 | Apache-2.0 |
+| `PDFPages/zenodo-presentations-open` (CC-BY-4.0 records only) | 230 | CC-BY-4.0 |
+| `HumynLabs` handwritten notes (math, physics, chemistry, biology, CS) | 169 | CC-BY-4.0 |
+
+No non-commercial or evaluation-only set was used. PDFA and IDL carry
+third-party terms rather than a standard license; the user chose to publish
+with them listed (2026-09-26). Data, heads and
 runs live outside the repository (D:/falcon-draft: `heads/s3-16k-cont.safetensors`
 is the current best head; `cpu-ab/` holds every A/B).
 

@@ -37,7 +37,9 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   A fast path without such a test does not ship.
 - **Integration tests that need no weights** run in CI
   (`cargo test --release --locked --tests`): negative inputs, preprocessing
-  fixtures, tokenizer prompts.
+  fixtures, tokenizer prompts. The router's parity tests (library) compare
+  its 26 statistics, both tree scores and the route bit for bit with the
+  Python specification on synthetic pages and the decode fixtures.
 - **Ignored gates** need `artifacts/` (the pinned checkpoint, the GPTQ
   overlay, the packed files, the GPU smoke reference and the corpus):
 
@@ -66,8 +68,8 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
 - **Python**: `python -m unittest discover -s tests -p "test_*.py"`; `ruff
   check tools` (`pyproject.toml`).
 
-Fixtures: `tests/fixtures/README.md` says how the preprocessing and decode
-fixtures are regenerated from the pinned Pillow/PyTorch environment;
+Fixtures: `tests/fixtures/README.md` says how the preprocessing, decode and
+router fixtures are regenerated from the pinned Pillow/PyTorch environment;
 `tests/fixtures/modes/README.md` how the mode fixtures are recorded with the
 CLI. Regenerate a fixture only when the numerics change on purpose.
 

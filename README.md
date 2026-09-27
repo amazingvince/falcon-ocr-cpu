@@ -22,8 +22,8 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --probe
 `run` prints one JSON line per page (text, token ids, stop reason, timings
 and the resolved plan); `--text` prints the text only. With no flags the
 runner picks near-exact mode, loads the packed file from the model directory
-(about 10 ms), and sets threads, kernels, the decode team, speculation and
-the repetition stop from the host.
+(about 10 ms) and the draft head next to it, and sets threads, kernels, the
+decode team, speculation and the repetition stop from the host.
 
 ## Modes
 
@@ -49,7 +49,8 @@ file: packed fast        artifacts/packed\falcon-ocr-v1.5-fast.safetensors (638 
 file: checkpoint         artifacts/packed\model.safetensors (missing)
 file: overlay            artifacts/packed\w8-gptq.safetensors (missing)
 file: tokenizer          artifacts/packed\tokenizer.json (5 MB)
-plan: mode near-exact (w16-body-kv-q16) | weights packed artifacts/packed\falcon-ocr-v1.5-near-exact.safetensors | prefill 32 threads, projections panel-avx2, attention avx512-wide | decode auto {12,16,24} threads, avx2 kernels, kv q16 | head Screened | speculation 4 drafts (min match 2) | repetition stop on | exp Fast
+file: draft head         artifacts/packed\falcon-ocr-v1.5-draft-head.safetensors (94 MB)
+plan: mode near-exact (w16-body-kv-q16) | weights packed artifacts/packed\falcon-ocr-v1.5-near-exact.safetensors | prefill 32 threads, projections panel-avx2, attention avx512-wide | decode auto {12,16,24} threads, avx2 kernels, kv q16 | head Screened | speculation 4 drafts (min match 2), draft head artifacts/packed\falcon-ocr-v1.5-draft-head.safetensors | repetition stop on | exp Fast
 load: 7 ms, screened head 53 MB
 probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 ```
@@ -76,11 +77,12 @@ None of these change tokens (gated by `tests/modes.rs`).
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
-| `--draft-head F` | A trained draft head ([research/draft-head](research/draft-head/README.md); not yet published); `--drafter ngram\|head\|both` (default `head` with a file, else `ngram`), `--draft-confidence P` (default 0.35) |
+| `--draft-head F` | A trained draft head ([research/draft-head](research/draft-head/README.md)); `falcon-ocr-v1.5-draft-head.safetensors` next to the model files is used without the flag; `--drafter ngram\|head\|both` (default `head` with a head, else `ngram`), `--draft-confidence P` (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
 | `--batch-size N` | Pages decoded jointly (1..=8) |
 | `run --min-dimension 64 --max-dimension 1536 --max-new-tokens 8192 --text` | Image size bounds, output cap, text only |
+| `run --max-dimension auto` | The resolution router picks 768, 1024 or 1536 per page ([docs/MODES.md](docs/MODES.md#resolution-routing); changes the output) |
 | `pack --output F`, `inspect`, `trace`, `doctor [--text] [--load] [--probe]` | Write a packed file; verify the checkpoint; capture tensors; show the plan |
 
 `falcon-ocr-eval` is the research binary: any weights × KV profile, timed
@@ -159,9 +161,12 @@ the cache (30–113 KB per position). At the 7950X's 52 GB/s that floor is 8.2,
 15 and 31 ms per token; the runner measures 8.5, 15 and 29. Prefill is
 compute-bound (about 6 TFLOP per full page): 2.9 s in fast mode with BF16
 attention, 4.1 s in FP32. N-gram speculation pays on tables and loops (a
-looping page 44 → 19 s), not on prose; a trained draft head also drafts prose:
-16 held-out pages 181.2 → 135.7 s in fast mode (decode 1.50×), tokens
-unchanged. [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
+looping page 44 → 19 s), not on prose; the published draft head also drafts
+prose: on 16 held-out pages it cuts total time against n-gram drafts by 21%
+in fast mode, 25% in near-exact and 26% in exact (decode 1.5–1.9× against no
+speculation), tokens unchanged. It is used automatically when
+`falcon-ocr-v1.5-draft-head.safetensors` sits next to the model files, as it
+does after the Hugging Face download. [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 lists every accepted and rejected change with its measurement.
 
 ## Platform support

@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "dataset": "opendatalab/OmniDocBench",
+  "revision": "aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec",
+  "corpus_manifest_sha256": "edc4552a2c123ca5baf8db4b020fad00dc02ab5be050cabb1cd2fc3cf408445b",
+  "annotation_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "preparation_script_sha256": "3aff8475b0b9349917d009761cbc7b15f9775914dc484db0b5bfed1d1e3d2328",
+  "ground_truth_script_sha256": "2d0be4adc9507808b0f05207bec5e41308fcf18bcbe243318c5118629eaa62de",
+  "pillow_version": "10.4.0",
+  "source_terms": "Research purposes only; not for commercial use. Do not redistribute source images in runner releases.",
+  "rgb_policy": "Pinned Pillow decode, then RGB conversion before upstream preprocessing; no EXIF auto-orientation.",
+  "ground_truth_policy": "Nonignored blocks with numeric order >= 0, sorted by order/index; text, HTML tables, LaTeX equations; NFC/LF, trim edges, join with two newlines.",
+  "metrics_note": "Assembled text supports diagnostic normalized CER only; retain original blocks for text/table/formula evaluation.",
+  "qualification": "Pixel/annotation freeze only. Visual category evidence belongs to the selection manifest/review report; newly found duplicate candidates require review. No quality or performance acceptance claim.",
+  "selection": "calibration",
+  "pages": []
+}

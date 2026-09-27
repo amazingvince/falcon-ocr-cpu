@@ -30,6 +30,7 @@ fn invalid_options() -> Vec<(&'static str, GenerationOptions, &'static str)> {
         max_dimension: 256,
         max_new_tokens: 1,
         fit_budget: false,
+        route: false,
     };
     vec![
         (
@@ -243,6 +244,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         max_dimension: 256,
         max_new_tokens: 1,
         fit_budget: false,
+        route: false,
     };
     let no_images: &[RgbImage] = &[];
     let no_files: &[PathBuf] = &[];

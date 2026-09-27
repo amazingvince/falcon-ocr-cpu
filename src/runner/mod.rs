@@ -1,7 +1,8 @@
 use crate::{
     config::{CacheLayout, GenerationOptions, HeadMode, RunnerConfig, WeightLayout},
     model::{BatchWorkspace, Model, Next, Session, image_range, positions},
-    preprocess::{PreparedImage, prepare_file_timed, prepare_rgb},
+    preprocess::{PreparedImage, decode_file, first_resize_rgb, prepare_file_timed, prepare_first, prepare_rgb},
+    router::{self, Route, RoutedAttempt},
     tokenizer::OcrTokenizer,
     trace::{NoTrace, PrefixedTrace, Trace},
 };
@@ -84,6 +85,10 @@ pub struct OcrResult {
     /// (`GenerationOptions::fit_budget`).
     #[serde(default)]
     pub budget_clamped: bool,
+    /// The resolution router's choice (`GenerationOptions::route`); `width`
+    /// and `height` are those of the input that produced `text`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub route: Option<Route>,
     pub timings: Timings,
 }
 
@@ -323,6 +328,11 @@ impl Runner {
     ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
+        if options.route {
+            let (source, decode_ms) = decode_file(path.as_ref())?;
+            let first_at = |max| source.first_resize(options.min_dimension, max);
+            return self.recognize_routed(&first_at, decode_ms, options, trace, start);
+        }
         let (prepared, decode_ms) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
@@ -349,6 +359,7 @@ impl Runner {
             !teacher.is_empty() && options.max_new_tokens == teacher.len(),
             "teacher scoring needs max_new_tokens equal to the teacher length"
         );
+        ensure!(!options.route, "teacher scoring needs a fixed max_dimension");
         let (prepared, _) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
@@ -365,12 +376,92 @@ impl Runner {
     ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
+        if options.route {
+            let first_at = |max| first_resize_rgb(image, options.min_dimension, max);
+            return self.recognize_routed(&first_at, 0., options, trace, start);
+        }
         let prepared = prepare_rgb(image, options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000.;
         let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
+        Ok(result)
+    }
+
+    /// `--max-dimension auto`: route the page from its first resize at the
+    /// cap and run it at the chosen size (exactly the input a fixed run of
+    /// that size sees); the safety net reruns it at the cap if it loops or
+    /// hits the length limit. `first_at(max)` is the first resize at `max`.
+    fn recognize_routed(
+        &self,
+        first_at: &dyn Fn(u32) -> Result<RgbImage>,
+        decode_ms: f64,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+        start: Instant,
+    ) -> Result<OcrResult> {
+        let (first, mut route, capped) = self.plan_route(first_at)?;
+        let routed = self.recognize_first(&first, decode_ms, &options.at(route.max_dimension), trace, start)?;
+        let mut result = self.safety_net(routed, &mut route, capped, options, trace)?;
+        result.route = Some(route);
+        Ok(result)
+    }
+
+    /// The router's choice for a page, the first resize at the chosen size,
+    /// and (when that is below the cap) the capped page for the safety net.
+    fn plan_route(&self, first_at: &dyn Fn(u32) -> Result<RgbImage>) -> Result<(RgbImage, Route, Option<RgbImage>)> {
+        let capped = first_at(router::CAP)?;
+        let route = self.pool.install(|| router::route(&capped));
+        if route.max_dimension == router::CAP {
+            return Ok((capped, route, None));
+        }
+        Ok((first_at(route.max_dimension)?, route, Some(capped)))
+    }
+
+    /// Rerun a routed page at the cap when it stopped by repetition or
+    /// length; the rerun's `total_ms` includes the routed attempt.
+    fn safety_net(
+        &self,
+        routed: OcrResult,
+        route: &mut Route,
+        capped: Option<RgbImage>,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+    ) -> Result<OcrResult> {
+        let Some(capped) = capped.filter(|_| router::needs_rerun(route, routed.finish_reason)) else {
+            return Ok(routed);
+        };
+        route.safety_net = Some(RoutedAttempt {
+            max_dimension: route.max_dimension,
+            finish_reason: routed.finish_reason,
+            output_tokens: routed.output_tokens,
+            total_ms: routed.timings.total_ms,
+        });
+        let mut rerun = self.recognize_first(&capped, 0., &options.at(router::CAP), trace, Instant::now())?;
+        rerun.timings.image_decode_ms = routed.timings.image_decode_ms;
+        rerun.timings.total_ms += routed.timings.total_ms;
+        Ok(rerun)
+    }
+
+    /// Prepare and run a first-resized page; timings count from `start`,
+    /// which `decode_ms` of file decoding preceded.
+    fn recognize_first(
+        &self,
+        first: &RgbImage,
+        decode_ms: f64,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+        start: Instant,
+    ) -> Result<OcrResult> {
+        let prepared = prepare_first(first)?;
+        validate_prepared_bounds(&prepared, options)?;
+        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
+        let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
+        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
+        result.timings.image_decode_ms = decode_ms;
+        result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
+        result.timings.time_to_first_token_ms += decode_ms;
         Ok(result)
     }
     /// Bounded batches with independent prefill and shared decode projections.
@@ -398,10 +489,12 @@ impl Runner {
             }
             let started = Instant::now();
             let mut inputs = Vec::with_capacity(chunk.len());
+            let mut routes = Vec::with_capacity(chunk.len());
             for image in chunk {
                 let prep_start = Instant::now();
-                let prepared = prepare_rgb(image, options.min_dimension, options.max_dimension)?;
-                validate_prepared_bounds(&prepared, options)?;
+                let first_at = |max| first_resize_rgb(image, options.min_dimension, max);
+                let (prepared, route) = self.prepare_batch_page(&first_at, options)?;
+                routes.push(route);
                 let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
                 inputs.push(BatchInput {
                     prepared,
@@ -410,10 +503,12 @@ impl Runner {
                     preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000.,
                 });
             }
-            let mut outputs = self.pool.install(|| {
+            let outputs = self.pool.install(|| {
                 self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
             })?;
-            results.append(&mut outputs);
+            for (output, route) in outputs.into_iter().zip(routes) {
+                results.push(self.finish_batch_page(output, route, options, trace)?);
+            }
         }
         Ok(results)
     }
@@ -441,12 +536,16 @@ impl Runner {
             }
             let started = Instant::now();
             let mut inputs = Vec::with_capacity(chunk.len());
+            let mut routes = Vec::with_capacity(chunk.len());
             for path in chunk {
                 let prep_start = Instant::now();
-                let (prepared, image_decode_ms) =
-                    prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)
-                        .with_context(|| format!("preparing {}", path.as_ref().display()))?;
-                validate_prepared_bounds(&prepared, options)?;
+                let (source, image_decode_ms) =
+                    decode_file(path.as_ref()).with_context(|| format!("preparing {}", path.as_ref().display()))?;
+                let first_at = |max| source.first_resize(options.min_dimension, max);
+                let (prepared, route) = self
+                    .prepare_batch_page(&first_at, options)
+                    .with_context(|| format!("preparing {}", path.as_ref().display()))?;
+                routes.push(route);
                 let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
                 inputs.push(BatchInput {
                     prepared,
@@ -455,12 +554,49 @@ impl Runner {
                     preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000. - image_decode_ms,
                 });
             }
-            let mut outputs = self.pool.install(|| {
+            let outputs = self.pool.install(|| {
                 self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
             })?;
-            results.append(&mut outputs);
+            for (output, route) in outputs.into_iter().zip(routes) {
+                results.push(self.finish_batch_page(output, route, options, trace)?);
+            }
         }
         Ok(results)
+    }
+
+    /// A batched page's prepared input at its maximum dimension (routed when
+    /// `options.route`), with the route and the capped page for the safety net.
+    fn prepare_batch_page(
+        &self,
+        first_at: &dyn Fn(u32) -> Result<RgbImage>,
+        options: &GenerationOptions,
+    ) -> Result<(PreparedImage, Option<Planned>)> {
+        let (first, route) = if options.route {
+            let (first, route, capped) = self.plan_route(first_at)?;
+            (first, Some((route, capped)))
+        } else {
+            (first_at(options.max_dimension)?, None)
+        };
+        let prepared = prepare_first(&first)?;
+        let max_dimension = route.as_ref().map_or(options.max_dimension, |(r, _)| r.max_dimension);
+        validate_prepared_bounds(&prepared, &options.at(max_dimension))?;
+        Ok((prepared, route))
+    }
+
+    /// A batched page's result, after the safety net when it was routed.
+    fn finish_batch_page(
+        &self,
+        output: OcrResult,
+        route: Option<Planned>,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+    ) -> Result<OcrResult> {
+        let Some((mut route, capped)) = route else {
+            return Ok(output);
+        };
+        let mut result = self.safety_net(output, &mut route, capped, options, trace)?;
+        result.route = Some(route);
+        Ok(result)
     }
 
     fn seal_session(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
@@ -903,6 +1039,10 @@ impl Runner {
     }
 }
 
+/// A routed page's route and, when routed below the cap, the capped page
+/// kept for the safety net.
+type Planned = (Route, Option<RgbImage>);
+
 struct BatchInput {
     prepared: PreparedImage,
     tokens: Vec<u32>,
@@ -970,6 +1110,7 @@ mod tests {
             max_dimension: 32,
             max_new_tokens: 1,
             fit_budget: false,
+            route: false,
         };
         options.validate().unwrap();
         let prepared = prepare_rgb(&RgbImage::new(33, 49), 16, 32).unwrap();

@@ -15,6 +15,7 @@ pub mod model;
 pub mod packed_kernels;
 pub mod preprocess;
 mod repetition;
+pub mod router;
 pub mod runner;
 mod simd;
 mod team;
@@ -24,8 +25,8 @@ mod tune;
 
 pub use auto::{HostInfo, Mode, Resolved};
 pub use config::{
-    Backend, CacheLayout, DecodeThreads, DraftKv, Drafter, ExpMode, GenerationOptions, HeadMode, ModelConfig,
-    PrefillBf16, RunnerConfig, Speculation, Tuning, WeightLayout,
+    Backend, CacheLayout, DecodeThreads, DraftKv, Drafter, ExpMode, GenerationOptions, HeadMode, MaxDimension,
+    ModelConfig, PrefillBf16, RunnerConfig, Speculation, Tuning, WeightLayout,
 };
 pub use model::{Model, WeightsSource};
 pub use runner::{FinishReason, OcrResult, Runner, Timings};

@@ -298,6 +298,8 @@ impl ModelConfig {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenerationOptions {
     pub min_dimension: u32,
+    /// The processor's resolution cap; with `route`, the cap the router
+    /// starts from and falls back to (`router::CAP`).
     pub max_dimension: u32,
     pub max_new_tokens: usize,
     /// Lower `max_new_tokens` to what the context leaves after the input
@@ -305,6 +307,12 @@ pub struct GenerationOptions {
     /// default; the CLI turns it on when `--max-new-tokens` is omitted.
     #[serde(default)]
     pub fit_budget: bool,
+    /// Choose each page's maximum dimension (768, 1024 or 1536) with the
+    /// resolution router (`--max-dimension auto`); a routed page that stops by
+    /// repetition or length is rerun at 1536. Changes the output, so off by
+    /// default.
+    #[serde(default)]
+    pub route: bool,
 }
 impl Default for GenerationOptions {
     fn default() -> Self {
@@ -313,6 +321,7 @@ impl Default for GenerationOptions {
             max_dimension: 1536,
             max_new_tokens: 8192,
             fit_budget: false,
+            route: false,
         }
     }
 }
@@ -327,7 +336,25 @@ impl GenerationOptions {
             "max_dimension must be a positive multiple of 16"
         );
         ensure!(self.max_new_tokens > 0, "max_new_tokens must be positive");
+        if self.route {
+            ensure!(
+                self.max_dimension == crate::router::CAP && self.min_dimension <= crate::router::SIZES[0],
+                "the resolution router chooses among {:?} and {}: it needs max_dimension {} and min_dimension at most {}",
+                crate::router::SIZES,
+                crate::router::CAP,
+                crate::router::CAP,
+                crate::router::SIZES[0]
+            );
+        }
         Ok(())
+    }
+    /// These options at one fixed maximum dimension (what a routed page runs with).
+    pub fn at(&self, max_dimension: u32) -> Self {
+        Self {
+            max_dimension,
+            route: false,
+            ..self.clone()
+        }
     }
     /// The output budget for `input_tokens` in a `context`-token window:
     /// `max_new_tokens` when it fits, else what the context leaves when
@@ -383,6 +410,43 @@ impl std::fmt::Display for DecodeThreads {
             Self::Auto => f.write_str("auto"),
             Self::Pool => f.write_str("pool"),
             Self::Fixed(n) => write!(f, "{n}"),
+        }
+    }
+}
+
+/// `--max-dimension`: a fixed resolution cap in pixels, or `auto` for the
+/// resolution router.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MaxDimension {
+    Fixed(u32),
+    Auto,
+}
+impl MaxDimension {
+    /// Set `options.max_dimension` and `options.route` from this choice.
+    pub fn apply(self, options: &mut GenerationOptions) {
+        (options.max_dimension, options.route) = match self {
+            Self::Fixed(pixels) => (pixels, false),
+            Self::Auto => (crate::router::CAP, true),
+        };
+    }
+}
+impl std::str::FromStr for MaxDimension {
+    type Err = String;
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        if value.eq_ignore_ascii_case("auto") {
+            return Ok(Self::Auto);
+        }
+        value
+            .parse::<u32>()
+            .map(Self::Fixed)
+            .map_err(|_| format!("expected `auto` or a size in pixels, got `{value}`"))
+    }
+}
+impl std::fmt::Display for MaxDimension {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Auto => f.write_str("auto"),
+            Self::Fixed(pixels) => write!(f, "{pixels}"),
         }
     }
 }
@@ -544,6 +608,24 @@ impl RunnerConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn max_dimension_auto_turns_on_the_router_at_its_cap() {
+        let mut options = GenerationOptions::default();
+        "auto".parse::<MaxDimension>().unwrap().apply(&mut options);
+        assert!(options.route && options.max_dimension == crate::router::CAP);
+        options.validate().unwrap();
+        assert!(!options.at(768).route && options.at(768).max_dimension == 768);
+        "1024".parse::<MaxDimension>().unwrap().apply(&mut options);
+        assert!(!options.route && options.max_dimension == 1024);
+        assert!("big".parse::<MaxDimension>().is_err());
+        // The router's trees were trained from the 1536 cap only.
+        let other = GenerationOptions {
+            max_dimension: 1280,
+            route: true,
+            ..GenerationOptions::default()
+        };
+        assert!(other.validate().is_err());
+    }
     #[test]
     fn token_budget_is_exact_and_checked() {
         let o = GenerationOptions::default();
