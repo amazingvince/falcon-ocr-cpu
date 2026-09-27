@@ -61,8 +61,12 @@ Checks:
   234 pages (before a game started on the host and slowed prefill 18% and
   decode per token 40%) the measured saving was 26.4% against 24.7% simulated
   from the older fixed runs; routing adds about 50 ms to a routed page
-  (decoding once, two first resizes, the statistics). A quiet-host timing
-  belongs to Phase 3.
+  (decoding once, two first resizes, the statistics).
+- **Quiet-host timing** (Phase 3): the 389 pages in four chunks, the two
+  settings alternated per chunk (1536, auto, auto, 1536, ...), same binary:
+  1536 58.0 min, auto 43.5 min, **25.1% of the CPU time saved** (chunks
+  16–32%); routed pages 38.5% faster (3.4 s each); tokens identical to the
+  earlier runs in both settings on all 389 pages.
 
 ## Phase 3: the held-out English gate (failed)
 

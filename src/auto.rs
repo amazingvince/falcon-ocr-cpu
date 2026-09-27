@@ -11,7 +11,7 @@ use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{DecodeThreads, ExpMode, HeadMode, ModelConfig, RunnerConfig, Speculation, Tuning},
+    config::{DecodeThreads, Drafter, ExpMode, HeadMode, ModelConfig, RunnerConfig, Speculation, Tuning},
     kernels::PrefillPlan,
     model::{Model, WeightsSource},
     quant::{Kv, Profile, Weights},
@@ -37,6 +37,36 @@ pub enum Mode {
 
 /// The GPTQ overlay `Mode::Fast` reads from the model directory by default.
 pub const DEFAULT_OVERLAY: &str = "w8-gptq.safetensors";
+/// The published draft head, used automatically when it sits next to the
+/// model files ([`with_default_draft_head`]).
+pub const DRAFT_HEAD_FILE: &str = "falcon-ocr-v1.5-draft-head.safetensors";
+
+/// The folder that holds the model files of `request`: the model file's
+/// folder, else the model directory.
+pub fn model_files_dir(request: &ModelRequest<'_>) -> PathBuf {
+    request
+        .model_file
+        .and_then(Path::parent)
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(request.model_dir)
+        .to_path_buf()
+}
+
+/// `config` drafting with the published draft head when `dir` holds
+/// [`DRAFT_HEAD_FILE`], speculation is on and the caller chose no drafter
+/// (`explicit`: `--drafter` or `--draft-head` was given). Drafts never
+/// change tokens; the head only makes decoding faster.
+pub fn with_default_draft_head(config: RunnerConfig, dir: &Path, explicit: bool) -> RunnerConfig {
+    let path = dir.join(DRAFT_HEAD_FILE);
+    if explicit || config.speculation.is_none() || config.draft_head.is_some() || !path.is_file() {
+        return config;
+    }
+    RunnerConfig {
+        drafter: Drafter::Head,
+        draft_head: Some(path),
+        ..config
+    }
+}
 
 impl Mode {
     pub fn label(self) -> &'static str {
@@ -498,6 +528,11 @@ pub struct Resolved {
     pub exp: ExpMode,
     pub head: HeadMode,
     pub speculation: Option<Speculation>,
+    /// The draft source, and the draft head file when it drafts.
+    #[serde(default)]
+    pub drafter: Drafter,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub draft_head: Option<PathBuf>,
     pub document_drafts: bool,
     pub repetition_stop: bool,
     pub threads: ThreadPlan,
@@ -538,6 +573,8 @@ impl Resolved {
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,
+            drafter: config.drafter,
+            draft_head: config.draft_head.clone().filter(|_| config.drafter != Drafter::Ngram),
             document_drafts: config.document_drafts,
             repetition_stop: config.repetition_stop,
             threads: ThreadPlan {
@@ -608,7 +645,16 @@ impl std::fmt::Display for Resolved {
             ),
         };
         let speculation = match self.speculation {
-            Some(s) => format!("{} drafts (min match {})", s.max_draft, s.min_match),
+            Some(s) => format!(
+                "{} drafts (min match {}){}",
+                s.max_draft,
+                s.min_match,
+                match (&self.draft_head, self.drafter) {
+                    (Some(path), Drafter::Head) => format!(", draft head {}", path.display()),
+                    (Some(path), _) => format!(", n-gram then draft head {}", path.display()),
+                    (None, _) => ", n-gram".to_owned(),
+                }
+            ),
             None => "off".to_owned(),
         };
         let weights = match &self.weights {
@@ -669,6 +715,12 @@ pub struct Files {
     pub checkpoint: FileStatus,
     pub overlay: FileStatus,
     pub tokenizer: FileStatus,
+    #[serde(default = "missing_draft_head")]
+    pub draft_head: FileStatus,
+}
+
+fn missing_draft_head() -> FileStatus {
+    FileStatus::of(PathBuf::from(DRAFT_HEAD_FILE))
 }
 
 /// `doctor --load`: the model was loaded and its screened head built.
@@ -722,6 +774,7 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
                 .map_or_else(|| dir.join(DEFAULT_OVERLAY), Path::to_path_buf),
         ),
         tokenizer: FileStatus::of(dir.join("tokenizer.json")),
+        draft_head: FileStatus::of(model_files_dir(request).join(DRAFT_HEAD_FILE)),
     };
     let (mut plan, mut error, mut load_report) = (None, None, None);
     match resolve_weights(request) {
@@ -796,6 +849,7 @@ impl std::fmt::Display for Doctor {
             ("checkpoint", Some(&self.files.checkpoint)),
             ("overlay", Some(&self.files.overlay)),
             ("tokenizer", Some(&self.files.tokenizer)),
+            ("draft head", Some(&self.files.draft_head)),
         ];
         for (name, file) in files.into_iter().filter_map(|(n, f)| f.map(|f| (n, f))) {
             let size = match file.bytes {
@@ -859,6 +913,40 @@ mod tests {
         assert_eq!(Mode::of_profile(Profile::W8_BODY), None);
         assert_eq!(Mode::Exact.packed_file_name(), None);
         assert!(Mode::Fast.packed_file_name().unwrap().contains("fast"));
+    }
+
+    #[test]
+    fn the_published_draft_head_drafts_unless_a_drafter_was_chosen() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = RunnerConfig::default();
+        assert!(base.speculation.is_some() && base.draft_head.is_none());
+        // No head file: nothing changes.
+        let config = with_default_draft_head(base.clone(), dir.path(), false);
+        assert_eq!((config.drafter, config.draft_head), (base.drafter, None));
+        std::fs::write(dir.path().join(DRAFT_HEAD_FILE), b"stub").unwrap();
+        let config = with_default_draft_head(base.clone(), dir.path(), false);
+        assert_eq!(config.drafter, Drafter::Head);
+        assert_eq!(config.draft_head, Some(dir.path().join(DRAFT_HEAD_FILE)));
+        // An explicit --drafter/--draft-head, or no speculation, keeps the choice.
+        assert_eq!(with_default_draft_head(base.clone(), dir.path(), true).draft_head, None);
+        let off = RunnerConfig {
+            speculation: None,
+            ..base
+        };
+        assert_eq!(with_default_draft_head(off, dir.path(), false).draft_head, None);
+        // The folder of --model-file, else --model.
+        let file = dir.path().join("falcon-ocr-v1.5-fast.safetensors");
+        let request = ModelRequest {
+            model_dir: Path::new("elsewhere"),
+            model_file: Some(&file),
+            ..ModelRequest::default()
+        };
+        assert_eq!(model_files_dir(&request), dir.path());
+        let request = ModelRequest {
+            model_dir: dir.path(),
+            ..ModelRequest::default()
+        };
+        assert_eq!(model_files_dir(&request), dir.path());
     }
 
     #[test]

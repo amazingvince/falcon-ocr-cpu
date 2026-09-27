@@ -2,7 +2,7 @@ use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
     CacheLayout, GenerationOptions, MaxDimension, Mode, Runner, RunnerConfig, WeightLayout,
-    auto::{ModelRequest, load_model, resolve_weights},
+    auto::{ModelRequest, load_model, model_files_dir, resolve_weights, with_default_draft_head},
     cli::{RunnerArgs, print_doctor},
     model::WeightsSource,
     trace::TensorTrace,
@@ -155,6 +155,10 @@ fn main() -> Result<()> {
         weight_layout: cli.weight_layout,
         ..cli.runner.apply(base)?
     };
+    // The published draft head next to the model files drafts unless a
+    // drafter was chosen; traces run without speculation, so never use it.
+    let explicit = cli.runner.drafter.is_some() || cli.runner.draft_head.is_some();
+    let config = with_default_draft_head(config, &model_files_dir(&request), explicit);
     if let Command::Doctor { text, load, probe } = &cli.command {
         return print_doctor(&request, &config, *text, *load, *probe);
     }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""CPU A/B of speculative drafters with the main binary (fast mode, packed file).
+"""CPU A/B of speculative drafters with the main binary (`--mode`, default fast;
+the packed file of the mode, the checkpoint for exact).
 
 Arms: no speculation, the n-gram drafter, the trained draft head, and both.
 Each (arm, round) is one `falcon-ocr run` over all pages; rounds alternate
@@ -21,7 +22,6 @@ import time
 from pathlib import Path
 
 BINARY = str(Path("target/release/falcon-ocr.exe").resolve())
-MODEL = "artifacts/packed/falcon-ocr-v1.5-fast.safetensors"
 SPEC = re.compile(r"speculation: (\d+) tokens; (\d+) single steps \(([\d.]+) ms\), (\d+) verify steps \(([\d.]+) ms\),\s+"
                   r"drafted (\d+), accepted (\d+)")
 
@@ -35,6 +35,7 @@ def main() -> None:
     ap.add_argument("--decode-threads", default="12")
     ap.add_argument("--confidence", default="0.45")
     ap.add_argument("--max-new-tokens", default="4096")
+    ap.add_argument("--mode", choices=["exact", "near-exact", "fast"], default="fast")
     ap.add_argument("--arm", action="append", default=[],
                     help="name=extra flags (replaces the default arms; `nospec` is always added); "
                          "a first flag `@<exe>` runs that binary instead of target/release")
@@ -63,7 +64,8 @@ def main() -> None:
             binary = BINARY
             if flags and flags[0].startswith("@"):
                 binary, flags = str(Path(flags[0][1:]).resolve()), flags[1:]
-            base = [binary, "--mode", "fast", "--model-file", MODEL, *threads,
+            model = [] if a.mode == "exact" else ["--model-file", f"artifacts/packed/falcon-ocr-v1.5-{a.mode}.safetensors"]
+            base = [binary, "--mode", a.mode, *model, *threads,
                     "--document-drafts=false", "--tune", "phases=1"]
             cmd = base + flags + ["run", *pages, "--max-new-tokens", a.max_new_tokens]
             out, err = a.out / f"{name}-r{r}.jsonl", a.out / f"{name}-r{r}.stderr"

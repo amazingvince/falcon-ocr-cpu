@@ -98,6 +98,22 @@ overall and +0.02 pt on ordinary pages. Future gates on OmniDocBench pages
 use figure-masked pages from the start
 (`reference/english-gate-v1-masked-results.json`).
 
+## Fast against near-exact
+
+Near-exact (the default) produced exactly FP32's tokens on all 118 English
+gate pages (110,516 tokens, figure-masked, default settings), so on printed
+English fast mode's cost is its difference from FP32: 93 of the 118 pages
+token-identical; half of the other 25 differ by at most 6 characters (a
+fifth only in whitespace, quotes or markdown); 112 pages within 0.5 pt of
+the near-exact CER against the ground truth, 3 worse and 3 better (2 each by
+more than 2 pt, tiny-print pages where one early token changes the rest);
+−0.11 pt overall; no loops. For about 1.7× the speed that is no measurable
+loss on printed English. The cost shows on hard pages: on the held-out set's
+handwriting and degraded scans (all Chinese, which the model reads poorly
+even in FP32) the 8-bit weights tipped uncertain pages into loops or drift.
+Use near-exact for handwriting, degraded scans and anything the model finds
+hard to read.
+
 ## Resolution routing
 
 `--max-dimension auto` lets the runner choose each page's maximum dimension:
@@ -117,9 +133,9 @@ On the router development set (389 English OmniDocBench pages with ground
 truth, none in any corpus or the English gate; fast mode with the draft head)
 it routed 73 pages to 768 and 185 to 1024, reran 2, and changed micro CER
 against the ground truth from 20.89% to 20.20% (−0.69 pt; 95% bootstrap
-[−1.35, −0.18]) while saving about a quarter of the CPU time (24.7% from the
-fixed-resolution runs; 26.4% measured over the part of the end-to-end run
-before other load appeared on the host). Lower resolution often reads better
+[−1.35, −0.18]) while saving a quarter of the CPU time (25.1% measured on a
+quiet host, 58.0 → 43.5 minutes, the two settings alternated in four chunks;
+routed pages 38.5% faster). Lower resolution often reads better
 (tables, textbooks, multi-column pages); dense small print (magazines,
 newspapers) stays at 1536. The router was tuned on this set.
 
