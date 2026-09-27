@@ -40,6 +40,21 @@ speculation), a 16k draft vocabulary (24k: same acceptance, larger head). A
 head trained on next-token prediction only is overconfident on later chain
 steps (23% acceptance); the seven-step phase is essential.
 
+### Other modes (2026-09-26)
+
+The same 16 held-out pages with the published head (`cpu_ab.py --mode`;
+tokens identical in every arm):
+
+| Mode | none | n-gram | head | decode vs none |
+|---|---:|---:|---:|---:|
+| near-exact (2 rounds) | 334.8 s | 277.4 s | **208.1 s** | 1.87x (acceptance 77%) |
+| exact (1 round) | 612.6 s | 531.0 s | **392.5 s** | 1.67x |
+
+The head pays more in the slower modes: a verified draft saves a whole
+16-bit or FP32 decode step, while drafting costs the same. The runner
+therefore uses the published head in every mode when it sits next to the
+model files.
+
 ## Pipeline
 
 | Step | File | Notes |

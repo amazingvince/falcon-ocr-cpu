@@ -50,7 +50,7 @@ attention tiles run QK at about 75% and PV at about 90% of FP32 peak.
 | BF16 scales in the Q8/Q16 caches | decode −2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
 | Portable polynomial exp in fast mode's decode attention (8-bit caches under `ExpMode::Fast`; `--tune decode-exp`) | verification attention −3/−7/−9/−10% at 2/3/4/5 rows, single rows unchanged; page totals with the draft head −2.1% (calibration) and −0.6% (held-out); flips vs FP32 92 → 94 of 78,282 |
-| Trained draft head (`--draft-head`, stage-2 head, INT8 drafter KV; 16 English held-out pages, fast mode) | 184.5 → 139.9 s page total, decode 1.47× (n-gram drafts: 172.7 s, 1.09×); stage-3 head (48k pages), a later run: 181.2 → 135.7 s, decode 1.50×; tokens identical |
+| Trained draft head (`--draft-head`, stage-2 head, INT8 drafter KV; 16 English held-out pages, fast mode) | 184.5 → 139.9 s page total, decode 1.47× (n-gram drafts: 172.7 s, 1.09×); stage-3 head (48k pages), a later run: 181.2 → 135.7 s, decode 1.50×; tokens identical. The published head in the other modes (same pages): near-exact 277.4 → 208.1 s against n-gram drafts (decode 1.87× vs none), exact 531.0 → 392.5 s (1.67×); used automatically when it sits next to the model files |
 
 ## Rejected or unadopted
 
@@ -66,8 +66,8 @@ is available (`--batch-size`; +14% pages per hour on short pages) but prefill
 dominates short pages. `--max-dimension 1280` is about 20% faster and was
 accuracy-neutral on 64 calibration pages but is not validated on held-out
 pages; the default stays 1536. The per-page resolution router
-(`--max-dimension auto`, [MODES.md](MODES.md#resolution-routing)) saves about
-a quarter of the CPU time; it improved CER on its development set but failed
+(`--max-dimension auto`, [MODES.md](MODES.md#resolution-routing)) saves 25% of
+the CPU time on its development set (quiet host); it improved CER on its development set but failed
 the held-out English gate (+0.29 pt), so it stays opt-in.
 
 Draft head (research/draft-head, 16 calibration pages): other confidence
