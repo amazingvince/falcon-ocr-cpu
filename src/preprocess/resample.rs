@@ -64,9 +64,10 @@ pub(super) fn resize_nearest(input: &RgbImage, width: u32, height: u32) -> Resul
 /// Pillow leaves an output pixel whose index falls outside the source at zero.
 /// That cannot happen here: the sum never decreases and after `k < output`
 /// steps is within about `output * input * 2^-53` of `(k + 1/2) * input / output`,
-/// which is at most `input - input / (2 * output)`; for sizes below 2^23 (the
-/// `f32` box is then exact) every index is in range. The last index is still
-/// checked, so any other case fails instead of deviating silently.
+/// which is at most `input - input / (2 * output)`; for inputs below 2^24
+/// (where the `f32` box is exact) and outputs below about 2^26 every index is
+/// in range. The last index is still checked, so any other case fails instead
+/// of deviating silently.
 pub(super) fn nearest_positions(input: u32, output: u32) -> Result<Vec<u32>> {
     let step = input as f32 as f64 / output as f64;
     let mut position = step * 0.5;
