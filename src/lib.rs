@@ -29,7 +29,7 @@ pub use config::{
     ModelConfig, PrefillBf16, RunnerConfig, Speculation, Tuning, WeightLayout,
 };
 pub use model::{Model, WeightsSource};
-pub use runner::{FinishReason, OcrResult, Runner, Timings};
+pub use runner::{FinishReason, OcrResult, Pipeline, Runner, Timings};
 pub use tune::TuneReport;
 
 pub mod quant;

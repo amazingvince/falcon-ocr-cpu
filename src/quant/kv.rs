@@ -1360,6 +1360,8 @@ unsafe fn pair_rows_native_fast<R: RecordStore, T: RecordStore>(
 }
 
 #[cfg(test)]
+mod record_bits;
+#[cfg(test)]
 mod tests {
     use super::*;
 

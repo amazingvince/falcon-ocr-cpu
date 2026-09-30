@@ -13,10 +13,12 @@ use std::{path::Path, sync::Arc, time::Instant};
 
 mod cohort;
 mod generate;
+mod pipeline;
 mod speculate;
 mod stream;
 
 use generate::{DecodeLoop, Generation, Page};
+pub use pipeline::Pipeline;
 pub use std::ops::ControlFlow;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -411,7 +413,13 @@ impl Runner {
     /// and (when that is below the cap) the capped page for the safety net.
     fn plan_route(&self, first_at: &dyn Fn(u32) -> Result<RgbImage>) -> Result<(RgbImage, Route, Option<RgbImage>)> {
         let capped = first_at(router::CAP)?;
-        let route = self.pool.install(|| router::route(&capped));
+        // A caller already on a pool routes there: the page reader of a
+        // pipelined run on its own one-thread pool (`read_pages`), away from
+        // the decode on the runner's pool. The route is the same on any pool.
+        let route = match rayon::current_thread_index() {
+            Some(_) => router::route(&capped),
+            None => self.pool.install(|| router::route(&capped)),
+        };
         if route.max_dimension == router::CAP {
             return Ok((capped, route, None));
         }
@@ -504,7 +512,10 @@ impl Runner {
 
     /// The first half of `run_prepared`: the session, the forward pass over
     /// the prompt and image, the first token and the sealed cache, on the
-    /// calling thread's pool. `decode_prefilled` is the second half.
+    /// calling thread's pool. `decode_prefilled` is the second half; the
+    /// page pipeline (`pipeline.rs`) runs the halves of consecutive pages on
+    /// different pools, which changes no arithmetic (every prefill kernel
+    /// computes each output independently of the pool's thread count).
     fn prefill(
         &self,
         mut prepared: PreparedImage,

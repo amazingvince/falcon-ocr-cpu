@@ -2,7 +2,7 @@
 //! Asset-dependent tests are opt-in: run with --include-ignored --test-threads=1.
 use anyhow::Result;
 use falcon_ocr::{
-    Backend, GenerationOptions, Model, OcrResult, Runner, RunnerConfig,
+    Backend, GenerationOptions, Model, OcrResult, Pipeline, Runner, RunnerConfig,
     preprocess::{prepare_file, prepare_file_timed},
     runner::ControlFlow,
     trace::Trace,
@@ -400,6 +400,22 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         error_contains(
             runner.recognize_files_streaming_with_trace(one, &invalid, &mut NoModelWork, never),
             expected,
+        );
+        error_contains(
+            runner.recognize_files_pipelined(one, &invalid, &Pipeline::default(), never),
+            expected,
+        );
+    }
+    // The second pool has at least one thread and at most the runner's one.
+    let one = std::slice::from_ref(&cases.valid);
+    for prefill_threads in [0, 2] {
+        let never = |_: usize, _: Result<OcrResult>| -> ControlFlow<()> { panic!("an invalid pipeline ran a page") };
+        let pipeline = Pipeline {
+            prefill_threads: Some(prefill_threads),
+        };
+        error_contains(
+            runner.recognize_files_pipelined(one, &options, &pipeline, never),
+            "the page pipeline's prefill threads must be 1..=1, the runner's threads",
         );
     }
     for (width, height) in [(0, 0), (0, 8), (8, 0)] {

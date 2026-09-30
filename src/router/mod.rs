@@ -576,6 +576,25 @@ mod tests {
     }
 
     #[test]
+    fn a_route_does_not_depend_on_the_pool() {
+        // The page reader of a pipelined run routes on a one-thread pool of
+        // its own, other runs on the runner's pool.
+        let page = synthetic(1100, 1536, 1);
+        let on = |threads: usize| {
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+            pool.install(|| (statistics(&page), route(&page)))
+        };
+        let (want_statistics, want) = on(1);
+        for threads in [2, 3, 7] {
+            let (statistics, mut got) = on(threads);
+            let bits = |x: &Statistics| x.map(f64::to_bits);
+            assert_eq!(bits(&statistics), bits(&want_statistics), "{threads} threads");
+            got.statistics_ms = want.statistics_ms;
+            assert_eq!(got, want, "{threads} threads");
+        }
+    }
+
+    #[test]
     fn choice_takes_the_smallest_routable_size_above_the_line_floor() {
         // 16-px lines on a 1536-px page: 8 px at 768, 10.7 px at 1024.
         assert_eq!(choose(&[0.0, 1.0], 16.0, 1536.0), 768);

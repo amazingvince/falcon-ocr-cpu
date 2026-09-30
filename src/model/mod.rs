@@ -19,6 +19,8 @@ mod cache;
 mod fused;
 mod load;
 mod packed;
+#[cfg(test)]
+mod pool_tests;
 mod profile;
 mod rope;
 

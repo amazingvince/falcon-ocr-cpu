@@ -2,7 +2,9 @@
 //! entry point: a page with wide margins reports the crop that preprocessing
 //! computes and runs on fewer image tokens than the whole page. Needs the pinned
 //! checkpoint and tokenizer in `artifacts/model`: run with --ignored.
-use falcon_ocr::{GenerationOptions, Model, Runner, RunnerConfig, preprocess::margin_crop};
+use falcon_ocr::{
+    GenerationOptions, Model, OcrResult, Pipeline, Runner, RunnerConfig, preprocess::margin_crop, runner::ControlFlow,
+};
 use image::{Rgb, RgbImage};
 use std::sync::Arc;
 
@@ -15,6 +17,17 @@ fn page() -> RgbImage {
     })
 }
 
+/// A streaming callback that keeps every page's result under `entry`.
+fn keep<'a>(
+    entry: &'static str,
+    results: &'a mut Vec<(&'static str, OcrResult)>,
+) -> impl FnMut(usize, anyhow::Result<OcrResult>) -> ControlFlow<()> + 'a {
+    move |_, result| {
+        results.push((entry, result.unwrap()));
+        ControlFlow::Continue(())
+    }
+}
+
 #[test]
 #[ignore = "requires the pinned checkpoint and tokenizer in artifacts/model"]
 fn pages_with_margins_report_their_crop_on_every_entry_point() {
@@ -24,7 +37,16 @@ fn pages_with_margins_report_their_crop_on_every_entry_point() {
         batch_size: 2,
         ..RunnerConfig::reference()
     };
-    let runner = Runner::new(model, "artifacts/model", config).unwrap();
+    let runner = Runner::new(model.clone(), "artifacts/model", config.clone()).unwrap();
+    let single = Runner::new(
+        model,
+        "artifacts/model",
+        RunnerConfig {
+            batch_size: 1,
+            ..config
+        },
+    )
+    .unwrap();
     let page = page();
     let expected = margin_crop(&page, 24);
     assert!(expected.is_some(), "the test page must have margins to crop");
@@ -59,6 +81,25 @@ fn pages_with_margins_report_their_crop_on_every_entry_point() {
     ] {
         results.extend(batch.unwrap().into_iter().map(|result| (entry, result)));
     }
+    // The streaming entry points: cohorts of two with the third page alone,
+    // and the pipeline one page at a time with a second pool that prefills
+    // the next page.
+    let paths = [&path, &path, &path];
+    let overlap = Pipeline {
+        prefill_threads: Some(1),
+    };
+    runner
+        .recognize_files_streaming(&paths, &cropped, keep("recognize_files_streaming", &mut results))
+        .unwrap();
+    single
+        .recognize_files_pipelined(
+            &paths,
+            &cropped,
+            &overlap,
+            keep("recognize_files_pipelined", &mut results),
+        )
+        .unwrap();
+    assert_eq!(results.len(), 3 + 2 + 2 + 3 * 2);
     for (entry, result) in &results {
         assert_eq!(result.crop, expected, "{entry}");
         assert!(
