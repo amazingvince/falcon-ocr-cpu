@@ -52,7 +52,7 @@ use rayon::{ThreadPool, ThreadPoolBuilder};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    OcrResult, Prefilled, Runner,
+    Decoder, OcrResult, Prefilled, Runner,
     cohort::{BatchInput, Planned, PreparedPage},
     stream::Emitter,
 };
@@ -105,8 +105,9 @@ impl Runner {
     /// prefill overlaps the current page's decode on a second pool (see the
     /// module notes). Results, tokens and errors are those of
     /// `recognize_files_streaming`; `Timings::total_ms` of a page is the sum
-    /// of its stages. Pages decode one at a time, whatever the batch size.
-    /// Never traced.
+    /// of its stages. With a batch size above 1 the rows refill as pages
+    /// finish (`batch/`) and the next page prefills on the second pool
+    /// while they decode. Never traced.
     pub fn recognize_files_pipelined<P: AsRef<Path> + Sync>(
         &self,
         paths: &[P],
@@ -123,6 +124,10 @@ impl Runner {
             "the page pipeline's prefill threads must be 1..={threads}, the runner's threads"
         );
         let mut emit = Emitter::new(&mut on_page);
+        if self.config.batch_size > 1 {
+            self.stream_rows_pipelined(paths, options, pipeline, &mut emit);
+            return Ok(());
+        }
         // Each call is one document for cross-page drafts.
         if let Some(mut history) = self.document_history() {
             history.clear();
@@ -252,8 +257,17 @@ impl Runner {
                 image_decode_ms,
                 preprocessing_ms,
             } = page.input;
-            let prefilled =
-                pool.install(|| self.prefill(prepared, tokens, &page_options, preprocessing_ms, &mut NoTrace, &[]))?;
+            let prefilled = pool.install(|| {
+                self.prefill(
+                    prepared,
+                    tokens,
+                    &page_options,
+                    preprocessing_ms,
+                    &mut NoTrace,
+                    &[],
+                    Decoder::Page,
+                )
+            })?;
             Ok(Staged {
                 prefilled,
                 route: page.route,

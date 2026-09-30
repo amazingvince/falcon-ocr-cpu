@@ -94,18 +94,28 @@ impl Runner {
     /// are finished, in input order. A page that fails (an unreadable or
     /// corrupt file, a context budget conflict, a runtime error) hands over
     /// its error the same way; the other pages still run. `on_page` returning
-    /// `ControlFlow::Break` stops the run: no page starts after it, and no
-    /// further result reaches `on_page` (the rest of a cohort that ran with
-    /// the page is dropped). The returned error is the run's own (invalid
-    /// options). Pages run as `recognize_files` runs them, one at a time or
-    /// in fixed cohorts of the batch size, with the same tokens.
+    /// `ControlFlow::Break` stops the run: no page starts after it, pages
+    /// decoding beside it in other rows stop unfinished, a prefill already
+    /// running on the pipeline's second pool completes first, and no further
+    /// result reaches `on_page`. The returned error is the run's own (invalid
+    /// options). With a batch size above 1, a page that finishes frees its
+    /// row for the next page at once (continuous batching, `batch/`), each
+    /// page keeps its own fitted output budget, as it would alone, and its
+    /// `Timings` are the sum of its own stages (`Timings::total_ms`). Tokens
+    /// are those of `recognize_files`, except that its fixed cohorts decode a
+    /// batch to the smallest fitted budget in it.
     pub fn recognize_files_streaming<P: AsRef<Path>>(
         &self,
         paths: &[P],
         options: &GenerationOptions,
-        on_page: impl FnMut(usize, Result<OcrResult>) -> ControlFlow<()>,
+        mut on_page: impl FnMut(usize, Result<OcrResult>) -> ControlFlow<()>,
     ) -> Result<()> {
-        self.recognize_files_streaming_with_trace(paths, options, &mut NoTrace, on_page)
+        if self.config.batch_size == 1 {
+            return self.recognize_files_streaming_with_trace(paths, options, &mut NoTrace, on_page);
+        }
+        options.validate()?;
+        self.stream_rows(paths, options, &mut Emitter::new(&mut on_page));
+        Ok(())
     }
 
     /// [`Runner::recognize_files_streaming`] with a trace, in fixed cohorts

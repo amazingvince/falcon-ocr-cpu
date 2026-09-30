@@ -11,6 +11,7 @@ use image::RgbImage;
 use serde::{Deserialize, Serialize};
 use std::{path::Path, sync::Arc, time::Instant};
 
+mod batch;
 mod cohort;
 mod generate;
 mod pipeline;
@@ -45,7 +46,20 @@ pub struct Timings {
     pub transformer_prefill_ms: Option<f64>,
     pub prefill_ms: f64,
     pub decode_ms: f64,
+    /// Wall time of a page run on its own, from the start of its
+    /// preparation. A page of a fixed cohort (`recognize_files` and
+    /// `recognize_batch` with a batch size above 1, traced runs) counts from
+    /// the start of its cohort. A page of continuous batching
+    /// (`recognize_files_streaming` with a batch size above 1, `run
+    /// --batch-size N`) or of the page pipeline (`recognize_files_pipelined`)
+    /// reports the sum of its own stages, `time_to_first_token_ms +
+    /// decode_ms`, where a batched page's `decode_ms` runs from its first
+    /// joint step to its last; the stages overlap other pages', so these
+    /// totals add up to more than the run took.
     pub total_ms: f64,
+    /// Time to the first token, counted as `total_ms` is: file decoding,
+    /// preprocessing and prefill for a continuously batched or pipelined
+    /// page (time waiting for a row or a pool is not counted).
     pub time_to_first_token_ms: f64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -506,7 +520,7 @@ impl Runner {
         trace: &mut dyn Trace,
         teacher_tokens: &[u32],
     ) -> Result<OcrResult> {
-        let prefilled = self.prefill(prepared, tokens, options, prep_ms, trace, teacher_tokens)?;
+        let prefilled = self.prefill(prepared, tokens, options, prep_ms, trace, teacher_tokens, Decoder::Page)?;
         self.decode_prefilled(prefilled, trace, teacher_tokens)
     }
 
@@ -516,6 +530,8 @@ impl Runner {
     /// page pipeline (`pipeline.rs`) runs the halves of consecutive pages on
     /// different pools, which changes no arithmetic (every prefill kernel
     /// computes each output independently of the pool's thread count).
+    /// Continuous batching (`batch/rows.rs`) prefills its rows here too.
+    #[allow(clippy::too_many_arguments)] // run_prepared's arguments and the decoder
     fn prefill(
         &self,
         mut prepared: PreparedImage,
@@ -524,6 +540,7 @@ impl Runner {
         prep_ms: f64,
         trace: &mut dyn Trace,
         teacher_tokens: &[u32],
+        decoder: Decoder,
     ) -> Result<Prefilled> {
         if trace.enabled() {
             require_uncropped(options, "a tensor trace")?;
@@ -559,6 +576,7 @@ impl Runner {
         )?;
         if let Some(head) = &self.draft_head
             && self.speculation.is_some()
+            && decoder == Decoder::Page
             && teacher_tokens.is_empty()
             && !trace.enabled()
         {
@@ -591,9 +609,16 @@ impl Runner {
         {
             self.seal_session(&mut session, trace)?;
         }
+        if decoder == Decoder::Row {
+            // A row decodes with the joint step's workspace.
+            session.release_workspace();
+            hidden = Vec::new();
+        }
         if self.model.profile().memory_hygiene() {
-            session.prepare_small_decode(c);
-            hidden = Vec::with_capacity(c.dim);
+            if decoder == Decoder::Page {
+                session.prepare_small_decode(c);
+                hidden = Vec::with_capacity(c.dim);
+            }
             prepared.patches = Vec::new();
             prepared.positions_hw = Vec::new();
             (pos_t, pos_hw) = (Vec::new(), Vec::new());
@@ -784,7 +809,18 @@ impl Runner {
     }
 }
 
-/// A page after `Runner::prefill`, ready for `Runner::decode_prefilled`.
+/// What a page is prefilled for (`Runner::prefill`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Decoder {
+    /// Its own decode (`Runner::decode_prefilled`), drafting when the runner
+    /// speculates.
+    Page,
+    /// A row of continuous batching: the joint step's workspace, no drafts.
+    Row,
+}
+
+/// A page after `Runner::prefill`, ready for `Runner::decode_prefilled` (or
+/// for its row).
 struct Prefilled {
     session: Session,
     hidden: Vec<f32>,

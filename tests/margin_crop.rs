@@ -81,15 +81,18 @@ fn pages_with_margins_report_their_crop_on_every_entry_point() {
     ] {
         results.extend(batch.unwrap().into_iter().map(|result| (entry, result)));
     }
-    // The streaming entry points: cohorts of two with the third page alone,
-    // and the pipeline one page at a time with a second pool that prefills
-    // the next page.
+    // The streaming entry points: rows of two with the third page alone, the
+    // pipeline over those rows, and the pipeline one page at a time with a
+    // second pool that prefills the next page.
     let paths = [&path, &path, &path];
     let overlap = Pipeline {
         prefill_threads: Some(1),
     };
     runner
         .recognize_files_streaming(&paths, &cropped, keep("recognize_files_streaming", &mut results))
+        .unwrap();
+    runner
+        .recognize_files_pipelined(&paths, &cropped, &overlap, keep("pipelined rows", &mut results))
         .unwrap();
     single
         .recognize_files_pipelined(
@@ -99,7 +102,7 @@ fn pages_with_margins_report_their_crop_on_every_entry_point() {
             keep("recognize_files_pipelined", &mut results),
         )
         .unwrap();
-    assert_eq!(results.len(), 3 + 2 + 2 + 3 * 2);
+    assert_eq!(results.len(), 3 + 2 + 2 + 3 * 3);
     for (entry, result) in &results {
         assert_eq!(result.crop, expected, "{entry}");
         assert!(
