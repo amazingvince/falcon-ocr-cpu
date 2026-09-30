@@ -57,6 +57,12 @@ gray.convert("1").save(TARGET / "binary.png")
 palette = rgb.quantize(colors=16)
 palette.save(TARGET / "palette.png", bits=4)
 palette.save(TARGET / "palette-trns.png", bits=4, transparency=0)
+# Pillow resizes modes P and 1 nearest-neighbour with a running sum of source positions; at these
+# sizes and bounds it picks different pixels than the direct (x + 0.5) * scale product in 5 columns
+# and 5 rows (64 -> 48, 48 -> 36 and 44 -> 33, 64 -> 48).
+extra_bounds = {"palette-64x48.png": [(16, 48)], "binary-44x64.png": [(16, 48)]}
+Image.fromarray(pattern(64,48,3)).quantize(colors=16).save(TARGET / "palette-64x48.png", bits=4)
+Image.fromarray(pattern(44,64,1)[...,0]).convert("1").save(TARGET / "binary-44x64.png")
 for color, channels, name in [(0,1,"gray16.png"),(2,3,"rgb16.png"),(4,2,"gray-alpha16.png"),(6,4,"rgba16.png")]:
     png16(name,color,channels)
 for quality in (10,75,100):
@@ -73,7 +79,7 @@ for path in sorted(TARGET.iterdir()):
     image = Image.open(path)
     rgb_array = np.asarray(image.convert("RGB"))
     path.with_suffix(path.suffix + ".rgb").write_bytes(rgb_array.tobytes())
-    for minimum, maximum in [(16,128),(64,128),(16,32)]:
+    for minimum, maximum in [(16,128),(64,128),(16,32)] + extra_bounds.get(path.name, []):
         resized = environment["resize_image_if_necessary"](image,minimum,maximum).convert("RGB")
         final = environment["smart_resize"](np.asarray(resized),16,Image.Resampling.BICUBIC,None)
         normalized = ((final.astype(np.float64)*(1/255)).astype(np.float32)-np.float32(.5))/np.float32(.5)

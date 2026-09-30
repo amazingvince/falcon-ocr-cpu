@@ -180,7 +180,7 @@ impl SourceImage {
             } else if color == 3 || (color == 0 && depth == 1) {
                 let rgb = decoded.to_rgb8();
                 // Pillow always uses nearest for modes P and 1 on this first call.
-                resize_nearest(&rgb, w, h)
+                resize_nearest(&rgb, w, h)?
             } else if matches!(color, 4 | 6) && resize {
                 let rgba = pillow_rgba8(decoded, depth);
                 resize_premultiplied(&rgba, w, h)
@@ -264,14 +264,50 @@ fn pillow_rgba8(decoded: &DynamicImage, depth: u8) -> RgbaImage {
     })
 }
 
-fn resize_nearest(input: &RgbImage, width: u32, height: u32) -> RgbImage {
-    let scale_x = input.width() as f64 / width as f64;
-    let scale_y = input.height() as f64 / height as f64;
-    RgbImage::from_fn(width, height, |x, y| {
-        let x = ((x as f64 + 0.5) * scale_x) as u32;
-        let y = ((y as f64 + 0.5) * scale_y) as u32;
-        *input.get_pixel(x.min(input.width() - 1), y.min(input.height() - 1))
-    })
+/// Pillow's nearest-neighbour resize, which `Image.resize` forces for modes
+/// P and 1: every output pixel copies the source pixel at its row's and
+/// column's [`nearest_positions`], so the result is bitwise Pillow's.
+fn resize_nearest(input: &RgbImage, width: u32, height: u32) -> Result<RgbImage> {
+    let columns = nearest_positions(input.width(), width)?;
+    let rows = nearest_positions(input.height(), height)?;
+    Ok(RgbImage::from_fn(width, height, |x, y| {
+        *input.get_pixel(columns[x as usize], rows[y as usize])
+    }))
+}
+
+/// The source index of each of `output` pixels along one axis of Pillow's
+/// nearest-neighbour resize from `input` pixels (Pillow 12.3.0): `_resize`
+/// (src/_imaging.c) passes `ImagingScaleAffine` (src/libImaging/Geometry.c)
+/// the step `a = (double)(box[2] - box[0]) / xsize`, where the box is a C
+/// `float[4]` (so `input as f32 as f64 / output`), and the offset `box[0] = 0`;
+/// output pixel `k` reads source index `(int)p_k` with `p_0 = a * 0.5` and
+/// `p_{k+1} = p_k + a`. This running f64 sum, in this operation order, is not
+/// the direct product `(k + 0.5) * a`: where that product is an integer the
+/// two can truncate to neighbouring indices (2048 -> 1536 differs in 303 of
+/// 1536 positions). An unchanged size gives the identity, as Pillow's copy does.
+///
+/// Pillow leaves an output pixel whose index falls outside the source at zero.
+/// That cannot happen here: the sum never decreases and after `k < output`
+/// steps is within about `output * input * 2^-53` of `(k + 1/2) * input / output`,
+/// which is at most `input - input / (2 * output)`; for sizes below 2^23 (the
+/// `f32` box is then exact) every index is in range. The last index is still
+/// checked, so any other case fails instead of deviating silently.
+fn nearest_positions(input: u32, output: u32) -> Result<Vec<u32>> {
+    let step = input as f32 as f64 / output as f64;
+    let mut position = step * 0.5;
+    let positions: Vec<u32> = (0..output)
+        .map(|_| {
+            // Pillow's COORD: the position is positive, so this truncates like `(int)`.
+            let index = position as u32;
+            position += step;
+            index
+        })
+        .collect();
+    ensure!(
+        positions.last().is_none_or(|&last| last < input),
+        "nearest-neighbour resize from {input} to {output} pixels reads outside the source"
+    );
+    Ok(positions)
 }
 
 fn resize_premultiplied(input: &RgbaImage, width: u32, height: u32) -> RgbImage {
@@ -720,6 +756,51 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "PNG parity failures: {failures:?}");
+    }
+
+    #[test]
+    fn nearest_positions_match_pillow() {
+        // Pillow 12.3.0 (the pinned processor's) resizing a one-row mode I image
+        // that holds its own column indices, `Image.fromarray(np.arange(n,
+        // dtype=np.int32)[None], "I").resize((m, 1), Image.Resampling.NEAREST)`,
+        // the `ImagingScaleAffine` call that modes P and 1 get: n, m, the number
+        // of positions where the direct product `(k + 0.5) * n / m` (this runner
+        // before 2026-09-28) differs, and the SHA-256 of the positions as
+        // little-endian u32.
+        let cases = "
+            16 12 1 382dc8a9be37675bf3f538be84c3ca7068e57750b44fe9d7bb5f314d114308e4
+            44 33 5 07d5fd49027f17c5bee31f81a3b8878c9f3a72582825ac714c5242a7a7d73b5a
+            5 13 0 ed365afe9d5c66e1174dd65cbadea1340e7fa59bb466be1f506db5273b0ce7d9
+            2048 1536 303 a67bd0ea1108d155e2667355332893e2c1f87182b416e66df149fd687dcdb4cd
+            2480 1085 97 8d62d0033758fddec05c4cf7bce4cd33ea38da5ca34eda113ab8889dd0f35d91
+            4096 3072 405 c1e3342a0447005f975bb6912894b5838d3587c7d24995022c2dd7b293e01a4c
+            3508 1536 0 8c800de18e29891c3b7bd92cc392b09be06c2f0f18e7b377db2b648242acc166
+            1536 1536 0 57c372795f4a7d1f49185aa616ab07e32b7c75f35222d5a0996b9cbcd3f92ff4
+            1085 2480 0 040dad2ae6274dad54a20a6b77bba75d348c054c78da0e848d05d16f2320725d
+            7 1 0 9d9f290527a6be626a8f5985b26e19b237b44872b03631811df4416fc1713178
+            1 7 0 3addfb141cd7c9c4c6543a82191a3707ac29c7a041217782e61d4d91c691aee8";
+        for case in cases.lines().map(str::trim).filter(|line| !line.is_empty()) {
+            let fields: Vec<_> = case.split_whitespace().collect();
+            let [input, output, differs] = [0, 1, 2].map(|i| fields[i].parse::<u32>().unwrap());
+            let positions = nearest_positions(input, output).unwrap();
+            let bytes: Vec<_> = positions.iter().flat_map(|p| p.to_le_bytes()).collect();
+            assert_eq!(sha256(&bytes), fields[3], "{case}");
+            let scale = input as f64 / output as f64;
+            let direct = (0..output).map(|k| (((k as f64 + 0.5) * scale) as u32).min(input - 1));
+            let changed = positions.iter().zip(direct).filter(|&(&p, d)| p != d).count();
+            assert_eq!(changed, differs as usize, "{case}");
+        }
+        assert_eq!(
+            nearest_positions(16, 12).unwrap(),
+            [0, 2, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15]
+        );
+        assert_eq!(
+            nearest_positions(5, 13).unwrap(),
+            [0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4]
+        );
+        // Above 2^24 the f32 box rounds sizes: 2,147,483,777 becomes 2,147,483,904,
+        // and 9,000,000 outputs would read 7 pixels past the source. An error, not a clamp.
+        assert!(nearest_positions(2_147_483_777, 9_000_000).is_err());
     }
 
     #[cfg(feature = "turbojpeg")]
