@@ -498,6 +498,22 @@ impl Runner {
         trace: &mut dyn Trace,
         teacher_tokens: &[u32],
     ) -> Result<OcrResult> {
+        let prefilled = self.prefill(prepared, tokens, options, prep_ms, trace, teacher_tokens)?;
+        self.decode_prefilled(prefilled, trace, teacher_tokens)
+    }
+
+    /// The first half of `run_prepared`: the session, the forward pass over
+    /// the prompt and image, the first token and the sealed cache, on the
+    /// calling thread's pool. `decode_prefilled` is the second half.
+    fn prefill(
+        &self,
+        mut prepared: PreparedImage,
+        tokens: Vec<u32>,
+        options: &GenerationOptions,
+        prep_ms: f64,
+        trace: &mut dyn Trace,
+        teacher_tokens: &[u32],
+    ) -> Result<Prefilled> {
         if trace.enabled() {
             require_uncropped(options, "a tensor trace")?;
         }
@@ -517,7 +533,7 @@ impl Runner {
             ..options.clone()
         };
         let (image_start, image_end) = image_range(&tokens, c)?;
-        let (pos_t, pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
+        let (mut pos_t, mut pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
         let simd = self.config.backend.simd();
         let mut session = Session::new(
             c,
@@ -567,16 +583,45 @@ impl Runner {
         if self.model.profile().memory_hygiene() {
             session.prepare_small_decode(c);
             hidden = Vec::with_capacity(c.dim);
-            drop(prepared.patches);
-            drop(prepared.positions_hw);
-            drop(pos_t);
-            drop(pos_hw);
+            prepared.patches = Vec::new();
+            prepared.positions_hw = Vec::new();
+            (pos_t, pos_hw) = (Vec::new(), Vec::new());
         }
         let prefill_ms = start.elapsed().as_secs_f64() * 1000.;
+        Ok(Prefilled {
+            session,
+            hidden,
+            next_token,
+            max_new_tokens: options.max_new_tokens,
+            budget_clamped,
+            screen,
+            simd,
+            input_tokens: tokens.len(),
+            retained: (prepared, pos_t, pos_hw),
+            started: start,
+            prep_ms,
+            image_projection_ms,
+            transformer_prefill_ms,
+            prefill_ms,
+        })
+    }
+
+    /// The second half of `run_prepared`: decode a prefilled page to its
+    /// result, on the calling thread's pool and the decode team.
+    fn decode_prefilled(&self, page: Prefilled, trace: &mut dyn Trace, teacher_tokens: &[u32]) -> Result<OcrResult> {
+        let Prefilled {
+            mut session,
+            mut hidden,
+            next_token,
+            screen,
+            simd,
+            ..
+        } = page;
         let decode_start = Instant::now();
+        let score = trace.scores_teacher();
         let stops = self.tokenizer.stop_ids();
         let stop_loops = self.repetition_stop && teacher_tokens.is_empty();
-        let mut generation = Generation::new(options.max_new_tokens, stop_loops);
+        let mut generation = Generation::new(page.max_new_tokens, stop_loops);
         let mut team = DecodeTeam::new(self);
         trace.decode_start();
         let speculate = self
@@ -603,24 +648,25 @@ impl Runner {
         drop(team);
         crate::model::report_decode_phases(self.config.tuning.phases);
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
+        let prepared = &page.retained.0;
         self.finish_result(Page {
             tokens: generation.tokens,
             reason: generation.reason,
             width: prepared.width,
             height: prepared.height,
             crop: prepared.crop,
-            input_tokens: tokens.len(),
+            input_tokens: page.input_tokens,
             teacher_forced: !teacher_tokens.is_empty(),
-            budget_clamped,
+            budget_clamped: page.budget_clamped,
             timings: Timings {
                 image_decode_ms: 0.,
-                preprocessing_ms: prep_ms,
-                image_projection_ms: Some(image_projection_ms),
-                transformer_prefill_ms: Some(transformer_prefill_ms),
-                prefill_ms,
+                preprocessing_ms: page.prep_ms,
+                image_projection_ms: Some(page.image_projection_ms),
+                transformer_prefill_ms: Some(page.transformer_prefill_ms),
+                prefill_ms: page.prefill_ms,
                 decode_ms,
-                total_ms: prep_ms + start.elapsed().as_secs_f64() * 1000.,
-                time_to_first_token_ms: prep_ms + prefill_ms,
+                total_ms: page.prep_ms + page.started.elapsed().as_secs_f64() * 1000.,
+                time_to_first_token_ms: page.prep_ms + page.prefill_ms,
             },
         })
     }
@@ -725,6 +771,30 @@ impl Runner {
         };
         self.run_prepared_scoped(prepared, tokens, &options, 0., trace, &teacher_tokens)
     }
+}
+
+/// A page after `Runner::prefill`, ready for `Runner::decode_prefilled`.
+struct Prefilled {
+    session: Session,
+    hidden: Vec<f32>,
+    /// The first generated token (the model's choice, or the teacher's).
+    next_token: u32,
+    /// The output budget after fitting it to the context.
+    max_new_tokens: usize,
+    budget_clamped: bool,
+    screen: bool,
+    simd: crate::kernels::Simd,
+    input_tokens: usize,
+    /// The page's patches and positions: released already under the
+    /// profile's memory hygiene; the reference profile keeps them until the
+    /// page is done.
+    retained: (PreparedImage, Vec<usize>, Vec<[f32; 2]>),
+    /// When the prefill started (`Timings::total_ms` counts from here).
+    started: Instant,
+    prep_ms: f64,
+    image_projection_ms: f64,
+    transformer_prefill_ms: f64,
+    prefill_ms: f64,
 }
 
 /// Runs compared with a reference of the whole page (tensor traces, teacher
