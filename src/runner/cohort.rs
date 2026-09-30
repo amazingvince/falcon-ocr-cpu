@@ -1,11 +1,15 @@
-//! Fixed-cohort batches (`Runner::recognize_batch`, `Runner::recognize_files`):
-//! each chunk of `batch_size` pages is prepared and prefilled one page at a
-//! time, then decodes in joint steps to the chunk's smallest fitted budget.
-//! A chunk of one page takes the single-page path.
+//! Fixed-cohort batches (`Runner::recognize_batch`, `Runner::recognize_files`
+//! and its streaming form with a trace): each chunk of `batch_size` pages is
+//! prepared and prefilled one page at a time, then decodes in joint steps to
+//! the chunk's smallest fitted budget. A chunk of one page takes the
+//! single-page path. Also the page preparation that every multi-page run
+//! shares (`Runner::prepare_path`).
 use super::{
     DecodeTeam, OcrResult, Runner, Timings, argmax,
     generate::{Generation, Page},
-    require_uncropped, select, validate_prepared_bounds,
+    require_uncropped, select,
+    stream::Emitter,
+    validate_prepared_bounds,
 };
 use crate::{
     config::{GenerationOptions, HeadMode},
@@ -14,9 +18,9 @@ use crate::{
     router::Route,
     trace::{NoTrace, PrefixedTrace, Trace},
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use image::RgbImage;
-use std::{path::Path, time::Instant};
+use std::{ops::ControlFlow, path::Path, time::Instant};
 
 impl Runner {
     /// Bounded batches with independent prefill and shared decode projections.
@@ -72,56 +76,187 @@ impl Runner {
     pub fn recognize_files<P: AsRef<Path>>(&self, paths: &[P], options: &GenerationOptions) -> Result<Vec<OcrResult>> {
         self.recognize_files_with_trace(paths, options, &mut NoTrace)
     }
+    /// Every page's result in input order, or the first error: pages run
+    /// one at a time, or in fixed cohorts of the batch size that decode
+    /// jointly. A cohort in which a page cannot be read or prepared stops
+    /// before any model work with the first such error (`preparing <path>:
+    /// ...`), as a cohort that does not fit the context does; otherwise the
+    /// run stops at the first page, in input order, whose run failed, once its
+    /// cohort has finished. [`Runner::recognize_files_streaming_with_trace`]
+    /// runs the same cohorts but hands each page its own result or error and
+    /// runs the rest of a cohort.
     pub fn recognize_files_with_trace<P: AsRef<Path>>(
         &self,
         paths: &[P],
         options: &GenerationOptions,
         trace: &mut dyn Trace,
     ) -> Result<Vec<OcrResult>> {
+        let mut results = Vec::with_capacity(paths.len());
+        let mut failure = None;
+        self.stream_cohorts(paths, options, trace, true, &mut |_, result| match result {
+            Ok(result) => {
+                results.push(result);
+                ControlFlow::Continue(())
+            }
+            Err(error) => {
+                failure = Some(error);
+                ControlFlow::Break(())
+            }
+        })?;
+        failure.map_or(Ok(results), Err)
+    }
+
+    /// Pages in fixed cohorts of the batch size (one at a time for batch
+    /// size 1). With `fail_fast` (`recognize_files`), a cohort in which a page
+    /// cannot be prepared stops before any model work and that error is
+    /// returned as the run's; without it the page's error goes to `on_page`
+    /// and the rest of the cohort runs.
+    pub(super) fn stream_cohorts<P: AsRef<Path>>(
+        &self,
+        paths: &[P],
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+        fail_fast: bool,
+        on_page: &mut dyn FnMut(usize, Result<OcrResult>) -> ControlFlow<()>,
+    ) -> Result<()> {
         options.validate()?;
         // Each call is one document for cross-page drafts.
         if let Some(mut history) = self.document_history() {
             history.clear();
         }
-        let mut results = Vec::with_capacity(paths.len());
+        let mut emit = Emitter::new(on_page);
         for (chunk_index, chunk) in paths.chunks(self.config.batch_size).enumerate() {
-            if chunk.len() == 1 {
-                results.push(self.recognize_file_with_trace(&chunk[0], options, trace)?);
-                continue;
-            }
-            let started = Instant::now();
-            let mut inputs = Vec::with_capacity(chunk.len());
-            let mut routes = Vec::with_capacity(chunk.len());
-            for path in chunk {
-                let prep_start = Instant::now();
-                let (source, image_decode_ms) =
-                    decode_file(path.as_ref()).with_context(|| format!("preparing {}", path.as_ref().display()))?;
-                let first_at = |max| source.first_resize(options.min_dimension, max);
-                let (prepared, route) = self
-                    .prepare_batch_page(&first_at, options)
-                    .with_context(|| format!("preparing {}", path.as_ref().display()))?;
-                routes.push(route);
-                let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-                inputs.push(BatchInput {
-                    prepared,
-                    tokens,
-                    image_decode_ms,
-                    preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000. - image_decode_ms,
-                });
-            }
-            let outputs = self.pool.install(|| {
-                self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
-            })?;
-            for (output, route) in outputs.into_iter().zip(routes) {
-                results.push(self.finish_batch_page(output, route, options, trace)?);
+            let first = chunk_index * self.config.batch_size;
+            let flow = if chunk.len() == 1 {
+                emit.finish(first, self.recognize_file_with_trace(&chunk[0], options, trace))
+            } else {
+                self.stream_chunk(chunk, first, options, trace, fail_fast, &mut emit)?
+            };
+            if flow.is_break() {
+                break;
             }
         }
-        Ok(results)
+        Ok(())
+    }
+
+    /// One cohort of files (`first` is the index of its first page): each
+    /// page is prepared on its own, so a page that fails leaves the cohort
+    /// with its error (or, with `fail_fast`, ends the run with it before any
+    /// model work), and the others decode jointly (alone when one is left, as
+    /// a cohort of one does).
+    fn stream_chunk<P: AsRef<Path>>(
+        &self,
+        chunk: &[P],
+        first: usize,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+        fail_fast: bool,
+        emit: &mut Emitter<'_, Result<OcrResult>>,
+    ) -> Result<ControlFlow<()>> {
+        let started = Instant::now();
+        let mut inputs = Vec::with_capacity(chunk.len());
+        let mut pages = Vec::with_capacity(chunk.len());
+        for (offset, path) in chunk.iter().enumerate() {
+            let path = path.as_ref();
+            match self
+                .prepare_path(path, options)
+                .with_context(|| format!("preparing {}", path.display()))
+            {
+                Ok(page) => {
+                    inputs.push(page.input);
+                    pages.push((first + offset, page.route));
+                }
+                Err(error) if fail_fast => return Err(error),
+                Err(error) => {
+                    if emit.finish(first + offset, Err(error)).is_break() {
+                        return Ok(ControlFlow::Break(()));
+                    }
+                }
+            }
+        }
+        if inputs.len() == 1 {
+            let (index, route) = pages.remove(0);
+            let page = PreparedPage {
+                input: inputs.remove(0),
+                route,
+            };
+            return Ok(emit.finish(index, self.run_page(page, options, trace)));
+        }
+        if inputs.is_empty() {
+            return Ok(ControlFlow::Continue(()));
+        }
+        let outputs = self
+            .pool
+            .install(|| self.run_batch_chunk(inputs, options, started, trace, first));
+        match outputs {
+            Ok(outputs) => {
+                for (output, (index, route)) in outputs.into_iter().zip(pages) {
+                    let result = self.finish_batch_page(output, route, options, trace);
+                    if emit.finish(index, result).is_break() {
+                        return Ok(ControlFlow::Break(()));
+                    }
+                }
+            }
+            // The joint decode failed every page in it.
+            Err(error) => {
+                let message = format!("{error:#}");
+                let mut error = Some(error);
+                for (index, _) in pages {
+                    let error = error.take().unwrap_or_else(|| anyhow!("{message}"));
+                    if emit.finish(index, Err(error)).is_break() {
+                        return Ok(ControlFlow::Break(()));
+                    }
+                }
+            }
+        }
+        Ok(ControlFlow::Continue(()))
+    }
+
+    /// A prepared page on its own, as `recognize_file` runs it (the safety
+    /// net included when routed).
+    pub(super) fn run_page(
+        &self,
+        page: PreparedPage,
+        options: &GenerationOptions,
+        trace: &mut dyn Trace,
+    ) -> Result<OcrResult> {
+        let page_options = page.options(options);
+        let BatchInput {
+            prepared,
+            tokens,
+            image_decode_ms,
+            preprocessing_ms,
+        } = page.input;
+        let mut result = self.run_prepared_scoped(prepared, tokens, &page_options, preprocessing_ms, trace, &[])?;
+        result.timings.image_decode_ms = image_decode_ms;
+        result.timings.total_ms += image_decode_ms;
+        result.timings.time_to_first_token_ms += image_decode_ms;
+        self.finish_batch_page(result, page.route, options, trace)
+    }
+
+    /// Read, decode and prepare the page at `path` at its maximum dimension
+    /// (routed when `options.route`), with its prompt: where a batched or
+    /// pipelined page starts.
+    pub(super) fn prepare_path(&self, path: &Path, options: &GenerationOptions) -> Result<PreparedPage> {
+        let prep_start = Instant::now();
+        let (source, image_decode_ms) = decode_file(path)?;
+        let first_at = |max| source.first_resize(options.min_dimension, max);
+        let (prepared, route) = self.prepare_batch_page(&first_at, options)?;
+        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
+        Ok(PreparedPage {
+            input: BatchInput {
+                prepared,
+                tokens,
+                image_decode_ms,
+                preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000. - image_decode_ms,
+            },
+            route,
+        })
     }
 
     /// A batched page's prepared input at its maximum dimension (routed when
     /// `options.route`), with the route and the capped page for the safety net.
-    fn prepare_batch_page(
+    pub(super) fn prepare_batch_page(
         &self,
         first_at: &dyn Fn(u32) -> Result<RgbImage>,
         options: &GenerationOptions,
@@ -139,7 +274,7 @@ impl Runner {
     }
 
     /// A batched page's result, after the safety net when it was routed.
-    fn finish_batch_page(
+    pub(super) fn finish_batch_page(
         &self,
         output: OcrResult,
         route: Option<Planned>,
@@ -154,7 +289,10 @@ impl Runner {
         Ok(result)
     }
 
-    fn run_batch_chunk(
+    /// Prefill a cohort's pages one after another on the calling thread's
+    /// pool, then decode them in joint steps to the smallest fitted budget;
+    /// results in input order. `request_offset` numbers the pages in traces.
+    pub(super) fn run_batch_chunk(
         &self,
         inputs: Vec<BatchInput>,
         options: &GenerationOptions,
@@ -346,13 +484,31 @@ impl Runner {
 
 /// A routed page's route and, when routed below the cap, the capped page
 /// kept for the safety net.
-type Planned = (Route, Option<RgbImage>);
+pub(super) type Planned = (Route, Option<RgbImage>);
 
-struct BatchInput {
-    prepared: PreparedImage,
-    tokens: Vec<u32>,
-    image_decode_ms: f64,
-    preprocessing_ms: f64,
+/// A prepared page's model input: its patches, its prompt and the time its
+/// preparation took.
+pub(super) struct BatchInput {
+    pub(super) prepared: PreparedImage,
+    pub(super) tokens: Vec<u32>,
+    pub(super) image_decode_ms: f64,
+    pub(super) preprocessing_ms: f64,
+}
+
+/// A page read and prepared for the model (`Runner::prepare_path`): its
+/// input at the maximum dimension it runs at, and its route when routed.
+pub(super) struct PreparedPage {
+    pub(super) input: BatchInput,
+    pub(super) route: Option<Planned>,
+}
+impl PreparedPage {
+    /// `options` at the maximum dimension this page runs at.
+    pub(super) fn options(&self, options: &GenerationOptions) -> GenerationOptions {
+        options.at(self
+            .route
+            .as_ref()
+            .map_or(options.max_dimension, |(route, _)| route.max_dimension))
+    }
 }
 struct BatchState {
     width: usize,

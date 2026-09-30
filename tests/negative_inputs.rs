@@ -2,8 +2,9 @@
 //! Asset-dependent tests are opt-in: run with --include-ignored --test-threads=1.
 use anyhow::Result;
 use falcon_ocr::{
-    Backend, GenerationOptions, Model, Runner, RunnerConfig,
+    Backend, GenerationOptions, Model, OcrResult, Runner, RunnerConfig,
     preprocess::{prepare_file, prepare_file_timed},
+    runner::ControlFlow,
     trace::Trace,
 };
 use image::{ImageFormat, Rgb, RgbImage};
@@ -392,6 +393,14 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         );
         error_contains(runner.recognize_batch(no_images, &invalid), expected);
         error_contains(runner.recognize_files(no_files, &invalid), expected);
+        // The streaming entry points refuse the options before any page.
+        let one = std::slice::from_ref(&cases.valid);
+        let never = |_: usize, _: Result<OcrResult>| -> ControlFlow<()> { panic!("an invalid request ran a page") };
+        error_contains(runner.recognize_files_streaming(one, &invalid, never), expected);
+        error_contains(
+            runner.recognize_files_streaming_with_trace(one, &invalid, &mut NoModelWork, never),
+            expected,
+        );
     }
     for (width, height) in [(0, 0), (0, 8), (8, 0)] {
         let invalid = RgbImage::new(width, height);
@@ -426,6 +435,21 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         runner.recognize_files_with_trace(&[&cases.valid, &cases.valid], &cropped, &mut NoModelWork),
         refusal,
     );
+    // The streaming form hands each page of the cohort the refusal.
+    let mut refused = Vec::new();
+    runner
+        .recognize_files_streaming_with_trace(
+            &[&cases.valid, &cases.valid],
+            &cropped,
+            &mut NoModelWork,
+            |page, result| {
+                refused.push((page, format!("{:#}", result.expect_err("refused"))));
+                ControlFlow::Continue(())
+            },
+        )
+        .unwrap();
+    assert_eq!(refused.len(), 2);
+    assert!(refused.iter().all(|(_, error)| error.contains(refusal)), "{refused:?}");
     error_contains(
         runner.score_teacher_file(&cases.valid, &[11], &cropped, &mut NoModelWork),
         "teacher scoring compares with the uncropped page",

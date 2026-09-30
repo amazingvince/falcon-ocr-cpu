@@ -14,8 +14,10 @@ use std::{path::Path, sync::Arc, time::Instant};
 mod cohort;
 mod generate;
 mod speculate;
+mod stream;
 
 use generate::{DecodeLoop, Generation, Page};
+pub use std::ops::ControlFlow;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
