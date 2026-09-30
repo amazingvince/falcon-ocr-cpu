@@ -2,12 +2,13 @@
 
 A Rust library and CLI that runs the Falcon-OCR v1.5 vision-language model
 (pinned revision `fe757d59…`) on CPUs: full-page plain OCR of PNG and JPEG
-pages, no GPU, no Python at inference time. Exact mode is bit-identical to
-the FP32 reference; near-exact mode (the default) changed 1 token in 24,262
-against FP32 and runs 1.8× faster; fast mode runs 3× faster with 8-bit
-weights. Everything the runner decides is reported, and every fast path is
-tested bitwise against a portable one. Kernel-ready model files are published
-at [huggingface.co/amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu).
+pages, no GPU, no Python at inference time. Exact mode matched the FP32
+reference token for token on every page measured; near-exact mode (the
+default) changed 1 token in 24,262 against FP32 and runs 1.8× faster; fast
+mode runs 3× faster with 8-bit weights. Everything the runner decides is
+reported, and every fast path is tested bitwise against a portable one.
+Kernel-ready model files are published at
+[huggingface.co/amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu).
 
 ## Quickstart
 
@@ -29,13 +30,16 @@ decode team, speculation and the repetition stop from the host.
 
 | Mode | Body weights | KV cache | Prefill attention | Changed tokens vs FP32 (of 24,262) | Journal page, 7950X | Use when |
 |---|---|---|---|---:|---:|---|
-| `exact` | FP32 | FP32 | FP32 | 0 (bitwise) | 38 s | you need the reference bits |
+| `exact` | FP32 | FP32 | FP32 | 0 | 38 s | you need FP32's tokens |
 | `near-exact` (default) | 16-bit, scale per 64 | 16-bit, scale per 32 | FP32 | 1 | 21.5 s | everything else |
 | `fast` | 8-bit GPTQ, scale per 64 | 8-bit, scale per 32 | BF16 on AVX512-BF16 CPUs | 63 | 12.6 s | printed pages where speed matters; **failed its held-out budget on handwriting (loops) and degraded scans** |
 
 The journal page has 6,544 image tokens; timings are with default flags on a
-Ryzen 9 7950X. [docs/MODES.md](docs/MODES.md) has the metric, the storage
-choices and the held-out result.
+Ryzen 9 7950X. Exact mode's 0 is tokens, not bits: its logits are bitwise
+the FP32 reference's only under the reference configuration, since the
+default polynomial exp in prefill attention changes their last bits
+([docs/MODES.md](docs/MODES.md#the-three-modes)). [docs/MODES.md](docs/MODES.md)
+has the metric, the storage choices and the held-out result.
 
 ## What `auto` decides
 
@@ -58,13 +62,31 @@ probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 Weights: the packed file for the mode in `--model`, else the FP32 checkpoint
 quantized at load (fast needs the GPTQ overlay). Prefill runs on every
 logical CPU with the fastest kernels the CPU has (AVX2, 16-lane AVX-512
-tiles, BF16 attention for fast mode, NEON on aarch64). Decode times a few
-team sizes on the first steps and keeps the smallest within 2% of the fastest.
-Up to 4 tokens are drafted from the output so far and verified in one step;
-every accepted token is the model's own greedy choice. A page that repeats a
-cycle for 256 tokens stops with `finish_reason: "repetition"`. Output caps
-that would overflow the 16,384-token context are lowered with a warning.
-None of these change tokens (gated by `tests/modes.rs`).
+tiles, BF16 attention for fast mode, NEON on aarch64) and a portable
+polynomial exp in attention. Decode times a few team sizes on the first steps
+and keeps the smallest within 2% of the fastest. Up to 4 tokens are drafted
+from the output so far and verified in one step; every accepted token is the
+model's own greedy choice. A page that repeats a cycle for 256 tokens stops
+with `finish_reason: "repetition"`. Without `--max-new-tokens`, the
+8,192-token output cap is lowered with a warning when a page's input leaves
+less of the 16,384-token context (`budget_clamped` in the result).
+
+The weights file, thread counts, decode team, drafts, head and AVX-512 tiles
+never change tokens (gated by `tests/modes.rs` and the library's bitwise
+tests). Three kernel choices change rounding: the polynomial exp in prefill
+attention (no token changed on the 67 calibration pages), fast mode's
+polynomial exp in decode attention over its 8-bit cache (94 flips against 92
+with the platform exp, teacher-forced over 78,282 steps;
+[docs/MODES.md](docs/MODES.md#the-three-modes)) and fast mode's BF16
+attention, which only AVX512-BF16 CPUs run, so fast mode's tokens can differ
+between CPUs with and without it. On aarch64 the NEON kernels use the
+polynomial exp in all attention, decode included, so x86 and aarch64 can
+give different tokens in every mode. Two decisions can shorten a page's
+output without changing the tokens before its end: the repetition stop ends
+a looping page early, also one that FP32 ends at EOS after a long loop (a
+held-out page, [docs/MODES.md](docs/MODES.md#loops-and-the-repetition-stop)),
+and a lowered cap ends a page at the context limit. `--stop-repetition=false`
+lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
 
 ## Command line
 
@@ -107,11 +129,11 @@ fn main() -> anyhow::Result<()> {
 
 `Model::load_mode` finds the packed file or the checkpoint; `Model::load_packed`
 and `Model::load` are the explicit loaders. `RunnerConfig::default()` is the
-automatic configuration, `RunnerConfig::reference()` the bit-exact one
-(FP32 exp, full head, no speculation, a pool-sized decode team). `Runner`
-owns its thread pool; `recognize`, `recognize_file`, `recognize_batch` and
-`recognize_files` return `OcrResult`s in input order, each carrying its
-`plan`.
+automatic configuration, `RunnerConfig::reference()` the bit-exact one (the
+platform exp, full head, no speculation or repetition stop, a pool-sized
+decode team). `Runner` owns its thread pool; `recognize`, `recognize_file`,
+`recognize_batch` and `recognize_files` return `OcrResult`s in input order,
+each carrying its `plan`.
 
 ## Building
 

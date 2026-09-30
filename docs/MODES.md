@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-09-25. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-09-30. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 image tokens).
 
 ## The metric
@@ -24,20 +24,31 @@ calibration pages outside the GPTQ capture set, 24,262 steps
 | Prefill attention | FP32 | FP32 | BF16 products on AVX512-BF16 CPUs, FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
-| Against FP32, 24,262 steps | bitwise | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
+| Against FP32, 24,262 steps | **0 flips** | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
 | Journal page | 38 s | 21.5 s | 12.6 s (14 s without AVX512-BF16) |
 | Profile label | `split-f32` (`reference` for traces and batches) | `w16-body-kv-q16` | `w8-body-kv-q8` |
 
-Every mode uses the exact screened head and the portable vector exp in
-prefill attention (token-identical to the platform exp on all calibration
-pages; traces use the platform exp). Fast mode also uses it in decode
-attention over its 8-bit cache, as the NEON kernels always do
-(`--tune decode-exp=exact|fast` overrides): teacher-forced on the 55 anchor
-pages up to 8,192 steps (78,282 steps) it has 94 flips against 92 with the
-platform exp, the English gate below is unchanged, and verification steps'
-attention is 3–10% faster. Exact mode is bit-identical to the FP32
-reference: the smoke trace and the GPU parity test hold under both the
-reference and the automatic configuration.
+Every mode uses the exact screened head and the portable polynomial exp in
+prefill attention, which changes rounding but no token against the platform
+exp on all 67 calibration pages (93,249 tokens); traces use the platform exp.
+Fast mode also uses it in decode attention over its 8-bit cache, as the NEON
+kernels always do (`--tune decode-exp=exact|fast` overrides): teacher-forced
+on the 55 anchor pages up to 8,192 steps (78,282 steps) it has 94 flips
+against 92 with the platform exp, the English gate below is unchanged, and
+verification steps' attention is 3–10% faster.
+
+Exact mode therefore gives FP32's tokens, not its bits. Under the reference
+configuration (`RunnerConfig::reference()`: the platform exp and the full
+head, which `trace` uses and `falcon-ocr-eval` starts from) it is bitwise the
+FP32 reference: the smoke trace hash is pinned, and the split FP32 cache is
+bitwise the compact one. Under the automatic configuration of `run` the
+polynomial exp moves logits in their last bits: teacher-forced along the
+1,295 FP32 tokens of a 1418 × 1224 page (Ryzen 7 7700X), 4.8% of exact
+mode's top-32 log-probabilities were bit-identical to the platform exp's,
+the largest difference 1.1e-4, with no flip. Tokens held on everything
+measured: the GPU smoke page under both configurations
+(`tests/gpu_parity.rs`, `tests/modes.rs`), all 67 calibration pages and the
+four full benchmark pages.
 
 Storage types were chosen against FP32 on the anchor set (GPU harness):
 INT16 with a scale per 64 inputs (1 flip, KL 1.7e-7) beat FP16 (11 flips)
@@ -160,11 +171,14 @@ verdict still needs fresh pages. Details: `research/resolution-router/README.md`
 
 The stop (`--stop-repetition`, on by default) ends a page once it repeats a
 cycle of at most 128 tokens for at least `max(256, 4 × cycle)` tokens, with
-`finish_reason: "repetition"`; output before the stop is unchanged. On the
-calibration pages it never fired on a page that ends normally and cut decode
-work by about a third; it also ends genuine FP32 loops. Legitimately periodic
-content longer than that (a 256-token page of identical lines) would be cut:
-pass `--stop-repetition=false`.
+`finish_reason: "repetition"`; output before the stop is unchanged
+(`tests/modes.rs`), but the page ends early. On the calibration pages it never
+fired on a page that ends normally and cut decode work by about a third. It
+also ends genuine FP32 loops, even one that FP32 itself ends at EOS after a
+2,232-token hallucination (a held-out page, where the stopped output read
+better: CER 1.90 → 0.83), so there the default output is shorter than FP32's.
+Legitimately periodic content longer than that (a 256-token page of identical
+lines) would be cut: pass `--stop-repetition=false`.
 
 ## Packed model files
 

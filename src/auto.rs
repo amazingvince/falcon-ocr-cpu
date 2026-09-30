@@ -22,7 +22,8 @@ use crate::{
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum Mode {
-    /// FP32 weights and caches: bit-identical to the FP32 reference.
+    /// FP32 weights and caches: the FP32 reference's tokens (bitwise under
+    /// the reference configuration).
     Exact,
     /// 16-bit body weights and 16-bit KV cache (absmax scale per 64 weights
     /// or 32 cache values): about 1.8x faster than exact, 1 changed token in
