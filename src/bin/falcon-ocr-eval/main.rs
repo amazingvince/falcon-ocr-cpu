@@ -594,6 +594,7 @@ fn main() -> Result<()> {
                 min_dimension: 64,
                 fit_budget: false,
                 route: false,
+                crop_margins: None,
             };
             for image in &images {
                 let t = Instant::now();
@@ -662,6 +663,7 @@ fn main() -> Result<()> {
                     min_dimension,
                     fit_budget: false,
                     route: false,
+                    crop_margins: None,
                 };
                 let mut agreement = Agreement {
                     dump: dump_topk.as_ref().map(|_| Vec::new()),

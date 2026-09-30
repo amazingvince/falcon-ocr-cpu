@@ -1,7 +1,7 @@
 use crate::{
     config::{CacheLayout, GenerationOptions, HeadMode, RunnerConfig, WeightLayout},
     model::{Model, Next, Session, image_range, positions},
-    preprocess::{PreparedImage, decode_file, first_resize_rgb, prepare_file_timed, prepare_first, prepare_rgb},
+    preprocess::{Crop, PreparedImage, decode_file, first_resize_rgb, prepare_file_timed, prepare_first_cropped},
     router::{self, Route, RoutedAttempt},
     tokenizer::OcrTokenizer,
     trace::{NoTrace, Trace},
@@ -90,6 +90,11 @@ pub struct OcrResult {
     /// and `height` are those of the input that produced `text`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub route: Option<Route>,
+    /// The margin crop the input was cut to after the first resize
+    /// (`GenerationOptions::crop_margins`), in first-resize pixels; `width`
+    /// and `height` stay those of the final model input.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crop: Option<Crop>,
     pub timings: Timings,
 }
 
@@ -329,20 +334,15 @@ impl Runner {
     ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
+        let (source, decode_ms) = decode_file(path.as_ref())?;
         if options.route {
-            let (source, decode_ms) = decode_file(path.as_ref())?;
             let first_at = |max| source.first_resize(options.min_dimension, max);
             return self.recognize_routed(&first_at, decode_ms, options, trace, start);
         }
-        let (prepared, decode_ms) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
-        validate_prepared_bounds(&prepared, options)?;
-        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-        let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
-        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
-        result.timings.image_decode_ms = decode_ms;
-        result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
-        result.timings.time_to_first_token_ms += decode_ms;
-        Ok(result)
+        let first = source.first_resize(options.min_dimension, options.max_dimension)?;
+        // Free the decoded page before generation; only its first resize is needed.
+        drop(source);
+        self.recognize_first(first, decode_ms, options, trace, start)
     }
     /// Teacher-forced run over `teacher` (for example a reference run's
     /// token IDs): every step feeds the forced token, and a trace whose
@@ -361,6 +361,7 @@ impl Runner {
             "teacher scoring needs max_new_tokens equal to the teacher length"
         );
         ensure!(!options.route, "teacher scoring needs a fixed max_dimension");
+        require_uncropped(options, "teacher scoring")?;
         let (prepared, _) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
@@ -381,13 +382,8 @@ impl Runner {
             let first_at = |max| first_resize_rgb(image, options.min_dimension, max);
             return self.recognize_routed(&first_at, 0., options, trace, start);
         }
-        let prepared = prepare_rgb(image, options.min_dimension, options.max_dimension)?;
-        validate_prepared_bounds(&prepared, options)?;
-        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-        let prep_ms = start.elapsed().as_secs_f64() * 1000.;
-        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
-        result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
-        Ok(result)
+        let first = first_resize_rgb(image, options.min_dimension, options.max_dimension)?;
+        self.recognize_first(first, 0., options, trace, start)
     }
 
     /// `--max-dimension auto`: route the page from its first resize at the
@@ -403,7 +399,7 @@ impl Runner {
         start: Instant,
     ) -> Result<OcrResult> {
         let (first, mut route, capped) = self.plan_route(first_at)?;
-        let routed = self.recognize_first(&first, decode_ms, &options.at(route.max_dimension), trace, start)?;
+        let routed = self.recognize_first(first, decode_ms, &options.at(route.max_dimension), trace, start)?;
         let mut result = self.safety_net(routed, &mut route, capped, options, trace)?;
         result.route = Some(route);
         Ok(result)
@@ -439,23 +435,25 @@ impl Runner {
             output_tokens: routed.output_tokens,
             total_ms: routed.timings.total_ms,
         });
-        let mut rerun = self.recognize_first(&capped, 0., &options.at(router::CAP), trace, Instant::now())?;
+        let mut rerun = self.recognize_first(capped, 0., &options.at(router::CAP), trace, Instant::now())?;
         rerun.timings.image_decode_ms = routed.timings.image_decode_ms;
         rerun.timings.total_ms += routed.timings.total_ms;
         Ok(rerun)
     }
 
-    /// Prepare and run a first-resized page; timings count from `start`,
-    /// which `decode_ms` of file decoding preceded.
+    /// Prepare (with the margin crop `options` asks for) and run a
+    /// first-resized page, which is freed before generation; timings count
+    /// from `start`, which `decode_ms` of file decoding preceded.
     fn recognize_first(
         &self,
-        first: &RgbImage,
+        first: RgbImage,
         decode_ms: f64,
         options: &GenerationOptions,
         trace: &mut dyn Trace,
         start: Instant,
     ) -> Result<OcrResult> {
-        let prepared = prepare_first(first)?;
+        let prepared = prepare_first_cropped(&first, options.crop_margins)?;
+        drop(first);
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
@@ -498,6 +496,9 @@ impl Runner {
         trace: &mut dyn Trace,
         teacher_tokens: &[u32],
     ) -> Result<OcrResult> {
+        if trace.enabled() {
+            require_uncropped(options, "a tensor trace")?;
+        }
         let start = Instant::now();
         let c = &self.model.config;
         let budget = options.budget(tokens.len(), c.max_seq_len)?;
@@ -605,6 +606,7 @@ impl Runner {
             reason: generation.reason,
             width: prepared.width,
             height: prepared.height,
+            crop: prepared.crop,
             input_tokens: tokens.len(),
             teacher_forced: !teacher_tokens.is_empty(),
             budget_clamped,
@@ -691,6 +693,7 @@ impl Runner {
             height: 0,
             patches,
             positions_hw,
+            crop: None,
         };
         let (computed_temporal, computed_spatial) = positions(&tokens, &prepared.positions_hw, &self.model.config)?;
         let reference_temporal = read_ids("pos_t")?;
@@ -720,6 +723,16 @@ impl Runner {
         };
         self.run_prepared_scoped(prepared, tokens, &options, 0., trace, &teacher_tokens)
     }
+}
+
+/// Runs compared with a reference of the whole page (tensor traces, teacher
+/// scoring) refuse the margin crop, which changes the model input.
+fn require_uncropped(options: &GenerationOptions, run: &str) -> Result<()> {
+    ensure!(
+        options.crop_margins.is_none(),
+        "{run} compares with the uncropped page; margin cropping (crop_margins, --crop-margins) changes the model input"
+    );
+    Ok(())
 }
 
 fn validate_prepared_bounds(prepared: &PreparedImage, options: &GenerationOptions) -> Result<()> {
@@ -761,6 +774,7 @@ fn select(next: &Next<'_>, row: usize, vocab: usize) -> Result<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::preprocess::prepare_rgb;
     #[test]
     fn argmax_handles_ties_and_rejects_nan() {
         assert_eq!(argmax(&[2., 3., 3.]).unwrap(), 1);
@@ -775,6 +789,7 @@ mod tests {
             max_new_tokens: 1,
             fit_budget: false,
             route: false,
+            crop_margins: None,
         };
         options.validate().unwrap();
         let prepared = prepare_rgb(&RgbImage::new(33, 49), 16, 32).unwrap();
@@ -792,5 +807,48 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn results_report_a_crop_only_when_one_was_applied() {
+        let record = serde_json::json!({
+            "text": "", "token_ids": [11], "finish_reason": "eos", "width": 544, "height": 544,
+            "input_tokens": 1173, "output_tokens": 1, "precision": "fp32", "backend": "avx2",
+            "teacher_forced": false, "timings": {"image_decode_ms": 0.0, "preprocessing_ms": 0.0,
+            "prefill_ms": 0.0, "decode_ms": 0.0, "total_ms": 0.0, "time_to_first_token_ms": 0.0}
+        });
+        // Records written before the field existed, and uncropped pages, carry no crop.
+        let mut result: OcrResult = serde_json::from_value(record).unwrap();
+        assert_eq!(result.crop, None);
+        assert!(serde_json::to_value(&result).unwrap().get("crop").is_none());
+        result.crop = Some(Crop {
+            x: 126,
+            y: 176,
+            width: 548,
+            height: 548,
+            first_width: 800,
+            first_height: 1000,
+        });
+        let value = serde_json::to_value(&result).unwrap();
+        assert_eq!(
+            value["crop"],
+            serde_json::json!({"x": 126, "y": 176, "width": 548, "height": 548, "first_width": 800, "first_height": 1000})
+        );
+        assert_eq!(serde_json::from_value::<OcrResult>(value).unwrap().crop, result.crop);
+    }
+
+    #[test]
+    fn traces_and_teacher_scoring_refuse_the_margin_crop() {
+        require_uncropped(&GenerationOptions::default(), "a tensor trace").unwrap();
+        let cropped = GenerationOptions {
+            crop_margins: Some(24),
+            ..GenerationOptions::default()
+        };
+        let error = require_uncropped(&cropped, "teacher scoring").unwrap_err().to_string();
+        assert!(
+            error.starts_with("teacher scoring compares with the uncropped page"),
+            "{error}"
+        );
+        assert!(error.contains("--crop-margins"), "{error}");
     }
 }

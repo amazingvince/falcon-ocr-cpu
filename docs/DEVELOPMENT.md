@@ -53,7 +53,12 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   `tests/fixtures/modes/*.json`; packing round-trips the checkpoint loader
   and matches the published files; speculation, the decode team, drafts, the
   head and the explicit AVX2 backend never change tokens; the repetition stop
-  yields a prefix; the three trace hashes are pinned.
+  yields a prefix; the three trace hashes are pinned. `cargo test --release
+  --locked --test negative_inputs --test margin_crop -- --ignored
+  --test-threads=1` (needs only `artifacts/model`) checks that every public
+  entry point rejects invalid requests before model work, including tensor
+  traces and teacher scoring with the margin crop, and that a page with
+  margins reports its crop and fewer input tokens on every entry point.
 - **Draft head** (needs an exported head file and `artifacts/model`):
   `FALCON_OCR_DRAFT_HEAD=<head>.safetensors cargo test --release --lib
   draft_head -- --ignored --nocapture` checks the Rust chain against the

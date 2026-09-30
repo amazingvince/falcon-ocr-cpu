@@ -13,7 +13,7 @@
 //! resampling, and the same few float64 operations in the same order. The
 //! trees (trees.json) come from train_trees.py.
 
-use crate::preprocess::{Filter, resize_gray};
+use crate::preprocess::{Filter, luma, resize_gray};
 use anyhow::{Context, Result, ensure};
 use image::RgbImage;
 use serde::Deserialize;
@@ -65,11 +65,9 @@ const EDGE: i32 = 40;
 
 pub type Statistics = [f64; FEATURES.len()];
 
-/// Pillow's `convert("L")`: ITU-R 601-2 luma in 16-bit fixed point.
+/// Pillow's `convert("L")` of the page.
 fn gray(page: &RgbImage) -> Vec<u8> {
-    page.pixels()
-        .map(|p| ((p[0] as u32 * 19595 + p[1] as u32 * 38470 + p[2] as u32 * 7471 + 0x8000) >> 16) as u8)
-        .collect()
+    page.as_raw().chunks_exact(3).map(luma).collect()
 }
 
 fn median(sorted: &[u64]) -> f64 {

@@ -5,12 +5,12 @@
 use super::{
     DecodeTeam, OcrResult, Runner, Timings, argmax,
     generate::{Generation, Page},
-    select, validate_prepared_bounds,
+    require_uncropped, select, validate_prepared_bounds,
 };
 use crate::{
     config::{GenerationOptions, HeadMode},
     model::{BatchWorkspace, Session, image_range, positions},
-    preprocess::{PreparedImage, decode_file, first_resize_rgb, prepare_first},
+    preprocess::{Crop, PreparedImage, decode_file, first_resize_rgb, prepare_first_cropped},
     router::Route,
     trace::{NoTrace, PrefixedTrace, Trace},
 };
@@ -132,7 +132,7 @@ impl Runner {
         } else {
             (first_at(options.max_dimension)?, None)
         };
-        let prepared = prepare_first(&first)?;
+        let prepared = prepare_first_cropped(&first, options.crop_margins)?;
         let max_dimension = route.as_ref().map_or(options.max_dimension, |(r, _)| r.max_dimension);
         validate_prepared_bounds(&prepared, &options.at(max_dimension))?;
         Ok((prepared, route))
@@ -162,6 +162,9 @@ impl Runner {
         trace: &mut dyn Trace,
         request_offset: usize,
     ) -> Result<Vec<OcrResult>> {
+        if trace.enabled() {
+            require_uncropped(options, "a tensor trace")?;
+        }
         let c = &self.model.config;
         let simd = self.config.backend.simd();
         let stops = self.tokenizer.stop_ids();
@@ -229,6 +232,7 @@ impl Runner {
             states.push(BatchState {
                 width: input.prepared.width,
                 height: input.prepared.height,
+                crop: input.prepared.crop,
                 input_tokens: input.tokens.len(),
                 generation,
                 finished,
@@ -329,6 +333,7 @@ impl Runner {
                     reason: state.generation.reason,
                     width: state.width,
                     height: state.height,
+                    crop: state.crop,
                     input_tokens: state.input_tokens,
                     teacher_forced: false,
                     budget_clamped,
@@ -352,6 +357,7 @@ struct BatchInput {
 struct BatchState {
     width: usize,
     height: usize,
+    crop: Option<Crop>,
     input_tokens: usize,
     generation: Generation,
     finished: bool,

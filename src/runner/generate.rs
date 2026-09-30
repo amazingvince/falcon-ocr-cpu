@@ -77,6 +77,8 @@ pub(super) struct Page {
     pub(super) reason: FinishReason,
     pub(super) width: usize,
     pub(super) height: usize,
+    /// The margin crop the input was cut to, if any.
+    pub(super) crop: Option<crate::preprocess::Crop>,
     pub(super) input_tokens: usize,
     pub(super) teacher_forced: bool,
     pub(super) budget_clamped: bool,
@@ -153,6 +155,7 @@ impl Runner {
             teacher_forced: page.teacher_forced,
             budget_clamped: page.budget_clamped,
             route: None,
+            crop: page.crop,
             timings: page.timings,
         })
     }

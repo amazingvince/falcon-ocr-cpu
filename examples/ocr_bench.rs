@@ -139,6 +139,7 @@ fn main() -> Result<()> {
         max_new_tokens: args.max_new_tokens,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     };
     options.validate()?;
     let start = Instant::now();
@@ -261,6 +262,7 @@ fn main() -> Result<()> {
             "runner":hash(include_bytes!("../src/runner/mod.rs")),"runner_cohort":hash(include_bytes!("../src/runner/cohort.rs")),
             "preprocess":hash(include_bytes!("../src/preprocess/mod.rs")),
             "preprocess_resample":hash(include_bytes!("../src/preprocess/resample.rs")),
+            "preprocess_crop":hash(include_bytes!("../src/preprocess/crop.rs")),
             "packed_kernels":hash(include_bytes!("../src/packed_kernels.rs")),
             "config":hash(include_bytes!("../src/config.rs")),"tokenizer":hash(include_bytes!("../src/tokenizer.rs")),
             "trace":hash(include_bytes!("../src/trace.rs")),"lib":hash(include_bytes!("../src/lib.rs")),

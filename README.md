@@ -105,6 +105,7 @@ lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
 | `--batch-size N` | Pages decoded jointly (1..=8) |
 | `run --min-dimension 64 --max-dimension 1536 --max-new-tokens 8192 --text` | Image size bounds, output cap, text only |
 | `run --max-dimension auto` | The resolution router picks 768, 1024 or 1536 per page ([docs/MODES.md](docs/MODES.md#resolution-routing); changes the output) |
+| `run --crop-margins`, `--crop-margins=PAD` | Cut blank page margins after the first resize, keeping PAD pixels (default 24) around the content: fewer image tokens, text at the same size; each result reports its `crop` ([docs/MODES.md](docs/MODES.md#margin-cropping); changes the output, off by default) |
 | `pack --output F`, `inspect`, `trace`, `doctor [--text] [--load] [--probe]` | Write a packed file; verify the checkpoint; capture tensors; show the plan |
 
 `falcon-ocr-eval` is the research binary: any weights × KV profile, timed

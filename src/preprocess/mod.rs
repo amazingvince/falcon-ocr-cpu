@@ -4,13 +4,16 @@
 //! resampling, including quantization between the horizontal and vertical passes.
 //! Replacing them with a single float resize changes the model input.
 //!
-//! The Pillow resampling port is in `resample`.
+//! The Pillow resampling port is in `resample`, the opt-in margin crop in
+//! `crop`.
+mod crop;
 mod resample;
 
 use anyhow::{Context, Result, ensure};
 use image::{DynamicImage, ImageFormat, RgbImage, RgbaImage};
 use std::path::Path;
 
+pub use crop::{Crop, margin_crop, prepare_first_cropped};
 pub(crate) use resample::{Filter, resize_gray};
 use resample::{resize_bicubic, resize_gray16, resize_nearest, resize_premultiplied};
 
@@ -28,6 +31,9 @@ pub struct PreparedImage {
     /// Per-patch [height, width] positions. FP32 sqrt uses IEEE rounding; the
     /// reference PyTorch MKL sqrt can differ by an ULP (see frozen fixtures).
     pub positions_hw: Vec<[f32; 2]>,
+    /// The margin crop this input was cut to after the first resize
+    /// ([`prepare_first_cropped`]), if one was applied.
+    pub crop: Option<Crop>,
 }
 
 pub fn prepare_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> Result<PreparedImage> {
@@ -54,6 +60,12 @@ pub fn first_resize_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32
 /// The second resize, normalization and patch packing of a first-resized page.
 pub fn prepare_first(first: &RgbImage) -> Result<PreparedImage> {
     prepare_resized_rgb(first)
+}
+
+/// Pillow's `convert("L")` of one RGB pixel: ITU-R 601-2 luma in 16-bit fixed
+/// point. The margin crop and the router's statistics both use it.
+pub(crate) fn luma(pixel: &[u8]) -> u8 {
+    ((pixel[0] as u32 * 19595 + pixel[1] as u32 * 38470 + pixel[2] as u32 * 7471 + 0x8000) >> 16) as u8
 }
 
 /// Decode a PNG or JPEG and preserve Pillow's source-mode first resize.
@@ -317,6 +329,7 @@ fn prepare_resized_rgb(first: &RgbImage) -> Result<PreparedImage> {
         height,
         patches,
         positions_hw,
+        crop: None,
     })
 }
 

@@ -167,6 +167,52 @@ resolution. With figures masked (the post-hoc check above) the router is
 verdict still needs fresh pages. Details: `research/resolution-router/README.md`,
 `reference/router-english-gate-v1-results.json`.
 
+## Margin cropping
+
+`run --crop-margins` or `--crop-margins=PAD`
+(`GenerationOptions::crop_margins`, off by default) cuts the blank margins of
+each page after the processor's first, aspect-preserving resize, keeping PAD
+pixels (default 24, at that resize's scale) around the content; the second
+resize and the patches then run unchanged on the cut page. Text keeps its size
+in pixels and only the image token count drops, which shortens prefill
+(attention grows with the square of the token count) and every decode step.
+The content box comes from integer luma statistics
+(`preprocess::margin_crop`): the background is the 90th luma percentile and
+must be at least 160, ink is at least 64 levels darker, and a row or column is
+content when it holds two ink pixels within a run of at least four such lines,
+so dust specks up to 3 pixels across are ignored. A page stays whole when it
+has no content, when its background is dark (inverted pages, dark slides),
+when the crop would remove less than 10% of the area, or when the crop's
+second resize would do more than round each side to whole patches. Dark scan
+borders, gutter shadows and punch holes count as ink and keep their side of
+the page; marks fainter than the ink threshold (light pencil) or thinner than
+four pixels are cut off when they lie beyond the padding. Routed pages
+(`--max-dimension auto`) are routed on the whole page and crop the resize they
+run at, as does the safety-net rerun.
+
+It is opt-in because it changes the model input. TII's layout pipeline feeds
+cropped regions to the model, so crops are in distribution, but nothing has
+been measured on real pages here. On synthetic book pages (a text block with
+about 15% side margins) it removes 42–44% of the image tokens at 1536 (6,048 →
+3,400–3,485), 40% at 1024 and 35% at 768; pages whose content fills the page
+are not cropped. The router's page-time model (fast mode with the draft head,
+`research/resolution-router/analyze_agreement.py`) puts 6,048 → 3,485 image
+tokens at about 37% less time for a page with 700 output tokens. Each result
+reports its crop (`crop`: `x`, `y`, `width`, `height` and the first-resize
+`first_width` and `first_height`, all in first-resize pixels); `width` and
+`height` stay those of the model input. The library refuses the option for
+tensor traces and for teacher scoring (`Runner::score_teacher_file`, which
+`falcon-ocr-eval agree` uses; that binary has no crop flag), since both
+compare with the whole page.
+
+To evaluate it, run a few dozen of your own book pages twice in the same mode,
+with and without `--crop-margins`, and compare per page: identical token ids,
+the character edit distance between the two texts over the uncropped text's
+length (the router's disagreement measure,
+`research/resolution-router/analyze_agreement.py`), the stop reason, CER
+against ground truth where you have it, and `total_ms`. Read the pages that
+changed: a lost page number or marginal note is the failure to look for.
+
 ## Loops and the repetition stop
 
 The stop (`--stop-repetition`, on by default) ends a page once it repeats a

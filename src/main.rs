@@ -95,6 +95,13 @@ enum Command {
         /// reruns a routed page at 1536 if it loops or hits the length limit.
         #[arg(long, default_value = "1536")]
         max_dimension: MaxDimension,
+        /// Cut blank page margins after the first resize, keeping PAD pixels
+        /// around the content: `--crop-margins` keeps 24, `--crop-margins=PAD`
+        /// (with `=`) sets PAD. Fewer image tokens, text at the same size.
+        /// Changes the model input, so off by default; each result reports
+        /// its crop (docs/MODES.md).
+        #[arg(long, value_name = "PAD", num_args = 0..=1, require_equals = true, default_missing_value = "24")]
+        crop_margins: Option<u32>,
         #[arg(long)]
         text: bool,
     },
@@ -209,6 +216,7 @@ fn main() -> Result<()> {
             max_new_tokens,
             min_dimension,
             max_dimension,
+            crop_margins,
             text,
         } => {
             let mut options = GenerationOptions {
@@ -216,6 +224,7 @@ fn main() -> Result<()> {
                 min_dimension,
                 // Without an explicit cap, long pages get what the context leaves.
                 fit_budget: max_new_tokens.is_none(),
+                crop_margins,
                 ..GenerationOptions::default()
             };
             max_dimension.apply(&mut options);

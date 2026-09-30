@@ -31,6 +31,7 @@ fn invalid_options() -> Vec<(&'static str, GenerationOptions, &'static str)> {
         max_new_tokens: 1,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     };
     vec![
         (
@@ -74,6 +75,14 @@ fn invalid_options() -> Vec<(&'static str, GenerationOptions, &'static str)> {
                 ..base.clone()
             },
             "multiple of 16",
+        ),
+        (
+            "crop padding that can never crop",
+            GenerationOptions {
+                crop_margins: Some(256),
+                ..base.clone()
+            },
+            "crop_margins",
         ),
         (
             "zero output cap",
@@ -282,6 +291,27 @@ fn eval_profile_picks_the_kv_cache_of_a_model_file() {
     }
 }
 
+#[test]
+fn cli_crop_margins_takes_an_optional_pixel_padding() {
+    let temporary = tempfile::tempdir().unwrap();
+    let run = |flag: &str| {
+        cli()
+            .arg("--model")
+            .arg(temporary.path().join("no-model"))
+            .args(["run", flag, "page.png"])
+            .output()
+            .unwrap()
+    };
+    // Accepted flags get as far as the missing model (exit 1, not Clap's 2).
+    for flag in ["--crop-margins", "--crop-margins=40"] {
+        let output = run(flag);
+        assert_eq!(output.status.code(), Some(1), "{flag}: {output:?}");
+    }
+    let output = run("--crop-margins=wide");
+    assert_eq!(output.status.code(), Some(2), "Clap argument rejection");
+    assert_cli_error(output, "--crop-margins");
+}
+
 fn model_directory() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/model")
 }
@@ -335,6 +365,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         max_new_tokens: 1,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     };
     let no_images: &[RgbImage] = &[];
     let no_files: &[PathBuf] = &[];
@@ -379,6 +410,26 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         error_contains(runner.recognize_file(path, &options), expected);
         error_contains(runner.recognize_files(&[&cases.valid, path], &options), expected);
     }
+    // Tensor traces and teacher scoring compare with the whole page: they
+    // refuse the margin crop before any model work, single or batched.
+    let cropped = GenerationOptions {
+        crop_margins: Some(24),
+        ..options
+    };
+    let refusal = "compares with the uncropped page";
+    error_contains(runner.recognize_with_trace(&valid, &cropped, &mut NoModelWork), refusal);
+    error_contains(
+        runner.recognize_batch_with_trace(&[valid.clone(), valid.clone()], &cropped, &mut NoModelWork),
+        refusal,
+    );
+    error_contains(
+        runner.recognize_files_with_trace(&[&cases.valid, &cases.valid], &cropped, &mut NoModelWork),
+        refusal,
+    );
+    error_contains(
+        runner.score_teacher_file(&cases.valid, &[11], &cropped, &mut NoModelWork),
+        "teacher scoring compares with the uncropped page",
+    );
 }
 
 #[test]
