@@ -70,8 +70,14 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors`
   (expect 1 and about 63 flips of 24,262). The CI `weights` job runs the
   gates and this queue on a self-hosted runner labelled `falcon-weights`.
-- **Python**: `python -m unittest discover -s tests -p "test_*.py"`; `ruff
-  check tools` (`pyproject.toml`).
+- **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
+  `research/corpus-qualification/tests` and
+  `research/quantization-feasibility/tests` (CI runs these two; they need
+  `pillow`, `rapidfuzz` and `numpy`); `ruff check tools`
+  (`pyproject.toml`). `tools/pdf_to_pages.py` has its own tests
+  on PDFs they build: `pip install -r requirements/tools.txt`, then `python -m
+  unittest discover -s tools/tests` and `ruff check tools/tests` (the `tests`
+  exclude in `pyproject.toml` skips that folder in `ruff check tools`).
 
 Fixtures: `tests/fixtures/README.md` says how the preprocessing, decode and
 router fixtures are regenerated from the pinned Pillow/PyTorch environment;

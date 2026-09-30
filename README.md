@@ -26,6 +26,24 @@ runner picks near-exact mode, loads the packed file from the model directory
 (about 10 ms) and the draft head next to it, and sets threads, kernels, the
 decode team, speculation and the repetition stop from the host.
 
+### PDFs
+
+`run` reads PNG and JPEG. `python tools/pdf_to_pages.py book.pdf --output-dir
+book-pages` (`pip install -r requirements/tools.txt`) writes one PNG per page:
+a page that is just a scanned image is extracted at its native resolution
+(1-bit and gray kept), any other page is rendered with its longer side at
+1536 pixels, which the processor's first resize leaves unchanged.
+`book-pages/pages.txt` lists the files in page order and `manifest.json`
+records how each page was made; recognize them in order with
+
+```sh
+tr '\n' '\0' < book-pages/pages.txt | xargs -0 target/release/falcon-ocr --model models/falcon-ocr-cpu run
+```
+
+Extracted 1-bit scans get the processor's nearest-neighbour downscale, as in
+Pillow; `--mode render` antialiases them instead. `--help` covers `--mode`,
+`--dpi`, `--pages 1-10,12` and `--gray`.
+
 ## Modes
 
 | Mode | Body weights | KV cache | Prefill attention | Changed tokens vs FP32 (of 24,262) | Journal page, 7950X | Use when |
@@ -203,7 +221,7 @@ lists every accepted and rejected change with its measurement.
 ## Repository layout
 
 `src/` library and binaries · `tests/` Rust gates and fixtures ·
-`examples/ocr_bench.rs` · `tools/` build and model helpers · `docs/`
+`examples/ocr_bench.rs` · `tools/` build, model and PDF helpers · `docs/`
 architecture, modes, performance, portability, development · `scripts/`
 the frozen GPU-reference closure that the receipts hash (do not edit) ·
 `reference/`, `requirements/` receipts and pins · `research/` the indexed

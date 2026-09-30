@@ -1,0 +1,4 @@
+# Python helpers in tools/ that the runner does not need at inference time.
+# tools/pdf_to_pages.py and its tests (tools/tests): PDF pages to PNG images.
+pypdfium2==5.13.0
+pillow==12.3.0
