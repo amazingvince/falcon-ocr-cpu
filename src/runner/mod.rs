@@ -13,6 +13,8 @@ use std::{path::Path, sync::Arc, time::Instant};
 
 mod batch;
 mod cohort;
+/// Rereading fast-mode pages that looped in near-exact mode (`run --escalate`).
+pub mod escalate;
 mod generate;
 mod pipeline;
 mod speculate;
@@ -113,6 +115,14 @@ pub struct OcrResult {
     /// and `height` stay those of the final model input.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub crop: Option<Crop>,
+    /// The fast-mode attempt that this near-exact rerun replaced
+    /// (`falcon-ocr run --escalate`, `escalate::Escalation`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub escalated_from: Option<escalate::EscalatedAttempt>,
+    /// Why this fast-mode page could not be reread in near-exact mode
+    /// (`--escalate`); the result is the fast one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub escalation_error: Option<String>,
     pub timings: Timings,
 }
 

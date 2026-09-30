@@ -156,6 +156,8 @@ impl Runner {
             budget_clamped: page.budget_clamped,
             route: None,
             crop: page.crop,
+            escalated_from: None,
+            escalation_error: None,
             timings: page.timings,
         })
     }
