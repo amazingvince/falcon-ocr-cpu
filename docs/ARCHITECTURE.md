@@ -63,7 +63,7 @@ finalized; nothing treats partial image strips as causal prompts.
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, panel prefill, multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
-| `runner/` | `Runner` (prefill, sealing, batches), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
+| `runner/` | `Runner` (prefill, sealing), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
 | `team.rs`, `tune.rs`, `cpu.rs` | The decode spin team; the automatic team-size tuner and its report; host topology, performance cores, the bandwidth probe |
 | `head_screen.rs`, `draft.rs`, `repetition.rs` | The exact INT8 vocabulary screen; n-gram drafts, the adaptive draft policy and document history; the repetition stop |
 | `draft_head.rs` | The trained draft head (EAGLE-3 style, `research/draft-head`): INT8 projections on the decode kernels, its own INT8 key/value cache of verified positions, confidence-gated draft chains, an optional low-rank vocabulary head |
