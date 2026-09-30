@@ -831,6 +831,16 @@
       "height": 80,
       "decoded_rgb_sha256": "b6aa9ef4413d2e4001cbd23c287aeb2818f34972be70d53dfebdb2203f3a6a9f",
       "patches_sha256": "7bf5416fb68148320bd99a237735865804d1b01cd25af6d976c51b02ffffd518"
+    },
+    {
+      "file": "tall-17x1800.png",
+      "mode": "RGB",
+      "minimum": 16,
+      "maximum": 2048,
+      "width": 16,
+      "height": 1792,
+      "decoded_rgb_sha256": "f9d858e45105fc25cd92f6239d2c070fcf37f361dd7e20f2584a8596b55907ff",
+      "patches_sha256": "699f42d876954e1c9d6e759a74fefa9b6b5683f581bd222c4a4cd7b997715921"
     }
   ]
 }

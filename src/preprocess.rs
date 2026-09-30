@@ -7,6 +7,9 @@
 //! The resampling coefficients and fixed-point arithmetic below are adapted from
 //! Pillow 11.3.0's src/libImaging/Resample.c:
 //! https://github.com/python-pillow/Pillow/blob/11.3.0/src/libImaging/Resample.c
+//! The I;16 rounding, the pass order for very tall images (src/PIL/Image.py) and
+//! the nearest-neighbour positions (src/libImaging/Geometry.c) follow Pillow
+//! 12.3.0, the pinned processor's version.
 //!
 //! Pillow / PIL copyright and permission notice:
 //! Copyright © 1997-2011 by Secret Labs AB
@@ -579,31 +582,54 @@ fn coefficients(input: u32, output: u32, filter: Filter) -> Vec<Coefficients> {
 
 fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, width: u32, height: u32) -> Vec<u16> {
     // Pillow's I;16 kernel accumulates FP64 and rounds to 16-bit after each
-    // separable pass. Conversion to RGB subsequently clips to 255, not /257.
-    let quantize = |value: f64| {
-        let rounded = (value + if value < 0.0 { -0.5 } else { 0.5 }) as i64;
-        ((rounded % 256).clamp(0, 255) + ((rounded >> 8).clamp(0, 255) << 8)) as u16
-    };
+    // separable pass, in the order `resize_bicubic` describes. Conversion to
+    // RGB subsequently clips to 255, not /257.
+    if tall_first(input_width, input_height, height) {
+        let vertical = gray16_vertical(input, input_width, input_height, height);
+        return if width == input_width {
+            vertical
+        } else {
+            gray16_horizontal(&vertical, input_width, height, width)
+        };
+    }
     let horizontal = if width == input_width {
         input.to_vec()
     } else {
-        let coeff = coefficients_f64(input_width, width, Filter::Bicubic);
-        let mut output = vec![0u16; width as usize * input_height as usize];
-        for y in 0..input_height as usize {
-            for (x, (start, weights)) in coeff.iter().enumerate() {
-                let value: f64 = weights
-                    .iter()
-                    .enumerate()
-                    .map(|(offset, &weight)| input[y * input_width as usize + start + offset] as f64 * weight)
-                    .sum();
-                output[y * width as usize + x] = quantize(value);
-            }
-        }
-        output
+        gray16_horizontal(input, input_width, input_height, width)
     };
     if height == input_height {
-        return horizontal;
+        horizontal
+    } else {
+        gray16_vertical(&horizontal, width, input_height, height)
     }
+}
+
+/// Pillow 12's rounding of an FP64 I;16 resampling sum to 16 bits,
+/// `CLIP16(ROUND_UP(ss))` (Pillow 11 clamped each byte, which differs when a
+/// sum overshoots 65535).
+fn quantize16(value: f64) -> u16 {
+    ((value + if value < 0.0 { -0.5 } else { 0.5 }) as i64).clamp(0, 65535) as u16
+}
+
+/// The horizontal I;16 bicubic pass to `width` columns.
+fn gray16_horizontal(input: &[u16], input_width: u32, input_height: u32, width: u32) -> Vec<u16> {
+    let coeff = coefficients_f64(input_width, width, Filter::Bicubic);
+    let mut output = vec![0u16; width as usize * input_height as usize];
+    for y in 0..input_height as usize {
+        for (x, (start, weights)) in coeff.iter().enumerate() {
+            let value: f64 = weights
+                .iter()
+                .enumerate()
+                .map(|(offset, &weight)| input[y * input_width as usize + start + offset] as f64 * weight)
+                .sum();
+            output[y * width as usize + x] = quantize16(value);
+        }
+    }
+    output
+}
+
+/// The vertical I;16 bicubic pass of a `width`-column image to `height` rows.
+fn gray16_vertical(input: &[u16], width: u32, input_height: u32, height: u32) -> Vec<u16> {
     let mut output = vec![0u16; width as usize * height as usize];
     for (y, (start, weights)) in coefficients_f64(input_height, height, Filter::Bicubic)
         .iter()
@@ -613,9 +639,9 @@ fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, width: u32,
             let value: f64 = weights
                 .iter()
                 .enumerate()
-                .map(|(offset, &weight)| horizontal[(start + offset) * width as usize + x] as f64 * weight)
+                .map(|(offset, &weight)| input[(start + offset) * width as usize + x] as f64 * weight)
                 .sum();
-            output[y * width as usize + x] = quantize(value);
+            output[y * width as usize + x] = quantize16(value);
         }
     }
     output
@@ -635,81 +661,136 @@ pub(crate) fn resize_gray(
     height: u32,
     filter: Filter,
 ) -> Vec<u8> {
-    // Pillow's 8-bit kernels accumulate in 32 bits: 255 times the positive
-    // lobe (at most about 1.2) in 22-bit fixed point stays below 2^31.
-    let clip = |sum: i32| (sum >> PRECISION_BITS).clamp(0, 255) as u8;
-    let (iw, w) = (input_width as usize, width as usize);
+    // The pass order `resize_bicubic` describes (Pillow 12's tall-page rule).
+    if tall_first(input_width, input_height, height) {
+        let vertical = gray8_vertical(input, input_width, input_height, height, filter);
+        return if width == input_width {
+            vertical
+        } else {
+            gray8_horizontal(&vertical, input_width, height, width, filter)
+        };
+    }
     let horizontal = if width == input_width {
         input.to_vec()
     } else {
-        let weights = coefficients(input_width, width, filter);
-        let mut out = vec![0u8; w * input_height as usize];
-        for (source, row) in input.chunks_exact(iw).zip(out.chunks_exact_mut(w)) {
-            for (target, coeff) in row.iter_mut().zip(&weights) {
-                let mut sum = 1_i32 << (PRECISION_BITS - 1);
-                for (&value, &weight) in source[coeff.start..].iter().zip(&coeff.weights) {
-                    sum += value as i32 * weight;
-                }
-                *target = clip(sum);
-            }
-        }
-        out
+        gray8_horizontal(input, input_width, input_height, width, filter)
     };
     if height == input_height {
-        return horizontal;
+        horizontal
+    } else {
+        gray8_vertical(&horizontal, width, input_height, height, filter)
     }
-    let mut out = vec![0u8; w * height as usize];
-    let mut sums = vec![0_i32; w];
-    for (row, coeff) in out.chunks_exact_mut(w).zip(&coefficients(input_height, height, filter)) {
-        sums.fill(1 << (PRECISION_BITS - 1));
-        for (offset, &weight) in coeff.weights.iter().enumerate() {
-            let source = &horizontal[(coeff.start + offset) * w..][..w];
-            for (sum, &value) in sums.iter_mut().zip(source) {
-                *sum += value as i32 * weight;
+}
+
+/// Pillow's 8-bit kernels accumulate in 32 bits: 255 times the positive
+/// lobe (at most about 1.2) in 22-bit fixed point stays below 2^31.
+fn clip8(sum: i32) -> u8 {
+    (sum >> PRECISION_BITS).clamp(0, 255) as u8
+}
+
+/// The horizontal pass of an 8-bit gray image to `width` columns.
+fn gray8_horizontal(input: &[u8], input_width: u32, input_height: u32, width: u32, filter: Filter) -> Vec<u8> {
+    let (iw, w) = (input_width as usize, width as usize);
+    let weights = coefficients(input_width, width, filter);
+    let mut out = vec![0u8; w * input_height as usize];
+    for (source, row) in input.chunks_exact(iw).zip(out.chunks_exact_mut(w)) {
+        for (target, coeff) in row.iter_mut().zip(&weights) {
+            let mut sum = 1_i32 << (PRECISION_BITS - 1);
+            for (&value, &weight) in source[coeff.start..].iter().zip(&coeff.weights) {
+                sum += value as i32 * weight;
             }
-        }
-        for (target, &sum) in row.iter_mut().zip(&sums) {
-            *target = clip(sum);
+            *target = clip8(sum);
         }
     }
     out
 }
 
-/// Pillow-compatible bicubic resampling of a complete RGB image.
-fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
-    let horizontal = if input.width() != width {
-        let weights = coefficients(input.width(), width, Filter::Bicubic);
-        let mut out = RgbImage::new(width, input.height());
-        let src = input.as_raw();
-        for (row_index, row) in out.as_mut().chunks_exact_mut(width as usize * 3).enumerate() {
-            for (pixel, coeff) in row.chunks_exact_mut(3).zip(&weights) {
-                let mut sums = [1_i64 << (PRECISION_BITS - 1); 3];
-                let base = (row_index * input.width() as usize + coeff.start) * 3;
-                for (offset, &weight) in coeff.weights.iter().enumerate() {
-                    for channel in 0..3 {
-                        sums[channel] += src[base + offset * 3 + channel] as i64 * weight as i64;
-                    }
-                }
-                for channel in 0..3 {
-                    pixel[channel] = clip(sums[channel]);
-                }
+/// The vertical pass of an 8-bit gray image `width` columns wide to `height`
+/// rows.
+fn gray8_vertical(input: &[u8], width: u32, input_height: u32, height: u32, filter: Filter) -> Vec<u8> {
+    let w = width as usize;
+    let mut out = vec![0u8; w * height as usize];
+    let mut sums = vec![0_i32; w];
+    for (row, coeff) in out.chunks_exact_mut(w).zip(&coefficients(input_height, height, filter)) {
+        sums.fill(1 << (PRECISION_BITS - 1));
+        for (offset, &weight) in coeff.weights.iter().enumerate() {
+            let source = &input[(coeff.start + offset) * w..][..w];
+            for (sum, &value) in sums.iter_mut().zip(source) {
+                *sum += value as i32 * weight;
             }
         }
-        out
-    } else {
-        input.clone()
-    };
-    if input.height() == height {
-        return horizontal;
+        for (target, &sum) in row.iter_mut().zip(&sums) {
+            *target = clip8(sum);
+        }
     }
+    out
+}
+
+/// Pillow-compatible bicubic resampling of a complete RGB image: a horizontal
+/// then a vertical pass, each rounded to uint8. Pillow 12's `Image.resize`
+/// (Image.py) reverses the order for an image more than 100 times taller than
+/// wide whose height shrinks ([`tall_first`]): a vertical-only core resize, then
+/// a horizontal-only one. The rounding between the passes makes the order
+/// visible, so the same order is kept here.
+fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
+    if tall_first(input.width(), input.height(), height) {
+        let vertical = bicubic_vertical(input, height);
+        return if width == input.width() {
+            vertical
+        } else {
+            bicubic_horizontal(&vertical, width)
+        };
+    }
+    let horizontal = if width == input.width() {
+        input.clone()
+    } else {
+        bicubic_horizontal(input, width)
+    };
+    if height == input.height() {
+        horizontal
+    } else {
+        bicubic_vertical(&horizontal, height)
+    }
+}
+
+/// Whether Pillow 12's `Image.resize` resamples an image vertically first:
+/// its height is more than 100 times its width and shrinks.
+fn tall_first(width: u32, height: u32, new_height: u32) -> bool {
+    height as u64 > width as u64 * 100 && new_height < height
+}
+
+/// The horizontal bicubic pass of an RGB image to `width` columns.
+fn bicubic_horizontal(input: &RgbImage, width: u32) -> RgbImage {
+    let weights = coefficients(input.width(), width, Filter::Bicubic);
+    let mut out = RgbImage::new(width, input.height());
+    let src = input.as_raw();
+    for (row_index, row) in out.as_mut().chunks_exact_mut(width as usize * 3).enumerate() {
+        for (pixel, coeff) in row.chunks_exact_mut(3).zip(&weights) {
+            let mut sums = [1_i64 << (PRECISION_BITS - 1); 3];
+            let base = (row_index * input.width() as usize + coeff.start) * 3;
+            for (offset, &weight) in coeff.weights.iter().enumerate() {
+                for channel in 0..3 {
+                    sums[channel] += src[base + offset * 3 + channel] as i64 * weight as i64;
+                }
+            }
+            for channel in 0..3 {
+                pixel[channel] = clip(sums[channel]);
+            }
+        }
+    }
+    out
+}
+
+/// The vertical bicubic pass of an RGB image to `height` rows.
+fn bicubic_vertical(input: &RgbImage, height: u32) -> RgbImage {
     let weights = coefficients(input.height(), height, Filter::Bicubic);
-    let mut out = RgbImage::new(width, height);
-    let stride = width as usize * 3;
+    let mut out = RgbImage::new(input.width(), height);
+    let stride = input.width() as usize * 3;
     for (row, coeff) in out.as_mut().chunks_exact_mut(stride).zip(&weights) {
         for (column, target) in row.iter_mut().enumerate() {
             let mut sum = 1_i64 << (PRECISION_BITS - 1);
             for (offset, &weight) in coeff.weights.iter().enumerate() {
-                sum += horizontal.as_raw()[(coeff.start + offset) * stride + column] as i64 * weight as i64;
+                sum += input.as_raw()[(coeff.start + offset) * stride + column] as i64 * weight as i64;
             }
             *target = clip(sum);
         }
@@ -801,6 +882,33 @@ mod tests {
         // Above 2^24 the f32 box rounds sizes: 2,147,483,777 becomes 2,147,483,904,
         // and 9,000,000 outputs would read 7 pixels past the source. An error, not a clamp.
         assert!(nearest_positions(2_147_483_777, 9_000_000).is_err());
+    }
+
+    #[test]
+    fn tall_pages_resize_vertically_first_like_pillow() {
+        // Pillow 12.3.0 on this pattern as a uint16 array (mode I;16):
+        // `Image.fromarray(values).resize((16, 1700), Image.Resampling.BICUBIC)`,
+        // hashed as little-endian u16. The one-call core resize (horizontal first,
+        // the order this runner used before 2026-09-28) differs in 9,234 of the
+        // 27,200 values. The pattern spans the full 16-bit range, so overshoots
+        // also check the clip to 65535. The RGB path is covered by
+        // `tall-17x1800.png` in the decode fixtures.
+        let pattern = |width: u64, height: u64| -> Vec<u16> {
+            (0..height)
+                .flat_map(|y| (0..width).map(move |x| ((x * 40503 + y * 9973 + x * y * 17) % 65536) as u16))
+                .collect()
+        };
+        let hash = |values: Vec<u16>| sha256(&values.iter().flat_map(|v| v.to_le_bytes()).collect::<Vec<_>>());
+        assert_eq!(
+            hash(resize_gray16(&pattern(17, 1800), 17, 1800, 16, 1700)),
+            "bc1a4abf9ea909e60792f27ae40c7d41a08fe17c790f3bb6b597f3ce7f40f681"
+        );
+        // At most 100 times taller than wide: horizontal first, as before.
+        assert_eq!(
+            hash(resize_gray16(&pattern(17, 40), 17, 40, 16, 30)),
+            "abe47940ea5d785cc9ed6741b3f8d80cd4a8a85cb1250ec27e9dd55d760c04fc"
+        );
+        assert!(tall_first(17, 1701, 1700) && !tall_first(17, 1700, 1600) && !tall_first(17, 1800, 1800));
     }
 
     #[cfg(feature = "turbojpeg")]
