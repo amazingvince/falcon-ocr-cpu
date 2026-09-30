@@ -227,6 +227,61 @@ fn cli_kv_cache_applies_to_run_and_doctor_only() {
     assert!(report["plan"]["mode"].is_null());
 }
 
+#[test]
+fn eval_profile_picks_the_kv_cache_of_a_model_file() {
+    let temporary = tempfile::tempdir().unwrap();
+    // A kernel-ready file header (the doctor reads no tensor).
+    let file = temporary.path().join("fast.safetensors");
+    let data = [0_u8; 4];
+    let view = safetensors::tensor::TensorView::new(safetensors::Dtype::F32, vec![1], &data).unwrap();
+    let metadata = std::collections::HashMap::from([
+        ("format".to_owned(), falcon_ocr::model::PACKED_FORMAT.to_owned()),
+        ("profile".to_owned(), "w8-body-kv-q8".to_owned()),
+        (
+            "config".to_owned(),
+            include_str!("fixtures/model-config.json").to_owned(),
+        ),
+    ]);
+    safetensors::serialize_to_file(vec![("t", view)], Some(metadata), &file).unwrap();
+    let doctor = |profile: &str| -> serde_json::Value {
+        let output = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"))
+            .arg("--model")
+            .arg(temporary.path())
+            .arg("--model-file")
+            .arg(&file)
+            .args(["--profile", profile, "doctor"])
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        serde_json::from_slice(&output.stdout).unwrap()
+    };
+    // The file's weights with the profile's cache, or a refusal.
+    let report = doctor("w8-body-kv-q16");
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q16");
+    assert_eq!(report["plan"]["kv_cache"], "q16");
+    let report = doctor("w16-body-kv-q8");
+    assert!(report["plan"].is_null());
+    let error = report["error"].as_str().unwrap();
+    assert!(error.contains("w8-body-kv-q8 weights"), "{error}");
+    // The checkpoint loader's options are refused, not silently ignored.
+    for flag in [
+        &["--w8-artifact", "overlay.safetensors"][..],
+        &["--keep-fp32", "layers.3.*"],
+        &["--weights-bf16"],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"))
+            .arg("--model")
+            .arg(temporary.path())
+            .arg("--model-file")
+            .arg(&file)
+            .args(flag)
+            .args(["bench", "page.png", "--report", "report.json"])
+            .output()
+            .unwrap();
+        assert_cli_error(output, "apply to the checkpoint loader, not to --model-file");
+    }
+}
+
 fn model_directory() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/model")
 }

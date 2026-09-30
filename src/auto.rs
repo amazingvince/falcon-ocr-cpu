@@ -242,6 +242,8 @@ pub struct ModelRequest<'a> {
     pub from_checkpoint: bool,
     /// Research: load this profile from the checkpoint whatever the mode
     /// (8-bit profiles take the overlay when present, else round-to-nearest).
+    /// With `model_file` it must name the file's weights (`kv_cache` picks the
+    /// cache).
     pub profile: Option<Profile>,
     /// Research: accept a kernel-ready file of any profile.
     pub allow_research: bool,
@@ -296,6 +298,15 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
     let dir = request.model_dir;
     if let Some(path) = request.model_file {
         let profile = Model::packed_profile(path)?;
+        if let Some(requested) = request.profile {
+            ensure!(
+                requested.weights == profile.weights,
+                "{} holds {} weights, not those of {}",
+                path.display(),
+                profile.label(),
+                requested.label()
+            );
+        }
         let mode = Mode::of_profile(profile);
         ensure!(
             mode.is_some() || request.allow_research,
@@ -1232,6 +1243,26 @@ mod tests {
         };
         let plan = resolve_weights(&explicit).unwrap();
         assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q16));
+        // A research profile with a model file (the eval binary's doctor)
+        // must name the file's weights; its cache comes from `kv_cache`.
+        let research = |profile| ModelRequest {
+            profile: Some(profile),
+            allow_research: true,
+            ..explicit.clone()
+        };
+        let plan = resolve_weights(&ModelRequest {
+            kv_cache: Some(Kv::F32Split),
+            ..research(Profile::W8_BODY_SPLIT_F32)
+        })
+        .unwrap();
+        assert_eq!(plan.profile, Profile::W8_BODY_SPLIT_F32);
+        let error = resolve_weights(&research(Profile::W16_BODY_KV_Q8))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("w8-body-kv-q8 weights, not those of w16-body-kv-q8"),
+            "{error}"
+        );
     }
 
     #[test]
