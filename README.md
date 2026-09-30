@@ -72,7 +72,7 @@ None of these change tokens (gated by `tests/modes.rs`).
 |---|---|
 | `--model DIR` | Checkpoint and/or packed files (default `artifacts/model`) |
 | `--model-file F` | A packed file; it decides the mode. `--verify-model-file` checks every tensor digest first |
-| `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay, `--allow-rtn` lets fast mode quantize without one |
+| `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay (applied to the checkpoint, even next to a packed fast file), `--allow-rtn` lets fast mode quantize without one |
 | `--backend auto\|avx2\|scalar\|neon` | `avx2` forces 8-lane FP32 kernels; `scalar` is for debugging |
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |

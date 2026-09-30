@@ -230,7 +230,8 @@ pub struct ModelRequest<'a> {
     pub model_file: Option<&'a Path>,
     /// `None` means near-exact.
     pub mode: Option<Mode>,
-    /// An explicit W8 overlay for fast mode.
+    /// An explicit W8 overlay for fast mode, applied to the checkpoint (a
+    /// packed fast file in `model_dir` is then not used).
     pub w8_artifact: Option<&'a Path>,
     /// Let fast mode quantize round-to-nearest at load when no overlay exists
     /// (about three times the changed tokens of GPTQ).
@@ -275,8 +276,9 @@ impl Default for ModelRequest<'_> {
 
 /// Decide where the weights come from. Without `model_file`: the published
 /// packed file for the mode in `model_dir`, then the FP32 checkpoint (fast
-/// mode also needs the GPTQ overlay unless `allow_rtn`). `kv_cache` then
-/// replaces the KV half of the profile.
+/// mode also needs the GPTQ overlay unless `allow_rtn`). An explicit
+/// `w8_artifact` always reads the checkpoint, so the overlay asked for is
+/// the one used. `kv_cache` then replaces the KV half of the profile.
 pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
     let plan = recorded_plan(request)?;
     Ok(match request.kv_cache {
@@ -371,6 +373,7 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
     );
     if let Some(name) = mode.packed_file_name()
         && !request.from_checkpoint
+        && request.w8_artifact.is_none()
     {
         let packed = dir.join(name);
         if packed.is_file() {
@@ -387,6 +390,17 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
                 profile,
             });
         }
+    }
+    if let Some(overlay) = request.w8_artifact
+        && !dir.join("model.safetensors").is_file()
+    {
+        bail!(
+            "--w8-artifact {} applies to the FP32 checkpoint, which {} lacks: download it with \
+             python scripts/fetch_reference.py --output {}, or drop --w8-artifact to use a packed fast file",
+            overlay.display(),
+            dir.display(),
+            dir.display()
+        );
     }
     require_checkpoint(dir, Some(mode))?;
     let profile = mode.profile(request.split_exact);
@@ -1168,6 +1182,46 @@ mod tests {
         );
         std::fs::write(root.join("tokenizer.json"), b"{}").unwrap();
         assert_eq!(plan.source.tokenizer_dir(Path::new("elsewhere")), root.to_path_buf());
+    }
+
+    /// `--w8-artifact` is used even when a packed fast file, which would
+    /// otherwise win, sits in the model directory.
+    #[test]
+    fn an_explicit_overlay_reads_the_checkpoint_over_a_packed_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fabricate_packed(&root.join(Mode::Fast.packed_file_name().unwrap()), "w8-body-kv-q8");
+        let fast = ModelRequest {
+            model_dir: root,
+            mode: Some(Mode::Fast),
+            ..ModelRequest::default()
+        };
+        assert!(matches!(
+            resolve_weights(&fast).unwrap().source,
+            WeightsSource::Packed { .. }
+        ));
+        let overlay = root.join("w8-gptq-other.safetensors");
+        let with_overlay = ModelRequest {
+            w8_artifact: Some(&overlay),
+            ..fast
+        };
+        // Without a checkpoint the overlay has nothing to apply to.
+        let error = resolve_weights(&with_overlay).unwrap_err().to_string();
+        assert!(
+            error.contains("applies to the FP32 checkpoint") && error.contains("drop --w8-artifact"),
+            "{error}"
+        );
+        std::fs::write(root.join("model.safetensors"), b"stub").unwrap();
+        let plan = resolve_weights(&with_overlay).unwrap();
+        assert_eq!(
+            plan.source,
+            WeightsSource::Checkpoint {
+                dir: root.to_path_buf(),
+                overlay: Some(overlay.clone()),
+                rtn: false
+            }
+        );
+        assert_eq!((plan.mode, plan.profile), (Some(Mode::Fast), Profile::W8_BODY_KV_Q8));
     }
 
     #[test]
