@@ -192,6 +192,41 @@ fn cli_requires_an_image_before_attempting_model_load() {
     assert_cli_error(output, "<IMAGES>");
 }
 
+#[test]
+fn cli_kv_cache_applies_to_run_and_doctor_only() {
+    let temporary = tempfile::tempdir().unwrap();
+    let model = temporary.path();
+    // Refused before any model file is read.
+    for command in [
+        &["trace", "--fixture", "f", "--output", "o"][..],
+        &["pack", "--output", "o"],
+        &["inspect"],
+    ] {
+        let output = cli()
+            .arg("--model")
+            .arg(model)
+            .args(["--kv-cache", "q16"])
+            .args(command)
+            .output()
+            .unwrap();
+        assert_cli_error(output, "--kv-cache applies to run and doctor");
+    }
+    // The doctor's plan names the profile that would run.
+    fs::write(model.join("model.safetensors"), b"stub").unwrap();
+    fs::write(model.join("config.json"), include_str!("fixtures/model-config.json")).unwrap();
+    let output = cli()
+        .arg("--model")
+        .arg(model)
+        .args(["--mode", "fast", "--allow-rtn", "--kv-cache", "q16", "doctor"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q16");
+    assert_eq!(report["plan"]["kv_cache"], "q16");
+    assert!(report["plan"]["mode"].is_null());
+}
+
 fn model_directory() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/model")
 }

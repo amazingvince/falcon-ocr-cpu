@@ -22,8 +22,9 @@ pub enum Weights {
     Int8,
 }
 
-/// KV cache storage once a page's prefix is sealed.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+/// KV cache storage once a page's prefix is sealed. The names are the values
+/// of `falcon-ocr --kv-cache`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum Kv {
     /// The reference compact FP32 cache (keys per query head); never sealed.

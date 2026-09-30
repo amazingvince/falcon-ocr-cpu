@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-09-24.
+Status: current as of 2026-09-30.
 
 ## Toolchain
 
@@ -88,8 +88,11 @@ checks with weights: smoke trace, token agreement, a speed report.
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
 takes `prefill-bf16=off|attention|all`, `split-chunks=1..4` (position chunks
 of the split cache scan), `phases=1` (phase split of forwards on stderr) and
-`prefill-profile=1` (prefill attention stage cycles). Both flags are hidden
-from `--help`; nothing reads environment variables.
+`prefill-profile=1` (prefill attention stage cycles). `--kv-cache
+compact|f32-split|q16|q8` (`falcon-ocr` run and doctor) replaces the KV half
+of the resolved profile; the plan and every result name the profile that
+runs, a research one unless it is a mode's own. These flags are hidden from
+`--help`; nothing reads environment variables.
 
 ## Gotchas
 

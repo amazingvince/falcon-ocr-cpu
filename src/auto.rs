@@ -214,7 +214,8 @@ impl HostInfo {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WeightsPlan {
     pub source: WeightsSource,
-    /// `None` for a research profile (`ModelRequest::profile`).
+    /// `None` for a research profile (`ModelRequest::profile`, or a
+    /// `ModelRequest::kv_cache` other than the mode's).
     pub mode: Option<Mode>,
     pub profile: Profile,
 }
@@ -244,6 +245,12 @@ pub struct ModelRequest<'a> {
     pub profile: Option<Profile>,
     /// Research: accept a kernel-ready file of any profile.
     pub allow_research: bool,
+    /// Research: replace the KV half of the profile the rest of the request
+    /// resolves to (`falcon-ocr --kv-cache`). The cache is built at run time,
+    /// so this works with kernel-ready files too; the plan (and so `doctor`
+    /// and every result) then names the profile that runs, a research
+    /// profile unless it is a mode's own.
+    pub kv_cache: Option<Kv>,
 }
 
 impl Default for ModelRequest<'_> {
@@ -259,14 +266,33 @@ impl Default for ModelRequest<'_> {
             from_checkpoint: false,
             profile: None,
             allow_research: false,
+            kv_cache: None,
         }
     }
 }
 
 /// Decide where the weights come from. Without `model_file`: the published
 /// packed file for the mode in `model_dir`, then the FP32 checkpoint (fast
-/// mode also needs the GPTQ overlay unless `allow_rtn`).
+/// mode also needs the GPTQ overlay unless `allow_rtn`). `kv_cache` then
+/// replaces the KV half of the profile.
 pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
+    let plan = recorded_plan(request)?;
+    Ok(match request.kv_cache {
+        Some(kv) => {
+            let profile = Profile::new(plan.profile.weights, kv);
+            WeightsPlan {
+                mode: Mode::of_profile(profile),
+                profile,
+                ..plan
+            }
+        }
+        None => plan,
+    })
+}
+
+/// [`resolve_weights`] without the KV override: the profile the model file
+/// records, or the one the mode or research profile names.
+fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
     let dir = request.model_dir;
     if let Some(path) = request.model_file {
         let profile = Model::packed_profile(path)?;
@@ -409,7 +435,19 @@ fn require_checkpoint(dir: &Path, mode: Option<Mode>) -> Result<()> {
 /// kernel-ready file.
 pub fn load_model(plan: &WeightsPlan, verify: bool) -> Result<Model> {
     match &plan.source {
-        WeightsSource::Packed { path } => Model::load_packed(path, verify),
+        WeightsSource::Packed { path } => {
+            // The file records its mode's profile; the plan may name another
+            // KV cache for the same weights (`ModelRequest::kv_cache`).
+            let model = Model::load_packed(path, verify)?;
+            ensure!(
+                model.profile().weights == plan.profile.weights,
+                "{} holds {} weights, not those of the planned {}",
+                path.display(),
+                model.profile().label(),
+                plan.profile.label()
+            );
+            Ok(model.with_kv_cache(plan.profile.kv))
+        }
         WeightsSource::Checkpoint { dir, overlay, .. } => {
             if plan.profile == Profile::REFERENCE {
                 Model::load(dir)
@@ -516,7 +554,8 @@ pub struct ByteBudget {
 /// The plan a runner executes for a host, config and model.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Resolved {
-    /// `None` for a research profile of the eval binary.
+    /// `None` for a research profile (the eval binary's, or one
+    /// `falcon-ocr --kv-cache` makes).
     pub mode: Option<Mode>,
     pub profile: Profile,
     pub weights: WeightsSource,
@@ -1144,6 +1183,58 @@ mod tests {
     }
 
     #[test]
+    fn kv_cache_replaces_the_kv_half_of_the_resolved_profile() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::write(root.join("model.safetensors"), b"stub").unwrap();
+        let request = |mode, kv_cache| ModelRequest {
+            model_dir: root,
+            mode,
+            kv_cache,
+            allow_rtn: true,
+            split_exact: true,
+            ..ModelRequest::default()
+        };
+        // A mode's own cache keeps the mode; any other makes a research profile.
+        let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q8))).unwrap();
+        assert_eq!((plan.mode, plan.profile), (Some(Mode::Fast), Profile::W8_BODY_KV_Q8));
+        let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q16))).unwrap();
+        assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q16));
+        assert!(matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }));
+        let plan = resolve_weights(&request(None, Some(Kv::Q8))).unwrap();
+        assert_eq!((plan.mode, plan.profile), (None, Profile::W16_BODY_KV_Q8));
+        let plan = resolve_weights(&request(Some(Mode::Exact), Some(Kv::Compact))).unwrap();
+        assert_eq!((plan.mode, plan.profile), (Some(Mode::Exact), Profile::REFERENCE));
+        let plan = resolve_weights(&request(Some(Mode::Exact), Some(Kv::Q8))).unwrap();
+        assert_eq!((plan.mode, plan.profile), (None, Profile::KV_Q8));
+        // The plan reports the profile that runs.
+        std::fs::write(
+            root.join("config.json"),
+            include_str!("../tests/fixtures/model-config.json"),
+        )
+        .unwrap();
+        let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q16))).unwrap();
+        let facts = ModelFacts::from_plan(&plan).unwrap();
+        let resolved = Resolved::new(HostInfo::detect(), &RunnerConfig::default(), &facts, root);
+        assert_eq!((resolved.mode, resolved.profile), (None, Profile::W8_BODY_KV_Q16));
+        assert_eq!(resolved.kv_cache, "q16");
+        assert_eq!(resolved.bytes.kv_per_position, 22 * 8 * 330);
+        assert!(resolved.to_string().contains("mode research (w8-body-kv-q16)"));
+        // A kernel-ready file keeps its weights and takes the requested cache.
+        let packed = root.join(Mode::Fast.packed_file_name().unwrap());
+        fabricate_packed(&packed, "w8-body-kv-q8");
+        let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q16))).unwrap();
+        assert_eq!(plan.source, WeightsSource::Packed { path: packed.clone() });
+        assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q16));
+        let explicit = ModelRequest {
+            model_file: Some(&packed),
+            ..request(None, Some(Kv::Q16))
+        };
+        let plan = resolve_weights(&explicit).unwrap();
+        assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q16));
+    }
+
+    #[test]
     fn doctor_reports_files_and_a_plan_without_reading_tensors() {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
@@ -1172,6 +1263,15 @@ mod tests {
         let json = serde_json::to_value(&report).unwrap();
         assert_eq!(json["plan"]["profile"], "w16-body-kv-q16");
         assert!(report.to_string().starts_with("host: "));
+        // A replaced cache shows in the plan.
+        let replaced = ModelRequest {
+            kv_cache: Some(Kv::Q8),
+            ..request.clone()
+        };
+        let plan = doctor(&replaced, &config, false, false).unwrap().plan.unwrap();
+        assert_eq!((plan.mode, plan.profile), (None, Profile::W16_BODY_KV_Q8));
+        assert_eq!(plan.kv_cache, "q8");
+        assert_eq!(plan.bytes.kv_per_position, 22 * 8 * 170);
     }
 
     #[test]

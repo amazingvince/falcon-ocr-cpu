@@ -321,6 +321,13 @@ impl Model {
     pub fn profile(&self) -> crate::quant::Profile {
         self.profile
     }
+    /// This model with the KV half of its profile replaced by `kv`. The
+    /// weights do not depend on it: a runner builds the cache per page and
+    /// seals it into the profile's storage (`auto::ModelRequest::kv_cache`).
+    pub fn with_kv_cache(mut self, kv: crate::quant::Kv) -> Self {
+        self.profile.kv = kv;
+        self
+    }
     /// Weight storage of this model (`falcon-ocr-eval` reports it).
     pub fn memory_report(&self) -> MemoryReport {
         let qbytes = |w: &Weight| w.quantized.as_ref().map_or(0, |q| q.payload_bytes());

@@ -5,6 +5,7 @@ use falcon_ocr::{
     auto::{ModelRequest, load_model, model_files_dir, resolve_weights, with_default_draft_head},
     cli::{RunnerArgs, print_doctor},
     model::WeightsSource,
+    quant::Kv,
     trace::TensorTrace,
 };
 use std::{path::PathBuf, sync::Arc, time::Instant};
@@ -44,6 +45,11 @@ struct Cli {
     /// With --model-file: check the digest of every tensor first.
     #[arg(long, global = true)]
     verify_model_file: bool,
+    /// Research: the KV cache storage for run and doctor, replacing the
+    /// mode's own (`--mode fast --kv-cache q16` runs w8-body-kv-q16); results
+    /// name the profile that ran.
+    #[arg(long, value_enum, global = true, hide = true)]
+    kv_cache: Option<Kv>,
     #[command(flatten)]
     runner: RunnerArgs,
     #[command(subcommand)]
@@ -129,6 +135,10 @@ fn main() -> Result<()> {
         }
         (_, mode) => mode,
     };
+    ensure!(
+        cli.kv_cache.is_none() || matches!(cli.command, Command::Run { .. } | Command::Doctor { .. }),
+        "--kv-cache applies to run and doctor; trace, pack and inspect use the mode's own cache"
+    );
     let request = ModelRequest {
         model_dir: &cli.model,
         model_file: cli.model_file.as_deref(),
@@ -137,6 +147,7 @@ fn main() -> Result<()> {
         allow_rtn: cli.allow_rtn,
         split_exact,
         from_checkpoint: matches!(cli.command, Command::Pack { .. }),
+        kv_cache: cli.kv_cache,
         ..ModelRequest::default()
     };
     // Traces stay bit-comparable with the recorded references: the reference
