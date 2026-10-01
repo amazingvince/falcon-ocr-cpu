@@ -96,7 +96,7 @@ CLI. Regenerate a fixture only when the numerics change on purpose.
 Implement `simd::Simd` for it (every method, including `sum_tree` and the
 pair operations), add the `#[target_feature]` entry wrappers next to the
 existing ones (`kernels/attention/decode64.rs`, `panels/panel.rs`,
-`model/fused.rs`, `quant/linear.rs`), extend `kernels::Simd` and `Backend`,
+`model/fused.rs`, `quant/linear/dot.rs`), extend `kernels::Simd` and `Backend`,
 and run the library tests on that machine: they compare the new
 instantiation with `Portable` bit for bit. Then run `tools/m4_check.sh`-style
 checks with weights: smoke trace, token agreement, a speed report.

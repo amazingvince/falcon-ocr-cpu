@@ -68,7 +68,7 @@ hashes keep reproducing.
 | Kernel | Phase | AVX2 | AVX-512 (`auto`) | NEON | Scalar |
 |---|---|---|---|---|---|
 | FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | generic | same as AVX2 | generic | scalar |
-| 8/16-bit GEMV and fused GLU, 1–8 rows (`quant/linear.rs`) | decode | generic | same as AVX2 | generic | scalar |
+| 8/16-bit GEMV and fused GLU, 1–8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
 | Decode attention, compact and expanded (`attention/decode64.rs`, `online.rs`) | decode | generic head | same as AVX2 | generic head | function-pointer head |
 | Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | same as AVX2 | generic | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
