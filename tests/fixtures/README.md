@@ -16,7 +16,8 @@ cargo test --lib tokenizer -- --include-ignored
 ```
 
 The checked-in metadata identifies Pillow 12.3.0, NumPy 2.5.1, PyTorch
-2.11.0+cu130 and the processor source checksum. Generation only uses CPU tensors.
+2.11.0+cu130 and the processor source checksum; the decode and router
+generators refuse any other Pillow. Generation only uses CPU tensors.
 The generator extracts the two pure dimension/resize helpers from the actual
 pinned source; it does not require importing the complete Transformers model.
 The separate GPU reference export validates the published processor end to end.
@@ -44,10 +45,10 @@ nearest-neighbour positions (a running sum of the scale) differ from the direct
 2026-09-28 used that product and failed both cases and the one-bit upscale at
 64..128. `tall-17x1800.png` has only bounds 16..2048 (narrower bounds make it too
 thin for a patch): its second resize to 16x1792 shrinks a page more than 100
-times taller than wide, which Pillow 12 resamples vertically first; the runner
-before 2026-09-28 resampled horizontally first and failed it. JPEG fixtures
-include grayscale, CMYK, progressive encoding, qualities 10/75/100, and chroma
-subsampling 4:4:4/4:2:2/4:2:0.
+times taller than wide, which the pinned Pillow 12.3.0 resamples vertically
+first; the runner before 2026-09-28 resampled horizontally first and failed it.
+JPEG fixtures include grayscale, CMYK, progressive encoding, qualities
+10/75/100, and chroma subsampling 4:4:4/4:2:2/4:2:0.
 All final FP32 patch buffers are compared exactly. The 12 JPEG files additionally
 have exact decoded RGB comparisons against their `.jpg.rgb` reference bytes.
 

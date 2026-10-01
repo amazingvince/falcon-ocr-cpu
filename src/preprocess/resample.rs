@@ -224,9 +224,9 @@ pub(super) fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, 
     }
 }
 
-/// Pillow 12's rounding of an FP64 I;16 resampling sum to 16 bits,
-/// `CLIP16(ROUND_UP(ss))` (Pillow 11 clamped each byte, which differs when a
-/// sum overshoots 65535).
+/// The pinned Pillow 12.3.0's rounding of an FP64 I;16 resampling sum to 16
+/// bits, `CLIP16(ROUND_UP(ss))` (clamping each byte instead, as Pillow 11
+/// did, differs when a sum overshoots 65535).
 fn quantize16(value: f64) -> u16 {
     ((value + if value < 0.0 { -0.5 } else { 0.5 }) as i64).clamp(0, 65535) as u16
 }
@@ -281,7 +281,8 @@ pub(crate) fn resize_gray(
     height: u32,
     filter: Filter,
 ) -> Vec<u8> {
-    // The pass order `resize_bicubic` describes (Pillow 12's tall-page rule).
+    // The pass order `resize_bicubic` describes (Pillow 12.3.0's tall-page
+    // rule).
     if tall_first(input_width, input_height, height) {
         let vertical = gray8_vertical(input, input_width, input_height, height, filter);
         return if width == input_width {
@@ -347,11 +348,11 @@ fn gray8_vertical(input: &[u8], width: u32, input_height: u32, height: u32, filt
 }
 
 /// Pillow-compatible bicubic resampling of a complete RGB image: a horizontal
-/// then a vertical pass, each rounded to uint8. Pillow 12's `Image.resize`
-/// (Image.py) reverses the order for an image more than 100 times taller than
-/// wide whose height shrinks ([`tall_first`]): a vertical-only core resize, then
-/// a horizontal-only one. The rounding between the passes makes the order
-/// visible, so the same order is kept here.
+/// then a vertical pass, each rounded to uint8. The pinned Pillow 12.3.0's
+/// `Image.resize` (Image.py) reverses the order for an image more than 100
+/// times taller than wide whose height shrinks ([`tall_first`]): a
+/// vertical-only core resize, then a horizontal-only one. The rounding between
+/// the passes makes the order visible, so the same order is kept here.
 pub(super) fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
     if tall_first(input.width(), input.height(), height) {
         let vertical = bicubic_vertical(input, height);
@@ -373,8 +374,8 @@ pub(super) fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbIm
     }
 }
 
-/// Whether Pillow 12's `Image.resize` resamples an image vertically first:
-/// its height is more than 100 times its width and shrinks.
+/// Whether the pinned Pillow 12.3.0's `Image.resize` resamples an image
+/// vertically first: its height is more than 100 times its width and shrinks.
 pub(super) fn tall_first(width: u32, height: u32, new_height: u32) -> bool {
     height as u64 > width as u64 * 100 && new_height < height
 }

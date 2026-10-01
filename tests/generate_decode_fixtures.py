@@ -12,6 +12,10 @@ import PIL
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
+# Pillow releases differ in the pass order of very tall pages and the rounding of 16-bit sums: only the pin fits.
+PILLOW = next(pin.split("==")[1] for pin in (ROOT / "requirements/reference.txt").read_text().split() if pin.startswith("pillow=="))
+if PIL.__version__ != PILLOW:
+    raise SystemExit(f"these fixtures need Pillow {PILLOW} (requirements/reference.txt), not {PIL.__version__}")
 TARGET = ROOT / "tests/fixtures/images"
 TARGET.mkdir(parents=True, exist_ok=True)
 source = ROOT / "artifacts/model/processing_falcon_ocr.py"
@@ -64,7 +68,7 @@ standard_bounds = [(16,128),(64,128),(16,32)]
 bounds = {name: standard_bounds + [(16, 48)] for name in ("palette-64x48.png", "binary-44x64.png")}
 Image.fromarray(pattern(64,48,3)).quantize(colors=16).save(TARGET / "palette-64x48.png", bits=4)
 Image.fromarray(pattern(44,64,1)[...,0]).convert("1").save(TARGET / "binary-44x64.png")
-# Pillow 12 resizes an image more than 100 times taller than wide vertically first when its height
+# Pillow 12.3.0 resizes an image more than 100 times taller than wide vertically first when its height
 # shrinks, as the second resize of this page does (17 x 1800 -> 16 x 1792); smaller bounds make it too narrow.
 bounds["tall-17x1800.png"] = [(16, 2048)]
 Image.fromarray(pattern(17,1800,3)).save(TARGET / "tall-17x1800.png")
