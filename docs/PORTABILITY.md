@@ -105,4 +105,4 @@ mode runs its FP32 prefill.
 SDOT/I8MM W8 decode kernels for high-bandwidth ARM; an Accelerate backend for
 prefill projections on macOS; FP32 AVX-512 panel tiles for Intel hosts
 without BF16; the first weights run on an M4 (numbers into MODES.md and
-PERFORMANCE.md).
+PERFORMANCE.md). [NEXT-STEPS.md](NEXT-STEPS.md) lists what else is open.

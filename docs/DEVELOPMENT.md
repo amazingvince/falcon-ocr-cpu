@@ -140,7 +140,8 @@ environment variables.
 
 `src/` (library and the two binaries), `tests/` (Rust gates and fixtures),
 `examples/ocr_bench.rs`, `tools/` (product-path helpers), `docs/` (this
-folder: ARCHITECTURE, MODES, PERFORMANCE, PORTABILITY, DEVELOPMENT),
+folder: ARCHITECTURE, MODES, PERFORMANCE, PORTABILITY, DEVELOPMENT, and
+NEXT-STEPS for what remains open and the proposals),
 `scripts/` (the frozen GPU-reference closure the receipts hash by path; do
 not edit), `reference/` and `requirements/` (frozen receipts and pins),
 `research/` (indexed history: the phase-4 hill climb, the GPU reference
