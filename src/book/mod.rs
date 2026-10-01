@@ -16,8 +16,8 @@ use serde::Serialize;
 
 use crate::{GenerationOptions, OcrResult};
 pub use resume::{
-    Existing, Kernels, Run, Settings, escalation_warning, is_file_or_missing, open_output, resume_warning, scan_output,
-    this_run,
+    Existing, Kernels, Run, Settings, escalation_warning, is_file_or_missing, open_output, read_output, resume_warning,
+    scan_output, this_run,
 };
 
 /// The input paths of `--list FILE`, one per line, in order. Blank lines

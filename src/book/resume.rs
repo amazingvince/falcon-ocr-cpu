@@ -308,18 +308,7 @@ pub fn open_output(path: &Path) -> Result<(File, Existing)> {
             .with_context(|| format!("opening the output {}", path.display()))?;
         return Ok((file, Existing::default()));
     }
-    let bytes = match std::fs::read(path) {
-        Ok(bytes) => bytes,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
-        Err(error) => return Err(error).with_context(|| format!("reading the output {}", path.display())),
-    };
-    let text = match std::str::from_utf8(&bytes) {
-        Ok(text) => text,
-        // A cut character at the very end: the valid part ends inside the last line.
-        Err(error) if error.error_len().is_none() => std::str::from_utf8(&bytes[..error.valid_up_to()])?,
-        Err(_) => bail!("{} is not a UTF-8 JSON-lines file", path.display()),
-    };
-    let existing = scan_output(text);
+    let (bytes, existing) = read_existing(path)?;
     if existing.keep < bytes.len() {
         OpenOptions::new()
             .write(true)
@@ -336,6 +325,36 @@ pub fn open_output(path: &Path) -> Result<(File, Existing)> {
         file.write_all(b"\n")?;
     }
     Ok((file, existing))
+}
+
+/// What the output at `path` holds ([`scan_output`]), read without changing
+/// it, as [`open_output`] reads it: nothing when it does not exist yet or is
+/// not a regular file. `run --resume` reads it before the model loads to
+/// check only the inputs that still need a record.
+pub fn read_output(path: &Path) -> Result<Existing> {
+    if !is_file_or_missing(path) {
+        return Ok(Existing::default());
+    }
+    read_existing(path).map(|(_, existing)| existing)
+}
+
+/// The bytes of the output at `path` (none when it does not exist yet) and
+/// what they hold. A crash can cut a record inside a multi-byte character;
+/// any other invalid UTF-8 is an error.
+fn read_existing(path: &Path) -> Result<(Vec<u8>, Existing)> {
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        Err(error) => return Err(error).with_context(|| format!("reading the output {}", path.display())),
+    };
+    let text = match std::str::from_utf8(&bytes) {
+        Ok(text) => text,
+        // A cut character at the very end: the valid part ends inside the last line.
+        Err(error) if error.error_len().is_none() => std::str::from_utf8(&bytes[..error.valid_up_to()])?,
+        Err(_) => bail!("{} is not a UTF-8 JSON-lines file", path.display()),
+    };
+    let existing = scan_output(text);
+    Ok((bytes, existing))
 }
 
 /// Whether `path` is a regular file or does not exist yet (the output

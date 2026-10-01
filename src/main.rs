@@ -340,7 +340,8 @@ struct RunJob {
 
 impl RunJob {
     /// The job of `command` when it is `run`, after checking the flags and
-    /// that every input is a readable PNG or JPEG file. Nothing is written.
+    /// that every input it will read (under `--resume`, those without a
+    /// successful record) is a readable PNG or JPEG file. Nothing is written.
     fn new(command: &Command, config: &RunnerConfig) -> Result<Option<Self>> {
         let (
             Some((options, pipeline)),
@@ -399,9 +400,6 @@ impl RunJob {
             inputs.extend(book::read_list(list)?);
             ensure!(!inputs.is_empty(), "no input images: {} lists none", list.display());
         }
-        for input in &inputs {
-            book::check_input(input)?;
-        }
         if *resume {
             // Compared as records write them: two paths that differ only
             // in bytes that are not UTF-8 share one record's `path`.
@@ -411,6 +409,17 @@ impl RunJob {
                     "--resume matches records by input path, and {} is an input twice",
                     twice.display()
                 );
+            }
+        }
+        // A resumed run reads only the inputs that have no successful record
+        // yet, so the others need not exist any more.
+        let done = match output.as_deref().filter(|_| *resume) {
+            Some(path) => book::read_output(path)?.done,
+            None => Default::default(),
+        };
+        for input in &inputs {
+            if !done.contains(input.to_string_lossy().as_ref()) {
+                book::check_input(input)?;
             }
         }
         Ok(Some(Self {

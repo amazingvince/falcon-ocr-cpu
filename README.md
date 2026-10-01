@@ -157,9 +157,9 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
   lines starting with `#` are skipped, and relative paths resolve against
   the current directory. `tools/pdf_to_pages.py` writes such a list for a
   PDF ([PDFs](#pdfs)).
-- Every input is checked before the model loads (it exists, is a regular
-  file and starts like a PNG or JPEG), so a wrong path fails at once and
-  nothing is printed.
+- Every input the run will read is checked before the model loads (it
+  exists, is a regular file and starts like a PNG or JPEG), so a wrong path
+  fails at once and nothing is printed.
 - Each record carries `"path"` (the input as given) and `"page"` (its 0-based
   position among the inputs) before the result's fields, and the generation
   `"options"` the run asked for after them. `--output FILE` appends the
@@ -170,19 +170,20 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
   has loaded. A device or pipe (`/dev/stdout`) is written to as it is,
   without being read.
 - `--resume` skips the inputs whose path, as given, already has a successful
-  record in the `--output` file, which must be a regular file; every input
-  must still exist, and none may be listed twice. A last record cut short by
-  a crash is removed, so its page runs again. Records that ran otherwise
-  (another mode or precision, another GPTQ overlay or round-to-nearest
-  weights, another `--max-dimension`, `--min-dimension`, `--max-new-tokens`
-  or `--crop-margins` padding, with or without the crop, another
-  `--stop-repetition` or `--exp`, BF16 or NEON prefill rounding as `--tune
-  prefill-bf16`, `--backend` or the CPU decide it, or a pinned `--tune
-  decode-exp`) are kept and skipped with a warning that names the difference.
-  Records written before records carried their `options` are compared on
-  mode, weights, routing and those runner choices only. With `--escalate`,
-  fast-mode records that the repetition stop ended without a near-exact rerun
-  are counted in a warning, since their pages are skipped.
+  record in the `--output` file, which must be a regular file; a skipped
+  input is not read, so it need not exist any more, and no input may be
+  listed twice. A last record cut short by a crash is removed, so its page
+  runs again. Records that ran otherwise (another mode or precision, another
+  GPTQ overlay or round-to-nearest weights, another `--max-dimension`,
+  `--min-dimension`, `--max-new-tokens` or `--crop-margins` padding, with or
+  without the crop, another `--stop-repetition` or `--exp`, BF16 or NEON
+  prefill rounding as `--tune prefill-bf16`, `--backend` or the CPU decide
+  it, or a pinned `--tune decode-exp`) are kept and skipped with a warning
+  that names the difference. Records written before records carried their
+  `options` are compared on mode, weights, routing and those runner choices
+  only. With `--escalate`, fast-mode records that the repetition stop ended
+  without a near-exact rerun are counted in a warning, since their pages are
+  skipped.
 - A page can still fail at run time (a corrupt file that passed the check).
   Without `--keep-going` the run stops there, after the pages before it
   were written (earlier releases printed nothing when any page failed). With

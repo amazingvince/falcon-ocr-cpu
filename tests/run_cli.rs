@@ -284,6 +284,17 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
     // must be a regular file. Both are refused before the weights resolve.
     let directory = arg(case.directory.path());
     assert_error(&case.run(&[], &[valid, "--output", directory]), "is a directory");
+    // A resumed run reads only the inputs without a successful record, so
+    // one that has a record need not exist any more; any other must.
+    let done = case.write("done.jsonl", b"{\"path\":\"gone.png\",\"page\":0,\"text\":\"t\"}\n");
+    assert_error(
+        &case.run(&[], &["gone.png", valid, "--output", arg(&done), "--resume"]),
+        NO_MODEL,
+    );
+    assert_error(
+        &case.run(&[], &["gone.png", valid, "--output", arg(&done)]),
+        "reading image",
+    );
     // An output whose folder is missing is refused before the model loads.
     assert_error(
         &case.run(&[], &[valid, "--output", "absent/out.jsonl"]),
