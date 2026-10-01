@@ -81,10 +81,12 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   `research/corpus-qualification/tests` and
   `research/quantization-feasibility/tests` (CI runs these two; they need
   `pillow`, `rapidfuzz` and `numpy`); `ruff check tools`
-  (`pyproject.toml`). `tools/pdf_to_pages.py` has its own tests
-  on PDFs they build: `pip install -r requirements/tools.txt`, then `python -m
-  unittest discover -s tools/tests` and `ruff check tools/tests` (the `tests`
-  exclude in `pyproject.toml` skips that folder in `ruff check tools`).
+  (`pyproject.toml`). The tools have their own tests (`tools/tests`:
+  `pdf_to_pages.py` on PDFs they build, the W8 overlay tools' exception
+  columns on synthetic Grams): `pip install -r requirements/tools.txt`, then
+  `python -m unittest discover -s tools/tests` and `ruff check tools/tests`
+  (the `tests` exclude in `pyproject.toml` skips that folder in `ruff check
+  tools`).
 
 Fixtures: `tests/fixtures/README.md` says how the preprocessing, decode and
 router fixtures are regenerated from the pinned Pillow/PyTorch environment;

@@ -2,3 +2,7 @@
 # tools/pdf_to_pages.py and its tests (tools/tests): PDF pages to PNG images.
 pypdfium2==5.13.0
 pillow==12.3.0
+# tools/w8_variants.py, tools/w8_proxy.py, tools/convert_w8.py and their
+# tests (tools/tests): W8 overlays.
+numpy==2.4.4
+safetensors==0.8.0
