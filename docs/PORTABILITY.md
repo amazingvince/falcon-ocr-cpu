@@ -1,7 +1,7 @@
 # Portability
 
-Status: current as of 2026-09-24. Runs and is measured on x86-64 (Windows,
-Linux under WSL). aarch64 compiles (CI cross-checks Linux and runs the NEON
+Status: current as of 2026-09-30. Runs and is measured on x86-64 (Windows,
+Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and runs the NEON
 unit tests on macOS runners); the NEON kernels are bitwise the portable ones
 in those tests, but no aarch64 machine has yet run the model with weights.
 
@@ -69,8 +69,10 @@ hashes keep reproducing.
 |---|---|---|---|---|---|
 | FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | generic | same as AVX2 | generic | scalar |
 | 8/16-bit GEMV and fused GLU, 1–8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
+| W8 exception columns, after the GEMV (`quant/linear.rs`, research overlays) | decode | scalar `mul_add`, FMA instruction | same as AVX2 | scalar `mul_add` | scalar `mul_add` |
 | Decode attention, compact and expanded (`attention/decode64.rs`, `online.rs`) | decode | generic head | same as AVX2 | generic head | function-pointer head |
 | Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | same as AVX2 | generic | generic loop |
+| Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
 | BF16 prefill attention (`prefill64/bf16.rs`, fast mode) | prefill | – | AVX512-BF16 | – | – |
