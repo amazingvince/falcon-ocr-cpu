@@ -63,7 +63,7 @@ Pillow; `--mode render` antialiases them instead. `--help` covers `--mode`,
 | `near-exact` (default) | 16-bit, scale per 64 | 16-bit, scale per 32 | FP32 | 1 | 21.5 s | everything else |
 | `fast` | 8-bit GPTQ, scale per 64 | 8-bit, scale per 32 | BF16 on AVX512-BF16 CPUs | 63 | 12.6 s | printed pages where speed matters; **failed its held-out budget on handwriting (loops) and degraded scans** |
 
-The journal page has 6,544 image tokens; timings are with default flags on a
+The journal page has 6,544 input tokens; timings are with default flags on a
 Ryzen 9 7950X. Exact mode's 0 is tokens, not bits: its logits are bitwise
 the FP32 reference's only under the reference configuration, since the
 default polynomial exp in prefill attention changes their last bits

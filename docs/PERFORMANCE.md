@@ -120,7 +120,7 @@ sequential run's tokens:
 | `--crop-margins` | 602, 605 | 416, 415 |
 | `--crop-margins --pipeline --decode-threads 8` | 701, 709 | – |
 
-The cropped arms give the model fewer image tokens (138,624 → 115,991 over
+The cropped arms give the model fewer input tokens (138,624 → 115,991 over
 the 24 pages) and so change some pages' tokens
 ([MODES.md](MODES.md#margin-cropping)); the pipelined cropped arm matched the
 cropped sequential run.
