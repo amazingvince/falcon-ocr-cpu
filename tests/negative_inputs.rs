@@ -293,22 +293,25 @@ fn eval_profile_picks_the_kv_cache_of_a_model_file() {
     assert!(report["plan"].is_null());
     let error = report["error"].as_str().unwrap();
     assert!(error.contains("w8-body-kv-q8 weights"), "{error}");
-    // The checkpoint loader's options are refused, not silently ignored.
+    // The checkpoint loader's options are refused, not silently ignored,
+    // by the doctor as by the commands that run.
     for flag in [
         &["--w8-artifact", "overlay.safetensors"][..],
         &["--keep-fp32", "layers.3.*"],
         &["--weights-bf16"],
     ] {
-        let output = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"))
-            .arg("--model")
-            .arg(temporary.path())
-            .arg("--model-file")
-            .arg(&file)
-            .args(flag)
-            .args(["bench", "page.png", "--report", "report.json"])
-            .output()
-            .unwrap();
-        assert_cli_error(output, "apply to the checkpoint loader, not to --model-file");
+        for command in [&["bench", "page.png", "--report", "report.json"][..], &["doctor"]] {
+            let output = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"))
+                .arg("--model")
+                .arg(temporary.path())
+                .arg("--model-file")
+                .arg(&file)
+                .args(flag)
+                .args(command)
+                .output()
+                .unwrap();
+            assert_cli_error(output, "apply to the checkpoint loader, not to --model-file");
+        }
     }
 }
 

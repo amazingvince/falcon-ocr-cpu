@@ -409,6 +409,12 @@ fn main() -> Result<()> {
     let config = args.runner.apply(RunnerConfig::reference())?;
     ensure!((1..=8).contains(&config.batch_size), "batch_size must be 1..=8");
     ensure!(config.threads > 0, "supply an explicit positive thread budget");
+    // A kernel-ready file carries its own weights; the loader options of the
+    // checkpoint would be ignored while the reports record them.
+    ensure!(
+        args.model_file.is_none() || (args.w8_artifact.is_none() && args.keep_fp32.is_empty() && !args.weights_bf16),
+        "--w8-artifact, --keep-fp32 and --weights-bf16 apply to the checkpoint loader, not to --model-file"
+    );
     if matches!(args.command, Command::Doctor) {
         // The same report as `falcon-ocr doctor`, for this profile (a model
         // file's weights with --profile's KV cache).
@@ -430,12 +436,6 @@ fn main() -> Result<()> {
         );
     }
     let profile = run_profile(args.model_file.as_deref(), args.profile)?;
-    // A kernel-ready file carries its own weights; the loader options of the
-    // checkpoint would be ignored while the reports record them.
-    ensure!(
-        args.model_file.is_none() || (args.w8_artifact.is_none() && args.keep_fp32.is_empty() && !args.weights_bf16),
-        "--w8-artifact, --keep-fp32 and --weights-bf16 apply to the checkpoint loader, not to --model-file"
-    );
     // Fail invalid output/options before model allocation and any recognition.
     match &args.command {
         Command::Bench {
