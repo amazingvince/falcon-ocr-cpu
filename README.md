@@ -244,6 +244,10 @@ verifies it (SHA-256 `3df91e40…`). `falcon-ocr --mode near-exact pack
 `tools/make_gptq_overlay.sh` builds `artifacts/model/w8-gptq.safetensors`
 (about 20 minutes: Gram capture on 12 calibration pages, GPTQ act-order over
 the 88 body matrices); the published fast file already contains it.
+Experimental: `EXCEPTIONS=N` builds an overlay that keeps the N
+highest-energy input columns of every W2 projection unquantized in FP32
+(`tools/w8_proxy.py` estimates the gain from the Grams first; see
+[docs/MODES.md](docs/MODES.md#exception-columns-experimental)).
 
 ## Fidelity and validation
 

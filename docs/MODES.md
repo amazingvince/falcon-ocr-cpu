@@ -70,6 +70,67 @@ The published overlay has SHA-256 `60808bbf…`; the published fast packed file
 contains it. Without an overlay, `--allow-rtn` quantizes round-to-nearest at
 load (2.7 → 8.6 flips per 1,000 steps).
 
+## Exception columns (experimental)
+
+What GPTQ leaves of fast mode's drift sits mostly in W2 (69% of the 8-bit
+weights' KL against production, `RESULTS-V3.md` §8), whose squared-ReLU
+inputs carry the extreme channels. A weight-only quantized product errs by
+about Σⱼ Δwⱼ xⱼ, so a channel with a huge activation multiplies its
+column's rounding error, and GPTQ can move that error only onto columns
+whose inputs correlate with it. An exception column is not quantized: its
+FP32 weights are stored beside the codes, which are zero there. A W2 column
+costs 3 KB and a W13 column 18 KB, against about 1.7 MB more for a whole W2
+kept in BF16.
+
+Every product uses the FP32 columns: prefill and other large products have
+them in place (BF16 panels hold codes only, so under `--tune
+prefill-bf16=all` a body with exception columns keeps FP32 projection panels,
+as its plan reports), and decode adds one fused multiply-add per exception
+column and output row after the 8-bit kernel, in ascending column order, so
+draft verification stays bitwise the single-row steps. `doctor` and every
+result's plan count the extra bytes.
+
+```sh
+python tools/w8_proxy.py --gram-dir artifacts/w8/gram --include "feed_forward\.w2" --jobs 16
+EXCEPTIONS=4 REUSE_GRAMS=1 bash tools/make_gptq_overlay.sh   # artifacts/model/w8-gptq-exc4.safetensors
+falcon-ocr --mode fast --w8-artifact artifacts/model/w8-gptq-exc4.safetensors run page.png
+falcon-ocr --mode fast --w8-artifact artifacts/model/w8-gptq-exc4.safetensors pack --output fast-exc4.safetensors
+```
+
+`tools/w8_proxy.py` prints, per matrix, the share of the input energy in the
+top k channels and the activation-weighted output error
+√(tr(ΔW G ΔWᵀ) / tr(W G Wᵀ)) of round-to-nearest and of GPTQ with k
+exception columns (k = 0, 1, 2, 4, 8, 16), quantized exactly as the
+overlay builder does, so N can be chosen in minutes before any model run.
+`tools/w8_variants.py --exceptions N --exceptions-include REGEX` keeps the N
+highest-energy input columns of each matching matrix (`--exception-select
+error` weights the energy by the column's expected rounding error). Round to
+nearest computes scales and codes with those columns zeroed and keeps their
+original values; GPTQ never quantizes them and processes them last, so they
+absorb every quantized column's error compensation and end at the
+least-squares optimum for the chosen codes under GPTQ's damped Gram (as in
+OWQ and SpQR): their stored values are not the checkpoint's.
+
+Such overlays have the format `falcon-ocr-attempt3-w8g64-v2`
+(`{name}.__w8_exc_cols` I32 `[k]`, `{name}.__w8_exc_vals` F32 `[out, k]`),
+and packed files made from them `falcon-ocr-kernel-v2`; binaries that predate
+exception columns refuse both rather than compute with zeroed columns.
+Overlays and packed files without exception columns keep their v1 formats
+(re-packing gives the published files' tensors); an overlay with a tensor
+that no body matrix uses is now refused. An explicit `--w8-artifact` always
+reads the checkpoint, even when a packed fast file sits in the model
+directory. To measure a v2 overlay offline, use `tools/w8_proxy.py
+--overlay`.
+
+Fast mode's defaults are unchanged. Measured on a Ryzen 7 7700X with the
+Grams of `tools/make_gptq_overlay.sh` captured there: over the 22 W2
+matrices GPTQ's mean proxy error falls from 9.96e-4 with no exception
+columns to 8.12e-4, 7.67e-4, 7.14e-4, 6.82e-4 and 6.37e-4 with 1, 2, 4, 8
+and 16, at 68 KB to 1.1 MB more per decode step. With 4 (+271 KB, 0.15%
+of fast mode's weight bytes per token) and the same Grams, fast mode gave
+FP32's 1,295 tokens on the 1418 × 1224 sample page, where the overlay
+without exception columns first differs at token 1,264.
+
 ## Fast mode's held-out result
 
 Fast mode ran once on the 200 held-out pages against a pre-registered budget
@@ -258,8 +319,10 @@ reread with a plain near-exact run's tokens.
 
 `falcon-ocr --mode near-exact|fast pack --output F` writes one safetensors
 file holding every tensor in the layout the kernels read (FP32 embedding,
-head, norms, projector and sinks; body codes and scales; the INT8 head screen
-and its bounds), with the recipe and a tensor digest in its metadata.
+head, norms, projector and sinks; body codes and scales, and any exception
+columns; the INT8 head screen and its bounds), with the recipe and a tensor
+digest in its metadata (format `falcon-ocr-kernel-v1`, or `-v2` with
+exception columns).
 `--model-file F` (or a `falcon-ocr-v1.5-<mode>.safetensors` in `--model`)
 maps it and uses it in place: load 2.2 s → 10 ms, peak resident memory
 2.9 → 1.8 GB, tokens identical to the checkpoint loader (gated by
