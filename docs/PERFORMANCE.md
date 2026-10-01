@@ -1,9 +1,10 @@
 # Performance
 
-Status: current as of 2026-09-30. Host: Ryzen 9 7950X (16 cores, 32
-threads, DDR5, AVX-512 with BF16), Windows 11. Page: the journal benchmark
-page, 6,544 input tokens. Earlier measurements on the tiny 256×128 fixture
-are archived in `research/benchmarks/docs/PERFORMANCE.md`.
+Status: current as of 2026-10-01. Host, unless a section says otherwise:
+Ryzen 9 7950X (16 cores, 32 threads, DDR5, AVX-512 with BF16), Windows 11.
+Page: the journal benchmark page, 6,544 input tokens. Earlier measurements on
+the tiny 256×128 fixture are archived in
+`research/benchmarks/docs/PERFORMANCE.md`.
 
 ## The roofline
 
@@ -61,14 +62,15 @@ neutral); a 4-way chunked FP32 cache scan; key-transposed decode attention
 (decode is already at the bandwidth floor); head-major K/V copies and an
 interleaved FP32 softmax (within noise: the FP32 prefill attention is near
 its ceiling); IEEE FP16 KV for near-exact (1 → 4 flips); BF16 prefill
-projections by default (+17% KL for 0.6 s). Multi-page batching in fast mode
-is available (`--batch-size`; +14% pages per hour on short pages, measured
-with fixed cohorts, before `run` refilled rows) but prefill dominates short
-pages. `--max-dimension 1280` was 20% faster on 64 calibration pages
-(near-exact); its CER against the ground truth was 16.42 → 15.69% on the 48
-pages that end at EOS at 1536, 1280 and 1024, but 19.10 → 20.67% on the 55
-that end at EOS at 1536, with 9 repetition stops against 7. It is not
-validated on held-out pages; the default stays 1536
+projections by default (+17% KL for 0.6 s). Multi-page batching
+(`--batch-size`) is available but gains little: on a scanned book it gave
+2–8% more pages per hour where the page pipeline gave 12–20%
+([below](#book-runs)); fixed cohorts gave +14% on short pages in fast mode,
+before the draft head. `--max-dimension 1280` was 20% faster on 64
+calibration pages (near-exact); its CER against the ground truth was 16.42 →
+15.69% on the 48 pages that end at EOS at 1536, 1280 and 1024, but 19.10 →
+20.67% on the 55 that end at EOS at 1536, with 9 repetition stops against 7.
+It is not validated on held-out pages; the default stays 1536
 (`research/phase4-hillclimb/attempt3/HILLCLIMB.md`, T14). The per-page
 resolution router (`--max-dimension auto`,
 [MODES.md](MODES.md#resolution-routing)) saves 25% of the CPU time on its
@@ -93,6 +95,56 @@ spills on AVX2's 16 registers). Two instantiations of the kernel behind a
 runtime choice inside one `#[target_feature]` function made the exact path
 53% slower; each instantiation now has its own entry function.
 
+## On a Ryzen 7 7700X
+
+Host: Ryzen 7 7700X (8 cores, 16 threads, DDR5, AVX-512 with BF16), Linux.
+The published packed files with the draft head beside them and the default
+configuration; fresh processes one after another on a quiet host.
+
+### Book runs
+
+24 pages of a scanned book ([MODES.md](MODES.md#margin-cropping); 956 × 1536,
+5,776 input tokens and on average 423 output tokens each). Pages per hour,
+one figure per round; every arm without `--crop-margins` gave every page the
+sequential run's tokens:
+
+| Arm | Fast | Near-exact |
+|---|---:|---:|
+| Sequential | 489, 506, 506, 511 | 342, 342 |
+| `--pipeline` | 566, 566 | 409, 409 |
+| `--pipeline --decode-threads 8` | 585, 586 | – |
+| `--batch-size 4` | 528, 529 | 350, 350 |
+| `--batch-size 4 --decode-threads 8` | 532, 532 | – |
+| `--batch-size 4 --pipeline` | 533, 380 | 380, 378 |
+| `--batch-size 4 --pipeline --decode-threads 8` | 548, 549 | – |
+| `--crop-margins` | 602, 605 | 416, 415 |
+| `--crop-margins --pipeline --decode-threads 8` | 701, 709 | – |
+
+The cropped arms give the model fewer image tokens (138,624 → 115,991 over
+the 24 pages) and so change some pages' tokens
+([MODES.md](MODES.md#margin-cropping)); the pipelined cropped arm matched the
+cropped sequential run.
+
+These pages are prefill-heavy: a sequential fast-mode page spends 4.6 s in
+prefill and 2.7 s in decode (6.5 ms per token with drafts). The pipeline
+prefills the next page on the threads the decode team leaves (8 in fast
+mode, 10 in near-exact), where it takes 6.1 s (near-exact: 8.4 s), and the
+run goes at the pace of those prefills: with the team pinned to 8,
+24 × 6.05 s = 145 s against 148 s measured. The decode beside them slows
+from 6.5 to 8.8 ms per token (near-exact: 9.1 to 14.3 ms), since the two
+share memory bandwidth and the decode team's SMT siblings. Continuous batching gains less: its rows decode
+without drafts, giving up the draft head's speedup, and without the pipeline
+a joining page's prefill pauses the other rows.
+
+The decode tuner chooses the team as if no prefill ran beside it. In fast
+mode its 8- and 12-thread candidates time within 4% of each other, on single
+steps and on 4-row batch steps, and in the second round of `--batch-size 4
+--pipeline` it chose 12, which left the prefill pool 4 threads (380 pages per
+hour). Pinning the team to 8 makes that arm repeatable and gives the pipeline
+3% more. Peak resident memory in fast mode: 2.2–2.3 GB sequential, 3.4 GB
+with `--pipeline` (3.9 GB with `--crop-margins`), 3.9 GB with `--batch-size
+4` and 3.3–4.3 GB with both.
+
 ## Measuring
 
 - `falcon-ocr doctor --probe --text`: bandwidth and the decode floor.
@@ -112,5 +164,6 @@ runtime choice inside one `#[target_feature]` function made the exact path
 - `cargo run --release --example ocr_bench`: warm RGB-buffer recognition
   with hashes of everything involved, for reproducible reports.
 
-Timing A/Bs on this host are unreliable while other jobs run; every number
-above came from a quiet host and its receipt is under `artifacts/phase4/`.
+Timing A/Bs are unreliable while other jobs run; every number above came
+from a quiet host. The 7950X receipts are under `artifacts/phase4/`, the
+7700X runs' scripts and records under `artifacts/verify/pr/timing/`.

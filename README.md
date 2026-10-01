@@ -191,7 +191,9 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
   decode_ms`), which overlap other pages'; the pages per hour are the run's.
 - `--pipeline` reads and prepares the next pages on a prefetch thread and
   prefills the next page on a second pool while the current page decodes;
-  tokens are unchanged.
+  tokens are unchanged. On a scanned book it gave 12–20% more pages per hour,
+  more than `--batch-size 4`
+  ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)).
 - `--escalate`, in fast mode, rereads each page that the repetition stop
   ended with the near-exact model (loaded when first needed, and kept beside
   the fast one; the other batch rows wait with their caches while a page is

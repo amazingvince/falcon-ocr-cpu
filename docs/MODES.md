@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-09-30. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-10-01. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens).
 
 ## The metric
@@ -266,11 +266,11 @@ the `--escalate` rerun prepare each page the same way, so every path reports
 the same crop.
 
 It is opt-in because it changes the model input. TII's layout pipeline feeds
-cropped regions to the model, so crops are in distribution, but nothing has
-been measured on real pages here. On synthetic book pages (a text block with
-about 15% side margins) it removes 42–44% of the image tokens at 1536 (6,048 →
-3,400–3,485), 40% at 1024 and 35% at 768; pages whose content fills the page
-are not cropped. The router's page-time model (fast mode with the draft head,
+cropped regions to the model, so crops are in distribution. On synthetic book
+pages (a text block with about 15% side margins) it removes 42–44% of the
+image tokens at 1536 (6,048 → 3,400–3,485), 40% at 1024 and 35% at 768; pages
+whose content fills the page are not cropped. The router's page-time model
+(fast mode with the draft head,
 `research/resolution-router/analyze_agreement.py`) puts 6,048 → 3,485 image
 tokens at about 37% less time for a page with 700 output tokens. Each result
 reports its crop (`crop`: `x`, `y`, `width`, `height` and the first-resize
@@ -279,6 +279,20 @@ reports its crop (`crop`: `x`, `y`, `width`, `height` and the first-resize
 tensor traces and for teacher scoring (`Runner::score_teacher_file`, which
 `falcon-ocr-eval agree` uses; that binary has no crop flag), since both
 compare with the whole page.
+
+On a real book it held up. On 24 pages of the Internet Archive scan
+`cu31924014450716` (Strunk's *The Elements of Style*, 1920), rendered at
+956 × 1536 by `tools/pdf_to_pages.py`, in near-exact mode on a Ryzen 7 7700X,
+it cropped every page, took 16% of the input tokens (138,624 → 115,991) and
+17–18% of the run's time in each of two rounds (+21% pages per hour). Every
+page kept its words. 10 kept their tokens; 6 differ only in markup (heading
+and emphasis marks, superscript notation, quote style), 4 add or drop one
+period, and 1 joins a word hyphenated across a line ("semicolon"). One page
+gives its two-column word lists as tables where the whole page gave one
+column after the other. The other two changes are corrections, checked
+against the page images: the cropped pages read "come" (a damaged glyph in
+the scan) and the note number "6-7" where the whole pages read "could" and
+"6".
 
 To evaluate it, run a few dozen of your own book pages twice in the same mode,
 with and without `--crop-margins`, and compare per page: identical token ids,
