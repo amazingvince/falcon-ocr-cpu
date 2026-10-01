@@ -62,9 +62,11 @@ impl Runner {
                     preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000.,
                 });
             }
-            let outputs = self.pool.install(|| {
-                self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
-            })?;
+            let first = chunk_index * self.config.batch_size;
+            let requests: Vec<usize> = (first..first + chunk.len()).collect();
+            let outputs = self
+                .pool
+                .install(|| self.run_batch_chunk(inputs, options, started, trace, &requests))?;
             for (output, route) in outputs.into_iter().zip(routes) {
                 results.push(self.finish_batch_page(output, route, options, trace)?);
             }
@@ -143,7 +145,7 @@ impl Runner {
     /// page is prepared on its own, so a page that fails leaves the cohort
     /// with its error (or, with `fail_fast`, ends the run with it before any
     /// model work), and the others decode jointly (alone when one is left, as
-    /// a cohort of one does).
+    /// a cohort of one does), traced under their input indices.
     fn stream_chunk<P: AsRef<Path>>(
         &self,
         chunk: &[P],
@@ -185,9 +187,10 @@ impl Runner {
         if inputs.is_empty() {
             return Ok(ControlFlow::Continue(()));
         }
+        let requests: Vec<usize> = pages.iter().map(|&(index, _)| index).collect();
         let outputs = self
             .pool
-            .install(|| self.run_batch_chunk(inputs, options, started, trace, first));
+            .install(|| self.run_batch_chunk(inputs, options, started, trace, &requests));
         match outputs {
             Ok(outputs) => {
                 for (output, (index, route)) in outputs.into_iter().zip(pages) {
@@ -291,15 +294,18 @@ impl Runner {
 
     /// Prefill a cohort's pages one after another on the calling thread's
     /// pool, then decode them in joint steps to the smallest fitted budget;
-    /// results in input order. `request_offset` numbers the pages in traces.
+    /// results in input order. `requests` holds each page's input index,
+    /// which names it in traces: its prefill is `request.{i}.prefill`, and
+    /// the cohort's decode is `batch.{i}` with its first page's index.
     pub(super) fn run_batch_chunk(
         &self,
         inputs: Vec<BatchInput>,
         options: &GenerationOptions,
         chunk_started: Instant,
         trace: &mut dyn Trace,
-        request_offset: usize,
+        requests: &[usize],
     ) -> Result<Vec<OcrResult>> {
+        debug_assert_eq!(requests.len(), inputs.len());
         if trace.enabled() {
             require_uncropped(options, "a tensor trace")?;
         }
@@ -328,7 +334,7 @@ impl Runner {
             max_new_tokens: budget,
             ..options.clone()
         };
-        for (index, input) in inputs.into_iter().enumerate() {
+        for (input, request) in inputs.into_iter().zip(requests) {
             let prefill_started = Instant::now();
             let (image_start, image_end) = image_range(&input.tokens, c)?;
             let (pos_t, pos_hw) = positions(&input.tokens, &input.prepared.positions_hw, c)?;
@@ -350,7 +356,7 @@ impl Runner {
                 self.model
                     .embed(&input.tokens, Some(&input.prepared.patches), simd, &mut hidden)?;
             let phase = if trace.enabled() {
-                format!("request.{}.prefill", request_offset + index)
+                format!("request.{request}.prefill")
             } else {
                 String::new()
             };
@@ -419,15 +425,12 @@ impl Runner {
                 tokens.push(states[index].generation.last());
             }
             let phase = if trace.enabled() {
-                format!("batch.{request_offset}.decode.{step}")
+                format!("batch.{}.decode.{step}", requests[0])
             } else {
                 String::new()
             };
             if trace.enabled() {
-                let ids = active
-                    .iter()
-                    .map(|&index| (request_offset + index) as f32)
-                    .collect::<Vec<_>>();
+                let ids = active.iter().map(|&index| requests[index] as f32).collect::<Vec<_>>();
                 trace.tensor(&format!("{phase}.request_indices"), &[active.len()], &ids)?;
             }
             team.select();
