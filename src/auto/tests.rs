@@ -382,6 +382,105 @@ fn kv_cache_replaces_the_kv_half_of_the_resolved_profile() {
     );
 }
 
+/// Exception columns (indices and FP32 weights) add to the body bytes a
+/// decode step reads, whether the plan comes from an overlay header or a
+/// packed file header.
+#[test]
+fn plans_count_exception_columns_from_headers() {
+    use safetensors::{Dtype, tensor::TensorView};
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    let config_json = include_str!("../../tests/fixtures/model-config.json");
+    std::fs::write(root.join("config.json"), config_json).unwrap();
+    let (columns, values) = ([0u8; 4 * 2], [0u8; 4 * 768 * 2]);
+    let write = |path: &Path, prefix: &str, metadata: std::collections::HashMap<String, String>| {
+        let views = [
+            (
+                format!("{prefix}exc_cols"),
+                TensorView::new(Dtype::I32, vec![2], &columns).unwrap(),
+            ),
+            (
+                format!("{prefix}exc_vals"),
+                TensorView::new(Dtype::F32, vec![768, 2], &values).unwrap(),
+            ),
+        ];
+        safetensors::serialize_to_file(views, Some(metadata), path).unwrap();
+    };
+    let exception_bytes = 4 * 2 + 4 * 768 * 2;
+    let overlay = root.join("exceptions.safetensors");
+    write(&overlay, "layers.3.feed_forward.w2.weight.__w8_", Default::default());
+    let checkpoint = WeightsPlan {
+        source: WeightsSource::Checkpoint {
+            dir: root.to_path_buf(),
+            overlay: Some(overlay),
+            rtn: false,
+        },
+        mode: Some(Mode::Fast),
+        profile: Profile::W8_BODY_KV_Q8,
+    };
+    let facts = ModelFacts::from_plan(&checkpoint).unwrap();
+    assert_eq!(facts.exception_bytes, exception_bytes);
+    let packed = root.join("packed.safetensors");
+    write(
+        &packed,
+        "layers.3.feed_forward.w2.__",
+        [
+            ("format".to_owned(), crate::model::PACKED_FORMAT_EXCEPTIONS.to_owned()),
+            ("config".to_owned(), config_json.to_owned()),
+        ]
+        .into(),
+    );
+    let plan = WeightsPlan {
+        source: WeightsSource::Packed { path: packed },
+        ..checkpoint
+    };
+    assert_eq!(ModelFacts::from_plan(&plan).unwrap().exception_bytes, exception_bytes);
+    let config = RunnerConfig::default();
+    let with = Resolved::new(HostInfo::detect(), &config, &facts, root);
+    let without = Resolved::new(
+        HostInfo::detect(),
+        &config,
+        &ModelFacts {
+            exception_bytes: 0,
+            ..facts
+        },
+        root,
+    );
+    assert_eq!(without.bytes.weights_per_token, 179_232_768);
+    assert_eq!(with.bytes.weights_per_token, 179_232_768 + exception_bytes);
+    assert_eq!(with.bytes.head_per_token, without.bytes.head_per_token);
+}
+
+/// A missing or unreadable `--w8-artifact` still gets a plan (counting no
+/// exception columns); the report says why instead of failing.
+#[test]
+fn doctor_reports_an_unreadable_overlay_and_still_plans() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    std::fs::write(root.join("model.safetensors"), b"stub").unwrap();
+    std::fs::write(
+        root.join("config.json"),
+        include_str!("../../tests/fixtures/model-config.json"),
+    )
+    .unwrap();
+    let stub = root.join("stub.safetensors");
+    std::fs::write(&stub, b"not safetensors").unwrap();
+    for (overlay, present) in [(root.join("missing.safetensors"), false), (stub, true)] {
+        let request = ModelRequest {
+            model_dir: root,
+            mode: Some(Mode::Fast),
+            w8_artifact: Some(&overlay),
+            ..ModelRequest::default()
+        };
+        let report = doctor(&request, &RunnerConfig::default(), false, false).unwrap();
+        assert_eq!(report.plan.as_ref().unwrap().bytes.weights_per_token, 179_232_768);
+        assert_eq!(report.files.overlay.present, present);
+        let error = report.error.as_deref().unwrap();
+        assert!(error.contains(&overlay.display().to_string()), "{error}");
+        assert!(report.to_string().contains("warning: W8 overlay header"));
+    }
+}
+
 #[test]
 fn doctor_reports_files_and_a_plan_without_reading_tensors() {
     let dir = tempfile::tempdir().unwrap();

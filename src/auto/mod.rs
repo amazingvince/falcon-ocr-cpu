@@ -506,20 +506,30 @@ pub struct ModelFacts {
     /// `Model::body_bits`: the profile's width for a plan.
     pub body_bits: Option<u32>,
     pub overlay_sha256: Option<String>,
+    /// `Model::exception_bytes`: the body's exception columns, read per
+    /// token on top of the codes (zero without any).
+    #[serde(default)]
+    pub exception_bytes: usize,
 }
 
 impl ModelFacts {
     /// From a plan without reading tensors: the checkpoint's `config.json`
-    /// or the packed file's header (which also names its overlay digest).
+    /// or the packed file's header (which also names its overlay digest),
+    /// and the exception columns the packed file or overlay header lists.
+    /// An overlay whose header cannot be read counts none: loading it fails,
+    /// and `doctor` reports why.
     pub fn from_plan(plan: &WeightsPlan) -> Result<Self> {
-        let (config, overlay_sha256) = match &plan.source {
+        let (config, overlay_sha256, exception_bytes) = match &plan.source {
             WeightsSource::Packed { path } => crate::model::packed_facts(path)?,
-            WeightsSource::Checkpoint { dir, .. } => {
+            WeightsSource::Checkpoint { dir, overlay, .. } => {
                 let path = dir.join("config.json");
                 let bytes = std::fs::read(&path).with_context(|| format!("read {}", path.display()))?;
                 let config: ModelConfig = serde_json::from_slice(&bytes)?;
                 config.validate()?;
-                (config, None)
+                let exception_bytes = overlay
+                    .as_deref()
+                    .and_then(|overlay| crate::model::overlay_exception_bytes(overlay).ok());
+                (config, None, exception_bytes.unwrap_or(0))
             }
         };
         Ok(Self {
@@ -528,6 +538,7 @@ impl ModelFacts {
             config,
             body_bits: plan.profile.quantizes_body().then(|| plan.profile.weight_bits()),
             overlay_sha256,
+            exception_bytes,
         })
     }
 }
@@ -541,6 +552,7 @@ impl Model {
             config: self.config().clone(),
             body_bits: self.body_bits(),
             overlay_sha256: self.overlay_sha256().map(str::to_owned),
+            exception_bytes: self.exception_bytes(),
         }
     }
 }
@@ -566,7 +578,7 @@ pub enum DecodePlan {
 /// Bytes one decode step streams (what memory bandwidth must deliver).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ByteBudget {
-    /// Body weights (codes and scales) read per token.
+    /// Body weights (codes, scales and any exception columns) read per token.
     pub weights_per_token: usize,
     /// Vocabulary head read per token (the INT8 screen, or the FP32 head).
     pub head_per_token: usize,
@@ -631,7 +643,12 @@ impl Resolved {
             overlay_sha256: facts.overlay_sha256.clone(),
             tokenizer_dir: tokenizer_dir.to_path_buf(),
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
-            prefill: crate::kernels::prefill_plan(facts.body_bits, simd, config.tuning.prefill_bf16),
+            prefill: crate::kernels::prefill_plan(
+                facts.body_bits,
+                facts.exception_bytes > 0,
+                simd,
+                config.tuning.prefill_bf16,
+            ),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,
@@ -644,7 +661,13 @@ impl Resolved {
                 decode,
             },
             kv_cache: kv_cache_label(profile).to_owned(),
-            bytes: byte_budget(&facts.config, profile, config.head),
+            bytes: {
+                let budget = byte_budget(&facts.config, profile, config.head);
+                ByteBudget {
+                    weights_per_token: budget.weights_per_token.saturating_add(facts.exception_bytes),
+                    ..budget
+                }
+            },
             image_decoder: if cfg!(feature = "turbojpeg") {
                 "libjpeg-turbo (Pillow-exact)"
             } else {

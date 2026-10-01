@@ -609,3 +609,24 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
         &mut [0.0; 2],
     );
 }
+
+#[test]
+fn exception_columns_keep_fp32_projection_panels() {
+    use crate::config::PrefillBf16;
+    for simd in implementations() {
+        for bits in [None, Some(8), Some(16)] {
+            for setting in [PrefillBf16::Off, PrefillBf16::Attention, PrefillBf16::All] {
+                let (plain, exceptions) = (
+                    prefill_plan(bits, false, simd, setting),
+                    prefill_plan(bits, true, simd, setting),
+                );
+                assert_eq!(exceptions.attention, plain.attention, "{simd:?} {bits:?} {setting:?}");
+                let expected = match plain.projection {
+                    PrefillProjection::PanelBf16 => PrefillProjection::PanelAvx2,
+                    other => other,
+                };
+                assert_eq!(exceptions.projection, expected, "{simd:?} {bits:?} {setting:?}");
+            }
+        }
+    }
+}

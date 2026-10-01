@@ -12,7 +12,10 @@ use super::{
     DEFAULT_OVERLAY, DRAFT_HEAD_FILE, HostInfo, Mode, ModelFacts, ModelRequest, Resolved, load_model, model_files_dir,
     resolve_weights,
 };
-use crate::config::{HeadMode, RunnerConfig};
+use crate::{
+    config::{HeadMode, RunnerConfig},
+    model::WeightsSource,
+};
 
 /// One file `doctor` looked for.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,7 +80,8 @@ pub struct Doctor {
     pub files: Files,
     /// The plan for the request, when its weights were found.
     pub plan: Option<Resolved>,
-    /// Why there is no plan.
+    /// Why there is no plan, or what the plan could not read (an overlay
+    /// whose header is unreadable: its exception columns are not counted).
     pub error: Option<String>,
     pub load: Option<LoadReport>,
     pub probe: Option<ProbeReport>,
@@ -108,6 +112,13 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
         Err(e) => error = Some(format!("{e:#}")),
         Ok(weights) => {
             let tokenizer_dir = weights.source.tokenizer_dir(dir);
+            if let WeightsSource::Checkpoint {
+                overlay: Some(path), ..
+            } = &weights.source
+                && let Err(e) = crate::model::overlay_exception_bytes(path)
+            {
+                error = Some(format!("W8 overlay header: {e:#}"));
+            }
             plan = Some(Resolved::new(
                 &host,
                 config,
@@ -186,7 +197,12 @@ impl std::fmt::Display for Doctor {
             writeln!(f, "file: {name:18} {} {size}", file.path.display())?;
         }
         match (&self.plan, &self.error) {
-            (Some(plan), _) => writeln!(f, "plan: {plan}")?,
+            (Some(plan), error) => {
+                writeln!(f, "plan: {plan}")?;
+                if let Some(error) = error {
+                    writeln!(f, "warning: {error}")?;
+                }
+            }
             (None, Some(error)) => writeln!(f, "plan: none ({error})")?,
             (None, None) => {}
         }

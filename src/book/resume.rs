@@ -715,6 +715,7 @@ mod tests {
             config: serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap(),
             body_bits: Some(8),
             overlay_sha256: None,
+            exception_bytes: 0,
         };
         let config = crate::RunnerConfig {
             repetition_stop: false,
