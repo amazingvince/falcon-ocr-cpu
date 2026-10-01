@@ -173,7 +173,10 @@ impl std::fmt::Display for Run {
         let mut details = Vec::new();
         details.extend(self.precision.clone());
         if let Some(overlay) = &self.overlay {
-            details.push(format!("overlay {}", &overlay[..overlay.len().min(12)]));
+            // The first 12 characters: a digest read back from a record is
+            // hex, unless the file was edited.
+            let short: String = overlay.chars().take(12).collect();
+            details.push(format!("overlay {short}"));
         } else if self
             .precision
             .as_deref()
@@ -581,6 +584,16 @@ mod tests {
         assert_eq!(resume_warning(&existing, &gptq_routed), None);
         let warning = resume_warning(&existing, &gptq).unwrap();
         assert!(warning.ends_with("1 in fast (w8-body-kv-q8, overlay 0123456789ab, --max-dimension auto); --resume skips their pages, it does not reread them"), "{warning}");
+        // An edited record's digest that is not hex is shortened by
+        // characters, not bytes.
+        let existing = scan_output(&format!(
+            r#"{{"path":"d.png","text":"t","mode":"fast","precision":"w8-body-kv-q8","plan":{{"overlay_sha256":"a{}"}}}}{}"#,
+            "é".repeat(12),
+            "\n"
+        ));
+        let warning = resume_warning(&existing, &gptq).unwrap();
+        let shown = format!("1 in fast (w8-body-kv-q8, overlay a{})", "é".repeat(11));
+        assert!(warning.contains(&shown), "{warning}");
     }
 
     /// Records carry the options their run asked for, so a resume notices
