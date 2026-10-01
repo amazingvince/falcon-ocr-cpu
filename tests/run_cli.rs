@@ -3,8 +3,8 @@
 //! every case here but the last runs without model assets: a model
 //! directory that holds nothing (or a header-only kernel-ready file) makes
 //! any later step fail with the model's own error, which the input errors
-//! must precede. The last, ignored, resumes a run with the published
-//! near-exact file in `artifacts/packed`.
+//! must precede. The last two, ignored, resume a run and keep going past a
+//! failing page with the published near-exact file in `artifacts/packed`.
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -346,4 +346,48 @@ fn a_resumed_run_repairs_the_output_and_runs_only_the_missing_pages() {
         (Some(second), Some(1))
     );
     assert_eq!(resumed[1]["token_ids"], resumed[0]["token_ids"], "the same image");
+}
+
+#[test]
+#[ignore = "requires the published near-exact file in artifacts/packed"]
+fn keep_going_records_a_failing_page_and_runs_the_rest() {
+    let case = Case::new();
+    let packed = Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/packed");
+    // A truncated PNG passes the check before the model loads and fails
+    // when its page runs.
+    let cut = case.write("cut.png", &fs::read(&case.valid).unwrap()[..24]);
+    let (valid, cut) = (arg(&case.valid), arg(&cut));
+    let run = |name: &str, keep_going: bool| {
+        let output = case.path(name);
+        let mut run = vec![valid, cut, valid, "--max-new-tokens", "8", "--output", arg(&output)];
+        if keep_going {
+            run.push("--keep-going");
+        }
+        let result = case.run_with(&packed, &[], &run);
+        let stderr = String::from_utf8_lossy(&result.stderr).into_owned();
+        let records: Vec<serde_json::Value> = fs::read_to_string(&output)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        (result.status.code(), stderr, records)
+    };
+    // With --keep-going: the failing page's error record, the others' results,
+    // and a failed exit at the end.
+    let (code, stderr, records) = run("kept.jsonl", true);
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(stderr.contains("pages: 2 done, 1 failed, 0 skipped"), "{stderr}");
+    assert!(stderr.contains("1 of 3 pages failed"), "{stderr}");
+    let pages: Vec<_> = records.iter().map(|record| record["page"].as_u64()).collect();
+    assert_eq!(pages, [Some(0), Some(1), Some(2)]);
+    assert!(records[1]["error"].is_string() && records[1].get("token_ids").is_none());
+    assert_eq!(records[2]["token_ids"], records[0]["token_ids"], "the same image");
+    // Without it the run stops at the failing page, after the page before it.
+    let (code, stderr, records) = run("stopped.jsonl", false);
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(
+        stderr.contains("pages: 1 done, 1 failed, 0 skipped, 1 not run"),
+        "{stderr}"
+    );
+    assert_eq!(records.len(), 1);
 }
