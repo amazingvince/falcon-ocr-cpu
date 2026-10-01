@@ -132,9 +132,10 @@ mode, 10 in near-exact), where it takes 6.1 s (near-exact: 8.4 s), and the
 run goes at the pace of those prefills: with the team pinned to 8,
 24 × 6.05 s = 145 s against 148 s measured. The decode beside them slows
 from 6.5 to 8.8 ms per token (near-exact: 9.1 to 14.3 ms), since the two
-share memory bandwidth and the decode team's SMT siblings. Continuous batching gains less: its rows decode
-without drafts, giving up the draft head's speedup, and without the pipeline
-a joining page's prefill pauses the other rows.
+share memory bandwidth and the decode team's SMT siblings. Continuous
+batching gains less: its rows decode without drafts, giving up the draft
+head's speedup, and without the pipeline a joining page's prefill pauses
+the other rows.
 
 The decode tuner times its candidates before any prefill runs beside them. In
 fast mode its 8- and 12-thread candidates time within 4% of each other, on

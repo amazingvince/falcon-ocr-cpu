@@ -1,9 +1,10 @@
 # Portability
 
 Status: current as of 2026-09-30. Runs and is measured on x86-64 (Windows,
-Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and runs the NEON
-unit tests on macOS runners); the NEON kernels are bitwise the portable ones
-in those tests, but no aarch64 machine has yet run the model with weights.
+Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and
+runs the NEON unit tests on macOS runners); the NEON kernels are bitwise the
+portable ones in those tests, but no aarch64 machine has yet run the model
+with weights.
 
 - Quality bar: token selection, not bit-exact math. Selected tokens must be
   the same or nearly the same as the FP32 reference (see MODES.md).
