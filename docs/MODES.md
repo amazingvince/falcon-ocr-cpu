@@ -1,7 +1,7 @@
 # Modes
 
 Status: current as of 2026-09-30. Measurements: Ryzen 9 7950X (16 cores,
-32 threads, DDR5), Windows 11, the journal benchmark page (6,544 image tokens).
+32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens).
 
 ## The metric
 

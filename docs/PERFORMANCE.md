@@ -1,8 +1,8 @@
 # Performance
 
-Status: current as of 2026-09-25. Host: Ryzen 9 7950X (16 cores, 32
+Status: current as of 2026-09-30. Host: Ryzen 9 7950X (16 cores, 32
 threads, DDR5, AVX-512 with BF16), Windows 11. Page: the journal benchmark
-page, 6,544 image tokens. Earlier measurements on the tiny 256×128 fixture
+page, 6,544 input tokens. Earlier measurements on the tiny 256×128 fixture
 are archived in `research/benchmarks/docs/PERFORMANCE.md`.
 
 ## The roofline
@@ -62,13 +62,18 @@ neutral); a 4-way chunked FP32 cache scan; key-transposed decode attention
 interleaved FP32 softmax (within noise: the FP32 prefill attention is near
 its ceiling); IEEE FP16 KV for near-exact (1 → 4 flips); BF16 prefill
 projections by default (+17% KL for 0.6 s). Multi-page batching in fast mode
-is available (`--batch-size`; +14% pages per hour on short pages) but prefill
-dominates short pages. `--max-dimension 1280` is about 20% faster and was
-accuracy-neutral on 64 calibration pages but is not validated on held-out
-pages; the default stays 1536. The per-page resolution router
-(`--max-dimension auto`, [MODES.md](MODES.md#resolution-routing)) saves 25% of
-the CPU time on its development set (quiet host); it improved CER on its development set but failed
-the held-out English gate (+0.29 pt), so it stays opt-in.
+is available (`--batch-size`; +14% pages per hour on short pages, measured
+with fixed cohorts, before `run` refilled rows) but prefill dominates short
+pages. `--max-dimension 1280` was 20% faster on 64 calibration pages
+(near-exact); its CER against the ground truth was 16.42 → 15.69% on the 48
+pages that end at EOS at 1536, 1280 and 1024, but 19.10 → 20.67% on the 55
+that end at EOS at 1536, with 9 repetition stops against 7. It is not
+validated on held-out pages; the default stays 1536
+(`research/phase4-hillclimb/attempt3/HILLCLIMB.md`, T14). The per-page
+resolution router (`--max-dimension auto`,
+[MODES.md](MODES.md#resolution-routing)) saves 25% of the CPU time on its
+development set (quiet host); it improved CER on its development set but
+failed the held-out English gate (+0.29 pt), so it stays opt-in.
 
 Draft head (research/draft-head, 16 calibration pages): other confidence
 thresholds and a product-of-probabilities gate (within 2%), 6 drafts per step
