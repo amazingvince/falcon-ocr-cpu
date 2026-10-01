@@ -35,7 +35,9 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   dequantized products, fast exp against the platform exp over the softmax
   domain, the split cache against the compact kernel over its decoded values
   (rotated caches with the rotation as the only pre- and post-transform).
-  A fast path without such a test does not ship.
+  A fast path without such a test does not ship. The prefill stages are also
+  compared bitwise across pool sizes (`model::pool_tests`, `kernels::tests`),
+  which the page pipeline's second pool relies on.
 - **Integration tests that need no weights** run in CI
   (`cargo test --release --locked --tests`): negative inputs, preprocessing
   fixtures, tokenizer prompts, and `run`'s flag, input, list and output-file
@@ -72,11 +74,15 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   PyTorch fixture written by `export_head.py` (equal tokens up to the first
   near tie) with FP32 and INT8 drafter caches, and prints the draft-step
   timing probe (warm and cold).
-- **Token agreement** against the FP32 anchor: `bash
-  tools/agree_queue.sh <out> tools/gptq-calibration-pages.txt 8192
-  near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors`
-  (expect 1 and about 63 flips of 24,262). The CI `weights` job runs the
-  gates and this queue on a self-hosted runner labelled `falcon-weights`.
+- **Token agreement** against the FP32 anchor: `bash tools/agree_queue.sh
+  <out> <anchor pages> 512 near-exact=w16-body-kv-q16
+  fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors` gives 1 and about
+  63 flips of 24,262 steps on the 55 anchor pages (the calibration pages of
+  `artifacts/phase4/checks/calibration-reference.json` outside
+  `tools/gptq-calibration-pages.txt`); at 8192 steps per page (78,282 steps)
+  fast mode has about 94. The CI `weights` job runs the gates and this queue,
+  on the 12 GPTQ capture pages at 8192 steps, on a self-hosted runner
+  labelled `falcon-weights`.
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
   `research/corpus-qualification/tests` and
   `research/quantization-feasibility/tests` (CI runs these two; they need
@@ -108,14 +114,15 @@ checks with weights: smoke trace, token agreement, a speed report.
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
 takes `prefill-bf16=off|attention|all`, `split-chunks=1..4` (position chunks
 of the split cache scan), `decode-exp=exact|fast` (the exp of decode
-attention over split caches), `phases=1` (phase split of forwards on stderr),
-`prefill-profile=1` (prefill attention stage cycles), and the draft head's
-`draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8` and
-`draft-gate=token|path`. `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
-(`falcon-ocr` run and doctor) replaces the KV half of the resolved profile; the plan and
-every result name the profile that runs, a research one unless it is a mode's
-own. These flags are hidden from `--help`; nothing reads environment
-variables.
+attention over split caches; pin it when comparing caches, see
+[MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase split
+of forwards on stderr), `prefill-profile=1` (prefill attention stage cycles),
+and the draft head's `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`
+and `draft-gate=token|path`. `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
+(`falcon-ocr` run and doctor) replaces the KV half of the resolved profile;
+the plan and every result name the profile that runs, a research one unless
+it is a mode's own. These flags are hidden from `--help`; nothing reads
+environment variables.
 
 ## Gotchas
 

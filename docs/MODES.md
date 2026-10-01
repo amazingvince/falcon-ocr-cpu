@@ -11,8 +11,9 @@ configuration's own greedy choice differs are counted (flips), together with
 the KL divergence of its distribution. A flip at step 30 of a free-running
 page turns everything after it into edits, so free-running comparisons
 understate agreement; per-step agreement does not. The anchor set is the 55
-calibration pages outside the GPTQ capture set, 24,262 steps
-(`artifacts/phase4/checks/calibration-reference.json`).
+calibration pages outside the GPTQ capture set, 24,262 steps at up to 512
+per page (`artifacts/phase4/checks/calibration-reference.json`; `agree
+--max-steps 8192` gives 78,282).
 
 ## The three modes
 
@@ -340,7 +341,9 @@ modes of the CLI. Its hidden `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
 (run and doctor only) replaces the KV half of whatever profile the other
 flags resolve to, packed files included: `--mode fast --kv-cache q8r` runs
 `w8-body-kv-q8r`, and the result's `mode` (null), `precision` and `plan` name
-that profile.
+that profile. With `--model-file`, `falcon-ocr-eval --profile` likewise picks
+the cache for the file's weights (it must name them), and its reports record
+the profile that ran and the file.
 
 ### Rotated KV cache (experimental)
 
