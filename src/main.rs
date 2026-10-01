@@ -135,7 +135,9 @@ enum Command {
         /// Record a page that fails as {"path", "page", "error"} (with --text
         /// and no --output, only its error on stderr) and go on; the exit
         /// code is non-zero at the end if any page failed. Without it the
-        /// run stops at the first failing page.
+        /// run stops at the first failing page. Either way an input that is
+        /// missing or not a PNG or JPEG stops the run before the model
+        /// loads.
         #[arg(long)]
         keep_going: bool,
         /// Read, prepare and prefill the next page while the current pages
