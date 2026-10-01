@@ -27,9 +27,10 @@ pub const PACKED_FORMAT: &str = "falcon-ocr-kernel-v1";
 /// Format tag of kernel-ready files whose body has exception columns (an
 /// overlay of format `falcon-ocr-attempt3-w8g64-v2`): [`PACKED_FORMAT`] plus
 /// `layers.{i}.{matrix}.__exc_cols` (I32 `[k]`) and `.__exc_vals` (F32
-/// `[out, k]`) after that matrix's scales. Binaries that predate exception
-/// columns refuse it instead of computing with the columns zeroed; files
-/// without exception columns keep [`PACKED_FORMAT`].
+/// `[out, k]`), which the tensor digest takes after that matrix's scales
+/// (the file stores tensors in the safetensors writer's own order). Binaries
+/// that predate exception columns refuse it instead of computing with the
+/// columns zeroed; files without exception columns keep [`PACKED_FORMAT`].
 pub const PACKED_FORMAT_EXCEPTIONS: &str = "falcon-ocr-kernel-v2";
 /// The body matrices of a layer, in file order.
 pub(super) const BODY: [&str; 4] = ["attention.wqkv", "attention.wo", "feed_forward.w13", "feed_forward.w2"];
