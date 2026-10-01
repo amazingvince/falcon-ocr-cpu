@@ -78,6 +78,21 @@ const TAIL_BLOCKS: [Block; TAIL_RECORD / BLOCK] = [Block::Temporal, Block::Spati
 const KEY_HALVES: [Block; 2] = [Block::Temporal, Block::Spatial];
 const VALUE_HALVES: [Block; 2] = [Block::ValueLow, Block::ValueHigh];
 
+/// The rotated half of [`SplitPrefix::in_storage_basis`]: the rotated
+/// queries live in an `N`-element stack buffer, so decode steps still do not
+/// allocate. Kept out of line so that callers on unrotated caches (every
+/// prefill and the production formats' decode) do not reserve the buffer's
+/// frame.
+#[inline(never)]
+fn rotated_basis<const N: usize>(q: &[f32], output: &mut [f32], decode: impl FnOnce(&[f32], &mut [f32])) {
+    let mut buffer = [0.0_f32; N];
+    let rotated = &mut buffer[..q.len()];
+    rotated.copy_from_slice(q);
+    each_block(rotated, &KEY_HALVES, rotation::rotate_query);
+    decode(rotated, output);
+    each_block(output, &VALUE_HALVES, rotation::unrotate);
+}
+
 #[derive(Debug)]
 enum Records {
     F32(Vec<f32>),
@@ -557,18 +572,12 @@ impl SplitPrefix {
     /// for rotated storage every head's query halves are rotated first
     /// (`rotation::rotate_query`, so their dots with the stored keys are the
     /// original ones) and its output halves un-rotated after
-    /// (`rotation::unrotate`). The rotated queries live in an `N`-element
-    /// stack buffer, so decode steps still do not allocate.
+    /// (`rotation::unrotate`).
     fn in_storage_basis<const N: usize>(&self, q: &[f32], output: &mut [f32], decode: impl FnOnce(&[f32], &mut [f32])) {
         if !self.rotated {
             return decode(q, output);
         }
-        let mut buffer = [0.0_f32; N];
-        let rotated = &mut buffer[..q.len()];
-        rotated.copy_from_slice(q);
-        each_block(rotated, &KEY_HALVES, rotation::rotate_query);
-        decode(rotated, output);
-        each_block(output, &VALUE_HALVES, rotation::unrotate);
+        rotated_basis::<N>(q, output, decode);
     }
 
     /// [`SplitPrefix::attention_decode`] in the records' basis.

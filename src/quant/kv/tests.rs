@@ -317,6 +317,39 @@ fn nonfinite_tail_values_reach_the_output() {
 }
 
 #[test]
+fn truncated_tails_take_new_positions_like_fresh_ones() {
+    let c: ModelConfig = serde_json::from_str(include_str!("../../../tests/fixtures/model-config.json")).unwrap();
+    let (p, generated, kept) = (37, 6, 2);
+    let (k, v, q) = fixture(&c, p, p + 5);
+    let row = |seed: usize| -> Vec<f32> {
+        (0..generated * c.kv_dim())
+            .map(|i| ((i * seed) % 43) as f32 / 59.0 - 0.35)
+            .collect()
+    };
+    let (old_k, old_v, new_k, new_v) = (row(13), row(17), row(19), row(23));
+    let split = kept * c.kv_dim();
+    let fresh_k = [&old_k[..split], &new_k[split..]].concat();
+    let fresh_v = [&old_v[..split], &new_v[split..]].concat();
+    let sinks: Vec<_> = (0..c.n_heads).map(|h| h as f32 * 0.2 - 0.9).collect();
+    for storage in storages() {
+        // Rejected drafts truncate the tail; the next positions overwrite
+        // every code and scale of the records they reuse.
+        let mut reused = SplitPrefix::seal(&k, &v, p, p + generated, &c, storage, None).unwrap();
+        push_rows(&mut reused, &c, &old_k, &old_v);
+        reused.truncate_tail(kept);
+        push_rows(&mut reused, &c, &new_k[split..], &new_v[split..]);
+        let mut output = vec![f32::NAN; c.query_dim()];
+        reused.attention_decode(&q, p + generated, &sinks, &mut output, Simd::Auto);
+        let expected = decode(&c, storage, &k, &v, &fresh_k, &fresh_v, &q, &sinks);
+        assert_eq!(
+            output.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            expected.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            "{storage:?}"
+        );
+    }
+}
+
+#[test]
 fn refuses_nonidentical_temporal_keys() {
     let c: ModelConfig = serde_json::from_str(include_str!("../../../tests/fixtures/model-config.json")).unwrap();
     let mut k = vec![0.0; c.query_dim()];
@@ -364,7 +397,10 @@ fn q4_codes_pack_two_per_byte_and_decode_like_q8() {
     };
     let store = Q4Rec::<RECORD> { codes, scales };
     let records = 3 * c.n_kv_heads;
-    /// Every 8-lane load of the `records` records of `store` through `S`.
+    /// Every 8-lane load of the `records` records of `store` through `S`
+    /// (inlined, so the vector instantiations compile with the caller's
+    /// instruction set as the production kernels do).
+    #[inline(always)]
     unsafe fn loads<S: crate::simd::Simd>(store: &Q4Rec<'_, RECORD>, records: usize) -> Vec<u32> {
         let mut lanes = vec![0.0_f32; records * RECORD];
         for record in 0..records {
@@ -390,6 +426,8 @@ fn q4_codes_pack_two_per_byte_and_decode_like_q8() {
     if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
         #[target_feature(enable = "avx2,fma")]
         unsafe fn native(store: &Q4Rec<'_, RECORD>, records: usize) -> [Vec<u32>; 2] {
+            // SAFETY: the caller enables AVX2 and FMA, all `Avx2` and
+            // `Avx2Fast` need.
             unsafe {
                 [
                     loads::<crate::simd::Avx2>(store, records),

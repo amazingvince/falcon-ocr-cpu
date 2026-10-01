@@ -77,11 +77,17 @@ impl Profile {
     pub const W8_BODY_KV_Q16: Self = Self::new(Weights::Int8, Kv::Q16);
     /// The fast mode.
     pub const W8_BODY_KV_Q8: Self = Self::new(Weights::Int8, Kv::Q8);
+    /// FP32 weights with the rotated 8-bit cache (research).
     pub const KV_Q8R: Self = Self::new(Weights::F32, Kv::Q8Rot);
+    /// FP32 weights with the rotated 4-bit cache (research).
     pub const KV_Q4R: Self = Self::new(Weights::F32, Kv::Q4Rot);
+    /// Near-exact's weights with the rotated 8-bit cache (research).
     pub const W16_BODY_KV_Q8R: Self = Self::new(Weights::Int16, Kv::Q8Rot);
+    /// Near-exact's weights with the rotated 4-bit cache (research).
     pub const W16_BODY_KV_Q4R: Self = Self::new(Weights::Int16, Kv::Q4Rot);
+    /// Fast mode's weights with the rotated 8-bit cache (research).
     pub const W8_BODY_KV_Q8R: Self = Self::new(Weights::Int8, Kv::Q8Rot);
+    /// Fast mode's weights with the rotated 4-bit cache (research).
     pub const W8_BODY_KV_Q4R: Self = Self::new(Weights::Int8, Kv::Q4Rot);
     /// Every combination.
     pub const ALL: [Self; 18] = [
