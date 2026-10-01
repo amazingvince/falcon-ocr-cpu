@@ -195,6 +195,20 @@ class CommandLines(unittest.TestCase):
         with self.assertRaises(SystemExit), redirect_stdout(io.StringIO()), mock.patch("sys.stderr", io.StringIO()):
             v.main(["--model", str(self.model), "--output", str(self.root / "x.safetensors"), "--exceptions", "2"])
 
+    def test_exceptions_that_match_no_selected_matrix_are_refused(self):
+        output = self.root / "none.safetensors"
+        # No matrix matches, and the matching one is left out by --include.
+        for extra in (["--exceptions-include", "no_such_matrix"],
+                      ["--include", r"\.wo", "--exceptions-include", r"\.w2"]):
+            argv = ["--model", str(self.model), "--output", str(output), "--gram-dir", str(self.grams),
+                    "--exceptions", "2", *extra]
+            with self.assertRaises(SystemExit) as raised, redirect_stdout(io.StringIO()), \
+                    mock.patch("sys.stderr", io.StringIO()) as stderr:
+                v.main(argv)
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn("--exceptions-include matches no matrix selected by --include/--exclude", stderr.getvalue())
+            self.assertFalse(output.exists())
+
     def test_proxy_reports_the_overlay_it_would_build(self):
         self.overlay("w2.safetensors", "--exceptions", "2", "--exceptions-include", r"\.w2")
         report = self.root / "proxy.json"

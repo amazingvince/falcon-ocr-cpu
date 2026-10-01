@@ -274,6 +274,8 @@ def main(argv: list[str] | None = None) -> None:
     include, exclude = re.compile(args.include), re.compile(args.exclude)
     exceptions_include = re.compile(args.exceptions_include)
     names = [n for n in inventory(False) if include.search(n) and not exclude.search(n)]
+    if args.exceptions and not any(exceptions_include.search(n) for n in names):
+        ap.error("--exceptions-include matches no matrix selected by --include/--exclude")
     if any(args.exceptions >= inventory(False)[n][1] for n in names if exceptions_include.search(n)):
         ap.error("--exceptions must stay below the input width of every matrix that gets them")
     tensors = {}
