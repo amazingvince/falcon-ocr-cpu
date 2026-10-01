@@ -142,10 +142,11 @@ impl Runner {
     }
 
     /// One cohort of files (`first` is the index of its first page): each
-    /// page is prepared on its own, so a page that fails leaves the cohort
-    /// with its error (or, with `fail_fast`, ends the run with it before any
-    /// model work), and the others decode jointly (alone when one is left, as
-    /// a cohort of one does), traced under their input indices.
+    /// page is prepared and its output budget fitted on its own, so a page
+    /// that cannot be read or prepared, or does not fit the context, leaves
+    /// the cohort with its error (or, with `fail_fast`, ends the run with it
+    /// before any model work), and the others decode jointly (alone when one
+    /// is left, as a cohort of one does), traced under their input indices.
     fn stream_chunk<P: AsRef<Path>>(
         &self,
         chunk: &[P],
@@ -160,10 +161,16 @@ impl Runner {
         let mut pages = Vec::with_capacity(chunk.len());
         for (offset, path) in chunk.iter().enumerate() {
             let path = path.as_ref();
-            match self
+            // A page's budget conflict is its own, the error it gets alone;
+            // the cohort then decodes to the smallest budget of those left.
+            let page = self
                 .prepare_path(path, options)
                 .with_context(|| format!("preparing {}", path.display()))
-            {
+                .and_then(|page| {
+                    options.budget(page.input.tokens.len(), self.model.config.max_seq_len)?;
+                    Ok(page)
+                });
+            match page {
                 Ok(page) => {
                     inputs.push(page.input);
                     pages.push((first + offset, page.route));
@@ -200,7 +207,8 @@ impl Runner {
                     }
                 }
             }
-            // The joint decode failed every page in it.
+            // The cohort's own failure (a trace refusing the crop, or its
+            // prefill or joint decode) fails every page in it.
             Err(error) => {
                 let message = format!("{error:#}");
                 let mut error = Some(error);

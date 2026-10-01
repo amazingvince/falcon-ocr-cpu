@@ -5,6 +5,7 @@ use falcon_ocr::{
     Backend, GenerationOptions, Model, OcrResult, Pipeline, Runner, RunnerConfig,
     preprocess::{prepare_file, prepare_file_timed},
     runner::ControlFlow,
+    tokenizer::OcrTokenizer,
     trace::Trace,
 };
 use image::{ImageFormat, Rgb, RgbImage};
@@ -352,6 +353,15 @@ impl Trace for NoModelWork {
     }
 }
 
+/// Ends a page at its first model tensor: a page that reaches the model
+/// fails with "reached the model" instead of generating.
+struct StopAtModel;
+impl Trace for StopAtModel {
+    fn tensor(&mut self, _: &str, _: &[usize], _: &[f32]) -> Result<()> {
+        anyhow::bail!("reached the model")
+    }
+}
+
 #[test]
 #[ignore = "requires pinned checkpoint/tokenizer assets; validates rejection only, no successful generation"]
 fn public_runner_errors_and_empty_collections_do_not_generate() {
@@ -371,6 +381,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         ),
         "batch_size must be positive",
     );
+    let context = model.config().max_seq_len;
     let runner = Runner::new(
         model,
         &model_dir,
@@ -490,6 +501,35 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         .unwrap();
     assert_eq!(refused.len(), 2);
     assert!(refused.iter().all(|(_, error)| error.contains(refusal)), "{refused:?}");
+    // A page whose prompt leaves too little context for the requested output
+    // fails alone; the page beside it in the cohort goes on to the model.
+    let directory = tempfile::tempdir().unwrap();
+    let larger = directory.path().join("larger.png");
+    RgbImage::from_pixel(256, 256, Rgb([255; 3])).save(&larger).unwrap();
+    let tokenizer = OcrTokenizer::load(&model_dir).unwrap();
+    let prompt = |path: &Path| {
+        let patches = prepare_file(path, options.min_dimension, options.max_dimension)
+            .unwrap()
+            .positions_hw
+            .len();
+        tokenizer.prompt(patches).unwrap().len()
+    };
+    let fits = prompt(&cases.valid);
+    assert!(fits < prompt(&larger));
+    let tight = GenerationOptions {
+        max_new_tokens: context - fits,
+        ..options
+    };
+    let mut pages = Vec::new();
+    runner
+        .recognize_files_streaming_with_trace(&[&cases.valid, &larger], &tight, &mut StopAtModel, |page, result| {
+            pages.push((page, format!("{:#}", result.expect_err("stopped"))));
+            ControlFlow::Continue(())
+        })
+        .unwrap();
+    assert_eq!(pages.len(), 2);
+    assert!(pages[0].1.contains("reached the model"), "{pages:?}");
+    assert!(pages[1].1.contains("context budget conflict"), "{pages:?}");
     error_contains(
         runner.score_teacher_file(&cases.valid, &[11], &cropped, &mut NoModelWork),
         "teacher scoring compares with the uncropped page",
