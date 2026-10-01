@@ -322,8 +322,9 @@ impl Runner {
             Decode::Auto(_) => self.decode_threads_chosen(),
         }
     }
-    /// `fp32` for the exact profiles, else the profile label.
-    fn precision(&self) -> String {
+    /// `fp32` for the exact profiles, else the profile label
+    /// (`OcrResult::precision`).
+    pub fn precision(&self) -> String {
         let profile = self.model.profile();
         if profile.is_exact() { "fp32" } else { profile.label() }.to_owned()
     }

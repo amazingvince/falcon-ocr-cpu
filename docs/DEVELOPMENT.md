@@ -37,7 +37,8 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   A fast path without such a test does not ship.
 - **Integration tests that need no weights** run in CI
   (`cargo test --release --locked --tests`): negative inputs, preprocessing
-  fixtures, tokenizer prompts. The router's parity tests (library) compare
+  fixtures, tokenizer prompts, and `run`'s flag, input, list and output-file
+  checks (`tests/run_cli.rs`). The router's parity tests (library) compare
   its 26 statistics, both tree scores and the route bit for bit with the
   Python specification on synthetic pages and the decode fixtures.
 - **Ignored gates** need `artifacts/` (the pinned checkpoint, the GPTQ

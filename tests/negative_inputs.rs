@@ -303,7 +303,8 @@ fn cli_crop_margins_takes_an_optional_pixel_padding() {
             .output()
             .unwrap()
     };
-    // Accepted flags get as far as the missing model (exit 1, not Clap's 2).
+    // Accepted flags pass Clap and fail at run time with exit 1, not Clap's 2
+    // (here at the input check, which finds no page.png).
     for flag in ["--crop-margins", "--crop-margins=40"] {
         let output = run(flag);
         assert_eq!(output.status.code(), Some(1), "{flag}: {output:?}");

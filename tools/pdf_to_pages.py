@@ -29,8 +29,13 @@ absolute output paths, one per line in page order) and manifest.json: the source
 file's SHA-256 and, per page, its size in points and rotation, the pixel size, the mode
 used, the scale or DPI, the PNG's image mode, the embedded image's size, bits per
 component, colour space and filters when extracted, and why a page auto-rendered was
-not extracted. Recognize the pages in order (the null-separated form works with GNU
-and BSD xargs):
+not extracted. Recognize the pages in order in one run, with the records in a file
+that --resume continues:
+
+  falcon-ocr run --list book-pages/pages.txt --output book.jsonl
+
+or through xargs (the null-separated form works with GNU and BSD xargs; a long list
+may be split over several runs):
 
   tr '\\n' '\\0' < book-pages/pages.txt | xargs -0 falcon-ocr run
 

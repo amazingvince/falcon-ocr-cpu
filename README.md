@@ -20,11 +20,13 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu --mode fast run page.png
 target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --probe
 ```
 
-`run` prints one JSON line per page (text, token ids, stop reason, timings
-and the resolved plan); `--text` prints the text only. With no flags the
-runner picks near-exact mode, loads the packed file from the model directory
-(about 10 ms) and the draft head next to it, and sets threads, kernels, the
-decode team, speculation and the repetition stop from the host.
+`run` prints one JSON line per page as soon as the page is done, in input
+order (the input `path`, its `page` index, text, token ids, stop reason,
+timings, the resolved plan and the generation `options` the run asked for);
+`--text` prints the text only. With no flags the runner picks near-exact
+mode, loads the packed file from the model directory (about 10 ms) and the
+draft head next to it, and sets threads, kernels, the decode team,
+speculation and the repetition stop from the host.
 
 ### PDFs
 
@@ -37,8 +39,15 @@ a page that is just a scanned image is extracted at its native resolution
 records how each page was made; recognize them in order with
 
 ```sh
+target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl
+# or, portably, through xargs
 tr '\n' '\0' < book-pages/pages.txt | xargs -0 target/release/falcon-ocr --model models/falcon-ocr-cpu run
 ```
+
+`--list` keeps the whole book in one run, and `--output` with `--resume`
+lets a stopped run continue ([Books and long runs](#books-and-long-runs));
+xargs may split a long list over several runs, each numbering its pages
+from 0.
 
 Extracted 1-bit scans get the processor's nearest-neighbour downscale, as in
 Pillow; `--mode render` antialiases them instead. `--help` covers `--mode`,
@@ -120,15 +129,73 @@ lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
 | `--draft-head F` | A trained draft head ([research/draft-head](research/draft-head/README.md)); `falcon-ocr-v1.5-draft-head.safetensors` next to the model files is used without the flag; `--drafter ngram\|head\|both` (default `head` with a head, else `ngram`), `--draft-confidence P` (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
-| `--batch-size N` | Pages decoded jointly (1..=8) |
+| `--batch-size N` | Pages decoded jointly (1..=8); `run` gives a finished page's row to the next page at once, and each page keeps the output budget it would have alone; rows decode without drafts |
 | `run --min-dimension 64 --max-dimension 1536 --max-new-tokens 8192 --text` | Image size bounds, output cap, text only |
 | `run --max-dimension auto` | The resolution router picks 768, 1024 or 1536 per page ([docs/MODES.md](docs/MODES.md#resolution-routing); changes the output) |
 | `run --crop-margins`, `--crop-margins=PAD` | Cut blank page margins after the first resize, keeping PAD pixels (default 24) around the content: fewer image tokens, text at the same size; each result reports its `crop` ([docs/MODES.md](docs/MODES.md#margin-cropping); changes the output, off by default) |
+| `run --list F --output F --resume --keep-going` | Inputs from a file, records appended to a file, skip the pages it holds, record failed pages and go on ([Books and long runs](#books-and-long-runs)) |
+| `run --pipeline [--prefill-threads N]` | Prepare the next pages on a prefetch thread and prefill the next one on a second pool of N threads (default: the threads the decode team leaves; at most `--threads`) while the current pages decode; tokens unchanged |
+| `run --escalate` | Fast mode: reread a page that the repetition stop ended with the near-exact model |
 | `pack --output F`, `inspect`, `trace`, `doctor [--text] [--load] [--probe]` | Write a packed file; verify the checkpoint; capture tensors; show the plan |
 
 `falcon-ocr-eval` is the research binary: any weights × KV profile, timed
 benchmarks with telemetry, token agreement against the FP32 anchor, tensor
 traces of quantized profiles, and GPTQ Gram capture.
+
+## Books and long runs
+
+```sh
+falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl --keep-going
+# after a crash or Ctrl-C, the same command with --resume runs only the missing pages
+falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl --keep-going --resume
+```
+
+- `--list FILE` reads input paths from FILE (UTF-8, with or without a byte
+  order mark), one per line, after any positional images; blank lines and
+  lines starting with `#` are skipped, and relative paths resolve against
+  the current directory. `tools/pdf_to_pages.py` writes such a list for a
+  PDF ([PDFs](#pdfs)).
+- Every input is checked before the model loads (it exists, is a regular
+  file and starts like a PNG or JPEG), so a wrong path fails at once and
+  nothing is printed.
+- Each record carries `"path"` (the input as given) and `"page"` (its
+  0-based position among the inputs) before the result's fields, and the
+  generation `"options"` the run asked for after them.
+  `--output FILE` appends the records to FILE, flushed after every page,
+  instead of printing them; `--text` then still prints each page's text.
+  The file is created or repaired only after the flags, inputs and weights
+  pass their checks. A device or pipe (`/dev/stdout`) is written to as it
+  is, without being read.
+- `--resume` skips the inputs whose path already has a successful record in
+  the `--output` file, which must be a regular file. A last record cut short
+  by a crash is removed, so its page runs again. Records that ran otherwise
+  (another mode or precision, another GPTQ overlay or round-to-nearest
+  weights, another `--max-dimension`, `--min-dimension`, `--max-new-tokens`
+  or `--crop-margins` padding, with or without the crop, another
+  `--stop-repetition` or `--exp`, BF16 or NEON prefill rounding as
+  `--tune prefill-bf16`, `--backend` or the CPU decide it, or a pinned
+  `--tune decode-exp`) are kept and skipped with a warning that names the
+  difference. Records written before records carried their `options` are
+  compared on mode, weights, routing and those runner choices only. With
+  `--escalate`, fast-mode records that the repetition stop ended without a
+  near-exact rerun are counted in a warning, since their pages are skipped.
+- A page can still fail at run time (a corrupt file that passed the check).
+  Without `--keep-going` the run stops there, after the pages before it
+  were written (earlier releases printed nothing when any page failed). With
+  it, the page's record is `{"path", "page", "error"}`, the run goes on,
+  and the exit code is non-zero at the end.
+- At the end stderr gets a summary: pages done, failed and skipped, the time
+  and pages per hour. With `--batch-size N` or `--pipeline`, a page's
+  `total_ms` is the sum of its own stages (`time_to_first_token_ms +
+  decode_ms`), which overlap other pages'; the pages per hour are the run's.
+- `--pipeline` reads and prepares the next pages on a prefetch thread and
+  prefills the next page on a second pool while the current page decodes;
+  tokens are unchanged.
+- `--escalate`, in fast mode, rereads each page that the repetition stop
+  ended with the near-exact model (loaded when first needed) and keeps the
+  fast attempt as `escalated_from`; if the near-exact model cannot be loaded
+  or the rerun fails, the page keeps its fast result with an
+  `escalation_error` ([docs/MODES.md](docs/MODES.md#loops-and-the-repetition-stop)).
 
 ## Library
 
@@ -152,7 +219,9 @@ automatic configuration, `RunnerConfig::reference()` the bit-exact one (the
 platform exp, full head, no speculation or repetition stop, a pool-sized
 decode team). `Runner` owns its thread pool; `recognize`, `recognize_file`,
 `recognize_batch` and `recognize_files` return `OcrResult`s in input order,
-each carrying its `plan`.
+each carrying its `plan`. `recognize_files_streaming` hands each page's
+result (or error) to a callback as soon as it and every earlier page are
+done, and `recognize_files_pipelined` does the same with the page pipeline.
 
 ## Building
 

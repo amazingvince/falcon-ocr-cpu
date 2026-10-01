@@ -3,6 +3,8 @@
 //! Numerical correctness and performance qualification are tracked separately;
 //! consult the reference reports before treating a backend as GPU-equivalent.
 pub mod auto;
+/// Long runs of `falcon-ocr run`: input lists, records, `--resume`.
+pub mod book;
 mod buf;
 pub mod cli;
 pub mod config;
