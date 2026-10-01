@@ -188,7 +188,9 @@ borders, gutter shadows and punch holes count as ink and keep their side of
 the page; marks fainter than the ink threshold (light pencil) or thinner than
 four pixels are cut off when they lie beyond the padding. Routed pages
 (`--max-dimension auto`) are routed on the whole page and crop the resize they
-run at, as does the safety-net rerun.
+run at, as does the safety-net rerun. `run --pipeline`, `--batch-size N` and
+the `--escalate` rerun prepare each page the same way, so every path reports
+the same crop.
 
 It is opt-in because it changes the model input. TII's layout pipeline feeds
 cropped regions to the model, so crops are in distribution, but nothing has
@@ -225,6 +227,32 @@ also ends genuine FP32 loops, even one that FP32 itself ends at EOS after a
 better: CER 1.90 → 0.83), so there the default output is shorter than FP32's.
 Legitimately periodic content longer than that (a 256-token page of identical
 lines) would be cut: pass `--stop-repetition=false`.
+
+`run --escalate` (fast mode) rereads every page that the stop ended with the
+near-exact model: the near-exact packed file next to `--model-file`, else
+what `--mode near-exact` finds in the model directory (its packed file or the
+checkpoint quantized at load), loaded when a page first needs it. Pages are
+reread one at a time, and in a batch the other rows wait meanwhile. The
+near-exact result replaces the page's record, which keeps the fast attempt as
+`escalated_from` (`mode`, `finish_reason`, `output_tokens`, `total_ms`, like
+the router's `safety_net`; the page's `total_ms` includes it); a routed page
+is reread at the size its fast run ended at. When the near-exact model
+cannot be loaded or the rerun fails, the page keeps its fast result with the
+reason in `escalation_error` and a warning on stderr, and after a failed
+load the run stops trying.
+
+This is remedy 1 of `research/phase4-hillclimb/attempt3/RESULTS-V3.md` §7,
+with near-exact in place of exact mode: the loops that the 8-bit weights
+caused on held-out handwriting were ended by the stop, so rereading those
+pages gives them near-FP32 output, and only looping pages pay near-exact
+cost. Only the repetition stop escalates: fast mode ran to the length limit
+less often than FP32 (7 against 19 of the 200 held-out pages), so rereading
+length stops would pay for the most expensive pages with little to gain.
+Near-exact pages never escalate to exact mode: near-exact matched FP32 on all
+118 English gate pages, so its loops are almost always FP32's own. The
+held-out pages are spent, so the effect there is not measured; with the
+published files, a fast-mode page of repeated lines that the stop ends is
+reread with a plain near-exact run's tokens.
 
 ## Packed model files
 

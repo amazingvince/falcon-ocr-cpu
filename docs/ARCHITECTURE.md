@@ -51,6 +51,22 @@ is deferred: prefill attention itself runs in FP32 (or BF16 in fast mode on
 AVX512-BF16 CPUs). Every image key exists before any prefix result is
 finalized; nothing treats partial image strips as causal prompts.
 
+A run of many files (`Runner::recognize_files_streaming`) hands each page's
+result or error to a callback as soon as the page and every earlier one are
+done, in input order; a page that fails does not stop the others unless the
+callback says so. Pages run one after another, or `--batch-size` at a time
+in joint decode steps, where a finished page's row goes to the next page at
+once (continuous batching, `runner/batch/`). `recognize_files`, the traced
+`recognize_files_streaming_with_trace` and `recognize_batch` keep fixed
+cohorts of the batch size (`runner/cohort.rs`); `recognize_files` stops at
+the first error. The page pipeline (`recognize_files_pipelined`,
+`run --pipeline`, `runner/pipeline.rs`) splits each page at the
+prefill/decode boundary (`Runner::prefill`, `Runner::decode_prefilled`, the
+two halves of the one sequential call): a prefetch thread reads and prepares
+the next pages, and the next page's prefill runs on a second pool while the
+current page decodes. Every prefill stage computes each output independently
+of its pool's thread count, so the pipeline's tokens are a sequential run's.
+
 ## Modules
 
 | Module | Holds |
@@ -65,7 +81,8 @@ finalized; nothing treats partial image strips as causal prompts.
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, panel prefill, multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
-| `runner/` | `Runner` (prefill, sealing), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
+| `runner/` | `Runner` (prefill, sealing, decode), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `stream.rs` (results in input order as pages finish), `batch/` (continuous batching: the scheduler, the page feed, the rows), `pipeline.rs` (the page pipeline), `escalate.rs` (fast-mode loops reread in near-exact mode), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
+| `book/` | Long runs of `falcon-ocr run`: the input list, the input check before the model loads, the per-page JSON record, the output file `--resume` continues (`resume.rs`), the summary |
 | `team.rs`, `tune.rs`, `cpu.rs` | The decode spin team; the automatic team-size tuner and its report; host topology, performance cores, the bandwidth probe |
 | `head_screen.rs`, `draft.rs`, `repetition.rs` | The exact INT8 vocabulary screen; n-gram drafts, the adaptive draft policy and document history; the repetition stop |
 | `draft_head.rs` | The trained draft head (EAGLE-3 style, `research/draft-head`): INT8 projections on the decode kernels, its own INT8 key/value cache of verified positions, confidence-gated draft chains, an optional low-rank vocabulary head |
