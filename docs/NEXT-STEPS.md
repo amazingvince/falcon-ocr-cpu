@@ -76,14 +76,17 @@ pinned checkpoint, the published packed files and a GPTQ overlay:
 ## Setup
 
 The commands below reproduce the agreement numbers from the repository root
-(bash; `falcon-ocr-eval` from `cargo build --release --locked`); the timing
-tools are listed in [PERFORMANCE.md](PERFORMANCE.md#measuring).
+(bash; `falcon-ocr-eval` from `cargo build --release --locked`) and write
+their files to the git-ignored `artifacts/agree/`; the timing tools are
+listed in [PERFORMANCE.md](PERFORMANCE.md#measuring).
 
 ```sh
 B=target/release
 W8=artifacts/model/w8-gptq.safetensors
+A=artifacts/agree
+mkdir -p $A
 # The anchor pages: the calibration pages outside the GPTQ capture set.
-python - > anchor-pages.txt <<'EOF'
+python - > $A/anchor-pages.txt <<'EOF'
 import json
 from pathlib import PureWindowsPath as P  # reads / and \
 capture = {P(path).parent.name for path in open("tools/gptq-calibration-pages.txt").read().split()}
@@ -92,12 +95,12 @@ for page in json.load(open("artifacts/phase4/checks/calibration-reference.json")
         print(f"artifacts/corpus/v3/{name}/canonical-rgb.png")
 EOF
 # FP32 top-K log-probabilities along the reference tokens, to score KL against
-$B/falcon-ocr-eval --profile reference agree $(cat anchor-pages.txt) \
+$B/falcon-ocr-eval --profile reference agree $(cat $A/anchor-pages.txt) \
   --reference artifacts/phase4/checks/calibration-reference.json --max-steps 512 \
-  --report fp32.json --dump-topk fp32-topk.json
+  --report $A/fp32.json --dump-topk $A/fp32-topk.json
 # One agreement arm: flips and KL against FP32 (tools/agree_queue.sh runs several)
-AGREE_BIN=$B/falcon-ocr-eval AGREE_ARGS="--reference-topk fp32-topk.json" \
-  bash tools/agree_queue.sh agree anchor-pages.txt 512 fast=w8-body-kv-q8=$W8
+AGREE_BIN=$B/falcon-ocr-eval AGREE_ARGS="--reference-topk $A/fp32-topk.json" \
+  bash tools/agree_queue.sh $A/arms $A/anchor-pages.txt 512 fast=w8-body-kv-q8=$W8
 ```
 
 The FP32 arm has 0 flips by construction; an arm's `kl_mean` is
