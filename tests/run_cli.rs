@@ -284,6 +284,11 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
     // must be a regular file. Both are refused before the weights resolve.
     let directory = arg(case.directory.path());
     assert_error(&case.run(&[], &[valid, "--output", directory]), "is a directory");
+    // An output whose folder is missing is refused before the model loads.
+    assert_error(
+        &case.run(&[], &[valid, "--output", "absent/out.jsonl"]),
+        "--output absent/out.jsonl: the folder absent does not exist",
+    );
     assert_error(
         &case.run(&[], &[valid, "--output", directory, "--resume"]),
         "is a directory",

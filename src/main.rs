@@ -376,6 +376,18 @@ impl RunJob {
         );
         if let Some(path) = output.as_deref() {
             ensure!(!path.is_dir(), "--output {} is a directory", path.display());
+            // The file itself is created after the model loads; a missing
+            // folder would only fail then.
+            let folder = match path.parent() {
+                Some(folder) if !folder.as_os_str().is_empty() => folder,
+                _ => Path::new("."),
+            };
+            ensure!(
+                folder.is_dir(),
+                "--output {}: the folder {} does not exist",
+                path.display(),
+                folder.display()
+            );
             ensure!(
                 !*resume || book::is_file_or_missing(path),
                 "--resume reads the records in --output, and {} is not a regular file",
