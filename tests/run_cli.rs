@@ -221,6 +221,14 @@ fn escalation_needs_fast_mode_and_a_near_exact_model_before_anything_loads() {
         "this run is the research profile w8-body-kv-q16",
     );
     assert_error(
+        &case.run_with(
+            &models,
+            &["--mode", "fast", "--kv-cache", "q8r"],
+            &[valid, "--escalate"],
+        ),
+        "this run is the research profile w8-body-kv-q8r",
+    );
+    assert_error(
         &case.run_with(&models, &["--mode", "fast", "--kv-cache", "q8"], &[valid, "--escalate"]),
         "packed metadata source_sha256 missing",
     );

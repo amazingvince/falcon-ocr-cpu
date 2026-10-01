@@ -331,8 +331,11 @@ fn kv_cache_replaces_the_kv_half_of_the_resolved_profile() {
     assert_eq!((plan.mode, plan.profile), (Some(Mode::Exact), Profile::REFERENCE));
     let plan = resolve_weights(&request(Some(Mode::Exact), Some(Kv::Q8))).unwrap();
     assert_eq!((plan.mode, plan.profile), (None, Profile::KV_Q8));
+    let plan = resolve_weights(&request(Some(Mode::Exact), Some(Kv::Q8Rot))).unwrap();
+    assert_eq!((plan.mode, plan.profile), (None, Profile::KV_Q8R));
     let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q8Rot))).unwrap();
     assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q8R));
+    assert!(matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }));
     let plan = resolve_weights(&request(None, Some(Kv::Q4Rot))).unwrap();
     assert_eq!((plan.mode, plan.profile), (None, Profile::W16_BODY_KV_Q4R));
     // The plan reports the profile that runs.
@@ -348,12 +351,23 @@ fn kv_cache_replaces_the_kv_half_of_the_resolved_profile() {
     assert_eq!(resolved.kv_cache, "q16");
     assert_eq!(resolved.bytes.kv_per_position, 22 * 8 * 330);
     assert!(resolved.to_string().contains("mode research (w8-body-kv-q16)"));
+    // The rotated cache is the same size as the plain 8-bit one.
+    let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q8Rot))).unwrap();
+    let facts = ModelFacts::from_plan(&plan).unwrap();
+    let resolved = Resolved::new(HostInfo::detect(), &RunnerConfig::default(), &facts, root);
+    assert_eq!((resolved.mode, resolved.profile), (None, Profile::W8_BODY_KV_Q8R));
+    assert_eq!(resolved.kv_cache, "q8r");
+    assert_eq!(resolved.bytes.kv_per_position, 22 * 8 * 170);
+    assert!(resolved.to_string().contains("mode research (w8-body-kv-q8r)"));
     // A kernel-ready file keeps its weights and takes the requested cache.
     let packed = root.join(Mode::Fast.packed_file_name().unwrap());
     fabricate_packed(&packed, "w8-body-kv-q8");
     let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q16))).unwrap();
     assert_eq!(plan.source, WeightsSource::Packed { path: packed.clone() });
     assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q16));
+    let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q8Rot))).unwrap();
+    assert_eq!(plan.source, WeightsSource::Packed { path: packed.clone() });
+    assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q8R));
     let explicit = ModelRequest {
         model_file: Some(&packed),
         ..request(None, Some(Kv::Q16))
@@ -373,11 +387,24 @@ fn kv_cache_replaces_the_kv_half_of_the_resolved_profile() {
     })
     .unwrap();
     assert_eq!(plan.profile, Profile::W8_BODY_SPLIT_F32);
+    let plan = resolve_weights(&ModelRequest {
+        kv_cache: Some(Kv::Q8Rot),
+        ..research(Profile::W8_BODY_KV_Q8R)
+    })
+    .unwrap();
+    assert_eq!(plan.profile, Profile::W8_BODY_KV_Q8R);
     let error = resolve_weights(&research(Profile::W16_BODY_KV_Q8))
         .unwrap_err()
         .to_string();
     assert!(
         error.contains("w8-body-kv-q8 weights, not those of w16-body-kv-q8"),
+        "{error}"
+    );
+    let error = resolve_weights(&research(Profile::W16_BODY_KV_Q8R))
+        .unwrap_err()
+        .to_string();
+    assert!(
+        error.contains("w8-body-kv-q8 weights, not those of w16-body-kv-q8r"),
         "{error}"
     );
 }
@@ -518,6 +545,14 @@ fn doctor_reports_files_and_a_plan_without_reading_tensors() {
     let plan = doctor(&replaced, &config, false, false).unwrap().plan.unwrap();
     assert_eq!((plan.mode, plan.profile), (None, Profile::W16_BODY_KV_Q8));
     assert_eq!(plan.kv_cache, "q8");
+    assert_eq!(plan.bytes.kv_per_position, 22 * 8 * 170);
+    let rotated = ModelRequest {
+        kv_cache: Some(Kv::Q8Rot),
+        ..request.clone()
+    };
+    let plan = doctor(&rotated, &config, false, false).unwrap().plan.unwrap();
+    assert_eq!((plan.mode, plan.profile), (None, Profile::W16_BODY_KV_Q8R));
+    assert_eq!(plan.kv_cache, "q8r");
     assert_eq!(plan.bytes.kv_per_position, 22 * 8 * 170);
 }
 

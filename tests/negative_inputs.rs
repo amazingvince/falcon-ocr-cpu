@@ -212,14 +212,16 @@ fn cli_kv_cache_applies_to_run_and_doctor_only() {
         &["pack", "--output", "o"],
         &["inspect"],
     ] {
-        let output = cli()
-            .arg("--model")
-            .arg(model)
-            .args(["--kv-cache", "q16"])
-            .args(command)
-            .output()
-            .unwrap();
-        assert_cli_error(output, "--kv-cache applies to run and doctor");
+        for kv_cache in ["q16", "q8r"] {
+            let output = cli()
+                .arg("--model")
+                .arg(model)
+                .args(["--kv-cache", kv_cache])
+                .args(command)
+                .output()
+                .unwrap();
+            assert_cli_error(output, "--kv-cache applies to run and doctor");
+        }
     }
     // The doctor's plan names the profile that would run.
     fs::write(model.join("model.safetensors"), b"stub").unwrap();
@@ -234,6 +236,17 @@ fn cli_kv_cache_applies_to_run_and_doctor_only() {
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["plan"]["profile"], "w8-body-kv-q16");
     assert_eq!(report["plan"]["kv_cache"], "q16");
+    assert!(report["plan"]["mode"].is_null());
+    let output = cli()
+        .arg("--model")
+        .arg(model)
+        .args(["--mode", "fast", "--allow-rtn", "--kv-cache", "q8r", "doctor"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q8r");
+    assert_eq!(report["plan"]["kv_cache"], "q8r");
     assert!(report["plan"]["mode"].is_null());
 }
 
@@ -270,6 +283,13 @@ fn eval_profile_picks_the_kv_cache_of_a_model_file() {
     assert_eq!(report["plan"]["profile"], "w8-body-kv-q16");
     assert_eq!(report["plan"]["kv_cache"], "q16");
     let report = doctor("w16-body-kv-q8");
+    assert!(report["plan"].is_null());
+    let error = report["error"].as_str().unwrap();
+    assert!(error.contains("w8-body-kv-q8 weights"), "{error}");
+    let report = doctor("w8-body-kv-q8r");
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q8r");
+    assert_eq!(report["plan"]["kv_cache"], "q8r");
+    let report = doctor("w16-body-kv-q8r");
     assert!(report["plan"].is_null());
     let error = report["error"].as_str().unwrap();
     assert!(error.contains("w8-body-kv-q8 weights"), "{error}");

@@ -763,16 +763,28 @@ mod tests {
         let fast = packed_file(dir.path(), Profile::W8_BODY_KV_Q8);
         assert_eq!(run_profile(None, None).unwrap(), Profile::REFERENCE);
         assert_eq!(run_profile(None, Some(Profile::KV_Q8)).unwrap(), Profile::KV_Q8);
+        assert_eq!(run_profile(None, Some(Profile::KV_Q8R)).unwrap(), Profile::KV_Q8R);
         assert_eq!(run_profile(Some(&fast), None).unwrap(), Profile::W8_BODY_KV_Q8);
         assert_eq!(
             run_profile(Some(&fast), Some(Profile::W8_BODY_KV_Q16)).unwrap(),
             Profile::W8_BODY_KV_Q16
+        );
+        assert_eq!(
+            run_profile(Some(&fast), Some(Profile::W8_BODY_KV_Q8R)).unwrap(),
+            Profile::W8_BODY_KV_Q8R
         );
         let error = run_profile(Some(&fast), Some(Profile::W16_BODY_KV_Q8))
             .unwrap_err()
             .to_string();
         assert!(
             error.contains("w8-body-kv-q8 weights, not those of --profile w16-body-kv-q8"),
+            "{error}"
+        );
+        let error = run_profile(Some(&fast), Some(Profile::W16_BODY_KV_Q8R))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("w8-body-kv-q8 weights, not those of --profile w16-body-kv-q8r"),
             "{error}"
         );
     }
