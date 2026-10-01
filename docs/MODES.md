@@ -141,7 +141,9 @@ without exception columns first differs at token 1,264. On the 7700X anchor
 ([The metric](#the-metric)) the overlay without exception columns has 64
 flips and KL 3.04e-4 (the published overlay: 67 and 3.04e-4); with 4 W2
 columns it has 63 flips and KL 1.84e-4, 39% less. Flips do not resolve a
-difference of that size.
+difference of that size. Decode time per token did not measurably change
+(8.24 against 8.28 ms on the journal page,
+[PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)).
 
 ## Fast mode's held-out result
 
@@ -419,6 +421,10 @@ study of the pinned weights predicted
 ([research/kv-rotation](../research/kv-rotation/README.md)): the cache
 blocks are nearly Gaussian except the temporal key halves of late layers.
 None of the three uses holds up: `q8r` would gain fast mode a few percent of
-KL; on near-exact's weights an 8-bit cache, rotated or not, flips 18 times
-where `q16` flips once; and `q4r` multiplies fast mode's flips by 5 and its
-KL by 30. The profiles stay for research.
+KL at no measurable decode cost; on near-exact's weights `q8r` decodes 21%
+faster per token (7% with the draft head), but an 8-bit cache, rotated or
+not, flips 18 times where `q16` flips once; and `q4r`, whose codes decode
+through the 8-bit loads, is 15% slower per token than `q8` and multiplies
+fast mode's flips by 5 and its KL by 30
+([PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns) has the
+timing). The profiles stay for research.

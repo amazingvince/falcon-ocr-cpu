@@ -145,6 +145,34 @@ hour). Pinning the team to 8 makes that arm repeatable and gives the pipeline
 with `--pipeline` (3.9 GB with `--crop-margins`), 3.9 GB with `--batch-size
 4` and 3.3–4.3 GB with both.
 
+### KV caches and exception columns
+
+The journal page's first 300 tokens (`--max-new-tokens 300`): decode
+milliseconds per token, median of three rounds. `--model-file` picks the
+weights and the hidden `--kv-cache` the cache; every arm gave the same 300
+tokens, with and without speculation:
+
+| Weights | Cache | `--speculate 0` | Draft head |
+|---|---|---:|---:|
+| fast | `q8` | 8.28 | 6.35 |
+| fast | `q8r` | 8.37 | 6.39 |
+| fast | `q4r` | 9.54 | 7.18 |
+| fast with 4 W2 exception columns | `q8` | 8.24 | – |
+| near-exact | `q16` | 13.84 | 8.62 |
+| near-exact | `q8r` | 11.30 | 7.51 |
+| near-exact | `q8r`, `--tune decode-exp=exact` | 10.98 | 8.01 |
+
+Rounds differ by up to 5%, so the rotation's 32-point transforms and the
+exception columns' fused multiply-adds cost nothing measurable. `q4r`
+streams fewer bytes than `q8` but decodes its codes through the 8-bit loads,
+and is 15% slower. On near-exact's weights `q8r` streams 23% fewer bytes per
+step than `q16`; with the platform exp that its agreement run used, it
+decodes 21% faster without speculation and 7% faster with the draft head.
+The exception-column file had no draft head beside it, so its speculative
+runs used n-gram drafts and are left out. Their fidelity is in
+[MODES.md](MODES.md#rotated-kv-cache-experimental) and
+[MODES.md](MODES.md#exception-columns-experimental).
+
 ## Measuring
 
 - `falcon-ocr doctor --probe --text`: bandwidth and the decode floor.
