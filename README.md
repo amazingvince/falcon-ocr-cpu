@@ -134,7 +134,7 @@ lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
 | `run --max-dimension auto` | The resolution router picks 768, 1024 or 1536 per page ([docs/MODES.md](docs/MODES.md#resolution-routing); changes the output) |
 | `run --crop-margins`, `--crop-margins=PAD` | Cut blank page margins after the first resize, keeping PAD pixels (default 24) around the content: fewer image tokens, text at the same size; each result reports its `crop` ([docs/MODES.md](docs/MODES.md#margin-cropping); changes the output, off by default) |
 | `run --list F --output F --resume --keep-going` | Inputs from a file, records appended to a file, skip the pages it holds, record failed pages and go on ([Books and long runs](#books-and-long-runs)) |
-| `run --pipeline [--prefill-threads N]` | Prepare the next pages on a prefetch thread and prefill the next one on a second pool of N threads (default: the threads the decode team leaves; at most `--threads`) while the current pages decode; tokens unchanged |
+| `run --pipeline [--prefill-threads N]` | Prepare the next pages on a prefetch thread and prefill the next one on a second pool of N threads (default: the threads the decode team leaves, an automatic team then taking at most half; at most `--threads`) while the current pages decode; tokens unchanged |
 | `run --escalate` | Fast mode: reread a page that the repetition stop ended with the near-exact model |
 | `pack --output F`, `inspect`, `trace`, `doctor [--text] [--load] [--probe]` | Write a packed file; verify the checkpoint; capture tensors; show the plan |
 

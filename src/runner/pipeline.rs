@@ -23,20 +23,24 @@
 //!
 //! The second pool has the runner's threads minus the decode team unless
 //! [`Pipeline::prefill_threads`] says otherwise, so the two stages use every
-//! thread of the runner between them. It is decided once the team size is
+//! thread of the runner between them. An automatic decode team then takes at
+//! most half of the runner's threads: the tuner still measures every candidate,
+//! with no prefill beside it, and a choice above half becomes the largest
+//! candidate within it. On an 8-core, 16-thread host the 8- and 12-thread teams
+//! time within 4% of each other, and the 12-thread team leaves the prefill 4
+//! threads instead of 8. The second pool is decided once the team size is
 //! settled: with a fixed team at once (page 1's prefill overlaps page 0's
-//! decode); with `DecodeThreads::Auto` after the tuner has chosen on the
-//! first decode steps, which an overlapping prefill would disturb, so
-//! overlap starts with the page decoding after the choice (page 1 when page
-//! 0 is long enough to finish tuning). Until then, and for the whole run
-//! when the default would leave the pool fewer than two threads (a
-//! one-thread prefill takes many times longer than the decode it overlaps)
-//! or the pool cannot be built, pages prefill on the runner's pool between
-//! decodes. The decode team's workers spin
-//! between steps and park after 2 ms idle, so they neither lend their cores
-//! to the second pool during a decode nor hold them after it; a prefill
-//! that outlasts the decode it overlaps keeps only the second pool's
-//! threads busy until it ends.
+//! decode); with `DecodeThreads::Auto` after the tuner has chosen on the first
+//! decode steps, which an overlapping prefill would disturb, so overlap starts
+//! with the page decoding after the choice (page 1 when page 0 is long enough
+//! to finish tuning). Until then, and for the whole run when the default would
+//! leave the pool fewer than two threads (a one-thread prefill takes many times
+//! longer than the decode it overlaps) or the pool cannot be built, pages
+//! prefill on the runner's pool between decodes. The decode team's workers spin
+//! between steps and park after 2 ms idle, so they neither lend their cores to
+//! the second pool during a decode nor hold them after it; a prefill that
+//! outlasts the decode it overlaps keeps only the second pool's threads busy
+//! until it ends.
 //!
 //! While two pages overlap, both caches are alive: the decoding page's sealed
 //! cache and the next page's prefill (its FP32 prefix cache and forward
@@ -52,7 +56,7 @@ use rayon::{ThreadPool, ThreadPoolBuilder};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Decoder, OcrResult, Prefilled, Runner,
+    Decode, Decoder, OcrResult, Prefilled, Runner,
     cohort::{BatchInput, Planned, PreparedPage},
     stream::Emitter,
 };
@@ -70,7 +74,8 @@ pub struct Pipeline {
     /// Threads of the pool that prefills the next page while the current one
     /// decodes, at most the runner's threads; `None`: the runner's threads
     /// minus the decode team, and no overlap when that leaves fewer than
-    /// two.
+    /// two. With `None` an automatic decode team takes at most half of the
+    /// runner's threads (see the module notes).
     pub prefill_threads: Option<usize>,
 }
 
@@ -123,6 +128,9 @@ impl Runner {
                 .is_none_or(|prefill| (1..=threads).contains(&prefill)),
             "the page pipeline's prefill threads must be 1..={threads}, the runner's threads"
         );
+        if pipeline.prefill_threads.is_none() {
+            self.leave_half_to_prefill(threads);
+        }
         let mut emit = Emitter::new(&mut on_page);
         if self.config.batch_size > 1 {
             self.stream_rows_pipelined(paths, options, pipeline, &mut emit);
@@ -198,6 +206,21 @@ impl Runner {
             Ok(own) => own.install(read),
             // Pages then route on the runner's pool, as outside the pipeline.
             Err(_) => read(),
+        }
+    }
+
+    /// Let an automatic decode team take at most half of the runner's
+    /// `threads`, so that the second pool keeps at least the other half (see
+    /// the module notes). The limit stays for the runner's later calls; it is reported
+    /// once, when it drops a candidate.
+    fn leave_half_to_prefill(&self, threads: usize) {
+        if let Decode::Auto(auto) = &self.decode
+            && let Some(largest) = auto.tuner.lock().unwrap().limit(threads / 2)
+        {
+            eprintln!(
+                "pipeline: the automatic decode team uses at most {largest} of {threads} threads, so the next \
+                 page's prefill keeps the rest"
+            );
         }
     }
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of 2026-09-30.
+Status: current as of 2026-10-01.
 
 ## Model contract
 
@@ -64,8 +64,10 @@ the first error. The page pipeline (`recognize_files_pipelined`,
 prefill/decode boundary (`Runner::prefill`, `Runner::decode_prefilled`, the
 two halves of the one sequential call): a prefetch thread reads and prepares
 the next pages, and the next page's prefill runs on a second pool while the
-current page decodes. Every prefill stage computes each output independently
-of its pool's thread count, so the pipeline's tokens are a sequential run's.
+current page decodes. That pool gets the threads the decode team leaves, and
+an automatic team then takes at most half of the runner's threads. Every
+prefill stage computes each output independently of its pool's thread count,
+so the pipeline's tokens are a sequential run's.
 
 ## Modules
 

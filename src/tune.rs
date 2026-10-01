@@ -104,6 +104,8 @@ impl std::fmt::Display for TuneReport {
 
 pub(crate) struct Tuner {
     sizes: Vec<usize>,
+    /// The largest team the choice may take ([`Tuner::limit`]).
+    max: usize,
     samples: Vec<Vec<f64>>,
     verify_samples: Vec<Vec<f64>>,
     start: usize,
@@ -123,6 +125,7 @@ impl Tuner {
             verify_samples: vec![Vec::new(); sizes.len()],
             report: None,
             reported: false,
+            max: usize::MAX,
             sizes,
             samples,
             start,
@@ -160,20 +163,53 @@ impl Tuner {
         }
         self.steps += 1;
         if self.samples.iter().all(|s| s.len() >= RUN * ROUNDS) {
-            let index = self.pick();
-            self.chosen = Some(index);
-            self.report = Some(TuneReport {
-                candidates: self.sizes.clone(),
-                median_ms: self.samples.iter().map(|s| median(s)).collect(),
-                verify_median_ms: self
-                    .verify_samples
-                    .iter()
-                    .map(|s| (!s.is_empty()).then(|| median(s)))
-                    .collect(),
-                chosen: self.sizes[index],
-                steps: self.steps,
-            });
+            self.choose();
         }
+    }
+
+    /// Let the choice take at most `max` threads (the smallest candidate
+    /// when every one is larger), and return the largest size it may still
+    /// take when that excludes a candidate. Tuning still measures every
+    /// candidate, and the tolerance still compares with the fastest of them;
+    /// a choice above `max` becomes the largest candidate within it, also
+    /// when it was already made (its report is then handed out again).
+    pub(crate) fn limit(&mut self, max: usize) -> Option<usize> {
+        if max >= self.max {
+            return None;
+        }
+        self.max = max;
+        let allowed = self.allowed();
+        if allowed + 1 == self.sizes.len() {
+            return None;
+        }
+        if self.chosen.is_some_and(|index| index > allowed) {
+            self.choose();
+            self.reported = false;
+        }
+        Some(self.sizes[allowed])
+    }
+
+    /// The index of the largest candidate within the limit, else 0.
+    fn allowed(&self) -> usize {
+        self.sizes.iter().rposition(|&size| size <= self.max).unwrap_or(0)
+    }
+
+    /// Choose from the measured candidates within the limit and build the
+    /// report.
+    fn choose(&mut self) {
+        let index = self.pick().min(self.allowed());
+        self.chosen = Some(index);
+        self.report = Some(TuneReport {
+            candidates: self.sizes.clone(),
+            median_ms: self.samples.iter().map(|s| median(s)).collect(),
+            verify_median_ms: self
+                .verify_samples
+                .iter()
+                .map(|s| (!s.is_empty()).then(|| median(s)))
+                .collect(),
+            chosen: self.sizes[index],
+            steps: self.steps,
+        });
     }
 
     /// Record the duration of a draft-verification step (several rows) that
@@ -308,5 +344,65 @@ mod tests {
         }
         assert_eq!(tuner.chosen(), Some(12));
         assert_eq!(tuner.current(), 1);
+    }
+
+    /// Tune `tuner` to its choice with `cost` per team size, and return
+    /// the sizes it measured.
+    fn tune(tuner: &mut Tuner, cost: impl Fn(usize) -> f64) -> Vec<usize> {
+        let mut measured = Vec::new();
+        while tuner.chosen().is_none() {
+            let size = tuner.sizes()[tuner.current()];
+            measured.push(size);
+            tuner.record(tuner.current(), cost(size));
+        }
+        measured.sort_unstable();
+        measured.dedup();
+        measured
+    }
+
+    #[test]
+    fn a_limit_caps_the_choice_but_not_the_measurement() {
+        // 12 threads are the fastest, 8 and 6 more than 2% slower.
+        let cost = |size: usize| match size {
+            6 => 9.4,
+            8 => 9.3,
+            _ => 9.0,
+        };
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        assert_eq!(tuner.limit(8), Some(8));
+        assert_eq!((tuner.limit(8), tuner.limit(16), tuner.limit(12)), (None, None, None));
+        assert_eq!(tune(&mut tuner, cost), vec![6, 8, 12]);
+        // Not 6 threads, which are within 2% of 8 but not of 12.
+        assert_eq!(tuner.chosen(), Some(8));
+        let report = tuner.report().unwrap();
+        assert_eq!((report.candidates.clone(), report.chosen), (vec![6, 8, 12], 8));
+        // A choice within the limit stands.
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        tuner.limit(8);
+        tune(&mut tuner, |size| if size == 6 { 9.0 } else { cost(size) });
+        assert_eq!(tuner.chosen(), Some(6));
+        // A limit that excludes nothing changes nothing.
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        assert_eq!(tuner.limit(12), None);
+        tune(&mut tuner, cost);
+        assert_eq!(tuner.chosen(), Some(12));
+    }
+
+    #[test]
+    fn a_limit_after_the_choice_takes_the_largest_candidate_within_it() {
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        tune(&mut tuner, |size| match size {
+            6 => 9.4,
+            8 => 9.3,
+            _ => 9.0,
+        });
+        assert_eq!(tuner.chosen(), Some(12));
+        assert!(tuner.take_report().is_some());
+        assert_eq!(tuner.limit(8), Some(8));
+        assert_eq!((tuner.chosen(), tuner.current()), (Some(8), 1));
+        assert_eq!(tuner.take_report().map(|report| report.chosen), Some(8));
+        // Below every candidate the smallest stays.
+        assert_eq!(tuner.limit(4), Some(6));
+        assert_eq!(tuner.chosen(), Some(6));
     }
 }
