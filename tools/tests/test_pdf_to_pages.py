@@ -355,6 +355,20 @@ class PdfToPages(unittest.TestCase):
         self.assertIn("page 4 cannot be extracted: the page has visible text", error)
         self.assertFalse(output.exists())
 
+    def test_a_page_that_cannot_be_written_leaves_no_output(self):
+        pdf = pdfium.PdfDocument.new()
+        pdf.new_page(144, 216)
+        pdf.new_page(4000, 4000)  # 16667 x 16667 px at 300 dpi
+        path = self.directory / "oversized.pdf"
+        pdf.save(path)
+        pdf.close()
+        for mode in ("render", "auto"):
+            code, error, output = self.run_tool("oversized-" + mode, "--mode", mode, "--dpi", "300", pdf=path)
+            self.assertEqual((code, "page 2: a 16667x16667 render is too large" in error, output.exists()),
+                             (1, True, False), mode)
+        code, _, output = self.run_tool("oversized-first", "--dpi", "300", "--pages", "1", pdf=path)
+        self.assertEqual((code, self.manifest(output)["pages"][0]["pixels"]), (0, [600, 900]))
+
     def test_selected_pages_in_order_and_no_overwrite(self):
         code, _, output = self.run_tool("selected", "--pages", "3,1-2")
         self.assertEqual(code, 0)

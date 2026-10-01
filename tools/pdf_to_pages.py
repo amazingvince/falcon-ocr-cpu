@@ -57,6 +57,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 import PIL
 import pypdfium2 as pdfium
@@ -260,6 +261,41 @@ def check_output_dir(output_dir: Path) -> None:
         raise ValueError(f"{output_dir} already holds output ({earlier[0]}): remove it or choose another --output-dir")
 
 
+class Plan(NamedTuple):
+    """How a selected page is written: the scan's bits per component when it is extracted, else the render's
+    pixel size and pixels per point, and why an auto-rendered page was not extracted."""
+
+    number: int
+    bits: int | None
+    size: tuple[int, int] | None
+    scale: float
+    reason: str
+
+
+def plan_pages(pdf: pdfium.PdfDocument, pages: list[int], mode: str, long_side: int, dpi: float | None) -> list[Plan]:
+    """Decide how every selected page is written before any file is, so that a page that cannot be written (not
+    a scan in --mode extract, or a render that is too large) leaves no partial output. Each page is closed
+    again, so a long PDF is not held open."""
+    plan = []
+    for number in pages:
+        page = pdf[number - 1]
+        try:
+            found, reason = scan_image(page) if mode != "render" else (None, "")
+            if found is not None:
+                plan.append(Plan(number, found[1], None, 0.0, ""))
+            elif mode == "extract":
+                raise ValueError(f"page {number} cannot be extracted: {reason} (--mode auto renders such pages)")
+            else:
+                try:
+                    size, scale = render_size(page.get_size(), long_side, dpi)
+                except ValueError as error:
+                    raise ValueError(f"page {number}: {error}") from None
+                plan.append(Plan(number, None, size, scale, reason))
+        finally:
+            page.close()
+    return plan
+
+
 def convert(
     pdf_path: Path, output_dir: Path, mode: str, long_side: int, dpi: float | None, gray: bool, page_spec: str | None
 ) -> dict:
@@ -269,24 +305,17 @@ def convert(
     check_output_dir(output_dir)
     pdf = pdfium.PdfDocument(pdf_path)
     pdf.init_forms()  # before any page is loaded, so form fields render
-    pages = parse_pages(page_spec, len(pdf))
-    if mode == "extract":
-        # Check every page before writing any, so a failure leaves no partial output.
-        for number in pages:
-            _, reason = scan_image(pdf[number - 1])
-            if reason:
-                raise ValueError(f"page {number} cannot be extracted: {reason} (--mode auto renders such pages)")
+    plan = plan_pages(pdf, parse_pages(page_spec, len(pdf)), mode, long_side, dpi)
     output_dir.mkdir(parents=True, exist_ok=True)
     entries, paths = [], []
-    for number in pages:
+    for number, bits, size, scale, reason in plan:
         page = pdf[number - 1]
-        found, reason = scan_image(page) if mode != "render" else (None, "")
-        if found is not None:
+        if bits is not None:
             used = "extract"
-            picture, details = extract(page, *found)
+            image = next(page.get_objects(max_depth=1, filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+            picture, details = extract(page, image, bits)
         else:
             used = "render"
-            size, scale = render_size(page.get_size(), long_side, dpi)
             picture = render(page, size, gray)
             details = {"scale": round(scale, 6), "dpi": round(scale * 72, 3)}
             if reason:
