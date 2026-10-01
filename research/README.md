@@ -1,6 +1,6 @@
 # Research archive
 
-Status: indexed on 2026-09-24. Nothing here is built or tested by CI; it is the record of how the runner got where it is. Each folder's README lists its files, what they produced and whether the result was accepted, rejected or superseded. Receipts and pinned hashes stay in `reference/`; the frozen GPU-reference scripts stay in `scripts/`.
+Status: indexed on 2026-09-30. Nothing here is built or tested by CI; it is the record of how the runner got where it is. Each folder's README lists its files, what they produced and whether the result was accepted, rejected or superseded. Receipts and pinned hashes stay in `reference/`; the frozen GPU-reference scripts stay in `scripts/`.
 
 | Folder | Files | About |
 |---|---:|---|
@@ -10,6 +10,7 @@ Status: indexed on 2026-09-24. Nothing here is built or tested by CI; it is the 
 | [corpus-qualification/](corpus-qualification/README.md) | 47 | Building and qualifying the evaluation corpus, the 200-page quality gate and its Python tests. |
 | [draft-head/](draft-head/README.md) | 13 | The trained speculative draft head (EAGLE-3 style): data pipeline, training, export, CPU A/Bs and lessons. Active. |
 | [gpu-reference/](gpu-reference/README.md) | 91 | The strict FP32 GPU export, reference capture and comparison protocol whose receipts live in `reference/`. |
+| [kv-rotation/](kv-rotation/README.md) | 3 | A static study of the rotated KV caches (`q8r`, `q4r`) on the real weights with synthetic activations: block and attention-output errors of Q8, Q8R, Q4 and Q4R per layer. Active; real-page validation pending. |
 | [phase4-hillclimb/](phase4-hillclimb/README.md) | 29 | The phase-4/5 hill climb of 2026-09-23: GPTQ overlay, near-exact and fast modes, speculation, packed files; every accepted and rejected attempt with its receipt. |
 | [quantization-feasibility/](quantization-feasibility/README.md) | 22 | Early quantized-operator feasibility experiments (source only, not compiled). |
 | [resolution-router/](resolution-router/README.md) | 11 | The per-page image-size router: agreement labels, serving noise, the ground-truth development set and the chosen tree policy. Active. |
