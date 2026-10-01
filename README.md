@@ -164,7 +164,8 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
   position among the inputs) before the result's fields, and the generation
   `"options"` the run asked for after them. `--output FILE` appends the
   records to FILE, flushed after every page, instead of printing them;
-  `--text` then still prints each page's text. FILE's folder must exist,
+  `--text` then still prints each page's text, and if stdout closes (a pager
+  that quit) the run goes on with FILE alone. FILE's folder must exist,
   which is checked with the inputs; the file is created or repaired only
   once the flags, inputs and weights have passed their checks and the model
   has loaded. A device or pipe (`/dev/stdout`) is written to as it is,

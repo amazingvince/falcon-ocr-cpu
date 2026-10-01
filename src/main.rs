@@ -120,7 +120,8 @@ enum Command {
         #[arg(long, value_name = "PAD", num_args = 0..=1, require_equals = true, default_missing_value = "24")]
         crop_margins: Option<u32>,
         /// Print each page's text instead of its JSON record (with --output,
-        /// the records still go to the file).
+        /// the records still go to the file, and the run goes on if stdout
+        /// closes).
         #[arg(long)]
         text: bool,
         /// Append the JSON records to FILE instead of printing them, flushed

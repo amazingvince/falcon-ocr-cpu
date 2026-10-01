@@ -111,6 +111,9 @@ pub struct Sink<W: Write> {
     text: bool,
     /// The generation options every record carries.
     options: Option<GenerationOptions>,
+    /// `stdout` failed while it only showed the text beside the file's
+    /// records; the file gets the rest of the run alone.
+    closed: bool,
 }
 
 impl<W: Write> Sink<W> {
@@ -122,21 +125,29 @@ impl<W: Write> Sink<W> {
             file,
             text,
             options,
+            closed: false,
         }
     }
 
-    /// A finished page.
+    /// A finished page: an error when its record could not be written. With
+    /// a file, `stdout` only shows the text, so a failure there (a closed
+    /// pipe) is a warning, and later pages are written to the file alone.
     pub fn page(&mut self, path: &Path, page: usize, result: &OcrResult) -> Result<()> {
         let line = record_line(path, page, Ok(result), self.options.as_ref())?;
-        if let Some(file) = &mut self.file {
-            append(file, &line)?;
+        let Some(file) = &mut self.file else {
+            let shown = if self.text { &result.text } else { &line };
+            writeln!(self.stdout, "{shown}")?;
+            self.stdout.flush()?;
+            return Ok(());
+        };
+        append(file, &line)?;
+        if self.text && !self.closed {
+            let shown = writeln!(self.stdout, "{}", result.text).and_then(|()| self.stdout.flush());
+            if let Err(error) = shown {
+                eprintln!("warning: stdout: {error}; the records still go to the output file");
+                self.closed = true;
+            }
         }
-        match (self.text, self.file.is_some()) {
-            (true, _) => writeln!(self.stdout, "{}", result.text)?,
-            (false, false) => writeln!(self.stdout, "{line}")?,
-            (false, true) => return Ok(()),
-        }
-        self.stdout.flush()?;
         Ok(())
     }
 
@@ -355,6 +366,26 @@ mod tests {
         let existing = scan_output(&std::fs::read_to_string(&path).unwrap());
         assert_eq!(existing.done, HashSet::from(["a.png".to_owned()]));
         assert_eq!(existing.keep, std::fs::metadata(&path).unwrap().len() as usize);
+        // A closed stdout beside a file only loses the text: every page is
+        // done once its record is in the file.
+        struct Closed;
+        impl Write for Closed {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::ErrorKind::BrokenPipe.into())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let path = dir.path().join("closed.jsonl");
+        let mut sink = Sink::new(Closed, Some(open_output(&path).unwrap().0), true, None);
+        sink.page(Path::new("a.png"), 0, &page).unwrap();
+        sink.page(Path::new("b.png"), 1, &page).unwrap();
+        let existing = scan_output(&std::fs::read_to_string(&path).unwrap());
+        assert_eq!(existing.done, HashSet::from(["a.png".to_owned(), "b.png".to_owned()]));
+        // Without a file, stdout holds the records: its failure is the page's.
+        let mut sink = Sink::new(Closed, None, true, None);
+        assert!(sink.page(Path::new("a.png"), 0, &page).is_err());
     }
 
     #[test]
