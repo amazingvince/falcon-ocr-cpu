@@ -7,7 +7,9 @@ rotating each 32-value block of the cache before quantizing it reduce the
 cache's error on this model? **Real weights, synthetic activations**: the
 pinned checkpoint was only read (the `wqkv` matrices, the golden spatial
 frequencies and, for layer 0, token embeddings); no inference ran. Status: the
-profiles exist for research; real-page validation is pending.
+profiles exist for research. Token agreement on real pages bore out the
+prediction below (little gain); the numbers are in
+[docs/MODES.md](../../docs/MODES.md#rotated-kv-cache-experimental).
 
 | File | What |
 |---|---|

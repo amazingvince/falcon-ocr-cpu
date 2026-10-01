@@ -13,7 +13,14 @@ page turns everything after it into edits, so free-running comparisons
 understate agreement; per-step agreement does not. The anchor set is the 55
 calibration pages outside the GPTQ capture set, 24,262 steps at up to 512
 per page (`artifacts/phase4/checks/calibration-reference.json`; `agree
---max-steps 8192` gives 78,282).
+--max-steps 8192` gives 78,282). The exception-column and rotated-cache
+results below come from a Ryzen 7 7700X with its own FP32 reference: the 52
+pages of its calibration lock outside the capture set, 22,726 steps at up to
+512 per page, where the reference profile has 0 flips, near-exact 1 (KL
+7.1e-8) and fast mode 67 (KL 3.0e-4). KL is over each step's 32 most likely
+FP32 tokens (`falcon-ocr-eval agree --reference-topk`), and every arm uses
+`tools/agree_queue.sh`'s flags (`--exp fast --backend avx2`). Compare those
+numbers with each other, not with the 24,262-step ones.
 
 ## The three modes
 
@@ -130,7 +137,11 @@ columns to 8.12e-4, 7.67e-4, 7.14e-4, 6.82e-4 and 6.37e-4 with 1, 2, 4, 8
 and 16, at 68 KB to 1.1 MB more per decode step. With 4 (+271 KB, 0.15%
 of fast mode's weight bytes per token) and the same Grams, fast mode gave
 FP32's 1,295 tokens on the 1418 × 1224 sample page, where the overlay
-without exception columns first differs at token 1,264.
+without exception columns first differs at token 1,264. On the 7700X anchor
+([The metric](#the-metric)) the overlay without exception columns has 64
+flips and KL 3.04e-4 (the published overlay: 67 and 3.04e-4); with 4 W2
+columns it has 63 flips and KL 1.84e-4, 39% less. Flips do not resolve a
+difference of that size.
 
 ## Fast mode's held-out result
 
@@ -364,7 +375,7 @@ rotated query, followed by the inverse rotation. `q4r` takes 90 bytes per
 record and decodes its codes through the 8-bit loads (bitwise tested on every
 instruction set; not yet a vector nibble unpack).
 
-The uses under study: a more faithful fast mode (`w8-body-kv-q8r`), a cheaper
+The uses studied: a more faithful fast mode (`w8-body-kv-q8r`), a cheaper
 cache for near-exact (`w16-body-kv-q8r` streams 23% fewer bytes per decode
 step than `w16-body-kv-q16` on the journal page), and a 4-bit cache for fast
 mode (`w8-body-kv-q4r`). With the published files, every rotated profile
@@ -372,4 +383,25 @@ gives the smoke page's reference tokens. Comparisons across caches pin the
 decode exp: under `--exp fast` the 8-bit and rotated caches default to the
 polynomial decode exp and `q16` to the platform one, a switch that alone
 moved fast mode from 92 to 94 flips (above), about the size of the effect
-under study; pass `--tune decode-exp=exact|fast`.
+under study; pass `--tune decode-exp=exact|fast`. On the 7700X anchor
+([The metric](#the-metric)):
+
+| Body weights | Cache | Decode exp | Flips | KL |
+|---|---|---|---:|---:|
+| FP32 | `q8` | polynomial | 22 | 2.94e-5 |
+| FP32 | `q8r` | polynomial | 22 | 2.60e-5 |
+| 16-bit (near-exact's) | `q16` | platform | 1 | 7.1e-8 |
+| 16-bit | `q8r` | platform | 18 | 2.48e-5 |
+| 8-bit GPTQ (fast mode's) | `q8` | polynomial | 67 | 3.04e-4 |
+| 8-bit GPTQ | `q8r` | polynomial | 61 | 2.93e-4 |
+| 8-bit GPTQ | `q4r` | polynomial | 335 | 9.04e-3 |
+
+Rotation lowers the 8-bit cache's KL by 11% with FP32 weights and by 4% in
+fast mode, and its flips stay within noise (22 → 22, 67 → 61), as the static
+study of the pinned weights predicted
+([research/kv-rotation](../research/kv-rotation/README.md)): the cache
+blocks are nearly Gaussian except the temporal key halves of late layers.
+None of the three uses holds up: `q8r` would gain fast mode a few percent of
+KL; on near-exact's weights an 8-bit cache, rotated or not, flips 18 times
+where `q16` flips once; and `q4r` multiplies fast mode's flips by 5 and its
+KL by 30. The profiles stay for research.
