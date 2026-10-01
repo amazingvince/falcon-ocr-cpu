@@ -172,6 +172,28 @@ fn run_flags_that_do_not_combine_fail_before_the_model_loads() {
         &case.run(&[], &[valid, valid, "--output", arg(&output), "--resume"]),
         "is an input twice",
     );
+    // A record writes its path as text, so two paths that differ only in
+    // bytes that are not UTF-8 are the same input to a resume.
+    #[cfg(target_os = "linux")]
+    {
+        use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+        let png = fs::read(&case.valid).unwrap();
+        let inputs = [b"x\xff.png", b"x\xfe.png"].map(|name| {
+            let path = case.directory.path().join(OsStr::from_bytes(name));
+            fs::write(&path, &png).unwrap();
+            path
+        });
+        let resumed = Command::new(env!("CARGO_BIN_EXE_falcon-ocr"))
+            .current_dir(case.directory.path())
+            .arg("--model")
+            .arg(case.path("no-model"))
+            .arg("run")
+            .args(&inputs)
+            .args(["--output", arg(&output), "--resume"])
+            .output()
+            .unwrap();
+        assert_error(&resumed, "is an input twice");
+    }
 }
 
 /// A header-only kernel-ready file of `profile`: enough for the weights

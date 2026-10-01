@@ -391,8 +391,10 @@ impl RunJob {
             book::check_input(input)?;
         }
         if *resume {
+            // Compared as records write them: two paths that differ only
+            // in bytes that are not UTF-8 share one record's `path`.
             let mut seen = std::collections::HashSet::new();
-            if let Some(twice) = inputs.iter().find(|input| !seen.insert(*input)) {
+            if let Some(twice) = inputs.iter().find(|input| !seen.insert(input.to_string_lossy())) {
                 bail!(
                     "--resume matches records by input path, and {} is an input twice",
                     twice.display()
