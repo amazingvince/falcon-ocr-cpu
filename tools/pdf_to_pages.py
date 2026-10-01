@@ -9,15 +9,16 @@ Modes (--mode):
            resize leaves the page as it is), or at --dpi N. --gray renders grayscale.
   extract  For PDFs containing scans or screenshots: write the embedded image at
            native resolution, decoded losslessly into a PNG. 1-bit images stay 1-bit,
-           grayscale stays grayscale, anything else becomes RGB; the page's /Rotate is applied. A page
-           qualifies when all it draws is one image, upright and covering the page's
-           visible box (each edge within 2 pt or 0.5% of the longer side), with equal
-           horizontal and vertical pixel scales, a colour space (not a stencil mask),
-           at most 8 bits per component and no transparency; invisible text (an OCR
-           layer) and link annotations may accompany it. The bits per component are
-           read from the image stream (PDFium reports its own 8-bit conversion);
-           JPEG 2000 and images whose depth cannot be read are rendered. Any other
-           page is an error.
+           grayscale stays grayscale, anything else becomes RGB; the page's /Rotate is
+           applied. A page qualifies when all it draws is one image, upright and
+           covering the page's visible box (each edge within 2 pt or 0.5% of the longer
+           side), with horizontal and vertical pixel scales within 0.5% of each other
+           (a 300 dpi A4 scan on a rounded page box differs by 0.02-0.04%), a colour
+           space (not a stencil mask), at most 8 bits per component and no
+           transparency; invisible text (an OCR layer) and link annotations may
+           accompany it. The bits per component are read from the image stream (PDFium
+           reports its own 8-bit conversion); JPEG 2000 and images whose depth cannot
+           be read are rendered. Any other page is an error.
   auto     (default) Extract the pages that qualify and render the others.
 
 A 1-bit scan written by extract goes through the processor's nearest-neighbour
@@ -79,6 +80,9 @@ COMPONENTS = {
     pdfium_c.FPDF_COLORSPACE_DEVICECMYK: 4,
 }
 ICC_COMPONENTS = {b"GRAY": 1, b"RGB ": 3, b"CMYK": 4}
+# How far a scan's placement may differ from the page and still be extracted: each image edge from the page
+# box (this fraction of the longer side, at least 2 pt) and the horizontal from the vertical pixel scale.
+GEOMETRY_TOLERANCE = 0.005
 # Renders above this many pixels (16384 x 16384) are refused rather than allocated.
 MAX_RENDER_PIXELS = 1 << 28
 # The transpose that shows an image as a page's /Rotate (degrees clockwise) displays it.
@@ -196,13 +200,13 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
     if b != 0 or c != 0 or a <= 0 or d <= 0:
         return None, "the image is rotated, skewed or flipped"
     box = page.get_bbox()
-    tolerance = max(2.0, 0.005 * max(box[2] - box[0], box[3] - box[1]))
+    tolerance = max(2.0, GEOMETRY_TOLERANCE * max(box[2] - box[0], box[3] - box[1]))
     if any(abs(edge - page_edge) > tolerance for edge, page_edge in zip(image.get_bounds(), box, strict=True)):
         return None, "the image does not cover the page"
     metadata = image.get_metadata()
-    # Allow PDF coordinate rounding, but render unequal pixel scales so the
-    # PNG keeps the page's displayed geometry without needing DPI metadata.
-    if not math.isclose(a / metadata.width, d / metadata.height, rel_tol=1e-5):
+    # Scans are placed on rounded page boxes (a 2480x3508 px A4 scan on 595.276x841.89 pt has scales 0.016%
+    # apart, on 595x842 pt 0.043%); a visible stretch is rendered, so the PNG keeps the displayed geometry.
+    if not math.isclose(a / metadata.width, d / metadata.height, rel_tol=GEOMETRY_TOLERANCE):
         return None, "the image has different horizontal and vertical pixel scales"
     if metadata.colorspace not in COLORSPACES:
         return None, "the image has no colour space of its own (a stencil mask or JPEG 2000)"

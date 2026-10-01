@@ -310,6 +310,30 @@ class PdfToPages(unittest.TestCase):
         self.assertIn("pixel scales", error)
         self.assertFalse(output.exists())
 
+    def test_pixel_scales_may_differ_by_the_geometry_tolerance(self):
+        # A4 is 595.276 x 841.89 pt, so a 300 dpi scan of it (2480 x 3508) has scales 0.016% apart, and
+        # the 595 x 842 pt box a scanner may write 0.043% apart; a 1% stretch is past the 0.5% tolerance.
+        scans = [(595.276, 841.89, (2480, 3508)), (595, 842, (2480, 3508)), (144, 218.16, (200, 300))]
+        pdf = pdfium.PdfDocument.new()
+        for width, height, size in scans:
+            page = pdf.new_page(width, height)
+            add_image(pdf, page, Image.linear_gradient("L").resize(size), (0, 0, width, height))
+            page.gen_content()
+        path = self.directory / "a4.pdf"
+        pdf.save(path)
+        pdf.close()
+
+        code, error, output = self.run_tool("a4-extract", "--mode", "extract", "--pages", "1-2", pdf=path)
+        self.assertEqual((code, error), (0, ""))
+        self.assertEqual([(p["mode"], p["pixels"]) for p in self.manifest(output)["pages"]],
+                         [("extract", [2480, 3508])] * 2)
+        code, error, output = self.run_tool("a4-auto", "--long-side", "432", pdf=path)
+        self.assertEqual((code, error), (0, ""))
+        pages = self.manifest(output)["pages"]
+        self.assertEqual([page["mode"] for page in pages], ["extract", "extract", "render"])
+        self.assertIn("pixel scales", pages[2]["extract_skipped"])
+        self.assertEqual(pages[2]["pixels"], [285, 432])
+
     def test_render_sizes_and_gray(self):
         code, _, output = self.run_tool("long", "--mode", "render", "--long-side", "1000", "--pages", "1,4")
         self.assertEqual(code, 0)
