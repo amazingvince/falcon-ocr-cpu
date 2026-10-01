@@ -22,19 +22,32 @@
 //! storage the tail keeps the exact values; Q16/Q8 storage compresses each
 //! generated position as it is appended, so long outputs do not stream an
 //! FP32 tail that grows past the compressed prefix.
-use super::Kv;
+//!
+//! Rotated storage (`Kv::Q8Rot`, `Kv::Q4Rot`) keeps every 32-element block of
+//! a record, prefix and tail, as `H D x` (`super::rotation`: the temporal and
+//! spatial key halves and the two value halves each with their own signs `D`)
+//! and quantizes that. Decode rotates the queries instead of the records and
+//! un-rotates each head's output once, so the kernels below run unchanged:
+//! the output is bitwise the compact kernel over the dequantized rotated
+//! values with the rotated query, followed by the inverse rotation, and it
+//! differs from unrotated storage by rounding and quantization error only.
+//! Q4 records (4-bit codes, two per byte) decode through the 8-bit loads.
+use super::{
+    Kv,
+    rotation::{self, BLOCK, Block},
+};
 use crate::{
     config::ModelConfig,
     kernels::{self, Simd},
 };
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use rayon::prelude::*;
 
 mod codec;
 mod decode;
 
-use codec::{bf16_f32, bf16_up, q8_code, q8_scale, q16_code, q16_scale, zeroed};
-use decode::{F32Rec, PairKernel, Partial, Q8Rec, Q16Rec, RowsKernel, Span, pair_entry};
+use codec::{bf16_f32, bf16_up, each_block, nibble, q4_block, q8_code, q8_scale, q16_code, q16_scale, zeroed};
+use decode::{F32Rec, PairKernel, Partial, Q4Rec, Q8Rec, Q16Rec, RowsKernel, Span, pair_entry};
 
 /// Elements per (group, position) record and their offsets.
 const RECORD: usize = 160;
@@ -51,6 +64,19 @@ const MAX_GROUPS: usize = 8;
 const MAX_CHUNKS: usize = 4;
 /// Query rows of one verification step (the last token plus drafts).
 pub(crate) const MAX_ROWS: usize = 8;
+/// Rotation of the 32-element blocks of a prefix record, of a tail record
+/// (both `[T | S.. | V_lo | V_hi]`), of a key head and of a value or output
+/// head.
+const RECORD_BLOCKS: [Block; RECORD / BLOCK] = [
+    Block::Temporal,
+    Block::Spatial,
+    Block::Spatial,
+    Block::ValueLow,
+    Block::ValueHigh,
+];
+const TAIL_BLOCKS: [Block; TAIL_RECORD / BLOCK] = [Block::Temporal, Block::Spatial, Block::ValueLow, Block::ValueHigh];
+const KEY_HALVES: [Block; 2] = [Block::Temporal, Block::Spatial];
+const VALUE_HALVES: [Block; 2] = [Block::ValueLow, Block::ValueHigh];
 
 #[derive(Debug)]
 enum Records {
@@ -66,6 +92,47 @@ enum Records {
         codes: Vec<i16>,
         scales: Vec<u16>,
     },
+    /// 4-bit codes in -7..=7, two per byte (element `2i` in the low nibble),
+    /// one BF16 scale per 32 elements.
+    Q4 {
+        codes: Vec<u8>,
+        scales: Vec<u16>,
+    },
+}
+
+/// Element format of split records ([`Records`]' variants).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Format {
+    F32,
+    Q16,
+    Q8,
+    Q4,
+}
+
+/// How a split cache stores its records: the element format, and whether
+/// every 32-element block is rotated first (`rotation`). Profiles use the
+/// storages [`Storage::of`] names; the tests also seal the others (rotated
+/// FP32 records, unrotated Q4) to isolate what rotation changes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Storage {
+    format: Format,
+    rotated: bool,
+}
+
+impl Storage {
+    /// The storage of a sealed `mode` (`None`: the compact cache is never
+    /// sealed).
+    fn of(mode: Kv) -> Option<Self> {
+        let (format, rotated) = match mode {
+            Kv::Compact => return None,
+            Kv::F32Split => (Format::F32, false),
+            Kv::Q16 => (Format::Q16, false),
+            Kv::Q8 => (Format::Q8, false),
+            Kv::Q8Rot => (Format::Q8, true),
+            Kv::Q4Rot => (Format::Q4, true),
+        };
+        Some(Self { format, rotated })
+    }
 }
 
 pub(crate) struct SplitPrefix {
@@ -83,26 +150,30 @@ pub(crate) struct SplitPrefix {
     /// x86: the softmax uses the portable polynomial exp (the NEON kernels'
     /// exp) instead of the platform-exact one (see [`default_fast_exp`]).
     fast_exp: bool,
+    /// Records hold rotated blocks: decode rotates queries and un-rotates
+    /// outputs ([`SplitPrefix::in_storage_basis`]).
+    rotated: bool,
 }
 
-/// Default decode exp: the polynomial one for 8-bit caches when the run
-/// allows fast exps (`ExpMode::Fast`, i.e. fast mode: token agreement with
-/// FP32 and the English gate unchanged, verification attention 3-10%
-/// faster), the platform-exact one otherwise; `requested`
-/// (`Tuning::decode_fast_exp`) overrides it.
+/// Default decode exp: the polynomial one for 8-bit caches (and the rotated
+/// 8- and 4-bit research caches) when the run allows fast exps
+/// (`ExpMode::Fast`, i.e. fast mode: token agreement with FP32 and the
+/// English gate unchanged, verification attention 3-10% faster), the
+/// platform-exact one otherwise; `requested` (`Tuning::decode_fast_exp`)
+/// overrides it.
 pub(crate) fn default_fast_exp(mode: Kv, fast_exps: bool, requested: Option<bool>) -> bool {
-    requested.unwrap_or(fast_exps && mode == Kv::Q8)
+    requested.unwrap_or(fast_exps && matches!(mode, Kv::Q8 | Kv::Q8Rot | Kv::Q4Rot))
 }
 
-/// Default position chunks: exact for FP32, split (rounding-level) for lossy
-/// storage; `requested` (`Tuning::split_chunks`, 1..=4) overrides it.
-fn default_chunks(mode: Kv, requested: Option<usize>) -> usize {
+/// Default position chunks: exact for FP32 records, split (rounding-level)
+/// for coded ones; `requested` (`Tuning::split_chunks`, 1..=4) overrides it.
+fn default_chunks(format: Format, requested: Option<usize>) -> usize {
     // Four chunks (32 tasks) measured ~13% faster attention than two on a
     // 16-thread 7950X at a 6.5k prefix; FP32 keeps the exact single scan.
     requested
         .filter(|n| (1..=MAX_CHUNKS).contains(n))
-        .unwrap_or(match mode {
-            Kv::F32Split => 1,
+        .unwrap_or(match format {
+            Format::F32 => 1,
             _ => 4,
         })
 }
@@ -113,6 +184,7 @@ impl Records {
             Records::F32(d) => d.capacity() * 4,
             Records::Q8 { codes, scales } => codes.capacity() + scales.capacity() * 2,
             Records::Q16 { codes, scales } => codes.capacity() * 2 + scales.capacity() * 2,
+            Records::Q4 { codes, scales } => codes.capacity() + scales.capacity() * 2,
         }
     }
 
@@ -124,6 +196,7 @@ impl Records {
             Records::F32(d) => d[at],
             Records::Q8 { codes, scales } => codes[at] as f32 * bf16_f32(scales[at / 32]),
             Records::Q16 { codes, scales } => codes[at] as f32 * bf16_f32(scales[at / 32]),
+            Records::Q4 { codes, scales } => nibble(codes[at / 2], at % 2) as f32 * bf16_f32(scales[at / 32]),
         }
     }
 }
@@ -140,8 +213,22 @@ impl SplitPrefix {
         mode: Kv,
         chunks: Option<usize>,
     ) -> Result<Self> {
+        let storage = Storage::of(mode).context("the compact cache is never sealed")?;
+        Self::seal(k, v, prefix_len, capacity, c, storage, chunks)
+    }
+
+    /// [`SplitPrefix::from_compact`] into any [`Storage`].
+    fn seal(
+        k: &[f32],
+        v: &[f32],
+        prefix_len: usize,
+        capacity: usize,
+        c: &ModelConfig,
+        storage: Storage,
+        chunks: Option<usize>,
+    ) -> Result<Self> {
         ensure!(
-            mode != Kv::Compact && c.head_dim == 64 && c.n_heads == 2 * c.n_kv_heads && c.n_kv_heads <= MAX_GROUPS,
+            c.head_dim == 64 && c.n_heads == 2 * c.n_kv_heads && c.n_kv_heads <= MAX_GROUPS,
             "split cache requires Falcon 64-wide paired GQA heads"
         );
         ensure!(
@@ -181,11 +268,16 @@ impl SplitPrefix {
             dst[SPATIAL[1]..SPATIAL[1] + 32].copy_from_slice(&k[b + 32..b + 64]);
             dst[VALUE..VALUE + 64].copy_from_slice(&v[value..value + 64]);
             ensure!(dst.iter().all(|x| x.is_finite()), "nonfinite or incomplete KV group");
+            // The pair check above ran on the unrotated keys.
+            if storage.rotated {
+                each_block(dst, &RECORD_BLOCKS, rotation::rotate);
+                ensure!(dst.iter().all(|x| x.is_finite()), "rotated KV group overflows");
+            }
             Ok(())
         };
         let count = groups * prefix_len;
-        let records = match mode {
-            Kv::F32Split => {
+        let records = match storage.format {
+            Format::F32 => {
                 let mut data = vec![0.0_f32; count * RECORD];
                 data.par_chunks_mut(RECORD).enumerate().try_for_each(|(record, dst)| {
                     let mut values = [0.0; RECORD];
@@ -195,7 +287,7 @@ impl SplitPrefix {
                 })?;
                 Records::F32(data)
             }
-            Kv::Q8 => {
+            Format::Q8 => {
                 let mut codes = vec![0_i8; count * RECORD];
                 let mut scales = vec![0_u16; count * Q8_SCALES];
                 codes
@@ -222,7 +314,7 @@ impl SplitPrefix {
                     })?;
                 Records::Q8 { codes, scales }
             }
-            Kv::Q16 => {
+            Format::Q16 => {
                 let mut codes = vec![0_i16; count * RECORD];
                 let mut scales = vec![0_u16; count * Q8_SCALES];
                 codes
@@ -249,7 +341,29 @@ impl SplitPrefix {
                     })?;
                 Records::Q16 { codes, scales }
             }
-            Kv::Compact => unreachable!("checked above"),
+            Format::Q4 => {
+                let mut codes = vec![0_u8; count * RECORD / 2];
+                let mut scales = vec![0_u16; count * Q8_SCALES];
+                codes
+                    .par_chunks_mut(RECORD / 2)
+                    .zip(scales.par_chunks_mut(Q8_SCALES))
+                    .enumerate()
+                    .try_for_each(|(record, (dst, record_scales))| {
+                        let mut values = [0.0; RECORD];
+                        gather(record, &mut values)?;
+                        for ((codes, values), scale_out) in dst
+                            .chunks_exact_mut(16)
+                            .zip(values.chunks_exact(32))
+                            .zip(record_scales.iter_mut())
+                        {
+                            *scale_out = q4_block(values, codes);
+                            // Codes are at most 7 in magnitude.
+                            ensure!((7.0 * bf16_f32(*scale_out)).is_finite(), "Q4 KV conversion overflow");
+                        }
+                        Ok(())
+                    })?;
+                Records::Q4 { codes, scales }
+            }
         };
         let tail_capacity = capacity - prefix_len;
         let tail_elements = (groups * tail_capacity)
@@ -265,17 +379,22 @@ impl SplitPrefix {
                 codes: zeroed(tail_elements)?,
                 scales: zeroed(tail_elements / 32)?,
             },
+            Records::Q4 { .. } => Records::Q4 {
+                codes: zeroed(tail_elements / 2)?,
+                scales: zeroed(tail_elements / 32)?,
+            },
         };
         Ok(Self {
             records,
             prefix_len,
             heads,
             kv_heads: groups,
-            chunks: default_chunks(mode, chunks),
+            chunks: default_chunks(storage.format, chunks),
             tail,
             tail_capacity,
             tail_len: 0,
             fast_exp: false,
+            rotated: storage.rotated,
         })
     }
 
@@ -311,9 +430,10 @@ impl SplitPrefix {
     }
 
     /// Appends one generated position given one key and one value per group
-    /// (`[groups][64]` each), encoded in the prefix's storage format. A
-    /// non-finite input keeps a non-finite decoded value (NaN for BF16 NaN and
-    /// for any Q8 block that holds one), so it still reaches the logits.
+    /// (`[groups][64]` each), encoded in the prefix's storage format (and
+    /// rotated like it). A non-finite input keeps a non-finite decoded value
+    /// (NaN for any Q16, Q8 or Q4 block that holds one; rotation first spreads
+    /// it over its block), so it still reaches the logits.
     fn push_unique(&mut self, k: &[f32], v: &[f32]) {
         assert_eq!(k.len(), self.kv_heads * 64);
         assert_eq!(v.len(), k.len());
@@ -322,6 +442,9 @@ impl SplitPrefix {
             let mut values = [0.0_f32; TAIL_RECORD];
             values[..64].copy_from_slice(&k[g * 64..(g + 1) * 64]);
             values[64..].copy_from_slice(&v[g * 64..(g + 1) * 64]);
+            if self.rotated {
+                each_block(&mut values, &TAIL_BLOCKS, rotation::rotate);
+            }
             let record = g * self.tail_capacity + self.tail_len;
             let at = record * TAIL_RECORD;
             match &mut self.tail {
@@ -358,6 +481,13 @@ impl SplitPrefix {
                         }
                     }
                 }
+                Records::Q4 { codes, scales } => {
+                    let blocks = TAIL_RECORD / 32;
+                    for (block, values) in values.chunks_exact(32).enumerate() {
+                        let codes = &mut codes[at / 2 + 16 * block..at / 2 + 16 * (block + 1)];
+                        scales[record * blocks + block] = q4_block(values, codes);
+                    }
+                }
             }
         }
         self.tail_len += 1;
@@ -386,7 +516,9 @@ impl SplitPrefix {
     }
 
     /// The compact `[t][heads][64]` keys and `[t][groups][64]` values that the
-    /// stored records decode to (the exactness oracle for lossy storage).
+    /// stored records decode to (the exactness oracle for lossy storage). For
+    /// rotated storage they are in the rotated basis, which decode pairs with
+    /// rotated queries.
     #[cfg(test)]
     fn dequantized_compact(&self) -> (Vec<f32>, Vec<f32>) {
         let (p, groups) = (self.prefix_len, self.kv_heads);
@@ -415,6 +547,32 @@ impl SplitPrefix {
         assert_eq!(output.len(), q.len());
         assert_eq!(sinks.len(), self.heads);
         assert_eq!(total_len, self.prefix_len + self.tail_len);
+        self.in_storage_basis::<{ MAX_GROUPS * 128 }>(q, output, |q, output| {
+            self.decode_stored(q, total_len, sinks, output, simd)
+        });
+    }
+
+    /// Runs `decode` on the queries in the basis the records are stored in
+    /// and leaves its output in the model's: directly for unrotated storage;
+    /// for rotated storage every head's query halves are rotated first
+    /// (`rotation::rotate_query`, so their dots with the stored keys are the
+    /// original ones) and its output halves un-rotated after
+    /// (`rotation::unrotate`). The rotated queries live in an `N`-element
+    /// stack buffer, so decode steps still do not allocate.
+    fn in_storage_basis<const N: usize>(&self, q: &[f32], output: &mut [f32], decode: impl FnOnce(&[f32], &mut [f32])) {
+        if !self.rotated {
+            return decode(q, output);
+        }
+        let mut buffer = [0.0_f32; N];
+        let rotated = &mut buffer[..q.len()];
+        rotated.copy_from_slice(q);
+        each_block(rotated, &KEY_HALVES, rotation::rotate_query);
+        decode(rotated, output);
+        each_block(output, &VALUE_HALVES, rotation::unrotate);
+    }
+
+    /// [`SplitPrefix::attention_decode`] in the records' basis.
+    fn decode_stored(&self, q: &[f32], total_len: usize, sinks: &[f32], output: &mut [f32], simd: Simd) {
         let selected = simd.resolved();
         #[cfg(target_arch = "x86_64")]
         if selected != Simd::Scalar
@@ -572,6 +730,22 @@ impl SplitPrefix {
                         part,
                         self.fast_exp,
                     ),
+                    (
+                        Records::Q4 { codes, scales },
+                        Records::Q4 {
+                            codes: tail_codes,
+                            scales: tail_scales,
+                        },
+                    ) => pair_entry(
+                        &Q4Rec::<RECORD> { codes, scales },
+                        &Q4Rec::<TAIL_RECORD> {
+                            codes: tail_codes,
+                            scales: tail_scales,
+                        },
+                        &span,
+                        part,
+                        self.fast_exp,
+                    ),
                     _ => unreachable!("tail storage matches the prefix"),
                 }
             }
@@ -637,6 +811,10 @@ impl SplitPrefix {
                     &Q16Rec::<RECORD> { codes, scales },
                     &Q16Rec::<TAIL_RECORD> { codes: tc, scales: ts },
                 ),
+                (Records::Q4 { codes, scales }, Records::Q4 { codes: tc, scales: ts }) => kernel.run(
+                    &Q4Rec::<RECORD> { codes, scales },
+                    &Q4Rec::<TAIL_RECORD> { codes: tc, scales: ts },
+                ),
                 _ => unreachable!("tail storage matches the prefix"),
             }
         }
@@ -664,9 +842,17 @@ impl SplitPrefix {
         assert_eq!(q.len(), rows * width);
         assert_eq!(output.len(), q.len());
         assert_eq!(sinks.len(), self.heads);
+        self.in_storage_basis::<{ MAX_ROWS * MAX_GROUPS * 128 }>(q, output, |q, output| {
+            self.rows_stored(q, rows, sinks, output, simd)
+        });
+    }
+
+    /// [`SplitPrefix::attention_decode_rows`] in the records' basis.
+    fn rows_stored(&self, q: &[f32], rows: usize, sinks: &[f32], output: &mut [f32], simd: Simd) {
+        let width = self.heads * 64;
         let last = self.prefix_len + self.tail_len;
         if rows == 1 {
-            self.attention_decode(q, last, sinks, output, simd);
+            self.decode_stored(q, last, sinks, output, simd);
             return;
         }
         let selected = simd.resolved();

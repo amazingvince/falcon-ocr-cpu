@@ -23,6 +23,8 @@ fn verify_rows_probe() {
     let mode = std::env::var("PROBE_MODE").map_or(Kv::Q8, |m| match m.as_str() {
         "q16" => Kv::Q16,
         "f32" => Kv::F32Split,
+        "q8r" => Kv::Q8Rot,
+        "q4r" => Kv::Q4Rot,
         _ => Kv::Q8,
     });
     let caches: Vec<SplitPrefix> = (0..layers)
@@ -85,7 +87,7 @@ fn decode_attention_bandwidth_probe() {
     let v: Vec<f32> = (0..p * c.kv_dim()).map(|i| (i % 73) as f32 / 97.0 - 0.2).collect();
     let q: Vec<f32> = (0..c.query_dim()).map(|i| (i % 61) as f32 / 21.0 - 1.4).collect();
     let sinks = vec![0.0_f32; c.n_heads];
-    for mode in [Kv::Q8, Kv::Q16, Kv::F32Split] {
+    for mode in [Kv::Q8, Kv::Q8Rot, Kv::Q4Rot, Kv::Q16, Kv::F32Split] {
         let caches: Vec<SplitPrefix> = (0..layers)
             .map(|_| {
                 SplitPrefix::from_compact(&k, &v, p, p + 8, &c, mode, None)

@@ -119,8 +119,8 @@ pub struct Tuning {
     /// Decode attention over sealed (split) caches uses the portable
     /// polynomial exp on x86, as the NEON kernels do, instead of the
     /// platform-exact exp: faster softmax, different rounding. `None` keeps
-    /// the default: polynomial for 8-bit caches under `ExpMode::Fast` (fast
-    /// mode), exact otherwise.
+    /// the default: polynomial for 8-bit caches (and the rotated research
+    /// caches) under `ExpMode::Fast` (fast mode), exact otherwise.
     pub decode_fast_exp: Option<bool>,
 }
 impl Tuning {

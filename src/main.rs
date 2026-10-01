@@ -57,7 +57,7 @@ struct Cli {
     #[arg(long, global = true)]
     verify_model_file: bool,
     /// Research: the KV cache storage for run and doctor, replacing the
-    /// mode's own (`--mode fast --kv-cache q16` runs w8-body-kv-q16); results
+    /// mode's own (`--mode fast --kv-cache q8r` runs w8-body-kv-q8r); results
     /// name the profile that ran.
     #[arg(long, value_enum, global = true, hide = true)]
     kv_cache: Option<Kv>,

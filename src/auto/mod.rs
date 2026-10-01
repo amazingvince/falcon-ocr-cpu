@@ -662,6 +662,8 @@ fn kv_cache_label(profile: Profile) -> &'static str {
         Kv::F32Split => "f32-split",
         Kv::Q16 => "q16",
         Kv::Q8 => "q8",
+        Kv::Q8Rot => "q8r",
+        Kv::Q4Rot => "q4r",
     }
 }
 
@@ -682,12 +684,13 @@ fn byte_budget(c: &ModelConfig, profile: Profile, head: HeadMode) -> ByteBudget 
     };
     // Split records hold 160 elements per KV group and position (the shared
     // temporal key half, both heads' spatial halves and the value); the coded
-    // formats add one 16-bit scale per 32 elements.
+    // formats add one 16-bit scale per 32 elements. Rotation adds no bytes.
     let record = match profile.kv {
         Kv::Compact => (qdim + kdim) * 4 / c.n_kv_heads,
         Kv::F32Split => 160 * 4,
         Kv::Q16 => 160 * 2 + 5 * 2,
-        Kv::Q8 => 160 + 5 * 2,
+        Kv::Q8 | Kv::Q8Rot => 160 + 5 * 2,
+        Kv::Q4Rot => 160 / 2 + 5 * 2,
     };
     ByteBudget {
         weights_per_token,

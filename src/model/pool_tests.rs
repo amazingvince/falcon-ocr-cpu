@@ -11,7 +11,8 @@
 //! scales, the rotary factors, the fused QKV pass with its BF16 attention
 //! copies, prefill attention (FP32 and BF16), the output projection and FFN
 //! (residual adds and the gate in the epilogues), sealing in every split
-//! format, and the unfused split with its residual add.
+//! format (the rotated research ones too), and the unfused split with its
+//! residual add.
 //! `kernels::tests::prefill_kernels_are_bitwise_independent_of_the_pool_size`
 //! covers the FP32 projections, attention, norms and first-token heads.
 use std::sync::Arc;
@@ -204,7 +205,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                     );
                     push("gated FFN", bits(&work.gated));
                     push("layer output", bits(&h));
-                    for mode in [Kv::F32Split, Kv::Q16, Kv::Q8] {
+                    for mode in [Kv::F32Split, Kv::Q16, Kv::Q8, Kv::Q8Rot, Kv::Q4Rot] {
                         let mut sealed = session();
                         sealed.layers[0] = LayerCache::Compact {
                             prefix_k: keys.clone(),

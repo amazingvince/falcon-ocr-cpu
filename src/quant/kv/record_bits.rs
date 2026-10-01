@@ -17,6 +17,11 @@ impl SplitPrefix {
                 .map(|&code| u32::from(code as u16))
                 .chain(scales.iter().map(|&scale| u32::from(scale)))
                 .collect(),
+            Records::Q4 { codes, scales } => codes
+                .iter()
+                .map(|&pair| u32::from(pair))
+                .chain(scales.iter().map(|&scale| u32::from(scale)))
+                .collect(),
         }
     }
 }

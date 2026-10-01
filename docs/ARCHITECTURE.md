@@ -78,7 +78,7 @@ of its pool's thread count, so the pipeline's tokens are a sequential run's.
 | `preprocess/`, `tokenizer.rs` | Pillow-exact image preparation (`SourceImage`: one decode, the first resize at any cap; `resample.rs`: the Pillow resampling port, with 8-bit bilinear and bicubic for the router; `crop.rs`: the opt-in margin crop); the pinned tokenizer and stop ids |
 | `router/` | The resolution router (`--max-dimension auto`, `research/resolution-router`): 26 image statistics of the page after the first resize at 1536, bit-exact with the Python specification; the two embedded gradient-boosted tree models (`trees.json`); the 768/1024/1536 choice with its 8-px text-line floor; the safety-net record |
 | `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
-| `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, panel prefill, multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records; `kv/codec.rs` its scalar codes and scales, `kv/decode.rs` its decode attention kernels) |
+| `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, panel prefill, multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records, and the research Q8R and Q4R ones; `kv/codec.rs` its scalar codes and scales, `kv/decode.rs` its decode attention kernels), `rotation.rs` (the randomized Hadamard rotation of 32-value blocks behind Q8R and Q4R) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
 | `runner/` | `Runner` (prefill, sealing, decode), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `stream.rs` (results in input order as pages finish), `batch/` (continuous batching: the scheduler, the page feed, the rows), `pipeline.rs` (the page pipeline), `escalate.rs` (fast-mode loops reread in near-exact mode), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
@@ -118,7 +118,13 @@ pair, each head's spatial half and the value, so one decode task per group
 streams its records contiguously. Records are FP32 (`split-f32`, bitwise the
 compact kernel), 16-bit codes with a BF16 absmax scale per 32 values (`q16`),
 or 8-bit codes (`q8`); generated positions go into 128-element tail records
-in the same format as they are appended. Traces and batches keep the compact
+in the same format as they are appended. The research formats `q8r` and `q4r`
+(8- and 4-bit codes; `falcon-ocr --kv-cache`, `falcon-ocr-eval --profile`)
+store every 32-value block as `H D x` (a Hadamard matrix times fixed signs,
+`quant/rotation.rs`) before quantizing it; decode rotates the query and
+un-rotates each head's output instead of the records, so they share `q8`'s
+kernels ([MODES.md](MODES.md#rotated-kv-cache-experimental)). Traces and
+batches keep the compact
 cache, so their tensors stay comparable with the recorded references. The
 `expanded` layout (every KV head duplicated) remains selectable.
 

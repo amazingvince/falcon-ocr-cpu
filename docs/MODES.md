@@ -269,7 +269,41 @@ maps it and uses it in place: load 2.2 s → 10 ms, peak resident memory
 ## Research profiles
 
 `falcon-ocr-eval --profile` takes any `Weights × Kv` pair: `reference`,
-`split-f32`, `kv-q16`, `kv-q8`, `w16-body-compact`, `w16-body`,
-`w16-body-kv-q16`, `w16-body-kv-q8`, `w8-body`, `w8-body-split-f32`,
-`w8-body-kv-q16`, `w8-body-kv-q8`. Only the three above are modes of the
-CLI.
+`split-f32`, `kv-q16`, `kv-q8`, `kv-q8r`, `kv-q4r`, `w16-body-compact`,
+`w16-body`, `w16-body-kv-q16`, `w16-body-kv-q8`, `w16-body-kv-q8r`,
+`w16-body-kv-q4r`, `w8-body`, `w8-body-split-f32`, `w8-body-kv-q16`,
+`w8-body-kv-q8`, `w8-body-kv-q8r`, `w8-body-kv-q4r`. Only the three above are
+modes of the CLI. Its hidden `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
+(run and doctor only) replaces the KV half of whatever profile the other
+flags resolve to, packed files included: `--mode fast --kv-cache q8r` runs
+`w8-body-kv-q8r`, and the result's `mode` (null), `precision` and `plan` name
+that profile.
+
+### Rotated KV cache (experimental)
+
+`q8r` and `q4r` store every 32-value block of the cache (the temporal and
+spatial key halves and the two value halves, prefix and generated positions)
+as `H D x` before quantizing it: `H` is the 32 × 32 Sylvester Hadamard matrix
+and `D` a fixed ±1 diagonal per block kind (`src/quant/rotation.rs`). `q8r`
+then uses `q8`'s codes and BF16 scale per 32 values; `q4r` uses 4-bit codes
+(-7..=7) with the same scale. An outlier channel no longer sizes the step of
+the 31 other values of its block. Decode rotates each query instead of the
+cache, `(2^-5 H D q) · (H D k) = q · k`, and un-rotates each head's output
+once, `o = 2^-5 D H o'`, so the records and kernels are `q8`'s: `q8r` streams
+the same 170 bytes per record and adds 32-point transforms, four per head, row
+and layer (two query halves, two output halves), four per group for each
+appended position and five per record when the prefix is sealed; its output is
+bitwise the compact kernel over the dequantized rotated records with the
+rotated query, followed by the inverse rotation. `q4r` takes 90 bytes per
+record and decodes its codes through the 8-bit loads (bitwise tested on every
+instruction set; not yet a vector nibble unpack).
+
+The uses under study: a more faithful fast mode (`w8-body-kv-q8r`), a cheaper
+cache for near-exact (`w16-body-kv-q8r` streams 23% fewer bytes per decode
+step than `w16-body-kv-q16` on the journal page), and a 4-bit cache for fast
+mode (`w8-body-kv-q4r`). With the published files, every rotated profile
+gives the smoke page's reference tokens. Comparisons across caches pin the
+decode exp: under `--exp fast` the 8-bit and rotated caches default to the
+polynomial decode exp and `q16` to the platform one, a switch that alone
+moved fast mode from 92 to 94 flips (above), about the size of the effect
+under study; pass `--tune decode-exp=exact|fast`.

@@ -291,6 +291,19 @@ fn byte_budget_matches_the_documented_figures() {
         byte_budget(&c, Profile::REFERENCE, HeadMode::Full).kv_per_position,
         22 * 1536 * 4
     );
+    // Rotation adds no bytes; 4-bit codes take half a byte per element.
+    let rotated = byte_budget(&c, Profile::W8_BODY_KV_Q8R, HeadMode::Screened);
+    assert_eq!(rotated, fast);
+    assert_eq!(
+        byte_budget(&c, Profile::W8_BODY_KV_Q4R, HeadMode::Screened).kv_per_position,
+        22 * 8 * 90
+    );
+    // Near-exact with the rotated 8-bit cache at the 6,544-position journal
+    // page: 23% fewer bytes per decode step.
+    let cheaper = byte_budget(&c, Profile::W16_BODY_KV_Q8R, HeadMode::Screened);
+    let step = |b: &ByteBudget| b.weights_per_token + b.head_per_token + 6544 * b.kv_per_position;
+    let saved = 1.0 - step(&cheaper) as f64 / step(&near) as f64;
+    assert!((0.23..0.24).contains(&saved), "{saved}");
 }
 
 #[test]
@@ -318,6 +331,10 @@ fn kv_cache_replaces_the_kv_half_of_the_resolved_profile() {
     assert_eq!((plan.mode, plan.profile), (Some(Mode::Exact), Profile::REFERENCE));
     let plan = resolve_weights(&request(Some(Mode::Exact), Some(Kv::Q8))).unwrap();
     assert_eq!((plan.mode, plan.profile), (None, Profile::KV_Q8));
+    let plan = resolve_weights(&request(Some(Mode::Fast), Some(Kv::Q8Rot))).unwrap();
+    assert_eq!((plan.mode, plan.profile), (None, Profile::W8_BODY_KV_Q8R));
+    let plan = resolve_weights(&request(None, Some(Kv::Q4Rot))).unwrap();
+    assert_eq!((plan.mode, plan.profile), (None, Profile::W16_BODY_KV_Q4R));
     // The plan reports the profile that runs.
     std::fs::write(
         root.join("config.json"),

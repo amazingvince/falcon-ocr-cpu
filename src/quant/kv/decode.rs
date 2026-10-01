@@ -1,6 +1,9 @@
 //! Decode attention over the split cache: record stores, the per-group
 //! kernels and their `#[target_feature]` entries.
-use super::{MAX_ROWS, SPATIAL, TEMPORAL, TILE, VALUE, codec::bf16_f32};
+use super::{
+    MAX_ROWS, SPATIAL, TEMPORAL, TILE, VALUE,
+    codec::{bf16_f32, nibble},
+};
 /// A decode kernel over one prefix/tail store pair (see `SplitPrefix::dispatch`).
 pub(super) trait PairKernel {
     unsafe fn run<R: RecordStore, T: RecordStore>(&mut self, store: &R, tail: &T);
@@ -125,6 +128,38 @@ impl<const W: usize> RecordStore for Q16Rec<'_, W> {
             S::mul(
                 S::load_i16(self.codes.as_ptr().add(record * W + offset)),
                 S::splat(bf16_f32(*self.scales.get_unchecked((record * W + offset) / 32))),
+            )
+        }
+    }
+}
+
+/// 4-bit records of `W` elements.
+pub(super) struct Q4Rec<'a, const W: usize> {
+    /// Two 4-bit codes per byte, element `2i` in the low nibble.
+    pub(super) codes: &'a [u8],
+    /// One BF16 scale per 32 elements.
+    pub(super) scales: &'a [u16],
+}
+impl<const W: usize> RecordStore for Q4Rec<'_, W> {
+    /// Unpacks the eight nibbles into `i8` codes and decodes them like
+    /// [`Q8Rec`], so every instruction set is correct without new vector
+    /// code (a vector nibble unpack would be faster).
+    #[inline(always)]
+    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
+        let at = record * W + offset;
+        debug_assert!(at.is_multiple_of(8) && (record + 1) * W <= 2 * self.codes.len());
+        // SAFETY: callers pass a stored record and an offset below `W` that is
+        // a multiple of 8 (the trait's contract), so the four code bytes at
+        // `at / 2` and the scale at `at / 32` are in bounds; the bytes are read
+        // unaligned, the eight codes come from a local array, and the caller
+        // runs with `S`'s instruction set enabled.
+        unsafe {
+            let bytes = self.codes.as_ptr().add(at / 2).cast::<[u8; 4]>().read_unaligned();
+            let codes: [i8; 8] = std::array::from_fn(|i| nibble(bytes[i / 2], i % 2));
+            // fl(code * scale), exactly the scalar dequantization.
+            S::mul(
+                S::load_i8(codes.as_ptr()),
+                S::splat(bf16_f32(*self.scales.get_unchecked(at / 32))),
             )
         }
     }
