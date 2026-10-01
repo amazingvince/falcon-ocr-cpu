@@ -92,18 +92,22 @@ inputs; the value halves gain nothing.
 - On this model's weights the cache blocks are nearly Gaussian unless the
   activations make them otherwise, the regime where rotation neither helps nor
   hurts (the unit tests: equal error on Gaussian blocks, a quarter of the Q8
-  error with outlier channels at 10–50× the RMS, and 1.4–1.6× the error per
-  value on uniform blocks, which are flatter than Gaussian). The only
-  structural outliers are in late-layer keys, and the attention outputs gain
-  little from fixing them: a median 2% (isotropic) to 9% (massive channel)
-  less output error with diffuse queries, none with peaked ones, and with the
-  massive channel one layer's output error rose 25%.
-- So the study predicts little gain for `q8r`, unless the real activations
-  carry outlier channels into the keys or values; it cannot see those. The
-  measurement that decides is `falcon-ocr-eval agree` on the anchor pages
-  (recipe in docs/MODES.md). The room there is: FP32 weights with the Q8 cache
-  flipped 0.77 steps per 1,000 on the screening set, and per-channel key scales
-  were flip-neutral in the hill climb.
+  error with outlier channels at 10–50× the RMS, and more error than plain Q8
+  on blocks flatter than Gaussian, 5.7e-4 against 2.4e-4 worst output error in
+  `low_precision_stays_close_to_fp32`). The only structural outliers are in
+  late-layer keys, and the attention outputs gain little from fixing them: a
+  median 2% (isotropic) to 9% (massive channel) less output error with diffuse
+  queries, none with peaked ones, and with the massive channel one layer's
+  output error rose 25%.
+- So the study predicted little gain for `q8r`, unless the real activations
+  carry outlier channels into the keys or values, which it cannot see. Token
+  agreement on the anchor pages bore that out
+  ([docs/NEXT-STEPS.md](../../docs/NEXT-STEPS.md#setup) has the commands,
+  [docs/MODES.md](../../docs/MODES.md#rotated-kv-cache-experimental) the
+  results): rotation lowered the 8-bit cache's KL by 11% with FP32 weights and
+  by 4% in fast mode, and its flips stayed within noise. The room there was:
+  FP32 weights with the Q8 cache flipped 0.77 steps per 1,000 on the screening
+  set, and per-channel key scales were flip-neutral in the hill climb.
 - Four bits cost about 18 times the error of eight (10% of a block, rotated or
-  not); `q4r` needs the same real-page validation before it could serve fast
-  mode.
+  not); on the anchor pages `q4r` multiplied fast mode's flips by 5 and its KL
+  by 30.
