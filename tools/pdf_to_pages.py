@@ -7,16 +7,17 @@ Modes (--mode):
            included, so that its longer side is exactly --long-side pixels (default
            1536, the runner's default maximum dimension, so the processor's first
            resize leaves the page as it is), or at --dpi N. --gray renders grayscale.
-  extract  For scanned PDFs: write the page's embedded scan at its native resolution,
-           decoded losslessly into a PNG. 1-bit images stay 1-bit, grayscale stays
-           grayscale, anything else becomes RGB; the page's /Rotate is applied. A page
+  extract  For PDFs containing scans or screenshots: write the embedded image at
+           native resolution, decoded losslessly into a PNG. 1-bit images stay 1-bit,
+           grayscale stays grayscale, anything else becomes RGB; the page's /Rotate is applied. A page
            qualifies when all it draws is one image, upright and covering the page's
-           visible box (each edge within 2 pt or 0.5% of the longer side), with a
-           colour space (not a stencil mask), at most 8 bits per component and no
-           transparency; invisible text (an OCR layer) and link annotations may
-           accompany it. The bits per component are read from the image stream (PDFium
-           reports its own 8-bit conversion); JPEG 2000 and images whose depth cannot
-           be read are rendered. Any other page is an error.
+           visible box (each edge within 2 pt or 0.5% of the longer side), with equal
+           horizontal and vertical pixel scales, a colour space (not a stencil mask),
+           at most 8 bits per component and no transparency; invisible text (an OCR
+           layer) and link annotations may accompany it. The bits per component are
+           read from the image stream (PDFium reports its own 8-bit conversion);
+           JPEG 2000 and images whose depth cannot be read are rendered. Any other
+           page is an error.
   auto     (default) Extract the pages that qualify and render the others.
 
 A 1-bit scan written by extract goes through the processor's nearest-neighbour
@@ -199,6 +200,10 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
     if any(abs(edge - page_edge) > tolerance for edge, page_edge in zip(image.get_bounds(), box, strict=True)):
         return None, "the image does not cover the page"
     metadata = image.get_metadata()
+    # Allow PDF coordinate rounding, but render unequal pixel scales so the
+    # PNG keeps the page's displayed geometry without needing DPI metadata.
+    if not math.isclose(a / metadata.width, d / metadata.height, rel_tol=1e-5):
+        return None, "the image has different horizontal and vertical pixel scales"
     if metadata.colorspace not in COLORSPACES:
         return None, "the image has no colour space of its own (a stencil mask or JPEG 2000)"
     bits = bits_per_component(page, image, metadata.colorspace)

@@ -249,6 +249,67 @@ class PdfToPages(unittest.TestCase):
         self.assertEqual((rotated["size_pt"], rotated["rotation"], rotated["pixels"]), ([216.0, 144.0], 90, [300, 200]))
         self.assertEqual(rotated["source_image"]["pixels"], [200, 300])
 
+    def test_auto_handles_text_pages_and_screenshots_with_text_layers(self):
+        pdf = pdfium.PdfDocument.new()
+        page = pdf.new_page(144, 216)
+        add_text(pdf, page, "Screenshot page")
+        page.gen_content()
+        screenshot = pdf_to_pages.render(page, (200, 300), False).convert("RGB")
+        self.assertLess(screenshot.convert("L").getextrema()[0], 255)
+        # The same page as an image, then with an invisible OCR layer or visible overlay.
+        for invisible in (None, True, False):
+            page = pdf.new_page(144, 216)
+            add_image(pdf, page, screenshot, (0, 0, 144, 216))
+            if invisible is not None:
+                add_text(pdf, page, "Text overlay", invisible=invisible)
+            page.gen_content()
+        path = self.directory / "screenshots.pdf"
+        pdf.save(path)
+        pdf.close()
+
+        code, error, output = self.run_tool("screenshots", "--long-side", "300", pdf=path)
+        self.assertEqual((code, error), (0, ""))
+        pages = self.manifest(output)["pages"]
+        self.assertEqual([page["mode"] for page in pages], ["render", "extract", "extract", "render"])
+        images = [load(output / page["file"]).convert("RGB") for page in pages]
+        for image in images[:3]:
+            self.assertEqual(image.size, screenshot.size)
+            self.assertEqual(image.tobytes(), screenshot.tobytes())
+        with pdfium.PdfDocument(path) as pdf:
+            expected = pdf_to_pages.render(pdf[3], (200, 300), False).convert("RGB")
+        self.assertEqual(images[3].tobytes(), expected.tobytes())
+        self.assertNotEqual(images[3].tobytes(), screenshot.tobytes())
+
+    def test_auto_renders_stretched_scans_in_page_coordinates(self):
+        pdf = pdfium.PdfDocument.new()
+        # Stretch vertically, then horizontally on a rotated page. The final
+        # page is uniformly scaled, apart from normal PDF coordinate rounding.
+        for width, height, rotation in [(144, 432, 0), (288, 216, 90), (144.000004, 216, 0)]:
+            page = pdf.new_page(width, height)
+            add_image(pdf, page, PLAIN, (0, 0, width, height))
+            page.set_rotation(rotation)
+            page.gen_content()
+        path = self.directory / "stretched.pdf"
+        pdf.save(path)
+        pdf.close()
+
+        code, error, output = self.run_tool("stretched", "--long-side", "432", pdf=path)
+        self.assertEqual((code, error), (0, ""))
+        pages = self.manifest(output)["pages"]
+        self.assertEqual([page["mode"] for page in pages], ["render", "render", "extract"])
+        self.assertEqual([page["pixels"] for page in pages], [[144, 432], [324, 432], [200, 300]])
+        with pdfium.PdfDocument(path) as pdf:
+            for index in (0, 1):
+                self.assertIn("pixel scales", pages[index]["extract_skipped"])
+                expected = pdf_to_pages.render(pdf[index], tuple(pages[index]["pixels"]), False)
+                actual = load(output / pages[index]["file"])
+                self.assertEqual(actual.convert("RGB").tobytes(), expected.convert("RGB").tobytes())
+        self.assertEqual(load(output / pages[2]["file"]).tobytes(), PLAIN.tobytes())
+        code, error, output = self.run_tool("stretched-extract", "--mode", "extract", pdf=path)
+        self.assertEqual(code, 1)
+        self.assertIn("pixel scales", error)
+        self.assertFalse(output.exists())
+
     def test_render_sizes_and_gray(self):
         code, _, output = self.run_tool("long", "--mode", "render", "--long-side", "1000", "--pages", "1,4")
         self.assertEqual(code, 0)

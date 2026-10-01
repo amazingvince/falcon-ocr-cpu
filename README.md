@@ -32,9 +32,11 @@ speculation and the repetition stop from the host.
 
 `run` reads PNG and JPEG. `python tools/pdf_to_pages.py book.pdf --output-dir
 book-pages` (`pip install -r requirements/tools.txt`) writes one PNG per page:
-a page that is just a scanned image is extracted at its native resolution
-(1-bit and gray kept), any other page is rendered with its longer side at
-1536 pixels, which the processor's first resize leaves unchanged.
+a page containing only a full-page scan or screenshot is extracted at its
+native resolution (1-bit and gray kept) when its pixel proportions match
+the displayed page. Pages with visible text objects, mixed content or
+stretched images are rendered with their longer side at 1536 pixels, which
+the processor's first resize leaves unchanged.
 `book-pages/pages.txt` lists the files in page order and `manifest.json`
 records how each page was made; recognize them in order with
 
