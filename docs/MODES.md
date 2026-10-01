@@ -323,9 +323,12 @@ less often than FP32 (7 against 19 of the 200 held-out pages), so rereading
 length stops would pay for the most expensive pages with little to gain.
 Near-exact pages never escalate to exact mode: near-exact matched FP32 on all
 118 English gate pages, so its loops are almost always FP32's own. The
-held-out pages are spent, so the effect there is not measured; with the
-published files, a fast-mode page of repeated lines that the stop ends is
-reread with a plain near-exact run's tokens.
+held-out pages are spent, so the effect there is not measured. On the 64
+v3 calibration pages (published files, Ryzen 7 7700X) the stop ended 9 pages
+in fast mode, and `--escalate` reread all 9: each record carries the tokens
+of a plain near-exact run of its page. Two of them then end at EOS (516 and
+1,858 tokens, where fast mode looped at 335 and 2,139); the other 7 loop in
+near-exact mode as well.
 
 ## Packed model files
 
