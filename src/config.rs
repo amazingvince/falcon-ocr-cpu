@@ -318,7 +318,9 @@ pub struct GenerationOptions {
     /// (`preprocess::prepare_first_cropped`; `--crop-margins`): text keeps its
     /// size, the image token count drops. Changes the model input, so off by
     /// default; results report the crop (`OcrResult::crop`). Routed pages are
-    /// routed on the whole page and crop the resize they run at.
+    /// routed on the whole page and crop the resize they run at. The padding
+    /// must be below `max_dimension`, or with `route` below the router's
+    /// smallest size: a larger one never crops.
     #[serde(default)]
     pub crop_margins: Option<u32>,
 }
@@ -346,10 +348,16 @@ impl GenerationOptions {
         );
         ensure!(self.max_new_tokens > 0, "max_new_tokens must be positive");
         if let Some(pad) = self.crop_margins {
-            ensure!(
-                pad < self.max_dimension,
-                "crop_margins padding {pad} must be below max_dimension {}: a larger padding never crops",
+            // A routed page may run at the router's smallest size.
+            let smallest = if self.route {
+                crate::router::SIZES[0]
+            } else {
                 self.max_dimension
+            };
+            ensure!(
+                pad < smallest,
+                "crop_margins padding {pad} must be below {smallest}, the smallest maximum dimension a page runs at: \
+                 a larger padding never crops it"
             );
         }
         if self.route {
@@ -657,11 +665,20 @@ mod tests {
         }
         let error = GenerationOptions {
             crop_margins: Some(1536),
-            ..options
+            ..options.clone()
         }
         .validate()
         .unwrap_err();
         assert!(error.to_string().contains("crop_margins padding 1536"), "{error}");
+        // Routed pages may run at 768, so the padding must be below that.
+        let routed = |pad| GenerationOptions {
+            route: true,
+            crop_margins: Some(pad),
+            ..options.clone()
+        };
+        routed(767).validate().unwrap();
+        let error = routed(768).validate().unwrap_err();
+        assert!(error.to_string().contains("padding 768 must be below 768"), "{error}");
         // Options serialized before the field existed read as uncropped.
         let old: GenerationOptions =
             serde_json::from_str(r#"{"min_dimension":64,"max_dimension":1536,"max_new_tokens":8}"#).unwrap();

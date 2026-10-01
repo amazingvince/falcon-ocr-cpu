@@ -263,9 +263,10 @@ borders, gutter shadows and punch holes count as ink and keep their side of
 the page; marks fainter than the ink threshold (light pencil) or thinner than
 four pixels are cut off when they lie beyond the padding. Routed pages
 (`--max-dimension auto`) are routed on the whole page and crop the resize they
-run at, as does the safety-net rerun. `run --pipeline`, `--batch-size N` and
-the `--escalate` rerun prepare each page the same way, so every path reports
-the same crop.
+run at, as does the safety-net rerun. PAD must be below `--max-dimension`
+(below 768 with `auto`), since a larger padding never crops the page.
+`run --pipeline`, `--batch-size N` and the `--escalate` rerun prepare each
+page the same way, so every path reports the same crop.
 
 It is opt-in because it changes the model input. TII's layout pipeline feeds
 cropped regions to the model, so crops are in distribution. On synthetic book
