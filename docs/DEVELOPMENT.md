@@ -54,7 +54,12 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   `tests/fixtures/modes/*.json`; packing round-trips the checkpoint loader
   and matches the published files; speculation, the decode team, drafts, the
   head and the explicit AVX2 backend never change tokens; the repetition stop
-  yields a prefix; the three trace hashes are pinned. `cargo test --release
+  yields a prefix; the three trace hashes are pinned. `tests/batch_parity.rs`
+  compares fixed cohorts, continuous batching (`run --batch-size N`) and the
+  page pipeline (`run --pipeline`) with sequential pages: tokens, stops,
+  input sizes, crops and routes, the safety net included, in the reference
+  configuration and with the packed near-exact and fast files under the
+  automatic one. `cargo test --release
   --locked --test negative_inputs --test margin_crop -- --ignored
   --test-threads=1` (needs only `artifacts/model`) checks that every public
   entry point rejects invalid requests before model work, including tensor
