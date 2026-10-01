@@ -59,9 +59,11 @@ for FP32 projections, and fast mode's BF16 kernels.
 
 Math functions come from our own vector code, not the OS math library,
 because UCRT, glibc and Apple libm differ. Recognition uses the portable
-fast exp everywhere (token-identical to the platform exp on all calibration
-pages); traces use the platform-exact AVX2 exp so the recorded reference
-hashes keep reproducing.
+fast exp in prefill attention (token-identical to the platform exp on all
+calibration pages) and in fast mode's decode attention over its 8-bit cache;
+on x86 the other decode attention and traces use the platform-exact AVX2
+exp, so the recorded reference hashes keep reproducing. NEON always uses the
+fast exp.
 
 ## Kernel inventory
 
@@ -69,7 +71,7 @@ hashes keep reproducing.
 |---|---|---|---|---|---|
 | FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | generic | same as AVX2 | generic | scalar |
 | 8/16-bit GEMV and fused GLU, 1–8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
-| W8 exception columns, after the GEMV (`quant/linear.rs`, research overlays) | decode | scalar `mul_add`, FMA instruction | same as AVX2 | scalar `mul_add` | scalar `mul_add` |
+| W8 exception columns after the GEMV (`quant/linear.rs`, research overlays) | decode | one fused multiply-add per column (FMA instruction) | same as AVX2 | `mul_add` | same as AVX2 |
 | Decode attention, compact and expanded (`attention/decode64.rs`, `online.rs`) | decode | generic head | same as AVX2 | generic head | function-pointer head |
 | Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | same as AVX2 | generic | generic loop |
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
@@ -77,10 +79,10 @@ hashes keep reproducing.
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
 | BF16 prefill attention (`prefill64/bf16.rs`, fast mode) | prefill | – | AVX512-BF16 | – | – |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| BF16 panel GEMM (`panels/panel_bf16.rs`, opt-in) | prefill | – | AVX512-BF16 | – | – |
+| BF16 panel GEMM (`panels/panel_bf16.rs`, opt-in; not for bodies with exception columns) | prefill | – | AVX512-BF16 | – | – |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |
-| Vector exp | both | platform-exact for traces, fast for recognition | same | fast | fast |
+| Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |
 | Thread defaults (`cpu.rs`) | both | logical CPUs for prefill, tuned team for decode | same | `hw.physicalcpu`, `hw.perflevel0.physicalcpu` | Linux sysfs (`cpu_core`, `cpu_capacity`) |
 
 `--backend avx2` forces 8-lane FP32 kernels everywhere (no wide tiles, no
