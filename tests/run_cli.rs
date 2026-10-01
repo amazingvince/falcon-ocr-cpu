@@ -1,8 +1,10 @@
-//! `falcon-ocr run` checks its flags, inputs and weights before it touches
-//! the output file and before the model loads, so every case here runs
-//! without model assets: a model directory that holds nothing (or a
-//! header-only kernel-ready file) makes any later step fail with the model's
-//! own error, which the input errors must precede.
+//! `falcon-ocr run` checks its flags, inputs and weights before the model
+//! loads, and touches the output file only once the runner is built, so
+//! every case here but the last runs without model assets: a model
+//! directory that holds nothing (or a header-only kernel-ready file) makes
+//! any later step fail with the model's own error, which the input errors
+//! must precede. The last, ignored, resumes a run with the published
+//! near-exact file in `artifacts/packed`.
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -163,6 +165,13 @@ fn run_flags_that_do_not_combine_fail_before_the_model_loads() {
         &case.run(&["--stop-repetition=false"], &[valid, "--escalate"]),
         "--escalate rereads the pages that the repetition stop ended",
     );
+    // Resumed runs match records by path, so an input may appear once.
+    let output = case.path("out.jsonl");
+    assert_error(&case.run(&[], &[valid, valid]), NO_MODEL);
+    assert_error(
+        &case.run(&[], &[valid, valid, "--output", arg(&output), "--resume"]),
+        "is an input twice",
+    );
 }
 
 /// A header-only kernel-ready file of `profile`: enough for the weights
@@ -218,7 +227,7 @@ fn escalation_needs_fast_mode_and_a_near_exact_model_before_anything_loads() {
 }
 
 #[test]
-fn the_output_file_is_repaired_once_the_weights_resolve_before_the_model_loads() {
+fn the_output_file_is_left_alone_until_the_model_loads() {
     let case = Case::new();
     let valid = arg(&case.valid);
     let record = r#"{"path":"valid.png","page":0,"text":"t","mode":"near-exact","precision":"w16-body-kv-q16"}"#;
@@ -228,7 +237,7 @@ fn the_output_file_is_repaired_once_the_weights_resolve_before_the_model_loads()
     // No weights: the file is left as it is.
     assert_error(&case.run(&[], &run), NO_MODEL);
     assert_eq!(fs::read_to_string(&output).unwrap(), cut);
-    // Weights that resolve but do not load: repaired before the load fails.
+    // Weights that resolve but do not load: still left as it is.
     let models = case.path("models");
     fs::create_dir(&models).unwrap();
     fabricate_packed(
@@ -239,8 +248,8 @@ fn the_output_file_is_repaired_once_the_weights_resolve_before_the_model_loads()
         &case.run_with(&models, &[], &run),
         "packed metadata source_sha256 missing",
     );
-    assert!(stderr.contains("removed a last record cut short"), "{stderr}");
-    assert_eq!(fs::read_to_string(&output).unwrap(), format!("{record}\n"));
+    assert!(!stderr.contains("removed a last record cut short"), "{stderr}");
+    assert_eq!(fs::read_to_string(&output).unwrap(), cut);
     // A directory is never an output; `--resume` reads the output, so it
     // must be a regular file. Both are refused before the weights resolve.
     let directory = arg(case.directory.path());
@@ -254,4 +263,41 @@ fn the_output_file_is_repaired_once_the_weights_resolve_before_the_model_loads()
         &case.run(&[], &[valid, "--output", "/dev/null", "--resume"]),
         "is not a regular file",
     );
+}
+
+#[test]
+#[ignore = "requires the published near-exact file in artifacts/packed"]
+fn a_resumed_run_repairs_the_output_and_runs_only_the_missing_pages() {
+    let case = Case::new();
+    let packed = Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/packed");
+    let second = case.write("second.png", &fs::read(&case.valid).unwrap());
+    let output = case.path("book.jsonl");
+    let (first, second) = (arg(&case.valid), arg(&second));
+    let records = |text: &str| -> Vec<serde_json::Value> {
+        text.lines().map(|line| serde_json::from_str(line).unwrap()).collect()
+    };
+    let run = |inputs: &[&str]| {
+        let mut run = inputs.to_vec();
+        run.extend(["--max-new-tokens", "8", "--output", arg(&output), "--resume"]);
+        let result = case.run_with(&packed, &[], &run);
+        let stderr = String::from_utf8_lossy(&result.stderr).into_owned();
+        assert!(result.status.success(), "{stderr}");
+        stderr
+    };
+    run(&[first]);
+    let written = fs::read_to_string(&output).unwrap();
+    assert_eq!(records(&written).len(), 1);
+    // A crash cut the next record short; the resumed run removes it, skips
+    // the first page and runs the second, as the input's second page.
+    fs::write(&output, format!("{written}{{\"path\":\"{second}\",\"te")).unwrap();
+    let stderr = run(&[first, second]);
+    assert!(stderr.contains("removed a last record cut short"), "{stderr}");
+    assert!(stderr.contains("pages: 1 done, 0 failed, 1 skipped"), "{stderr}");
+    let resumed = records(&fs::read_to_string(&output).unwrap());
+    assert_eq!(resumed.len(), 2);
+    assert_eq!(
+        (resumed[1]["path"].as_str(), resumed[1]["page"].as_u64()),
+        (Some(second), Some(1))
+    );
+    assert_eq!(resumed[1]["token_ids"], resumed[0]["token_ids"], "the same image");
 }

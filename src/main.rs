@@ -131,9 +131,10 @@ enum Command {
         /// file (a record cut short by a crash is dropped and redone).
         #[arg(long, requires = "output")]
         resume: bool,
-        /// Record a page that fails as {"path", "page", "error"} and go on;
-        /// the exit code is non-zero at the end if any page failed. Without
-        /// it the run stops at the first failing page.
+        /// Record a page that fails as {"path", "page", "error"} (with --text
+        /// and no --output, only its error on stderr) and go on; the exit
+        /// code is non-zero at the end if any page failed. Without it the
+        /// run stops at the first failing page.
         #[arg(long)]
         keep_going: bool,
         /// Read, prepare and prefill the next page while the current pages
@@ -213,15 +214,15 @@ fn main() -> Result<()> {
         return print_doctor(&request, &config, *text, *load, *probe);
     }
     // `run` checks its options and inputs, then the weights (and those
-    // `--escalate` needs), before it creates or repairs the output file and
-    // before the model loads, so bad input never produces partial output.
+    // `--escalate` needs); the model loads and the runner checks its
+    // configuration before the output file is created or repaired, so a
+    // run that cannot start leaves no output.
     let job = RunJob::new(&cli.command, &config)?;
     let plan = resolve_weights(&request)?;
     let escalation = match &job {
         Some(job) if job.escalate => Some(escalation(&plan, &request, &config, &cli.model, cli.verify_model_file)?),
         _ => None,
     };
-    let output = job.as_ref().map(RunJob::open_output).transpose()?.flatten();
     if matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }) {
         eprintln!("fast mode: quantizing round-to-nearest at load (--allow-rtn); the GPTQ overlay is closer to FP32");
     }
@@ -251,6 +252,7 @@ fn main() -> Result<()> {
     let runner = Runner::new(model, &tokenizer_dir, config)?;
     eprintln!("{} | loaded in {load_ms:.0} ms", runner.resolved());
     if let Some(job) = job {
+        let output = job.open_output()?;
         return job.run(&runner, output, escalation);
     }
     match cli.command {
@@ -386,6 +388,15 @@ impl RunJob {
         }
         for input in &inputs {
             book::check_input(input)?;
+        }
+        if *resume {
+            let mut seen = std::collections::HashSet::new();
+            if let Some(twice) = inputs.iter().find(|input| !seen.insert(*input)) {
+                bail!(
+                    "--resume matches records by input path, and {} is an input twice",
+                    twice.display()
+                );
+            }
         }
         Ok(Some(Self {
             inputs,

@@ -158,27 +158,28 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
 - Every input is checked before the model loads (it exists, is a regular
   file and starts like a PNG or JPEG), so a wrong path fails at once and
   nothing is printed.
-- Each record carries `"path"` (the input as given) and `"page"` (its
-  0-based position among the inputs) before the result's fields, and the
-  generation `"options"` the run asked for after them.
-  `--output FILE` appends the records to FILE, flushed after every page,
-  instead of printing them; `--text` then still prints each page's text.
-  The file is created or repaired only after the flags, inputs and weights
-  pass their checks. A device or pipe (`/dev/stdout`) is written to as it
-  is, without being read.
-- `--resume` skips the inputs whose path already has a successful record in
-  the `--output` file, which must be a regular file. A last record cut short
-  by a crash is removed, so its page runs again. Records that ran otherwise
+- Each record carries `"path"` (the input as given) and `"page"` (its 0-based
+  position among the inputs) before the result's fields, and the generation
+  `"options"` the run asked for after them. `--output FILE` appends the
+  records to FILE, flushed after every page, instead of printing them;
+  `--text` then still prints each page's text. The file is created or
+  repaired only once the flags, inputs and weights have passed their checks
+  and the model has loaded. A device or pipe (`/dev/stdout`) is written to as
+  it is, without being read.
+- `--resume` skips the inputs whose path, as given, already has a successful
+  record in the `--output` file, which must be a regular file; every input
+  must still exist, and none may be listed twice. A last record cut short by
+  a crash is removed, so its page runs again. Records that ran otherwise
   (another mode or precision, another GPTQ overlay or round-to-nearest
   weights, another `--max-dimension`, `--min-dimension`, `--max-new-tokens`
   or `--crop-margins` padding, with or without the crop, another
-  `--stop-repetition` or `--exp`, BF16 or NEON prefill rounding as
-  `--tune prefill-bf16`, `--backend` or the CPU decide it, or a pinned
-  `--tune decode-exp`) are kept and skipped with a warning that names the
-  difference. Records written before records carried their `options` are
-  compared on mode, weights, routing and those runner choices only. With
-  `--escalate`, fast-mode records that the repetition stop ended without a
-  near-exact rerun are counted in a warning, since their pages are skipped.
+  `--stop-repetition` or `--exp`, BF16 or NEON prefill rounding as `--tune
+  prefill-bf16`, `--backend` or the CPU decide it, or a pinned `--tune
+  decode-exp`) are kept and skipped with a warning that names the difference.
+  Records written before records carried their `options` are compared on
+  mode, weights, routing and those runner choices only. With `--escalate`,
+  fast-mode records that the repetition stop ended without a near-exact rerun
+  are counted in a warning, since their pages are skipped.
 - A page can still fail at run time (a corrupt file that passed the check).
   Without `--keep-going` the run stops there, after the pages before it
   were written (earlier releases printed nothing when any page failed). With
@@ -192,10 +193,12 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
   prefills the next page on a second pool while the current page decodes;
   tokens are unchanged.
 - `--escalate`, in fast mode, rereads each page that the repetition stop
-  ended with the near-exact model (loaded when first needed) and keeps the
-  fast attempt as `escalated_from`; if the near-exact model cannot be loaded
-  or the rerun fails, the page keeps its fast result with an
-  `escalation_error` ([docs/MODES.md](docs/MODES.md#loops-and-the-repetition-stop)).
+  ended with the near-exact model (loaded when first needed, and kept beside
+  the fast one; the other batch rows wait with their caches while a page is
+  reread) and keeps the fast attempt as `escalated_from`; if the near-exact
+  model cannot be loaded or the rerun fails, the page keeps its fast result
+  with an `escalation_error`
+  ([docs/MODES.md](docs/MODES.md#loops-and-the-repetition-stop)).
 
 ## Library
 

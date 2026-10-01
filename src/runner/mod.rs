@@ -56,8 +56,11 @@ pub struct Timings {
     /// --batch-size N`) or of the page pipeline (`recognize_files_pipelined`)
     /// reports the sum of its own stages, `time_to_first_token_ms +
     /// decode_ms`, where a batched page's `decode_ms` runs from its first
-    /// joint step to its last; the stages overlap other pages', so these
-    /// totals add up to more than the run took.
+    /// joint step until its result is taken after its last (pages that end
+    /// in the same step are taken in turn, so a page also counts the
+    /// safety-net reruns and escalations of those taken before it); the
+    /// stages overlap other pages', so these totals add up to more than the
+    /// run took.
     pub total_ms: f64,
     /// Time to the first token, counted as `total_ms` is: file decoding,
     /// preprocessing and prefill for a continuously batched or pipelined
