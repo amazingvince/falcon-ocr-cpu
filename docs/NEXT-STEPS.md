@@ -29,7 +29,9 @@ pinned checkpoint, the published packed files and a GPTQ overlay:
   `--crop-margins` gave 18–21% more, and every page kept its words
   ([MODES.md](MODES.md#margin-cropping)). Fast mode with `--crop-margins
   --pipeline` and the decode team pinned to 8 threads read 701–709 pages per
-  hour against 506–511.
+  hour against 506–511. Beside the pipeline an automatic decode team now
+  takes at most half of the threads: the tuner had once chosen 12 of 16 and
+  left the prefill 4.
 - **Long runs.** `--keep-going` records a truncated PNG's error and goes on;
   without it the run stops at that page. An interrupted run resumed with
   `--resume` runs only the missing pages and repairs a cut-off last record
@@ -109,24 +111,6 @@ are dropped: a vector nibble unpack for `q4r` (its 4-bit codes flip 5 times
 as often as fast mode's 8-bit cache) and a faster near-exact on `q8r` (an
 8-bit cache flips 18 times where near-exact flips once;
 [MODES.md](MODES.md#rotated-kv-cache-experimental)).
-
-### A decode team chosen with the pipeline in view
-
-- Why: the tuner keeps the smallest team whose decode steps are within 2% of
-  the fastest, as if no prefill ran beside it, and `--pipeline` gives the
-  prefill pool the remaining threads. On the 7700X the 8- and 12-thread
-  candidates time within 4% of each other in fast mode, so the choice varies
-  between runs; a 12-thread team left the prefill 4 threads, and fast mode's
-  `--batch-size 4 --pipeline` fell from 533 to 380 pages per hour between
-  two rounds ([PERFORMANCE.md](PERFORMANCE.md#book-runs)). On book pages the
-  pipelined run goes at the pace of the prefill on that pool.
-- Estimate: pinned to 8 threads the same arm gave 548 and 549, and
-  `--pipeline` alone 585 against 566.
-- Risks: none for tokens (the team size never changes them); on pages with
-  long outputs the decode sets the pace and may want the larger team.
-- First measurement: with the pipeline on, choose the team that balances
-  the decode step against the prefill measured on the remaining threads,
-  then A/B on the book and on long-output pages.
 
 ### Exception columns as fast mode's default
 

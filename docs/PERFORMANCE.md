@@ -136,14 +136,26 @@ share memory bandwidth and the decode team's SMT siblings. Continuous batching g
 without drafts, giving up the draft head's speedup, and without the pipeline
 a joining page's prefill pauses the other rows.
 
-The decode tuner chooses the team as if no prefill ran beside it. In fast
-mode its 8- and 12-thread candidates time within 4% of each other, on single
-steps and on 4-row batch steps, and in the second round of `--batch-size 4
---pipeline` it chose 12, which left the prefill pool 4 threads (380 pages per
-hour). Pinning the team to 8 makes that arm repeatable and gives the pipeline
-3% more. Peak resident memory in fast mode: 2.2–2.3 GB sequential, 3.4 GB
-with `--pipeline` (3.9 GB with `--crop-margins`), 3.9 GB with `--batch-size
-4` and 3.3–4.3 GB with both.
+The decode tuner times its candidates before any prefill runs beside them. In
+fast mode its 8- and 12-thread candidates time within 4% of each other, on
+single steps and on 4-row batch steps, and in the second round of
+`--batch-size 4 --pipeline` it chose 12, which left the prefill pool 4
+threads (380 pages per hour); pinned to 8 threads the same arm gave 548 and
+549. With `--pipeline` an automatic team now takes at most half of the
+runner's threads: a choice above that becomes the largest candidate within
+it, and smaller choices stand. In an A/B on a busier host (two rounds, the
+binary before the limit against the one with it, tokens identical), the
+binary without the limit chose 12 threads for `--pipeline` once and read 372
+pages per hour; the one with it kept 8 threads in both rounds, where its
+tuner alone would have chosen 12, and read 530 and 515. Its batched and
+long-output runs chose the teams the other binary chose. A first version that
+removed the larger candidates before tuning was dropped: without the fastest
+candidate the 2% tolerance accepted 6 threads, whose verification steps are
+slower. Pinning the team (`--decode-threads 8`) still gives the pipeline
+about 3% more, since with an automatic team the overlap starts only after
+tuning. Peak resident memory in fast mode: 2.2–2.3 GB sequential, 3.4 GB with
+`--pipeline` (3.9 GB with `--crop-margins`), 3.9 GB with `--batch-size 4` and
+3.3–4.3 GB with both.
 
 ### KV caches and exception columns
 
