@@ -3,6 +3,9 @@
 pypdfium2==5.13.0
 pillow==12.3.0
 # tools/w8_variants.py, tools/w8_proxy.py, tools/convert_w8.py and their
-# tests (tools/tests): W8 overlays.
-numpy==2.4.4
+# tests (tools/tests): W8 overlays. numpy 2.3 and later need Python 3.11, so
+# Python 3.10, which pyproject.toml still supports, gets 2.2.6, its last
+# release; CI installs 2.4.4.
+numpy==2.4.4; python_version >= "3.11"
+numpy==2.2.6; python_version < "3.11"
 safetensors==0.8.0
