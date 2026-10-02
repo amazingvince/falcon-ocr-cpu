@@ -280,9 +280,10 @@ impl Existing {
 /// place of data that was never written: a record after leading NULs counts,
 /// and any other such line is skipped, so the pages of the records it
 /// replaced run again; a file with damaged lines and no record is not an
-/// output. A last line without its newline that holds a NUL, or starts like
-/// a record but is not valid JSON, was cut short by a crash and is dropped;
-/// any other last line without its newline is kept and gets one. A byte
+/// output. A last line without its newline that is not valid JSON but could
+/// be the start of a record ([`starts_like_a_record`], NULs around it
+/// aside) was cut short by a crash and is dropped; any other last line
+/// without its newline is kept and gets one, or is not a record. A byte
 /// order mark (an editor's) is kept and skipped.
 pub fn scan_output(text: &str) -> Existing {
     let mut existing = Existing::default();
@@ -301,7 +302,7 @@ pub fn scan_output(text: &str) -> Existing {
                 records += 1;
                 true
             }
-            Err(_) if !piece.ends_with('\n') && (nul || line.trim_start().starts_with('{')) => {
+            Err(_) if !piece.ends_with('\n') && starts_like_a_record(line.trim_matches('\0')) => {
                 existing.cut = piece.len();
                 break;
             }
@@ -324,6 +325,16 @@ pub fn scan_output(text: &str) -> Existing {
     existing.keep = start;
     existing.unterminated = start > bom && !text[..start].ends_with('\n');
     existing
+}
+
+/// Whether `text` could be the start of a line that [`super::record_line`]
+/// writes: it opens with `{"path":` (or is a start of that) and holds none
+/// of the control characters JSON escapes. Only such a last line is taken
+/// for a record cut short, so that another file given as `--output` is
+/// refused, not truncated.
+fn starts_like_a_record(text: &str) -> bool {
+    const START: &str = "{\"path\":";
+    (text.starts_with(START) || START.starts_with(text)) && !text.contains(char::is_control)
 }
 
 /// Open `path` for appending records, creating it, after reading what it
@@ -543,11 +554,25 @@ mod tests {
             existing.done.contains("i.png") && !existing.done.contains("g.png") && !existing.done.contains("h.png")
         );
         assert_eq!((existing.keep, existing.cut, existing.foreign), (block.len(), 0, None));
-        // So is a last line without its newline that holds a NUL.
+        // A record cut short with NULs after it is cut, also as a file's
+        // only line, and so is a tail of NULs alone.
         let tail = format!("{complete}{}\0\0", &lost[..20]);
         assert_eq!(scan_output(&tail).cut, 22);
+        assert_eq!(scan_output(&lost[..20]).cut, 20);
+        assert_eq!(scan_output("{\"pa").cut, 4);
         // A file of damaged lines and no record (UTF-16 text) is not an output.
         assert_eq!(scan_output("a\0b\0\n\0c\0\n").foreign, Some(1));
+        // Nor is a one-line file that is not a record, with or without NULs:
+        // it is refused, never taken for a cut record and truncated.
+        for other in [
+            "{\"note\": NaN}",
+            "{\"note\":\"a\"}{\"todo\":\"keep this\"}",
+            "{\0\"\0n\0o\0t\0e\0\"\0:\0 \x001\0}\0",
+            "{\"path\":\"a.png\"\u{1}",
+        ] {
+            let existing = scan_output(other);
+            assert_eq!((existing.cut, existing.foreign), (0, Some(1)), "{other:?}");
+        }
         // A byte order mark is skipped and kept.
         let marked = format!("\u{feff}{}\r\n", ok("a.png", "fast", "w8-body-kv-q8"));
         let existing = scan_output(&marked);

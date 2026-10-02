@@ -350,6 +350,18 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
         "config.json: its line 1 is not a record (a JSON object with a \"path\")",
     );
     assert_eq!(fs::read(&list).unwrap(), b"valid.png\n");
+    // A one-line file that is not valid JSON is not a record cut short.
+    for (name, bytes) in [
+        ("nan.json", &b"{\"loss\": NaN}"[..]),
+        ("utf16.txt", &b"{\0\"\0a\0\"\0:\x001\0}\0"[..]),
+    ] {
+        let file = case.write(name, bytes);
+        assert_error(
+            &case.run(&[], &[valid, "--output", arg(&file)]),
+            &format!("{name}: its line 1 is not a record"),
+        );
+        assert_eq!(fs::read(&file).unwrap(), bytes);
+    }
     // An output whose folder is missing is refused before the model loads.
     assert_error(
         &case.run(&[], &[valid, "--output", "absent/out.jsonl"]),
