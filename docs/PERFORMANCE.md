@@ -126,23 +126,25 @@ the 24 pages) and so change some pages' tokens
 cropped sequential run.
 
 These pages are prefill-heavy: a sequential fast-mode page spends 4.6 s in
-prefill and 2.7 s in decode (6.5 ms per token with drafts). The pipeline
-prefills the next page on the threads the decode team leaves (8 in fast
-mode, 10 in near-exact), where it takes 6.1 s (near-exact: 8.4 s), and the
-run goes at the pace of those prefills: with the team pinned to 8,
-24 × 6.05 s = 145 s against 148 s measured. The decode beside them slows
-from 6.5 to 8.8 ms per token (near-exact: 9.1 to 14.3 ms), since the two
-share memory bandwidth and the decode team's SMT siblings. Continuous
+prefill and 2.4–2.5 s in decode (5.7–5.9 ms per token with drafts) in three
+rounds; in the fourth, where the tuner chose 6 threads, decode took 2.7 s
+(6.5 ms). The pipeline prefills the next page on the threads the decode team
+leaves (8 in fast mode, 10 in near-exact), where it takes 6.0–6.2 s
+(near-exact: 8.4 s), and the run goes at the pace of those prefills: with
+the team pinned to 8, 24 × 6.05 s = 145 s against 148 s measured. The decode
+beside them slows from 5.7–5.9 to 8.8–9.2 ms per token (near-exact: 9.1 to
+14.3 ms), since the two share memory bandwidth and the decode team's SMT
+siblings. Continuous
 batching gains less: its rows decode without drafts, giving up the draft
 head's speedup, and without the pipeline a joining page's prefill pauses
 the other rows.
 
 The decode tuner times its candidates before any prefill runs beside them. In
-fast mode its 8- and 12-thread candidates time within 4% of each other, on
-single steps and on 4-row batch steps, and in the second round of
-`--batch-size 4 --pipeline` it chose 12, which left the prefill pool 4
-threads (380 pages per hour); pinned to 8 threads the same arm gave 548 and
-549. With `--pipeline` an automatic team now takes at most half of the
+fast mode its 8- and 12-thread candidates time within 4.3% of each other on
+single steps and within 7.4% on 4-row batch steps over the runs above, and
+in the second round of `--batch-size 4 --pipeline` it chose 12, which left
+the prefill pool 4 threads (380 pages per hour); pinned to 8 threads the same
+arm gave 548 and 549. With `--pipeline` an automatic team now takes at most half of the
 runner's threads: a choice above that becomes the largest candidate within
 it, and smaller choices stand. In an A/B on a busier host (two rounds, the
 binary before the limit against the one with it, tokens identical), the
@@ -154,9 +156,10 @@ removed the larger candidates before tuning was dropped: without the fastest
 candidate the 2% tolerance accepted 6 threads, whose verification steps are
 slower. Pinning the team (`--decode-threads 8`) still gives the pipeline
 about 3% more, since with an automatic team the overlap starts only after
-tuning. Peak resident memory in fast mode: 2.2–2.3 GB sequential, 3.4 GB with
-`--pipeline` (3.9 GB with `--crop-margins`), 3.9 GB with `--batch-size 4` and
-3.3–4.3 GB with both.
+tuning. Peak resident memory in fast mode, with the decode team pinned to 8
+threads in the pipelined and batched arms: 2,243–2,300 MiB sequential,
+3,404–3,413 MiB with `--pipeline` (3,822–3,831 MiB with `--crop-margins`),
+3,899–3,900 MiB with `--batch-size 4` and 3,348–4,275 MiB with both.
 
 ### KV caches and exception columns
 
