@@ -328,13 +328,18 @@ pub fn scan_output(text: &str) -> Existing {
 }
 
 /// Whether `text` could be the start of a line that [`super::record_line`]
-/// writes: it opens with `{"path":` (or is a start of that) and holds none
-/// of the control characters JSON escapes. Only such a last line is taken
-/// for a record cut short, so that another file given as `--output` is
-/// refused, not truncated.
+/// writes: it opens with `{"path":` (or is a start of that), holds none of
+/// the control characters JSON escapes (below U+0020), and fails to parse
+/// only for want of more input (also once a digit is added, for a number
+/// cut after its `.`, `e` or `-`). Only such a last line is taken for a
+/// record cut short, so that another file given as `--output` (one holding
+/// NaN, a trailing comma, two objects) is refused, not truncated.
 fn starts_like_a_record(text: &str) -> bool {
     const START: &str = "{\"path\":";
-    (text.starts_with(START) || START.starts_with(text)) && !text.contains(char::is_control)
+    let cut = |text: &str| matches!(serde_json::from_str::<Value>(text), Err(error) if error.is_eof());
+    (text.starts_with(START) || START.starts_with(text))
+        && !text.contains(|c: char| c < ' ')
+        && (cut(text) || cut(&format!("{text}0")))
 }
 
 /// Open `path` for appending records, creating it, after reading what it
@@ -569,9 +574,19 @@ mod tests {
             "{\"note\":\"a\"}{\"todo\":\"keep this\"}",
             "{\0\"\0n\0o\0t\0e\0\"\0:\0 \x001\0}\0",
             "{\"path\":\"a.png\"\u{1}",
+            "{\"path\":\"a.png\",\"score\":NaN}",
+            "{\"path\":\"a.png\",}",
         ] {
             let existing = scan_output(other);
             assert_eq!((existing.cut, existing.foreign), (0, Some(1)), "{other:?}");
+        }
+        // A record cut short is cut whatever it holds that JSON writes raw
+        // (DEL, C1 controls), and inside a number.
+        for cut in [
+            "{\"path\":\"a.png\",\"text\":\"x\u{7f}y\u{85}z",
+            "{\"path\":\"a.png\",\"page\":1.",
+        ] {
+            assert_eq!(scan_output(cut).cut, cut.len(), "{cut:?}");
         }
         // A byte order mark is skipped and kept.
         let marked = format!("\u{feff}{}\r\n", ok("a.png", "fast", "w8-body-kv-q8"));
