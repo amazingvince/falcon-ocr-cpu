@@ -320,6 +320,11 @@ unsafe fn pair_native_fast<R: RecordStore, T: RecordStore>(store: &R, tail: &T, 
     unsafe { pair_native(store, tail, span, part) }
 }
 /// [`pair_native`] or [`pair_native_fast`] (`SplitPrefix::with_fast_exp`).
+///
+/// # Safety
+///
+/// The CPU must have the native vector instruction set (AVX2, FMA and F16C
+/// on x86-64, NEON on aarch64), and `span` must fit `store` and `tail`.
 #[inline(always)]
 pub(super) unsafe fn pair_entry<R: RecordStore, T: RecordStore>(
     store: &R,

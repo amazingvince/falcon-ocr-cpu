@@ -400,6 +400,11 @@ fn q4_codes_pack_two_per_byte_and_decode_like_q8() {
     /// Every 8-lane load of the `records` records of `store` through `S`
     /// (inlined, so the vector instantiations compile with the caller's
     /// instruction set as the production kernels do).
+    ///
+    /// # Safety
+    ///
+    /// The CPU must have `S`'s instruction set, and `store` must hold
+    /// `records` records.
     #[inline(always)]
     unsafe fn loads<S: crate::simd::Simd>(store: &Q4Rec<'_, RECORD>, records: usize) -> Vec<u32> {
         let mut lanes = vec![0.0_f32; records * RECORD];
@@ -424,6 +429,12 @@ fn q4_codes_pack_two_per_byte_and_decode_like_q8() {
     assert_eq!(unsafe { loads::<crate::simd::Portable>(&store, records) }, scalar);
     #[cfg(target_arch = "x86_64")]
     if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
+        /// `loads` through `Avx2` and `Avx2Fast`.
+        ///
+        /// # Safety
+        ///
+        /// The CPU must have AVX2 and FMA, and `store` must hold `records`
+        /// records.
         #[target_feature(enable = "avx2,fma")]
         unsafe fn native(store: &Q4Rec<'_, RECORD>, records: usize) -> [Vec<u32>; 2] {
             // SAFETY: the caller enables AVX2 and FMA, all `Avx2` and
