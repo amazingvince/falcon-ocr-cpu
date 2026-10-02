@@ -119,8 +119,8 @@ pub struct Tuning {
     /// Decode attention over sealed (split) caches uses the portable
     /// polynomial exp on x86, as the NEON kernels do, instead of the
     /// platform-exact exp: faster softmax, different rounding. `None` keeps
-    /// the default: polynomial for 8-bit caches under `ExpMode::Fast` (fast
-    /// mode), exact otherwise.
+    /// the default: polynomial for 8-bit caches (and the rotated research
+    /// caches) under `ExpMode::Fast` (fast mode), exact otherwise.
     pub decode_fast_exp: Option<bool>,
 }
 impl Tuning {
@@ -313,6 +313,16 @@ pub struct GenerationOptions {
     /// default.
     #[serde(default)]
     pub route: bool,
+    /// Cut the blank margins of each page after the processor's first resize,
+    /// keeping this many pixels around the content
+    /// (`preprocess::prepare_first_cropped`; `--crop-margins`): text keeps its
+    /// size, the image token count drops. Changes the model input, so off by
+    /// default; results report the crop (`OcrResult::crop`). Routed pages are
+    /// routed on the whole page and crop the resize they run at. The padding
+    /// must be below `max_dimension`, or with `route` below the router's
+    /// smallest size: a larger one never crops.
+    #[serde(default)]
+    pub crop_margins: Option<u32>,
 }
 impl Default for GenerationOptions {
     fn default() -> Self {
@@ -322,6 +332,7 @@ impl Default for GenerationOptions {
             max_new_tokens: 8192,
             fit_budget: false,
             route: false,
+            crop_margins: None,
         }
     }
 }
@@ -336,6 +347,19 @@ impl GenerationOptions {
             "max_dimension must be a positive multiple of 16"
         );
         ensure!(self.max_new_tokens > 0, "max_new_tokens must be positive");
+        if let Some(pad) = self.crop_margins {
+            // A routed page may run at the router's smallest size.
+            let smallest = if self.route {
+                crate::router::SIZES[0]
+            } else {
+                self.max_dimension
+            };
+            ensure!(
+                pad < smallest,
+                "crop_margins padding {pad} must be below {smallest}, the smallest maximum dimension a page runs at: \
+                 a larger padding never crops a page that runs there"
+            );
+        }
         if self.route {
             ensure!(
                 self.max_dimension == crate::router::CAP && self.min_dimension <= crate::router::SIZES[0],
@@ -625,6 +649,40 @@ mod tests {
             ..GenerationOptions::default()
         };
         assert!(other.validate().is_err());
+    }
+    #[test]
+    fn margin_crop_is_off_by_default_and_its_padding_is_checked() {
+        let options = GenerationOptions::default();
+        assert_eq!(options.crop_margins, None);
+        for pad in [0, 24, 1535] {
+            let cropped = GenerationOptions {
+                crop_margins: Some(pad),
+                ..options.clone()
+            };
+            cropped.validate().unwrap();
+            // Routed pages crop the resize they run at.
+            assert_eq!(cropped.at(768).crop_margins, Some(pad));
+        }
+        let error = GenerationOptions {
+            crop_margins: Some(1536),
+            ..options.clone()
+        }
+        .validate()
+        .unwrap_err();
+        assert!(error.to_string().contains("crop_margins padding 1536"), "{error}");
+        // Routed pages may run at 768, so the padding must be below that.
+        let routed = |pad| GenerationOptions {
+            route: true,
+            crop_margins: Some(pad),
+            ..options.clone()
+        };
+        routed(767).validate().unwrap();
+        let error = routed(768).validate().unwrap_err();
+        assert!(error.to_string().contains("padding 768 must be below 768"), "{error}");
+        // Options serialized before the field existed read as uncropped.
+        let old: GenerationOptions =
+            serde_json::from_str(r#"{"min_dimension":64,"max_dimension":1536,"max_new_tokens":8}"#).unwrap();
+        assert_eq!(old.crop_margins, None);
     }
     #[test]
     fn token_budget_is_exact_and_checked() {

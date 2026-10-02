@@ -144,7 +144,7 @@ impl Runner {
         }
         if self.config.tuning.phases {
             let (singles, single_ms, verifies, verify_ms, drafted, accepted) = stats;
-            eprintln!(
+            crate::note!(
                 "speculation: {} tokens; {singles} single steps ({:.2} ms), {verifies} verify steps ({:.2} ms), \
                  drafted {drafted}, accepted {accepted} ({:.0}%)",
                 d.generation.len(),

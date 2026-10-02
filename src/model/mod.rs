@@ -19,13 +19,16 @@ mod cache;
 mod fused;
 mod load;
 mod packed;
+#[cfg(test)]
+mod pool_tests;
 mod profile;
 mod rope;
 
 pub(crate) use cache::{BatchWorkspace, Session};
 pub use load::MemoryReport;
-pub use packed::PACKED_FORMAT;
+pub(crate) use load::overlay_exception_bytes;
 pub(crate) use packed::packed_facts;
+pub use packed::{PACKED_FORMAT, PACKED_FORMAT_EXCEPTIONS};
 
 /// Where a model's weights came from.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -154,6 +157,16 @@ impl Model {
             }
         }
         bits
+    }
+    /// Bytes of the body's exception columns (indices and FP32 weights),
+    /// which a decode step reads on top of the codes; zero without any.
+    pub fn exception_bytes(&self) -> usize {
+        self.layers
+            .iter()
+            .flat_map(|layer| [&layer.qkv, &layer.wo, &layer.w13, &layer.w2])
+            .filter_map(|w| w.quantized.as_ref())
+            .map(|q| q.exception_bytes())
+            .sum()
     }
     /// Actual additional shared tensor payload, excluding allocator metadata.
     /// This remains resident if another Runner on this Model enabled packing.
@@ -565,7 +578,7 @@ impl Model {
         // operations as the separate passes.
         // `kernels::prefill_plan` is the one place that decides which prefill
         // kernels a body and CPU get (`auto::Resolved` reports the same plan).
-        let plan = kernels::prefill_plan(self.body_bits(), simd, tuning.prefill_bf16);
+        let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, tuning.prefill_bf16);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
         let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;
         let bf16_projections = panel && plan.projection == kernels::PrefillProjection::PanelBf16;

@@ -6,8 +6,10 @@ decode fixtures in tests/fixtures/images (after the processor's first resize
 at the 1536 cap), computed by the specification
 research/resolution-router/router_features.py and the exported trees.
 
-  wsl.exe -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- \\
-      /home/amazi/falcon-ocr-rust-reference/.venv/bin/python tests/generate_router_fixtures.py
+From the repository root, with the pinned packages (requirements/reference.txt) and
+scikit-learn, which research/resolution-router/train_trees.py imports:
+
+  python tests/generate_router_fixtures.py
 """
 from __future__ import annotations
 
@@ -19,6 +21,11 @@ import numpy as np
 import PIL
 
 ROOT = Path(__file__).resolve().parents[1]
+# Pillow releases differ in the pass order of very tall pages (tall-17x1800.png): only the pin fits.
+PILLOW = next(pin.split("==")[1] for pin in (ROOT / "requirements" / "reference.txt").read_text().split()
+              if pin.startswith("pillow=="))
+if PIL.__version__ != PILLOW:
+    raise SystemExit(f"these fixtures need Pillow {PILLOW} (requirements/reference.txt), not {PIL.__version__}")
 sys.path.insert(0, str(ROOT / "research" / "resolution-router"))
 from router_features import CAP, capped_page, features  # noqa: E402
 from train_trees import raw_score  # noqa: E402

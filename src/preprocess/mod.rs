@@ -4,44 +4,23 @@
 //! resampling, including quantization between the horizontal and vertical passes.
 //! Replacing them with a single float resize changes the model input.
 //!
-//! The resampling coefficients and fixed-point arithmetic below are adapted from
-//! Pillow 11.3.0's src/libImaging/Resample.c:
-//! https://github.com/python-pillow/Pillow/blob/11.3.0/src/libImaging/Resample.c
-//!
-//! Pillow / PIL copyright and permission notice:
-//! Copyright © 1997-2011 by Secret Labs AB
-//! Copyright © 1995-2011 by Fredrik Lundh and contributors
-//! Copyright © 2010 by Jeffrey A. Clark and contributors
-//!
-//! By obtaining, using, and/or copying this software and/or its associated
-//! documentation, you agree that you have read, understood, and will comply
-//! with the following terms and conditions:
-//!
-//! Permission to use, copy, modify and distribute this software and its
-//! documentation for any purpose and without fee is hereby granted,
-//! provided that the above copyright notice appears in all copies, and that
-//! both that copyright notice and this permission notice appear in supporting
-//! documentation, and that the name of Secret Labs AB or the author not be
-//! used in advertising or publicity pertaining to distribution of the software
-//! without specific, written prior permission.
-//!
-//! SECRET LABS AB AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
-//! SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
-//! IN NO EVENT SHALL SECRET LABS AB OR THE AUTHOR BE LIABLE FOR ANY SPECIAL,
-//! INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-//! LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
-//! OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-//! PERFORMANCE OF THIS SOFTWARE.
+//! The Pillow resampling port is in `resample`, the opt-in margin crop in
+//! `crop`.
+mod crop;
+mod resample;
 
 use anyhow::{Context, Result, ensure};
 use image::{DynamicImage, ImageFormat, RgbImage, RgbaImage};
 use std::path::Path;
 
+pub use crop::{Crop, margin_crop, prepare_first_cropped};
+pub(crate) use resample::{Filter, resize_gray};
+use resample::{resize_bicubic, resize_gray16, resize_nearest, resize_premultiplied};
+
 pub const PATCH_SIZE: usize = 16;
 pub const PATCH_VALUES: usize = PATCH_SIZE * PATCH_SIZE * 3;
 const MIN_PIXELS: u64 = 56 * 56;
 const MAX_PIXELS: u64 = 28 * 28 * 1280 * 10;
-const PRECISION_BITS: u32 = 22;
 
 #[derive(Debug, Clone)]
 pub struct PreparedImage {
@@ -52,6 +31,9 @@ pub struct PreparedImage {
     /// Per-patch [height, width] positions. FP32 sqrt uses IEEE rounding; the
     /// reference PyTorch MKL sqrt can differ by an ULP (see frozen fixtures).
     pub positions_hw: Vec<[f32; 2]>,
+    /// The margin crop this input was cut to after the first resize
+    /// ([`prepare_first_cropped`]), if one was applied.
+    pub crop: Option<Crop>,
 }
 
 pub fn prepare_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> Result<PreparedImage> {
@@ -78,6 +60,12 @@ pub fn first_resize_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32
 /// The second resize, normalization and patch packing of a first-resized page.
 pub fn prepare_first(first: &RgbImage) -> Result<PreparedImage> {
     prepare_resized_rgb(first)
+}
+
+/// Pillow's `convert("L")` of one RGB pixel: ITU-R 601-2 luma in 16-bit fixed
+/// point. The margin crop and the router's statistics both use it.
+pub(crate) fn luma(pixel: &[u8]) -> u8 {
+    ((pixel[0] as u32 * 19595 + pixel[1] as u32 * 38470 + pixel[2] as u32 * 7471 + 0x8000) >> 16) as u8
 }
 
 /// Decode a PNG or JPEG and preserve Pillow's source-mode first resize.
@@ -180,7 +168,7 @@ impl SourceImage {
             } else if color == 3 || (color == 0 && depth == 1) {
                 let rgb = decoded.to_rgb8();
                 // Pillow always uses nearest for modes P and 1 on this first call.
-                resize_nearest(&rgb, w, h)
+                resize_nearest(&rgb, w, h)?
             } else if matches!(color, 4 | 6) && resize {
                 let rgba = pillow_rgba8(decoded, depth);
                 resize_premultiplied(&rgba, w, h)
@@ -218,6 +206,7 @@ fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
     }
     // libjpeg-turbo uses the accurate integer IDCT and fancy chroma upsampling
     // by default, as does the pinned Pillow JPEG decoder.
+    check_jpeg_size(bytes)?;
     let decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::RGB)?;
     ensure!(decoded.pitch == decoded.width * 3, "unexpected JPEG row stride");
     RgbImage::from_raw(decoded.width.try_into()?, decoded.height.try_into()?, decoded.pixels)
@@ -230,6 +219,7 @@ fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<Option<RgbaImage>> {
     if jpeg_components(bytes)? != 4 {
         return Ok(None);
     }
+    check_jpeg_size(bytes)?;
     let mut decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::CMYK)?;
     ensure!(decoded.pitch == decoded.width * 4, "unexpected CMYK row stride");
     // Pillow raw mode CMYK;I inverts libjpeg's CMYK samples before resizing.
@@ -264,44 +254,36 @@ fn pillow_rgba8(decoded: &DynamicImage, depth: u8) -> RgbaImage {
     })
 }
 
-fn resize_nearest(input: &RgbImage, width: u32, height: u32) -> RgbImage {
-    let scale_x = input.width() as f64 / width as f64;
-    let scale_y = input.height() as f64 / height as f64;
-    RgbImage::from_fn(width, height, |x, y| {
-        let x = ((x as f64 + 0.5) * scale_x) as u32;
-        let y = ((y as f64 + 0.5) * scale_y) as u32;
-        *input.get_pixel(x.min(input.width() - 1), y.min(input.height() - 1))
-    })
-}
-
-fn resize_premultiplied(input: &RgbaImage, width: u32, height: u32) -> RgbImage {
-    let rgb = RgbImage::from_fn(input.width(), input.height(), |x, y| {
-        let pixel = input.get_pixel(x, y);
-        image::Rgb(std::array::from_fn(|channel| {
-            let product = pixel[channel] as u32 * pixel[3] as u32 + 128;
-            ((product + (product >> 8)) >> 8) as u8
-        }))
-    });
-    let alpha = RgbImage::from_fn(input.width(), input.height(), |x, y| {
-        image::Rgb([input.get_pixel(x, y)[3]; 3])
-    });
-    let rgb = resize_bicubic(&rgb, width, height);
-    let alpha = resize_bicubic(&alpha, width, height);
-    RgbImage::from_fn(width, height, |x, y| {
-        let color = rgb.get_pixel(x, y);
-        let a = alpha.get_pixel(x, y)[0];
-        image::Rgb(color.0.map(|v| {
-            if a == 0 || a == 255 {
-                v
-            } else {
-                (255 * v as u32 / a as u32).min(255) as u8
-            }
-        }))
-    })
-}
-
 #[cfg(feature = "turbojpeg")]
 fn jpeg_components(bytes: &[u8]) -> Result<u8> {
+    Ok(bytes[jpeg_frame(bytes)? + 7])
+}
+
+/// The most pixels the pinned Pillow opens: above twice its
+/// `MAX_IMAGE_PIXELS` (89,478,485) it raises `DecompressionBombError`.
+#[cfg(feature = "turbojpeg")]
+const PILLOW_MAX_PIXELS: u64 = 2 * 89_478_485;
+
+/// Refuse a JPEG whose header claims more pixels than the pinned Pillow
+/// opens ([`PILLOW_MAX_PIXELS`]): the `turbojpeg` crate allocates the output
+/// buffer the header claims before decoding, and a failed allocation aborts
+/// the process instead of failing the page.
+#[cfg(feature = "turbojpeg")]
+fn check_jpeg_size(bytes: &[u8]) -> Result<()> {
+    let frame = jpeg_frame(bytes)?;
+    let dimension = |at: usize| u16::from_be_bytes([bytes[frame + at], bytes[frame + at + 1]]) as u64;
+    let (height, width) = (dimension(3), dimension(5));
+    ensure!(
+        width * height <= PILLOW_MAX_PIXELS,
+        "the JPEG is {width} x {height} pixels, more than the {PILLOW_MAX_PIXELS} Pillow opens"
+    );
+    Ok(())
+}
+
+/// The offset of a JPEG frame header's length field, followed by the
+/// precision, the height, the width and the component count.
+#[cfg(feature = "turbojpeg")]
+fn jpeg_frame(bytes: &[u8]) -> Result<usize> {
     let mut offset = 2;
     while offset + 1 < bytes.len() {
         ensure!(bytes[offset] == 255, "invalid JPEG marker");
@@ -325,7 +307,7 @@ fn jpeg_components(bytes: &[u8]) -> Result<u8> {
         );
         if matches!(marker, 0xc0..=0xc3 | 0xc5..=0xc7 | 0xc9..=0xcb | 0xcd..=0xcf) {
             ensure!(length >= 8, "truncated JPEG frame");
-            return Ok(bytes[offset + 7]);
+            return Ok(offset);
         }
         offset += length;
     }
@@ -377,6 +359,7 @@ fn prepare_resized_rgb(first: &RgbImage) -> Result<PreparedImage> {
         height,
         patches,
         positions_hw,
+        crop: None,
     })
 }
 
@@ -457,232 +440,9 @@ fn torch_linspace(start: f32, end: f32, steps: usize) -> Vec<f32> {
         .collect()
 }
 
-struct Coefficients {
-    start: usize,
-    weights: Vec<i32>,
-}
-
-fn cubic(x: f64) -> f64 {
-    let x = x.abs();
-    if x < 1.0 {
-        (1.5 * x - 2.5) * x * x + 1.0
-    } else if x < 2.0 {
-        (((x - 5.0) * x + 8.0) * x - 4.0) * -0.5
-    } else {
-        0.0
-    }
-}
-
-fn triangle(x: f64) -> f64 {
-    let x = x.abs();
-    if x < 1.0 { 1.0 - x } else { 0.0 }
-}
-
-/// Pillow's resampling filters (`Image.BILINEAR`, `Image.BICUBIC`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Filter {
-    Bilinear,
-    Bicubic,
-}
-
-impl Filter {
-    fn support(self) -> f64 {
-        match self {
-            Filter::Bilinear => 1.0,
-            Filter::Bicubic => 2.0,
-        }
-    }
-    fn weight(self, x: f64) -> f64 {
-        match self {
-            Filter::Bilinear => triangle(x),
-            Filter::Bicubic => cubic(x),
-        }
-    }
-}
-
-fn coefficients_f64(input: u32, output: u32, filter: Filter) -> Vec<(usize, Vec<f64>)> {
-    // Pillow stores the crop box as floats even for a full-image resize.
-    let scale = input as f32 as f64 / output as f64;
-    let filter_scale = scale.max(1.0);
-    let support = filter.support() * filter_scale;
-    let inverse_scale = 1.0 / filter_scale;
-    (0..output)
-        .map(|index| {
-            let center = (index as f64 + 0.5) * scale;
-            let start = ((center - support + 0.5) as i64).max(0) as usize;
-            let end = ((center + support + 0.5) as usize).min(input as usize);
-            let mut weights: Vec<f64> = (start..end)
-                .map(|x| filter.weight((x as f64 - center + 0.5) * inverse_scale))
-                .collect();
-            let sum: f64 = weights.iter().sum();
-            if sum != 0.0 {
-                for weight in &mut weights {
-                    *weight /= sum;
-                }
-            }
-            (start, weights)
-        })
-        .collect()
-}
-
-fn coefficients(input: u32, output: u32, filter: Filter) -> Vec<Coefficients> {
-    coefficients_f64(input, output, filter)
-        .into_iter()
-        .map(|(start, weights)| Coefficients {
-            start,
-            weights: weights
-                .into_iter()
-                .map(|weight| {
-                    let bias = if weight < 0.0 { -0.5 } else { 0.5 };
-                    (bias + weight * (1_u32 << PRECISION_BITS) as f64) as i32
-                })
-                .collect(),
-        })
-        .collect()
-}
-
-fn resize_gray16(input: &[u16], input_width: u32, input_height: u32, width: u32, height: u32) -> Vec<u16> {
-    // Pillow's I;16 kernel accumulates FP64 and rounds to 16-bit after each
-    // separable pass. Conversion to RGB subsequently clips to 255, not /257.
-    let quantize = |value: f64| {
-        let rounded = (value + if value < 0.0 { -0.5 } else { 0.5 }) as i64;
-        ((rounded % 256).clamp(0, 255) + ((rounded >> 8).clamp(0, 255) << 8)) as u16
-    };
-    let horizontal = if width == input_width {
-        input.to_vec()
-    } else {
-        let coeff = coefficients_f64(input_width, width, Filter::Bicubic);
-        let mut output = vec![0u16; width as usize * input_height as usize];
-        for y in 0..input_height as usize {
-            for (x, (start, weights)) in coeff.iter().enumerate() {
-                let value: f64 = weights
-                    .iter()
-                    .enumerate()
-                    .map(|(offset, &weight)| input[y * input_width as usize + start + offset] as f64 * weight)
-                    .sum();
-                output[y * width as usize + x] = quantize(value);
-            }
-        }
-        output
-    };
-    if height == input_height {
-        return horizontal;
-    }
-    let mut output = vec![0u16; width as usize * height as usize];
-    for (y, (start, weights)) in coefficients_f64(input_height, height, Filter::Bicubic)
-        .iter()
-        .enumerate()
-    {
-        for x in 0..width as usize {
-            let value: f64 = weights
-                .iter()
-                .enumerate()
-                .map(|(offset, &weight)| horizontal[(start + offset) * width as usize + x] as f64 * weight)
-                .sum();
-            output[y * width as usize + x] = quantize(value);
-        }
-    }
-    output
-}
-
-fn clip(value: i64) -> u8 {
-    (value >> PRECISION_BITS).clamp(0, 255) as u8
-}
-
-/// Pillow-compatible 8-bit resampling of a grayscale (mode L) image:
-/// the horizontal pass, rounded to 8 bits, then the vertical pass.
-pub(crate) fn resize_gray(
-    input: &[u8],
-    input_width: u32,
-    input_height: u32,
-    width: u32,
-    height: u32,
-    filter: Filter,
-) -> Vec<u8> {
-    // Pillow's 8-bit kernels accumulate in 32 bits: 255 times the positive
-    // lobe (at most about 1.2) in 22-bit fixed point stays below 2^31.
-    let clip = |sum: i32| (sum >> PRECISION_BITS).clamp(0, 255) as u8;
-    let (iw, w) = (input_width as usize, width as usize);
-    let horizontal = if width == input_width {
-        input.to_vec()
-    } else {
-        let weights = coefficients(input_width, width, filter);
-        let mut out = vec![0u8; w * input_height as usize];
-        for (source, row) in input.chunks_exact(iw).zip(out.chunks_exact_mut(w)) {
-            for (target, coeff) in row.iter_mut().zip(&weights) {
-                let mut sum = 1_i32 << (PRECISION_BITS - 1);
-                for (&value, &weight) in source[coeff.start..].iter().zip(&coeff.weights) {
-                    sum += value as i32 * weight;
-                }
-                *target = clip(sum);
-            }
-        }
-        out
-    };
-    if height == input_height {
-        return horizontal;
-    }
-    let mut out = vec![0u8; w * height as usize];
-    let mut sums = vec![0_i32; w];
-    for (row, coeff) in out.chunks_exact_mut(w).zip(&coefficients(input_height, height, filter)) {
-        sums.fill(1 << (PRECISION_BITS - 1));
-        for (offset, &weight) in coeff.weights.iter().enumerate() {
-            let source = &horizontal[(coeff.start + offset) * w..][..w];
-            for (sum, &value) in sums.iter_mut().zip(source) {
-                *sum += value as i32 * weight;
-            }
-        }
-        for (target, &sum) in row.iter_mut().zip(&sums) {
-            *target = clip(sum);
-        }
-    }
-    out
-}
-
-/// Pillow-compatible bicubic resampling of a complete RGB image.
-fn resize_bicubic(input: &RgbImage, width: u32, height: u32) -> RgbImage {
-    let horizontal = if input.width() != width {
-        let weights = coefficients(input.width(), width, Filter::Bicubic);
-        let mut out = RgbImage::new(width, input.height());
-        let src = input.as_raw();
-        for (row_index, row) in out.as_mut().chunks_exact_mut(width as usize * 3).enumerate() {
-            for (pixel, coeff) in row.chunks_exact_mut(3).zip(&weights) {
-                let mut sums = [1_i64 << (PRECISION_BITS - 1); 3];
-                let base = (row_index * input.width() as usize + coeff.start) * 3;
-                for (offset, &weight) in coeff.weights.iter().enumerate() {
-                    for channel in 0..3 {
-                        sums[channel] += src[base + offset * 3 + channel] as i64 * weight as i64;
-                    }
-                }
-                for channel in 0..3 {
-                    pixel[channel] = clip(sums[channel]);
-                }
-            }
-        }
-        out
-    } else {
-        input.clone()
-    };
-    if input.height() == height {
-        return horizontal;
-    }
-    let weights = coefficients(input.height(), height, Filter::Bicubic);
-    let mut out = RgbImage::new(width, height);
-    let stride = width as usize * 3;
-    for (row, coeff) in out.as_mut().chunks_exact_mut(stride).zip(&weights) {
-        for (column, target) in row.iter_mut().enumerate() {
-            let mut sum = 1_i64 << (PRECISION_BITS - 1);
-            for (offset, &weight) in coeff.weights.iter().enumerate() {
-                sum += horizontal.as_raw()[(coeff.start + offset) * stride + column] as i64 * weight as i64;
-            }
-            *target = clip(sum);
-        }
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
+    use super::resample::{nearest_positions, tall_first};
     use super::*;
     use sha2::{Digest, Sha256};
 
@@ -700,7 +460,7 @@ mod tests {
 
     #[test]
     fn png_source_modes_match_pillow() {
-        let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
+        let data: serde_json::Value = serde_json::from_str(include_str!("../../tests/fixtures/decode.json")).unwrap();
         let mut failures = Vec::new();
         for case in data["cases"].as_array().unwrap() {
             let filename = case["file"].as_str().unwrap();
@@ -722,10 +482,82 @@ mod tests {
         assert!(failures.is_empty(), "PNG parity failures: {failures:?}");
     }
 
+    #[test]
+    fn nearest_positions_match_pillow() {
+        // Pillow 12.3.0 (the pinned processor's) resizing a one-row mode I image
+        // that holds its own column indices, `Image.fromarray(np.arange(n,
+        // dtype=np.int32)[None], "I").resize((m, 1), Image.Resampling.NEAREST)`,
+        // the `ImagingScaleAffine` call that modes P and 1 get: n, m, the number
+        // of positions where the direct product `(k + 0.5) * n / m` (this runner
+        // before 2026-09-30) differs, and the SHA-256 of the positions as
+        // little-endian u32.
+        let cases = "
+            16 12 1 382dc8a9be37675bf3f538be84c3ca7068e57750b44fe9d7bb5f314d114308e4
+            44 33 5 07d5fd49027f17c5bee31f81a3b8878c9f3a72582825ac714c5242a7a7d73b5a
+            5 13 0 ed365afe9d5c66e1174dd65cbadea1340e7fa59bb466be1f506db5273b0ce7d9
+            2048 1536 303 a67bd0ea1108d155e2667355332893e2c1f87182b416e66df149fd687dcdb4cd
+            2480 1085 97 8d62d0033758fddec05c4cf7bce4cd33ea38da5ca34eda113ab8889dd0f35d91
+            4096 3072 405 c1e3342a0447005f975bb6912894b5838d3587c7d24995022c2dd7b293e01a4c
+            3508 1536 0 8c800de18e29891c3b7bd92cc392b09be06c2f0f18e7b377db2b648242acc166
+            1536 1536 0 57c372795f4a7d1f49185aa616ab07e32b7c75f35222d5a0996b9cbcd3f92ff4
+            1085 2480 0 040dad2ae6274dad54a20a6b77bba75d348c054c78da0e848d05d16f2320725d
+            7 1 0 9d9f290527a6be626a8f5985b26e19b237b44872b03631811df4416fc1713178
+            1 7 0 3addfb141cd7c9c4c6543a82191a3707ac29c7a041217782e61d4d91c691aee8";
+        for case in cases.lines().map(str::trim).filter(|line| !line.is_empty()) {
+            let fields: Vec<_> = case.split_whitespace().collect();
+            let [input, output, differs] = [0, 1, 2].map(|i| fields[i].parse::<u32>().unwrap());
+            let positions = nearest_positions(input, output).unwrap();
+            let bytes: Vec<_> = positions.iter().flat_map(|p| p.to_le_bytes()).collect();
+            assert_eq!(sha256(&bytes), fields[3], "{case}");
+            let scale = input as f64 / output as f64;
+            let direct = (0..output).map(|k| (((k as f64 + 0.5) * scale) as u32).min(input - 1));
+            let changed = positions.iter().zip(direct).filter(|&(&p, d)| p != d).count();
+            assert_eq!(changed, differs as usize, "{case}");
+        }
+        assert_eq!(
+            nearest_positions(16, 12).unwrap(),
+            [0, 2, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15]
+        );
+        assert_eq!(
+            nearest_positions(5, 13).unwrap(),
+            [0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4]
+        );
+        // Above 2^24 the f32 box rounds sizes: 2,147,483,777 becomes 2,147,483,904,
+        // and 9,000,000 outputs would read 7 pixels past the source. An error, not a clamp.
+        assert!(nearest_positions(2_147_483_777, 9_000_000).is_err());
+    }
+
+    #[test]
+    fn tall_pages_resize_vertically_first_like_pillow() {
+        // Pillow 12.3.0 on this pattern as a uint16 array (mode I;16):
+        // `Image.fromarray(values).resize((16, 1700), Image.Resampling.BICUBIC)`,
+        // hashed as little-endian u16. The one-call core resize (horizontal first,
+        // the order this runner used before 2026-09-30) differs in 9,234 of the
+        // 27,200 values. The pattern spans the full 16-bit range, so overshoots
+        // also check the clip to 65535. The RGB path is covered by
+        // `tall-17x1800.png` in the decode fixtures.
+        let pattern = |width: u64, height: u64| -> Vec<u16> {
+            (0..height)
+                .flat_map(|y| (0..width).map(move |x| ((x * 40503 + y * 9973 + x * y * 17) % 65536) as u16))
+                .collect()
+        };
+        let hash = |values: Vec<u16>| sha256(&values.iter().flat_map(|v| v.to_le_bytes()).collect::<Vec<_>>());
+        assert_eq!(
+            hash(resize_gray16(&pattern(17, 1800), 17, 1800, 16, 1700)),
+            "bc1a4abf9ea909e60792f27ae40c7d41a08fe17c790f3bb6b597f3ce7f40f681"
+        );
+        // At most 100 times taller than wide: horizontal first, as before.
+        assert_eq!(
+            hash(resize_gray16(&pattern(17, 40), 17, 40, 16, 30)),
+            "abe47940ea5d785cc9ed6741b3f8d80cd4a8a85cb1250ec27e9dd55d760c04fc"
+        );
+        assert!(tall_first(17, 1701, 1700) && !tall_first(17, 1700, 1600) && !tall_first(17, 1800, 1800));
+    }
+
     #[cfg(feature = "turbojpeg")]
     #[test]
     fn jpeg_decoder_matches_pillow() {
-        let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
+        let data: serde_json::Value = serde_json::from_str(include_str!("../../tests/fixtures/decode.json")).unwrap();
         let mut failures = Vec::new();
         for case in data["cases"].as_array().unwrap() {
             let filename = case["file"].as_str().unwrap();
@@ -752,9 +584,30 @@ mod tests {
         assert!(failures.is_empty(), "JPEG parity failures: {failures:?}");
     }
 
+    #[cfg(feature = "turbojpeg")]
+    #[test]
+    fn a_jpeg_too_large_to_decode_fails_instead_of_aborting() {
+        let images = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/images");
+        for name in ["gray.jpg", "cmyk.jpg"] {
+            let mut bytes = std::fs::read(images.join(name)).unwrap();
+            let frame = jpeg_frame(&bytes).unwrap();
+            // 40000 x 40000: 4.8 GB of RGB, 6.4 GB of CMYK.
+            bytes[frame + 3..frame + 7].copy_from_slice(&[0x9c, 0x40, 0x9c, 0x40]);
+            let error = decode_jpeg_rgb(&bytes).unwrap_err().to_string();
+            assert!(error.contains("40000 x 40000 pixels"), "{name}: {error}");
+            // Pillow's limit is in pixels, whatever the components: it
+            // opens 13376 x 13376 and refuses 13380 x 13380.
+            for (side, opens) in [(13376_u16, true), (13380, false)] {
+                let side = side.to_be_bytes();
+                bytes[frame + 3..frame + 7].copy_from_slice(&[side[0], side[1], side[0], side[1]]);
+                assert_eq!(check_jpeg_size(&bytes).is_ok(), opens, "{name}");
+            }
+        }
+    }
+
     #[test]
     fn jpeg_source_modes_match_pillow() {
-        let data: serde_json::Value = serde_json::from_str(include_str!("../tests/fixtures/decode.json")).unwrap();
+        let data: serde_json::Value = serde_json::from_str(include_str!("../../tests/fixtures/decode.json")).unwrap();
         for case in data["cases"].as_array().unwrap() {
             let filename = case["file"].as_str().unwrap();
             if !filename.ends_with(".jpg") {
@@ -777,7 +630,7 @@ mod tests {
     #[test]
     fn pixel_exact_pillow_resize_fixtures() {
         let fixtures: serde_json::Value =
-            serde_json::from_str(include_str!("../tests/fixtures/preprocess.json")).unwrap();
+            serde_json::from_str(include_str!("../../tests/fixtures/preprocess.json")).unwrap();
         for case in fixtures["resizes"].as_array().unwrap() {
             let number = |key: &str| case[key].as_u64().unwrap() as u32;
             let image = pattern(number("width"), number("height"));
@@ -789,7 +642,7 @@ mod tests {
     #[test]
     fn upstream_two_stage_patches_and_torch_positions() {
         let fixtures: serde_json::Value =
-            serde_json::from_str(include_str!("../tests/fixtures/preprocess.json")).unwrap();
+            serde_json::from_str(include_str!("../../tests/fixtures/preprocess.json")).unwrap();
         for case in fixtures["prepared"].as_array().unwrap() {
             let number = |key: &str| case[key].as_u64().unwrap() as u32;
             let image = pattern(number("width"), number("height"));

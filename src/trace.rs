@@ -83,6 +83,21 @@ impl Trace for PrefixedTrace<'_> {
     fn head_screen(&mut self, candidates: usize, fallback: bool) {
         self.inner.head_screen(candidates, fallback);
     }
+    fn scores_teacher(&self) -> bool {
+        self.inner.scores_teacher()
+    }
+    fn teacher_step(&mut self, step: usize, forced: u32, predicted: u32) {
+        self.inner.teacher_step(step, forced, predicted);
+    }
+    fn teacher_logits(&mut self, step: usize, logits: &[f32]) {
+        self.inner.teacher_logits(step, logits);
+    }
+    fn captures_linear_inputs(&self) -> bool {
+        self.inner.captures_linear_inputs()
+    }
+    fn linear_input(&mut self, layer: usize, site: &'static str, rows: usize, data: &[f32]) {
+        self.inner.linear_input(layer, site, rows, data);
+    }
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
         self.inner.tensor(&format!("{}.{name}", self.prefix), shape, data)
     }
@@ -145,5 +160,39 @@ mod tests {
         trace.decode_start();
         trace.decode_end();
         assert_eq!((probe.starts, probe.ends), (1, 1));
+    }
+
+    #[test]
+    fn prefix_adapter_forwards_teacher_scoring_and_linear_inputs() {
+        /// Scores teacher steps and captures linear inputs, counting calls.
+        #[derive(Default)]
+        struct Calls(usize);
+        impl Trace for Calls {
+            fn scores_teacher(&self) -> bool {
+                true
+            }
+            fn teacher_step(&mut self, _: usize, _: u32, _: u32) {
+                self.0 += 1;
+            }
+            fn teacher_logits(&mut self, _: usize, _: &[f32]) {
+                self.0 += 1;
+            }
+            fn captures_linear_inputs(&self) -> bool {
+                true
+            }
+            fn linear_input(&mut self, _: usize, _: &'static str, _: usize, _: &[f32]) {
+                self.0 += 1;
+            }
+            fn tensor(&mut self, _: &str, _: &[usize], _: &[f32]) -> Result<()> {
+                Ok(())
+            }
+        }
+        let mut calls = Calls::default();
+        let mut trace = PrefixedTrace::new(&mut calls, "request.0");
+        assert!(trace.scores_teacher() && trace.captures_linear_inputs());
+        trace.teacher_step(0, 1, 1);
+        trace.teacher_logits(0, &[0.0]);
+        trace.linear_input(0, "qkv", 1, &[0.0]);
+        assert_eq!(calls.0, 3);
     }
 }

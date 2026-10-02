@@ -358,6 +358,96 @@ fn parallelism_uses_callers_pool_without_changing_results() {
     }
 }
 
+/// The page pipeline prefills on a second pool whose size differs from the
+/// runner's (`runner::pipeline`). Every prefill kernel computes each output
+/// independently of the pool's thread count, so pools of 1, 2, 3 and 7
+/// threads agree bit for bit: the `gemm` crate's FP32 projections (a 1-thread
+/// pool takes its single-threaded path), the FP32 panel GEMM, the FP32 and
+/// (where the CPU has them) BF16 prefill attention tiles, the row-parallel
+/// RMS norm, and the first token's heads (the full FP32 head's one-row
+/// product and the screened head). `model::pool_tests` runs a quantized
+/// layer's stages the same way.
+#[test]
+fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
+    let (rows, dim, out) = (37, 768, 192);
+    let input = values(rows * dim, 3);
+    let weights = values(out * dim, 5);
+    let (queries, heads, kv_heads, head_dim) = (70, 16, 8, 64);
+    let q = values(queries * heads * head_dim, 17);
+    let k = values(queries * heads * head_dim, 19);
+    let v = values(queries * kv_heads * head_dim, 23);
+    let sinks = values(heads, 29);
+    let kv = CompactKv::prefill(&k, &v, queries, heads, kv_heads, head_dim);
+    let geometry = Geometry::new(0, 3, 65);
+    let fast = PrefillOptions {
+        exp: crate::config::ExpMode::Fast,
+        profile: false,
+    };
+    let vocab = 4096;
+    let head = values(vocab * dim, 31);
+    let screened = crate::head_screen::ScreenedHead::build(&head, vocab, dim).unwrap();
+    let run = |threads: usize| -> Vec<Vec<u32>> {
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+        pool.install(|| {
+            let mut outputs = Vec::new();
+            let mut projected = vec![f32::NAN; rows * out];
+            linear(&input, rows, dim, &weights, out, &mut projected);
+            outputs.push(projected);
+            // The first token: the full head's one-row product, then the
+            // screened head's choice.
+            let last = &input[(rows - 1) * dim..];
+            let mut logits = vec![f32::NAN; vocab];
+            linear(last, 1, dim, &head, vocab, &mut logits);
+            outputs.push(logits);
+            let mut scratch = crate::head_screen::HeadScratch::default();
+            scratch.reserve(&screened);
+            let chosen = match screened.select(last, &head, dot_kernel(Simd::Auto.resolved()), &mut scratch) {
+                crate::head_screen::Screened::Token { token, candidates } => [token as f32, candidates as f32],
+                crate::head_screen::Screened::Fallback { candidates } => [-1.0, candidates as f32],
+            };
+            outputs.push(chosen.to_vec());
+            if panel_gemm::available(Simd::Auto) {
+                let mut panels = Vec::new();
+                let row = |r: usize, dst: &mut [f32]| dst.copy_from_slice(&weights[r * dim..(r + 1) * dim]);
+                panel_gemm::pack_panels(out, dim, row, &mut panels);
+                let mut panel = vec![f32::NAN; rows * out];
+                panel_gemm::gemm(
+                    &input,
+                    rows,
+                    dim,
+                    &panels,
+                    out,
+                    None,
+                    panel_gemm::Epilogue::Store(&mut panel),
+                );
+                outputs.push(panel);
+            }
+            for options in [PrefillOptions::EXACT, fast] {
+                let mut attention = vec![f32::NAN; q.len()];
+                attention_with(&q, &kv, queries, geometry, &sinks, &mut attention, Simd::Auto, options);
+                outputs.push(attention);
+            }
+            let mut bf16 = vec![f32::NAN; q.len()];
+            let (mut bf16_keys, mut bf16_values) = (Vec::new(), Vec::new());
+            let converted = Bf16Kv::Convert(&mut bf16_keys, &mut bf16_values);
+            if attention_prefill_bf16(&q, &kv, queries, geometry, &sinks, &mut bf16, converted, fast) {
+                outputs.push(bf16);
+            }
+            let mut normalized = vec![f32::NAN; input.len()];
+            rms_norm(&input, &mut normalized, dim, 1e-5, None);
+            outputs.push(normalized);
+            outputs
+                .into_iter()
+                .map(|output| output.iter().map(|x| x.to_bits()).collect())
+                .collect()
+        })
+    };
+    let single = run(1);
+    for threads in [2, 3, 7] {
+        assert!(run(threads) == single, "{threads} threads");
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn expand_compact_cache(
     prefix: &[f32],
@@ -518,4 +608,25 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
         &[0.0; 2],
         &mut [0.0; 2],
     );
+}
+
+#[test]
+fn exception_columns_keep_fp32_projection_panels() {
+    use crate::config::PrefillBf16;
+    for simd in implementations() {
+        for bits in [None, Some(8), Some(16)] {
+            for setting in [PrefillBf16::Off, PrefillBf16::Attention, PrefillBf16::All] {
+                let (plain, exceptions) = (
+                    prefill_plan(bits, false, simd, setting),
+                    prefill_plan(bits, true, simd, setting),
+                );
+                assert_eq!(exceptions.attention, plain.attention, "{simd:?} {bits:?} {setting:?}");
+                let expected = match plain.projection {
+                    PrefillProjection::PanelBf16 => PrefillProjection::PanelAvx2,
+                    other => other,
+                };
+                assert_eq!(exceptions.projection, expected, "{simd:?} {bits:?} {setting:?}");
+            }
+        }
+    }
 }

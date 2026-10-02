@@ -60,8 +60,9 @@ jobs:
         run: cargo check --locked --target aarch64-unknown-linux-gnu --no-default-features --all-targets
       - name: Python tools and tests
         run: |
-          python3 -m pip install --quiet ruff pillow rapidfuzz numpy
-          python3 -m ruff check tools
+          python3 -m pip install --quiet ruff rapidfuzz -r requirements/tools.txt
+          python3 -m ruff check tools tools/tests
+          python3 -m unittest discover -s tools/tests
           python3 -m unittest discover -s research/corpus-qualification/tests -p "test_*.py"
           python3 -m unittest discover -s research/quantization-feasibility/tests -p "test_*.py"
 
@@ -92,7 +93,9 @@ jobs:
           --test modes --test gpu_parity --test cache_layout --test batch_parity
           --test batch_trace --test decode_allocations --test head_screen
           -- --ignored
-      - name: Token agreement against the FP32 anchor (near-exact 1 flip, fast about 63 of 24,262)
+      - name: Runner input rejections, margin cropping and a resumed run
+        run: cargo test --release --locked --test negative_inputs --test margin_crop --test run_cli -- --ignored --test-threads=1
+      - name: Token agreement against the FP32 anchor (the 12 GPTQ capture pages, 8192 steps)
         run: >-
           bash tools/agree_queue.sh artifacts/phase4/agree/ci tools/gptq-calibration-pages.txt 8192
           near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors

@@ -1,7 +1,7 @@
 use crate::{
     config::{CacheLayout, GenerationOptions, HeadMode, RunnerConfig, WeightLayout},
-    model::{BatchWorkspace, Model, Next, Session, image_range, positions},
-    preprocess::{PreparedImage, decode_file, first_resize_rgb, prepare_file_timed, prepare_first, prepare_rgb},
+    model::{Model, Next, Session, image_range, positions},
+    preprocess::{Crop, PreparedImage, decode_file, first_resize_rgb, prepare_file_timed, prepare_first_cropped},
     router::{self, Route, RoutedAttempt},
     tokenizer::OcrTokenizer,
     trace::{NoTrace, PrefixedTrace, Trace},
@@ -11,10 +11,18 @@ use image::RgbImage;
 use serde::{Deserialize, Serialize};
 use std::{path::Path, sync::Arc, time::Instant};
 
+mod batch;
+mod cohort;
+/// Rereading fast-mode pages that looped in near-exact mode (`run --escalate`).
+pub mod escalate;
 mod generate;
+mod pipeline;
 mod speculate;
+mod stream;
 
 use generate::{DecodeLoop, Generation, Page};
+pub use pipeline::Pipeline;
+pub use std::ops::ControlFlow;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -40,7 +48,23 @@ pub struct Timings {
     pub transformer_prefill_ms: Option<f64>,
     pub prefill_ms: f64,
     pub decode_ms: f64,
+    /// Wall time of a page run on its own, from the start of its
+    /// preparation. A page of a fixed cohort (`recognize_files` and
+    /// `recognize_batch` with a batch size above 1, traced runs) counts from
+    /// the start of its cohort. A page of continuous batching
+    /// (`recognize_files_streaming` with a batch size above 1, `run
+    /// --batch-size N`) or of the page pipeline (`recognize_files_pipelined`)
+    /// reports the sum of its own stages, `time_to_first_token_ms +
+    /// decode_ms`, where a batched page's `decode_ms` runs from its first
+    /// joint step until its result is taken after its last (pages that end
+    /// in the same step are taken in turn, so a page also counts the
+    /// safety-net reruns and escalations of those taken before it); the
+    /// stages overlap other pages', so these totals add up to more than the
+    /// run took.
     pub total_ms: f64,
+    /// Time to the first token, counted as `total_ms` is: file decoding,
+    /// preprocessing and prefill for a continuously batched or pipelined
+    /// page (time waiting for a row or a pool is not counted).
     pub time_to_first_token_ms: f64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -89,6 +113,19 @@ pub struct OcrResult {
     /// and `height` are those of the input that produced `text`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub route: Option<Route>,
+    /// The margin crop the input was cut to after the first resize
+    /// (`GenerationOptions::crop_margins`), in first-resize pixels; `width`
+    /// and `height` stay those of the final model input.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crop: Option<Crop>,
+    /// The fast-mode attempt that this near-exact rerun replaced
+    /// (`falcon-ocr run --escalate`, `escalate::Escalation`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub escalated_from: Option<escalate::EscalatedAttempt>,
+    /// Why this fast-mode page could not be reread in near-exact mode
+    /// (`--escalate`); the result is the fast one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub escalation_error: Option<String>,
     pub timings: Timings,
 }
 
@@ -124,25 +161,38 @@ pub struct Runner {
 
 enum Decode {
     Fixed(crate::team::Team),
-    Auto(AutoThreads),
+    Auto(Box<AutoThreads>),
 }
 
 struct AutoThreads {
+    /// One team per size the tuner can hand out, sizes distinct.
     teams: Vec<crate::team::Team>,
     tuner: std::sync::Mutex<crate::tune::Tuner>,
 }
 
+impl AutoThreads {
+    fn team(&self, size: usize) -> &crate::team::Team {
+        let team = self.teams.iter().find(|team| team.size() == size);
+        team.expect("a team for every size the tuner hands out")
+    }
+}
+
 /// One spin team per candidate decode size for a `pool_threads`-thread prefill
-/// pool on `host`, and the tuner that picks between them (`crate::tune`).
+/// pool on `host`, and the tuner that picks between them (`crate::tune`). Half
+/// of the threads may be held in reserve for a page pipeline ([`Pipeline`],
+/// `crate::tune::pipeline_reserve`), with a team of its own.
 fn auto_threads(host: &crate::auto::HostInfo, pool_threads: usize, speculating: bool) -> std::io::Result<AutoThreads> {
     let (sizes, start) = crate::tune::auto_candidates(host, pool_threads, speculating);
-    let teams = sizes
-        .iter()
-        .map(|&size| crate::team::Team::new(size))
+    let reserve = crate::tune::pipeline_reserve(&sizes, pool_threads);
+    let tuner = crate::tune::Tuner::new(sizes, start).with_reserve(reserve);
+    let teams = tuner
+        .team_sizes()
+        .into_iter()
+        .map(crate::team::Team::new)
         .collect::<std::io::Result<Vec<_>>>()?;
     Ok(AutoThreads {
         teams,
-        tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
+        tuner: std::sync::Mutex::new(tuner),
     })
 }
 
@@ -150,7 +200,10 @@ fn auto_threads(host: &crate::auto::HostInfo, pool_threads: usize, speculating: 
 /// automatic tuner wants measured or has chosen.
 struct DecodeTeam<'a> {
     runner: &'a Runner,
+    /// The tuner's index of the candidate in use.
     index: usize,
+    /// Its size; candidates are inserted below it ([`crate::tune::Tuner::limit`]).
+    size: usize,
     entered: Option<crate::team::Entered<'a>>,
 }
 impl<'a> DecodeTeam<'a> {
@@ -158,6 +211,7 @@ impl<'a> DecodeTeam<'a> {
         let mut team = Self {
             runner,
             index: usize::MAX,
+            size: 0,
             entered: None,
         };
         team.select();
@@ -167,15 +221,17 @@ impl<'a> DecodeTeam<'a> {
     fn select(&mut self) {
         let (index, team) = match &self.runner.decode {
             Decode::Auto(auto) => {
-                let index = auto.tuner.lock().unwrap().current();
-                (index, &auto.teams[index])
+                let tuner = auto.tuner.lock().unwrap();
+                let index = tuner.current();
+                (index, auto.team(tuner.size(index)))
             }
             Decode::Fixed(team) => (0, team),
         };
-        if index != self.index {
+        self.index = index;
+        if team.size() != self.size {
             self.entered = None;
             self.entered = team.enter();
-            self.index = index;
+            self.size = team.size();
         }
     }
     /// Report the single-row step just run on the selected team.
@@ -218,7 +274,7 @@ impl Runner {
             .speculation
             .map(|s| (s.max_draft.min(crate::head_screen::MAX_ROWS - 1), s.min_match.max(1)));
         let decode = match config.decode_threads {
-            DecodeThreads::Auto => Decode::Auto(auto_threads(host, pool_threads, speculation.is_some())?),
+            DecodeThreads::Auto => Decode::Auto(Box::new(auto_threads(host, pool_threads, speculation.is_some())?)),
             DecodeThreads::Fixed(threads) => {
                 ensure!(
                     (1..=pool_threads).contains(&threads),
@@ -288,8 +344,9 @@ impl Runner {
             Decode::Auto(_) => self.decode_threads_chosen(),
         }
     }
-    /// `fp32` for the exact profiles, else the profile label.
-    fn precision(&self) -> String {
+    /// `fp32` for the exact profiles, else the profile label
+    /// (`OcrResult::precision`).
+    pub fn precision(&self) -> String {
         let profile = self.model.profile();
         if profile.is_exact() { "fp32" } else { profile.label() }.to_owned()
     }
@@ -328,20 +385,15 @@ impl Runner {
     ) -> Result<OcrResult> {
         options.validate()?;
         let start = Instant::now();
+        let (source, decode_ms) = decode_file(path.as_ref())?;
         if options.route {
-            let (source, decode_ms) = decode_file(path.as_ref())?;
             let first_at = |max| source.first_resize(options.min_dimension, max);
             return self.recognize_routed(&first_at, decode_ms, options, trace, start);
         }
-        let (prepared, decode_ms) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
-        validate_prepared_bounds(&prepared, options)?;
-        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-        let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
-        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
-        result.timings.image_decode_ms = decode_ms;
-        result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
-        result.timings.time_to_first_token_ms += decode_ms;
-        Ok(result)
+        let first = source.first_resize(options.min_dimension, options.max_dimension)?;
+        // Free the decoded page before generation; only its first resize is needed.
+        drop(source);
+        self.recognize_first(first, decode_ms, options, trace, start)
     }
     /// Teacher-forced run over `teacher` (for example a reference run's
     /// token IDs): every step feeds the forced token, and a trace whose
@@ -360,6 +412,7 @@ impl Runner {
             "teacher scoring needs max_new_tokens equal to the teacher length"
         );
         ensure!(!options.route, "teacher scoring needs a fixed max_dimension");
+        require_uncropped(options, "teacher scoring")?;
         let (prepared, _) = prepare_file_timed(path.as_ref(), options.min_dimension, options.max_dimension)?;
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
@@ -380,13 +433,8 @@ impl Runner {
             let first_at = |max| first_resize_rgb(image, options.min_dimension, max);
             return self.recognize_routed(&first_at, 0., options, trace, start);
         }
-        let prepared = prepare_rgb(image, options.min_dimension, options.max_dimension)?;
-        validate_prepared_bounds(&prepared, options)?;
-        let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-        let prep_ms = start.elapsed().as_secs_f64() * 1000.;
-        let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
-        result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
-        Ok(result)
+        let first = first_resize_rgb(image, options.min_dimension, options.max_dimension)?;
+        self.recognize_first(first, 0., options, trace, start)
     }
 
     /// `--max-dimension auto`: route the page from its first resize at the
@@ -402,7 +450,7 @@ impl Runner {
         start: Instant,
     ) -> Result<OcrResult> {
         let (first, mut route, capped) = self.plan_route(first_at)?;
-        let routed = self.recognize_first(&first, decode_ms, &options.at(route.max_dimension), trace, start)?;
+        let routed = self.recognize_first(first, decode_ms, &options.at(route.max_dimension), trace, start)?;
         let mut result = self.safety_net(routed, &mut route, capped, options, trace)?;
         result.route = Some(route);
         Ok(result)
@@ -412,7 +460,13 @@ impl Runner {
     /// and (when that is below the cap) the capped page for the safety net.
     fn plan_route(&self, first_at: &dyn Fn(u32) -> Result<RgbImage>) -> Result<(RgbImage, Route, Option<RgbImage>)> {
         let capped = first_at(router::CAP)?;
-        let route = self.pool.install(|| router::route(&capped));
+        // A caller already on a pool routes there: the page reader of a
+        // pipelined run on its own one-thread pool (`read_pages`), away from
+        // the decode on the runner's pool. The route is the same on any pool.
+        let route = match rayon::current_thread_index() {
+            Some(_) => router::route(&capped),
+            None => self.pool.install(|| router::route(&capped)),
+        };
         if route.max_dimension == router::CAP {
             return Ok((capped, route, None));
         }
@@ -420,7 +474,8 @@ impl Runner {
     }
 
     /// Rerun a routed page at the cap when it stopped by repetition or
-    /// length; the rerun's `total_ms` includes the routed attempt.
+    /// length; the rerun's `total_ms` includes the routed attempt, and its
+    /// tensors are traced under `rerun.`, apart from the attempt's.
     fn safety_net(
         &self,
         routed: OcrResult,
@@ -438,23 +493,26 @@ impl Runner {
             output_tokens: routed.output_tokens,
             total_ms: routed.timings.total_ms,
         });
-        let mut rerun = self.recognize_first(&capped, 0., &options.at(router::CAP), trace, Instant::now())?;
+        let mut scoped = PrefixedTrace::new(trace, "rerun");
+        let mut rerun = self.recognize_first(capped, 0., &options.at(router::CAP), &mut scoped, Instant::now())?;
         rerun.timings.image_decode_ms = routed.timings.image_decode_ms;
         rerun.timings.total_ms += routed.timings.total_ms;
         Ok(rerun)
     }
 
-    /// Prepare and run a first-resized page; timings count from `start`,
-    /// which `decode_ms` of file decoding preceded.
+    /// Prepare (with the margin crop `options` asks for) and run a
+    /// first-resized page, which is freed before generation; timings count
+    /// from `start`, which `decode_ms` of file decoding preceded.
     fn recognize_first(
         &self,
-        first: &RgbImage,
+        first: RgbImage,
         decode_ms: f64,
         options: &GenerationOptions,
         trace: &mut dyn Trace,
         start: Instant,
     ) -> Result<OcrResult> {
-        let prepared = prepare_first(first)?;
+        let prepared = prepare_first_cropped(&first, options.crop_margins)?;
+        drop(first);
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
@@ -462,140 +520,6 @@ impl Runner {
         result.timings.image_decode_ms = decode_ms;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
         result.timings.time_to_first_token_ms += decode_ms;
-        Ok(result)
-    }
-    /// Bounded batches with independent prefill and shared decode projections.
-    /// Results retain input order. Batch size one uses the single-image path.
-    pub fn recognize_batch(&self, images: &[RgbImage], options: &GenerationOptions) -> Result<Vec<OcrResult>> {
-        self.recognize_batch_with_trace(images, options, &mut NoTrace)
-    }
-
-    /// Trace phase boundaries cover each chunk's shared decode loop; tensor
-    /// captures identify request prefills and compacted batch decode rows.
-    pub fn recognize_batch_with_trace(
-        &self,
-        images: &[RgbImage],
-        options: &GenerationOptions,
-        trace: &mut dyn Trace,
-    ) -> Result<Vec<OcrResult>> {
-        options.validate()?;
-        let mut results = Vec::with_capacity(images.len());
-        for (chunk_index, chunk) in images.chunks(self.config.batch_size).enumerate() {
-            if chunk.len() == 1 {
-                let prefix = format!("request.{}", chunk_index * self.config.batch_size);
-                let mut scoped = PrefixedTrace::new(trace, &prefix);
-                results.push(self.recognize_with_trace(&chunk[0], options, &mut scoped)?);
-                continue;
-            }
-            let started = Instant::now();
-            let mut inputs = Vec::with_capacity(chunk.len());
-            let mut routes = Vec::with_capacity(chunk.len());
-            for image in chunk {
-                let prep_start = Instant::now();
-                let first_at = |max| first_resize_rgb(image, options.min_dimension, max);
-                let (prepared, route) = self.prepare_batch_page(&first_at, options)?;
-                routes.push(route);
-                let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-                inputs.push(BatchInput {
-                    prepared,
-                    tokens,
-                    image_decode_ms: 0.,
-                    preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000.,
-                });
-            }
-            let outputs = self.pool.install(|| {
-                self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
-            })?;
-            for (output, route) in outputs.into_iter().zip(routes) {
-                results.push(self.finish_batch_page(output, route, options, trace)?);
-            }
-        }
-        Ok(results)
-    }
-
-    /// Batch PNG/JPEG files without losing source-mode resize semantics.
-    pub fn recognize_files<P: AsRef<Path>>(&self, paths: &[P], options: &GenerationOptions) -> Result<Vec<OcrResult>> {
-        self.recognize_files_with_trace(paths, options, &mut NoTrace)
-    }
-    pub fn recognize_files_with_trace<P: AsRef<Path>>(
-        &self,
-        paths: &[P],
-        options: &GenerationOptions,
-        trace: &mut dyn Trace,
-    ) -> Result<Vec<OcrResult>> {
-        options.validate()?;
-        // Each call is one document for cross-page drafts.
-        if let Some(mut history) = self.document_history() {
-            history.clear();
-        }
-        let mut results = Vec::with_capacity(paths.len());
-        for (chunk_index, chunk) in paths.chunks(self.config.batch_size).enumerate() {
-            if chunk.len() == 1 {
-                results.push(self.recognize_file_with_trace(&chunk[0], options, trace)?);
-                continue;
-            }
-            let started = Instant::now();
-            let mut inputs = Vec::with_capacity(chunk.len());
-            let mut routes = Vec::with_capacity(chunk.len());
-            for path in chunk {
-                let prep_start = Instant::now();
-                let (source, image_decode_ms) =
-                    decode_file(path.as_ref()).with_context(|| format!("preparing {}", path.as_ref().display()))?;
-                let first_at = |max| source.first_resize(options.min_dimension, max);
-                let (prepared, route) = self
-                    .prepare_batch_page(&first_at, options)
-                    .with_context(|| format!("preparing {}", path.as_ref().display()))?;
-                routes.push(route);
-                let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
-                inputs.push(BatchInput {
-                    prepared,
-                    tokens,
-                    image_decode_ms,
-                    preprocessing_ms: prep_start.elapsed().as_secs_f64() * 1000. - image_decode_ms,
-                });
-            }
-            let outputs = self.pool.install(|| {
-                self.run_batch_chunk(inputs, options, started, trace, chunk_index * self.config.batch_size)
-            })?;
-            for (output, route) in outputs.into_iter().zip(routes) {
-                results.push(self.finish_batch_page(output, route, options, trace)?);
-            }
-        }
-        Ok(results)
-    }
-
-    /// A batched page's prepared input at its maximum dimension (routed when
-    /// `options.route`), with the route and the capped page for the safety net.
-    fn prepare_batch_page(
-        &self,
-        first_at: &dyn Fn(u32) -> Result<RgbImage>,
-        options: &GenerationOptions,
-    ) -> Result<(PreparedImage, Option<Planned>)> {
-        let (first, route) = if options.route {
-            let (first, route, capped) = self.plan_route(first_at)?;
-            (first, Some((route, capped)))
-        } else {
-            (first_at(options.max_dimension)?, None)
-        };
-        let prepared = prepare_first(&first)?;
-        let max_dimension = route.as_ref().map_or(options.max_dimension, |(r, _)| r.max_dimension);
-        validate_prepared_bounds(&prepared, &options.at(max_dimension))?;
-        Ok((prepared, route))
-    }
-
-    /// A batched page's result, after the safety net when it was routed.
-    fn finish_batch_page(
-        &self,
-        output: OcrResult,
-        route: Option<Planned>,
-        options: &GenerationOptions,
-        trace: &mut dyn Trace,
-    ) -> Result<OcrResult> {
-        let Some((mut route, capped)) = route else {
-            return Ok(output);
-        };
-        let mut result = self.safety_net(output, &mut route, capped, options, trace)?;
-        result.route = Some(route);
         Ok(result)
     }
 
@@ -608,190 +532,6 @@ impl Runner {
             trace.prefix_sealed(before, session.cache_bytes(), t.elapsed().as_secs_f64() * 1000.0);
         }
         Ok(())
-    }
-
-    fn run_batch_chunk(
-        &self,
-        inputs: Vec<BatchInput>,
-        options: &GenerationOptions,
-        chunk_started: Instant,
-        trace: &mut dyn Trace,
-        request_offset: usize,
-    ) -> Result<Vec<OcrResult>> {
-        let c = &self.model.config;
-        let simd = self.config.backend.simd();
-        let stops = self.tokenizer.stop_ids();
-        let count = inputs.len();
-        let mut sessions = Vec::with_capacity(count);
-        let mut states = Vec::with_capacity(count);
-        let mut hidden = Vec::new();
-        // Validate every budget before expensive prefill or KV allocation. A
-        // batch shares one step loop, so it runs to the smallest fitted budget.
-        let mut budget = options.max_new_tokens;
-        for input in &inputs {
-            budget = budget.min(options.budget(input.tokens.len(), c.max_seq_len)?);
-        }
-        let budget_clamped = budget != options.max_new_tokens;
-        if budget_clamped {
-            eprintln!(
-                "max_new_tokens lowered to {budget}: the longest input of {} tokens leaves no more room in the {}-token context",
-                inputs.iter().map(|i| i.tokens.len()).max().unwrap_or(0),
-                c.max_seq_len
-            );
-        }
-        let options = &GenerationOptions {
-            max_new_tokens: budget,
-            ..options.clone()
-        };
-        for (index, input) in inputs.into_iter().enumerate() {
-            let prefill_started = Instant::now();
-            let (image_start, image_end) = image_range(&input.tokens, c)?;
-            let (pos_t, pos_hw) = positions(&input.tokens, &input.prepared.positions_hw, c)?;
-            let mut session = Session::new(
-                c,
-                input.tokens.len() + options.max_new_tokens,
-                input.tokens.len(),
-                image_start,
-                image_end,
-                simd,
-                self.config.cache_layout,
-                self.config.exp,
-                self.config.tuning,
-            )?;
-            if let Some(previous) = sessions.last_mut() {
-                session.reuse_workspace_from(previous);
-            }
-            let image_projection_ms =
-                self.model
-                    .embed(&input.tokens, Some(&input.prepared.patches), simd, &mut hidden)?;
-            let phase = if trace.enabled() {
-                format!("request.{}.prefill", request_offset + index)
-            } else {
-                String::new()
-            };
-            let transformer_started = Instant::now();
-            let logits = self
-                .model
-                .forward(&mut hidden, &pos_t, &pos_hw, &mut session, trace, &phase)?;
-            let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
-            let token = argmax(logits)?;
-            if !stops.contains(&token) && options.max_new_tokens > 1 {
-                self.seal_session(&mut session, trace)?;
-            }
-            let prefill_ms = prefill_started.elapsed().as_secs_f64() * 1000.;
-            let first_token_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
-            let mut generation = Generation::new(options.max_new_tokens, self.repetition_stop);
-            let finished = generation.push(token, &stops);
-            states.push(BatchState {
-                width: input.prepared.width,
-                height: input.prepared.height,
-                input_tokens: input.tokens.len(),
-                generation,
-                finished,
-                timings: Timings {
-                    image_decode_ms: input.image_decode_ms,
-                    preprocessing_ms: input.preprocessing_ms,
-                    image_projection_ms: Some(image_projection_ms),
-                    transformer_prefill_ms: Some(transformer_prefill_ms),
-                    prefill_ms,
-                    decode_ms: 0.,
-                    time_to_first_token_ms: first_token_ms,
-                    total_ms: if finished { first_token_ms } else { 0. },
-                },
-            });
-            if finished && self.model.profile().memory_hygiene() {
-                trace.cache_retired(session.retire_cache());
-            }
-            sessions.push(session);
-        }
-        // All earlier sessions handed their scratch to the next prefill. Joint
-        // decode has its own small workspace and no longer needs this allocation
-        // or the largest prefix's hidden-state buffer.
-        if let Some(last) = sessions.last_mut() {
-            last.release_workspace();
-        }
-        drop(hidden);
-        let mut active = Vec::with_capacity(count);
-        for (index, state) in states.iter().enumerate() {
-            if !state.finished {
-                active.push(index);
-            }
-        }
-        let mut tokens = Vec::with_capacity(count);
-        let mut batch = BatchWorkspace::new(active.len(), c);
-        let screen = self.head == HeadMode::Screened;
-        if screen {
-            batch.reserve_screened_head(&self.model, active.len());
-        }
-        let decode_started = Instant::now();
-        let mut step = 0;
-        let mut team = DecodeTeam::new(self);
-        trace.decode_start();
-        while !active.is_empty() {
-            tokens.clear();
-            for &index in &active {
-                tokens.push(states[index].generation.last());
-            }
-            let phase = if trace.enabled() {
-                format!("batch.{request_offset}.decode.{step}")
-            } else {
-                String::new()
-            };
-            if trace.enabled() {
-                let ids = active
-                    .iter()
-                    .map(|&index| (request_offset + index) as f32)
-                    .collect::<Vec<_>>();
-                trace.tensor(&format!("{phase}.request_indices"), &[active.len()], &ids)?;
-            }
-            team.select();
-            let step_started = Instant::now();
-            let next = self.model.decode_batch_next(
-                &tokens,
-                &active,
-                &mut sessions,
-                &mut batch,
-                self.config.weight_layout,
-                trace,
-                &phase,
-                screen,
-            )?;
-            let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-            team.record(step_ms);
-            trace.decode_step(active.len(), step_ms, sessions.iter().map(Session::cache_bytes).sum());
-            for (row, &index) in active.iter().enumerate() {
-                let token = select(&next, row, c.vocab_size)?;
-                let state = &mut states[index];
-                state.finished = state.generation.push(token, &stops);
-                if state.finished {
-                    state.timings.decode_ms = decode_started.elapsed().as_secs_f64() * 1000.;
-                    state.timings.total_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
-                    if self.model.profile().memory_hygiene() {
-                        trace.cache_retired(sessions[index].retire_cache());
-                    }
-                }
-            }
-            active.retain(|&index| !states[index].finished);
-            step += 1;
-        }
-        trace.decode_end();
-        drop(team);
-        crate::model::report_decode_phases(self.config.tuning.phases);
-        states
-            .into_iter()
-            .map(|state| {
-                self.finish_result(Page {
-                    tokens: state.generation.tokens,
-                    reason: state.generation.reason,
-                    width: state.width,
-                    height: state.height,
-                    input_tokens: state.input_tokens,
-                    teacher_forced: false,
-                    budget_clamped,
-                    timings: state.timings,
-                })
-            })
-            .collect()
     }
 
     fn run_prepared_scoped(
@@ -815,12 +555,37 @@ impl Runner {
         trace: &mut dyn Trace,
         teacher_tokens: &[u32],
     ) -> Result<OcrResult> {
+        let prefilled = self.prefill(prepared, tokens, options, prep_ms, trace, teacher_tokens, Decoder::Page)?;
+        self.decode_prefilled(prefilled, trace, teacher_tokens)
+    }
+
+    /// The first half of `run_prepared`: the session, the forward pass over
+    /// the prompt and image, the first token and the sealed cache, on the
+    /// calling thread's pool. `decode_prefilled` is the second half; the
+    /// page pipeline (`pipeline.rs`) runs the halves of consecutive pages on
+    /// different pools, which changes no arithmetic (every prefill kernel
+    /// computes each output independently of the pool's thread count).
+    /// Continuous batching (`batch/rows.rs`) prefills its rows here too.
+    #[allow(clippy::too_many_arguments)] // run_prepared's arguments and the decoder
+    fn prefill(
+        &self,
+        mut prepared: PreparedImage,
+        tokens: Vec<u32>,
+        options: &GenerationOptions,
+        prep_ms: f64,
+        trace: &mut dyn Trace,
+        teacher_tokens: &[u32],
+        decoder: Decoder,
+    ) -> Result<Prefilled> {
+        if trace.enabled() {
+            require_uncropped(options, "a tensor trace")?;
+        }
         let start = Instant::now();
         let c = &self.model.config;
         let budget = options.budget(tokens.len(), c.max_seq_len)?;
         let budget_clamped = budget != options.max_new_tokens;
         if budget_clamped {
-            eprintln!(
+            crate::note!(
                 "max_new_tokens lowered to {budget}: {} input tokens leave no more room in the {}-token context",
                 tokens.len(),
                 c.max_seq_len
@@ -831,7 +596,7 @@ impl Runner {
             ..options.clone()
         };
         let (image_start, image_end) = image_range(&tokens, c)?;
-        let (pos_t, pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
+        let (mut pos_t, mut pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
         let simd = self.config.backend.simd();
         let mut session = Session::new(
             c,
@@ -846,6 +611,7 @@ impl Runner {
         )?;
         if let Some(head) = &self.draft_head
             && self.speculation.is_some()
+            && decoder == Decoder::Page
             && teacher_tokens.is_empty()
             && !trace.enabled()
         {
@@ -878,19 +644,55 @@ impl Runner {
         {
             self.seal_session(&mut session, trace)?;
         }
+        if decoder == Decoder::Row {
+            // A row decodes with the joint step's workspace.
+            session.release_workspace();
+            hidden = Vec::new();
+        }
         if self.model.profile().memory_hygiene() {
-            session.prepare_small_decode(c);
-            hidden = Vec::with_capacity(c.dim);
-            drop(prepared.patches);
-            drop(prepared.positions_hw);
-            drop(pos_t);
-            drop(pos_hw);
+            if decoder == Decoder::Page {
+                session.prepare_small_decode(c);
+                hidden = Vec::with_capacity(c.dim);
+            }
+            prepared.patches = Vec::new();
+            prepared.positions_hw = Vec::new();
+            (pos_t, pos_hw) = (Vec::new(), Vec::new());
         }
         let prefill_ms = start.elapsed().as_secs_f64() * 1000.;
+        Ok(Prefilled {
+            session,
+            hidden,
+            next_token,
+            max_new_tokens: options.max_new_tokens,
+            budget_clamped,
+            screen,
+            simd,
+            input_tokens: tokens.len(),
+            retained: (prepared, pos_t, pos_hw),
+            started: start,
+            prep_ms,
+            image_projection_ms,
+            transformer_prefill_ms,
+            prefill_ms,
+        })
+    }
+
+    /// The second half of `run_prepared`: decode a prefilled page to its
+    /// result, on the calling thread's pool and the decode team.
+    fn decode_prefilled(&self, page: Prefilled, trace: &mut dyn Trace, teacher_tokens: &[u32]) -> Result<OcrResult> {
+        let Prefilled {
+            mut session,
+            mut hidden,
+            next_token,
+            screen,
+            simd,
+            ..
+        } = page;
         let decode_start = Instant::now();
+        let score = trace.scores_teacher();
         let stops = self.tokenizer.stop_ids();
         let stop_loops = self.repetition_stop && teacher_tokens.is_empty();
-        let mut generation = Generation::new(options.max_new_tokens, stop_loops);
+        let mut generation = Generation::new(page.max_new_tokens, stop_loops);
         let mut team = DecodeTeam::new(self);
         trace.decode_start();
         let speculate = self
@@ -917,23 +719,25 @@ impl Runner {
         drop(team);
         crate::model::report_decode_phases(self.config.tuning.phases);
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;
+        let prepared = &page.retained.0;
         self.finish_result(Page {
             tokens: generation.tokens,
             reason: generation.reason,
             width: prepared.width,
             height: prepared.height,
-            input_tokens: tokens.len(),
+            crop: prepared.crop,
+            input_tokens: page.input_tokens,
             teacher_forced: !teacher_tokens.is_empty(),
-            budget_clamped,
+            budget_clamped: page.budget_clamped,
             timings: Timings {
                 image_decode_ms: 0.,
-                preprocessing_ms: prep_ms,
-                image_projection_ms: Some(image_projection_ms),
-                transformer_prefill_ms: Some(transformer_prefill_ms),
-                prefill_ms,
+                preprocessing_ms: page.prep_ms,
+                image_projection_ms: Some(page.image_projection_ms),
+                transformer_prefill_ms: Some(page.transformer_prefill_ms),
+                prefill_ms: page.prefill_ms,
                 decode_ms,
-                total_ms: prep_ms + start.elapsed().as_secs_f64() * 1000.,
-                time_to_first_token_ms: prep_ms + prefill_ms,
+                total_ms: page.prep_ms + page.started.elapsed().as_secs_f64() * 1000.,
+                time_to_first_token_ms: page.prep_ms + page.prefill_ms,
             },
         })
     }
@@ -1008,6 +812,7 @@ impl Runner {
             height: 0,
             patches,
             positions_hw,
+            crop: None,
         };
         let (computed_temporal, computed_spatial) = positions(&tokens, &prepared.positions_hw, &self.model.config)?;
         let reference_temporal = read_ids("pos_t")?;
@@ -1039,23 +844,49 @@ impl Runner {
     }
 }
 
-/// A routed page's route and, when routed below the cap, the capped page
-/// kept for the safety net.
-type Planned = (Route, Option<RgbImage>);
-
-struct BatchInput {
-    prepared: PreparedImage,
-    tokens: Vec<u32>,
-    image_decode_ms: f64,
-    preprocessing_ms: f64,
+/// What a page is prefilled for (`Runner::prefill`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Decoder {
+    /// Its own decode (`Runner::decode_prefilled`), drafting when the runner
+    /// speculates.
+    Page,
+    /// A row of continuous batching: the joint step's workspace, no drafts.
+    Row,
 }
-struct BatchState {
-    width: usize,
-    height: usize,
+
+/// A page after `Runner::prefill`, ready for `Runner::decode_prefilled` (or
+/// for its row).
+struct Prefilled {
+    session: Session,
+    hidden: Vec<f32>,
+    /// The first generated token (the model's choice, or the teacher's).
+    next_token: u32,
+    /// The output budget after fitting it to the context.
+    max_new_tokens: usize,
+    budget_clamped: bool,
+    screen: bool,
+    simd: crate::kernels::Simd,
     input_tokens: usize,
-    generation: Generation,
-    finished: bool,
-    timings: Timings,
+    /// The page's patches and positions: released already under the
+    /// profile's memory hygiene; the reference profile keeps them until the
+    /// page is done.
+    retained: (PreparedImage, Vec<usize>, Vec<[f32; 2]>),
+    /// When the prefill started (`Timings::total_ms` counts from here).
+    started: Instant,
+    prep_ms: f64,
+    image_projection_ms: f64,
+    transformer_prefill_ms: f64,
+    prefill_ms: f64,
+}
+
+/// Runs compared with a reference of the whole page (tensor traces, teacher
+/// scoring) refuse the margin crop, which changes the model input.
+fn require_uncropped(options: &GenerationOptions, run: &str) -> Result<()> {
+    ensure!(
+        options.crop_margins.is_none(),
+        "{run} compares with the uncropped page; margin cropping (crop_margins, --crop-margins) changes the model input"
+    );
+    Ok(())
 }
 
 fn validate_prepared_bounds(prepared: &PreparedImage, options: &GenerationOptions) -> Result<()> {
@@ -1097,6 +928,7 @@ fn select(next: &Next<'_>, row: usize, vocab: usize) -> Result<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::preprocess::prepare_rgb;
     #[test]
     fn argmax_handles_ties_and_rejects_nan() {
         assert_eq!(argmax(&[2., 3., 3.]).unwrap(), 1);
@@ -1111,6 +943,7 @@ mod tests {
             max_new_tokens: 1,
             fit_budget: false,
             route: false,
+            crop_margins: None,
         };
         options.validate().unwrap();
         let prepared = prepare_rgb(&RgbImage::new(33, 49), 16, 32).unwrap();
@@ -1128,5 +961,48 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn results_report_a_crop_only_when_one_was_applied() {
+        let record = serde_json::json!({
+            "text": "", "token_ids": [11], "finish_reason": "eos", "width": 544, "height": 544,
+            "input_tokens": 1173, "output_tokens": 1, "precision": "fp32", "backend": "avx2",
+            "teacher_forced": false, "timings": {"image_decode_ms": 0.0, "preprocessing_ms": 0.0,
+            "prefill_ms": 0.0, "decode_ms": 0.0, "total_ms": 0.0, "time_to_first_token_ms": 0.0}
+        });
+        // Records written before the field existed, and uncropped pages, carry no crop.
+        let mut result: OcrResult = serde_json::from_value(record).unwrap();
+        assert_eq!(result.crop, None);
+        assert!(serde_json::to_value(&result).unwrap().get("crop").is_none());
+        result.crop = Some(Crop {
+            x: 126,
+            y: 176,
+            width: 548,
+            height: 548,
+            first_width: 800,
+            first_height: 1000,
+        });
+        let value = serde_json::to_value(&result).unwrap();
+        assert_eq!(
+            value["crop"],
+            serde_json::json!({"x": 126, "y": 176, "width": 548, "height": 548, "first_width": 800, "first_height": 1000})
+        );
+        assert_eq!(serde_json::from_value::<OcrResult>(value).unwrap().crop, result.crop);
+    }
+
+    #[test]
+    fn traces_and_teacher_scoring_refuse_the_margin_crop() {
+        require_uncropped(&GenerationOptions::default(), "a tensor trace").unwrap();
+        let cropped = GenerationOptions {
+            crop_margins: Some(24),
+            ..GenerationOptions::default()
+        };
+        let error = require_uncropped(&cropped, "teacher scoring").unwrap_err().to_string();
+        assert!(
+            error.starts_with("teacher scoring compares with the uncropped page"),
+            "{error}"
+        );
+        assert!(error.contains("--crop-margins"), "{error}");
     }
 }

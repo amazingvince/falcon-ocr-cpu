@@ -2,8 +2,10 @@
 //! Asset-dependent tests are opt-in: run with --include-ignored --test-threads=1.
 use anyhow::Result;
 use falcon_ocr::{
-    Backend, GenerationOptions, Model, Runner, RunnerConfig,
+    Backend, GenerationOptions, Model, OcrResult, Pipeline, Runner, RunnerConfig,
     preprocess::{prepare_file, prepare_file_timed},
+    runner::ControlFlow,
+    tokenizer::OcrTokenizer,
     trace::Trace,
 };
 use image::{ImageFormat, Rgb, RgbImage};
@@ -31,6 +33,7 @@ fn invalid_options() -> Vec<(&'static str, GenerationOptions, &'static str)> {
         max_new_tokens: 1,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     };
     vec![
         (
@@ -74,6 +77,14 @@ fn invalid_options() -> Vec<(&'static str, GenerationOptions, &'static str)> {
                 ..base.clone()
             },
             "multiple of 16",
+        ),
+        (
+            "crop padding that can never crop",
+            GenerationOptions {
+                crop_margins: Some(256),
+                ..base.clone()
+            },
+            "crop_margins",
         ),
         (
             "zero output cap",
@@ -192,6 +203,141 @@ fn cli_requires_an_image_before_attempting_model_load() {
     assert_cli_error(output, "<IMAGES>");
 }
 
+#[test]
+fn cli_kv_cache_applies_to_run_and_doctor_only() {
+    let temporary = tempfile::tempdir().unwrap();
+    let model = temporary.path();
+    // Refused before any model file is read.
+    for command in [
+        &["trace", "--fixture", "f", "--output", "o"][..],
+        &["pack", "--output", "o"],
+        &["inspect"],
+    ] {
+        for kv_cache in ["q16", "q8r"] {
+            let output = cli()
+                .arg("--model")
+                .arg(model)
+                .args(["--kv-cache", kv_cache])
+                .args(command)
+                .output()
+                .unwrap();
+            assert_cli_error(output, "--kv-cache applies to run and doctor");
+        }
+    }
+    // The doctor's plan names the profile that would run.
+    fs::write(model.join("model.safetensors"), b"stub").unwrap();
+    fs::write(model.join("config.json"), include_str!("fixtures/model-config.json")).unwrap();
+    let output = cli()
+        .arg("--model")
+        .arg(model)
+        .args(["--mode", "fast", "--allow-rtn", "--kv-cache", "q16", "doctor"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q16");
+    assert_eq!(report["plan"]["kv_cache"], "q16");
+    assert!(report["plan"]["mode"].is_null());
+    let output = cli()
+        .arg("--model")
+        .arg(model)
+        .args(["--mode", "fast", "--allow-rtn", "--kv-cache", "q8r", "doctor"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q8r");
+    assert_eq!(report["plan"]["kv_cache"], "q8r");
+    assert!(report["plan"]["mode"].is_null());
+}
+
+#[test]
+fn eval_profile_picks_the_kv_cache_of_a_model_file() {
+    let temporary = tempfile::tempdir().unwrap();
+    // A kernel-ready file header (the doctor reads no tensor).
+    let file = temporary.path().join("fast.safetensors");
+    let data = [0_u8; 4];
+    let view = safetensors::tensor::TensorView::new(safetensors::Dtype::F32, vec![1], &data).unwrap();
+    let metadata = std::collections::HashMap::from([
+        ("format".to_owned(), falcon_ocr::model::PACKED_FORMAT.to_owned()),
+        ("profile".to_owned(), "w8-body-kv-q8".to_owned()),
+        (
+            "config".to_owned(),
+            include_str!("fixtures/model-config.json").to_owned(),
+        ),
+    ]);
+    safetensors::serialize_to_file(vec![("t", view)], Some(metadata), &file).unwrap();
+    let doctor = |profile: &str| -> serde_json::Value {
+        let output = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"))
+            .arg("--model")
+            .arg(temporary.path())
+            .arg("--model-file")
+            .arg(&file)
+            .args(["--profile", profile, "doctor"])
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        serde_json::from_slice(&output.stdout).unwrap()
+    };
+    // The file's weights with the profile's cache, or a refusal.
+    let report = doctor("w8-body-kv-q16");
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q16");
+    assert_eq!(report["plan"]["kv_cache"], "q16");
+    let report = doctor("w16-body-kv-q8");
+    assert!(report["plan"].is_null());
+    let error = report["error"].as_str().unwrap();
+    assert!(error.contains("w8-body-kv-q8 weights"), "{error}");
+    let report = doctor("w8-body-kv-q8r");
+    assert_eq!(report["plan"]["profile"], "w8-body-kv-q8r");
+    assert_eq!(report["plan"]["kv_cache"], "q8r");
+    let report = doctor("w16-body-kv-q8r");
+    assert!(report["plan"].is_null());
+    let error = report["error"].as_str().unwrap();
+    assert!(error.contains("w8-body-kv-q8 weights"), "{error}");
+    // The checkpoint loader's options are refused, not silently ignored,
+    // by the doctor as by the commands that run.
+    for flag in [
+        &["--w8-artifact", "overlay.safetensors"][..],
+        &["--keep-fp32", "layers.3.*"],
+        &["--weights-bf16"],
+    ] {
+        for command in [&["bench", "page.png", "--report", "report.json"][..], &["doctor"]] {
+            let output = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"))
+                .arg("--model")
+                .arg(temporary.path())
+                .arg("--model-file")
+                .arg(&file)
+                .args(flag)
+                .args(command)
+                .output()
+                .unwrap();
+            assert_cli_error(output, "apply to the checkpoint loader, not to --model-file");
+        }
+    }
+}
+
+#[test]
+fn cli_crop_margins_takes_an_optional_pixel_padding() {
+    let temporary = tempfile::tempdir().unwrap();
+    let run = |flag: &str| {
+        cli()
+            .arg("--model")
+            .arg(temporary.path().join("no-model"))
+            .args(["run", flag, "page.png"])
+            .output()
+            .unwrap()
+    };
+    // Accepted flags pass Clap and fail at run time with exit 1, not Clap's 2
+    // (here at the input check, which finds no page.png).
+    for flag in ["--crop-margins", "--crop-margins=40"] {
+        let output = run(flag);
+        assert_eq!(output.status.code(), Some(1), "{flag}: {output:?}");
+    }
+    let output = run("--crop-margins=wide");
+    assert_eq!(output.status.code(), Some(2), "Clap argument rejection");
+    assert_cli_error(output, "--crop-margins");
+}
+
 fn model_directory() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/model")
 }
@@ -204,6 +350,15 @@ impl Trace for NoModelWork {
     }
     fn decode_start(&mut self) {
         panic!("invalid request reached decode");
+    }
+}
+
+/// Ends a page at its first model tensor: a page that reaches the model
+/// fails with "reached the model" instead of generating.
+struct StopAtModel;
+impl Trace for StopAtModel {
+    fn tensor(&mut self, _: &str, _: &[usize], _: &[f32]) -> Result<()> {
+        anyhow::bail!("reached the model")
     }
 }
 
@@ -226,6 +381,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         ),
         "batch_size must be positive",
     );
+    let context = model.config().max_seq_len;
     let runner = Runner::new(
         model,
         &model_dir,
@@ -245,6 +401,7 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         max_new_tokens: 1,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     };
     let no_images: &[RgbImage] = &[];
     let no_files: &[PathBuf] = &[];
@@ -271,6 +428,30 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         );
         error_contains(runner.recognize_batch(no_images, &invalid), expected);
         error_contains(runner.recognize_files(no_files, &invalid), expected);
+        // The streaming entry points refuse the options before any page.
+        let one = std::slice::from_ref(&cases.valid);
+        let never = |_: usize, _: Result<OcrResult>| -> ControlFlow<()> { panic!("an invalid request ran a page") };
+        error_contains(runner.recognize_files_streaming(one, &invalid, never), expected);
+        error_contains(
+            runner.recognize_files_streaming_with_trace(one, &invalid, &mut NoModelWork, never),
+            expected,
+        );
+        error_contains(
+            runner.recognize_files_pipelined(one, &invalid, &Pipeline::default(), never),
+            expected,
+        );
+    }
+    // The second pool has at least one thread and at most the runner's one.
+    let one = std::slice::from_ref(&cases.valid);
+    for prefill_threads in [0, 2] {
+        let never = |_: usize, _: Result<OcrResult>| -> ControlFlow<()> { panic!("an invalid pipeline ran a page") };
+        let pipeline = Pipeline {
+            prefill_threads: Some(prefill_threads),
+        };
+        error_contains(
+            runner.recognize_files_pipelined(one, &options, &pipeline, never),
+            "the page pipeline's prefill threads must be 1..=1, the runner's threads",
+        );
     }
     for (width, height) in [(0, 0), (0, 8), (8, 0)] {
         let invalid = RgbImage::new(width, height);
@@ -289,6 +470,70 @@ fn public_runner_errors_and_empty_collections_do_not_generate() {
         error_contains(runner.recognize_file(path, &options), expected);
         error_contains(runner.recognize_files(&[&cases.valid, path], &options), expected);
     }
+    // Tensor traces and teacher scoring compare with the whole page: they
+    // refuse the margin crop before any model work, single or batched.
+    let cropped = GenerationOptions {
+        crop_margins: Some(24),
+        ..options
+    };
+    let refusal = "compares with the uncropped page";
+    error_contains(runner.recognize_with_trace(&valid, &cropped, &mut NoModelWork), refusal);
+    error_contains(
+        runner.recognize_batch_with_trace(&[valid.clone(), valid.clone()], &cropped, &mut NoModelWork),
+        refusal,
+    );
+    error_contains(
+        runner.recognize_files_with_trace(&[&cases.valid, &cases.valid], &cropped, &mut NoModelWork),
+        refusal,
+    );
+    // The streaming form hands each page of the cohort the refusal.
+    let mut refused = Vec::new();
+    runner
+        .recognize_files_streaming_with_trace(
+            &[&cases.valid, &cases.valid],
+            &cropped,
+            &mut NoModelWork,
+            |page, result| {
+                refused.push((page, format!("{:#}", result.expect_err("refused"))));
+                ControlFlow::Continue(())
+            },
+        )
+        .unwrap();
+    assert_eq!(refused.len(), 2);
+    assert!(refused.iter().all(|(_, error)| error.contains(refusal)), "{refused:?}");
+    // A page whose prompt leaves too little context for the requested output
+    // fails alone; the page beside it in the cohort goes on to the model.
+    let directory = tempfile::tempdir().unwrap();
+    let larger = directory.path().join("larger.png");
+    RgbImage::from_pixel(256, 256, Rgb([255; 3])).save(&larger).unwrap();
+    let tokenizer = OcrTokenizer::load(&model_dir).unwrap();
+    let prompt = |path: &Path| {
+        let patches = prepare_file(path, options.min_dimension, options.max_dimension)
+            .unwrap()
+            .positions_hw
+            .len();
+        tokenizer.prompt(patches).unwrap().len()
+    };
+    let fits = prompt(&cases.valid);
+    assert!(fits < prompt(&larger));
+    let tight = GenerationOptions {
+        max_new_tokens: context - fits,
+        ..options
+    };
+    let mut pages = Vec::new();
+    runner
+        .recognize_files_streaming_with_trace(&[&cases.valid, &larger], &tight, &mut StopAtModel, |page, result| {
+            pages.push((page, format!("{:#}", result.expect_err("stopped"))));
+            ControlFlow::Continue(())
+        })
+        .unwrap();
+    assert_eq!(pages.len(), 2);
+    assert!(pages[0].1.contains("reached the model"), "{pages:?}");
+    assert!(pages[1].1.contains("context budget conflict"), "{pages:?}");
+    error_contains(
+        runner.score_teacher_file(&cases.valid, &[11], &cropped, &mut NoModelWork),
+        "teacher scoring compares with the uncropped page",
+    );
 }
 
 #[test]
