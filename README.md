@@ -302,7 +302,7 @@ lists every accepted and rejected change with its measurement.
 | | Windows x86-64 | Linux x86-64 | macOS / Linux aarch64 |
 |---|---|---|---|
 | Builds and tests in CI | yes | yes (plus an aarch64 cross check) | macOS arm64: library tests |
-| Runs the model | measured | measured under WSL | not yet run |
+| Runs the model | measured | measured (under WSL, and natively on a Ryzen 7 7700X) | not yet run |
 | Kernels | AVX2, AVX-512 tiles, AVX512-BF16 (fast) | same | NEON (fast mode's BF16 kernels are x86-only) |
 
 ## Repository layout
