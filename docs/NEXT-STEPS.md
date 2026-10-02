@@ -63,9 +63,11 @@ pinned checkpoint, the published packed files and a GPTQ overlay:
 
 - **The GPU smoke outputs** (`metadata.json`, `trace.safetensors` from the
   frozen reference) gate `tests/gpu_parity.rs`, `tests/cache_layout.rs`,
-  `weight_layout` and `tools/check.sh --smoke`. The reference's preflight
-  pins the RTX 4090 it was recorded on, so the self-hosted `weights` runner
-  is where these run.
+  `tests/weight_layout.rs` and `tools/check.sh --smoke`. The reference's
+  preflight pins the RTX 4090 it was recorded on, so they cannot be remade
+  on this host. The self-hosted `weights` CI job, whose machine holds them,
+  runs `gpu_parity` and `cache_layout`; `weight_layout` and `check.sh
+  --smoke` are in no CI job.
 - **The anchor at 55 pages.** The agreement numbers here are on 52
   calibration pages (the local calibration lock holds 64; upstream's anchor
   has 55), so they compare arms with each other. The `weights` runner's
