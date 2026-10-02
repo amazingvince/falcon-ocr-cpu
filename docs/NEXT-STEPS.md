@@ -1,156 +1,47 @@
 # Next steps
 
-Status: current as of 2026-10-01. What the features of this release were
-validated with, what still needs other hardware or a decision, and proposals
-that are not implemented. The numbers live in the documents that own them;
-this page links to them.
-
-## Validated on real weights
-
-On a Ryzen 7 7700X (8 cores, 16 threads, AVX-512 with BF16), Linux, with the
-pinned checkpoint, the published packed files and a GPTQ overlay:
-
-- **The run paths keep a page's tokens; only a change of input does not.**
-  With the published files and the default configuration (screened head,
-  draft head), 16 pages (8 corpus smoke pages, 6 pages of the scanned book
-  of [PERFORMANCE.md](PERFORMANCE.md#book-runs) and 2 arXiv pages) gave each
-  page the same tokens at 1536 pixels run one after another, with
-  `--pipeline`, `--batch-size 4` and `--batch-size 3 --pipeline`, in
-  near-exact and fast mode. With `--max-dimension auto`, the sequential run
-  and `--batch-size 3 --pipeline` agreed with each other on 16 of 16 pages,
-  but both matched the fixed-1536 run on only 5 of 16: the router changes
-  the input size, and so the tokens, by design. On the book's 24 pages every
-  timed arm without `--crop-margins` matched the sequential run, the cropped
-  pipelined arm matched the cropped sequential run, and every cache on the
-  journal page gave the same 300 tokens with and without speculation.
-- **The ignored gates that need no GPU outputs pass**: `batch_parity`
-  (including the default configuration with near-exact and fast weights),
-  `batch_trace`, `decode_allocations`, `head_screen`, `margin_crop`,
-  `negative_inputs` and `run_cli`. `modes` passes its packed round trip,
-  repetition, routing and speculation tests. Its journal test fails here
-  only on the overlay's hash, since the local overlay was rebuilt from the
-  published fast file; the recorded journal tokens matched.
-- **Throughput on a book** ([PERFORMANCE.md](PERFORMANCE.md#book-runs)):
-  `--pipeline` gave 12–20% more pages per hour and `--batch-size 4` 2–8%;
-  `--crop-margins` gave 18–21% more, and every page kept its words
-  ([MODES.md](MODES.md#margin-cropping)). Fast mode with `--crop-margins
-  --pipeline` and the decode team pinned to 8 threads read 701–709 pages per
-  hour against 506–511. Beside the pipeline an automatic decode team now
-  takes at most half of the threads: the tuner had once chosen 12 of 16 and
-  left the prefill 4.
-- **Long runs.** `--keep-going` records a truncated PNG's error and goes on;
-  without it the run stops at that page. An interrupted run resumed with
-  `--resume` runs only the missing pages and repairs a cut-off last record
-  (`tests/run_cli.rs`).
-- **Escalation.** Over the 64 calibration pages in fast mode, `--escalate`
-  reread the 9 pages that the repetition stop ended, each with a plain
-  near-exact run's tokens
-  ([MODES.md](MODES.md#loops-and-the-repetition-stop)).
-- **Agreement against FP32** on 52 calibration pages
-  ([MODES.md](MODES.md#the-metric)): `q8r` lowers fast mode's KL by 4%
-  and `q4r` multiplies it by 30
-  ([MODES.md](MODES.md#rotated-kv-cache-experimental)); 4 exception columns
-  per W2 lower it by 39%
-  ([MODES.md](MODES.md#exception-columns-experimental)). Only `q4r` costs
-  measurable decode time, 15% per token
-  ([PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)).
-- **Packed files.** Re-packing near-exact from the checkpoint, and fast from
-  an overlay reconstructed from the published file, gives the published
-  files' metadata values and tensors. A v2 file with exception columns
-  passes `--verify-model-file` and gives its overlay's tokens.
+Status: current as of 2026-10-02. What still needs other hardware or a
+decision, and proposals that are not implemented. The numbers live in the
+documents that own them; this page links to them.
 
 ## Still open
 
-- **The GPU smoke outputs** (`metadata.json`, `trace.safetensors` from the
-  frozen reference) gate `tests/gpu_parity.rs`, `tests/cache_layout.rs`,
-  `tests/weight_layout.rs` and `tools/check.sh --smoke`. The reference's
-  preflight pins the RTX 4090 it was recorded on, so they cannot be remade
-  on this host. The self-hosted `weights` CI job, whose machine holds them,
-  runs `gpu_parity` and `cache_layout`; `weight_layout` and `check.sh
-  --smoke` are in no CI job.
-- **The anchor at 55 pages.** The agreement numbers here are on 52
-  calibration pages (the local calibration lock holds 64; upstream's anchor
-  has 55), so they compare arms with each other. Scored against upstream's
-  `artifacts/phase4/checks/calibration-reference.json`, which the `weights`
-  runner reads and this host does not have, the [Setup](#setup) commands
-  give the 24,262-step numbers the modes table quotes.
+- **Gates outside CI.** `tests/weight_layout.rs` and `tools/check.sh
+  --smoke` need the GPU smoke outputs (`metadata.json`, `trace.safetensors`
+  from the frozen reference), as `tests/gpu_parity.rs` and
+  `tests/cache_layout.rs` do, but the self-hosted `weights` CI job, whose
+  machine holds those outputs, runs only the latter two. The reference's
+  preflight pins the RTX 4090 the outputs were recorded on, so no other
+  machine can remake them.
+- **The 55-page anchor.** The Ryzen 7 7700X agreement numbers in
+  [MODES.md](MODES.md#the-metric) (exception columns, rotated caches) are on
+  that host's 52-page anchor, so they compare arms with each other. Scored
+  against upstream's `artifacts/phase4/checks/calibration-reference.json`
+  ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
+  give 24,262-step numbers comparable with the modes table.
 - **Held-out gates** decide every default that would change tokens: margin
   cropping for books, `--max-dimension 1280`, a rotated cache and exception
   columns. Held-out pages are single-use, so each needs a pre-registered
   budget before its run.
-- **Windows and aarch64.** Every timing here is Linux on one desktop; no
-  aarch64 machine has run the model with weights
-  ([PORTABILITY.md](PORTABILITY.md)).
-
-## Setup
-
-The commands below reproduce the agreement numbers from the repository root
-(bash; `falcon-ocr-eval` from `cargo build --release --locked`) and write
-their files to the git-ignored `artifacts/agree/`; the timing tools are
-listed in [PERFORMANCE.md](PERFORMANCE.md#measuring).
-
-Agreement is scored along the tokens of an FP32 reference: a
-`falcon-ocr-eval --profile reference bench` report over the calibration
-pages. The report decides which numbers come out. Upstream's
-`artifacts/phase4/checks/calibration-reference.json`, which only upstream's
-machine has, gives the 55-page, 24,262-step anchor that
-[MODES.md](MODES.md#the-metric) and the `--help` text quote. The first
-commands below make this host's reference instead, over the 64 pages of
-`reference/corpus-v3-calibration-lock.json` with up to 512 tokens each,
-which gives the 52-page, 22,726-step anchor of the 7700X results; to use
-upstream's, skip them and set `REF` to its path.
-
-```sh
-B=target/release
-W8=artifacts/model/w8-gptq.safetensors
-A=artifacts/agree
-mkdir -p $A
-# This host's FP32 reference: the calibration lock's 64 pages, 512 tokens each
-python - > $A/calibration-pages.txt <<'EOF'
-import json
-for page in json.load(open("reference/corpus-v3-calibration-lock.json"))["pages"]:
-    print(page["canonical_path"])
-EOF
-$B/falcon-ocr-eval --profile reference bench $(cat $A/calibration-pages.txt) \
-  --max-new-tokens 512 --warmup 0 --samples 1 --report $A/calibration-reference.json
-REF=$A/calibration-reference.json   # upstream's: artifacts/phase4/checks/calibration-reference.json
-# The anchor pages: the reference's pages outside the GPTQ capture set.
-python - $REF > $A/anchor-pages.txt <<'EOF'
-import json, sys
-from pathlib import PureWindowsPath as P  # reads / and \
-capture = {P(path).parent.name for path in open("tools/gptq-calibration-pages.txt").read().split()}
-for page in json.load(open(sys.argv[1]))["inputs"]:
-    if (name := P(page["path"]).parent.name) not in capture:
-        print(f"artifacts/corpus/v3/{name}/canonical-rgb.png")
-EOF
-# FP32 top-K log-probabilities along the reference tokens, to score KL against
-$B/falcon-ocr-eval --profile reference agree $(cat $A/anchor-pages.txt) \
-  --reference $REF --max-steps 512 --report $A/fp32.json --dump-topk $A/fp32-topk.json
-# One agreement arm: flips and KL against FP32 (tools/agree_queue.sh runs several)
-AGREE_BIN=$B/falcon-ocr-eval AGREE_REFERENCE=$REF AGREE_ARGS="--reference-topk $A/fp32-topk.json" \
-  bash tools/agree_queue.sh $A/arms $A/anchor-pages.txt 512 fast=w8-body-kv-q8=$W8
-```
-
-`tools/agree_queue.sh` scores against upstream's file unless
-`AGREE_REFERENCE` names another report, so leave that variable out only when
-`REF` is upstream's. The FP32 arm has 0 flips by construction; an arm's
-`kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
+- **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
+  timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were
+  measured on one Linux desktop; no aarch64 machine has run the model with
+  weights ([PORTABILITY.md](PORTABILITY.md)).
 
 ## Proposals (not implemented)
 
 Estimates come from measured numbers in this repository; they are not
-measurements. Two earlier proposals were settled by the agreement runs and
-are dropped: a vector nibble unpack for `q4r` (its 4-bit codes flip 5 times
-as often as fast mode's 8-bit cache) and a faster near-exact on `q8r` (an
-8-bit cache flips 18 times where near-exact flips once;
-[MODES.md](MODES.md#rotated-kv-cache-experimental)).
+measurements. Agreement rules out two other ideas: a vector nibble unpack
+for `q4r` (its 4-bit codes flip 5 times as often as fast mode's 8-bit cache)
+and a faster near-exact on `q8r` (an 8-bit cache flips 18 times where
+near-exact flips once; [MODES.md](MODES.md#rotated-kv-cache-experimental)).
 
 ### Exception columns as fast mode's default
 
 - Why: 4 FP32 columns per W2 cut fast mode's KL against FP32 by 39% (3.04e-4
   → 1.84e-4 on the 7700X anchor) for 271 KB more per decode step, 0.15% of
   its weight bytes ([MODES.md](MODES.md#exception-columns-experimental)).
-- Estimate: no flip gain at this anchor's size (64 → 63); the KL gain is
+- Estimate: no flip gain at that anchor's size (64 → 63); the KL gain is
   what a held-out gate would have to confirm in output quality.
 - Risks: a new packed format (`falcon-ocr-kernel-v2`) and republished files;
   the proxy curve flattens after 4 columns (7.14e-4 → 6.37e-4 at 16), and
@@ -162,8 +53,8 @@ as often as fast mode's 8-bit cache) and a faster near-exact on `q8r` (an
 
 - Why: `tools/w8_variants.py` damps each Gram by 1% of its mean diagonal; in
   the layer-10 W2 Gram, whose largest diagonal entry is 614,663 times the
-  median, that is 4.9 times the median diagonal entry (this host's Grams),
-  which weakens the error compensation of every ordinary column.
+  median, that is 4.9 times the median diagonal entry (the Grams captured on
+  the 7700X), which weakens the error compensation of every ordinary column.
 - Estimate: none (it changes GPTQ's result).
 - Risks: fitting the 12 capture pages more closely; the proxy is in-sample.
 - First measurement: `tools/w8_proxy.py --damp` with smaller values on the
@@ -207,11 +98,11 @@ as often as fast mode's 8-bit cache) and a faster near-exact on `q8r` (an
 
 ### `--max-dimension 1280` per book
 
-- Why: on 64 calibration pages in near-exact mode, 1280 took 20% less time
-  than 1536; CER against the ground truth went 16.42 → 15.69% on the 48
-  pages that end at EOS at 1536, 1280 and 1024, but 19.10 → 20.67% on the 55
-  that end at EOS at 1536, with 9 repetition stops against 7
-  (`research/phase4-hillclimb/attempt3/HILLCLIMB.md`, T14).
+- Why: on 64 calibration pages in near-exact mode 1280 took 20% less time
+  than 1536. Its CER was better on the 48 pages that end at EOS at 1536,
+  1280 and 1024 but worse on the 55 that end at EOS at 1536, with 9
+  repetition stops against 7
+  ([PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted) has the numbers).
 - Estimate: about 20% of a book's time where its print reads as well at
   1280, on top of margin cropping.
 - Risks: more loops and lost small print; the per-page router failed the

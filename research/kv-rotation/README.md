@@ -102,12 +102,13 @@ inputs; the value halves gain nothing.
 - So the study predicted little gain for `q8r`, unless the real activations
   carry outlier channels into the keys or values, which it cannot see. Token
   agreement on the anchor pages bore that out
-  ([docs/NEXT-STEPS.md](../../docs/NEXT-STEPS.md#setup) has the commands,
-  [docs/MODES.md](../../docs/MODES.md#rotated-kv-cache-experimental) the
-  results): rotation lowered the 8-bit cache's KL by 11% with FP32 weights and
-  by 4% in fast mode, and its flips stayed within noise. The room there was:
-  FP32 weights with the Q8 cache flipped 0.77 steps per 1,000 on the screening
-  set, and per-channel key scales were flip-neutral in the hill climb.
+  ([docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md#token-agreement) has the
+  commands, [docs/MODES.md](../../docs/MODES.md#rotated-kv-cache-experimental)
+  the results): rotation lowered the 8-bit cache's KL by 11% with FP32
+  weights and by 4% in fast mode, and its flips stayed within noise. The room
+  there was: FP32 weights with the Q8 cache flipped 0.77 steps per 1,000 on
+  the screening set, and per-channel key scales were flip-neutral in the hill
+  climb.
 - Four bits cost about 18 times the error of eight (10% of a block, rotated or
   not); on the anchor pages `q4r` multiplied fast mode's flips by 5 and its KL
   by 30.

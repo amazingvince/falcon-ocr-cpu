@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-10-01.
+Status: current as of 2026-10-02.
 
 ## Toolchain
 
@@ -68,31 +68,25 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   for a prefill or a page that runs alone, `batch.{i}` for a cohort's joint
   decode), singleton cohorts and pages dropped from a cohort included.
   `cargo test --release --locked --test negative_inputs --test margin_crop
-  --test run_cli -- --ignored --test-threads=1` checks that every public
-  entry point rejects invalid requests before model work, including tensor
-  traces and teacher scoring with the margin crop, and that a page with
-  margins reports its crop and fewer input tokens on every entry point
-  (these need `artifacts/model`); and that `run` resumes an interrupted
-  output, with `--keep-going` records a failing page and runs the rest, and
-  goes on when stderr is closed (these need the near-exact file in
-  `artifacts/packed`).
+  --test run_cli -- --ignored --test-threads=1` checks the entry points.
+  With `artifacts/model`: every public entry point rejects invalid requests
+  before model work, including tensor traces and teacher scoring with the
+  margin crop, and a page with margins reports its crop and fewer input
+  tokens on every entry point. With the near-exact file in
+  `artifacts/packed`: `run` resumes an interrupted output, under
+  `--keep-going` records a failing page and runs the rest, and goes on when
+  stderr is closed.
 - **Draft head** (needs an exported head file and `artifacts/model`):
   `FALCON_OCR_DRAFT_HEAD=<head>.safetensors cargo test --release --lib
   draft_head -- --ignored --nocapture` checks the Rust chain against the
   PyTorch fixture written by `export_head.py` (equal tokens up to the first
   near tie) with FP32 and INT8 drafter caches, and prints the draft-step
   timing probe (warm and cold).
-- **Token agreement** against the FP32 anchor: `bash tools/agree_queue.sh
-  <out> <anchor pages> 512 near-exact=w16-body-kv-q16
-  fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors` gives 1 and about
-  63 flips of 24,262 steps on the 55 anchor pages (the calibration pages of
-  `artifacts/phase4/checks/calibration-reference.json` outside
-  `tools/gptq-calibration-pages.txt`); at 8192 steps per page (78,282 steps)
-  fast mode has about 94. `AGREE_REFERENCE` names another FP32 reference
-  report than that file; [NEXT-STEPS.md](NEXT-STEPS.md#setup) makes one for
-  hosts that lack it, with the numbers it gives. The CI `weights` job runs
-  the gates and this queue, on the 12 GPTQ capture pages at 8192 steps, on a
-  self-hosted runner labelled `falcon-weights`.
+- **Token agreement** against the FP32 anchor
+  ([below](#token-agreement)): near-exact has 1 flip and fast mode about 63
+  in 24,262 steps. The CI `weights` job runs the gates and an agreement
+  queue, on the 12 GPTQ capture pages at 8192 steps, on a self-hosted runner
+  labelled `falcon-weights`.
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
   `research/corpus-qualification/tests` and
   `research/quantization-feasibility/tests` (CI runs these two; they need
@@ -108,6 +102,66 @@ Fixtures: `tests/fixtures/README.md` says how the preprocessing, decode and
 router fixtures are regenerated from the pinned Pillow/PyTorch environment;
 `tests/fixtures/modes/README.md` how the mode fixtures are recorded with the
 CLI. Regenerate a fixture only when the numerics change on purpose.
+
+## Token agreement
+
+`falcon-ocr-eval agree` teacher-forces each page along the tokens of an FP32
+reference, a `falcon-ocr-eval --profile reference bench` report over the
+calibration pages, and counts flips and KL
+([MODES.md](MODES.md#the-metric)). The anchor pages are the reference's
+pages outside the GPTQ capture set (`tools/gptq-calibration-pages.txt`).
+Upstream's `artifacts/phase4/checks/calibration-reference.json` gives the
+55-page anchor that MODES.md and the `--help` text quote: near-exact
+(`w16-body-kv-q16`) has 1 flip and fast mode (`w8-body-kv-q8` with
+`artifacts/model/w8-gptq.safetensors`) about 63 in 24,262 steps at up to
+512 per page; at 8192 steps per page (78,282 steps) fast mode has about 94.
+A host without that file makes its own reference over the 64 pages of
+`reference/corpus-v3-calibration-lock.json` with up to 512 tokens each,
+which gives the 52-page, 22,726-step anchor of MODES.md's Ryzen 7 7700X
+results.
+
+From the repository root (bash; `falcon-ocr-eval` from `cargo build
+--release --locked`), writing to the git-ignored `artifacts/agree/`; to use
+upstream's reference, skip the two commands that make one and set `REF` to
+its path:
+
+```sh
+B=target/release
+W8=artifacts/model/w8-gptq.safetensors
+A=artifacts/agree
+mkdir -p $A
+# This host's FP32 reference: the calibration lock's 64 pages, 512 tokens each
+python - > $A/calibration-pages.txt <<'EOF'
+import json
+for page in json.load(open("reference/corpus-v3-calibration-lock.json"))["pages"]:
+    print(page["canonical_path"])
+EOF
+$B/falcon-ocr-eval --profile reference bench $(cat $A/calibration-pages.txt) \
+  --max-new-tokens 512 --warmup 0 --samples 1 --report $A/calibration-reference.json
+REF=$A/calibration-reference.json   # upstream's: artifacts/phase4/checks/calibration-reference.json
+# The anchor pages: the reference's pages outside the GPTQ capture set.
+python - $REF > $A/anchor-pages.txt <<'EOF'
+import json, sys
+from pathlib import PureWindowsPath as P  # reads / and \
+capture = {P(path).parent.name for path in open("tools/gptq-calibration-pages.txt").read().split()}
+for page in json.load(open(sys.argv[1]))["inputs"]:
+    if (name := P(page["path"]).parent.name) not in capture:
+        print(f"artifacts/corpus/v3/{name}/canonical-rgb.png")
+EOF
+# FP32 top-K log-probabilities along the reference tokens, to score KL against
+$B/falcon-ocr-eval --profile reference agree $(cat $A/anchor-pages.txt) \
+  --reference $REF --max-steps 512 --report $A/fp32.json --dump-topk $A/fp32-topk.json
+# One agreement arm: flips and KL against FP32 (tools/agree_queue.sh runs several)
+AGREE_BIN=$B/falcon-ocr-eval AGREE_REFERENCE=$REF AGREE_ARGS="--reference-topk $A/fp32-topk.json" \
+  bash tools/agree_queue.sh $A/arms $A/anchor-pages.txt 512 fast=w8-body-kv-q8=$W8
+```
+
+`tools/agree_queue.sh <out> <pages> <steps> name=profile[=overlay] ...`
+runs one `agree` per arm with `--exp fast --backend avx2`. It scores against
+upstream's file unless `AGREE_REFERENCE` names another report, so leave that
+variable out only when `REF` is upstream's; `AGREE_BIN` defaults to the
+Windows `.exe` path. The FP32 top-K run has 0 flips by construction; an
+arm's `kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
 
 ## Adding an instruction set
 
