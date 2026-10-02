@@ -70,9 +70,10 @@ pinned checkpoint, the published packed files and a GPTQ overlay:
   --smoke` are in no CI job.
 - **The anchor at 55 pages.** The agreement numbers here are on 52
   calibration pages (the local calibration lock holds 64; upstream's anchor
-  has 55), so they compare arms with each other. The `weights` runner's
-  `artifacts/phase4/checks/calibration-reference.json` gives the 24,262-step
-  numbers the modes table quotes.
+  has 55), so they compare arms with each other. Scored against upstream's
+  `artifacts/phase4/checks/calibration-reference.json`, which the `weights`
+  runner reads and this host does not have, the [Setup](#setup) commands
+  give the 24,262-step numbers the modes table quotes.
 - **Held-out gates** decide every default that would change tokens: margin
   cropping for books, `--max-dimension 1280`, a rotated cache and exception
   columns. Held-out pages are single-use, so each needs a pre-registered
@@ -88,31 +89,52 @@ The commands below reproduce the agreement numbers from the repository root
 their files to the git-ignored `artifacts/agree/`; the timing tools are
 listed in [PERFORMANCE.md](PERFORMANCE.md#measuring).
 
+Agreement is scored along the tokens of an FP32 reference: a
+`falcon-ocr-eval --profile reference bench` report over the calibration
+pages. The report decides which numbers come out. Upstream's
+`artifacts/phase4/checks/calibration-reference.json`, which only upstream's
+machine has, gives the 55-page, 24,262-step anchor that
+[MODES.md](MODES.md#the-metric) and the `--help` text quote. The first
+commands below make this host's reference instead, over the 64 pages of
+`reference/corpus-v3-calibration-lock.json` with up to 512 tokens each,
+which gives the 52-page, 22,726-step anchor of the 7700X results; to use
+upstream's, skip them and set `REF` to its path.
+
 ```sh
 B=target/release
 W8=artifacts/model/w8-gptq.safetensors
 A=artifacts/agree
 mkdir -p $A
-# The anchor pages: the calibration pages outside the GPTQ capture set.
-python - > $A/anchor-pages.txt <<'EOF'
+# This host's FP32 reference: the calibration lock's 64 pages, 512 tokens each
+python - > $A/calibration-pages.txt <<'EOF'
 import json
+for page in json.load(open("reference/corpus-v3-calibration-lock.json"))["pages"]:
+    print(page["canonical_path"])
+EOF
+$B/falcon-ocr-eval --profile reference bench $(cat $A/calibration-pages.txt) \
+  --max-new-tokens 512 --warmup 0 --samples 1 --report $A/calibration-reference.json
+REF=$A/calibration-reference.json   # upstream's: artifacts/phase4/checks/calibration-reference.json
+# The anchor pages: the reference's pages outside the GPTQ capture set.
+python - $REF > $A/anchor-pages.txt <<'EOF'
+import json, sys
 from pathlib import PureWindowsPath as P  # reads / and \
 capture = {P(path).parent.name for path in open("tools/gptq-calibration-pages.txt").read().split()}
-for page in json.load(open("artifacts/phase4/checks/calibration-reference.json"))["inputs"]:
+for page in json.load(open(sys.argv[1]))["inputs"]:
     if (name := P(page["path"]).parent.name) not in capture:
         print(f"artifacts/corpus/v3/{name}/canonical-rgb.png")
 EOF
 # FP32 top-K log-probabilities along the reference tokens, to score KL against
 $B/falcon-ocr-eval --profile reference agree $(cat $A/anchor-pages.txt) \
-  --reference artifacts/phase4/checks/calibration-reference.json --max-steps 512 \
-  --report $A/fp32.json --dump-topk $A/fp32-topk.json
+  --reference $REF --max-steps 512 --report $A/fp32.json --dump-topk $A/fp32-topk.json
 # One agreement arm: flips and KL against FP32 (tools/agree_queue.sh runs several)
-AGREE_BIN=$B/falcon-ocr-eval AGREE_ARGS="--reference-topk $A/fp32-topk.json" \
+AGREE_BIN=$B/falcon-ocr-eval AGREE_REFERENCE=$REF AGREE_ARGS="--reference-topk $A/fp32-topk.json" \
   bash tools/agree_queue.sh $A/arms $A/anchor-pages.txt 512 fast=w8-body-kv-q8=$W8
 ```
 
-The FP32 arm has 0 flips by construction; an arm's `kl_mean` is
-KL(FP32 ‖ arm) over the top 32 tokens per step.
+`tools/agree_queue.sh` scores against upstream's file unless
+`AGREE_REFERENCE` names another report, so leave that variable out only when
+`REF` is upstream's. The FP32 arm has 0 flips by construction; an arm's
+`kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
 
 ## Proposals (not implemented)
 
