@@ -167,6 +167,27 @@ def optional_scan_pdf(placement: str, off: bool) -> bytes:
     return write_pdf(objects)
 
 
+def stated_scan_pdf(state: str, extra: tuple[bytes, ...] = (), width: int = 30) -> bytes:
+    """A one-page PDF, written by hand: a noise gray scan (seed 12) `width` pixels wide and 20 high covering
+    a 30 x 20 point page, drawn under an ExtGState with the entries `state`; `extra` objects are numbered
+    from 7."""
+    stream = zlib.compress(noise((width, 20), 1, 12))
+    content = b"/GS0 gs q 30 0 0 20 0 0 cm /Im0 Do Q"
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 30 20] /Resources << /XObject << /Im0 4 0 R >> "
+        b"/ExtGState << /GS0 6 0 R >> >> /Contents 5 0 R >>",
+        f"<< /Type /XObject /Subtype /Image /Width {width} /Height 20 /ColorSpace /DeviceGray "
+        f"/BitsPerComponent 8 /Filter /FlateDecode /Length {len(stream)} >>\nstream\n".encode()
+        + stream + b"\nendstream",
+        f"<< /Length {len(content)} >>\nstream\n".encode() + content + b"\nendstream",
+        f"<< /Type /ExtGState {state} >>".encode(),
+        *extra,
+    ]
+    return write_pdf(objects)
+
+
 def write_pdf(objects: list[bytes]) -> bytes:
     """A PDF of `objects`, numbered from 1 (the first is the catalog), with its cross-reference table."""
     pdf = bytearray(b"%PDF-1.7\n")
@@ -489,6 +510,42 @@ class PdfToPages(unittest.TestCase):
             else:
                 self.assertEqual(page["mode"], "extract")
                 self.assertEqual(picture.tobytes(), noise((30, 20), 1, 11))
+
+    def test_scans_that_the_graphics_state_changes_are_rendered(self):
+        # A transfer function (doubling, so mid grays turn white) or a soft mask (hiding the right half)
+        # changes what the page shows of the scan; a line width does not.
+        mask = b"<< /Type /XObject /Subtype /Form /BBox [0 0 30 20] /Group << /S /Transparency /CS /DeviceGray >> "
+        mask += b"/Length 18 >>\nstream\n1 g 0 0 15 20 re f\nendstream"
+        doubled = "/TR << /FunctionType 2 /Domain [0 1] /C0 [0] /C1 [2] /N 1 /Range [0 1] >>"
+        for name, state, extra, expected in (
+            ("transfer", doubled, (), "the image looks different drawn on the page"),
+            ("soft-mask", "/SMask << /S /Luminosity /G 7 0 R >>", (mask,),
+             "the image is drawn with transparency or a blend mode"),
+            ("line-width", "/LW 3", (), None),
+        ):
+            path = self.directory / f"{name}.pdf"
+            path.write_bytes(stated_scan_pdf(state, extra))
+            code, _, output = self.run_tool(name, "--long-side", "30", pdf=path)
+            self.assertEqual(code, 0)
+            page = self.manifest(output)["pages"][0]
+            self.assertEqual((page["mode"], page.get("extract_skipped")),
+                             ("extract" if expected is None else "render", expected), name)
+            picture = load(output / "page-0001.png").convert("RGB")
+            with pdfium.PdfDocument(path) as pdf:
+                shown = pdf_to_pages.render(pdf[0], (30, 20), False).convert("RGB")
+            self.assertEqual(picture.tobytes(), shown.tobytes(), name)
+            if expected is not None:
+                code, error, output = self.run_tool(name + "-extract", "--mode", "extract", pdf=path)
+                self.assertEqual((code, f"page 1 cannot be extracted: {expected}" in error), (1, True), name)
+                self.assertFalse(output.exists())
+
+    def test_an_image_without_pixels_is_rendered(self):
+        path = self.directory / "empty-image.pdf"
+        path.write_bytes(stated_scan_pdf("/LW 1", width=0))
+        code, error, output = self.run_tool("empty-image", pdf=path)
+        self.assertEqual((code, error), (0, ""))
+        page = self.manifest(output)["pages"][0]
+        self.assertEqual((page["mode"], page["extract_skipped"]), ("render", "the image has no pixels"))
 
     def test_bad_arguments_fail_cleanly(self):
         code, error, output = self.run_tool("missing", pdf=self.directory / "missing.pdf")

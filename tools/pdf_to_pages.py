@@ -14,13 +14,15 @@ Modes (--mode):
            covering the page's visible box (each edge within 2 pt or 0.5% of the longer
            side), with horizontal and vertical pixel scales within 0.5% of each other
            (a 300 dpi A4 scan on a rounded page box differs by 0.02-0.04%), a colour
-           space (not a stencil mask), at most 8 bits per component and no
-           transparency; invisible text (an OCR layer), popups and link annotations
-           without an appearance of their own (which draw nothing) may accompany it; a
-           link that draws one is rendered, and so is an image that optional content
-           (/OC) hides. The bits per component are read from the image stream (PDFium
-           reports its own 8-bit conversion); JPEG 2000 and images whose depth cannot
-           be read are rendered. Any other page is an error.
+           space (not a stencil mask), at most 8 bits per component, no transparency
+           or blend mode, and drawn on its own pixel grid it shows exactly its pixels
+           (a transfer function, say, changes them); invisible text (an OCR layer),
+           popups and link annotations without an appearance of their own (which draw
+           nothing) may accompany it; a link that draws one is rendered, and so is an
+           image that optional content (/OC) hides. The bits per component are read
+           from the image stream (PDFium reports its own 8-bit conversion); JPEG 2000
+           and images whose depth cannot be read are rendered. Any other page is an
+           error.
   auto     (default) Extract the pages that qualify and render the others.
 
 A 1-bit scan written by extract goes through the processor's nearest-neighbour
@@ -186,6 +188,18 @@ def annotation_draws(annotation: pdfium_c.FPDF_ANNOTATION) -> bool:
     return subtype != pdfium_c.FPDF_ANNOT_LINK or bool(pdfium_c.FPDFAnnot_HasKey(annotation, b"AP"))
 
 
+def appearance(image: pdfium.PdfImage) -> Image.Image:
+    """The image drawn with its graphics state onto exactly its own pixel grid; its placement on the page
+    is restored."""
+    width, height = image.get_px_size()
+    placement = image.get_matrix()
+    try:
+        image.set_matrix(pdfium.PdfMatrix(width, 0, 0, height, 0, 0))
+        return image.get_bitmap(render=True, scale_to_original=False).to_pil()
+    finally:
+        image.set_matrix(placement)
+
+
 def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None, str]:
     """The image a scanned page consists of and its bits per component (see the module docstring), or None
     and why the page is not one."""
@@ -217,6 +231,8 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
     if any(abs(edge - page_edge) > tolerance for edge, page_edge in zip(image.get_bounds(), box, strict=True)):
         return None, "the image does not cover the page"
     metadata = image.get_metadata()
+    if metadata.width == 0 or metadata.height == 0:
+        return None, "the image has no pixels"
     # Scans are placed on rounded page boxes (a 2480x3508 px A4 scan on 595.276x841.89 pt has scales 0.016%
     # apart, on 595x842 pt 0.043%); a visible stretch is rendered, so the PNG keeps the displayed geometry.
     if not math.isclose(a / metadata.width, d / metadata.height, rel_tol=GEOMETRY_TOLERANCE):
@@ -232,6 +248,15 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
     drawn = image.get_bitmap(render=True, scale_to_original=False).to_pil()
     if "A" in drawn.getbands() and drawn.getchannel("A").getextrema()[0] < 255:
         return None, "the image has transparency"
+    # A soft mask, constant alpha or blend mode in the graphics state does not show in that drawing.
+    if pdfium_c.FPDFPageObj_HasTransparency(image):
+        return None, "the image is drawn with transparency or a blend mode"
+    # Nor does a transfer function, which the drawing on the image's own pixel grid applies: the scan is
+    # extracted only when that shows exactly its pixels.
+    pixels = image.get_bitmap(render=False).to_pil().convert("RGB")
+    shown = appearance(image).convert("RGB")
+    if shown.size != pixels.size or ImageChops.difference(shown, pixels).getbbox() is not None:
+        return None, "the image looks different drawn on the page"
     # Optional content (/OC on the image or around it) can hide the image, and PDFium's API does not say
     # whether it does: an image with ink, drawn at one pixel per point, on a page that renders blank at that
     # scale is hidden.
