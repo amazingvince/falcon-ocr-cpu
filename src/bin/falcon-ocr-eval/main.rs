@@ -324,12 +324,14 @@ impl falcon_ocr::trace::Trace for Agreement {
     }
 }
 
-/// Page directory name of an input image path (the corpus page ID).
+/// Page directory name of an input image path (the corpus page ID), read
+/// with `/` or `\` separators, so a report written on Windows matches on any
+/// host.
 fn page_id(path: &Path) -> String {
-    path.parent()
-        .and_then(|p| p.file_name())
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default()
+    let path = path.to_string_lossy();
+    let mut parts = path.rsplit(['/', '\\']);
+    parts.next();
+    parts.next().unwrap_or_default().to_owned()
 }
 fn digest(path: &Path) -> Result<String> {
     let mut file = std::fs::File::open(path)?;
@@ -743,6 +745,17 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn page_ids_read_either_separator() {
+        for path in [
+            "artifacts/corpus/v3/4a756837/canonical-rgb.png",
+            r"artifacts\corpus\v3\4a756837\canonical-rgb.png",
+        ] {
+            assert_eq!(page_id(Path::new(path)), "4a756837");
+        }
+        assert_eq!(page_id(Path::new("canonical-rgb.png")), "");
+    }
 
     /// A kernel-ready file header naming `profile` (no tensor is read).
     fn packed_file(dir: &Path, profile: Profile) -> PathBuf {
