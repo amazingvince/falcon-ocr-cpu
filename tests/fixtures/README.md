@@ -42,11 +42,12 @@ RGBA/LA, and 16-bit grayscale/RGB/alpha. `palette-64x48.png` and `binary-44x64.p
 add a fourth case at bounds 16..48 that downscales them where Pillow's
 nearest-neighbour positions (a running sum of the scale) differ from the direct
 `(x + 0.5) * scale` product in five columns and five rows. The runner before
-2026-09-28 used that product and failed both cases and the one-bit upscale at
-64..128. `tall-17x1800.png` has only bounds 16..2048 (narrower bounds make it too
-thin for a patch): its second resize to 16x1792 shrinks a page more than 100
-times taller than wide, which the pinned Pillow 12.3.0 resamples vertically
-first; the runner before 2026-09-28 resampled horizontally first and failed it.
+the 2026-09-30 fix used that product and failed both cases and the one-bit
+upscale at 64..128. `tall-17x1800.png` has only bounds 16..2048 (narrower
+bounds make it too thin for a patch): its second resize to 16x1792 shrinks a
+page more than 100 times taller than wide, which the pinned Pillow 12.3.0
+resamples vertically first; the runner before the 2026-09-30 fix resampled
+horizontally first and failed it.
 JPEG fixtures include grayscale, CMYK, progressive encoding, qualities
 10/75/100, and chroma subsampling 4:4:4/4:2:2/4:2:0.
 All final FP32 patch buffers are compared exactly. The 12 JPEG files additionally
