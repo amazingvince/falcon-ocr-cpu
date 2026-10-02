@@ -32,13 +32,16 @@ speculation and the repetition stop from the host.
 
 `run` reads PNG and JPEG. `python tools/pdf_to_pages.py book.pdf --output-dir
 book-pages` (`pip install -r requirements/tools.txt`) writes one PNG per page:
-a page containing only a full-page scan or screenshot is extracted at its
+a page that draws only a full-page scan or screenshot is extracted at its
 native resolution (1-bit and gray kept) when its pixel proportions match the
-displayed page to within 0.5%. Pages with visible text objects, mixed content
-or images stretched by more than that are rendered with their longer side at
-1536 pixels, which the processor's first resize leaves unchanged.
-`book-pages/pages.txt` lists the files in page order and `manifest.json`
-records how each page was made; recognize them in order with
+displayed page to within 0.5% and the page shows exactly the image's pixels.
+Pages with visible text objects, mixed content, images stretched by more than
+that, or an image that the PDF alters or hides (a transfer function,
+transparency, a blend mode, optional content, a link that draws over it) are
+rendered with their longer side at 1536 pixels, which the processor's first
+resize leaves unchanged. `book-pages/pages.txt` lists the files in page order
+and `manifest.json` records how each page was made; recognize them in order
+with
 
 ```sh
 target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl
