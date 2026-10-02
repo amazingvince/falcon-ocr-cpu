@@ -143,6 +143,30 @@ def linked_scan_pdf(appearance: bytes) -> bytes:
     return write_pdf(objects)
 
 
+def optional_scan_pdf(placement: str, off: bool) -> bytes:
+    """A one-page PDF, written by hand: a noise gray scan (seed 11) covering a 30 x 20 point page in an
+    optional-content group, set on the image (`placement` "image") or around its drawing ("content"), and
+    switched off by default when `off`."""
+    width, height = 30, 20
+    stream = zlib.compress(noise((width, height), 1, 11))
+    draw = f"q {width} 0 0 {height} 0 0 cm /Im0 Do Q"
+    content = (f"/OC /oc1 BDC {draw} EMC" if placement == "content" else draw).encode()
+    group = " /OC 6 0 R" if placement == "image" else ""
+    objects = [
+        f"<< /Type /Catalog /Pages 2 0 R /OCProperties << /OCGs [6 0 R] /D << /Order [6 0 R]"
+        f"{' /OFF [6 0 R]' if off else ''} >> >> >>".encode(),
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Resources << /XObject << /Im0 4 0 R >> "
+        "/Properties << /oc1 6 0 R >> >> /Contents 5 0 R >>".encode(),
+        f"<< /Type /XObject /Subtype /Image /Width {width} /Height {height} /ColorSpace /DeviceGray "
+        f"/BitsPerComponent 8{group} /Filter /FlateDecode /Length {len(stream)} >>\nstream\n".encode()
+        + stream + b"\nendstream",
+        f"<< /Length {len(content)} >>\nstream\n".encode() + content + b"\nendstream",
+        b"<< /Type /OCG /Name (Scan) >>",
+    ]
+    return write_pdf(objects)
+
+
 def write_pdf(objects: list[bytes]) -> bytes:
     """A PDF of `objects`, numbered from 1 (the first is the catalog), with its cross-reference table."""
     pdf = bytearray(b"%PDF-1.7\n")
@@ -447,6 +471,24 @@ class PdfToPages(unittest.TestCase):
         red, green, _ = load(output / "page-0001.png").convert("RGB").getpixel((300, 1100))
         self.assertEqual((red > 200, green < 50), (True, True))
         self.assertEqual(load(output / "page-0002.png").getextrema(), (255, 255))
+
+    def test_scans_hidden_by_optional_content_are_rendered(self):
+        # A switched-off group hides the scan as displayed, set on the image or around it.
+        for placement, off, expected in (("image", True, "render"), ("content", True, "render"),
+                                         ("image", False, "extract")):
+            path = self.directory / f"optional-{placement}-{off}.pdf"
+            path.write_bytes(optional_scan_pdf(placement, off))
+            code, _, output = self.run_tool(path.stem, pdf=path)
+            self.assertEqual(code, 0)
+            page = self.manifest(output)["pages"][0]
+            picture = load(output / "page-0001.png")
+            if expected == "render":
+                self.assertEqual((page["mode"], page["extract_skipped"]),
+                                 ("render", "the image is hidden (optional content)"), placement)
+                self.assertEqual(picture.convert("L").getextrema(), (255, 255), placement)
+            else:
+                self.assertEqual(page["mode"], "extract")
+                self.assertEqual(picture.tobytes(), noise((30, 20), 1, 11))
 
     def test_bad_arguments_fail_cleanly(self):
         code, error, output = self.run_tool("missing", pdf=self.directory / "missing.pdf")

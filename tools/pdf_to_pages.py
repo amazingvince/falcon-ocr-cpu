@@ -17,9 +17,10 @@ Modes (--mode):
            space (not a stencil mask), at most 8 bits per component and no
            transparency; invisible text (an OCR layer), popups and link annotations
            without an appearance of their own (which draw nothing) may accompany it; a
-           link that draws one is rendered. The bits per component are read from the
-           image stream (PDFium reports its own 8-bit conversion); JPEG 2000 and images
-           whose depth cannot be read are rendered. Any other page is an error.
+           link that draws one is rendered, and so is an image that optional content
+           (/OC) hides. The bits per component are read from the image stream (PDFium
+           reports its own 8-bit conversion); JPEG 2000 and images whose depth cannot
+           be read are rendered. Any other page is an error.
   auto     (default) Extract the pages that qualify and render the others.
 
 A 1-bit scan written by extract goes through the processor's nearest-neighbour
@@ -231,6 +232,13 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
     drawn = image.get_bitmap(render=True, scale_to_original=False).to_pil()
     if "A" in drawn.getbands() and drawn.getchannel("A").getextrema()[0] < 255:
         return None, "the image has transparency"
+    # Optional content (/OC on the image or around it) can hide the image, and PDFium's API does not say
+    # whether it does: an image with ink, drawn at one pixel per point, on a page that renders blank at that
+    # scale is hidden.
+    if drawn.convert("L").getextrema()[0] < 255:
+        width, height = page.get_size()
+        if render(page, (max(1, round(width)), max(1, round(height))), gray=True).getextrema()[0] == 255:
+            return None, "the image is hidden (optional content)"
     return (image, bits), ""
 
 
