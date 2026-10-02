@@ -88,6 +88,14 @@ impl<'f, T> Emitter<'f, T> {
     }
 }
 
+impl<T> Emitter<'_, Result<T>> {
+    /// A failure waiting behind an earlier page: do not admit more pages
+    /// until the callback receives it and decides whether to continue.
+    pub(crate) fn has_pending_error(&self) -> bool {
+        self.order.waiting.values().any(Result::is_err)
+    }
+}
+
 impl Runner {
     /// [`Runner::recognize_files`] as a stream: `on_page(index, result)`
     /// receives each page's result as soon as the page and every earlier one
@@ -99,8 +107,10 @@ impl Runner {
     /// running on the pipeline's second pool completes first, and no further
     /// result reaches `on_page`. The returned error is the run's own (invalid
     /// options). With a batch size above 1, a page that finishes frees its
-    /// row for the next page at once (continuous batching, `batch/`), each
-    /// page keeps its own fitted output budget, as it would alone, and its
+    /// row for the next page (continuous batching, `batch/`), unless a
+    /// failure waits behind an earlier result: admissions wait until the
+    /// callback receives it and decides whether to continue. Each page
+    /// keeps its own fitted output budget, as it would alone, and its
     /// `Timings` are the sum of its own stages (`Timings::total_ms`). Tokens
     /// are those of `recognize_files`, except that its fixed cohorts decode a
     /// batch to the smallest fitted budget in it.

@@ -88,7 +88,9 @@ pub(crate) trait Engine {
 
 /// Run `pages` pages on `engine`, at most `rows` at a time, handing each
 /// result to `emit` in input order. A page whose prefill fails hands over
-/// its error; a joint step that fails fails every page in it.
+/// its error; a joint step that fails fails every page in it. Admissions
+/// wait while a failure is buffered behind an earlier page, until the
+/// callback receives it and decides whether to continue.
 pub(crate) fn drive<E: Engine>(
     engine: &mut E,
     rows: usize,
@@ -98,7 +100,9 @@ pub(crate) fn drive<E: Engine>(
     let mut scheduler = Scheduler::new(rows, pages);
     let (mut active, mut finished) = (Vec::with_capacity(rows), Vec::with_capacity(rows));
     while !scheduler.done() {
-        while let Some(page) = scheduler.admit(|page| engine.ready(page)) {
+        while !emit.has_pending_error()
+            && let Some(page) = scheduler.admit(|page| engine.ready(page))
+        {
             let result = match engine.start(page, scheduler.alone()) {
                 Ok(true) => continue,
                 Ok(false) => engine.finish(page),
@@ -153,8 +157,12 @@ mod tests {
         ready_at: Vec<usize>,
         /// The joint step that fails (1-based), if any.
         fail_step: Option<usize>,
+        /// The page whose finished result fails.
+        fail_finish: Option<usize>,
         steps: usize,
         decoded: Vec<usize>,
+        /// Pages admitted, with the number of steps already taken.
+        started: Vec<(usize, usize)>,
         /// Every step's pages.
         log: Vec<Vec<usize>>,
         abandoned: Vec<usize>,
@@ -179,6 +187,7 @@ mod tests {
             self.steps >= self.ready_at[page]
         }
         fn start(&mut self, page: usize, alone: bool) -> Result<bool> {
+            self.started.push((page, self.steps));
             if alone {
                 self.alone.push(page);
             }
@@ -206,6 +215,9 @@ mod tests {
             Ok(())
         }
         fn finish(&mut self, page: usize) -> Result<usize> {
+            if self.fail_finish == Some(page) {
+                bail!("page {page} did not finish");
+            }
             Ok(self.decoded[page])
         }
         fn abandon(&mut self, page: usize) {
@@ -307,6 +319,7 @@ mod tests {
         assert_eq!(seen.iter().map(|(p, _)| *p).collect::<Vec<_>>(), [0, 1, 2, 3]);
         assert_eq!((seen[2].1.as_str(), seen[3].1.as_str()), ("3", "1"));
         assert_eq!(mock.abandoned, [1]);
+        assert_eq!(mock.started, [(0, 0), (1, 0), (2, 2), (3, 2)]);
         let mut mock = Mock::new(vec![Some(3), Some(3), Some(1)]);
         mock.fail_step = Some(2);
         let (_, seen) = run(&mut mock, 2, None);
@@ -324,5 +337,28 @@ mod tests {
         assert!(flow.is_break());
         assert_eq!(seen, [(0, "1".to_owned())]);
         assert_eq!(mock.log, [vec![0, 1]]);
+        // A later failure waits behind page 0. No row may refill until
+        // the callback receives it, whether prefill or finishing failed
+        // (at the first token or after a decode step).
+        for length in [None, Some(0), Some(1)] {
+            for stop in [Some(1), None] {
+                let mut mock = Mock::new(vec![Some(4), length, Some(1), Some(1)]);
+                mock.fail_finish = length.map(|_| 1);
+                let (flow, seen) = run(&mut mock, 2, stop);
+                assert_eq!(flow.is_break(), stop.is_some());
+                assert_eq!(seen[0], (0, "4".to_owned()));
+                assert_eq!(seen[1].0, 1);
+                assert!(seen[1].1.starts_with("page 1 did not"));
+                if stop.is_some() {
+                    assert_eq!(seen.len(), 2);
+                    assert_eq!(mock.started, [(0, 0), (1, 0)]);
+                    assert_eq!(&mock.decoded[2..], [0, 0]);
+                } else {
+                    assert_eq!(seen.len(), 4);
+                    assert_eq!(mock.started, [(0, 0), (1, 0), (2, 4), (3, 4)]);
+                    assert_eq!(&mock.decoded[2..], [1, 1]);
+                }
+            }
+        }
     }
 }
