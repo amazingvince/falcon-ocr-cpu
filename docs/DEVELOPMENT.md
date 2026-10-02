@@ -88,9 +88,11 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   63 flips of 24,262 steps on the 55 anchor pages (the calibration pages of
   `artifacts/phase4/checks/calibration-reference.json` outside
   `tools/gptq-calibration-pages.txt`); at 8192 steps per page (78,282 steps)
-  fast mode has about 94. The CI `weights` job runs the gates and this queue,
-  on the 12 GPTQ capture pages at 8192 steps, on a self-hosted runner
-  labelled `falcon-weights`.
+  fast mode has about 94. `AGREE_REFERENCE` names another FP32 reference
+  report than that file; [NEXT-STEPS.md](NEXT-STEPS.md#setup) makes one for
+  hosts that lack it, with the numbers it gives. The CI `weights` job runs
+  the gates and this queue, on the 12 GPTQ capture pages at 8192 steps, on a
+  self-hosted runner labelled `falcon-weights`.
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
   `research/corpus-qualification/tests` and
   `research/quantization-feasibility/tests` (CI runs these two; they need

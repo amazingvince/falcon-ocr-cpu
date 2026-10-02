@@ -26,9 +26,9 @@ vertically, except that, as in the pinned Pillow 12.3.0, a page more than 100
 times taller than wide whose height shrinks is resampled vertically first;
 palette and 1-bit pages take Pillow's nearest-neighbour first resize. The
 prompt starts at the image class token (no BOS) and plain extraction ends at
-`OCR_PLAIN`.
-JPEG goes through libjpeg-turbo, matching the pinned Pillow decoder byte for
-byte; PNG through the `image` crate with Pillow's 16-bit truncation.
+`OCR_PLAIN`. JPEG goes through libjpeg-turbo, matching the pinned Pillow
+decoder byte for byte; PNG through the `image` crate with Pillow's 16-bit
+truncation.
 
 ## Execution order
 
