@@ -20,13 +20,13 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu --mode fast run page.png
 target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --probe
 ```
 
-`run` prints one JSON line per page as soon as the page is done: the text,
-token ids, stop reason, timings and the plan the runner chose. `--text`
-prints the text only. With no flags the runner picks near-exact mode, loads
-the packed file from the model directory (about 10 ms) and the draft head
-next to it, and sets threads, kernels, the decode team, speculation and the
-repetition stop from the host. For whole books and PDFs, see
-[Books and PDFs](#books-and-pdfs).
+`run` prints one JSON line per page, in input order, as soon as the page
+and those before it are done: the text, token ids, stop reason, timings and
+the plan the runner chose. `--text` prints the text only. With no flags the
+runner picks near-exact mode, loads the packed file from the model directory
+(about 10 ms) and the draft head next to it, and sets threads, kernels, the
+decode team, speculation and the repetition stop from the host. For whole
+books and PDFs, see [Books and PDFs](#books-and-pdfs).
 
 ## Modes
 
@@ -120,9 +120,9 @@ long side (`--help` has the rules). The whole book then runs as one job:
 ```sh
 pip install -r requirements/tools.txt
 python tools/pdf_to_pages.py book.pdf --output-dir book-pages
-falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl --keep-going
+target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl --keep-going
 # stopped by a crash or Ctrl-C? the same command with --resume runs only the missing pages
-falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl --keep-going --resume
+target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl --keep-going --resume
 ```
 
 - `--output` appends each page's record to the file as soon as the page is

@@ -100,7 +100,8 @@ enum Command {
         output: PathBuf,
     },
     /// Recognize full-page PNG/JPEG images: one JSON line per page, in input
-    /// order, each printed as soon as its page is done.
+    /// order, each printed as soon as its page and every earlier one are
+    /// done.
     Run {
         /// Page images, in order [required unless --list].
         #[arg(required_unless_present = "list")]
@@ -115,6 +116,8 @@ enum Command {
         /// explicit value that does not fit is an error].
         #[arg(long)]
         max_new_tokens: Option<usize>,
+        /// Smallest side in pixels: the first resize enlarges a page whose
+        /// shorter side is below it.
         #[arg(long, default_value_t = 64)]
         min_dimension: u32,
         /// Resolution cap in pixels, or `auto`: the resolution router picks
@@ -135,19 +138,20 @@ enum Command {
         #[arg(long)]
         text: bool,
         /// Append the JSON records to FILE instead of printing them, flushed
-        /// after every page.
+        /// after every page. An existing FILE must hold only records; a last
+        /// record cut short by a crash is removed first.
         #[arg(long, value_name = "FILE")]
         output: Option<PathBuf>,
         /// Skip inputs that already have a successful record in the --output
-        /// file (a record cut short by a crash is dropped and redone).
+        /// file (a page whose record was cut short by a crash runs again).
         #[arg(long, requires = "output")]
         resume: bool,
         /// Record a page that fails as {"path", "page", "error"} (with --text
         /// and no --output, only its error on stderr) and go on; the exit
         /// code is non-zero at the end if any page failed. Without it the
-        /// run stops at the first failing page. Either way an input that is
-        /// missing or not a PNG or JPEG stops the run before the model
-        /// loads.
+        /// run stops at the first failing page. Either way an input the run
+        /// reads (any but those --resume skips) that is missing or not a PNG
+        /// or JPEG stops the run before the model loads.
         #[arg(long)]
         keep_going: bool,
         /// Read, prepare and prefill the next page while the current pages

@@ -111,11 +111,8 @@ calibration pages, and counts flips and KL
 ([MODES.md](MODES.md#the-metric)). The anchor pages are the reference's
 pages outside the GPTQ capture set (`tools/gptq-calibration-pages.txt`).
 Upstream's `artifacts/phase4/checks/calibration-reference.json` gives the
-55-page anchor that MODES.md and the `--help` text quote: near-exact
-(`w16-body-kv-q16`) has 1 flip and fast mode (`w8-body-kv-q8` with
-`artifacts/model/w8-gptq.safetensors`) about 63 in 24,262 steps at up to
-512 per page; at 8192 steps per page (78,282 steps) fast mode has about 94.
-A host without that file makes its own reference over the 64 pages of
+55-page, 24,262-step anchor whose flips MODES.md and the `--help` text
+quote. A host without that file makes its own reference over the 64 pages of
 `reference/corpus-v3-calibration-lock.json` with up to 512 tokens each,
 which gives the 52-page, 22,726-step anchor of MODES.md's Ryzen 7 7700X
 results.

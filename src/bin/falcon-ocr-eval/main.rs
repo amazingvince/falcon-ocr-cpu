@@ -21,6 +21,8 @@ use std::{
 #[derive(Parser)]
 #[command(about = "Falcon-OCR v1.5 integrated CPU experiment (UNQUALIFIED)")]
 struct Cli {
+    /// Model directory: the FP32 checkpoint, its tokenizer and the GPTQ
+    /// overlay.
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
     /// Kernel-ready model file (`falcon-ocr pack`): its weights, with

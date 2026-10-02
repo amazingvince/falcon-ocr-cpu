@@ -357,7 +357,7 @@ impl GenerationOptions {
             ensure!(
                 pad < smallest,
                 "crop_margins padding {pad} must be below {smallest}, the smallest maximum dimension a page runs at: \
-                 a larger padding never crops it"
+                 a larger padding never crops a page that runs there"
             );
         }
         if self.route {

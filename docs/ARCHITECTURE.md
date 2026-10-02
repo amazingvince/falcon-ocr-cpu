@@ -90,17 +90,21 @@ thread count, so the pipeline's tokens are a sequential run's.
 `--list FILE`: UTF-8 with or without a byte order mark, one per line, blank
 lines and lines starting with `#` skipped, relative paths resolved against
 the current directory. Before the model loads, every input the run will
-read must exist, be a regular file and start like a PNG or JPEG.
+read must exist, be a regular file and start like a PNG or JPEG. A JPEG
+above the pinned Pillow's limit (178,956,970 pixels) fails its page when it
+is decoded.
 
 **Records.** Each page gives one JSON line, in input order: `path` (the
 input as given) and `page` (its 0-based index among the inputs), the
 `OcrResult` fields, then the generation `options` the run asked for. A page
 that fails under `--keep-going` gives `{"path", "page", "error"}`; without
 it the run stops at the first failing page, after the records of the pages
-before it. With `--batch-size N` or `--pipeline`, a page's `total_ms` is the
-sum of its own stages (`time_to_first_token_ms + decode_ms`), which overlap
-other pages'. A summary on stderr gives the pages done, failed and skipped,
-the time and the pages per hour.
+before it, and pages after it that `--batch-size N` or `--pipeline` had
+already finished are not written and count as not run. With
+`--batch-size N` or `--pipeline`, a page's `total_ms` is the sum of its own
+stages (`time_to_first_token_ms + decode_ms`), which overlap other pages'. A
+summary on stderr gives the pages done, failed, skipped and not run, the
+time and the pages per hour.
 
 **The output file.** `--output FILE` appends the records to FILE, flushed
 after every page. Checked with the inputs, before the model loads: FILE's

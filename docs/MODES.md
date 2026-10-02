@@ -1,7 +1,8 @@
 # Modes
 
 Status: current as of 2026-10-02. Measurements: Ryzen 9 7950X (16 cores,
-32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens).
+32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
+unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
 ## The metric
 
@@ -251,8 +252,9 @@ pixels (default 24, at that resize's scale) around the content; the second
 resize and the patches then run unchanged on the cut page. Text keeps its size
 in pixels and only the image token count drops, which shortens prefill
 (attention grows with the square of the token count) and every decode step.
-PAD must be below `--max-dimension` (below 768 with `auto`), since a larger
-padding never crops the page.
+PAD must be below `--max-dimension`, since a larger padding never crops the
+page; with `auto` it must be below 768, so that it can crop a page routed to
+any size.
 
 The content box comes from integer luma statistics
 (`preprocess::margin_crop`): the background is the 90th luma percentile and
