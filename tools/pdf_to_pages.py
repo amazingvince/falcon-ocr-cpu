@@ -15,10 +15,11 @@ Modes (--mode):
            side), with horizontal and vertical pixel scales within 0.5% of each other
            (a 300 dpi A4 scan on a rounded page box differs by 0.02-0.04%), a colour
            space (not a stencil mask), at most 8 bits per component and no
-           transparency; invisible text (an OCR layer) and link annotations may
-           accompany it. The bits per component are read from the image stream (PDFium
-           reports its own 8-bit conversion); JPEG 2000 and images whose depth cannot
-           be read are rendered. Any other page is an error.
+           transparency; invisible text (an OCR layer), popups and link annotations
+           without an appearance of their own (which draw nothing) may accompany it; a
+           link that draws one is rendered. The bits per component are read from the
+           image stream (PDFium reports its own 8-bit conversion); JPEG 2000 and images
+           whose depth cannot be read are rendered. Any other page is an error.
   auto     (default) Extract the pages that qualify and render the others.
 
 A 1-bit scan written by extract goes through the processor's nearest-neighbour
@@ -71,8 +72,6 @@ COLORSPACES = {
         "Indexed", "Pattern",
     )
 }
-# Annotations that draw nothing on the page as displayed.
-HIDDEN_ANNOTATIONS = (pdfium_c.FPDF_ANNOT_LINK, pdfium_c.FPDF_ANNOT_POPUP)
 # Components per pixel of the colour spaces whose image data can be sized (ICCBased: from the profile).
 COMPONENTS = {
     pdfium_c.FPDF_COLORSPACE_DEVICEGRAY: 1, pdfium_c.FPDF_COLORSPACE_CALGRAY: 1,
@@ -176,6 +175,16 @@ def bits_per_component(page: pdfium.PdfPage, image: pdfium.PdfImage, colorspace:
     return fits[0] if len(fits) == 1 else None
 
 
+def annotation_draws(annotation: pdfium_c.FPDF_ANNOTATION) -> bool:
+    """Whether a page annotation may draw on the page as rendered. PDFium draws no popup on the page, and a
+    link only through an appearance stream of its own (/AP): it generates none for links, so a link without
+    one shows nothing, not even its /Border."""
+    subtype = pdfium_c.FPDFAnnot_GetSubtype(annotation)
+    if subtype == pdfium_c.FPDF_ANNOT_POPUP:
+        return False
+    return subtype != pdfium_c.FPDF_ANNOT_LINK or bool(pdfium_c.FPDFAnnot_HasKey(annotation, b"AP"))
+
+
 def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None, str]:
     """The image a scanned page consists of and its bits per component (see the module docstring), or None
     and why the page is not one."""
@@ -192,9 +201,11 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
         return None, f"the page has {len(images)} images"
     for index in range(pdfium_c.FPDFPage_GetAnnotCount(page)):
         annotation = pdfium_c.FPDFPage_GetAnnot(page, index)
-        subtype = pdfium_c.FPDFAnnot_GetSubtype(annotation)
-        pdfium_c.FPDFPage_CloseAnnot(annotation)
-        if subtype not in HIDDEN_ANNOTATIONS:
+        try:
+            drawn = annotation_draws(annotation)
+        finally:
+            pdfium_c.FPDFPage_CloseAnnot(annotation)
+        if drawn:
             return None, "the page has visible annotations"
     image = images[0]
     a, b, c, d, _, _ = image.get_matrix().get()

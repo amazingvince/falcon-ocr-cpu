@@ -113,6 +113,38 @@ def image_pdf(width: int, height: int, colorspace: str, bits: int, samples: byte
     ]
     if icc:
         objects.append(f"<< /N 3 /Length {len(icc)} >>\nstream\n".encode() + icc + b"\nendstream")
+    return write_pdf(objects)
+
+
+def linked_scan_pdf(appearance: bytes) -> bytes:
+    """A one-page PDF, written by hand (PDFium cannot set a link's appearance): a white 8-bit gray scan
+    covering a 144 x 216 point page and a link annotation over part of it, drawing the content stream
+    `appearance` when one is given."""
+    width, height = 144, 216
+    stream = zlib.compress(b"\xff" * (width * height))
+    content = f"q {width} 0 0 {height} 0 0 cm /Im0 Do Q".encode()
+    link = b"<< /Type /Annot /Subtype /Link /Rect [20 20 100 100]"
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] "
+        "/Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R /Annots [6 0 R] >>".encode(),
+        f"<< /Type /XObject /Subtype /Image /Width {width} /Height {height} /ColorSpace /DeviceGray "
+        f"/BitsPerComponent 8 /Filter /FlateDecode /Length {len(stream)} >>\nstream\n".encode()
+        + stream + b"\nendstream",
+        f"<< /Length {len(content)} >>\nstream\n".encode() + content + b"\nendstream",
+        link + (b" /AP << /N 7 0 R >> >>" if appearance else b" >>"),
+    ]
+    if appearance:
+        objects.append(
+            f"<< /Type /XObject /Subtype /Form /BBox [0 0 80 80] /Length {len(appearance)} >>\nstream\n".encode()
+            + appearance + b"\nendstream"
+        )
+    return write_pdf(objects)
+
+
+def write_pdf(objects: list[bytes]) -> bytes:
+    """A PDF of `objects`, numbered from 1 (the first is the catalog), with its cross-reference table."""
     pdf = bytearray(b"%PDF-1.7\n")
     offsets = []
     for number, body in enumerate(objects, 1):
@@ -398,6 +430,23 @@ class PdfToPages(unittest.TestCase):
         code, error, _ = self.run_tool("depths-extract", "--mode", "extract", pdf=self.depths)
         self.assertEqual(code, 1)
         self.assertIn("page 1 cannot be extracted: the image has 16 bits per component", error)
+
+    def test_links_that_draw_an_appearance_are_rendered(self):
+        # A link draws only through its own appearance stream; without one the scan is extracted.
+        pdf = pdfium.PdfDocument.new()
+        for appearance in (b"1 0 0 rg 0 0 80 80 re f", b""):
+            pdf.import_pages(pdfium.PdfDocument(linked_scan_pdf(appearance)))
+        path = self.directory / "links.pdf"
+        pdf.save(path)
+        pdf.close()
+        code, _, output = self.run_tool("links", pdf=path)
+        self.assertEqual(code, 0)
+        pages = self.manifest(output)["pages"]
+        self.assertEqual([(page["mode"], page.get("extract_skipped")) for page in pages],
+                         [("render", "the page has visible annotations"), ("extract", None)])
+        red, green, _ = load(output / "page-0001.png").convert("RGB").getpixel((300, 1100))
+        self.assertEqual((red > 200, green < 50), (True, True))
+        self.assertEqual(load(output / "page-0002.png").getextrema(), (255, 255))
 
     def test_bad_arguments_fail_cleanly(self):
         code, error, output = self.run_tool("missing", pdf=self.directory / "missing.pdf")
