@@ -141,8 +141,8 @@ pub struct Run {
     pub overlay: Option<String>,
     /// `--max-dimension auto` (the record has a `route`).
     pub routed: bool,
-    /// The options the run asked for; `None` for a record written before
-    /// records carried them, whose fixed size and crop are then unknown.
+    /// The options the run asked for; `None` for a record without readable
+    /// `options`, which matches no run.
     pub settings: Option<Settings>,
     /// The runner's token-changing choices; `None` for an escalated record
     /// (its plan is the near-exact rerun's) or a plan without them.
@@ -158,7 +158,8 @@ impl Run {
                 .precision
                 .as_ref()
                 .is_none_or(|precision| Some(precision) == run.precision.as_ref() && self.overlay == run.overlay)
-            && self.settings.is_none_or(|settings| Some(settings) == run.settings)
+            && self.settings.is_some()
+            && self.settings == run.settings
             && self
                 .kernels
                 .as_ref()
@@ -186,8 +187,7 @@ impl std::fmt::Display for Run {
         }
         match &self.settings {
             Some(settings) => details.extend(settings.flags()),
-            None if self.routed => details.push("--max-dimension auto".to_owned()),
-            None => {}
+            None => details.push("no options".to_owned()),
         }
         details.extend(self.kernels.iter().flat_map(Kernels::flags));
         if self.precision.is_none() {
@@ -605,15 +605,15 @@ mod tests {
         sink.page(Path::new("a.png"), 0, &result("a")).unwrap();
     }
 
+    /// `record` as a line of an output, with the `options` its run asked for.
+    fn line(record: &str, options: &GenerationOptions) -> String {
+        let mut record: Map<String, Value> = serde_json::from_str(record).unwrap();
+        record.insert("options".to_owned(), serde_json::to_value(options).unwrap());
+        format!("{}\n", Value::Object(record))
+    }
+
     #[test]
     fn a_resume_from_another_mode_warns() {
-        let text = concat!(
-            r#"{"path":"a.png","text":"t","mode":"fast","precision":"w8-body-kv-q8"}"#,
-            "\n",
-            r#"{"path":"b.png","text":"t","mode":"near-exact","precision":"w16-body-kv-q16","escalated_from":{"mode":"fast"}}"#,
-            "\n"
-        );
-        let existing = scan_output(text);
         // `run`'s defaults: the fitted budget at a fixed 1536, or routed.
         let fixed = GenerationOptions {
             fit_budget: true,
@@ -623,6 +623,13 @@ mod tests {
             route: true,
             ..fixed.clone()
         };
+        let text = [
+            r#"{"path":"a.png","text":"t","mode":"fast","precision":"w8-body-kv-q8"}"#,
+            r#"{"path":"b.png","text":"t","mode":"near-exact","precision":"w16-body-kv-q16","escalated_from":{"mode":"fast"}}"#,
+        ]
+        .map(|record| line(record, &fixed))
+        .concat();
+        let existing = scan_output(&text);
         let fast_rtn = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, None);
         assert_eq!(resume_warning(&existing, &fast_rtn), None);
         let near_exact = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None);
@@ -654,10 +661,12 @@ mod tests {
         let warning = resume_warning(&existing, &routed).unwrap();
         assert!(warning.contains(": 1 escalated from fast, 1 in fast ("), "{warning}");
         // Records name their overlay in `plan` and their route in `route`.
-        let existing = scan_output(concat!(
-            r#"{"path":"c.png","text":"t","mode":"fast","precision":"w8-body-kv-q8","#,
-            r#""plan":{"overlay_sha256":"0123456789abcdef"},"route":{"max_dimension":768}}"#,
-            "\n"
+        let existing = scan_output(&line(
+            concat!(
+                r#"{"path":"c.png","text":"t","mode":"fast","precision":"w8-body-kv-q8","#,
+                r#""plan":{"overlay_sha256":"0123456789abcdef"},"route":{"max_dimension":768}}"#
+            ),
+            &auto,
         ));
         let gptq_routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", Some("0123456789abcdef"), &auto, None);
         assert_eq!(resume_warning(&existing, &gptq_routed), None);
@@ -665,10 +674,12 @@ mod tests {
         assert!(warning.ends_with("1 in fast (w8-body-kv-q8, overlay 0123456789ab, --max-dimension auto); --resume skips their pages, it does not reread them"), "{warning}");
         // An edited record's digest that is not hex is shortened by
         // characters, not bytes.
-        let existing = scan_output(&format!(
-            r#"{{"path":"d.png","text":"t","mode":"fast","precision":"w8-body-kv-q8","plan":{{"overlay_sha256":"a{}"}}}}{}"#,
-            "é".repeat(12),
-            "\n"
+        let existing = scan_output(&line(
+            &format!(
+                r#"{{"path":"d.png","text":"t","mode":"fast","precision":"w8-body-kv-q8","plan":{{"overlay_sha256":"a{}"}}}}"#,
+                "é".repeat(12)
+            ),
+            &fixed,
         ));
         let warning = resume_warning(&existing, &gptq).unwrap();
         let shown = format!("1 in fast (w8-body-kv-q8, overlay a{})", "é".repeat(11));
@@ -738,12 +749,16 @@ mod tests {
             ),
             "{flags}"
         );
-        // Records written before they carried options match on what they show.
-        let old = scan_output(
+        // A record without options matches no run.
+        let bare = scan_output(
             "{\"path\":\"d.png\",\"text\":\"t\",\"mode\":\"near-exact\",\"precision\":\"w16-body-kv-q16\"}\n",
         );
-        let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &cropped, None);
-        assert_eq!(resume_warning(&old, &this), None);
+        let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None);
+        let warning = resume_warning(&bare, &this).unwrap();
+        assert!(
+            warning.contains(": 1 in near-exact (w16-body-kv-q16, no options);"),
+            "{warning}"
+        );
     }
 
     /// Records' plans hold the runner's token-changing choices: a resume
@@ -758,15 +773,15 @@ mod tests {
                 "tuning": {"decode_fast_exp": null}
             })
         };
-        let record = serde_json::json!({
-            "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8",
-            "plan": plan(true, "fast", "avx512-wide", "panel-avx2")
-        });
-        let existing = scan_output(&format!("{record}\n"));
         let fixed = GenerationOptions {
             fit_budget: true,
             ..GenerationOptions::default()
         };
+        let record = serde_json::json!({
+            "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8",
+            "plan": plan(true, "fast", "avx512-wide", "panel-avx2")
+        });
+        let existing = scan_output(&line(&record.to_string(), &fixed));
         let run = |plan: Value| {
             let this = this_run(
                 Some(Mode::Fast),

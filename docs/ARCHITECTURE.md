@@ -122,10 +122,9 @@ otherwise is kept and skipped with a warning naming the difference: the mode
 or precision, the GPTQ overlay or round-to-nearest weights, the
 `--max-dimension`, `--min-dimension`, `--max-new-tokens` or crop padding,
 `--stop-repetition`, `--exp`, BF16 or NEON prefill rounding, or a pinned
-`--tune decode-exp`. Records written before records carried their `options`
-are compared on the mode, the weights, routing and the runner's choices
-only. With `--escalate`, a warning counts the fast-mode records that the
-repetition stop ended without a near-exact rerun, since their pages are
+`--tune decode-exp`; a record without `options` counts as one that ran
+otherwise. With `--escalate`, a warning counts the fast-mode records that
+the repetition stop ended without a near-exact rerun, since their pages are
 skipped.
 
 **Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
