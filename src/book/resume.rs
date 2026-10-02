@@ -271,10 +271,11 @@ impl Existing {
 
 /// Read an output file's text: every successful record (a line with `path`
 /// and `text` and no `error`), and how to append after it. A last line
-/// without its newline that starts like a record but is not valid JSON was
-/// cut short by a crash and is dropped; any other last line without its
-/// newline is kept and gets one. A byte order mark (an editor's) is kept
-/// and skipped.
+/// without its newline that starts like a record but is not valid JSON, or
+/// holds only NUL bytes (what a power loss can leave after the last write),
+/// was cut short by a crash and is dropped; any other last line without its
+/// newline is kept and gets one. A byte order mark (an editor's) is kept and
+/// skipped.
 pub fn scan_output(text: &str) -> Existing {
     let mut existing = Existing::default();
     let bom = if text.starts_with('\u{feff}') {
@@ -287,7 +288,10 @@ pub fn scan_output(text: &str) -> Existing {
         let line = piece.trim_end_matches(['\n', '\r']);
         let record = match serde_json::from_str::<Value>(line) {
             Ok(Value::Object(record)) => existing.add(&record),
-            Err(_) if !piece.ends_with('\n') && line.trim_start().starts_with('{') => {
+            Err(_)
+                if !piece.ends_with('\n')
+                    && (line.trim_start().starts_with('{') || line.bytes().all(|byte| byte == 0)) =>
+            {
                 existing.cut = piece.len();
                 break;
             }
@@ -369,7 +373,7 @@ fn read_existing(path: &Path) -> Result<(Vec<u8>, Existing)> {
     let existing = scan_output(text);
     if let Some(line) = existing.foreign {
         bail!(
-            "{} is not a falcon-ocr output: its line {line} is not a record",
+            "{}: its line {line} is not a record (a JSON object with a \"path\"), so records are not appended to it",
             path.display()
         );
     }
@@ -489,6 +493,13 @@ mod tests {
         );
         assert_eq!(scan_output(&format!("{complete}{{\"a\":1}}")).foreign, Some(6));
         assert_eq!(scan_output("{\"a\":1}").cut, 0);
+        // NUL bytes after the last record (a power loss) were never written.
+        let nuls = format!("{complete}\0\0\0\0");
+        let existing = scan_output(&nuls);
+        assert_eq!(
+            (existing.keep, existing.cut, existing.foreign),
+            (complete.len(), 4, None)
+        );
         // A byte order mark is skipped and kept.
         let marked = format!("\u{feff}{}\r\n", ok("a.png", "fast", "w8-body-kv-q8"));
         let existing = scan_output(&marked);
@@ -561,7 +572,7 @@ mod tests {
         std::fs::write(&path, &list).unwrap();
         let error = format!("{:#}", open_output(&path).unwrap_err());
         assert!(
-            error.ends_with("is not a falcon-ocr output: its line 2 is not a record"),
+            error.contains("book.jsonl: its line 2 is not a record (a JSON object with a \"path\")"),
             "{error}"
         );
         assert_eq!(std::fs::read_to_string(&path).unwrap(), list);

@@ -442,8 +442,10 @@ impl RunJob {
         if let Some(path) = output.as_deref().filter(|_| !*resume) {
             let again = inputs
                 .iter()
-                .filter(|input| existing.done.contains(input.to_string_lossy().as_ref()))
-                .count();
+                .map(|input| input.to_string_lossy())
+                .filter(|input| existing.done.contains(input.as_ref()))
+                .collect::<std::collections::HashSet<_>>()
+                .len();
             if again > 0 {
                 note!(
                     "warning: {} already holds records of {again} of these pages; without --resume they run again \

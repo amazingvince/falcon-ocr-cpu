@@ -180,9 +180,10 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
 - `--resume` skips the inputs whose path, as given, already has a successful
   record in the `--output` file, which must be a regular file; a skipped
   input is not read, so it need not exist any more, and no input may be
-  listed twice. A last record cut short by a crash is removed, so its page
-  runs again. Records that ran otherwise (another mode or precision, another
-  GPTQ overlay or round-to-nearest weights, another `--max-dimension`,
+  listed twice. A last record cut short by a crash, or the NUL bytes a power
+  loss can leave in its place, is removed, so its page runs again. Records
+  that ran otherwise (another mode or precision, another GPTQ overlay or
+  round-to-nearest weights, another `--max-dimension`,
   `--min-dimension`, `--max-new-tokens` or `--crop-margins` padding, with or
   without the crop, another `--stop-repetition` or `--exp`, BF16 or NEON
   prefill rounding as `--tune prefill-bf16`, `--backend` or the CPU decide

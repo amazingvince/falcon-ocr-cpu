@@ -319,7 +319,11 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
     let stderr = assert_error(&case.run(&[], &["valid.png", "--output", arg(&done)]), NO_MODEL);
     assert!(!stderr.contains("run again"), "{stderr}");
     let again = case.write("again.jsonl", b"{\"path\":\"valid.png\",\"page\":0,\"text\":\"t\"}\n");
-    let stderr = assert_error(&case.run(&[], &["valid.png", "--output", arg(&again)]), NO_MODEL);
+    // An input given twice is one page with a record.
+    let stderr = assert_error(
+        &case.run(&[], &["valid.png", "valid.png", "--output", arg(&again)]),
+        NO_MODEL,
+    );
     assert!(
         stderr.contains("already holds records of 1 of these pages; without --resume they run again"),
         "{stderr}"
@@ -338,15 +342,12 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
         &["--list", "pages.txt", "--output", "pages.txt"][..],
         &[valid, "--output", "pages.txt", "--resume"],
     ] {
-        assert_error(
-            &case.run(&[], run),
-            "pages.txt is not a falcon-ocr output: its line 1 is not a record",
-        );
+        assert_error(&case.run(&[], run), "pages.txt: its line 1 is not a record");
     }
     let json = case.write("config.json", b"{\"model_type\":\"falcon\"}\n");
     assert_error(
         &case.run(&[], &[valid, "--output", arg(&json)]),
-        "not a falcon-ocr output",
+        "config.json: its line 1 is not a record (a JSON object with a \"path\")",
     );
     assert_eq!(fs::read(&list).unwrap(), b"valid.png\n");
     // An output whose folder is missing is refused before the model loads.
