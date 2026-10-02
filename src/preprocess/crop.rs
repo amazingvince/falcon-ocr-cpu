@@ -19,12 +19,12 @@ pub struct Crop {
     pub first_height: u32,
 }
 
-/// [`prepare_first`] of the page cut to its [`margin_crop`] with `pad` pixels
-/// of padding when `crop_margins` is `Some(pad)` and the page has a crop worth
-/// taking; the crop is reported in `PreparedImage::crop`. Text keeps its size
-/// in first-resize pixels and only the image token count drops, but the model
-/// input changes, so the runner does this only on request. `None`, or a page
-/// that stays whole, gives exactly `prepare_first(first)`.
+/// [`super::prepare_first`] of the page cut to its [`margin_crop`] with `pad`
+/// pixels of padding when `crop_margins` is `Some(pad)` and the page has a crop
+/// worth taking; the crop is reported in `PreparedImage::crop`. Text keeps its
+/// size in first-resize pixels and only the image token count drops, but the
+/// model input changes, so the runner does this only on request. `None`, or a
+/// page that stays whole, gives exactly `prepare_first(first)`.
 pub fn prepare_first_cropped(first: &RgbImage, crop_margins: Option<u32>) -> Result<PreparedImage> {
     let Some(crop) = crop_margins.and_then(|pad| margin_crop(first, pad)) else {
         return prepare_resized_rgb(first);
@@ -61,10 +61,11 @@ const MIN_SAVING_PERCENT: u64 = 10;
 /// content, when the background is darker than `LIGHT_BACKGROUND` (inverted or
 /// dark pages; dark scan borders and gutter shadows are ink, so they keep their
 /// side of the page), when the crop would remove less than `MIN_SAVING_PERCENT`
-/// of the area, or when the processor's second resize of the crop would be more
+/// of the area, when the processor's second resize of the crop would be more
 /// than rounding each side to whole patches (the minimum- or maximum-area
-/// rescale, fewer than 16 pixels, an aspect ratio above 200). Integer
-/// arithmetic throughout.
+/// rescale, fewer than 16 pixels, an aspect ratio above 200), or when the crop
+/// would keep as many patches as the whole page (a side under about 150
+/// pixels). Integer arithmetic throughout.
 pub fn margin_crop(first: &RgbImage, pad: u32) -> Option<Crop> {
     let (width, height) = first.dimensions();
     if width == 0 || height == 0 {
@@ -106,6 +107,10 @@ pub fn margin_crop(first: &RgbImage, pad: u32) -> Option<Crop> {
     }
     let plain = (round_to_patch(crop_width), round_to_patch(crop_height));
     if aligned_dimensions(crop_width, crop_height).ok()? != plain {
+        return None;
+    }
+    let whole = aligned_dimensions(width, height).ok()?;
+    if plain.0 as u64 * plain.1 as u64 >= whole.0 as u64 * whole.1 as u64 {
         return None;
     }
     Some(Crop {
@@ -226,6 +231,11 @@ mod tests {
         assert_eq!(margin_crop(&small, 24), crop(356, 456, 88, 88, 800, 1000));
         assert_eq!(margin_crop(&page(800, 1000, (100, 500, 700, 506)), 0), None);
         assert_eq!(margin_crop(&RgbImage::new(0, 0), 24), None);
+        // A crop must save patches: 90 x 58 pixels round to the 96 x 64 of
+        // the whole 90 x 70 page.
+        let short = page(90, 70, (0, 0, 90, 34));
+        assert_eq!(margin_crop(&short, 24), None);
+        assert_eq!(margin_crop(&short, 8), crop(0, 0, 90, 42, 90, 70));
     }
 
     #[test]
