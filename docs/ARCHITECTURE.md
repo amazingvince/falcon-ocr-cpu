@@ -105,10 +105,10 @@ folder must exist; an existing FILE must hold only records (JSON objects
 with a `path`; a byte order mark and blank lines are skipped), so an input
 image or list given as FILE is refused; and every input path must be UTF-8,
 since a record names its input by its path. A run without `--resume` over a
-FILE that already holds records of some inputs warns that they run again.
-FILE is created or repaired only after the model has loaded. A device or
-pipe (`/dev/stdout`) is written to as it is, without being read. With
-`--text`, each page's text still goes to stdout, and a closed stdout or
+FILE that already holds successful records of some inputs warns that they
+run again. FILE is created or repaired only after the model has loaded. A
+device or pipe (`/dev/stdout`) is written to as it is, without being read.
+With `--text`, each page's text still goes to stdout, and a closed stdout or
 stderr does not stop the run.
 
 **Resume.** `--resume` needs a regular `--output` file and skips the inputs

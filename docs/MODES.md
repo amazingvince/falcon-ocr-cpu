@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-10-01. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-10-02. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens).
 
 ## The metric
@@ -125,7 +125,7 @@ and packed files made from them `falcon-ocr-kernel-v2`; binaries that predate
 exception columns refuse both rather than compute with zeroed columns.
 Overlays and packed files without exception columns keep their v1 formats
 (re-packing gives the published files' tensors); an overlay with a tensor
-that no body matrix uses is now refused. An explicit `--w8-artifact` always
+that no body matrix uses is refused. An explicit `--w8-artifact` always
 reads the checkpoint, even when a packed fast file sits in the model
 directory. To measure a v2 overlay offline, use `tools/w8_proxy.py
 --overlay`.
@@ -251,35 +251,49 @@ pixels (default 24, at that resize's scale) around the content; the second
 resize and the patches then run unchanged on the cut page. Text keeps its size
 in pixels and only the image token count drops, which shortens prefill
 (attention grows with the square of the token count) and every decode step.
+PAD must be below `--max-dimension` (below 768 with `auto`), since a larger
+padding never crops the page.
+
 The content box comes from integer luma statistics
 (`preprocess::margin_crop`): the background is the 90th luma percentile and
-must be at least 160, ink is at least 64 levels darker, and a row or column is
-content when it holds two ink pixels within a run of at least four such lines,
-so dust specks up to 3 pixels across are ignored. A page stays whole when it
-has no content, when its background is dark (inverted pages, dark slides),
-when the crop would remove less than 10% of the area, when the crop's second
-resize would do more than round each side to whole patches, or when the crop
-would keep as many patches as the whole page (small pages, where rounding
-takes back what the crop removed). Dark scan borders, gutter shadows and
-punch holes count as ink and keep their side of the page. Ink is counted per
-row and per column over the whole page, so a mark that runs the length of
-one edge makes every row (or column) content: the crop keeps that side and
-both adjacent margins whole and cuts only the opposite margin. On a
-1188 × 1536 page with a text block at x 180–1000, y 200–1350 and the
-default padding, no border gives 4,050 image tokens
-(7,104 uncropped), an 18-pixel gutter shadow down the right edge 6,144, a
-12-pixel black border down the left edge 6,144 and a 12-pixel black band
-along the top 6,364. A mark that covers only part of an edge (a punch hole,
-a short border) keeps its side and the rows or columns it covers. Marks
-fainter than the ink threshold (light pencil) or thinner than four pixels
-are cut off when they lie beyond the padding, except that a full-length mark
-two or three pixels thick, though cut off itself, still makes every row (or
-column) content and keeps the margins at its two ends. Routed pages
-(`--max-dimension auto`) are routed on the whole page and crop the resize they
-run at, as does the safety-net rerun. PAD must be below `--max-dimension`
-(below 768 with `auto`), since a larger padding never crops the page.
-`run --pipeline`, `--batch-size N` and the `--escalate` rerun prepare each
-page the same way, so every path reports the same crop.
+must be at least 160, ink is at least 64 levels darker, and a row or column
+is content when it holds two ink pixels within a run of at least four such
+lines, so dust specks up to 3 pixels across are ignored. A page stays whole
+when:
+
+- it has no content;
+- its background is dark (inverted pages, dark slides);
+- the crop would remove less than 10% of the area;
+- the crop's second resize would do more than round each side to whole
+  patches;
+- the crop would keep as many patches as the whole page (small pages, where
+  rounding takes back what the crop removed).
+
+Dark scan borders, gutter shadows and punch holes count as ink and keep
+their side of the page. Ink is counted per row and per column over the whole
+page, so a mark that runs the length of one edge makes every row (or column)
+content: the crop keeps that side and both adjacent margins whole and cuts
+only the opposite margin. A mark that covers only part of an edge (a punch
+hole, a short border) keeps its side and the rows or columns it covers.
+Marks fainter than the ink threshold (light pencil) or thinner than four
+pixels are cut off when they lie beyond the padding, except that a
+full-length mark two or three pixels thick, though cut off itself, still
+makes every row (or column) content and keeps the margins at its two ends.
+On a 1188 × 1536 page with a text block at x 180–1000, y 200–1350 and the
+default padding, no border gives 4,050 image tokens (7,104 uncropped), an
+18-pixel gutter shadow down the right edge 6,144, a 12-pixel black border
+down the left edge 6,144 and a 12-pixel black band along the top 6,364.
+
+Each result reports its crop (`crop`: `x`, `y`, `width`, `height` and the
+first-resize `first_width` and `first_height`, all in first-resize pixels);
+`width` and `height` stay those of the model input. Routed pages
+(`--max-dimension auto`) are routed on the whole page and crop the resize
+they run at, as does the safety-net rerun. `run --pipeline`, `--batch-size
+N` and the `--escalate` rerun prepare each page the same way, so every path
+reports the same crop. The library refuses the option for tensor traces and
+for teacher scoring (`Runner::score_teacher_file`, which `falcon-ocr-eval
+agree` uses; that binary has no crop flag), since both compare with the
+whole page.
 
 It is opt-in because it changes the model input. TII's layout pipeline feeds
 cropped regions to the model, so crops are in distribution. On synthetic book
@@ -288,13 +302,7 @@ image tokens at 1536 (6,048 → 3,400–3,485), 40% at 1024 and 35% at 768; page
 whose content fills the page are not cropped. The router's page-time model
 (fast mode with the draft head,
 `research/resolution-router/analyze_agreement.py`) puts 6,048 → 3,485 image
-tokens at about 37% less time for a page with 700 output tokens. Each result
-reports its crop (`crop`: `x`, `y`, `width`, `height` and the first-resize
-`first_width` and `first_height`, all in first-resize pixels); `width` and
-`height` stay those of the model input. The library refuses the option for
-tensor traces and for teacher scoring (`Runner::score_teacher_file`, which
-`falcon-ocr-eval agree` uses; that binary has no crop flag), since both
-compare with the whole page.
+tokens at about 37% less time for a page with 700 output tokens.
 
 On a real book it held up. On 24 pages of the Internet Archive scan
 `cu31924014450716` (Strunk's *The Elements of Style*, 1920), rendered at
@@ -410,7 +418,7 @@ kernel over the dequantized rotated records with the rotated query, followed
 by the inverse rotation. Coded caches scan four chunks by default, and
 merging their partial softmaxes changes rounding. `q4r` takes 90 bytes per
 record and decodes its codes through the 8-bit loads (bitwise tested on every
-instruction set; not yet a vector nibble unpack).
+instruction set; there is no vector nibble unpack).
 
 The uses studied: a more faithful fast mode (`w8-body-kv-q8r`), a cheaper
 cache for near-exact (`w16-body-kv-q8r` streams 23% fewer bytes per decode
