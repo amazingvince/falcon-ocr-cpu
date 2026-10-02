@@ -106,6 +106,9 @@ pub(crate) struct Tuner {
     sizes: Vec<usize>,
     /// The largest team the choice may take ([`Tuner::limit`]).
     max: usize,
+    /// A size below every candidate, held back until a limit excludes every
+    /// one ([`Tuner::with_reserve`]).
+    reserve: Option<usize>,
     samples: Vec<Vec<f64>>,
     verify_samples: Vec<Vec<f64>>,
     start: usize,
@@ -126,12 +129,32 @@ impl Tuner {
             report: None,
             reported: false,
             max: usize::MAX,
+            reserve: None,
             sizes,
             samples,
             start,
             steps: 0,
             chosen: None,
         }
+    }
+
+    /// Hold `size` back for a [`Tuner::limit`] that excludes every candidate,
+    /// when it is at least one and below every candidate: with
+    /// `--pipeline`, half of the runner's threads.
+    pub(crate) fn with_reserve(mut self, size: usize) -> Self {
+        self.reserve = (1..self.sizes[0]).contains(&size).then_some(size);
+        self
+    }
+
+    /// Every team size the tuner can hand out: the candidates and the
+    /// reserve.
+    pub(crate) fn team_sizes(&self) -> Vec<usize> {
+        self.reserve.into_iter().chain(self.sizes.iter().copied()).collect()
+    }
+
+    /// The team size of candidate `index`.
+    pub(crate) fn size(&self, index: usize) -> usize {
+        self.sizes[index]
     }
 
     #[cfg(test)]
@@ -167,17 +190,30 @@ impl Tuner {
         }
     }
 
-    /// Let the choice take at most `max` threads (the smallest candidate
-    /// when every one is larger), and return the largest size it may still
-    /// take when that excludes a candidate. Tuning still measures every
-    /// candidate, and the tolerance still compares with the fastest of them;
-    /// a choice above `max` becomes the largest candidate within it, also
-    /// when it was already made (its report is then handed out again).
+    /// Let the choice take at most `max` threads, and return the largest
+    /// size it may still take when that excludes a candidate. When every
+    /// candidate is larger (with speculation the half-core team is not one),
+    /// the reserve ([`Tuner::with_reserve`]) becomes the smallest candidate if
+    /// it is within `max`, and else the smallest candidate stays. Tuning still
+    /// measures every candidate, and the tolerance still compares with the
+    /// fastest of them; a choice above `max` becomes the largest candidate
+    /// within it, also when it was already made (its report is then handed
+    /// out again).
     pub(crate) fn limit(&mut self, max: usize) -> Option<usize> {
         if max >= self.max {
             return None;
         }
         self.max = max;
+        if self.sizes[0] > max
+            && let Some(reserve) = self.reserve.filter(|&size| size <= max)
+        {
+            self.reserve = None;
+            self.sizes.insert(0, reserve);
+            self.samples.insert(0, Vec::new());
+            self.verify_samples.insert(0, Vec::new());
+            self.start += 1;
+            self.chosen = self.chosen.map(|index| index + 1);
+        }
         let allowed = self.allowed();
         if allowed + 1 == self.sizes.len() {
             return None;
@@ -401,8 +437,38 @@ mod tests {
         assert_eq!(tuner.limit(8), Some(8));
         assert_eq!((tuner.chosen(), tuner.current()), (Some(8), 1));
         assert_eq!(tuner.take_report().map(|report| report.chosen), Some(8));
-        // Below every candidate the smallest stays.
+        // Below every candidate, without a reserve, the smallest stays.
         assert_eq!(tuner.limit(4), Some(6));
         assert_eq!(tuner.chosen(), Some(6));
+    }
+
+    #[test]
+    fn a_limit_below_every_candidate_takes_the_reserve() {
+        // With speculation an 8-core host has no 4-thread candidate; the
+        // pipeline's half of its 8 threads is the reserve, which a limit to
+        // 4 makes a candidate, measured like the others.
+        let mut tuner = Tuner::new(vec![6, 8], 1).with_reserve(4);
+        assert_eq!(tuner.team_sizes(), [4, 6, 8]);
+        assert_eq!(tuner.sizes(), [6, 8], "held back until a limit needs it");
+        assert_eq!(tuner.limit(4), Some(4));
+        assert_eq!((tuner.sizes(), tuner.current()), (&[4, 6, 8][..], 2));
+        assert_eq!(tune(&mut tuner, |size| size as f64), vec![4, 6, 8]);
+        assert_eq!(tuner.chosen(), Some(4));
+        // A reserve above the limit, or a limit some candidate fits, leaves
+        // it out.
+        let mut tuner = Tuner::new(vec![6, 8], 1).with_reserve(4);
+        assert_eq!(tuner.limit(3), Some(6));
+        assert_eq!(tuner.sizes(), [6, 8]);
+        let tuner = Tuner::new(vec![4, 6, 8], 2).with_reserve(4);
+        assert_eq!(tuner.team_sizes(), [4, 6, 8]);
+        // After the choice: the reserve is taken, unmeasured.
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1).with_reserve(4);
+        tune(&mut tuner, |size| size as f64);
+        assert_eq!(tuner.limit(4), Some(4));
+        assert_eq!((tuner.chosen(), tuner.current()), (Some(4), 0));
+        let report = tuner.take_report().unwrap();
+        assert_eq!((report.candidates, report.chosen), (vec![4, 6, 8, 12], 4));
+        // No reserve below one thread.
+        assert_eq!(Tuner::new(vec![1], 0).with_reserve(0).team_sizes(), [1]);
     }
 }

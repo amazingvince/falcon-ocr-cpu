@@ -161,25 +161,37 @@ pub struct Runner {
 
 enum Decode {
     Fixed(crate::team::Team),
-    Auto(AutoThreads),
+    Auto(Box<AutoThreads>),
 }
 
 struct AutoThreads {
+    /// One team per size the tuner can hand out, sizes distinct.
     teams: Vec<crate::team::Team>,
     tuner: std::sync::Mutex<crate::tune::Tuner>,
 }
 
+impl AutoThreads {
+    fn team(&self, size: usize) -> &crate::team::Team {
+        let team = self.teams.iter().find(|team| team.size() == size);
+        team.expect("a team for every size the tuner hands out")
+    }
+}
+
 /// One spin team per candidate decode size for a `pool_threads`-thread prefill
-/// pool on `host`, and the tuner that picks between them (`crate::tune`).
+/// pool on `host`, and the tuner that picks between them (`crate::tune`). Half
+/// of the threads is held in reserve for a page pipeline when every candidate
+/// is larger ([`Pipeline`]), with a team of its own.
 fn auto_threads(host: &crate::auto::HostInfo, pool_threads: usize, speculating: bool) -> std::io::Result<AutoThreads> {
     let (sizes, start) = crate::tune::auto_candidates(host, pool_threads, speculating);
-    let teams = sizes
-        .iter()
-        .map(|&size| crate::team::Team::new(size))
+    let tuner = crate::tune::Tuner::new(sizes, start).with_reserve(pool_threads / 2);
+    let teams = tuner
+        .team_sizes()
+        .into_iter()
+        .map(crate::team::Team::new)
         .collect::<std::io::Result<Vec<_>>>()?;
     Ok(AutoThreads {
         teams,
-        tuner: std::sync::Mutex::new(crate::tune::Tuner::new(sizes, start)),
+        tuner: std::sync::Mutex::new(tuner),
     })
 }
 
@@ -187,7 +199,10 @@ fn auto_threads(host: &crate::auto::HostInfo, pool_threads: usize, speculating: 
 /// automatic tuner wants measured or has chosen.
 struct DecodeTeam<'a> {
     runner: &'a Runner,
+    /// The tuner's index of the candidate in use.
     index: usize,
+    /// Its size; candidates are inserted below it ([`crate::tune::Tuner::limit`]).
+    size: usize,
     entered: Option<crate::team::Entered<'a>>,
 }
 impl<'a> DecodeTeam<'a> {
@@ -195,6 +210,7 @@ impl<'a> DecodeTeam<'a> {
         let mut team = Self {
             runner,
             index: usize::MAX,
+            size: 0,
             entered: None,
         };
         team.select();
@@ -204,15 +220,17 @@ impl<'a> DecodeTeam<'a> {
     fn select(&mut self) {
         let (index, team) = match &self.runner.decode {
             Decode::Auto(auto) => {
-                let index = auto.tuner.lock().unwrap().current();
-                (index, &auto.teams[index])
+                let tuner = auto.tuner.lock().unwrap();
+                let index = tuner.current();
+                (index, auto.team(tuner.size(index)))
             }
             Decode::Fixed(team) => (0, team),
         };
-        if index != self.index {
+        self.index = index;
+        if team.size() != self.size {
             self.entered = None;
             self.entered = team.enter();
-            self.index = index;
+            self.size = team.size();
         }
     }
     /// Report the single-row step just run on the selected team.
@@ -255,7 +273,7 @@ impl Runner {
             .speculation
             .map(|s| (s.max_draft.min(crate::head_screen::MAX_ROWS - 1), s.min_match.max(1)));
         let decode = match config.decode_threads {
-            DecodeThreads::Auto => Decode::Auto(auto_threads(host, pool_threads, speculation.is_some())?),
+            DecodeThreads::Auto => Decode::Auto(Box::new(auto_threads(host, pool_threads, speculation.is_some())?)),
             DecodeThreads::Fixed(threads) => {
                 ensure!(
                     (1..=pool_threads).contains(&threads),

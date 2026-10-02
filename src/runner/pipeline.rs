@@ -26,8 +26,11 @@
 //! thread of the runner between them. An automatic decode team then takes at
 //! most half of the runner's threads: the tuner still measures every candidate,
 //! with no prefill beside it, and a choice above half becomes the largest
-//! candidate within it. On an 8-core, 16-thread host the 8- and 12-thread teams
-//! time within 4% of each other, and the 12-thread team leaves the prefill 4
+//! candidate within it; when every candidate is larger (with speculation there
+//! is no half-core candidate, so an 8-thread run on 8 cores has only 6 and 8),
+//! half is a candidate of its own, held in reserve until then. On an 8-core,
+//! 16-thread host the 8- and 12-thread teams time about 4% apart on single
+//! steps (7% on 4-row steps), and the 12-thread team leaves the prefill 4
 //! threads instead of 8. The second pool is decided once the team size is
 //! settled: with a fixed team at once (page 1's prefill overlaps page 0's
 //! decode); with `DecodeThreads::Auto` after the tuner has chosen on the first
