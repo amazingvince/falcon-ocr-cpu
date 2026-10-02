@@ -54,10 +54,13 @@ finalized; nothing treats partial image strips as causal prompts.
 
 A run of many files (`Runner::recognize_files_streaming`) hands each page's
 result or error to a callback as soon as the page and every earlier one are
-done, in input order; a page that fails does not stop the others unless the
-callback says so. Pages run one after another, or `--batch-size` at a time
-in joint decode steps, where a finished page's row goes to the next page at
-once (continuous batching, `runner/batch/`). `recognize_files`, the traced
+done, in input order, and the callback stops the run by returning
+`ControlFlow::Break`. A page that fails on its own (an unreadable file, a
+context budget conflict) does not stop the others, but a joint decode step
+that fails fails every page in it, and in a fixed cohort so does a failed
+prefill. Pages run one after another, or `--batch-size` at a time in joint
+decode steps, where a finished page's row goes to the next page at once
+(continuous batching, `runner/batch/`). `recognize_files`, the traced
 `recognize_files_streaming_with_trace` and `recognize_batch` keep fixed
 cohorts of the batch size (`runner/cohort.rs`); `recognize_files` stops at
 the first error. The page pipeline (`recognize_files_pipelined`,
@@ -114,22 +117,29 @@ runs it and `auto::Resolved` reports it.
 
 The compact cache (`LayerCache::Compact`) keeps prefix keys per query head
 (their spatial rotations differ), generated keys and every value per KV head,
-all FP32: the reference. For a single page, after the first token, the prefix
-is sealed into the profile's split store (`quant/kv.rs`): one 160-element
-record per KV group and position holding the temporal key half shared by the
-pair, each head's spatial half and the value, so one decode task per group
-streams its records contiguously. Records are FP32 (`split-f32`, bitwise the
-compact kernel), 16-bit codes with a BF16 absmax scale per 32 values (`q16`),
-or 8-bit codes (`q8`); generated positions go into 128-element tail records
-in the same format as they are appended. The research formats `q8r` and `q4r`
-(8- and 4-bit codes; `falcon-ocr --kv-cache`, `falcon-ocr-eval --profile`)
-store every 32-value block as `H D x` (a Hadamard matrix times fixed signs,
-`quant/rotation.rs`) before quantizing it; decode rotates the query and
-un-rotates each head's output instead of the records, so they share `q8`'s
-kernels ([MODES.md](MODES.md#rotated-kv-cache-experimental)). Traces and
-batches keep the compact
-cache, so their tensors stay comparable with the recorded references. The
-`expanded` layout (every KV head duplicated) remains selectable.
+all FP32: the reference. After a page's first token (unless the page ends
+there), its prefix is sealed into the profile's split store (`quant/kv.rs`):
+one 160-element record per KV group and position holding the temporal key
+half shared by the pair, each head's spatial half and the value, so one
+decode task per group streams its records contiguously. Records are FP32
+(`split-f32`, bitwise the compact kernel), 16-bit codes with a BF16 absmax
+scale per 32 values (`q16`), or 8-bit codes (`q8`); generated positions go
+into 128-element tail records in the same format as they are appended. The
+research formats `q8r` and `q4r` (8- and 4-bit codes; `falcon-ocr
+--kv-cache`, `falcon-ocr-eval --profile`) store every 32-value block as
+`H D x` (a Hadamard matrix times fixed signs, `quant/rotation.rs`) before
+quantizing it; decode rotates the query and un-rotates each head's output
+instead of the records, so they share `q8`'s kernels
+([MODES.md](MODES.md#rotated-kv-cache-experimental)). The `expanded` layout
+(every KV head duplicated) remains selectable.
+
+Every path that prefills a page seals it: a page that runs alone, the pages
+of a fixed cohort and the rows of continuous batching alike. Only a profile
+whose cache is compact (`reference`) never seals. `falcon-ocr` loads it for
+traces, which always run in exact mode, so their tensors stay comparable with
+the recorded references, and for exact-mode `run` with `--batch-size` above
+1; an exact single-page `run` takes `split-f32`. Near-exact and fast seal in
+every path.
 
 ## Decode machinery
 
