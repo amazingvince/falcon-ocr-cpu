@@ -229,5 +229,5 @@ Timing A/Bs are unreliable while other jobs run. The numbers above came from
 a quiet host except two A/Bs on the 7700X: the tuner limit's, whose 8-thread
 rounds of one configuration read 515 to 566 pages per hour, and the
 reserve's, at a load average of about 5. The 7950X receipts are under
-`artifacts/phase4/`, the 7700X runs' scripts and records under
-`artifacts/verify/pr/timing/` (the A/B's under `artifacts/verify/pr/T2/`).
+`artifacts/phase4/` and the 7700X runs' scripts and records under
+`artifacts/verify/pr/`, both on their hosts only.
