@@ -64,8 +64,9 @@ const MIN_SAVING_PERCENT: u64 = 10;
 /// of the area, when the processor's second resize of the crop would be more
 /// than rounding each side to whole patches (the minimum- or maximum-area
 /// rescale, fewer than 16 pixels, an aspect ratio above 200), or when the crop
-/// would keep as many patches as the whole page (a side under about 150
-/// pixels). Integer arithmetic throughout.
+/// would keep as many patches as the whole page (on small pages only, where
+/// rounding to patches takes back what the crop removed). Integer arithmetic
+/// throughout.
 pub fn margin_crop(first: &RgbImage, pad: u32) -> Option<Crop> {
     let (width, height) = first.dimensions();
     if width == 0 || height == 0 {
