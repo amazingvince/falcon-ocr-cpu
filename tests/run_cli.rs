@@ -173,27 +173,37 @@ fn run_flags_that_do_not_combine_fail_before_the_model_loads() {
         &case.run(&[], &[valid, valid, "--output", arg(&output), "--resume"]),
         "is an input twice",
     );
-    // A record writes its path as text, so two paths that differ only in
-    // bytes that are not UTF-8 are the same input to a resume.
+    // A record writes its path as text, so a path that is not UTF-8 is
+    // refused with an output: written lossily, `x\xff.png` would share the
+    // record of `x\xfe.png`, which a resumed run would then skip.
     #[cfg(target_os = "linux")]
     {
         use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
         let png = fs::read(&case.valid).unwrap();
-        let inputs = [b"x\xff.png", b"x\xfe.png"].map(|name| {
-            let path = case.directory.path().join(OsStr::from_bytes(name));
-            fs::write(&path, &png).unwrap();
-            path
-        });
-        let resumed = Command::new(env!("CARGO_BIN_EXE_falcon-ocr"))
-            .current_dir(case.directory.path())
-            .arg("--model")
-            .arg(case.path("no-model"))
-            .arg("run")
-            .args(&inputs)
-            .args(["--output", arg(&output), "--resume"])
-            .output()
-            .unwrap();
-        assert_error(&resumed, "is an input twice");
+        let input = case.directory.path().join(OsStr::from_bytes(b"x\xff.png"));
+        fs::write(&input, &png).unwrap();
+        let record = format!(
+            "{}\n",
+            serde_json::json!({"path": case.directory.path().join("x\u{fffd}.png"), "page": 0, "text": "t"})
+        );
+        fs::write(&output, &record).unwrap();
+        let run = |extra: &[&str]| {
+            Command::new(env!("CARGO_BIN_EXE_falcon-ocr"))
+                .current_dir(case.directory.path())
+                .arg("--model")
+                .arg(case.path("no-model"))
+                .arg("run")
+                .arg(&input)
+                .args(extra)
+                .output()
+                .unwrap()
+        };
+        for extra in [&["--output", arg(&output), "--resume"][..], &["--output", arg(&output)]] {
+            assert_error(&run(extra), "is not UTF-8, so a record in --output cannot name it");
+        }
+        assert_eq!(fs::read_to_string(&output).unwrap(), record);
+        // Without an output nothing is recorded, and the page runs.
+        assert_error(&run(&[]), NO_MODEL);
     }
 }
 
@@ -296,14 +306,49 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
         &case.run(&[], &["gone.png", valid, "--output", arg(&done)]),
         "reading image",
     );
-    // An output that is not JSON lines, such as an input image, is refused
-    // before the model loads, and left as it is.
+    // An editor's byte order mark does not hide the first record.
+    let marked = case.write(
+        "marked.jsonl",
+        b"\xef\xbb\xbf{\"path\":\"gone.png\",\"page\":0,\"text\":\"t\"}\r\n",
+    );
+    assert_error(
+        &case.run(&[], &["gone.png", valid, "--output", arg(&marked), "--resume"]),
+        NO_MODEL,
+    );
+    // Without --resume, the pages that have a record run again: a warning.
+    let stderr = assert_error(&case.run(&[], &["valid.png", "--output", arg(&done)]), NO_MODEL);
+    assert!(!stderr.contains("run again"), "{stderr}");
+    let again = case.write("again.jsonl", b"{\"path\":\"valid.png\",\"page\":0,\"text\":\"t\"}\n");
+    let stderr = assert_error(&case.run(&[], &["valid.png", "--output", arg(&again)]), NO_MODEL);
+    assert!(
+        stderr.contains("already holds records of 1 of these pages; without --resume they run again"),
+        "{stderr}"
+    );
+    // A file that is not an output is refused before the model loads, and
+    // left as it is: an input image (not UTF-8), or text that is not
+    // records, such as the input list itself.
     let image = fs::read(&case.valid).unwrap();
     assert_error(
         &case.run(&[], &[valid, "--output", valid]),
         "is not a UTF-8 JSON-lines file",
     );
     assert_eq!(fs::read(&case.valid).unwrap(), image);
+    let list = case.write("pages.txt", b"valid.png\n");
+    for run in [
+        &["--list", "pages.txt", "--output", "pages.txt"][..],
+        &[valid, "--output", "pages.txt", "--resume"],
+    ] {
+        assert_error(
+            &case.run(&[], run),
+            "pages.txt is not a falcon-ocr output: its line 1 is not a record",
+        );
+    }
+    let json = case.write("config.json", b"{\"model_type\":\"falcon\"}\n");
+    assert_error(
+        &case.run(&[], &[valid, "--output", arg(&json)]),
+        "not a falcon-ocr output",
+    );
+    assert_eq!(fs::read(&list).unwrap(), b"valid.png\n");
     // An output whose folder is missing is refused before the model loads.
     assert_error(
         &case.run(&[], &[valid, "--output", "absent/out.jsonl"]),

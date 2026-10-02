@@ -413,9 +413,16 @@ impl RunJob {
             inputs.extend(book::read_list(list)?);
             ensure!(!inputs.is_empty(), "no input images: {} lists none", list.display());
         }
+        // A record names its input by its path, as text: a path that is not
+        // UTF-8 would lose bytes, and could then share a record with another
+        // (which a resumed run would skip).
+        if output.is_some()
+            && let Some(path) = inputs.iter().find(|input| input.to_str().is_none())
+        {
+            bail!("{path:?} is not UTF-8, so a record in --output cannot name it; rename it");
+        }
         if *resume {
-            // Compared as records write them: two paths that differ only
-            // in bytes that are not UTF-8 share one record's `path`.
+            // Resumed runs match records by path.
             let mut seen = std::collections::HashSet::new();
             if let Some(twice) = inputs.iter().find(|input| !seen.insert(input.to_string_lossy())) {
                 bail!(
@@ -425,14 +432,26 @@ impl RunJob {
             }
         }
         // The output is read (not yet created or repaired) before the model
-        // loads, so a file that is not JSON lines is refused first: an input
-        // image never is (PNG and JPEG start with bytes that are not UTF-8).
-        // A resumed run reads only the inputs that have no successful record
-        // yet, so the others need not exist any more.
+        // loads, so a file that is not an output (an input image or list) is
+        // refused first. A resumed run reads only the inputs that have no
+        // successful record yet, so the others need not exist any more.
         let existing = match output.as_deref() {
             Some(path) => book::read_output(path)?,
             None => Default::default(),
         };
+        if let Some(path) = output.as_deref().filter(|_| !*resume) {
+            let again = inputs
+                .iter()
+                .filter(|input| existing.done.contains(input.to_string_lossy().as_ref()))
+                .count();
+            if again > 0 {
+                note!(
+                    "warning: {} already holds records of {again} of these pages; without --resume they run again \
+                     and get a second record",
+                    path.display()
+                );
+            }
+        }
         let done = if *resume { existing.done } else { Default::default() };
         for input in &inputs {
             if !done.contains(input.to_string_lossy().as_ref()) {
@@ -461,16 +480,9 @@ impl RunJob {
         let (file, existing) = book::open_output(path)?;
         if existing.cut > 0 {
             note!(
-                "{}: removed a last record cut short ({} bytes); its page runs again",
+                "{}: removed a last record cut short ({} bytes)",
                 path.display(),
                 existing.cut
-            );
-        }
-        if existing.foreign > 0 {
-            note!(
-                "{}: ignoring {} lines that are not JSON records",
-                path.display(),
-                existing.foreign
             );
         }
         Ok(Some((file, existing)))

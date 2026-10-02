@@ -215,8 +215,10 @@ pub struct Existing {
     pub cut: usize,
     /// The kept text ends without a newline.
     pub unterminated: bool,
-    /// Complete lines that are not JSON objects; they are ignored.
-    pub foreign: usize,
+    /// The number (from 1) of the first line that is not a record (a JSON
+    /// object with a `path`): a file that holds one is not an output, and
+    /// is not appended to.
+    pub foreign: Option<usize>,
     /// Successful fast-mode records that the repetition stop ended and that
     /// were not reread in near-exact mode (a run without `--escalate`, or an
     /// escalation that failed).
@@ -224,14 +226,15 @@ pub struct Existing {
 }
 
 impl Existing {
-    fn add(&mut self, record: &Map<String, Value>) {
-        let (Some(path), true, false) = (
-            record.get("path").and_then(Value::as_str),
-            record.contains_key("text"),
-            record.contains_key("error"),
-        ) else {
-            return;
+    /// Count `record` when it is a successful record; false when it is not a
+    /// record at all.
+    fn add(&mut self, record: &Map<String, Value>) -> bool {
+        let Some(path) = record.get("path").and_then(Value::as_str) else {
+            return false;
         };
+        if !record.contains_key("text") || record.contains_key("error") {
+            return true;
+        }
         self.done.insert(path.to_owned());
         let text = |value: Option<&Value>| value.and_then(Value::as_str).map(str::to_owned);
         if record.get("escalated_from").is_none()
@@ -262,6 +265,7 @@ impl Existing {
             },
         };
         *self.runs.entry(run).or_default() += 1;
+        true
     }
 }
 
@@ -269,25 +273,33 @@ impl Existing {
 /// and `text` and no `error`), and how to append after it. A last line
 /// without its newline that starts like a record but is not valid JSON was
 /// cut short by a crash and is dropped; any other last line without its
-/// newline is kept and gets one.
+/// newline is kept and gets one. A byte order mark (an editor's) is kept
+/// and skipped.
 pub fn scan_output(text: &str) -> Existing {
     let mut existing = Existing::default();
-    let mut start = 0;
-    for piece in text.split_inclusive('\n') {
+    let bom = if text.starts_with('\u{feff}') {
+        '\u{feff}'.len_utf8()
+    } else {
+        0
+    };
+    let mut start = bom;
+    for (number, piece) in (1..).zip(text[bom..].split_inclusive('\n')) {
         let line = piece.trim_end_matches(['\n', '\r']);
-        match serde_json::from_str::<Value>(line) {
+        let record = match serde_json::from_str::<Value>(line) {
             Ok(Value::Object(record)) => existing.add(&record),
-            _ if !piece.ends_with('\n') && line.trim_start().starts_with('{') => {
+            Err(_) if !piece.ends_with('\n') && line.trim_start().starts_with('{') => {
                 existing.cut = piece.len();
                 break;
             }
-            _ if line.trim().is_empty() => {}
-            _ => existing.foreign += 1,
+            _ => line.trim().is_empty(),
+        };
+        if !record {
+            existing.foreign = existing.foreign.or(Some(number));
         }
         start += piece.len();
     }
     existing.keep = start;
-    existing.unterminated = !text[..start].is_empty() && !text[..start].ends_with('\n');
+    existing.unterminated = start > bom && !text[..start].ends_with('\n');
     existing
 }
 
@@ -340,7 +352,8 @@ pub fn read_output(path: &Path) -> Result<Existing> {
 
 /// The bytes of the output at `path` (none when it does not exist yet) and
 /// what they hold. A crash can cut a record inside a multi-byte character;
-/// any other invalid UTF-8 is an error.
+/// any other invalid UTF-8 is an error, and so is a line that is not a
+/// record: such a file (an input list, notes, an image) is not an output.
 fn read_existing(path: &Path) -> Result<(Vec<u8>, Existing)> {
     let bytes = match std::fs::read(path) {
         Ok(bytes) => bytes,
@@ -354,6 +367,12 @@ fn read_existing(path: &Path) -> Result<(Vec<u8>, Existing)> {
         Err(_) => bail!("{} is not a UTF-8 JSON-lines file", path.display()),
     };
     let existing = scan_output(text);
+    if let Some(line) = existing.foreign {
+        bail!(
+            "{} is not a falcon-ocr output: its line {line} is not a record",
+            path.display()
+        );
+    }
     Ok((bytes, existing))
 }
 
@@ -445,7 +464,7 @@ mod tests {
         let done: HashSet<String> = ["a.png", "b.png", "c.png"].map(String::from).into();
         assert_eq!(existing.done, done);
         assert_eq!((existing.keep, existing.cut), (complete.len(), cut.len()));
-        assert!(!existing.unterminated && existing.foreign == 0);
+        assert!(!existing.unterminated && existing.foreign.is_none());
         let fast = Run {
             mode: Some("fast".to_owned()),
             precision: Some("w8-body-kv-q8".to_owned()),
@@ -461,9 +480,21 @@ mod tests {
         let last = ok("f.png", "fast", "w8-body-kv-q8");
         let existing = scan_output(&format!("{complete}{last}"));
         assert!(existing.done.contains("f.png") && existing.unterminated && existing.cut == 0);
-        // Foreign lines are counted and kept, even a last one.
+        // The first line that is not a record is found, even a last one or
+        // a JSON object without a `path`; such lines are not cut.
         let existing = scan_output("not json\n[1]\nplain tail");
-        assert_eq!((existing.foreign, existing.keep, existing.unterminated), (3, 23, true));
+        assert_eq!(
+            (existing.foreign, existing.keep, existing.unterminated),
+            (Some(1), 23, true)
+        );
+        assert_eq!(scan_output(&format!("{complete}{{\"a\":1}}")).foreign, Some(6));
+        assert_eq!(scan_output("{\"a\":1}").cut, 0);
+        // A byte order mark is skipped and kept.
+        let marked = format!("\u{feff}{}\r\n", ok("a.png", "fast", "w8-body-kv-q8"));
+        let existing = scan_output(&marked);
+        assert!(existing.done.contains("a.png") && existing.foreign.is_none());
+        assert_eq!((existing.keep, existing.unterminated), (marked.len(), false));
+        assert!(!scan_output("\u{feff}").unterminated);
         assert_eq!(scan_output(""), Existing::default());
     }
 
@@ -522,9 +553,18 @@ mod tests {
         let (file, _) = open_output(&path).unwrap();
         sink_line(file);
         assert_eq!(std::fs::read_to_string(&path).unwrap(), format!("{first}{first}"));
-        // Invalid UTF-8 before the end is refused.
+        // Invalid UTF-8 before the end is refused, and so is a line that is
+        // not a record; the file is left as it is.
         std::fs::write(&path, b"\xff\n{}\n").unwrap();
         assert!(open_output(&path).is_err());
+        let list = format!("{first}page.png\n");
+        std::fs::write(&path, &list).unwrap();
+        let error = format!("{:#}", open_output(&path).unwrap_err());
+        assert!(
+            error.ends_with("is not a falcon-ocr output: its line 2 is not a record"),
+            "{error}"
+        );
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), list);
         // Only a regular file is read; a directory is not an output.
         assert!(is_file_or_missing(&path) && is_file_or_missing(&dir.path().join("new.jsonl")));
         assert!(!is_file_or_missing(dir.path()));
