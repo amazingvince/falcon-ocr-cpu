@@ -133,7 +133,9 @@ mode or precision, the GPTQ overlay or round-to-nearest weights, the
 `--max-dimension`, `--min-dimension`, `--max-new-tokens` or crop padding,
 `--stop-repetition`, `--exp`, BF16, NEON or scalar prefill attention, BF16
 projections, or a pinned `--tune decode-exp`; a record without `options`
-counts as one that ran otherwise. With `--escalate`, a warning counts the
+counts as one that ran otherwise. An escalated record compares its
+near-exact rerun's kernel settings, allowing the expected switch from
+fast-mode BF16 prefill to FP32. With `--escalate`, a warning counts the
 fast-mode records that the repetition stop ended without a near-exact rerun,
 since their pages are skipped.
 

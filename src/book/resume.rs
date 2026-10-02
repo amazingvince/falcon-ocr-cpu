@@ -144,8 +144,8 @@ pub struct Run {
     /// The options the run asked for; `None` for a record without readable
     /// `options`, which matches no run.
     pub settings: Option<Settings>,
-    /// The runner's token-changing choices; `None` for an escalated record
-    /// (its plan is the near-exact rerun's) or a plan without them.
+    /// The runner's token-changing choices (the near-exact rerun's for an
+    /// escalated record); `None` for a plan without them.
     pub kernels: Option<Kernels>,
 }
 
@@ -160,10 +160,20 @@ impl Run {
                 .is_none_or(|precision| Some(precision) == run.precision.as_ref() && self.overlay == run.overlay)
             && self.settings.is_some()
             && self.settings == run.settings
-            && self
-                .kernels
-                .as_ref()
-                .is_none_or(|kernels| Some(kernels) == run.kernels.as_ref())
+            && self.kernels.as_ref().is_none_or(|kernels| {
+                let mut expected = run.kernels.clone();
+                if self.precision.is_none()
+                    && let Some(expected) = &mut expected
+                {
+                    // Escalation shares the run's configuration, but its
+                    // 16-bit body cannot use fast mode's BF16 prefill.
+                    if expected.attention == "bf16" {
+                        expected.attention = "fp32".to_owned();
+                    }
+                    expected.bf16_projections = false;
+                }
+                Some(kernels) == expected.as_ref()
+            })
     }
 }
 
@@ -258,6 +268,7 @@ impl Existing {
                 mode: text(attempt.get("mode")),
                 routed,
                 settings,
+                kernels: record.get("plan").and_then(Kernels::from_plan),
                 ..Run::default()
             },
             None => Run {
@@ -722,7 +733,7 @@ mod tests {
         // Same mode, another precision (for example exact mode's labels).
         assert!(resume_warning(&existing, &this_run(Some(Mode::Fast), "fp32", None, &fixed, None)).is_some());
         // The GPTQ overlay against round-to-nearest, and routing: the
-        // escalated record matches any fast run that routes alike.
+        // legacy escalated record has no plan to compare.
         let gptq = this_run(
             Some(Mode::Fast),
             "w8-body-kv-q8",
@@ -890,6 +901,54 @@ mod tests {
                 "{warning}"
             );
         }
+        // Escalation keeps the near-exact plan. Its FP32 prefill is
+        // expected even when fast mode uses BF16, but exp, the stop and
+        // pinned decode exp still have to agree with the resumed run.
+        let mut escalated = record.clone();
+        escalated["mode"] = "near-exact".into();
+        escalated["precision"] = "w16-body-kv-q16".into();
+        escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
+        let existing = scan_output(&line(&escalated.to_string(), &fixed));
+        assert_eq!(
+            existing.runs.keys().next().unwrap().kernels,
+            Kernels::from_plan(&escalated["plan"])
+        );
+        let resumed = |plan: Value| {
+            this_run(
+                Some(Mode::Fast),
+                "w8-body-kv-q8",
+                None,
+                &fixed,
+                Kernels::from_plan(&plan),
+            )
+        };
+        for attention in ["avx2", "avx512-wide", "bf16"] {
+            for projection in ["panel-avx2", "panel-bf16"] {
+                assert_eq!(
+                    resume_warning(&existing, &resumed(plan(true, "fast", attention, projection))),
+                    None
+                );
+            }
+        }
+        let mut pinned = plan(true, "fast", "bf16", "panel-avx2");
+        pinned["tuning"]["decode_fast_exp"] = true.into();
+        for other in [
+            plan(false, "fast", "bf16", "panel-avx2"),
+            plan(true, "exact", "bf16", "panel-avx2"),
+            plan(true, "fast", "neon", "panel-avx2"),
+            plan(true, "fast", "scalar", "panel-avx2"),
+            pinned,
+        ] {
+            assert!(resume_warning(&existing, &resumed(other)).is_some());
+        }
+        escalated["plan"]["exp"] = "exact".into();
+        let existing = scan_output(&line(&escalated.to_string(), &fixed));
+        assert_eq!(
+            resume_warning(&existing, &resumed(plan(true, "exact", "bf16", "panel-avx2"))),
+            None
+        );
+        let warning = resume_warning(&existing, &resumed(plan(true, "fast", "bf16", "panel-avx2"))).unwrap();
+        assert!(warning.contains("1 escalated from fast (--exp exact)"), "{warning}");
         // A runner's own plan reads the same way.
         let facts = crate::auto::ModelFacts {
             source: crate::WeightsSource::Checkpoint {
