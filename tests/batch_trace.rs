@@ -179,3 +179,53 @@ fn streamed_pages_are_traced_under_their_input_indices() {
         );
     }
 }
+
+#[test]
+#[ignore = "requires pinned model and strict GPU reference fixture"]
+fn safety_net_reruns_are_traced_apart_from_the_routed_attempt() {
+    let model = Arc::new(Model::load("artifacts/model").unwrap());
+    let page = image::open("artifacts/reference/smoke-fp32/canonical-rgb.png")
+        .unwrap()
+        .to_rgb8();
+    // The smoke page routes to 768 pixels, and three tokens end it by length,
+    // so the safety net reruns it at the cap.
+    let options = GenerationOptions {
+        route: true,
+        max_new_tokens: 3,
+        ..Default::default()
+    };
+    let runner = |batch_size| {
+        Runner::new(
+            model.clone(),
+            "artifacts/model",
+            RunnerConfig {
+                threads: 4,
+                batch_size,
+                backend: Backend::Avx2,
+                cache_layout: CacheLayout::Compact,
+                ..RunnerConfig::reference()
+            },
+        )
+        .unwrap()
+    };
+    let mut trace = UniqueNames::default();
+    let result = runner(1).recognize_with_trace(&page, &options, &mut trace).unwrap();
+    assert!(result.route.unwrap().safety_net.is_some());
+    assert!(trace.tensors.contains_key("prefill.embedding"));
+    assert!(trace.tensors.contains_key("rerun.prefill.embedding"));
+    for batch_size in [1, 2] {
+        let mut trace = UniqueNames::default();
+        let results = runner(batch_size)
+            .recognize_batch_with_trace(&[page.clone(), page.clone()], &options, &mut trace)
+            .unwrap();
+        for (index, result) in results.iter().enumerate() {
+            assert!(result.route.as_ref().unwrap().safety_net.is_some());
+            assert!(
+                trace
+                    .tensors
+                    .contains_key(&format!("request.{index}.rerun.prefill.embedding")),
+                "batch size {batch_size}"
+            );
+        }
+    }
+}

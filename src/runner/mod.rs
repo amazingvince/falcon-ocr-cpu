@@ -4,7 +4,7 @@ use crate::{
     preprocess::{Crop, PreparedImage, decode_file, first_resize_rgb, prepare_file_timed, prepare_first_cropped},
     router::{self, Route, RoutedAttempt},
     tokenizer::OcrTokenizer,
-    trace::{NoTrace, Trace},
+    trace::{NoTrace, PrefixedTrace, Trace},
 };
 use anyhow::{Context, Result, ensure};
 use image::RgbImage;
@@ -473,7 +473,8 @@ impl Runner {
     }
 
     /// Rerun a routed page at the cap when it stopped by repetition or
-    /// length; the rerun's `total_ms` includes the routed attempt.
+    /// length; the rerun's `total_ms` includes the routed attempt, and its
+    /// tensors are traced under `rerun.`, apart from the attempt's.
     fn safety_net(
         &self,
         routed: OcrResult,
@@ -491,7 +492,8 @@ impl Runner {
             output_tokens: routed.output_tokens,
             total_ms: routed.timings.total_ms,
         });
-        let mut rerun = self.recognize_first(capped, 0., &options.at(router::CAP), trace, Instant::now())?;
+        let mut scoped = PrefixedTrace::new(trace, "rerun");
+        let mut rerun = self.recognize_first(capped, 0., &options.at(router::CAP), &mut scoped, Instant::now())?;
         rerun.timings.image_decode_ms = routed.timings.image_decode_ms;
         rerun.timings.total_ms += routed.timings.total_ms;
         Ok(rerun)

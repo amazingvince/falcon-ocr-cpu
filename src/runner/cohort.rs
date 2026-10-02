@@ -67,8 +67,10 @@ impl Runner {
             let outputs = self
                 .pool
                 .install(|| self.run_batch_chunk(inputs, options, started, trace, &requests))?;
-            for (output, route) in outputs.into_iter().zip(routes) {
-                results.push(self.finish_batch_page(output, route, options, trace)?);
+            for ((output, route), request) in outputs.into_iter().zip(routes).zip(requests) {
+                let prefix = format!("request.{request}");
+                let mut scoped = PrefixedTrace::new(trace, &prefix);
+                results.push(self.finish_batch_page(output, route, options, &mut scoped)?);
             }
         }
         Ok(results)
@@ -207,7 +209,9 @@ impl Runner {
         match outputs {
             Ok(outputs) => {
                 for (output, (index, route)) in outputs.into_iter().zip(pages) {
-                    let result = self.finish_batch_page(output, route, options, trace);
+                    let prefix = format!("request.{index}");
+                    let mut scoped = PrefixedTrace::new(trace, &prefix);
+                    let result = self.finish_batch_page(output, route, options, &mut scoped);
                     if emit.finish(index, result).is_break() {
                         return Ok(ControlFlow::Break(()));
                     }
