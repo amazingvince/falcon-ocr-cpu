@@ -187,7 +187,12 @@ impl std::fmt::Display for Run {
         }
         match &self.settings {
             Some(settings) => details.extend(settings.flags()),
-            None => details.push("no options".to_owned()),
+            None => {
+                details.push("no options".to_owned());
+                if self.routed {
+                    details.push("--max-dimension auto".to_owned());
+                }
+            }
         }
         details.extend(self.kernels.iter().flat_map(Kernels::flags));
         if self.precision.is_none() {
@@ -270,13 +275,15 @@ impl Existing {
 }
 
 /// Read an output file's text: every successful record (a line with `path`
-/// and `text` and no `error`), and how to append after it. NUL bytes at the
-/// start of a line, what a power loss leaves in place of data that was never
-/// written, are skipped: the record they replaced is missing, so its page
-/// runs again. A last line without its newline that starts like a record but
-/// is not valid JSON, or holds only NUL bytes, was cut short by a crash and
-/// is dropped; any other last line without its newline is kept and gets one.
-/// A byte order mark (an editor's) is kept and skipped.
+/// and `text` and no `error`), and how to append after it. JSON escapes NUL,
+/// so a line holding a raw NUL byte is damage, what a power loss leaves in
+/// place of data that was never written: a record after leading NULs counts,
+/// and any other such line is skipped, so the pages of the records it
+/// replaced run again; a file with damaged lines and no record is not an
+/// output. A last line without its newline that holds a NUL, or starts like
+/// a record but is not valid JSON, was cut short by a crash and is dropped;
+/// any other last line without its newline is kept and gets one. A byte
+/// order mark (an editor's) is kept and skipped.
 pub fn scan_output(text: &str) -> Existing {
     let mut existing = Existing::default();
     let bom = if text.starts_with('\u{feff}') {
@@ -285,13 +292,22 @@ pub fn scan_output(text: &str) -> Existing {
         0
     };
     let mut start = bom;
+    let (mut records, mut damaged) = (0, None);
     for (number, piece) in (1..).zip(text[bom..].split_inclusive('\n')) {
-        let line = piece.trim_end_matches(['\n', '\r']).trim_start_matches('\0');
-        let record = match serde_json::from_str::<Value>(line) {
-            Ok(Value::Object(record)) => existing.add(&record),
-            Err(_) if !piece.ends_with('\n') && (line.is_empty() || line.trim_start().starts_with('{')) => {
+        let line = piece.trim_end_matches(['\n', '\r']);
+        let nul = line.contains('\0');
+        let record = match serde_json::from_str::<Value>(line.trim_start_matches('\0')) {
+            Ok(Value::Object(record)) if existing.add(&record) => {
+                records += 1;
+                true
+            }
+            Err(_) if !piece.ends_with('\n') && (nul || line.trim_start().starts_with('{')) => {
                 existing.cut = piece.len();
                 break;
+            }
+            _ if nul => {
+                damaged = damaged.or(Some(number));
+                true
             }
             _ => line.trim().is_empty(),
         };
@@ -299,6 +315,11 @@ pub fn scan_output(text: &str) -> Existing {
             existing.foreign = existing.foreign.or(Some(number));
         }
         start += piece.len();
+    }
+    if records == 0
+        && let Some(line) = damaged
+    {
+        existing.foreign = Some(existing.foreign.map_or(line, |foreign| foreign.min(line)));
     }
     existing.keep = start;
     existing.unterminated = start > bom && !text[..start].ends_with('\n');
@@ -500,7 +521,7 @@ mod tests {
         );
         // NULs in place of an earlier record, newline included, run into
         // the next record's line: that record counts, the lost one does not,
-        // and a line of NULs alone is blank.
+        // and a line of NULs alone is skipped.
         let (lost, next) = (
             ok("g.png", "fast", "w8-body-kv-q8"),
             ok("h.png", "fast", "w8-body-kv-q8"),
@@ -509,6 +530,24 @@ mod tests {
         let existing = scan_output(&gap);
         assert!(existing.done.contains("h.png") && !existing.done.contains("g.png"));
         assert_eq!((existing.keep, existing.cut, existing.foreign), (gap.len(), 0, None));
+        // A hole of whole blocks starts and ends inside records: the line
+        // that holds it is skipped, and both of its records' pages run again.
+        let block = format!(
+            "{complete}{}\0\0\0\0{}\n{}\n",
+            &lost[..20],
+            &next[20..],
+            ok("i.png", "fast", "w8-body-kv-q8")
+        );
+        let existing = scan_output(&block);
+        assert!(
+            existing.done.contains("i.png") && !existing.done.contains("g.png") && !existing.done.contains("h.png")
+        );
+        assert_eq!((existing.keep, existing.cut, existing.foreign), (block.len(), 0, None));
+        // So is a last line without its newline that holds a NUL.
+        let tail = format!("{complete}{}\0\0", &lost[..20]);
+        assert_eq!(scan_output(&tail).cut, 22);
+        // A file of damaged lines and no record (UTF-16 text) is not an output.
+        assert_eq!(scan_output("a\0b\0\n\0c\0\n").foreign, Some(1));
         // A byte order mark is skipped and kept.
         let marked = format!("\u{feff}{}\r\n", ok("a.png", "fast", "w8-body-kv-q8"));
         let existing = scan_output(&marked);

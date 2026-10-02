@@ -117,17 +117,19 @@ stderr does not stop the run.
 whose path, as given, already has a successful record there. Skipped inputs
 are not read, so they need not exist any more, and no input may be listed
 twice. A last record cut short by a crash, or the NUL bytes a power loss can
-leave in its place, is removed, so its page runs again. NUL bytes at the
-start of a line, which a power loss can leave in place of an earlier record,
-are skipped, and that record's page runs again too. A record that ran
-otherwise is kept and skipped with a warning naming the difference: the mode
-or precision, the GPTQ overlay or round-to-nearest weights, the
+leave in its place, is removed, so its page runs again. A record never holds
+a raw NUL byte, so a line that does is damage from a power loss, which can
+leave NULs in place of earlier records: it is skipped, unless a whole record
+follows its leading NULs, and the pages of the records it replaced run
+again (a file with damaged lines and no record is refused). A record that
+ran otherwise is kept and skipped with a warning naming the difference: the
+mode or precision, the GPTQ overlay or round-to-nearest weights, the
 `--max-dimension`, `--min-dimension`, `--max-new-tokens` or crop padding,
-`--stop-repetition`, `--exp`, BF16 or NEON prefill rounding, or a pinned
-`--tune decode-exp`; a record without `options` counts as one that ran
-otherwise. With `--escalate`, a warning counts the fast-mode records that
-the repetition stop ended without a near-exact rerun, since their pages are
-skipped.
+`--stop-repetition`, `--exp`, BF16, NEON or scalar prefill attention, BF16
+projections, or a pinned `--tune decode-exp`; a record without `options`
+counts as one that ran otherwise. With `--escalate`, a warning counts the
+fast-mode records that the repetition stop ended without a near-exact rerun,
+since their pages are skipped.
 
 **Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
 model when a fast-mode page first ends on the repetition stop and keeps it
