@@ -6,8 +6,9 @@ decode fixtures in tests/fixtures/images (after the processor's first resize
 at the 1536 cap), computed by the specification
 research/resolution-router/router_features.py and the exported trees.
 
-  wsl.exe -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- \\
-      /home/amazi/falcon-ocr-rust-reference/.venv/bin/python tests/generate_router_fixtures.py
+From the repository root, with the pinned packages (requirements/reference.txt):
+
+  python tests/generate_router_fixtures.py
 """
 from __future__ import annotations
 

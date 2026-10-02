@@ -9,10 +9,11 @@ Modes (--mode):
            resize leaves the page as it is), or at --dpi N. --gray renders grayscale.
   extract  For PDFs containing scans or screenshots: write the embedded image at
            native resolution, decoded losslessly into a PNG. 1-bit images stay 1-bit,
-           grayscale stays grayscale, anything else becomes RGB; the page's /Rotate is
-           applied. A page qualifies when all it draws is one image, upright and
-           covering the page's visible box (each edge within 2 pt or 0.5% of the longer
-           side), with horizontal and vertical pixel scales within 0.5% of each other
+           grayscale and images whose pixels are all neutral gray become grayscale,
+           anything else becomes RGB; the page's /Rotate is applied. A page qualifies
+           when all it draws is one image, upright and covering the page's visible box
+           (each edge within 2 pt or 0.5% of the longer side), with horizontal and
+           vertical pixel scales within 0.5% of each other
            (a 300 dpi A4 scan on a rounded page box differs by 0.02-0.04%), a colour
            space (not a stencil mask), at most 8 bits per component, no transparency
            or blend mode, and drawn on its own pixel grid it shows exactly its pixels
@@ -268,8 +269,8 @@ def scan_image(page: pdfium.PdfPage) -> tuple[tuple[pdfium.PdfImage, int] | None
 
 
 def extract(page: pdfium.PdfPage, image: pdfium.PdfImage, bits: int) -> tuple[Image.Image, dict]:
-    """The scan (`bits` per component) decoded at its native size (1-bit as mode 1, gray as L, else RGB),
-    turned as the page shows it."""
+    """The scan (`bits` per component) decoded at its native size (1-bit as mode 1, gray or all-neutral
+    pixels as L, else RGB), turned as the page shows it."""
     metadata = image.get_metadata()
     picture = image.get_bitmap(render=False).to_pil()
     if picture.mode != "L":
