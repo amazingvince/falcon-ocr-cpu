@@ -459,7 +459,7 @@ mod tests {
         // dtype=np.int32)[None], "I").resize((m, 1), Image.Resampling.NEAREST)`,
         // the `ImagingScaleAffine` call that modes P and 1 get: n, m, the number
         // of positions where the direct product `(k + 0.5) * n / m` (this runner
-        // before 2026-09-28) differs, and the SHA-256 of the positions as
+        // before 2026-09-30) differs, and the SHA-256 of the positions as
         // little-endian u32.
         let cases = "
             16 12 1 382dc8a9be37675bf3f538be84c3ca7068e57750b44fe9d7bb5f314d114308e4
@@ -502,7 +502,7 @@ mod tests {
         // Pillow 12.3.0 on this pattern as a uint16 array (mode I;16):
         // `Image.fromarray(values).resize((16, 1700), Image.Resampling.BICUBIC)`,
         // hashed as little-endian u16. The one-call core resize (horizontal first,
-        // the order this runner used before 2026-09-28) differs in 9,234 of the
+        // the order this runner used before 2026-09-30) differs in 9,234 of the
         // 27,200 values. The pattern spans the full 16-bit range, so overshoots
         // also check the clip to 65535. The RGB path is covered by
         // `tall-17x1800.png` in the decode fixtures.
