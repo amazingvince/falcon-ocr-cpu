@@ -81,7 +81,7 @@ so the pipeline's tokens are a sequential run's.
 
 | Module | Holds |
 |---|---|
-| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget` and `route`), `MaxDimension`, `RunnerConfig` (`Default` = automatic, `reference()` = bit-exact), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DraftKv`, `DecodeThreads` |
+| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget`, `route` and `crop_margins`), `MaxDimension`, `RunnerConfig` (`Default` = automatic, `reference()` = bit-exact), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DraftKv`, `DecodeThreads` |
 | `auto/` | `HostInfo::detect`, `Mode`, `resolve_weights` (packed file, then checkpoint), `Resolved` (the plan a runner executes); `doctor.rs` (`doctor`: host, files, plan, load and probe) |
 | `cli.rs` | `RunnerArgs` shared by both binaries and `print_doctor` |
 | `main.rs`, `bin/falcon-ocr-eval/` | The CLI; the research binary (profiles, bench, agree, trace, Gram capture) with its telemetry |
@@ -141,9 +141,9 @@ Every path that prefills a page seals it: a page that runs alone, the pages
 of a fixed cohort and the rows of continuous batching alike. Only a profile
 whose cache is compact (`reference`) never seals. `falcon-ocr` loads it for
 traces, which always run in exact mode, so their tensors stay comparable with
-the recorded references, and for exact-mode `run` with `--batch-size` above
-1; an exact single-page `run` takes `split-f32`. Near-exact and fast seal in
-every path.
+the recorded references, and for exact-mode `run` at a batch size above 1; an
+exact single-page `run` takes `split-f32`. Near-exact and fast seal in every
+path.
 
 ## Decode machinery
 
