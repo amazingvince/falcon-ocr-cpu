@@ -44,7 +44,8 @@ pub struct RunnerArgs {
     /// siblings only contend; `auto` times a few team sizes on the first
     /// decode steps and keeps the smallest within 2% of the fastest (tokens
     /// never depend on it). Prefill uses every thread in --threads, except
-    /// that `run --pipeline` prefills the next page on those the team leaves.
+    /// that `run --pipeline` prefills the next page on a second pool
+    /// (--prefill-threads, by default the threads the team leaves).
     #[arg(long, global = true)]
     pub decode_threads: Option<DecodeThreads>,
     /// Speculative decoding: verify up to N tokens drafted from earlier output

@@ -25,27 +25,27 @@
 //! [`Pipeline::prefill_threads`] says otherwise, so the two stages use every
 //! thread of the runner between them. An automatic decode team then takes at
 //! most half of the runner's threads (on three or more; below that the
-//! pipeline cannot overlap): the tuner still measures every candidate, with
-//! no prefill beside it, and a choice above half becomes the largest
-//! candidate within it; when every candidate is larger (with speculation there
-//! is no half-core candidate, so an 8-thread run on 8 cores has only 6 and 8),
-//! half is a candidate of its own, held in reserve until then. An explicit
-//! [`Pipeline::prefill_threads`] leaves the team unlimited. On an 8-core,
-//! 16-thread host the 8- and 12-thread teams time about 4% apart on single
-//! steps (7% on 4-row steps), and the 12-thread team leaves the prefill 4
-//! threads instead of 8. The second pool is decided once the team size is
-//! settled: with a fixed team at once (page 1's prefill overlaps page 0's
-//! decode); with `DecodeThreads::Auto` after the tuner has chosen on the first
-//! decode steps, which an overlapping prefill would disturb, so overlap starts
-//! with the page decoding after the choice (page 1 when page 0 is long enough
-//! to finish tuning). Until then, and for the whole run when the default would
-//! leave the pool fewer than two threads (a one-thread prefill takes many times
-//! longer than the decode it overlaps) or the pool cannot be built, pages
-//! prefill on the runner's pool between decodes. The decode team's workers spin
-//! between steps and park after 2 ms idle, so they neither lend their cores to
-//! the second pool during a decode nor hold them after it; a prefill that
-//! outlasts the decode it overlaps keeps only the second pool's threads busy
-//! until it ends.
+//! default pool would have fewer than two): the tuner still measures every
+//! candidate, with no prefill beside it, and a choice above half becomes the
+//! largest candidate within it; when every candidate is larger (with
+//! speculation there is no half-core candidate, so an 8-thread run on 8 cores
+//! has only 6 and 8), half is a candidate of its own, held in reserve until
+//! then. An explicit [`Pipeline::prefill_threads`] leaves the team unlimited.
+//! On an 8-core, 16-thread host the 8- and 12-thread teams time about 4%
+//! apart on single steps (7% on 4-row steps), and the 12-thread team leaves
+//! the prefill 4 threads instead of 8. The second pool is decided once the
+//! team size is settled: with a fixed team at once (page 1's prefill overlaps
+//! page 0's decode); with `DecodeThreads::Auto` after the tuner has chosen on
+//! the first decode steps, which an overlapping prefill would disturb, so
+//! overlap starts with the page decoding after the choice (page 1 when page 0
+//! is long enough to finish tuning). Until then, and for the whole run when
+//! the default would leave the pool fewer than two threads (a one-thread
+//! prefill takes many times longer than the decode it overlaps) or the pool
+//! cannot be built, pages prefill on the runner's pool between decodes. The
+//! decode team's workers spin between steps and park after 2 ms idle, so they
+//! neither lend their cores to the second pool during a decode nor hold them
+//! after it; a prefill that outlasts the decode it overlaps keeps only the
+//! second pool's threads busy until it ends.
 //!
 //! While two pages overlap, both caches are alive: the decoding page's sealed
 //! cache and the next page's prefill (its FP32 prefix cache and forward

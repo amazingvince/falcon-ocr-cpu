@@ -116,8 +116,9 @@ enum Command {
         /// explicit value that does not fit is an error].
         #[arg(long)]
         max_new_tokens: Option<usize>,
-        /// Smallest side in pixels: the first resize enlarges a page whose
-        /// shorter side is below it.
+        /// Smallest side in pixels: the first resize scales a page with a
+        /// side below it so that its shorter side is this, then caps its
+        /// longer side at --max-dimension.
         #[arg(long, default_value_t = 64)]
         min_dimension: u32,
         /// Resolution cap in pixels, or `auto`: the resolution router picks

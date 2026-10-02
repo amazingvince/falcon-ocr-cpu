@@ -60,7 +60,8 @@ pub(crate) fn auto_candidates(host: &crate::auto::HostInfo, limit: usize, specul
 /// The most threads an automatic decode team takes beside a page pipeline's
 /// prefill in a `threads`-thread runner: half, so that the other half (at
 /// least two threads) can prefill beside it; `None` below three threads,
-/// where the pipeline cannot overlap and the team keeps every thread.
+/// where the default prefill pool would get fewer than two and the team
+/// keeps every thread.
 pub(crate) fn pipeline_half(threads: usize) -> Option<usize> {
     (threads >= 3).then_some(threads / 2)
 }
@@ -493,7 +494,7 @@ mod tests {
         assert!(report.median_ms.iter().all(|ms| ms.is_finite()), "{report:?}");
         assert_eq!((report.candidates, report.chosen), (vec![4, 6, 8, 12], 4));
         // No reserve that leaves the prefill fewer than two threads: on two
-        // threads the pipeline cannot overlap, and the team keeps both.
+        // threads the default pool cannot overlap, and the team keeps both.
         assert_eq!(pipeline_reserve(&[2], 2), None);
         assert_eq!(pipeline_reserve(&[2, 3], 3), Some(1));
         assert_eq!(Tuner::new(vec![1], 0).with_reserve(Some(0)).team_sizes(), [1]);
