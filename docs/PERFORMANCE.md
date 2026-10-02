@@ -143,34 +143,40 @@ fast mode its 8- and 12-thread candidates time within 4.3% of each other on
 single steps and within 7.4% on 4-row batch steps over the runs above, and
 in the second round of `--batch-size 4 --pipeline` it chose 12, which left
 the prefill pool 4 threads (380 pages per hour); pinned to 8 threads the same
-arm gave 548 and 549. With `--pipeline` an automatic team now takes at most
-half of the runner's threads: a choice above that becomes the largest
-candidate within it, and smaller choices stand. In an A/B on a busier host
-(two rounds, the binary before the limit against the one with it, tokens
-identical), the binary without the limit kept 8 threads for `--pipeline` in
-one round and read 566 pages per hour, and chose 12 in the other and read
-372; the one with it kept 8 threads in both rounds, where its tuner alone
-would have chosen 12, and read 530 and 515. The three 8-thread rounds are
-one configuration, so their 515–566 spread is that host's noise, and the A/B
-shows the limit's effect only through the 12-thread round. Its batched and
-long-output runs chose the teams the other binary chose. A first version that
-removed the larger candidates before tuning was dropped: without the fastest
-candidate the 2% tolerance accepted 6 threads, whose verification steps are
-slower. Pinning the team (`--decode-threads 8`) still gives the pipeline
-about 3% more, since with an automatic team the overlap starts only after
-tuning. When every candidate is above half, half of the threads is a
-candidate of its own, held in reserve until the limit needs it: with
-speculation the tuner drops its half-core candidate, so an 8-thread run on
-8 cores has only 6 and 8, and before the reserve the smallest stood. With
-`--mode fast --threads 8 --pipeline` on Strunk pages 10–13 (379–425 tokens
-each; a quiet host, two interleaved rounds, tokens identical), the 6-thread
-team with a 2-thread prefill pool took 59.3 and 48.7 s, the 4-thread reserve
-with a 4-thread pool 35.5 and 35.2 s. A sequential run of the same pages on
-8 threads took 32.9 s: on pages this short the pipeline does not pay at 8
-threads. Peak resident memory in fast mode, with the decode team pinned to 8
-threads in the pipelined and batched arms: 2,243–2,300 MiB sequential,
-3,404–3,413 MiB with `--pipeline` (3,822–3,831 MiB with `--crop-margins`),
-3,899–3,900 MiB with `--batch-size 4` and 3,348–4,275 MiB with both.
+arm gave 548 and 549.
+
+Accepted: with `--pipeline` an automatic team takes at most half of the
+runner's threads; a choice above that becomes the largest candidate within
+it, and smaller choices stand. In an A/B on a busier host (two rounds, the
+binary without the limit against the one with it, tokens identical), the
+binary without the limit kept 8 threads for `--pipeline` in one round and
+read 566 pages per hour, and chose 12 in the other and read 372; the one with
+it kept 8 threads in both rounds, where its tuner alone would have chosen 12,
+and read 530 and 515. The three 8-thread rounds are one configuration, so
+their 515–566 spread is that host's noise, and the A/B shows the limit's
+effect only through the 12-thread round. In the batched and long-output runs
+both binaries chose the same teams. Rejected: removing the larger candidates
+before tuning, since without the fastest candidate the 2% tolerance accepted
+6 threads, whose verification steps are slower. Pinning the team
+(`--decode-threads 8`) still gives the pipeline about 3% more, since with an
+automatic team the overlap starts only after tuning.
+
+When every candidate is above half, half of the threads is a candidate of its
+own, held in reserve until the limit needs it: with speculation the tuner
+drops its half-core candidate, so an 8-thread run on 8 cores has only 6 and
+8, and without the reserve the limit finds nothing within half and the
+smallest stands. With `--mode fast --threads 8 --pipeline` on the book's
+first four pages (379–425 output tokens each; two interleaved rounds at a
+load average of about 5, tokens identical), the 6-thread team with a
+2-thread prefill pool took 59.3 and 48.7 s, the 4-thread reserve with a
+4-thread pool 35.5 and 35.2 s. A sequential run of the same pages on 8
+threads took 32.9 s: on pages this short the pipeline does not pay at 8
+threads.
+
+Peak resident memory in fast mode, with the decode team pinned to 8 threads
+in the pipelined and batched arms: 2,243–2,300 MiB sequential, 3,404–3,413
+MiB with `--pipeline` (3,822–3,831 MiB with `--crop-margins`), 3,899–3,900
+MiB with `--batch-size 4` and 3,348–4,275 MiB with both.
 
 ### KV caches and exception columns
 
@@ -220,7 +226,8 @@ runs used n-gram drafts and are left out. Their fidelity is in
   with hashes of everything involved, for reproducible reports.
 
 Timing A/Bs are unreliable while other jobs run. The numbers above came from
-a quiet host except the tuner-limit A/B, whose 8-thread rounds of one
-configuration read 515 to 566 pages per hour. The 7950X receipts are under
+a quiet host except two A/Bs on the 7700X: the tuner limit's, whose 8-thread
+rounds of one configuration read 515 to 566 pages per hour, and the
+reserve's, at a load average of about 5. The 7950X receipts are under
 `artifacts/phase4/`, the 7700X runs' scripts and records under
 `artifacts/verify/pr/timing/` (the A/B's under `artifacts/verify/pr/T2/`).
