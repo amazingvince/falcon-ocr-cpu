@@ -57,13 +57,19 @@ pub(crate) fn auto_candidates(host: &crate::auto::HostInfo, limit: usize, specul
     (sizes, start)
 }
 
+/// The most threads an automatic decode team takes beside a page pipeline's
+/// prefill in a `threads`-thread runner: half, so that the other half (at
+/// least two threads) can prefill beside it; `None` below three threads,
+/// where the pipeline cannot overlap and the team keeps every thread.
+pub(crate) fn pipeline_half(threads: usize) -> Option<usize> {
+    (threads >= 3).then_some(threads / 2)
+}
+
 /// The team held in reserve for a page pipeline beside a `threads`-thread
 /// runner whose tuner has the candidates `sizes` ([`Tuner::with_reserve`]):
-/// half of the threads, when every candidate is larger and the other half
-/// (at least two threads) can prefill beside it.
+/// [`pipeline_half`] when every candidate is larger.
 pub(crate) fn pipeline_reserve(sizes: &[usize], threads: usize) -> Option<usize> {
-    let half = threads / 2;
-    (half >= 1 && threads - half >= 2 && sizes.first().is_some_and(|&smallest| smallest > half)).then_some(half)
+    pipeline_half(threads).filter(|&half| sizes.first().is_some_and(|&smallest| smallest > half))
 }
 
 /// What the tuner measured and chose (`Runner::decode_tuning`).

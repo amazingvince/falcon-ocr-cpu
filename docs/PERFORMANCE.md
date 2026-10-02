@@ -146,20 +146,20 @@ the prefill pool 4 threads (380 pages per hour); pinned to 8 threads the same
 arm gave 548 and 549.
 
 Accepted: with `--pipeline` an automatic team takes at most half of the
-runner's threads; a choice above that becomes the largest candidate within
-it, and smaller choices stand. In an A/B on a busier host (two rounds, the
-binary without the limit against the one with it, tokens identical), the
-binary without the limit kept 8 threads for `--pipeline` in one round and
-read 566 pages per hour, and chose 12 in the other and read 372; the one with
-it kept 8 threads in both rounds, where its tuner alone would have chosen 12,
-and read 530 and 515. The three 8-thread rounds are one configuration, so
-their 515–566 spread is that host's noise, and the A/B shows the limit's
-effect only through the 12-thread round. In the batched and long-output runs
-both binaries chose the same teams. Rejected: removing the larger candidates
-before tuning, since without the fastest candidate the 2% tolerance accepted
-6 threads, whose verification steps are slower. Pinning the team
-(`--decode-threads 8`) still gives the pipeline about 3% more, since with an
-automatic team the overlap starts only after tuning.
+runner's threads (on three or more); a choice above that becomes the largest
+candidate within it, and smaller choices stand. In an A/B on a busier host
+(two rounds, the binary without the limit against the one with it, tokens
+identical), the binary without the limit kept 8 threads for `--pipeline` in
+one round and read 566 pages per hour, and chose 12 in the other and read
+372; the one with it kept 8 threads in both rounds, where its tuner alone
+would have chosen 12, and read 530 and 515. The three 8-thread rounds are one
+configuration, so their 515–566 spread is that host's noise, and the A/B
+shows the limit's effect only through the 12-thread round. In the batched and
+long-output runs both binaries chose the same teams. Rejected: removing the
+larger candidates before tuning, since without the fastest candidate the 2%
+tolerance accepted 6 threads, whose verification steps are slower. Pinning
+the team (`--decode-threads 8`) still gives the pipeline about 3% more, since
+with an automatic team the overlap starts only after tuning.
 
 When every candidate is above half, half of the threads is a candidate of its
 own, held in reserve until the limit needs it: with speculation the tuner

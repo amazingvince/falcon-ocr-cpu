@@ -73,11 +73,13 @@ prefill/decode boundary (`Runner::prefill`, `Runner::decode_prefilled`, the
 two halves of the one sequential call): a prefetch thread reads and prepares
 the next pages, and the next page's prefill runs on a second pool while the
 current page decodes. That pool gets the threads the decode team leaves, and
-an automatic team then takes at most half of the runner's threads; when every
-candidate is larger, it measures a half-size team the plan lists as
-`decode auto {6,8; 4 with --pipeline}`. Every prefill stage computes each
-output independently of its pool's thread count, so the pipeline's tokens
-are a sequential run's.
+on three or more threads an automatic team then takes at most half of them
+(below three the pipeline cannot overlap); when every candidate is larger, it
+measures a half-size team the plan lists as
+`decode auto {6,8; 4 with --pipeline}`. An explicit `--prefill-threads`
+sizes the pool and leaves the team unlimited, so the half-size team goes
+unused. Every prefill stage computes each output independently of its pool's
+thread count, so the pipeline's tokens are a sequential run's.
 
 ## Long runs
 

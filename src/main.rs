@@ -156,8 +156,9 @@ enum Command {
         pipeline: bool,
         /// Threads that prefill the next page with --pipeline, at most
         /// --threads [default: --threads minus the decode team, an automatic
-        /// team then taking at most half of --threads; when that leaves fewer
-        /// than 2, pages prefill between decodes instead].
+        /// team then taking at most half of 3 or more --threads; when that
+        /// leaves fewer than 2, pages prefill between decodes instead]. Given
+        /// explicitly, it leaves an automatic team unlimited.
         #[arg(long, requires = "pipeline")]
         prefill_threads: Option<usize>,
         /// Reread fast-mode pages that the repetition stop ended with the

@@ -24,11 +24,13 @@
 //! The second pool has the runner's threads minus the decode team unless
 //! [`Pipeline::prefill_threads`] says otherwise, so the two stages use every
 //! thread of the runner between them. An automatic decode team then takes at
-//! most half of the runner's threads: the tuner still measures every candidate,
-//! with no prefill beside it, and a choice above half becomes the largest
+//! most half of the runner's threads (on three or more; below that the
+//! pipeline cannot overlap): the tuner still measures every candidate, with
+//! no prefill beside it, and a choice above half becomes the largest
 //! candidate within it; when every candidate is larger (with speculation there
 //! is no half-core candidate, so an 8-thread run on 8 cores has only 6 and 8),
-//! half is a candidate of its own, held in reserve until then. On an 8-core,
+//! half is a candidate of its own, held in reserve until then. An explicit
+//! [`Pipeline::prefill_threads`] leaves the team unlimited. On an 8-core,
 //! 16-thread host the 8- and 12-thread teams time about 4% apart on single
 //! steps (7% on 4-row steps), and the 12-thread team leaves the prefill 4
 //! threads instead of 8. The second pool is decided once the team size is
@@ -77,8 +79,8 @@ pub struct Pipeline {
     /// Threads of the pool that prefills the next page while the current one
     /// decodes, at most the runner's threads; `None`: the runner's threads
     /// minus the decode team, and no overlap when that leaves fewer than
-    /// two. With `None` an automatic decode team takes at most half of the
-    /// runner's threads (see the module notes).
+    /// two. With `None` an automatic decode team takes at most half of three
+    /// or more threads (see the module notes).
     pub prefill_threads: Option<usize>,
 }
 
@@ -213,12 +215,14 @@ impl Runner {
     }
 
     /// Let an automatic decode team take at most half of the runner's
-    /// `threads`, so that the second pool keeps at least the other half (see
-    /// the module notes). The limit stays for the runner's later calls; it is reported
-    /// once, when it drops a candidate.
+    /// `threads` ([`crate::tune::pipeline_half`]), so that the second pool
+    /// keeps at least the other half (see the module notes); below three
+    /// threads the team keeps them all. The limit stays for the runner's
+    /// later calls; it is reported once, when it drops a candidate.
     fn leave_half_to_prefill(&self, threads: usize) {
         if let Decode::Auto(auto) = &self.decode
-            && let Some(largest) = auto.tuner.lock().unwrap().limit(threads / 2)
+            && let Some(half) = crate::tune::pipeline_half(threads)
+            && let Some(largest) = auto.tuner.lock().unwrap().limit(half)
         {
             crate::note!(
                 "pipeline: the automatic decode team uses at most {largest} of {threads} threads, so the next \
