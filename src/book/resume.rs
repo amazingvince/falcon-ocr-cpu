@@ -270,12 +270,13 @@ impl Existing {
 }
 
 /// Read an output file's text: every successful record (a line with `path`
-/// and `text` and no `error`), and how to append after it. A last line
-/// without its newline that starts like a record but is not valid JSON, or
-/// holds only NUL bytes (what a power loss can leave after the last write),
-/// was cut short by a crash and is dropped; any other last line without its
-/// newline is kept and gets one. A byte order mark (an editor's) is kept and
-/// skipped.
+/// and `text` and no `error`), and how to append after it. NUL bytes at the
+/// start of a line, what a power loss leaves in place of data that was never
+/// written, are skipped: the record they replaced is missing, so its page
+/// runs again. A last line without its newline that starts like a record but
+/// is not valid JSON, or holds only NUL bytes, was cut short by a crash and
+/// is dropped; any other last line without its newline is kept and gets one.
+/// A byte order mark (an editor's) is kept and skipped.
 pub fn scan_output(text: &str) -> Existing {
     let mut existing = Existing::default();
     let bom = if text.starts_with('\u{feff}') {
@@ -285,13 +286,10 @@ pub fn scan_output(text: &str) -> Existing {
     };
     let mut start = bom;
     for (number, piece) in (1..).zip(text[bom..].split_inclusive('\n')) {
-        let line = piece.trim_end_matches(['\n', '\r']);
+        let line = piece.trim_end_matches(['\n', '\r']).trim_start_matches('\0');
         let record = match serde_json::from_str::<Value>(line) {
             Ok(Value::Object(record)) => existing.add(&record),
-            Err(_)
-                if !piece.ends_with('\n')
-                    && (line.trim_start().starts_with('{') || line.bytes().all(|byte| byte == 0)) =>
-            {
+            Err(_) if !piece.ends_with('\n') && (line.is_empty() || line.trim_start().starts_with('{')) => {
                 existing.cut = piece.len();
                 break;
             }
@@ -500,6 +498,17 @@ mod tests {
             (existing.keep, existing.cut, existing.foreign),
             (complete.len(), 4, None)
         );
+        // NULs in place of an earlier record, newline included, run into
+        // the next record's line: that record counts, the lost one does not,
+        // and a line of NULs alone is blank.
+        let (lost, next) = (
+            ok("g.png", "fast", "w8-body-kv-q8"),
+            ok("h.png", "fast", "w8-body-kv-q8"),
+        );
+        let gap = format!("{complete}{}{next}\n\0\0\n", "\0".repeat(lost.len() + 1));
+        let existing = scan_output(&gap);
+        assert!(existing.done.contains("h.png") && !existing.done.contains("g.png"));
+        assert_eq!((existing.keep, existing.cut, existing.foreign), (gap.len(), 0, None));
         // A byte order mark is skipped and kept.
         let marked = format!("\u{feff}{}\r\n", ok("a.png", "fast", "w8-body-kv-q8"));
         let existing = scan_output(&marked);

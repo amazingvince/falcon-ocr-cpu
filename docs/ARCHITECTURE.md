@@ -115,7 +115,9 @@ stderr does not stop the run.
 whose path, as given, already has a successful record there. Skipped inputs
 are not read, so they need not exist any more, and no input may be listed
 twice. A last record cut short by a crash, or the NUL bytes a power loss can
-leave in its place, is removed, so its page runs again. A record that ran
+leave in its place, is removed, so its page runs again. NUL bytes at the
+start of a line, which a power loss can leave in place of an earlier record,
+are skipped, and that record's page runs again too. A record that ran
 otherwise is kept and skipped with a warning naming the difference: the mode
 or precision, the GPTQ overlay or round-to-nearest weights, the
 `--max-dimension`, `--min-dimension`, `--max-new-tokens` or crop padding,
