@@ -144,13 +144,16 @@ fast mode its 8- and 12-thread candidates time within 4.3% of each other on
 single steps and within 7.4% on 4-row batch steps over the runs above, and
 in the second round of `--batch-size 4 --pipeline` it chose 12, which left
 the prefill pool 4 threads (380 pages per hour); pinned to 8 threads the same
-arm gave 548 and 549. With `--pipeline` an automatic team now takes at most half of the
-runner's threads: a choice above that becomes the largest candidate within
-it, and smaller choices stand. In an A/B on a busier host (two rounds, the
-binary before the limit against the one with it, tokens identical), the
-binary without the limit chose 12 threads for `--pipeline` once and read 372
-pages per hour; the one with it kept 8 threads in both rounds, where its
-tuner alone would have chosen 12, and read 530 and 515. Its batched and
+arm gave 548 and 549. With `--pipeline` an automatic team now takes at most
+half of the runner's threads: a choice above that becomes the largest
+candidate within it, and smaller choices stand. In an A/B on a busier host
+(two rounds, the binary before the limit against the one with it, tokens
+identical), the binary without the limit kept 8 threads for `--pipeline` in
+one round and read 566 pages per hour, and chose 12 in the other and read
+372; the one with it kept 8 threads in both rounds, where its tuner alone
+would have chosen 12, and read 530 and 515. The three 8-thread rounds are
+one configuration, so their 515–566 spread is that host's noise, and the A/B
+shows the limit's effect only through the 12-thread round. Its batched and
 long-output runs chose the teams the other binary chose. A first version that
 removed the larger candidates before tuning was dropped: without the fastest
 candidate the 2% tolerance accepted 6 threads, whose verification steps are
@@ -208,6 +211,8 @@ runs used n-gram drafts and are left out. Their fidelity is in
 - `cargo run --release --example ocr_bench`: warm RGB-buffer recognition
   with hashes of everything involved, for reproducible reports.
 
-Timing A/Bs are unreliable while other jobs run; every number above came
-from a quiet host. The 7950X receipts are under `artifacts/phase4/`, the
-7700X runs' scripts and records under `artifacts/verify/pr/timing/`.
+Timing A/Bs are unreliable while other jobs run. The numbers above came from
+a quiet host except the tuner-limit A/B, whose 8-thread rounds of one
+configuration read 515 to 566 pages per hour. The 7950X receipts are under
+`artifacts/phase4/`, the 7700X runs' scripts and records under
+`artifacts/verify/pr/timing/` (the A/B's under `artifacts/verify/pr/T2/`).
