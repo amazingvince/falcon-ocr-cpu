@@ -7,10 +7,11 @@ upscaling, downscaling, horizontal-only/vertical-only resizing, single-pixel
 dimensions, Python ties-to-even alignment, and the processor's minimum-area rule.
 Both resize pixels and normalized FP32 patches are checked exactly.
 
-Regenerate from the repository root after fetching the pinned model:
+Regenerate from the repository root after fetching the pinned model, with
+the pinned Python packages (`requirements/reference.txt`) installed:
 
-```powershell
-wsl.exe -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- /home/amazi/falcon-ocr-rust-reference/.venv/bin/python tests/generate_preprocess_fixtures.py
+```sh
+python tests/generate_preprocess_fixtures.py
 cargo test --lib preprocess
 cargo test --lib tokenizer -- --include-ignored
 ```
@@ -71,8 +72,8 @@ and for every decode fixture after the first resize at the 1536 cap. Regenerate
 it whenever `src/router/trees.json`, the specification or the decode fixtures
 change:
 
-```powershell
-wsl.exe -d Ubuntu-24.04-CUDA --cd /mnt/c/Users/amazi/Documents/ChatGPT/falcon-ocr -- /home/amazi/falcon-ocr-rust-reference/.venv/bin/python tests/generate_router_fixtures.py
+```sh
+python tests/generate_router_fixtures.py
 cargo test --lib router
 ```
 
