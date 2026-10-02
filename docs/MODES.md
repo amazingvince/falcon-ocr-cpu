@@ -400,9 +400,11 @@ cache, `(2^-5 H D q) · (H D k) = q · k`, and un-rotates each head's output
 once, `o = 2^-5 D H o'`, so the records and kernels are `q8`'s: `q8r` streams
 the same 170 bytes per record and adds 32-point transforms, four per head, row
 and layer (two query halves, two output halves), four per group for each
-appended position and five per record when the prefix is sealed; its output is
-bitwise the compact kernel over the dequantized rotated records with the
-rotated query, followed by the inverse rotation. `q4r` takes 90 bytes per
+appended position and five per record when the prefix is sealed; with one
+position chunk (`--tune split-chunks=1`) its output is bitwise the compact
+kernel over the dequantized rotated records with the rotated query, followed
+by the inverse rotation. Coded caches scan four chunks by default, and
+merging their partial softmaxes changes rounding. `q4r` takes 90 bytes per
 record and decodes its codes through the 8-bit loads (bitwise tested on every
 instruction set; not yet a vector nibble unpack).
 

@@ -34,7 +34,8 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   compact cache against the expanded one, quantized dots against the
   dequantized products, fast exp against the platform exp over the softmax
   domain, the split cache against the compact kernel over its decoded values
-  (rotated caches with the rotation as the only pre- and post-transform).
+  at one position chunk (rotated caches with the rotation as the only pre-
+  and post-transform).
   A fast path without such a test does not ship. The prefill stages are also
   compared bitwise across pool sizes (`model::pool_tests`, `kernels::tests`),
   which the page pipeline's second pool relies on.
