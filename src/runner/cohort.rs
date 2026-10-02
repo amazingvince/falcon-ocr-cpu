@@ -112,7 +112,9 @@ impl Runner {
     /// size 1). With `fail_fast` (`recognize_files`), a cohort in which a page
     /// cannot be prepared stops before any model work and that error is
     /// returned as the run's; without it the page's error goes to `on_page`
-    /// and the rest of the cohort runs.
+    /// and the rest of the cohort runs. A page that runs alone is traced
+    /// under its input index (`request.{i}`), as `recognize_batch_with_trace`
+    /// traces one, so the pages of one trace keep their own tensors.
     pub(super) fn stream_cohorts<P: AsRef<Path>>(
         &self,
         paths: &[P],
@@ -130,7 +132,9 @@ impl Runner {
         for (chunk_index, chunk) in paths.chunks(self.config.batch_size).enumerate() {
             let first = chunk_index * self.config.batch_size;
             let flow = if chunk.len() == 1 {
-                emit.finish(first, self.recognize_file_with_trace(&chunk[0], options, trace))
+                let prefix = format!("request.{first}");
+                let mut scoped = PrefixedTrace::new(trace, &prefix);
+                emit.finish(first, self.recognize_file_with_trace(&chunk[0], options, &mut scoped))
             } else {
                 self.stream_chunk(chunk, first, options, trace, fail_fast, &mut emit)?
             };
@@ -189,7 +193,9 @@ impl Runner {
                 input: inputs.remove(0),
                 route,
             };
-            return Ok(emit.finish(index, self.run_page(page, options, trace)));
+            let prefix = format!("request.{index}");
+            let mut scoped = PrefixedTrace::new(trace, &prefix);
+            return Ok(emit.finish(index, self.run_page(page, options, &mut scoped)));
         }
         if inputs.is_empty() {
             return Ok(ControlFlow::Continue(()));

@@ -120,7 +120,9 @@ impl Runner {
 
     /// [`Runner::recognize_files_streaming`] with a trace, in fixed cohorts
     /// of the batch size (a cohort hands its pages over when it finishes),
-    /// as `recognize_files` runs them.
+    /// as `recognize_files` runs them. Tensors carry each page's input index:
+    /// `request.{i}` for a page that runs alone or prefills in a cohort, and
+    /// `batch.{i}` for a cohort's joint decode, after its first page.
     pub fn recognize_files_streaming_with_trace<P: AsRef<Path>>(
         &self,
         paths: &[P],

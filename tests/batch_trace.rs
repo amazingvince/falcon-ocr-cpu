@@ -96,7 +96,7 @@ fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
 
 #[test]
 #[ignore = "requires pinned model and strict GPU reference fixture"]
-fn a_streamed_cohort_traces_its_pages_under_their_input_indices() {
+fn streamed_pages_are_traced_under_their_input_indices() {
     let model = Arc::new(Model::load("artifacts/model").unwrap());
     let original = Path::new("artifacts/reference/smoke-fp32/canonical-rgb.png");
     let directory = tempfile::tempdir().unwrap();
@@ -107,50 +107,75 @@ fn a_streamed_cohort_traces_its_pages_under_their_input_indices() {
         .save(&one_line)
         .unwrap();
     let missing = directory.path().join("missing.png");
-    let runner = Runner::new(
-        model,
-        "artifacts/model",
-        RunnerConfig {
-            threads: 4,
-            batch_size: 3,
-            backend: Backend::Avx2,
-            cache_layout: CacheLayout::Compact,
-            ..RunnerConfig::reference()
-        },
-    )
-    .unwrap();
+    let (missing, one_line) = (missing.as_path(), one_line.as_path());
     let options = GenerationOptions {
         max_dimension: 256,
         max_new_tokens: 3,
         ..Default::default()
     };
-    // The missing page leaves the cohort; the other two decode jointly,
-    // traced under their own input indices, not their rows in the cohort.
-    let mut trace = UniqueNames::default();
-    let mut results = Vec::new();
-    runner
-        .recognize_files_streaming_with_trace(
-            &[missing.as_path(), original, one_line.as_path()],
-            &options,
-            &mut trace,
-            |page, result| {
-                results.push((page, result));
-                ControlFlow::Continue(())
+    let stream = |batch_size, paths: &[&Path]| {
+        let runner = Runner::new(
+            model.clone(),
+            "artifacts/model",
+            RunnerConfig {
+                threads: 4,
+                batch_size,
+                backend: Backend::Avx2,
+                cache_layout: CacheLayout::Compact,
+                ..RunnerConfig::reference()
             },
         )
         .unwrap();
-    assert_eq!(results.iter().map(|(page, _)| *page).collect::<Vec<_>>(), [0, 1, 2]);
-    assert!(results[0].1.is_err());
-    for (page, result) in &results[1..] {
+        let mut trace = UniqueNames::default();
+        let mut results = Vec::new();
+        runner
+            .recognize_files_streaming_with_trace(paths, &options, &mut trace, |page, result| {
+                results.push((page, result.ok()));
+                ControlFlow::Continue(())
+            })
+            .unwrap();
         assert_eq!(
-            trace.tensors[&format!("request.{page}.prefill.embedding")],
-            [result.as_ref().unwrap().input_tokens, 768]
+            results.iter().map(|(page, _)| *page).collect::<Vec<_>>(),
+            Vec::from_iter(0..paths.len())
         );
-    }
+        // Every page that ran has its own prefill, named by its input index.
+        for (page, result) in &results {
+            if let Some(result) = result {
+                assert_eq!(
+                    trace.tensors[&format!("request.{page}.prefill.embedding")],
+                    [result.input_tokens, 768]
+                );
+            }
+        }
+        assert!(!trace.tensors.contains_key("prefill.embedding"));
+        (trace, results)
+    };
+    // The missing page leaves the cohort; the other two decode jointly,
+    // traced under their own input indices, not their rows in the cohort.
+    let (trace, results) = stream(3, &[missing, original, one_line]);
+    assert!(results[0].1.is_none());
     assert!(!trace.tensors.keys().any(|key| key.starts_with("request.0.")));
     assert!(trace.tensors.contains_key("batch.1.decode.0.embedding"));
     let mut requests = trace.requests.clone();
     requests.sort_by(f32::total_cmp);
     requests.dedup();
     assert_eq!(requests, [1., 2.]);
+    // Pages that run alone, left alone in their cohort or one per cohort,
+    // decode under their own names too (a repeated name fails the trace).
+    let (trace, _) = stream(2, &[missing, original, missing, one_line]);
+    for page in [1, 3] {
+        assert!(
+            trace
+                .tensors
+                .contains_key(&format!("request.{page}.decode.0.embedding"))
+        );
+    }
+    let (trace, _) = stream(1, &[original, one_line]);
+    for page in [0, 1] {
+        assert!(
+            trace
+                .tensors
+                .contains_key(&format!("request.{page}.decode.0.embedding"))
+        );
+    }
 }
