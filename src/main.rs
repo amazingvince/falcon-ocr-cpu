@@ -414,12 +414,16 @@ impl RunJob {
                 );
             }
         }
+        // The output is read (not yet created or repaired) before the model
+        // loads, so a file that is not JSON lines is refused first: an input
+        // image never is (PNG and JPEG start with bytes that are not UTF-8).
         // A resumed run reads only the inputs that have no successful record
         // yet, so the others need not exist any more.
-        let done = match output.as_deref().filter(|_| *resume) {
-            Some(path) => book::read_output(path)?.done,
+        let existing = match output.as_deref() {
+            Some(path) => book::read_output(path)?,
             None => Default::default(),
         };
+        let done = if *resume { existing.done } else { Default::default() };
         for input in &inputs {
             if !done.contains(input.to_string_lossy().as_ref()) {
                 book::check_input(input)?;

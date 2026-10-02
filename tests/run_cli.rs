@@ -295,6 +295,14 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
         &case.run(&[], &["gone.png", valid, "--output", arg(&done)]),
         "reading image",
     );
+    // An output that is not JSON lines, such as an input image, is refused
+    // before the model loads, and left as it is.
+    let image = fs::read(&case.valid).unwrap();
+    assert_error(
+        &case.run(&[], &[valid, "--output", valid]),
+        "is not a UTF-8 JSON-lines file",
+    );
+    assert_eq!(fs::read(&case.valid).unwrap(), image);
     // An output whose folder is missing is refused before the model loads.
     assert_error(
         &case.run(&[], &[valid, "--output", "absent/out.jsonl"]),
