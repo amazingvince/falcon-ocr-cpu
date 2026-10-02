@@ -206,6 +206,7 @@ fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
     }
     // libjpeg-turbo uses the accurate integer IDCT and fancy chroma upsampling
     // by default, as does the pinned Pillow JPEG decoder.
+    check_jpeg_size(bytes, 3)?;
     let decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::RGB)?;
     ensure!(decoded.pitch == decoded.width * 3, "unexpected JPEG row stride");
     RgbImage::from_raw(decoded.width.try_into()?, decoded.height.try_into()?, decoded.pixels)
@@ -218,6 +219,7 @@ fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<Option<RgbaImage>> {
     if jpeg_components(bytes)? != 4 {
         return Ok(None);
     }
+    check_jpeg_size(bytes, 4)?;
     let mut decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::CMYK)?;
     ensure!(decoded.pitch == decoded.width * 4, "unexpected CMYK row stride");
     // Pillow raw mode CMYK;I inverts libjpeg's CMYK samples before resizing.
@@ -254,6 +256,30 @@ fn pillow_rgba8(decoded: &DynamicImage, depth: u8) -> RgbaImage {
 
 #[cfg(feature = "turbojpeg")]
 fn jpeg_components(bytes: &[u8]) -> Result<u8> {
+    Ok(bytes[jpeg_frame(bytes)? + 7])
+}
+
+/// Refuse a JPEG whose header claims more decoded bytes, at `channels` per
+/// pixel, than the `image` crate's default allocation limit (512 MiB), the
+/// cap PNG decoding has: libjpeg-turbo allocates whatever the header claims,
+/// and a failed allocation aborts the process instead of failing the page.
+#[cfg(feature = "turbojpeg")]
+fn check_jpeg_size(bytes: &[u8], channels: u64) -> Result<()> {
+    let frame = jpeg_frame(bytes)?;
+    let dimension = |at: usize| u16::from_be_bytes([bytes[frame + at], bytes[frame + at + 1]]) as u64;
+    let (height, width) = (dimension(3), dimension(5));
+    let limit = image::Limits::default().max_alloc.unwrap_or(u64::MAX);
+    ensure!(
+        width * height * channels <= limit,
+        "the JPEG is {width} x {height} pixels, more than {limit} bytes to decode"
+    );
+    Ok(())
+}
+
+/// The offset of a JPEG frame header's length field, followed by the
+/// precision, the height, the width and the component count.
+#[cfg(feature = "turbojpeg")]
+fn jpeg_frame(bytes: &[u8]) -> Result<usize> {
     let mut offset = 2;
     while offset + 1 < bytes.len() {
         ensure!(bytes[offset] == 255, "invalid JPEG marker");
@@ -277,7 +303,7 @@ fn jpeg_components(bytes: &[u8]) -> Result<u8> {
         );
         if matches!(marker, 0xc0..=0xc3 | 0xc5..=0xc7 | 0xc9..=0xcb | 0xcd..=0xcf) {
             ensure!(length >= 8, "truncated JPEG frame");
-            return Ok(bytes[offset + 7]);
+            return Ok(offset);
         }
         offset += length;
     }
@@ -552,6 +578,20 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "JPEG parity failures: {failures:?}");
+    }
+
+    #[cfg(feature = "turbojpeg")]
+    #[test]
+    fn a_jpeg_too_large_to_decode_fails_instead_of_aborting() {
+        let images = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/images");
+        for name in ["gray.jpg", "cmyk.jpg"] {
+            let mut bytes = std::fs::read(images.join(name)).unwrap();
+            let frame = jpeg_frame(&bytes).unwrap();
+            // 40000 x 40000: 4.8 GB of RGB, 6.4 GB of CMYK.
+            bytes[frame + 3..frame + 7].copy_from_slice(&[0x9c, 0x40, 0x9c, 0x40]);
+            let error = decode_jpeg_rgb(&bytes).unwrap_err().to_string();
+            assert!(error.contains("40000 x 40000 pixels"), "{name}: {error}");
+        }
     }
 
     #[test]
