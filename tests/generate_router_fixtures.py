@@ -6,7 +6,8 @@ decode fixtures in tests/fixtures/images (after the processor's first resize
 at the 1536 cap), computed by the specification
 research/resolution-router/router_features.py and the exported trees.
 
-From the repository root, with the pinned packages (requirements/reference.txt):
+From the repository root, with the pinned packages (requirements/reference.txt) and
+scikit-learn, which research/resolution-router/train_trees.py imports:
 
   python tests/generate_router_fixtures.py
 """

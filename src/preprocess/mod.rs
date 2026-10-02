@@ -261,8 +261,9 @@ fn jpeg_components(bytes: &[u8]) -> Result<u8> {
 
 /// Refuse a JPEG whose header claims more decoded bytes, at `channels` per
 /// pixel, than the `image` crate's default allocation limit (512 MiB), the
-/// cap PNG decoding has: libjpeg-turbo allocates whatever the header claims,
-/// and a failed allocation aborts the process instead of failing the page.
+/// cap PNG decoding has: the `turbojpeg` crate allocates the output buffer
+/// the header claims before decoding, and a failed allocation aborts the
+/// process instead of failing the page.
 #[cfg(feature = "turbojpeg")]
 fn check_jpeg_size(bytes: &[u8], channels: u64) -> Result<()> {
     let frame = jpeg_frame(bytes)?;

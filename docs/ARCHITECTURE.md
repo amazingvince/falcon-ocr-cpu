@@ -66,8 +66,9 @@ would have alone. `recognize_files`, the traced
 cohorts of the batch size (`runner/cohort.rs`): a cohort decodes to the
 smallest budget fitted to any page in it, and a trace names each page's
 tensors by its input index (`request.{i}`; a cohort's joint decode is
-`batch.{i}`, with the index of the cohort's first page). `recognize_files`
-stops at the first error. The page pipeline (`recognize_files_pipelined`,
+`batch.{i}`, with the index of the cohort's first page that decodes, so
+`batch.1` when page 0 failed to prepare). `recognize_files` stops at the
+first error. The page pipeline (`recognize_files_pipelined`,
 `run --pipeline`, `runner/pipeline.rs`) splits each page at the
 prefill/decode boundary (`Runner::prefill`, `Runner::decode_prefilled`, the
 two halves of the one sequential call): a prefetch thread reads and prepares

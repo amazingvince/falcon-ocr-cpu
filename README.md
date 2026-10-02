@@ -127,8 +127,8 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --outpu
 
 - `--output` appends each page's record to the file as soon as the page is
   done; each record names its input `path` and its `page` index.
-- `--resume` skips the pages that already have a record, and `--keep-going`
-  records a page that fails and goes on to the rest.
+- `--resume` skips the pages that already have a successful record, and
+  `--keep-going` records a page that fails and goes on to the rest.
 - Inputs and the output file are checked before the model loads, so a
   wrong path fails in seconds rather than hours into the run.
 - `--pipeline` prefills the next page while the current one decodes; on a

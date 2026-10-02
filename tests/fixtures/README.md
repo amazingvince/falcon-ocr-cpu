@@ -69,7 +69,8 @@ exported trees: the 26 statistics, both raw tree scores and the route, compared
 bit for bit, for eight synthetic pages (a formula mirrored in the Rust test)
 and for every decode fixture after the first resize at the 1536 cap. Regenerate
 it whenever `src/router/trees.json`, the specification or the decode fixtures
-change:
+change; the generator also needs scikit-learn, which
+`research/resolution-router/train_trees.py` imports:
 
 ```sh
 python tests/generate_router_fixtures.py
