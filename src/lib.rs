@@ -2,6 +2,17 @@
 //!
 //! Numerical correctness and performance qualification are tracked separately;
 //! consult the reference reports before treating a backend as GPU-equivalent.
+
+/// `eprintln!` for a diagnostic that must not stop a run: when stderr is
+/// closed (a pager that quit) the message is dropped instead of panicking.
+macro_rules! note {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        let _ = writeln!(std::io::stderr().lock(), $($arg)*);
+    }};
+}
+pub(crate) use note;
+
 pub mod auto;
 /// Long runs of `falcon-ocr run`: input lists, records, `--resume`.
 pub mod book;

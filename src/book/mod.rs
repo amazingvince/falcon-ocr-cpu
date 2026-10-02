@@ -144,7 +144,7 @@ impl<W: Write> Sink<W> {
         if self.text && !self.closed {
             let shown = writeln!(self.stdout, "{}", result.text).and_then(|()| self.stdout.flush());
             if let Err(error) = shown {
-                eprintln!("warning: stdout: {error}; the records still go to the output file");
+                crate::note!("warning: stdout: {error}; the records still go to the output file");
                 self.closed = true;
             }
         }

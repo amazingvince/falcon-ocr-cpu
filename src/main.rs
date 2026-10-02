@@ -20,6 +20,16 @@ use std::{
     time::Instant,
 };
 
+/// `eprintln!` for a diagnostic that must not stop a run: when stderr is
+/// closed (`run … 2>&1 | less`, and the pager quit) the message is dropped
+/// instead of panicking.
+macro_rules! note {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        let _ = writeln!(std::io::stderr().lock(), $($arg)*);
+    }};
+}
+
 #[derive(Parser)]
 #[command(version, about = "Falcon-OCR v1.5 CPU runner")]
 struct Cli {
@@ -228,14 +238,14 @@ fn main() -> Result<()> {
         _ => None,
     };
     if matches!(plan.source, WeightsSource::Checkpoint { rtn: true, .. }) {
-        eprintln!("fast mode: quantizing round-to-nearest at load (--allow-rtn); the GPTQ overlay is closer to FP32");
+        note!("fast mode: quantizing round-to-nearest at load (--allow-rtn); the GPTQ overlay is closer to FP32");
     }
     let model = Arc::new(load_model(&plan, cli.verify_model_file)?);
     let load_ms = start.elapsed().as_secs_f64() * 1000.;
     if let Command::Pack { output } = &cli.command {
         model.prepare_screened_head()?;
         model.write_packed(output)?;
-        eprintln!(
+        note!(
             "wrote {} ({:.0} MB, {})",
             output.display(),
             std::fs::metadata(output)?.len() as f64 / 1e6,
@@ -254,7 +264,7 @@ fn main() -> Result<()> {
     }
     let tokenizer_dir = plan.source.tokenizer_dir(&cli.model);
     let runner = Runner::new(model, &tokenizer_dir, config)?;
-    eprintln!("{} | loaded in {load_ms:.0} ms", runner.resolved());
+    note!("{} | loaded in {load_ms:.0} ms", runner.resolved());
     if let Some(job) = job {
         let output = job.open_output()?;
         return job.run(&runner, output, escalation);
@@ -450,14 +460,14 @@ impl RunJob {
         };
         let (file, existing) = book::open_output(path)?;
         if existing.cut > 0 {
-            eprintln!(
+            note!(
                 "{}: removed a last record cut short ({} bytes); its page runs again",
                 path.display(),
                 existing.cut
             );
         }
         if existing.foreign > 0 {
-            eprintln!(
+            note!(
                 "{}: ignoring {} lines that are not JSON records",
                 path.display(),
                 existing.foreign
@@ -488,12 +498,12 @@ impl RunJob {
         if let Some(existing) = existing.as_ref().filter(|_| self.resume)
             && let Some(warning) = book::resume_warning(existing, &this)
         {
-            eprintln!("warning: {warning}");
+            note!("warning: {warning}");
         }
         if let Some(existing) = existing.as_ref().filter(|_| self.resume && self.escalate)
             && let Some(warning) = book::escalation_warning(existing)
         {
-            eprintln!("warning: {warning}");
+            note!("warning: {warning}");
         }
         // (input index, path) of every page that still needs a record.
         let todo: Vec<(usize, &PathBuf)> = self
@@ -518,14 +528,14 @@ impl RunJob {
                 let Some(escalation) = escalation.as_mut().filter(|_| escalate::needs_escalation(&result)) else {
                     return result;
                 };
-                eprintln!(
+                note!(
                     "page {page} ({}): the repetition stop ended it in fast mode after {} tokens; rereading it in near-exact mode",
                     path.display(),
                     result.output_tokens
                 );
                 let result = escalation.escalate(path, options, result);
                 match &result.escalation_error {
-                    Some(error) => eprintln!(
+                    Some(error) => note!(
                         "warning: page {page} ({}): kept the fast-mode result: {error}",
                         path.display()
                     ),
@@ -546,7 +556,7 @@ impl RunJob {
                 }
                 Err(error) if self.keep_going => {
                     summary.failed += 1;
-                    eprintln!("page {page} ({}) failed: {error:#}", path.display());
+                    note!("page {page} ({}) failed: {error:#}", path.display());
                     sink.error(path, page, &error)
                 }
                 Err(error) => {
@@ -569,7 +579,7 @@ impl RunJob {
         }
         summary.seconds = started.elapsed().as_secs_f64();
         summary.not_run = todo.len() - summary.done - summary.failed;
-        eprintln!("{summary}");
+        note!("{summary}");
         if let Some(error) = failure {
             return Err(error);
         }
@@ -581,7 +591,7 @@ impl RunJob {
 /// The decode-thread tuner's choice, on the page that carries it.
 fn print_tuning(result: &OcrResult) {
     if let Some(tuning) = &result.decode_tuning {
-        eprintln!("{tuning}");
+        note!("{tuning}");
     }
 }
 
@@ -620,7 +630,7 @@ fn escalation(
         let started = Instant::now();
         let model = Arc::new(load_model(&near_exact, verify)?);
         let runner = Runner::new(model, near_exact.source.tokenizer_dir(&model_dir), config.clone())?;
-        eprintln!(
+        note!(
             "escalation: {} | loaded in {:.0} ms",
             runner.resolved(),
             started.elapsed().as_secs_f64() * 1000.

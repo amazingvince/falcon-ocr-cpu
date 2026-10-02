@@ -217,7 +217,7 @@ impl Runner {
         if let Decode::Auto(auto) = &self.decode
             && let Some(largest) = auto.tuner.lock().unwrap().limit(threads / 2)
         {
-            eprintln!(
+            crate::note!(
                 "pipeline: the automatic decode team uses at most {largest} of {threads} threads, so the next \
                  page's prefill keeps the rest"
             );
@@ -236,7 +236,7 @@ impl Runner {
         let pool = self.pool.current_num_threads();
         let decided = match prefill_threads(pipeline.prefill_threads, pool, team) {
             None => {
-                eprintln!(
+                crate::note!(
                     "pipeline: the {team}-thread decode team leaves fewer than two of {pool} threads to prefill \
                      beside it; pages prefill between decodes (--prefill-threads N overlaps anyway)"
                 );
@@ -248,13 +248,13 @@ impl Runner {
                 .build()
             {
                 Ok(built) => {
-                    eprintln!(
+                    crate::note!(
                         "pipeline: the next page prefills on a {threads}-thread pool beside the {team}-thread decode team"
                     );
                     Some(built)
                 }
                 Err(error) => {
-                    eprintln!(
+                    crate::note!(
                         "warning: pipeline: the {threads}-thread prefill pool could not be built ({error}); \
                          pages prefill between decodes"
                     );

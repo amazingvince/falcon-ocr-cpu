@@ -165,12 +165,12 @@ falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl
   `"options"` the run asked for after them. `--output FILE` appends the
   records to FILE, flushed after every page, instead of printing them;
   `--text` then still prints each page's text, and if stdout closes (a pager
-  that quit) the run goes on with FILE alone. FILE's folder must exist and
-  FILE, if it exists, must hold JSON lines (an input image never does), which
-  is checked with the inputs; the file is created or repaired only once the
-  flags, inputs and weights have passed their checks and the model has
-  loaded. A device or pipe (`/dev/stdout`) is written to as it is, without
-  being read.
+  that quit) the run goes on with FILE alone, as it does if stderr closes.
+  FILE's folder must exist and FILE, if it exists, must hold JSON lines (an
+  input image never does), which is checked with the inputs; the file is
+  created or repaired only once the flags, inputs and weights have passed
+  their checks and the model has loaded. A device or pipe (`/dev/stdout`) is
+  written to as it is, without being read.
 - `--resume` skips the inputs whose path, as given, already has a successful
   record in the `--output` file, which must be a regular file; a skipped
   input is not read, so it need not exist any more, and no input may be

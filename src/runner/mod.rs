@@ -564,7 +564,7 @@ impl Runner {
         let budget = options.budget(tokens.len(), c.max_seq_len)?;
         let budget_clamped = budget != options.max_new_tokens;
         if budget_clamped {
-            eprintln!(
+            crate::note!(
                 "max_new_tokens lowered to {budget}: {} input tokens leave no more room in the {}-token context",
                 tokens.len(),
                 c.max_seq_len

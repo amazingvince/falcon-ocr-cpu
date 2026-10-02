@@ -3,12 +3,13 @@
 //! every case here but the last runs without model assets: a model
 //! directory that holds nothing (or a header-only kernel-ready file) makes
 //! any later step fail with the model's own error, which the input errors
-//! must precede. The last two, ignored, resume a run and keep going past a
-//! failing page with the published near-exact file in `artifacts/packed`.
+//! must precede. The last three, ignored, resume a run, keep going past a
+//! failing page and run with a closed stderr, with the published near-exact
+//! file in `artifacts/packed`.
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::{Command, Output},
+    process::{Command, Output, Stdio},
 };
 
 use image::{ImageFormat, Rgb, RgbImage};
@@ -398,4 +399,28 @@ fn keep_going_records_a_failing_page_and_runs_the_rest() {
         "{stderr}"
     );
     assert_eq!(records.len(), 1);
+}
+
+#[test]
+#[ignore = "requires the published near-exact file in artifacts/packed"]
+fn a_closed_stderr_does_not_stop_the_run() {
+    let case = Case::new();
+    let packed = Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/packed");
+    let output = case.path("book.jsonl");
+    let valid = arg(&case.valid);
+    // `run … 2>&1 | less`, and the pager quit: every diagnostic (the plan,
+    // the summary) fails to write.
+    let mut child = Command::new(env!("CARGO_BIN_EXE_falcon-ocr"))
+        .current_dir(case.directory.path())
+        .arg("--model")
+        .arg(&packed)
+        .args(["run", valid, valid, "--max-new-tokens", "8", "--output", arg(&output)])
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    drop(child.stderr.take());
+    let status = child.wait().unwrap();
+    assert!(status.success(), "{status}");
+    assert_eq!(fs::read_to_string(&output).unwrap().lines().count(), 2);
 }
