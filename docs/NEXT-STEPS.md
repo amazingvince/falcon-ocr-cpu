@@ -10,13 +10,19 @@ this page links to them.
 On a Ryzen 7 7700X (8 cores, 16 threads, AVX-512 with BF16), Linux, with the
 pinned checkpoint, the published packed files and a GPTQ overlay:
 
-- **Every run path keeps a page's tokens.** With the published files and
-  the default configuration (screened head, draft head), 16 calibration and
-  book pages gave each page the same tokens run one after another, with
-  `--pipeline`, `--batch-size 4`, `--batch-size 3 --pipeline` and
-  `--max-dimension auto`, in near-exact and fast mode; so did every timed
-  arm on a book (cropped arms against the cropped sequential run), and every
-  cache on the journal page with and without speculation.
+- **The run paths keep a page's tokens; only a change of input does not.**
+  With the published files and the default configuration (screened head,
+  draft head), 16 pages (8 corpus smoke pages, 6 pages of the scanned book
+  of [PERFORMANCE.md](PERFORMANCE.md#book-runs) and 2 arXiv pages) gave each
+  page the same tokens at 1536 pixels run one after another, with
+  `--pipeline`, `--batch-size 4` and `--batch-size 3 --pipeline`, in
+  near-exact and fast mode. With `--max-dimension auto`, the sequential run
+  and `--batch-size 3 --pipeline` agreed with each other on 16 of 16 pages,
+  but both matched the fixed-1536 run on only 5 of 16: the router changes
+  the input size, and so the tokens, by design. On the book's 24 pages every
+  timed arm without `--crop-margins` matched the sequential run, the cropped
+  pipelined arm matched the cropped sequential run, and every cache on the
+  journal page gave the same 300 tokens with and without speculation.
 - **The ignored gates that need no GPU outputs pass**: `batch_parity`
   (including the default configuration with near-exact and fast weights),
   `batch_trace`, `decode_allocations`, `head_screen`, `margin_crop`,
