@@ -133,8 +133,10 @@ ran otherwise is kept and skipped with a warning naming the difference: the
 mode or precision, the GPTQ overlay or round-to-nearest weights, the
 `--max-dimension`, `--min-dimension`, `--max-new-tokens` or crop padding,
 `--stop-repetition`, `--exp`, BF16, NEON or scalar prefill attention, BF16
-projections, or a pinned `--tune decode-exp`; a record without `options`
-counts as one that ran otherwise. An escalated record compares its
+projections, a pinned `--tune decode-exp`, the effective `--tune split-chunks`
+or the build's image decoder; a record without `options` counts as one that
+ran otherwise. Automatic chunking matches an explicit mode default, and
+compact caches ignore the split-cache knob. An escalated record compares its
 near-exact rerun's kernel settings, allowing the expected switch from
 fast-mode BF16 prefill to FP32. With `--escalate`, a warning counts the
 fast-mode records that the repetition stop ended without a near-exact rerun,
