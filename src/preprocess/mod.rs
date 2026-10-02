@@ -206,7 +206,7 @@ fn decode_jpeg_rgb(bytes: &[u8]) -> Result<RgbImage> {
     }
     // libjpeg-turbo uses the accurate integer IDCT and fancy chroma upsampling
     // by default, as does the pinned Pillow JPEG decoder.
-    check_jpeg_size(bytes, 3)?;
+    check_jpeg_size(bytes)?;
     let decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::RGB)?;
     ensure!(decoded.pitch == decoded.width * 3, "unexpected JPEG row stride");
     RgbImage::from_raw(decoded.width.try_into()?, decoded.height.try_into()?, decoded.pixels)
@@ -219,7 +219,7 @@ fn decode_jpeg_cmyk(bytes: &[u8]) -> Result<Option<RgbaImage>> {
     if jpeg_components(bytes)? != 4 {
         return Ok(None);
     }
-    check_jpeg_size(bytes, 4)?;
+    check_jpeg_size(bytes)?;
     let mut decoded = turbojpeg::decompress(bytes, turbojpeg::PixelFormat::CMYK)?;
     ensure!(decoded.pitch == decoded.width * 4, "unexpected CMYK row stride");
     // Pillow raw mode CMYK;I inverts libjpeg's CMYK samples before resizing.
@@ -259,20 +259,23 @@ fn jpeg_components(bytes: &[u8]) -> Result<u8> {
     Ok(bytes[jpeg_frame(bytes)? + 7])
 }
 
-/// Refuse a JPEG whose header claims more decoded bytes, at `channels` per
-/// pixel, than the `image` crate's default allocation limit (512 MiB), the
-/// cap PNG decoding has: the `turbojpeg` crate allocates the output buffer
-/// the header claims before decoding, and a failed allocation aborts the
-/// process instead of failing the page.
+/// The most pixels the pinned Pillow opens: above twice its
+/// `MAX_IMAGE_PIXELS` (89,478,485) it raises `DecompressionBombError`.
 #[cfg(feature = "turbojpeg")]
-fn check_jpeg_size(bytes: &[u8], channels: u64) -> Result<()> {
+const PILLOW_MAX_PIXELS: u64 = 2 * 89_478_485;
+
+/// Refuse a JPEG whose header claims more pixels than the pinned Pillow
+/// opens ([`PILLOW_MAX_PIXELS`]): the `turbojpeg` crate allocates the output
+/// buffer the header claims before decoding, and a failed allocation aborts
+/// the process instead of failing the page.
+#[cfg(feature = "turbojpeg")]
+fn check_jpeg_size(bytes: &[u8]) -> Result<()> {
     let frame = jpeg_frame(bytes)?;
     let dimension = |at: usize| u16::from_be_bytes([bytes[frame + at], bytes[frame + at + 1]]) as u64;
     let (height, width) = (dimension(3), dimension(5));
-    let limit = image::Limits::default().max_alloc.unwrap_or(u64::MAX);
     ensure!(
-        width * height * channels <= limit,
-        "the JPEG is {width} x {height} pixels, more than {limit} bytes to decode"
+        width * height <= PILLOW_MAX_PIXELS,
+        "the JPEG is {width} x {height} pixels, more than the {PILLOW_MAX_PIXELS} Pillow opens"
     );
     Ok(())
 }
@@ -592,6 +595,13 @@ mod tests {
             bytes[frame + 3..frame + 7].copy_from_slice(&[0x9c, 0x40, 0x9c, 0x40]);
             let error = decode_jpeg_rgb(&bytes).unwrap_err().to_string();
             assert!(error.contains("40000 x 40000 pixels"), "{name}: {error}");
+            // Pillow's limit is in pixels, whatever the components: it
+            // opens 13376 x 13376 and refuses 13380 x 13380.
+            for (side, opens) in [(13376_u16, true), (13380, false)] {
+                let side = side.to_be_bytes();
+                bytes[frame + 3..frame + 7].copy_from_slice(&[side[0], side[1], side[0], side[1]]);
+                assert_eq!(check_jpeg_size(&bytes).is_ok(), opens, "{name}");
+            }
         }
     }
 
