@@ -179,11 +179,12 @@ impl AutoThreads {
 
 /// One spin team per candidate decode size for a `pool_threads`-thread prefill
 /// pool on `host`, and the tuner that picks between them (`crate::tune`). Half
-/// of the threads is held in reserve for a page pipeline when every candidate
-/// is larger ([`Pipeline`]), with a team of its own.
+/// of the threads may be held in reserve for a page pipeline ([`Pipeline`],
+/// `crate::tune::pipeline_reserve`), with a team of its own.
 fn auto_threads(host: &crate::auto::HostInfo, pool_threads: usize, speculating: bool) -> std::io::Result<AutoThreads> {
     let (sizes, start) = crate::tune::auto_candidates(host, pool_threads, speculating);
-    let tuner = crate::tune::Tuner::new(sizes, start).with_reserve(pool_threads / 2);
+    let reserve = crate::tune::pipeline_reserve(&sizes, pool_threads);
+    let tuner = crate::tune::Tuner::new(sizes, start).with_reserve(reserve);
     let teams = tuner
         .team_sizes()
         .into_iter()

@@ -568,10 +568,14 @@ pub struct ThreadPlan {
 #[serde(rename_all = "snake_case")]
 pub enum DecodePlan {
     Fixed(usize),
-    /// Candidate team sizes the tuner times, and the one it starts on.
+    /// Candidate team sizes the tuner times, and the one it starts on; and
+    /// the size held in reserve for `--pipeline`, which becomes a candidate
+    /// when the pipeline's limit to half of the threads excludes every one.
     Auto {
         candidates: Vec<usize>,
         start: usize,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reserve: Option<usize>,
     },
 }
 
@@ -633,7 +637,12 @@ impl Resolved {
             DecodeThreads::Pool => DecodePlan::Fixed(threads),
             DecodeThreads::Auto => {
                 let (candidates, start) = crate::tune::auto_candidates(host, threads, config.speculation.is_some());
-                DecodePlan::Auto { candidates, start }
+                let reserve = crate::tune::pipeline_reserve(&candidates, threads);
+                DecodePlan::Auto {
+                    candidates,
+                    start,
+                    reserve,
+                }
             }
         };
         Self {
@@ -727,9 +736,12 @@ impl std::fmt::Display for Resolved {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let decode = match &self.threads.decode {
             DecodePlan::Fixed(n) => n.to_string(),
-            DecodePlan::Auto { candidates, .. } => format!(
-                "auto {{{}}}",
-                candidates.iter().map(usize::to_string).collect::<Vec<_>>().join(",")
+            DecodePlan::Auto {
+                candidates, reserve, ..
+            } => format!(
+                "auto {{{}{}}}",
+                candidates.iter().map(usize::to_string).collect::<Vec<_>>().join(","),
+                reserve.map_or_else(String::new, |size| format!("; {size} with --pipeline"))
             ),
         };
         let speculation = match self.speculation {
