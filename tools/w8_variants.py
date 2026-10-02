@@ -124,7 +124,7 @@ def quantize_rtn(w: np.ndarray, group: int, clip: str, diag: np.ndarray | None,
     for g in range(groups):
         a, b = g * group, min(k, (g + 1) * group)
         block = source[:, a:b]
-        s = best_scales(block, None if diag is None else diag[a:b], clip)
+        s = best_scales(block, diag[a:b] if clip == "wmse" else None, clip)
         codes[:, a:b] = codes_for(block, s)
         scales[:, g] = s
     return codes, scales, np.ascontiguousarray(w[:, exceptions], dtype=np.float32)

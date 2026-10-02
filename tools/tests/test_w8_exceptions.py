@@ -78,6 +78,16 @@ class RoundToNearest(unittest.TestCase):
         rtn = proxy(w, gram, *v.quantize_rtn(w, 64, "rtn", None)[:2], v.NO_EXCEPTIONS, none)
         self.assertLess(proxy(w, gram, codes, scales, exceptions, values), 0.2 * rtn)
 
+    def test_only_wmse_weights_the_scale_search_by_the_gram(self):
+        # A loaded Gram (for exception columns) must not turn --clip mse into wmse.
+        w, gram = synthetic()
+        diag = np.diag(gram).astype(np.float64)
+        plain = v.quantize_rtn(w, 64, "mse", None)
+        for got, want in zip(v.quantize_rtn(w, 64, "mse", diag), plain, strict=True):
+            np.testing.assert_array_equal(got, want)
+        weighted = v.quantize_rtn(w, 64, "wmse", diag)
+        self.assertFalse(np.array_equal(weighted[1], plain[1]))
+
 
 class Gptq(unittest.TestCase):
     def test_exception_columns_hold_the_least_squares_optimum_for_the_codes(self):
