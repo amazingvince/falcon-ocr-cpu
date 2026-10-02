@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of 2026-10-01.
+Status: current as of 2026-10-02.
 
 ## Model contract
 
@@ -78,6 +78,61 @@ candidate is larger, it measures a half-size team the plan lists as
 `decode auto {6,8; 4 with --pipeline}`. Every prefill stage computes each
 output independently of its pool's thread count, so the pipeline's tokens
 are a sequential run's.
+
+## Long runs
+
+`falcon-ocr run` drives the multi-page runner through `book/` and `main.rs`.
+
+**Inputs.** The positional images come first, then the paths of
+`--list FILE`: UTF-8 with or without a byte order mark, one per line, blank
+lines and lines starting with `#` skipped, relative paths resolved against
+the current directory. Before the model loads, every input the run will
+read must exist, be a regular file and start like a PNG or JPEG.
+
+**Records.** Each page gives one JSON line, in input order: `path` (the
+input as given) and `page` (its 0-based index among the inputs), the
+`OcrResult` fields, then the generation `options` the run asked for. A page
+that fails under `--keep-going` gives `{"path", "page", "error"}`; without
+it the run stops at the first failing page, after the records of the pages
+before it. With `--batch-size N` or `--pipeline`, a page's `total_ms` is the
+sum of its own stages (`time_to_first_token_ms + decode_ms`), which overlap
+other pages'. A summary on stderr gives the pages done, failed and skipped,
+the time and the pages per hour.
+
+**The output file.** `--output FILE` appends the records to FILE, flushed
+after every page. Checked with the inputs, before the model loads: FILE's
+folder must exist; an existing FILE must hold only records (JSON objects
+with a `path`; a byte order mark and blank lines are skipped), so an input
+image or list given as FILE is refused; and every input path must be UTF-8,
+since a record names its input by its path. A run without `--resume` over a
+FILE that already holds records of some inputs warns that they run again.
+FILE is created or repaired only after the model has loaded. A device or
+pipe (`/dev/stdout`) is written to as it is, without being read. With
+`--text`, each page's text still goes to stdout, and a closed stdout or
+stderr does not stop the run.
+
+**Resume.** `--resume` needs a regular `--output` file and skips the inputs
+whose path, as given, already has a successful record there. Skipped inputs
+are not read, so they need not exist any more, and no input may be listed
+twice. A last record cut short by a crash, or the NUL bytes a power loss can
+leave in its place, is removed, so its page runs again. A record that ran
+otherwise is kept and skipped with a warning naming the difference: the mode
+or precision, the GPTQ overlay or round-to-nearest weights, the
+`--max-dimension`, `--min-dimension`, `--max-new-tokens` or crop padding,
+`--stop-repetition`, `--exp`, BF16 or NEON prefill rounding, or a pinned
+`--tune decode-exp`. Records written before records carried their `options`
+are compared on the mode, the weights, routing and the runner's choices
+only. With `--escalate`, a warning counts the fast-mode records that the
+repetition stop ended without a near-exact rerun, since their pages are
+skipped.
+
+**Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
+model when a fast-mode page first ends on the repetition stop and keeps it
+beside the fast one; the other batch rows wait with their caches while the
+page is reread. The record becomes the near-exact result with the fast
+attempt in `escalated_from`, or keeps the fast result with an
+`escalation_error` when the near-exact model cannot be loaded or the rerun
+fails ([MODES.md](MODES.md#loops-and-the-repetition-stop)).
 
 ## Modules
 

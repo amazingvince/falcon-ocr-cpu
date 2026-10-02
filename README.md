@@ -20,43 +20,13 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu --mode fast run page.png
 target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --probe
 ```
 
-`run` prints one JSON line per page as soon as the page is done, in input
-order (the input `path`, its `page` index, text, token ids, stop reason,
-timings, the resolved plan and the generation `options` the run asked for);
-`--text` prints the text only. With no flags the runner picks near-exact
-mode, loads the packed file from the model directory (about 10 ms) and the
-draft head next to it, and sets threads, kernels, the decode team,
-speculation and the repetition stop from the host.
-
-### PDFs
-
-`run` reads PNG and JPEG. `python tools/pdf_to_pages.py book.pdf --output-dir
-book-pages` (`pip install -r requirements/tools.txt`) writes one PNG per page:
-a page that draws only a full-page scan or screenshot is extracted at its
-native resolution (1-bit and gray kept) when its pixel proportions match the
-displayed page to within 0.5% and the page shows exactly the image's pixels.
-Pages with visible text objects, mixed content, images stretched by more than
-that, or an image that the PDF alters or hides (a transfer function,
-transparency, a blend mode, optional content, a link that draws over it) are
-rendered with their longer side at 1536 pixels, which the processor's first
-resize leaves unchanged. `book-pages/pages.txt` lists the files in page order
-and `manifest.json` records how each page was made; recognize them in order
-with
-
-```sh
-target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl
-# or, portably, through xargs
-tr '\n' '\0' < book-pages/pages.txt | xargs -0 target/release/falcon-ocr --model models/falcon-ocr-cpu run
-```
-
-`--list` keeps the whole book in one run, and `--output` with `--resume`
-lets a stopped run continue ([Books and long runs](#books-and-long-runs));
-xargs may split a long list over several runs, each numbering its pages
-from 0.
-
-Extracted 1-bit scans get the processor's nearest-neighbour downscale, as in
-Pillow; `--mode render` antialiases them instead. `--help` covers `--mode`,
-`--dpi`, `--pages 1-10,12` and `--gray`.
+`run` prints one JSON line per page as soon as the page is done: the text,
+token ids, stop reason, timings and the plan the runner chose. `--text`
+prints the text only. With no flags the runner picks near-exact mode, loads
+the packed file from the model directory (about 10 ms) and the draft head
+next to it, and sets threads, kernels, the decode team, speculation and the
+repetition stop from the host. For whole books and PDFs, see
+[Books and PDFs](#books-and-pdfs).
 
 ## Modes
 
@@ -67,11 +37,10 @@ Pillow; `--mode render` antialiases them instead. `--help` covers `--mode`,
 | `fast` | 8-bit GPTQ, scale per 64 | 8-bit, scale per 32 | BF16 on AVX512-BF16 CPUs | 63 | 12.6 s | printed pages where speed matters; **failed its held-out budget on handwriting (loops) and degraded scans** |
 
 The journal page has 6,544 input tokens; timings are with default flags on a
-Ryzen 9 7950X. Exact mode's 0 is tokens, not bits: its logits are bitwise
-the FP32 reference's only under the reference configuration, since the
-default polynomial exp in prefill attention changes their last bits
-([docs/MODES.md](docs/MODES.md#the-three-modes)). [docs/MODES.md](docs/MODES.md)
-has the metric, the storage choices and the held-out result.
+Ryzen 9 7950X. Exact mode's 0 counts tokens: by default its logits can
+differ from FP32's in the last bits, and only `RunnerConfig::reference()` is
+bitwise. [docs/MODES.md](docs/MODES.md) has the metric, the storage choices
+and the held-out result.
 
 ## What `auto` decides
 
@@ -105,20 +74,14 @@ less of the 16,384-token context (`budget_clamped` in the result).
 
 The weights file, thread counts, decode team, drafts, head and AVX-512 tiles
 never change tokens (gated by `tests/modes.rs` and the library's bitwise
-tests). Three kernel choices change rounding: the polynomial exp in prefill
-attention (no token changed on the 67 calibration pages), fast mode's
-polynomial exp in decode attention over its 8-bit cache (94 flips against 92
-with the platform exp, teacher-forced over 78,282 steps;
-[docs/MODES.md](docs/MODES.md#the-three-modes)) and fast mode's BF16
-attention, which only AVX512-BF16 CPUs run, so fast mode's tokens can differ
-between CPUs with and without it. On aarch64 the NEON kernels use the
-polynomial exp in all attention, decode included, so x86 and aarch64 can
-give different tokens in every mode. Two decisions can shorten a page's
-output without changing the tokens before its end: the repetition stop ends
-a looping page early, also one that FP32 ends at EOS after a long loop (a
-held-out page, [docs/MODES.md](docs/MODES.md#loops-and-the-repetition-stop)),
-and a lowered cap ends a page at the context limit. `--stop-repetition=false`
-lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
+tests). Three kernel choices change rounding, and so can change tokens: the
+polynomial exp in prefill attention, and in fast mode the same exp in decode
+attention and BF16 prefill attention on AVX512-BF16 CPUs
+([docs/MODES.md](docs/MODES.md#the-three-modes)). Fast mode's tokens can
+therefore differ between CPUs with and without AVX512-BF16, and x86 and
+aarch64 can differ in every mode. The repetition stop and a lowered output
+cap can end a page early without changing the tokens before the end;
+`--stop-repetition=false` lets loops run.
 
 ## Command line
 
@@ -126,7 +89,7 @@ lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
 |---|---|
 | `--model DIR` | Checkpoint and/or packed files (default `artifacts/model`) |
 | `--model-file F` | A packed file; it decides the mode. `--verify-model-file` checks every tensor digest first |
-| `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay (applied to the checkpoint, even next to a packed fast file), `--allow-rtn` lets fast mode quantize without one |
+| `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay, `--allow-rtn` lets fast mode quantize without one |
 | `--backend auto\|avx2\|scalar\|neon` | `avx2` forces 8-lane FP32 kernels; `scalar` is for debugging |
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
@@ -134,86 +97,49 @@ lets loops run; an explicit `--max-new-tokens` that does not fit is an error.
 | `--draft-head F` | A trained draft head ([research/draft-head](research/draft-head/README.md)); `falcon-ocr-v1.5-draft-head.safetensors` next to the model files is used without the flag; `--drafter ngram\|head\|both` (default `head` with a head, else `ngram`), `--draft-confidence P` (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
-| `--batch-size N` | Pages decoded jointly (1..=8); `run` gives a finished page's row to the next page at once, and each page keeps the output budget it would have alone; rows decode without drafts |
+| `--batch-size N` | Pages decoded jointly (1..=8); in `run`, a finished page's row goes straight to the next page |
 | `run --min-dimension 64 --max-dimension 1536 --max-new-tokens 8192 --text` | Image size bounds, output cap, text only |
 | `run --max-dimension auto` | The resolution router picks 768, 1024 or 1536 per page ([docs/MODES.md](docs/MODES.md#resolution-routing); changes the output) |
-| `run --crop-margins`, `--crop-margins=PAD` | Cut blank page margins after the first resize, keeping PAD pixels (default 24) around the content: fewer image tokens, text at the same size; each result reports its `crop` ([docs/MODES.md](docs/MODES.md#margin-cropping); changes the output, off by default) |
-| `run --list F --output F --resume --keep-going` | Inputs from a file, records appended to a file, skip the pages it holds, record failed pages and go on ([Books and long runs](#books-and-long-runs)) |
-| `run --pipeline [--prefill-threads N]` | Prepare the next pages on a prefetch thread and prefill the next one on a second pool of N threads (default: the threads the decode team leaves, an automatic team then taking at most half; at most `--threads`) while the current pages decode; tokens unchanged |
-| `run --escalate` | Fast mode: reread a page that the repetition stop ended with the near-exact model |
+| `run --crop-margins[=PAD]` | Trim blank margins, keeping PAD pixels (default 24): fewer image tokens at the same text size; changes the output, so off by default ([docs/MODES.md](docs/MODES.md#margin-cropping)) |
+| `run --list F --output F --resume --keep-going` | Long runs: inputs from a list, records appended to a file, resume, go on past a failing page ([Books and PDFs](#books-and-pdfs)) |
+| `run --pipeline [--prefill-threads N]` | Prefill the next page while the current one decodes; tokens unchanged |
+| `run --escalate` | Fast mode: reread a page that got stuck in a loop with the near-exact model |
 | `pack --output F`, `inspect`, `trace`, `doctor [--text] [--load] [--probe]` | Write a packed file; verify the checkpoint; capture tensors; show the plan |
 
 `falcon-ocr-eval` is the research binary: any weights × KV profile, timed
 benchmarks with telemetry, token agreement against the FP32 anchor, tensor
 traces of quantized profiles, and GPTQ Gram capture.
 
-## Books and long runs
+## Books and PDFs
+
+`run` reads PNG and JPEG. `tools/pdf_to_pages.py` turns a PDF into one PNG
+per page plus a `pages.txt` list: a page that is just a scan is extracted at
+its native resolution, and any other page is rendered at 1536 pixels on its
+long side (`--help` has the rules). The whole book then runs as one job:
 
 ```sh
-falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl --keep-going
-# after a crash or Ctrl-C, the same command with --resume runs only the missing pages
-falcon-ocr --model models/falcon-ocr-cpu run --list book.txt --output book.jsonl --keep-going --resume
+pip install -r requirements/tools.txt
+python tools/pdf_to_pages.py book.pdf --output-dir book-pages
+falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl --keep-going
+# stopped by a crash or Ctrl-C? the same command with --resume runs only the missing pages
+falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pages.txt --output book.jsonl --keep-going --resume
 ```
 
-- `--list FILE` reads input paths from FILE (UTF-8, with or without a byte
-  order mark), one per line, after any positional images; blank lines and
-  lines starting with `#` are skipped, and relative paths resolve against
-  the current directory. `tools/pdf_to_pages.py` writes such a list for a
-  PDF ([PDFs](#pdfs)).
-- Every input the run will read is checked before the model loads (it
-  exists, is a regular file and starts like a PNG or JPEG), so a wrong path
-  fails at once and nothing is printed.
-- Each record carries `"path"` (the input as given) and `"page"` (its 0-based
-  position among the inputs) before the result's fields, and the generation
-  `"options"` the run asked for after them. `--output FILE` appends the
-  records to FILE, flushed after every page, instead of printing them;
-  `--text` then still prints each page's text, and if stdout closes (a pager
-  that quit) the run goes on with FILE alone, as it does if stderr closes.
-  FILE's folder must exist, FILE, if it exists, must hold records only (a
-  byte order mark and blank lines aside; an input image or list never does),
-  and every input path must be UTF-8 so that its record can name it, all
-  checked with the inputs. When FILE already holds records of some inputs, a
-  run without `--resume` warns that they run again. The file is created or
-  repaired only once the flags, inputs and weights have passed their checks
-  and the model has loaded. A device or pipe (`/dev/stdout`) is written to
-  as it is, without being read.
-- `--resume` skips the inputs whose path, as given, already has a successful
-  record in the `--output` file, which must be a regular file; a skipped
-  input is not read, so it need not exist any more, and no input may be
-  listed twice. A last record cut short by a crash, or the NUL bytes a power
-  loss can leave in its place, is removed, so its page runs again. Records
-  that ran otherwise (another mode or precision, another GPTQ overlay or
-  round-to-nearest weights, another `--max-dimension`,
-  `--min-dimension`, `--max-new-tokens` or `--crop-margins` padding, with or
-  without the crop, another `--stop-repetition` or `--exp`, BF16 or NEON
-  prefill rounding as `--tune prefill-bf16`, `--backend` or the CPU decide
-  it, or a pinned `--tune decode-exp`) are kept and skipped with a warning
-  that names the difference. Records written before records carried their
-  `options` are compared on mode, weights, routing and those runner choices
-  only. With `--escalate`, fast-mode records that the repetition stop ended
-  without a near-exact rerun are counted in a warning, since their pages are
-  skipped.
-- A page can still fail at run time (a corrupt file that passed the check).
-  Without `--keep-going` the run stops there, after the pages before it
-  were written (earlier releases printed nothing when any page failed). With
-  it, the page's record is `{"path", "page", "error"}`, the run goes on,
-  and the exit code is non-zero at the end.
-- At the end stderr gets a summary: pages done, failed and skipped, the time
-  and pages per hour. With `--batch-size N` or `--pipeline`, a page's
-  `total_ms` is the sum of its own stages (`time_to_first_token_ms +
-  decode_ms`), which overlap other pages'; the pages per hour are the run's.
-- `--pipeline` reads and prepares the next pages on a prefetch thread and
-  prefills the next page on a second pool while the current page decodes;
-  tokens are unchanged. On a scanned book it gave 12–20% more pages per hour,
-  more than `--batch-size 4`
-  ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)).
-- `--escalate`, in fast mode, rereads each page that the repetition stop
-  ended with the near-exact model (loaded when first needed, and kept beside
-  the fast one; the other batch rows wait with their caches while a page is
-  reread) and keeps the fast attempt as `escalated_from`; if the near-exact
-  model cannot be loaded or the rerun fails, the page keeps its fast result
-  with an `escalation_error`
-  ([docs/MODES.md](docs/MODES.md#loops-and-the-repetition-stop)).
+- `--output` appends each page's record to the file as soon as the page is
+  done; each record names its input `path` and its `page` index.
+- `--resume` skips the pages that already have a record, and `--keep-going`
+  records a page that fails and goes on to the rest.
+- Inputs and the output file are checked before the model loads, so a
+  wrong path fails in seconds rather than hours into the run.
+- `--pipeline` prefills the next page while the current one decodes; on a
+  scanned book it gave 12–20% more pages per hour
+  ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)). `--batch-size N`
+  decodes several pages together. Neither changes the tokens.
+- In fast mode, `--escalate` rereads a page that got stuck in a loop with
+  the near-exact model.
+
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#long-runs) has the record format
+and how `--resume` matches and repairs the file.
 
 ## Library
 
