@@ -385,7 +385,9 @@ flags resolve to, packed files included: `--mode fast --kv-cache q8r` runs
 `w8-body-kv-q8r`, and the result's `mode` (null), `precision` and `plan` name
 that profile. With `--model-file`, `falcon-ocr-eval --profile` likewise picks
 the cache for the file's weights (it must name them), and its reports record
-the profile that ran and the file.
+the profile that ran and the file. The checkpoint loader's `--w8-artifact`,
+`--keep-fp32` and `--weights-bf16` are refused beside `--model-file`, as is
+`capture-gram`, which needs the FP32 reference profile.
 
 ### Rotated KV cache (experimental)
 
