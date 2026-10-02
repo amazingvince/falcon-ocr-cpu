@@ -63,14 +63,19 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   page pipeline (`run --pipeline`) with sequential pages: tokens, stops,
   input sizes, crops and routes, the safety net included, in the reference
   configuration and with the packed near-exact and fast files under the
-  automatic one. `cargo test --release --locked --test negative_inputs
-  --test margin_crop --test run_cli -- --ignored --test-threads=1` checks
-  that every public entry point rejects invalid requests before model work,
-  including tensor traces and teacher scoring with the margin crop, and that
-  a page with margins reports its crop and fewer input tokens on every entry
-  point (these need `artifacts/model`); and that `run` resumes an
-  interrupted output and, with `--keep-going`, records a failing page and
-  runs the rest (these need the near-exact file in `artifacts/packed`).
+  automatic one. `tests/batch_trace.rs` checks that traced cohorts and
+  streamed runs name each page's tensors by its input index (`request.{i}`
+  for a prefill or a page that runs alone, `batch.{i}` for a cohort's joint
+  decode), singleton cohorts and pages dropped from a cohort included.
+  `cargo test --release --locked --test negative_inputs --test margin_crop
+  --test run_cli -- --ignored --test-threads=1` checks that every public
+  entry point rejects invalid requests before model work, including tensor
+  traces and teacher scoring with the margin crop, and that a page with
+  margins reports its crop and fewer input tokens on every entry point
+  (these need `artifacts/model`); and that `run` resumes an interrupted
+  output, with `--keep-going` records a failing page and runs the rest, and
+  goes on when stderr is closed (these need the near-exact file in
+  `artifacts/packed`).
 - **Draft head** (needs an exported head file and `artifacts/model`):
   `FALCON_OCR_DRAFT_HEAD=<head>.safetensors cargo test --release --lib
   draft_head -- --ignored --nocapture` checks the Rust chain against the

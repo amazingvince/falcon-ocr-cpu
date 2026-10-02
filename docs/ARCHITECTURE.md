@@ -60,10 +60,14 @@ context budget conflict) does not stop the others, but a joint decode step
 that fails fails every page in it, and in a fixed cohort so does a failed
 prefill. Pages run one after another, or `--batch-size` at a time in joint
 decode steps, where a finished page's row goes to the next page at once
-(continuous batching, `runner/batch/`). `recognize_files`, the traced
+(continuous batching, `runner/batch/`), each keeping the output budget it
+would have alone. `recognize_files`, the traced
 `recognize_files_streaming_with_trace` and `recognize_batch` keep fixed
-cohorts of the batch size (`runner/cohort.rs`); `recognize_files` stops at
-the first error. The page pipeline (`recognize_files_pipelined`,
+cohorts of the batch size (`runner/cohort.rs`): a cohort decodes to the
+smallest budget fitted to any page in it, and a trace names each page's
+tensors by its input index (`request.{i}`, and `batch.{i}` for a cohort's
+joint decode, after its first page). `recognize_files` stops at the first
+error. The page pipeline (`recognize_files_pipelined`,
 `run --pipeline`, `runner/pipeline.rs`) splits each page at the
 prefill/decode boundary (`Runner::prefill`, `Runner::decode_prefilled`, the
 two halves of the one sequential call): a prefetch thread reads and prepares
