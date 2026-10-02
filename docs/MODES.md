@@ -260,8 +260,19 @@ has no content, when its background is dark (inverted pages, dark slides),
 when the crop would remove less than 10% of the area, or when the crop's
 second resize would do more than round each side to whole patches. Dark scan
 borders, gutter shadows and punch holes count as ink and keep their side of
-the page; marks fainter than the ink threshold (light pencil) or thinner than
-four pixels are cut off when they lie beyond the padding. Routed pages
+the page. Ink is counted per row and per column over the whole page, so a
+mark that runs the length of one edge makes every row (or column) content:
+the crop keeps that side and both adjacent margins whole and cuts only the
+opposite margin. On a 1188 × 1536 page with a text block at x 180–1000,
+y 200–1350 and the default padding, no border gives 4,050 image tokens
+(7,104 uncropped), an 18-pixel gutter shadow down the right edge 6,144, a
+12-pixel black border down the left edge 6,144 and a 12-pixel black band
+along the top 6,364. A mark that covers only part of an edge (a punch hole,
+a short border) keeps its side and the rows or columns it covers. Marks
+fainter than the ink threshold (light pencil) or thinner than four pixels
+are cut off when they lie beyond the padding, except that a full-length mark
+two or three pixels thick, though cut off itself, still makes every row (or
+column) content and keeps the margins at its two ends. Routed pages
 (`--max-dimension auto`) are routed on the whole page and crop the resize they
 run at, as does the safety-net rerun. PAD must be below `--max-dimension`
 (below 768 with `auto`), since a larger padding never crops the page.
