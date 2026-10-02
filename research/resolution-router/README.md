@@ -38,10 +38,11 @@ The runner reproduces the router bit for bit. The statistics were redefined
 ([router_features.py](router_features.py), version 2) so that every one is an
 integer count or sum finished by a few float64 operations in a fixed order,
 on the page after the model's first resize at 1536, with Pillow's 8-bit
-resampling (which src/preprocess.rs already implements exactly). The trees
-were retrained on them ([train_trees.py](train_trees.py): the same labels and
-settings plus scikit-learn's early stopping, which picks 132 and 84 trees on a
-training split: 13,176 nodes, `src/router/trees.json`, 318 KiB). The same
+resampling (which src/preprocess/resample.rs already implements exactly).
+The trees were retrained on them ([train_trees.py](train_trees.py): the same
+labels and settings plus scikit-learn's early stopping, which picks 132 and
+84 trees on a training split: 13,176 nodes, `src/router/trees.json`,
+318 KiB). The same
 policy on the development set: CER −0.69 pt [−1.35, −0.18], CPU time saved
 24.7% [22.6, 26.9] (without early stopping −0.51 pt / 23.7%; all variants are
 within noise of each other and of Phase 1).
