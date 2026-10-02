@@ -1,6 +1,6 @@
 # Performance
 
-Status: current as of 2026-10-01. Host, unless a section says otherwise:
+Status: current as of 2026-10-02. Host, unless a section says otherwise:
 Ryzen 9 7950X (16 cores, 32 threads, DDR5, AVX-512 with BF16), Windows 11.
 Page: the journal benchmark page, 6,544 input tokens. Earlier measurements on
 the tiny 256×128 fixture are archived in
@@ -158,7 +158,16 @@ removed the larger candidates before tuning was dropped: without the fastest
 candidate the 2% tolerance accepted 6 threads, whose verification steps are
 slower. Pinning the team (`--decode-threads 8`) still gives the pipeline
 about 3% more, since with an automatic team the overlap starts only after
-tuning. Peak resident memory in fast mode, with the decode team pinned to 8
+tuning. When every candidate is above half, half of the threads is a
+candidate of its own, held in reserve until the limit needs it: with
+speculation the tuner drops its half-core candidate, so an 8-thread run on
+8 cores has only 6 and 8, and before the reserve the smallest stood. With
+`--mode fast --threads 8 --pipeline` on Strunk pages 10–13 (379–425 tokens
+each; a quiet host, two interleaved rounds, tokens identical), the 6-thread
+team with a 2-thread prefill pool took 59.3 and 48.7 s, the 4-thread reserve
+with a 4-thread pool 35.5 and 35.2 s. A sequential run of the same pages on
+8 threads took 32.9 s: on pages this short the pipeline does not pay at 8
+threads. Peak resident memory in fast mode, with the decode team pinned to 8
 threads in the pipelined and batched arms: 2,243–2,300 MiB sequential,
 3,404–3,413 MiB with `--pipeline` (3,822–3,831 MiB with `--crop-margins`),
 3,899–3,900 MiB with `--batch-size 4` and 3,348–4,275 MiB with both.
