@@ -348,50 +348,51 @@ def convert(
     if not pdf_path.is_file():
         raise ValueError(f"no PDF file at {pdf_path}")
     check_output_dir(output_dir)
-    pdf = pdfium.PdfDocument(pdf_path)
-    pdf.init_forms()  # before any page is loaded, so form fields render
-    plan = plan_pages(pdf, parse_pages(page_spec, len(pdf)), mode, long_side, dpi)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    entries, paths = [], []
-    for number, bits, size, scale, reason in plan:
-        page = pdf[number - 1]
-        if bits is not None:
-            used = "extract"
-            image = next(page.get_objects(max_depth=1, filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]))
-            picture, details = extract(page, image, bits)
-        else:
-            used = "render"
-            picture = render(page, size, gray)
-            details = {"scale": round(scale, 6), "dpi": round(scale * 72, 3)}
-            if reason:
-                details["extract_skipped"] = reason
-        name = f"page-{number:04d}.png"
-        picture.save(output_dir / name, format="PNG")
-        width, height = page.get_size()
-        entries.append({
-            "page": number, "file": name, "mode": used, "size_pt": [round(width, 3), round(height, 3)],
-            "rotation": page.get_rotation(), "pixels": list(picture.size), "image_mode": picture.mode, **details,
-        })
-        paths.append(str((output_dir / name).resolve()))
-        note = f" ({reason})" if reason else ""
-        print(f"page {number}: {used} {picture.width}x{picture.height} {picture.mode}{note}")
-        page.close()
-    manifest = {
-        "source": {"file": str(pdf_path), "sha256": sha256(pdf_path), "pages": len(pdf)},
-        "settings": {
-            "mode": mode, "long_side": None if dpi is not None else long_side, "dpi": dpi, "gray": gray,
-            "pages": page_spec,
-        },
-        "versions": {
-            "pypdfium2": str(pdfium.version.PYPDFIUM_INFO), "pdfium": str(pdfium.version.PDFIUM_INFO),
-            "pillow": PIL.__version__,
-        },
-        "pages": entries,
-    }
-    (output_dir / "pages.txt").write_text("".join(f"{path}\n" for path in paths), encoding="utf-8")
-    (output_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    pdf.close()
-    return manifest
+    # A context manager, so a page this cannot convert releases the file: on
+    # Windows an open document keeps the PDF open for the life of the process.
+    with pdfium.PdfDocument(pdf_path) as pdf:
+        pdf.init_forms()  # before any page is loaded, so form fields render
+        plan = plan_pages(pdf, parse_pages(page_spec, len(pdf)), mode, long_side, dpi)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        entries, paths = [], []
+        for number, bits, size, scale, reason in plan:
+            page = pdf[number - 1]
+            if bits is not None:
+                used = "extract"
+                image = next(page.get_objects(max_depth=1, filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+                picture, details = extract(page, image, bits)
+            else:
+                used = "render"
+                picture = render(page, size, gray)
+                details = {"scale": round(scale, 6), "dpi": round(scale * 72, 3)}
+                if reason:
+                    details["extract_skipped"] = reason
+            name = f"page-{number:04d}.png"
+            picture.save(output_dir / name, format="PNG")
+            width, height = page.get_size()
+            entries.append({
+                "page": number, "file": name, "mode": used, "size_pt": [round(width, 3), round(height, 3)],
+                "rotation": page.get_rotation(), "pixels": list(picture.size), "image_mode": picture.mode, **details,
+            })
+            paths.append(str((output_dir / name).resolve()))
+            note = f" ({reason})" if reason else ""
+            print(f"page {number}: {used} {picture.width}x{picture.height} {picture.mode}{note}")
+            page.close()
+        manifest = {
+            "source": {"file": str(pdf_path), "sha256": sha256(pdf_path), "pages": len(pdf)},
+            "settings": {
+                "mode": mode, "long_side": None if dpi is not None else long_side, "dpi": dpi, "gray": gray,
+                "pages": page_spec,
+            },
+            "versions": {
+                "pypdfium2": str(pdfium.version.PYPDFIUM_INFO), "pdfium": str(pdfium.version.PDFIUM_INFO),
+                "pillow": PIL.__version__,
+            },
+            "pages": entries,
+        }
+        (output_dir / "pages.txt").write_text("".join(f"{path}\n" for path in paths), encoding="utf-8")
+        (output_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        return manifest
 
 
 def main(argv: list[str] | None = None) -> int:

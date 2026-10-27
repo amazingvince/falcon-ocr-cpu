@@ -67,7 +67,8 @@ def build(directory: Path) -> Path:
     scans = directory / "scans.pdf"
     BITS.save(scans, "PDF", resolution=100.0, save_all=True, append_images=[GRAY, COLOUR])
     pdf = pdfium.PdfDocument.new()
-    pdf.import_pages(pdfium.PdfDocument(scans))
+    with pdfium.PdfDocument(scans) as source:
+        pdf.import_pages(source)
     page = pdf.new_page(300, 200)
     add_text(pdf, page, "Hello")
     rectangle = pdfium_c.FPDFPageObj_CreateNewRect(10, 10, 50, 30)
@@ -230,9 +231,11 @@ def load(source: Path | io.BytesIO) -> Image.Image:
 
 def embedded_jpeg(path: Path, page_index: int) -> Image.Image:
     """The page's JPEG stream decoded by Pillow."""
-    page = pdfium.PdfDocument(path)[page_index]
-    image = next(page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]))
-    return load(io.BytesIO(bytes(image.get_data(decode_simple=True))))
+    # Closed before returning: on Windows an open document keeps `path` open, and the
+    # class's temporary directory cannot be removed while it is.
+    with pdfium.PdfDocument(path) as pdf:
+        image = next(pdf[page_index].get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]))
+        return load(io.BytesIO(bytes(image.get_data(decode_simple=True))))
 
 
 class PdfToPages(unittest.TestCase):
