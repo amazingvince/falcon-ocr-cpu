@@ -234,10 +234,11 @@ impl<'a> DecodeTeam<'a> {
             self.size = team.size();
         }
     }
-    /// Report the single-row step just run on the selected team.
-    fn record(&self, ms: f64) {
+    /// Report the step just run on the selected team, which decoded `rows`
+    /// rows (one outside continuous batching).
+    fn record(&self, ms: f64, rows: usize) {
         if let Decode::Auto(auto) = &self.runner.decode {
-            auto.tuner.lock().unwrap().record(self.index, ms);
+            auto.tuner.lock().unwrap().record(self.index, ms, rows);
         }
     }
     /// Report a draft-verification step (several rows) on the selected team.

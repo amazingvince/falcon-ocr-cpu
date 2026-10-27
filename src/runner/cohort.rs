@@ -464,7 +464,7 @@ impl Runner {
                 screen,
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-            team.record(step_ms);
+            team.record(step_ms, active.len());
             trace.decode_step(active.len(), step_ms, sessions.iter().map(Session::cache_bytes).sum());
             for (row, &index) in active.iter().enumerate() {
                 let token = select(&next, row, c.vocab_size)?;

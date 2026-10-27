@@ -114,7 +114,7 @@ impl Runner {
                 d.screen,
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-            d.team.record(step_ms);
+            d.team.record(step_ms, 1);
             d.next_token = if let Some(&forced) = teacher.get(step + 1) {
                 if score {
                     d.trace.teacher_step(step + 1, forced, select(&next, 0, c.vocab_size)?);

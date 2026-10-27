@@ -125,7 +125,10 @@ pub(crate) struct Tuner {
     /// A size below every candidate, held back until a limit excludes every
     /// one ([`Tuner::with_reserve`]).
     reserve: Option<usize>,
-    samples: Vec<Vec<f64>>,
+    /// Step times as `(rows, ms)`: continuous batching decodes 1..batch_size
+    /// rows in one step, and a step's cost depends on how many rows ran, so
+    /// candidates are compared at one row count ([`Tuner::comparable`]).
+    samples: Vec<Vec<(usize, f64)>>,
     verify_samples: Vec<Vec<f64>>,
     start: usize,
     steps: usize,
@@ -192,13 +195,14 @@ impl Tuner {
         self.chosen.map(|index| self.sizes[index])
     }
 
-    /// Record the duration of a step that ran on `sizes[index]`.
-    pub(crate) fn record(&mut self, index: usize, ms: f64) {
+    /// Record the duration of a step that ran on `sizes[index]` and decoded
+    /// `rows` rows (one outside continuous batching).
+    pub(crate) fn record(&mut self, index: usize, ms: f64, rows: usize) {
         if self.chosen.is_some() {
             return;
         }
         if self.steps >= WARMUP && index == self.current() {
-            self.samples[index].push(ms);
+            self.samples[index].push((rows, ms));
         }
         self.steps += 1;
         if self.samples.iter().all(|s| s.len() >= RUN * ROUNDS) {
@@ -256,7 +260,7 @@ impl Tuner {
         self.chosen = Some(index);
         self.report = Some(TuneReport {
             candidates: self.sizes.clone(),
-            median_ms: self.samples.iter().map(|s| median(s)).collect(),
+            median_ms: self.comparable().iter().map(|s| median(s)).collect(),
             verify_median_ms: self
                 .verify_samples
                 .iter()
@@ -291,8 +295,41 @@ impl Tuner {
         Some(report)
     }
 
+    /// Each candidate's step times at one row count, so the medians compare
+    /// like with like. Continuous batching admits a row as soon as one
+    /// finishes, so the row count moves while the tuner rotates its
+    /// candidates, and the medians would otherwise rank the candidates by how
+    /// many rows happened to be decoding. The count is the one every
+    /// candidate measured, with the most samples (the smallest on a tie);
+    /// with none in common the samples stand as they are, so a run that
+    /// never repeats a row count still chooses.
+    fn comparable(&self) -> Vec<Vec<f64>> {
+        let at = |rows: usize| -> Vec<Vec<f64>> {
+            self.samples
+                .iter()
+                .map(|s| s.iter().filter(|(r, _)| *r == rows).map(|(_, ms)| *ms).collect())
+                .collect()
+        };
+        let mut counts: Vec<usize> = self.samples.iter().flatten().map(|(rows, _)| *rows).collect();
+        counts.sort_unstable();
+        counts.dedup();
+        let shared = counts
+            .into_iter()
+            .map(|rows| (rows, at(rows)))
+            .filter(|(_, per)| !per.iter().any(Vec::is_empty))
+            .max_by_key(|(rows, per)| (per.iter().map(Vec::len).sum::<usize>(), usize::MAX - *rows));
+        match shared {
+            Some((_, per)) => per,
+            None => self
+                .samples
+                .iter()
+                .map(|s| s.iter().map(|(_, ms)| *ms).collect())
+                .collect(),
+        }
+    }
+
     fn pick(&self) -> usize {
-        let medians: Vec<f64> = self.samples.iter().map(|s| median(s)).collect();
+        let medians: Vec<f64> = self.comparable().iter().map(|s| median(s)).collect();
         let best = medians.iter().copied().fold(f64::INFINITY, f64::min);
         medians
             .iter()
@@ -358,7 +395,7 @@ mod tests {
         while tuner.chosen().is_none() {
             let index = tuner.current();
             // 8 threads: 10 ms; 16 threads: 9 ms (within 2%: the smaller wins... no: 10 > 9.18).
-            tuner.record(index, if index == 0 { 10.0 } else { 9.0 });
+            tuner.record(index, if index == 0 { 10.0 } else { 9.0 }, 1);
             // Verification steps are slower and never enter the choice.
             tuner.record_verify(index, 100.0);
             step += 1;
@@ -391,14 +428,52 @@ mod tests {
         };
         for _ in 0..WARMUP {
             assert_eq!(tuner.current(), 2);
-            tuner.record(2, 50.0);
+            tuner.record(2, 50.0, 1);
         }
         while tuner.chosen().is_none() {
             let index = tuner.current();
-            tuner.record(index, cost(tuner.sizes()[index]));
+            tuner.record(index, cost(tuner.sizes()[index]), 1);
         }
         assert_eq!(tuner.chosen(), Some(12));
         assert_eq!(tuner.current(), 1);
+    }
+
+    #[test]
+    fn the_choice_compares_candidates_at_one_row_count() {
+        // Under continuous batching a step's cost rises with the rows that
+        // decode in it, and the row count moves with the rotation rather
+        // than with the team: here every candidate's run starts with one row
+        // and then decodes more, the more the later it rotates. At any one
+        // row count the teams rank 16 < 12 < 8, so 16 is the right choice;
+        // over all the samples together 8 looks fastest, which is the row
+        // counts deciding and not the teams.
+        let ms = |size: usize, rows: usize| {
+            let team = match size {
+                8 => 11.0,
+                12 => 10.0,
+                _ => 9.0,
+            };
+            team + 5.0 * rows as f64
+        };
+        let mut tuner = Tuner::new(vec![8, 12, 16], 0);
+        for _ in 0..WARMUP {
+            tuner.record(0, 50.0, 1);
+        }
+        let (mut step, mut running) = (0, usize::MAX);
+        while tuner.chosen().is_none() {
+            let index = tuner.current();
+            if index != running {
+                (step, running) = (0, index);
+            }
+            let rows = if step == 0 { 1 } else { 1 + index };
+            step += 1;
+            tuner.record(index, ms(tuner.sizes()[index], rows), rows);
+        }
+        assert_eq!(tuner.chosen(), Some(16));
+        // The report's medians are the ones that were compared: one row
+        // count, so they rank the teams.
+        let report = tuner.report().unwrap();
+        assert_eq!(report.median_ms, vec![16.0, 15.0, 14.0]);
     }
 
     /// Tune `tuner` to its choice with `cost` per team size, and return
@@ -408,7 +483,7 @@ mod tests {
         while tuner.chosen().is_none() {
             let size = tuner.sizes()[tuner.current()];
             measured.push(size);
-            tuner.record(tuner.current(), cost(size));
+            tuner.record(tuner.current(), cost(size), 1);
         }
         measured.sort_unstable();
         measured.dedup();

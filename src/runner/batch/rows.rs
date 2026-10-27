@@ -175,7 +175,7 @@ impl<F: Feed<Prepared = PreparedPage, Item = Started>> Engine for Rows<'_, F> {
                 "",
                 screen,
             )?;
-            team.record(started.elapsed().as_secs_f64() * 1000.0);
+            team.record(started.elapsed().as_secs_f64() * 1000.0, tokens.len());
             selected.clear();
             for row in 0..tokens.len() {
                 selected.push(select(&next, row, runner.model.config.vocab_size)?);

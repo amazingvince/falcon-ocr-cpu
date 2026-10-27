@@ -89,7 +89,7 @@ impl Runner {
                     d.screen,
                 )?;
                 let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-                d.team.record(step_ms);
+                d.team.record(step_ms, 1);
                 stats.0 += 1;
                 stats.1 += step_ms;
                 policy.single_step(step_ms);
