@@ -29,6 +29,7 @@ fn resume_finds_successful_records_and_drops_a_record_cut_by_a_crash() {
     assert_eq!(existing.runs[&fast], 2);
     let escalated = Run {
         mode: Some("fast".to_owned()),
+        escalated: true,
         ..Run::default()
     };
     assert_eq!(existing.runs[&escalated], 1);
@@ -204,6 +205,48 @@ fn line(record: &str, options: &GenerationOptions) -> String {
     let mut record: Map<String, Value> = serde_json::from_str(record).unwrap();
     record.insert("options".to_owned(), serde_json::to_value(options).unwrap());
     format!("{}\n", Value::Object(record))
+}
+
+#[test]
+fn an_escalated_record_compares_the_weights_of_its_fast_attempt() {
+    let fixed = GenerationOptions {
+        fit_budget: true,
+        ..GenerationOptions::default()
+    };
+    let existing = scan_output(&line(
+        concat!(
+            r#"{"path":"a.png","text":"t","mode":"near-exact","precision":"w16-body-kv-q16","#,
+            r#""escalated_from":{"mode":"fast","precision":"w8-body-kv-q8","overlay_sha256":"0123456789abcdef"}}"#
+        ),
+        &fixed,
+    ));
+    // The fast run that wrote it reaches this page the same way again.
+    let same = this_run(
+        Some(Mode::Fast),
+        "w8-body-kv-q8",
+        Some("0123456789abcdef"),
+        &fixed,
+        None,
+    );
+    assert_eq!(resume_warning(&existing, &same), None);
+    // Another overlay, and round-to-nearest in place of GPTQ: the fast
+    // attempt would have run otherwise, so the page warns although its
+    // record is a near-exact rerun.
+    for overlay in [Some("fedcba9876543210"), None] {
+        let other = this_run(Some(Mode::Fast), "w8-body-kv-q8", overlay, &fixed, None);
+        let warning = resume_warning(&existing, &other).unwrap();
+        assert!(
+            warning.contains("1 escalated from fast (w8-body-kv-q8, overlay 0123456789ab"),
+            "{warning}"
+        );
+    }
+    // A record from before the weights were recorded has none to compare,
+    // and still matches any run that reaches it.
+    let legacy = scan_output(&line(
+        r#"{"path":"a.png","text":"t","mode":"near-exact","precision":"w16-body-kv-q16","escalated_from":{"mode":"fast"}}"#,
+        &fixed,
+    ));
+    assert_eq!(resume_warning(&legacy, &same), None);
 }
 
 #[test]

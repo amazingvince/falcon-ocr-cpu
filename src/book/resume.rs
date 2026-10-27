@@ -156,8 +156,11 @@ impl Kernels {
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Run {
     pub mode: Option<String>,
-    /// `None` for an escalated record: its rerun ran in near-exact mode on
-    /// purpose, from a fast-mode run whose weights it does not record.
+    /// The weights the page ran with: for an escalated record, the fast
+    /// attempt's (`escalated_from.precision`), since its near-exact rerun
+    /// ran in near-exact mode on purpose. `None` for a record that does not
+    /// name them, including an escalated record written before they were
+    /// recorded, whose weights then match any run.
     pub precision: Option<String>,
     /// The digest of the GPTQ overlay the weights came from
     /// (`plan.overlay_sha256`): `None` for round-to-nearest 8-bit weights
@@ -171,6 +174,10 @@ pub struct Run {
     /// The runner's token-changing choices (the near-exact rerun's for an
     /// escalated record); `None` for a plan without them.
     pub kernels: Option<Kernels>,
+    /// The record is an escalated one (it has an `escalated_from`): its
+    /// `kernels` are a near-exact rerun's, which a fast run's 16-bit body
+    /// reaches without BF16 prefill.
+    pub escalated: bool,
 }
 
 impl Run {
@@ -186,7 +193,7 @@ impl Run {
             && self.settings == run.settings
             && self.kernels.as_ref().is_none_or(|kernels| {
                 let mut expected = run.kernels.clone();
-                if self.precision.is_none()
+                if self.escalated
                     && let Some(expected) = &mut expected
                 {
                     // Escalation shares the run's configuration, but its
@@ -229,7 +236,7 @@ impl std::fmt::Display for Run {
             }
         }
         details.extend(self.kernels.iter().flat_map(Kernels::flags));
-        if self.precision.is_none() {
+        if self.escalated {
             write!(f, "escalated from ")?;
         }
         write!(f, "{}", self.mode.as_deref().unwrap_or("no mode"))?;
@@ -290,10 +297,16 @@ impl Existing {
         let run = match record.get("escalated_from") {
             Some(attempt) => Run {
                 mode: text(attempt.get("mode")),
+                // The fast attempt's weights, not the near-exact rerun's: a
+                // resumed fast run with other weights would have reached
+                // this page differently. A record written before they were
+                // recorded leaves them `None`, and matches any weights.
+                precision: text(attempt.get("precision")),
+                overlay: text(attempt.get("overlay_sha256")),
                 routed,
                 settings,
                 kernels: record.get("plan").and_then(Kernels::from_plan),
-                ..Run::default()
+                escalated: true,
             },
             None => Run {
                 mode: text(record.get("mode")),
@@ -302,6 +315,7 @@ impl Existing {
                 routed,
                 settings,
                 kernels: record.get("plan").and_then(Kernels::from_plan),
+                escalated: false,
             },
         };
         *self.runs.entry(run).or_default() += 1;
@@ -476,6 +490,8 @@ pub fn this_run(
         routed: options.route,
         settings: Some(Settings::from(options)),
         kernels,
+        // A run escalates pages; it never is an escalation itself.
+        escalated: false,
     }
 }
 
@@ -502,9 +518,11 @@ pub fn resume_warning(existing: &Existing, this: &Run) -> Option<String> {
         .runs
         .iter()
         .filter(|(run, _)| !run.matches(this))
-        .map(|(run, count)| match run.precision {
-            Some(_) => format!("{count} in {run}"),
-            None => format!("{count} {run}"),
+        // "1 in fast (…)", but "1 escalated from fast (…)", which reads as
+        // the sentence it is part of.
+        .map(|(run, count)| match run.escalated {
+            false => format!("{count} in {run}"),
+            true => format!("{count} {run}"),
         })
         .collect();
     (!others.is_empty()).then(|| {

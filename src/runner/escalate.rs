@@ -41,6 +41,14 @@ pub struct EscalatedAttempt {
     pub finish_reason: FinishReason,
     pub output_tokens: usize,
     pub total_ms: f64,
+    /// The fast attempt's weights, which the near-exact rerun's own
+    /// `precision` and `plan` no longer name. `--resume` compares them, so a
+    /// fast run with other weights warns on this page as on any other.
+    /// Absent in records written before they were recorded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub precision: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overlay_sha256: Option<String>,
 }
 
 /// Whether `result` is reread in near-exact mode: a fast-mode page that the
@@ -68,6 +76,8 @@ pub fn escalated(fast: OcrResult, mut rerun: OcrResult) -> OcrResult {
         finish_reason: fast.finish_reason,
         output_tokens: fast.output_tokens,
         total_ms: fast.timings.total_ms,
+        precision: Some(fast.precision.clone()),
+        overlay_sha256: fast.plan.as_ref().and_then(|plan| plan.overlay_sha256.clone()),
     });
     rerun.timings.total_ms += fast.timings.total_ms;
     rerun.route = fast.route;
@@ -231,6 +241,10 @@ mod tests {
                 finish_reason: FinishReason::Repetition,
                 output_tokens: 2,
                 total_ms: 100.0,
+                // The fast attempt's weights, which `--resume` compares; this
+                // result carries no plan, so there is no overlay digest.
+                precision: Some("w8-body-kv-q8".to_owned()),
+                overlay_sha256: None,
             })
         );
         assert_eq!(
