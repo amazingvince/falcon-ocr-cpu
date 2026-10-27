@@ -77,6 +77,8 @@ pub(super) struct Page {
     pub(super) reason: FinishReason,
     pub(super) width: usize,
     pub(super) height: usize,
+    /// The margin crop the input was cut to, if any.
+    pub(super) crop: Option<crate::preprocess::Crop>,
     pub(super) input_tokens: usize,
     pub(super) teacher_forced: bool,
     pub(super) budget_clamped: bool,
@@ -112,7 +114,7 @@ impl Runner {
                 d.screen,
             )?;
             let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-            d.team.record(step_ms);
+            d.team.record(step_ms, 1);
             d.next_token = if let Some(&forced) = teacher.get(step + 1) {
                 if score {
                     d.trace.teacher_step(step + 1, forced, select(&next, 0, c.vocab_size)?);
@@ -153,6 +155,9 @@ impl Runner {
             teacher_forced: page.teacher_forced,
             budget_clamped: page.budget_clamped,
             route: None,
+            crop: page.crop,
+            escalated_from: None,
+            escalation_error: None,
             timings: page.timings,
         })
     }

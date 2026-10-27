@@ -106,21 +106,28 @@ impl std::fmt::Display for PrefillAttention {
 }
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
-/// for FP32) on this CPU with the `simd` backend: the single predicate set
-/// behind `Model::forward_layers` and `auto::Resolved`. Only the `auto`
-/// backend takes the AVX-512 paths (wide FP32 tiles, BF16 for 8-bit bodies);
-/// `avx2` is 8-lane FP32 throughout. Traces, linear-input captures and
-/// prefills of at most 8 rows take the FP32 path regardless.
-pub fn prefill_plan(body_bits: Option<u32>, simd: Simd, prefill_bf16: crate::config::PrefillBf16) -> PrefillPlan {
+/// for FP32), with or without W8 `exceptions` columns, on this CPU with the
+/// `simd` backend: the single predicate set behind `Model::forward_layers`
+/// and `auto::Resolved`. Only the `auto` backend takes the AVX-512 paths
+/// (wide FP32 tiles, BF16 for 8-bit bodies); `avx2` is 8-lane FP32
+/// throughout. Traces, linear-input captures and prefills of at most 8 rows
+/// take the FP32 path regardless.
+pub fn prefill_plan(
+    body_bits: Option<u32>,
+    exceptions: bool,
+    simd: Simd,
+    prefill_bf16: crate::config::PrefillBf16,
+) -> PrefillPlan {
     use crate::config::PrefillBf16;
     let panel = body_bits.is_some() && panel_gemm::available(simd);
     // 8-bit bodies (fast mode) also run prefill attention, and with
     // `prefill_bf16 = All` the projections, in BF16 where the CPU has
-    // AVX512-BF16 (`attention_prefill_bf16`).
+    // AVX512-BF16 (`attention_prefill_bf16`). BF16 panels hold codes only,
+    // so a body with exception columns keeps FP32 projection panels.
     let eight_bit = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
     let projection = if !panel {
         PrefillProjection::GemmF32
-    } else if eight_bit && prefill_bf16 == PrefillBf16::All {
+    } else if eight_bit && !exceptions && prefill_bf16 == PrefillBf16::All {
         PrefillProjection::PanelBf16
     } else {
         PrefillProjection::PanelAvx2

@@ -89,7 +89,7 @@ impl Runner {
                     d.screen,
                 )?;
                 let step_ms = step_started.elapsed().as_secs_f64() * 1000.0;
-                d.team.record(step_ms);
+                d.team.record(step_ms, 1);
                 stats.0 += 1;
                 stats.1 += step_ms;
                 policy.single_step(step_ms);
@@ -144,7 +144,7 @@ impl Runner {
         }
         if self.config.tuning.phases {
             let (singles, single_ms, verifies, verify_ms, drafted, accepted) = stats;
-            eprintln!(
+            crate::note!(
                 "speculation: {} tokens; {singles} single steps ({:.2} ms), {verifies} verify steps ({:.2} ms), \
                  drafted {drafted}, accepted {accepted} ({:.0}%)",
                 d.generation.len(),

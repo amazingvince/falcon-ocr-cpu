@@ -94,7 +94,7 @@ pub(crate) fn report_stage_cycles(enabled: bool) {
     {
         let ns = bf16::CONVERT_NS.swap(0, std::sync::atomic::Ordering::Relaxed);
         if ns > 0 {
-            eprintln!("prefill attention BF16 K/V conversion: {:.1} ms", ns as f64 / 1e6);
+            crate::note!("prefill attention BF16 K/V conversion: {:.1} ms", ns as f64 / 1e6);
         }
     }
     let v: Vec<u64> = STAGE_CYCLES
@@ -102,7 +102,7 @@ pub(crate) fn report_stage_cycles(enabled: bool) {
         .map(|c| c.swap(0, std::sync::atomic::Ordering::Relaxed))
         .collect();
     let total = v.iter().sum::<u64>().max(1) as f64;
-    eprintln!(
+    crate::note!(
         "prefill attention stages (thread cycles): qk {:.1}% softmax {:.1}% pv {:.1}% total {:.2e}",
         100.0 * v[0] as f64 / total,
         100.0 * v[1] as f64 / total,

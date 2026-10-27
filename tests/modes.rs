@@ -53,6 +53,7 @@ fn options(max_new_tokens: usize) -> GenerationOptions {
         max_dimension: 1536,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     }
 }
 
@@ -118,6 +119,7 @@ fn exact_mode_under_the_automatic_config_matches_the_gpu_smoke_tokens() {
                 max_new_tokens: metadata["max_new_tokens"].as_u64().unwrap() as usize,
                 fit_budget: false,
                 route: false,
+                crop_margins: None,
             },
         )
         .unwrap();
@@ -146,6 +148,7 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
                     max_dimension: fixture.max_dimension,
                     fit_budget: false,
                     route: false,
+                    crop_margins: None,
                 },
             )
             .unwrap();

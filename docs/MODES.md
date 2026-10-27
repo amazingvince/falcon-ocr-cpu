@@ -1,7 +1,8 @@
 # Modes
 
-Status: current as of 2026-09-25. Measurements: Ryzen 9 7950X (16 cores,
-32 threads, DDR5), Windows 11, the journal benchmark page (6,544 image tokens).
+Status: current as of 2026-10-02. Measurements: Ryzen 9 7950X (16 cores,
+32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
+unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
 ## The metric
 
@@ -11,8 +12,16 @@ configuration's own greedy choice differs are counted (flips), together with
 the KL divergence of its distribution. A flip at step 30 of a free-running
 page turns everything after it into edits, so free-running comparisons
 understate agreement; per-step agreement does not. The anchor set is the 55
-calibration pages outside the GPTQ capture set, 24,262 steps
-(`artifacts/phase4/checks/calibration-reference.json`).
+calibration pages outside the GPTQ capture set, 24,262 steps at up to 512
+per page (`artifacts/phase4/checks/calibration-reference.json`; `agree
+--max-steps 8192` gives 78,282). The exception-column and rotated-cache
+results below come from a Ryzen 7 7700X with its own FP32 reference: the 52
+pages of its calibration lock outside the capture set, 22,726 steps at up to
+512 per page, where the reference profile has 0 flips, near-exact 1 (KL
+7.1e-8) and fast mode 67 (KL 3.0e-4). KL is over each step's 32 most likely
+FP32 tokens (`falcon-ocr-eval agree --reference-topk`), and every arm uses
+`tools/agree_queue.sh`'s flags (`--exp fast --backend avx2`). Compare those
+numbers with each other, not with the 24,262-step ones.
 
 ## The three modes
 
@@ -24,20 +33,31 @@ calibration pages outside the GPTQ capture set, 24,262 steps
 | Prefill attention | FP32 | FP32 | BF16 products on AVX512-BF16 CPUs, FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
-| Against FP32, 24,262 steps | bitwise | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
+| Against FP32, 24,262 steps | **0 flips** | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
 | Journal page | 38 s | 21.5 s | 12.6 s (14 s without AVX512-BF16) |
 | Profile label | `split-f32` (`reference` for traces and batches) | `w16-body-kv-q16` | `w8-body-kv-q8` |
 
-Every mode uses the exact screened head and the portable vector exp in
-prefill attention (token-identical to the platform exp on all calibration
-pages; traces use the platform exp). Fast mode also uses it in decode
-attention over its 8-bit cache, as the NEON kernels always do
-(`--tune decode-exp=exact|fast` overrides): teacher-forced on the 55 anchor
-pages up to 8,192 steps (78,282 steps) it has 94 flips against 92 with the
-platform exp, the English gate below is unchanged, and verification steps'
-attention is 3–10% faster. Exact mode is bit-identical to the FP32
-reference: the smoke trace and the GPU parity test hold under both the
-reference and the automatic configuration.
+Every mode uses the exact screened head and the portable polynomial exp in
+prefill attention, which changes rounding but no token against the platform
+exp on all 67 calibration pages (93,249 tokens); traces use the platform exp.
+Fast mode also uses it in decode attention over its 8-bit cache, as the NEON
+kernels always do (`--tune decode-exp=exact|fast` overrides): teacher-forced
+on the 55 anchor pages up to 8,192 steps (78,282 steps) it has 94 flips
+against 92 with the platform exp, the English gate below is unchanged, and
+verification steps' attention is 3–10% faster.
+
+Exact mode therefore gives FP32's tokens, not its bits. Under the reference
+configuration (`RunnerConfig::reference()`: the platform exp and the full
+head, which `trace` uses and `falcon-ocr-eval` starts from) it is bitwise the
+FP32 reference: the smoke trace hash is pinned, and the split FP32 cache is
+bitwise the compact one. Under the automatic configuration of `run` the
+polynomial exp moves logits in their last bits: teacher-forced along the
+1,295 FP32 tokens of a 1418 × 1224 page (Ryzen 7 7700X), 4.8% of exact
+mode's top-32 log-probabilities were bit-identical to the platform exp's,
+the largest difference 1.1e-4, with no flip. Tokens held on everything
+measured: the GPU smoke page under both configurations
+(`tests/gpu_parity.rs`, `tests/modes.rs`), all 67 calibration pages and the
+four full benchmark pages.
 
 Storage types were chosen against FP32 on the anchor set (GPU harness):
 INT16 with a scale per 64 inputs (1 flip, KL 1.7e-7) beat FP16 (11 flips)
@@ -58,6 +78,73 @@ the median energy), which is why plain rounding drifts three times as much.
 The published overlay has SHA-256 `60808bbf…`; the published fast packed file
 contains it. Without an overlay, `--allow-rtn` quantizes round-to-nearest at
 load (2.7 → 8.6 flips per 1,000 steps).
+
+## Exception columns (experimental)
+
+What GPTQ leaves of fast mode's drift sits mostly in W2 (69% of the 8-bit
+weights' KL against production, `RESULTS-V3.md` §8), whose squared-ReLU
+inputs carry the extreme channels. A weight-only quantized product errs by
+about Σⱼ Δwⱼ xⱼ, so a channel with a huge activation multiplies its
+column's rounding error, and GPTQ can move that error only onto columns
+whose inputs correlate with it. An exception column is not quantized: its
+FP32 weights are stored beside the codes, which are zero there. A W2 column
+costs 3 KB and a W13 column 18 KB, against about 1.7 MB more for a whole W2
+kept in BF16.
+
+Every product uses the FP32 columns: prefill and other large products have
+them in place (BF16 panels hold codes only, so under `--tune
+prefill-bf16=all` a body with exception columns keeps FP32 projection panels,
+as its plan reports), and decode adds one fused multiply-add per exception
+column and output row after the 8-bit kernel, in ascending column order, so
+draft verification stays bitwise the single-row steps. `doctor` and every
+result's plan count the extra bytes.
+
+```sh
+python tools/w8_proxy.py --gram-dir artifacts/w8/gram --include "feed_forward\.w2" --jobs 16
+EXCEPTIONS=4 REUSE_GRAMS=1 bash tools/make_gptq_overlay.sh   # artifacts/model/w8-gptq-exc4.safetensors
+falcon-ocr --mode fast --w8-artifact artifacts/model/w8-gptq-exc4.safetensors run page.png
+falcon-ocr --mode fast --w8-artifact artifacts/model/w8-gptq-exc4.safetensors pack --output fast-exc4.safetensors
+```
+
+`tools/w8_proxy.py` prints, per matrix, the share of the input energy in the
+top k channels and the activation-weighted output error
+√(tr(ΔW G ΔWᵀ) / tr(W G Wᵀ)) of round-to-nearest and of GPTQ with k
+exception columns (k = 0, 1, 2, 4, 8, 16), quantized exactly as the
+overlay builder does, so N can be chosen in minutes before any model run.
+`tools/w8_variants.py --exceptions N --exceptions-include REGEX` keeps the N
+highest-energy input columns of each matching matrix (`--exception-select
+error` weights the energy by the column's expected rounding error). Round to
+nearest computes scales and codes with those columns zeroed and keeps their
+original values; GPTQ never quantizes them and processes them last, so they
+absorb every quantized column's error compensation and end at the
+least-squares optimum for the chosen codes under GPTQ's damped Gram (as in
+OWQ and SpQR): their stored values are not the checkpoint's.
+
+Such overlays have the format `falcon-ocr-attempt3-w8g64-v2`
+(`{name}.__w8_exc_cols` I32 `[k]`, `{name}.__w8_exc_vals` F32 `[out, k]`),
+and packed files made from them `falcon-ocr-kernel-v2`; binaries that predate
+exception columns refuse both rather than compute with zeroed columns.
+Overlays and packed files without exception columns keep their v1 formats
+(re-packing gives the published files' tensors); an overlay with a tensor
+that no body matrix uses is refused. An explicit `--w8-artifact` always
+reads the checkpoint, even when a packed fast file sits in the model
+directory. To measure a v2 overlay offline, use `tools/w8_proxy.py
+--overlay`.
+
+Fast mode's defaults are unchanged. Measured on a Ryzen 7 7700X with the
+Grams of `tools/make_gptq_overlay.sh` captured there: over the 22 W2
+matrices GPTQ's mean proxy error falls from 9.96e-4 with no exception
+columns to 8.12e-4, 7.67e-4, 7.14e-4, 6.82e-4 and 6.37e-4 with 1, 2, 4, 8
+and 16, at 68 KB to 1.1 MB more per decode step. With 4 (+271 KB, 0.15%
+of fast mode's weight bytes per token) and the same Grams, fast mode gave
+FP32's 1,295 tokens on the 1418 × 1224 sample page, where the overlay
+without exception columns first differs at token 1,264. On the 7700X anchor
+([The metric](#the-metric)) the overlay without exception columns has 64
+flips and KL 3.04e-4 (the published overlay: 67 and 3.04e-4); with 4 W2
+columns it has 63 flips and KL 1.84e-4, 39% less. Flips do not resolve a
+difference of that size. Decode time per token did not measurably change
+(8.24 against 8.28 ms on the journal page,
+[PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)).
 
 ## Fast mode's held-out result
 
@@ -156,22 +243,141 @@ resolution. With figures masked (the post-hoc check above) the router is
 verdict still needs fresh pages. Details: `research/resolution-router/README.md`,
 `reference/router-english-gate-v1-results.json`.
 
+## Margin cropping
+
+`run --crop-margins` or `--crop-margins=PAD`
+(`GenerationOptions::crop_margins`, off by default) cuts the blank margins of
+each page after the processor's first, aspect-preserving resize, keeping PAD
+pixels (default 24, at that resize's scale) around the content; the second
+resize and the patches then run unchanged on the cut page. Text keeps its size
+in pixels and only the image token count drops, which shortens prefill
+(attention grows with the square of the token count) and every decode step.
+PAD must be below `--max-dimension`, since a larger padding never crops the
+page; with `auto` it must be below 768, so that it can crop a page routed to
+any size.
+
+The content box comes from integer luma statistics
+(`preprocess::margin_crop`): the background is the 90th luma percentile and
+must be at least 160, ink is at least 64 levels darker, and a row or column
+is content when it holds two ink pixels within a run of at least four such
+lines, so dust specks up to 3 pixels across are ignored. A page stays whole
+when:
+
+- it has no content;
+- its background is dark (inverted pages, dark slides);
+- the crop would remove less than 10% of the area;
+- the crop's second resize would do more than round each side to whole
+  patches;
+- the crop would keep as many patches as the whole page (small pages, where
+  rounding takes back what the crop removed).
+
+Dark scan borders, gutter shadows and punch holes count as ink and keep
+their side of the page. Ink is counted per row and per column over the whole
+page, so a mark that runs the length of one edge makes every row (or column)
+content: the crop keeps that side and both adjacent margins whole and cuts
+only the opposite margin. A mark that covers only part of an edge (a punch
+hole, a short border) keeps its side and the rows or columns it covers.
+Marks fainter than the ink threshold (light pencil) or thinner than four
+pixels are cut off when they lie beyond the padding, except that a
+full-length mark two or three pixels thick, though cut off itself, still
+makes every row (or column) content and keeps the margins at its two ends.
+On a 1188 × 1536 page with a text block at x 180–1000, y 200–1350 and the
+default padding, no border gives 4,050 image tokens (7,104 uncropped), an
+18-pixel gutter shadow down the right edge 6,144, a 12-pixel black border
+down the left edge 6,144 and a 12-pixel black band along the top 6,364.
+
+Each result reports its crop (`crop`: `x`, `y`, `width`, `height` and the
+first-resize `first_width` and `first_height`, all in first-resize pixels);
+`width` and `height` stay those of the model input. Routed pages
+(`--max-dimension auto`) are routed on the whole page and crop the resize
+they run at, as does the safety-net rerun. `run --pipeline`, `--batch-size
+N` and the `--escalate` rerun prepare each page the same way, so every path
+reports the same crop. The library refuses the option for tensor traces and
+for teacher scoring (`Runner::score_teacher_file`, which `falcon-ocr-eval
+agree` uses; that binary has no crop flag), since both compare with the
+whole page.
+
+It is opt-in because it changes the model input. TII's layout pipeline feeds
+cropped regions to the model, so crops are in distribution. On synthetic book
+pages (a text block with about 15% side margins) it removes 42–44% of the
+image tokens at 1536 (6,048 → 3,400–3,485), 40% at 1024 and 35% at 768; pages
+whose content fills the page are not cropped. The router's page-time model
+(fast mode with the draft head,
+`research/resolution-router/analyze_agreement.py`) puts 6,048 → 3,485 image
+tokens at about 37% less time for a page with 700 output tokens.
+
+On a real book it held up. On 24 pages of the Internet Archive scan
+`cu31924014450716` (Strunk's *The Elements of Style*, 1920), rendered at
+956 × 1536 by `tools/pdf_to_pages.py`, in near-exact mode on a Ryzen 7 7700X,
+it cropped every page, took 16% of the input tokens (138,624 → 115,991) and
+17–18% of the run's time in each of two rounds (+21% pages per hour). Every
+page kept its words. 10 kept their tokens; 6 differ only in markup (heading
+and emphasis marks, superscript notation, quote style), 4 add or drop one
+period, and 1 joins a word hyphenated across a line ("semicolon"). One page
+gives its two-column word lists as tables where the whole page gave one
+column after the other. The other two changes are corrections, checked
+against the page images: the cropped pages read "come" (a damaged glyph in
+the scan) and the note number "6-7" where the whole pages read "could" and
+"6".
+
+To evaluate it, run a few dozen of your own book pages twice in the same mode,
+with and without `--crop-margins`, and compare per page: identical token ids,
+the character edit distance between the two texts over the uncropped text's
+length (the router's disagreement measure,
+`research/resolution-router/analyze_agreement.py`), the stop reason, CER
+against ground truth where you have it, and `total_ms`. Read the pages that
+changed: a lost page number or marginal note is the failure to look for.
+
 ## Loops and the repetition stop
 
 The stop (`--stop-repetition`, on by default) ends a page once it repeats a
 cycle of at most 128 tokens for at least `max(256, 4 × cycle)` tokens, with
-`finish_reason: "repetition"`; output before the stop is unchanged. On the
-calibration pages it never fired on a page that ends normally and cut decode
-work by about a third; it also ends genuine FP32 loops. Legitimately periodic
-content longer than that (a 256-token page of identical lines) would be cut:
-pass `--stop-repetition=false`.
+`finish_reason: "repetition"`; output before the stop is unchanged
+(`tests/modes.rs`), but the page ends early. On the calibration pages it never
+fired on a page that ends normally and cut decode work by about a third. It
+also ends genuine FP32 loops, even one that FP32 itself ends at EOS after a
+2,232-token hallucination (a held-out page, where the stopped output read
+better: CER 1.90 → 0.83), so there the default output is shorter than FP32's.
+Legitimately periodic content longer than that (a 256-token page of identical
+lines) would be cut: pass `--stop-repetition=false`.
+
+`run --escalate` (fast mode) rereads every page that the stop ended with the
+near-exact model: the near-exact packed file next to `--model-file`, else
+what `--mode near-exact` finds in the model directory (its packed file or the
+checkpoint quantized at load), loaded when a page first needs it. Pages are
+reread one at a time, and in a batch the other rows wait meanwhile. The
+near-exact result replaces the page's record, which keeps the fast attempt as
+`escalated_from` (`mode`, `finish_reason`, `output_tokens`, `total_ms`, like
+the router's `safety_net`; the page's `total_ms` includes it); a routed page
+is reread at the size its fast run ended at. When the near-exact model
+cannot be loaded or the rerun fails, the page keeps its fast result with the
+reason in `escalation_error` and a warning on stderr, and after a failed
+load the run stops trying.
+
+This is remedy 1 of `research/phase4-hillclimb/attempt3/RESULTS-V3.md` §7,
+with near-exact in place of exact mode: the loops that the 8-bit weights
+caused on held-out handwriting were ended by the stop, so rereading those
+pages gives them near-FP32 output, and only looping pages pay near-exact
+cost. Only the repetition stop escalates: fast mode ran to the length limit
+less often than FP32 (7 against 19 of the 200 held-out pages), so rereading
+length stops would pay for the most expensive pages with little to gain.
+Near-exact pages never escalate to exact mode: near-exact matched FP32 on all
+118 English gate pages, so its loops are almost always FP32's own. The
+held-out pages are spent, so the effect there is not measured. On the 64
+v3 calibration pages (published files, Ryzen 7 7700X) the stop ended 9 pages
+in fast mode, and `--escalate` reread all 9: each record carries the tokens
+of a plain near-exact run of its page. Two of them then end at EOS (516 and
+1,858 tokens, where fast mode looped at 335 and 2,139); the other 7 loop in
+near-exact mode as well.
 
 ## Packed model files
 
 `falcon-ocr --mode near-exact|fast pack --output F` writes one safetensors
 file holding every tensor in the layout the kernels read (FP32 embedding,
-head, norms, projector and sinks; body codes and scales; the INT8 head screen
-and its bounds), with the recipe and a tensor digest in its metadata.
+head, norms, projector and sinks; body codes and scales, and any exception
+columns; the INT8 head screen and its bounds), with the recipe and a tensor
+digest in its metadata (format `falcon-ocr-kernel-v1`, or `-v2` with
+exception columns).
 `--model-file F` (or a `falcon-ocr-v1.5-<mode>.safetensors` in `--model`)
 maps it and uses it in place: load 2.2 s → 10 ms, peak resident memory
 2.9 → 1.8 GB, tokens identical to the checkpoint loader (gated by
@@ -181,7 +387,72 @@ maps it and uses it in place: load 2.2 s → 10 ms, peak resident memory
 ## Research profiles
 
 `falcon-ocr-eval --profile` takes any `Weights × Kv` pair: `reference`,
-`split-f32`, `kv-q16`, `kv-q8`, `w16-body-compact`, `w16-body`,
-`w16-body-kv-q16`, `w16-body-kv-q8`, `w8-body`, `w8-body-split-f32`,
-`w8-body-kv-q16`, `w8-body-kv-q8`. Only the three above are modes of the
-CLI.
+`split-f32`, `kv-q16`, `kv-q8`, `kv-q8r`, `kv-q4r`, `w16-body-compact`,
+`w16-body`, `w16-body-kv-q16`, `w16-body-kv-q8`, `w16-body-kv-q8r`,
+`w16-body-kv-q4r`, `w8-body`, `w8-body-split-f32`, `w8-body-kv-q16`,
+`w8-body-kv-q8`, `w8-body-kv-q8r`, `w8-body-kv-q4r`. Only the three above are
+modes of the CLI. Its hidden `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
+(run and doctor only) replaces the KV half of whatever profile the other
+flags resolve to, packed files included: `--mode fast --kv-cache q8r` runs
+`w8-body-kv-q8r`, and the result's `mode` (null), `precision` and `plan` name
+that profile. With `--model-file`, `falcon-ocr-eval --profile` likewise picks
+the cache for the file's weights (it must name them), and its reports record
+the profile that ran and the file. The checkpoint loader's `--w8-artifact`,
+`--keep-fp32` and `--weights-bf16` are refused beside `--model-file`, as is
+`capture-gram`, which needs the FP32 reference profile.
+
+### Rotated KV cache (experimental)
+
+`q8r` and `q4r` store every 32-value block of the cache (the temporal and
+spatial key halves and the two value halves, prefix and generated positions)
+as `H D x` before quantizing it: `H` is the 32 × 32 Sylvester Hadamard matrix
+and `D` a fixed ±1 diagonal per block kind (`src/quant/rotation.rs`). `q8r`
+then uses `q8`'s codes and BF16 scale per 32 values; `q4r` uses 4-bit codes
+(-7..=7) with the same scale. An outlier channel no longer sizes the step of
+the 31 other values of its block. Decode rotates each query instead of the
+cache, `(2^-5 H D q) · (H D k) = q · k`, and un-rotates each head's output
+once, `o = 2^-5 D H o'`, so the records and kernels are `q8`'s: `q8r` streams
+the same 170 bytes per record and adds 32-point transforms, four per head, row
+and layer (two query halves, two output halves), four per group for each
+appended position and five per record when the prefix is sealed; with one
+position chunk (`--tune split-chunks=1`) its output is bitwise the compact
+kernel over the dequantized rotated records with the rotated query, followed
+by the inverse rotation. Coded caches scan four chunks by default, and
+merging their partial softmaxes changes rounding. `q4r` takes 90 bytes per
+record and decodes its codes through the 8-bit loads (bitwise tested on every
+instruction set; there is no vector nibble unpack).
+
+The uses studied: a more faithful fast mode (`w8-body-kv-q8r`), a cheaper
+cache for near-exact (`w16-body-kv-q8r` streams 23% fewer bytes per decode
+step than `w16-body-kv-q16` on the journal page), and a 4-bit cache for fast
+mode (`w8-body-kv-q4r`). With the published files, every rotated profile
+gives the smoke page's reference tokens. Comparisons across caches pin the
+decode exp: under `--exp fast` the 8-bit and rotated caches default to the
+polynomial decode exp and `q16` to the platform one, a switch that alone
+moved fast mode from 92 to 94 flips (above), about the size of the effect
+under study; pass `--tune decode-exp=exact|fast`. On the 7700X anchor
+([The metric](#the-metric)):
+
+| Body weights | Cache | Decode exp | Flips | KL |
+|---|---|---|---:|---:|
+| FP32 | `q8` | polynomial | 22 | 2.94e-5 |
+| FP32 | `q8r` | polynomial | 22 | 2.60e-5 |
+| 16-bit (near-exact's) | `q16` | platform | 1 | 7.1e-8 |
+| 16-bit | `q8r` | platform | 18 | 2.48e-5 |
+| 8-bit GPTQ (fast mode's) | `q8` | polynomial | 67 | 3.04e-4 |
+| 8-bit GPTQ | `q8r` | polynomial | 61 | 2.93e-4 |
+| 8-bit GPTQ | `q4r` | polynomial | 335 | 9.04e-3 |
+
+Rotation lowers the 8-bit cache's KL by 11% with FP32 weights and by 4% in
+fast mode, and its flips stay within noise (22 → 22, 67 → 61), as the static
+study of the pinned weights predicted
+([research/kv-rotation](../research/kv-rotation/README.md)): the cache
+blocks are nearly Gaussian except the temporal key halves of late layers.
+None of the three uses holds up: `q8r` would gain fast mode a few percent of
+KL at no measurable decode cost; on near-exact's weights `q8r` decodes 21%
+faster per token (7% with the draft head), but an 8-bit cache, rotated or
+not, flips 18 times where `q16` flips once; and `q4r`, whose codes decode
+through the 8-bit loads, is 15% slower per token than `q8` and multiplies
+fast mode's flips by 5 and its KL by 30
+([PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns) has the
+timing). The profiles stay for research.

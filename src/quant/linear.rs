@@ -3,10 +3,20 @@
 //! per K group, ties-to-even, FP32 dequant and ascending-K FMA. Neither
 //! activations nor accumulators are integer/BF16; this is not W8A8. 16-bit
 //! codes are effectively lossless against the FP32 weights
-//! (activation-weighted output error about 2.5e-5 relative).
+//! (activation-weighted output error about 2.5e-5 relative). A matrix may
+//! also keep a few input columns unquantized in FP32
+//! ([`QuantLinear::with_exceptions`]).
 
 use anyhow::ensure;
 use rayon::prelude::*;
+
+mod dot;
+#[cfg(test)]
+mod integrated_tests;
+#[cfg(test)]
+mod tests;
+
+use dot::{Dot, DotRows, OutputCell, OutputPtr, balanced_tasks, fill_row, output_ptr, select_dot, select_dot_rows};
 
 /// Row-major weight codes of one matrix (owned, or mapped from a
 /// kernel-ready model file).
@@ -16,7 +26,87 @@ enum Codes {
     I16(crate::buf::Buf<i16>),
 }
 
-/// A quantized linear layer with 8- or 16-bit codes.
+/// Exception columns: input columns whose weights are stored unquantized in
+/// FP32 while the codes there are zero. A weight-only quantized product errs
+/// by about `Σ_j Δw_j x_j`, so an input channel with a huge activation `x_c`
+/// multiplies its column's rounding error by `|x_c|`; an unquantized column
+/// has no rounding error. The values are the overlay's: the checkpoint's
+/// weights after round to nearest, or after GPTQ (which quantizes the other
+/// columns first and moves their error compensation onto these) weights that
+/// differ from the checkpoint's. Every product uses them (see
+/// [`QuantLinear::linear`]).
+#[derive(Debug)]
+struct Exceptions {
+    /// Sorted, unique input columns, each below `in_dim` (I32, as stored).
+    columns: crate::buf::Buf<i32>,
+    /// FP32 weights, row-major `[out_dim][columns.len()]`.
+    values: crate::buf::Buf<f32>,
+    /// The CPU has the FMA instruction, detected when the columns were set
+    /// so that [`Exceptions::accumulate`] does not check per call.
+    #[cfg(target_arch = "x86_64")]
+    fma: bool,
+}
+
+impl Exceptions {
+    /// Columns and values as stored, with the instruction set detected once.
+    fn new(columns: crate::buf::Buf<i32>, values: crate::buf::Buf<f32>) -> Self {
+        Self {
+            columns,
+            values,
+            #[cfg(target_arch = "x86_64")]
+            fma: std::is_x86_feature_detected!("fma"),
+        }
+    }
+
+    /// Output row `row`'s FP32 weights, in column order.
+    fn row(&self, row: usize) -> &[f32] {
+        let k = self.columns.len();
+        &self.values[row * k..(row + 1) * k]
+    }
+
+    /// `acc` plus the products of `x` with output row `row`'s FP32 weights:
+    /// one fused multiply-add per exception column, in ascending column
+    /// order. A fused multiply-add rounds once, so the FMA instruction and
+    /// libm's `fmaf` (used where the CPU has no FMA) give the same bits.
+    #[inline(always)]
+    fn accumulate(&self, x: &[f32], row: usize, acc: f32) -> f32 {
+        #[cfg(target_arch = "x86_64")]
+        if self.fma {
+            // SAFETY: FMA was detected when the columns were set.
+            return unsafe { exception_fmas_fma(x, &self.columns, self.row(row), acc) };
+        }
+        exception_fmas(x, &self.columns, self.row(row), acc)
+    }
+
+    fn bytes(&self) -> usize {
+        (self.columns.len() + self.values.len()) * 4
+    }
+}
+
+/// `acc + Σ_i x[columns[i]] · values[i]`, one `mul_add` per term in order
+/// (see [`Exceptions::accumulate`]).
+#[inline(always)]
+fn exception_fmas(x: &[f32], columns: &[i32], values: &[f32], mut acc: f32) -> f32 {
+    for (&column, &value) in columns.iter().zip(values) {
+        acc = x[column as usize].mul_add(value, acc);
+    }
+    acc
+}
+
+/// [`exception_fmas`] compiled with the FMA instruction (without it, x86-64
+/// `mul_add` calls libm; same bits, slower).
+///
+/// # Safety
+///
+/// The CPU must support FMA.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "fma")]
+unsafe fn exception_fmas_fma(x: &[f32], columns: &[i32], values: &[f32], acc: f32) -> f32 {
+    exception_fmas(x, columns, values, acc)
+}
+
+/// A quantized linear layer with 8- or 16-bit codes and optional exception
+/// columns.
 #[derive(Debug)]
 pub struct QuantLinear {
     out_dim: usize,
@@ -24,6 +114,7 @@ pub struct QuantLinear {
     group_size: usize,
     codes: Codes,
     scales: crate::buf::Buf<f32>,
+    exceptions: Option<Exceptions>,
 }
 
 impl QuantLinear {
@@ -93,6 +184,7 @@ impl QuantLinear {
             group_size,
             codes,
             scales: crate::buf::Buf::Owned(scales),
+            exceptions: None,
         })
     }
 
@@ -116,15 +208,27 @@ impl QuantLinear {
     pub fn scales(&self) -> &[f32] {
         &self.scales
     }
-    /// Tensor payload only, excluding headers/alignment/allocator overhead.
+    /// The exception columns kept unquantized in FP32 (empty without any).
+    pub fn exception_columns(&self) -> &[i32] {
+        self.exceptions.as_ref().map_or(&[], |e| &e.columns)
+    }
+    /// Bytes of the exception columns' indices and FP32 weights (zero
+    /// without any); decode reads them on top of the codes.
+    pub fn exception_bytes(&self) -> usize {
+        self.exceptions.as_ref().map_or(0, Exceptions::bytes)
+    }
+    /// Tensor payload only (codes, scales and exception columns), excluding
+    /// headers/alignment/allocator overhead.
     pub fn payload_bytes(&self) -> usize {
         let codes = match &self.codes {
             Codes::I8(codes) => codes.len(),
             Codes::I16(codes) => 2 * codes.len(),
         };
-        codes + self.scales.len() * size_of::<f32>()
+        codes + self.scales.len() * size_of::<f32>() + self.exception_bytes()
     }
 
+    /// Row `row` of the reconstructed weights: `fl(code * scale)`, and the
+    /// FP32 weight at every exception column.
     pub fn dequantize_row(&self, row: usize, output: &mut [f32]) {
         assert!(row < self.out_dim);
         assert_eq!(output.len(), self.in_dim);
@@ -135,12 +239,25 @@ impl QuantLinear {
             Codes::I8(codes) => fill_row(&codes[span], scales, self.group_size, output),
             Codes::I16(codes) => fill_row(&codes[span], scales, self.group_size, output),
         }
+        if let Some(exceptions) = &self.exceptions {
+            for (&column, &value) in exceptions.columns.iter().zip(exceptions.row(row)) {
+                output[column as usize] = value;
+            }
+        }
     }
 
-    /// `fl(code * scale)` for element `index` (row-major).
+    /// The reconstructed weight at element `index` (row-major), as
+    /// [`QuantLinear::dequantize_row`] writes it.
     fn weight(&self, index: usize) -> f32 {
         let groups = self.in_dim.div_ceil(self.group_size);
         let (row, column) = (index / self.in_dim, index % self.in_dim);
+        if let Some(exceptions) = &self.exceptions
+            && let Some(i) = i32::try_from(column)
+                .ok()
+                .and_then(|c| exceptions.columns.binary_search(&c).ok())
+        {
+            return exceptions.row(row)[i];
+        }
         let code = match &self.codes {
             Codes::I8(codes) => codes[index] as f32,
             Codes::I16(codes) => codes[index] as f32,
@@ -148,6 +265,9 @@ impl QuantLinear {
         code * self.scales[row * groups + column / self.group_size]
     }
 
+    /// Scalar reference: ascending-K FMA over the reconstructed weights
+    /// ([`QuantLinear::dequantize_row`], so exception columns contribute
+    /// their FP32 weights in place).
     pub fn linear_f32(&self, input: &[f32], rows: usize, output: &mut [f32]) -> Result<(), &'static str> {
         if rows.checked_mul(self.in_dim) != Some(input.len()) || rows.checked_mul(self.out_dim) != Some(output.len()) {
             return Err("linear shape overflow or mismatch");
@@ -169,93 +289,6 @@ impl QuantLinear {
             }
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn codes_ties_zero_and_signed_endpoints() {
-        let mut weights = vec![0.; 128];
-        weights[..8].copy_from_slice(&[254., -254., 1., 3., 5., -1., -3., -5.]);
-        let q = QuantLinear::quantize(&weights, 1, 128, 64).unwrap();
-        assert_eq!(q.scales(), &[2., 0.]);
-        assert_eq!(&q.codes()[..8], &[127, -127, 0, 2, 2, 0, -2, -2]);
-        let mut restored = vec![0.; 128];
-        q.dequantize_row(0, &mut restored);
-        assert_eq!(&restored[..8], &[254., -254., 0., 4., 4., 0., -4., -4.]);
-        assert!(restored[8..].iter().all(|&x| x == 0.));
-    }
-
-    #[test]
-    fn odd_rows_partial_groups_and_error_bound() {
-        for k in [1usize, 31, 65, 127, 129, 257] {
-            for g in [64, 128] {
-                let weights: Vec<_> = (0..3 * k).map(|i| ((i * 137 % 127) as f32 - 63.) / 19.).collect();
-                let q = QuantLinear::quantize(&weights, 3, k, g).unwrap();
-                assert_eq!(q.payload_bytes(), 3 * k + 12 * k.div_ceil(g));
-                for row in 0..3 {
-                    let mut restored = vec![0.; k];
-                    q.dequantize_row(row, &mut restored);
-                    for (column, &w) in restored.iter().enumerate() {
-                        let scale = q.scales()[row * k.div_ceil(g) + column / g] as f64;
-                        let original = weights[row * k + column] as f64;
-                        assert!((w as f64 - original).abs() <= scale / 2. + 2. * f32::EPSILON as f64 * original.abs());
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn real_reduction_widths_batches_and_f64_bound() {
-        for k in [768usize, 1024, 2304] {
-            for g in [64, 128] {
-                let weights: Vec<_> = (0..7 * k).map(|i| ((i * 67 % 199) as f32 - 99.) / 31.).collect();
-                let q = QuantLinear::quantize(&weights, 7, k, g).unwrap();
-                for rows in [1, 2, 4, 8] {
-                    let x: Vec<_> = (0..rows * k).map(|i| ((i * 101 % 257) as f32 - 128.) / 37.).collect();
-                    let mut y = vec![0.; rows * 7];
-                    q.linear_f32(&x, rows, &mut y).unwrap();
-                    for channel in 0..7 {
-                        let mut restored = vec![0.; k];
-                        q.dequantize_row(channel, &mut restored);
-                        for row in 0..rows {
-                            let products: Vec<_> = x[row * k..(row + 1) * k]
-                                .iter()
-                                .zip(&restored)
-                                .map(|(&a, &b)| a as f64 * b as f64)
-                                .collect();
-                            let sum: f64 = products.iter().sum();
-                            let absolute_sum: f64 = products.iter().map(|x| x.abs()).sum();
-                            let ku = k as f64 * f32::EPSILON as f64 / 2.;
-                            assert!((y[row * 7 + channel] as f64 - sum).abs() <= ku / (1. - ku) * absolute_sum);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn finite_checks_subnormals_and_overflow() {
-        let tiny = f32::from_bits(1);
-        let q = QuantLinear::quantize(&[tiny, -tiny], 1, 2, 64).unwrap();
-        let mut restored = [0.; 2];
-        q.dequantize_row(0, &mut restored);
-        assert_eq!(restored, [tiny, -tiny]);
-        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-            assert!(QuantLinear::quantize(&[value], 1, 1, 64).is_err());
-        }
-        assert!(QuantLinear::quantize(&[], usize::MAX, 2, 64).is_err());
-        assert!(QuantLinear::quantize(&[], 0, 0, 64).is_err());
-        assert!(QuantLinear::quantize(&[1.], 1, 1, 16).is_err());
-        let q = QuantLinear::quantize(&[2., 2.], 1, 2, 64).unwrap();
-        assert!(q.linear_f32(&[f32::NAN, 1.], 1, &mut [0.]).is_err());
-        assert!(q.linear_f32(&[f32::MAX, f32::MAX], 1, &mut [0.]).is_err());
-        assert!(q.linear_f32(&[], usize::MAX, &mut []).is_err());
     }
 }
 
@@ -306,7 +339,71 @@ impl QuantLinear {
             group_size,
             codes: Codes::I8(crate::buf::Buf::Owned(codes)),
             scales: crate::buf::Buf::Owned(scales),
+            exceptions: None,
         })
+    }
+
+    /// Keep `columns` of this matrix unquantized: `values` holds their FP32
+    /// weights row-major (`[out_dim][columns.len()]`). The columns must be
+    /// sorted, unique, below `in_dim` and at least one, and the codes there
+    /// zero (the quantizer computed codes and scales with them zeroed).
+    pub fn with_exceptions(mut self, columns: Vec<i32>, values: Vec<f32>) -> anyhow::Result<Self> {
+        self.check_exception_columns(&columns)?;
+        ensure!(
+            self.out_dim.checked_mul(columns.len()) == Some(values.len()),
+            "exception values shape"
+        );
+        ensure!(values.iter().all(|v| v.is_finite()), "nonfinite exception value");
+        for &column in &columns {
+            let column = column as usize;
+            let zero = match &self.codes {
+                Codes::I8(codes) => (0..self.out_dim).all(|r| codes[r * self.in_dim + column] == 0),
+                Codes::I16(codes) => (0..self.out_dim).all(|r| codes[r * self.in_dim + column] == 0),
+            };
+            ensure!(zero, "nonzero code in exception column {column}");
+        }
+        self.exceptions = Some(Exceptions::new(
+            crate::buf::Buf::Owned(columns),
+            crate::buf::Buf::Owned(values),
+        ));
+        Ok(self)
+    }
+
+    /// [`QuantLinear::with_exceptions`] from `count` I32 columns and their
+    /// FP32 values in byte ranges of a kernel-ready model file. The columns
+    /// are checked and the values must be finite; the zero codes at the
+    /// columns are trusted like the codes of [`QuantLinear::from_mapped`]
+    /// (checking them would read every page of the codes; the file's tensor
+    /// digest, checked on request, covers them).
+    pub(crate) fn with_mapped_exceptions(
+        mut self,
+        map: &std::sync::Arc<memmap2::Mmap>,
+        columns: std::ops::Range<usize>,
+        values: std::ops::Range<usize>,
+        count: usize,
+    ) -> anyhow::Result<Self> {
+        let columns = crate::buf::Buf::<i32>::mapped(map, columns, count)?;
+        self.check_exception_columns(&columns)?;
+        // `count <= in_dim` now, so the product fits like the codes' size.
+        let values = crate::buf::Buf::<f32>::mapped(map, values, self.out_dim * count)?;
+        ensure!(values.iter().all(|v| v.is_finite()), "nonfinite exception value");
+        self.exceptions = Some(Exceptions::new(columns, values));
+        Ok(self)
+    }
+
+    fn check_exception_columns(&self, columns: &[i32]) -> anyhow::Result<()> {
+        ensure!(self.exceptions.is_none(), "exception columns already set");
+        ensure!(!columns.is_empty(), "empty exception column set");
+        ensure!(
+            columns.windows(2).all(|pair| pair[0] < pair[1]),
+            "exception columns must be sorted and unique"
+        );
+        ensure!(
+            columns[0] >= 0 && (columns[columns.len() - 1] as usize) < self.in_dim,
+            "exception column outside the {} inputs",
+            self.in_dim
+        );
+        Ok(())
     }
 
     /// A matrix whose codes (`bits` = 8 or 16) and FP32 scales are byte
@@ -339,6 +436,7 @@ impl QuantLinear {
             group_size,
             codes,
             scales,
+            exceptions: None,
         })
     }
 
@@ -356,6 +454,12 @@ impl QuantLinear {
         (codes, self.scales.bytes())
     }
 
+    /// Raw exception column (I32) and value (FP32) bytes, for writing
+    /// kernel-ready files; `None` without exception columns.
+    pub(crate) fn raw_exceptions(&self) -> Option<(&[u8], &[u8])> {
+        self.exceptions.as_ref().map(|e| (e.columns.bytes(), e.values.bytes()))
+    }
+
     /// Same reconstructed weights at every phase. Large-M uses one reusable
     /// dense scratch matrix, never the original full-precision weights.
     ///
@@ -367,6 +471,15 @@ impl QuantLinear {
     /// makes large-M (dequantize, then the same GEMM) consistent by
     /// construction. NaN/Inf are not scanned here: they propagate exactly as in
     /// the FP32 graph and are rejected by greedy selection.
+    ///
+    /// Exception columns: 1..=8 rows add one fused multiply-add per exception
+    /// column, in ascending column order, to the kernel's result over the codes
+    /// (which are zero there), with the same scalar code for one row and for
+    /// several, so each row stays bitwise its single-row product. That is
+    /// bitwise `kernels::linear_with_simd` on the dequantized matrix with the
+    /// exception columns zeroed, followed by those FMAs; large-M uses the exact
+    /// weights in place ([`QuantLinear::dequantize_row`]), which differs from
+    /// the decode order by rounding only.
     pub(crate) fn linear(
         &self,
         input: &[f32],
@@ -423,8 +536,8 @@ impl QuantLinear {
 
     /// Fused W13 projection and squared-ReLU gate for 1..=8 rows on the
     /// interleaved `[gate_i, up_i]` layout: `gated[row][i]` uses the same two
-    /// dot products and gate expression as `linear` followed by
-    /// `kernels::squared_relu_gate`, bit for bit.
+    /// dot products (exception columns included) and gate expression as
+    /// `linear` followed by `kernels::squared_relu_gate`, bit for bit.
     pub(crate) fn linear_glu(
         &self,
         input: &[f32],
@@ -500,7 +613,9 @@ impl QuantLinear {
     /// Prefill product through `kernels::panel_gemm` with a folded row scale
     /// (RMS norm) and a fused epilogue (store, gate or residual add). The
     /// caller checks `panel_gemm` first. With `bf16_projections`, 8-bit
-    /// matrices use the BF16 panels where the CPU has AVX512-BF16.
+    /// matrices use the BF16 panels where the CPU has AVX512-BF16, except a
+    /// matrix with exception columns: BF16 panels hold only the codes, so it
+    /// keeps the FP32 panels (its FP32 weights at its exception columns).
     pub(crate) fn prefill(
         &self,
         input: &[f32],
@@ -518,6 +633,7 @@ impl QuantLinear {
             if let Codes::I8(codes) = &self.codes
                 && self.group_size == 64
                 && self.out_dim.is_multiple_of(panel_bf16::NR)
+                && self.exceptions.is_none()
                 && bf16_projections
                 && panel_bf16::available()
             {
@@ -594,19 +710,29 @@ impl QuantLinear {
             (DotRows::None, _) => return false,
             _ => unreachable!("dot kernel selected for another code type"),
         }
+        if let Some(exceptions) = &self.exceptions {
+            // The kernel is bitwise `row_dot`'s per row; so is this pass.
+            for (row, value) in out[..rows].iter_mut().enumerate() {
+                *value = exceptions.accumulate(&input[row * in_dim..(row + 1) * in_dim], channel, *value);
+            }
+        }
         true
     }
 
-    /// `dot` of `x` with output row `channel`.
+    /// `dot` of `x` with output row `channel`, then the exception columns.
     #[inline(always)]
     fn row_dot(&self, dot: Dot, x: &[f32], channel: usize) -> f32 {
         let (in_dim, groups) = (self.in_dim, self.in_dim.div_ceil(self.group_size));
         let scales = &self.scales[channel * groups..(channel + 1) * groups];
         let span = channel * in_dim..(channel + 1) * in_dim;
-        match (dot, &self.codes) {
+        let value = match (dot, &self.codes) {
             (Dot::I8(f), Codes::I8(codes)) => f(x, &codes[span], scales),
             (Dot::I16(f), Codes::I16(codes)) => f(x, &codes[span], scales),
             _ => unreachable!("dot kernel selected for another code type"),
+        };
+        match &self.exceptions {
+            Some(exceptions) => exceptions.accumulate(x, channel, value),
+            None => value,
         }
     }
 
@@ -646,411 +772,5 @@ impl QuantLinear {
                 }
             }
         });
-    }
-}
-
-type DotQ<C> = fn(&[f32], &[C], &[f32]) -> f32;
-/// `out[r] = dot(x[r * stride..], codes, scales)` for `rows <= 8`, bitwise
-/// the single-row [`DotQ`] per row, decoding the weights once.
-type DotRowsQ<C> = fn(&[f32], usize, usize, &[C], &[f32], &mut [f32; 8]);
-
-/// A multi-row dot kernel, where the backend has one.
-#[derive(Clone, Copy)]
-enum DotRows {
-    I8(DotRowsQ<i8>),
-    I16(DotRowsQ<i16>),
-    None,
-}
-
-#[derive(Clone, Copy)]
-enum Dot {
-    I8(DotQ<i8>),
-    I16(DotQ<i16>),
-}
-
-/// `output[k] = fl(codes[k] * scales[k / group])`.
-fn fill_row<C: crate::simd::QCode>(codes: &[C], scales: &[f32], group: usize, output: &mut [f32]) {
-    for (k, (value, &code)) in output.iter_mut().zip(codes).enumerate() {
-        *value = code.to_f32() * scales[k / group];
-    }
-}
-
-/// The dot kernel for code type `C`, `group` and the selected backend.
-fn select_dot<C: crate::simd::QCode>(group: usize, simd: crate::kernels::Simd) -> DotQ<C> {
-    let selected = simd.resolved();
-    #[cfg(target_arch = "x86_64")]
-    if selected != crate::kernels::Simd::Scalar
-        && std::is_x86_feature_detected!("avx2")
-        && std::is_x86_feature_detected!("fma")
-    {
-        return match group {
-            // SAFETY (all): AVX2/FMA detected above.
-            32 => |x, c, s| unsafe { dot_q_avx2::<C, 32>(x, c, s) },
-            64 => |x, c, s| unsafe { dot_q_avx2::<C, 64>(x, c, s) },
-            _ => |x, c, s| unsafe { dot_q_avx2::<C, 128>(x, c, s) },
-        };
-    }
-    #[cfg(target_arch = "aarch64")]
-    if selected == crate::kernels::Simd::Neon {
-        return match group {
-            // SAFETY (all): NEON is baseline on aarch64.
-            32 => |x, c, s| unsafe { crate::simd::dot_q::<crate::simd::Neon, C, 32>(x, c, s) },
-            64 => |x, c, s| unsafe { crate::simd::dot_q::<crate::simd::Neon, C, 64>(x, c, s) },
-            _ => |x, c, s| unsafe { crate::simd::dot_q::<crate::simd::Neon, C, 128>(x, c, s) },
-        };
-    }
-    let _ = selected;
-    match group {
-        32 => dot_q_scalar::<C, 32>,
-        64 => dot_q_scalar::<C, 64>,
-        _ => dot_q_scalar::<C, 128>,
-    }
-}
-
-/// The multi-row dot for code type `C`, `group` and the selected backend
-/// (vector backends only; the scalar path keeps per-row dots).
-fn select_dot_rows<C: crate::simd::QCode>(group: usize, simd: crate::kernels::Simd) -> Option<DotRowsQ<C>> {
-    let selected = simd.resolved();
-    #[cfg(target_arch = "x86_64")]
-    if selected != crate::kernels::Simd::Scalar
-        && std::is_x86_feature_detected!("avx2")
-        && std::is_x86_feature_detected!("fma")
-    {
-        return Some(match group {
-            // SAFETY (all): AVX2/FMA detected above.
-            32 => |x, st, n, c, s, o| unsafe { dot_rows_avx2::<C, 32>(x, st, n, c, s, o) },
-            64 => |x, st, n, c, s, o| unsafe { dot_rows_avx2::<C, 64>(x, st, n, c, s, o) },
-            _ => |x, st, n, c, s, o| unsafe { dot_rows_avx2::<C, 128>(x, st, n, c, s, o) },
-        });
-    }
-    #[cfg(target_arch = "aarch64")]
-    if selected == crate::kernels::Simd::Neon {
-        return Some(match group {
-            // SAFETY (all): NEON is baseline on aarch64.
-            32 => |x, st, n, c, s, o| unsafe { dot_rows::<crate::simd::Neon, C, 32>(x, st, n, c, s, o) },
-            64 => |x, st, n, c, s, o| unsafe { dot_rows::<crate::simd::Neon, C, 64>(x, st, n, c, s, o) },
-            _ => |x, st, n, c, s, o| unsafe { dot_rows::<crate::simd::Neon, C, 128>(x, st, n, c, s, o) },
-        });
-    }
-    let _ = (group, selected);
-    None
-}
-
-/// Rows in groups of up to three (12 accumulators fit AVX2's registers).
-#[inline(always)]
-unsafe fn dot_rows<S: crate::simd::Simd, C: crate::simd::QCode, const G: usize>(
-    x: &[f32],
-    stride: usize,
-    rows: usize,
-    codes: &[C],
-    scales: &[f32],
-    out: &mut [f32; 8],
-) {
-    use crate::simd::dot_q_rows;
-    debug_assert!(rows <= 8);
-    let mut r = 0;
-    unsafe {
-        while r < rows {
-            let x = &x[r * stride..];
-            match rows - r {
-                1 => {
-                    out[r] = dot_q_rows::<S, C, G, 1>(x, stride, codes, scales)[0];
-                    r += 1;
-                }
-                2 => {
-                    out[r..r + 2].copy_from_slice(&dot_q_rows::<S, C, G, 2>(x, stride, codes, scales));
-                    r += 2;
-                }
-                _ => {
-                    out[r..r + 3].copy_from_slice(&dot_q_rows::<S, C, G, 3>(x, stride, codes, scales));
-                    r += 3;
-                }
-            }
-        }
-    }
-}
-
-#[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx2,fma")]
-unsafe fn dot_rows_avx2<C: crate::simd::QCode, const G: usize>(
-    x: &[f32],
-    stride: usize,
-    rows: usize,
-    codes: &[C],
-    scales: &[f32],
-    out: &mut [f32; 8],
-) {
-    unsafe { dot_rows::<crate::simd::Avx2, C, G>(x, stride, rows, codes, scales, out) }
-}
-
-/// About two equal channel blocks per pool thread (multiples of 4 channels):
-/// small decode matrices finish in one or two rounds without idle threads.
-fn balanced_tasks(channels: usize) -> usize {
-    let target = 2 * crate::team::threads();
-    let per = channels.div_ceil(target).next_multiple_of(4).max(4);
-    channels.div_ceil(per)
-}
-
-/// Output base pointer shared by tasks that write disjoint elements.
-#[derive(Clone, Copy)]
-struct OutputPtr(*mut f32);
-// SAFETY: tasks write disjoint (row, channel) elements of one exclusive borrow.
-unsafe impl Send for OutputPtr {}
-unsafe impl Sync for OutputPtr {}
-impl OutputPtr {
-    fn get(self) -> *mut f32 {
-        self.0
-    }
-}
-
-/// Address of an exclusive output buffer for disjoint writes from tasks.
-fn output_ptr(output: &OutputCell) -> *mut f32 {
-    output.0
-}
-/// `Sync` wrapper so the write closure can be shared across tasks.
-struct OutputCell(*mut f32);
-// SAFETY: see OutputPtr.
-unsafe impl Send for OutputCell {}
-unsafe impl Sync for OutputCell {}
-
-/// `kernels::dot_scalar` over `fl(code * scale)` weights, same iterator sum.
-fn dot_q_scalar<C: crate::simd::QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
-    x.iter()
-        .zip(codes)
-        .enumerate()
-        .map(|(k, (value, &code))| value * (code.to_f32() * scales[k / G]))
-        .sum()
-}
-
-/// `kernels::x86::dot_avx2` over `fl(code * scale)` weights: the generic
-/// `simd::dot_q` (same phase accumulators, tree and tails) under AVX2/FMA.
-#[cfg(target_arch = "x86_64")]
-#[target_feature(enable = "avx2,fma")]
-unsafe fn dot_q_avx2<C: crate::simd::QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
-    unsafe { crate::simd::dot_q::<crate::simd::Avx2, C, G>(x, codes, scales) }
-}
-
-#[cfg(test)]
-mod integrated_tests {
-    use super::*;
-    use crate::kernels::Simd;
-    #[test]
-    fn integrated_shapes_and_phase_values() {
-        for k in [31, 64, 65, 768, 1024, 2304] {
-            let n = 9;
-            let w: Vec<_> = (0..n * k).map(|i| ((i * 137 % 193) as f32 - 96.0) / 113.0).collect();
-            let q = QuantLinear::quantize(&w, n, k, 64).unwrap();
-            for rows in [1, 2, 4, 8, 9, 17] {
-                let x: Vec<_> = (0..rows * k).map(|i| ((i * 31 % 151) as f32 - 75.0) / 97.0).collect();
-                let mut dense = vec![0.0; n * k];
-                for r in 0..n {
-                    q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
-                }
-                for backend in [Simd::Scalar, Simd::Auto] {
-                    let mut out = vec![0.0; rows * n];
-                    let mut scratch = Scratch::default();
-                    q.linear(&x, rows, &mut out, &mut scratch, backend).unwrap();
-                    for r in 0..rows {
-                        for c in 0..n {
-                            let mut expected = 0.0_f64;
-                            let mut magnitude = 0.0_f64;
-                            for j in 0..k {
-                                let p = x[r * k + j] as f64 * dense[c * k + j] as f64;
-                                expected += p;
-                                magnitude += p.abs();
-                            }
-                            assert!(
-                                (out[r * n + c] as f64 - expected).abs()
-                                    <= 4.0 * k as f64 * f32::EPSILON as f64 * magnitude + 1e-6
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-    #[test]
-    fn dot_rows_are_bitwise_single_dots() {
-        for (k, group) in [
-            (768, 64),
-            (1024, 64),
-            (2304, 64),
-            (65, 64),
-            (31, 32),
-            (100, 32),
-            (768, 128),
-        ] {
-            let x: Vec<f32> = (0..8 * k).map(|i| ((i * 37 % 101) as f32 - 50.0) / 17.0).collect();
-            for bits in [8, 16] {
-                let w: Vec<f32> = (0..3 * k).map(|i| ((i * 13 % 89) as f32 - 44.0) / 23.0).collect();
-                let q = QuantLinear::quantize_bits(&w, 3, k, group, bits).unwrap();
-                for simd in [crate::kernels::Simd::Auto, crate::kernels::Simd::Scalar] {
-                    let (dot, dot_rows) = (q.dot_fn(simd), q.dot_rows_fn(simd));
-                    for rows in 1..=8 {
-                        for channel in 0..3 {
-                            let mut values = [f32::NAN; 8];
-                            if !q.rows_dot(dot_rows, &x[..rows * k], rows, channel, &mut values) {
-                                continue;
-                            }
-                            for row in 0..rows {
-                                let single = q.row_dot(dot, &x[row * k..(row + 1) * k], channel);
-                                assert_eq!(values[row].to_bits(), single.to_bits(), "k {k} bits {bits} rows {rows}");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn small_m_is_bitwise_fp32_on_dequantized_weights() {
-        // The oracle for every W8 decode result: the FP32 GEMV on fl(code*scale).
-        for (n, k, group) in [
-            (37, 768, 64),
-            (5, 1024, 64),
-            (3, 2304, 64),
-            (4, 65, 64),
-            (2, 31, 64),
-            (37, 768, 32),
-            (3, 2304, 32),
-            (4, 65, 32),
-        ] {
-            let w: Vec<_> = (0..n * k)
-                .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
-                .collect();
-            let q = QuantLinear::quantize(&w, n, k, group).unwrap();
-            let mut dense = vec![0.0; n * k];
-            for r in 0..n {
-                q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
-            }
-            for backend in [Simd::Scalar, Simd::Auto, Simd::Avx2]
-                .into_iter()
-                .filter(|s| s.validate().is_ok())
-            {
-                for rows in 1..=8 {
-                    let x: Vec<_> = (0..rows * k)
-                        .map(|i| ((i * 104729 % 1009) as f32 - 504.0) / 311.0)
-                        .collect();
-                    let mut expected = vec![0.0; rows * n];
-                    crate::kernels::linear_with_simd(&x, rows, k, &dense, n, &mut expected, backend);
-                    let mut out = vec![f32::NAN; rows * n];
-                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend).unwrap();
-                    for (a, b) in out.iter().zip(&expected) {
-                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} g{group} rows{rows}");
-                    }
-                }
-            }
-        }
-    }
-    #[test]
-    fn w16_small_m_is_bitwise_fp32_on_dequantized_weights() {
-        for (n, k) in [(37, 768), (5, 1024), (3, 2304), (4, 65)] {
-            let w: Vec<_> = (0..n * k)
-                .map(|i| ((i * 7919 % 2003) as f32 - 1001.0) / 977.0)
-                .collect();
-            let q = QuantLinear::quantize_bits(&w, n, k, 64, 16).unwrap();
-            assert_eq!(q.bits(), 16);
-            assert_eq!(q.payload_bytes(), 2 * n * k + 4 * n * k.div_ceil(64));
-            let mut dense = vec![0.0; n * k];
-            for r in 0..n {
-                q.dequantize_row(r, &mut dense[r * k..(r + 1) * k]);
-            }
-            // 16-bit codes: every weight within half a step of 1/32767 of its group's absmax.
-            for (a, b) in dense.iter().zip(&w) {
-                assert!((a - b).abs() <= 1.0 / 32767.0 * 1.03 + 1e-7, "{a} vs {b}");
-            }
-            for backend in [Simd::Scalar, Simd::Auto, Simd::Avx2]
-                .into_iter()
-                .filter(|s| s.validate().is_ok())
-            {
-                for rows in 1..=8 {
-                    let x: Vec<_> = (0..rows * k)
-                        .map(|i| ((i * 104729 % 1009) as f32 - 504.0) / 311.0)
-                        .collect();
-                    let mut expected = vec![0.0; rows * n];
-                    crate::kernels::linear_with_simd(&x, rows, k, &dense, n, &mut expected, backend);
-                    let mut out = vec![f32::NAN; rows * n];
-                    q.linear(&x, rows, &mut out, &mut Scratch::default(), backend).unwrap();
-                    for (a, b) in out.iter().zip(&expected) {
-                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} n{n} k{k} rows{rows}");
-                    }
-                }
-            }
-        }
-    }
-    #[test]
-    fn fused_glu_is_bitwise_linear_then_gate() {
-        for (ffn, k) in [(19, 768), (5, 65), (3, 2304)] {
-            let n = 2 * ffn;
-            let w: Vec<_> = (0..n * k).map(|i| ((i * 6007 % 1999) as f32 - 999.0) / 613.0).collect();
-            let q = QuantLinear::quantize(&w, n, k, 64).unwrap();
-            for backend in [Simd::Scalar, Simd::Auto] {
-                for rows in 1..=8 {
-                    let x: Vec<_> = (0..rows * k)
-                        .map(|i| ((i * 7727 % 997) as f32 - 498.0) / 211.0)
-                        .collect();
-                    let mut packed = vec![0.0; rows * n];
-                    q.linear(&x, rows, &mut packed, &mut Scratch::default(), backend)
-                        .unwrap();
-                    let mut expected = vec![0.0; rows * ffn];
-                    crate::kernels::squared_relu_gate(&packed, &mut expected);
-                    let mut fused = vec![f32::NAN; rows * ffn];
-                    assert!(
-                        q.linear_glu(&x, rows, &mut fused, &mut Scratch::default(), backend)
-                            .unwrap()
-                    );
-                    for (a, b) in fused.iter().zip(&expected) {
-                        assert_eq!(a.to_bits(), b.to_bits(), "{backend:?} ffn{ffn} rows{rows}");
-                    }
-                }
-            }
-        }
-    }
-    /// Decode-shaped GEMV throughput, cold in cache (working set > L3).
-    #[test]
-    #[ignore = "timing probe; run in release with --nocapture"]
-    fn decode_gemv_throughput_probe() {
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(16).build().unwrap();
-        for (name, n, k) in [
-            ("wo", 768, 1024),
-            ("qkv", 2048, 768),
-            ("w13", 4608, 768),
-            ("w2", 768, 2304),
-        ] {
-            let copies = (96 << 20) / (n * k) + 1;
-            let mats: Vec<QuantLinear> = (0..copies)
-                .map(|c| {
-                    let w: Vec<f32> = (0..n * k)
-                        .map(|i| (((i + c) * 2654435761usize) % 2001) as f32 / 1000.0 - 1.0)
-                        .collect();
-                    QuantLinear::quantize(&w, n, k, 64).unwrap()
-                })
-                .collect();
-            let x: Vec<f32> = (0..k).map(|i| (i % 13) as f32 / 13.0).collect();
-            let mut out = vec![0.0; n];
-            pool.install(|| {
-                for m in &mats {
-                    m.linear(&x, 1, &mut out, &mut Scratch::default(), Simd::Auto).unwrap();
-                }
-                let rounds = 5;
-                let t = std::time::Instant::now();
-                for _ in 0..rounds {
-                    for m in &mats {
-                        m.linear(&x, 1, &mut out, &mut Scratch::default(), Simd::Auto).unwrap();
-                    }
-                }
-                let calls = (rounds * mats.len()) as f64;
-                let us = t.elapsed().as_secs_f64() * 1e6 / calls;
-                let bytes = (n * k + n * k.div_ceil(64) * 4) as f64;
-                println!("{name}: {us:.1} us/call, {:.1} GB/s", bytes / (us * 1e3));
-            });
-        }
-    }
-    #[test]
-    fn artifact_validation() {
-        assert!(QuantLinear::from_parts(1, 1, 64, vec![-128], vec![1.0]).is_err());
-        assert!(QuantLinear::from_parts(1, 1, 64, vec![1], vec![0.0]).is_err());
-        assert!(QuantLinear::from_parts(1, 1, 64, vec![0], vec![f32::NAN]).is_err());
     }
 }

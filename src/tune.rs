@@ -57,6 +57,22 @@ pub(crate) fn auto_candidates(host: &crate::auto::HostInfo, limit: usize, specul
     (sizes, start)
 }
 
+/// The most threads an automatic decode team takes beside a page pipeline's
+/// prefill in a `threads`-thread runner: half, so that the other half (at
+/// least two threads) can prefill beside it; `None` below three threads,
+/// where the default prefill pool would get fewer than two and the team
+/// keeps every thread.
+pub(crate) fn pipeline_half(threads: usize) -> Option<usize> {
+    (threads >= 3).then_some(threads / 2)
+}
+
+/// The team held in reserve for a page pipeline beside a `threads`-thread
+/// runner whose tuner has the candidates `sizes` ([`Tuner::with_reserve`]):
+/// [`pipeline_half`] when every candidate is larger.
+pub(crate) fn pipeline_reserve(sizes: &[usize], threads: usize) -> Option<usize> {
+    pipeline_half(threads).filter(|&half| sizes.first().is_some_and(|&smallest| smallest > half))
+}
+
 /// What the tuner measured and chose (`Runner::decode_tuning`).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TuneReport {
@@ -104,7 +120,15 @@ impl std::fmt::Display for TuneReport {
 
 pub(crate) struct Tuner {
     sizes: Vec<usize>,
-    samples: Vec<Vec<f64>>,
+    /// The largest team the choice may take ([`Tuner::limit`]).
+    max: usize,
+    /// A size below every candidate, held back until a limit excludes every
+    /// one ([`Tuner::with_reserve`]).
+    reserve: Option<usize>,
+    /// Step times as `(rows, ms)`: continuous batching decodes 1..batch_size
+    /// rows in one step, and a step's cost depends on how many rows ran, so
+    /// candidates are compared at one row count ([`Tuner::comparable`]).
+    samples: Vec<Vec<(usize, f64)>>,
     verify_samples: Vec<Vec<f64>>,
     start: usize,
     steps: usize,
@@ -123,12 +147,33 @@ impl Tuner {
             verify_samples: vec![Vec::new(); sizes.len()],
             report: None,
             reported: false,
+            max: usize::MAX,
+            reserve: None,
             sizes,
             samples,
             start,
             steps: 0,
             chosen: None,
         }
+    }
+
+    /// Hold `size` back for a [`Tuner::limit`] that excludes every candidate,
+    /// when it is at least one and below every candidate
+    /// ([`pipeline_reserve`]).
+    pub(crate) fn with_reserve(mut self, size: Option<usize>) -> Self {
+        self.reserve = size.filter(|size| (1..self.sizes[0]).contains(size));
+        self
+    }
+
+    /// Every team size the tuner can hand out: the candidates and the
+    /// reserve.
+    pub(crate) fn team_sizes(&self) -> Vec<usize> {
+        self.reserve.into_iter().chain(self.sizes.iter().copied()).collect()
+    }
+
+    /// The team size of candidate `index`.
+    pub(crate) fn size(&self, index: usize) -> usize {
+        self.sizes[index]
     }
 
     #[cfg(test)]
@@ -150,30 +195,80 @@ impl Tuner {
         self.chosen.map(|index| self.sizes[index])
     }
 
-    /// Record the duration of a step that ran on `sizes[index]`.
-    pub(crate) fn record(&mut self, index: usize, ms: f64) {
+    /// Record the duration of a step that ran on `sizes[index]` and decoded
+    /// `rows` rows (one outside continuous batching).
+    pub(crate) fn record(&mut self, index: usize, ms: f64, rows: usize) {
         if self.chosen.is_some() {
             return;
         }
         if self.steps >= WARMUP && index == self.current() {
-            self.samples[index].push(ms);
+            self.samples[index].push((rows, ms));
         }
         self.steps += 1;
         if self.samples.iter().all(|s| s.len() >= RUN * ROUNDS) {
-            let index = self.pick();
-            self.chosen = Some(index);
-            self.report = Some(TuneReport {
-                candidates: self.sizes.clone(),
-                median_ms: self.samples.iter().map(|s| median(s)).collect(),
-                verify_median_ms: self
-                    .verify_samples
-                    .iter()
-                    .map(|s| (!s.is_empty()).then(|| median(s)))
-                    .collect(),
-                chosen: self.sizes[index],
-                steps: self.steps,
-            });
+            self.choose();
         }
+    }
+
+    /// Let the choice take at most `max` threads, and return the largest
+    /// size it may still take when that excludes a candidate. When every
+    /// candidate is larger (with speculation the half-core team is not one),
+    /// the reserve ([`Tuner::with_reserve`]) becomes the smallest candidate if
+    /// it is within `max`, and else the smallest candidate stays. Tuning still
+    /// measures every candidate, and the tolerance still compares with the
+    /// fastest of them; a choice above `max` becomes the largest candidate
+    /// within it, also when it was already made (its report is then handed
+    /// out again), except that a choice made before the reserve came in is
+    /// dropped, and tuning goes on until the reserve is measured too.
+    pub(crate) fn limit(&mut self, max: usize) -> Option<usize> {
+        if max >= self.max {
+            return None;
+        }
+        self.max = max;
+        if self.sizes[0] > max
+            && let Some(reserve) = self.reserve.filter(|&size| size <= max)
+        {
+            self.reserve = None;
+            self.sizes.insert(0, reserve);
+            self.samples.insert(0, Vec::new());
+            self.verify_samples.insert(0, Vec::new());
+            self.start += 1;
+            self.chosen = None;
+            self.report = None;
+            self.reported = false;
+        }
+        let allowed = self.allowed();
+        if allowed + 1 == self.sizes.len() {
+            return None;
+        }
+        if self.chosen.is_some_and(|index| index > allowed) {
+            self.choose();
+            self.reported = false;
+        }
+        Some(self.sizes[allowed])
+    }
+
+    /// The index of the largest candidate within the limit, else 0.
+    fn allowed(&self) -> usize {
+        self.sizes.iter().rposition(|&size| size <= self.max).unwrap_or(0)
+    }
+
+    /// Choose from the measured candidates within the limit and build the
+    /// report.
+    fn choose(&mut self) {
+        let index = self.pick().min(self.allowed());
+        self.chosen = Some(index);
+        self.report = Some(TuneReport {
+            candidates: self.sizes.clone(),
+            median_ms: self.comparable().iter().map(|s| median(s)).collect(),
+            verify_median_ms: self
+                .verify_samples
+                .iter()
+                .map(|s| (!s.is_empty()).then(|| median(s)))
+                .collect(),
+            chosen: self.sizes[index],
+            steps: self.steps,
+        });
     }
 
     /// Record the duration of a draft-verification step (several rows) that
@@ -200,8 +295,41 @@ impl Tuner {
         Some(report)
     }
 
+    /// Each candidate's step times at one row count, so the medians compare
+    /// like with like. Continuous batching admits a row as soon as one
+    /// finishes, so the row count moves while the tuner rotates its
+    /// candidates, and the medians would otherwise rank the candidates by how
+    /// many rows happened to be decoding. The count is the one every
+    /// candidate measured, with the most samples (the smallest on a tie);
+    /// with none in common the samples stand as they are, so a run that
+    /// never repeats a row count still chooses.
+    fn comparable(&self) -> Vec<Vec<f64>> {
+        let at = |rows: usize| -> Vec<Vec<f64>> {
+            self.samples
+                .iter()
+                .map(|s| s.iter().filter(|(r, _)| *r == rows).map(|(_, ms)| *ms).collect())
+                .collect()
+        };
+        let mut counts: Vec<usize> = self.samples.iter().flatten().map(|(rows, _)| *rows).collect();
+        counts.sort_unstable();
+        counts.dedup();
+        let shared = counts
+            .into_iter()
+            .map(|rows| (rows, at(rows)))
+            .filter(|(_, per)| !per.iter().any(Vec::is_empty))
+            .max_by_key(|(rows, per)| (per.iter().map(Vec::len).sum::<usize>(), usize::MAX - *rows));
+        match shared {
+            Some((_, per)) => per,
+            None => self
+                .samples
+                .iter()
+                .map(|s| s.iter().map(|(_, ms)| *ms).collect())
+                .collect(),
+        }
+    }
+
     fn pick(&self) -> usize {
-        let medians: Vec<f64> = self.samples.iter().map(|s| median(s)).collect();
+        let medians: Vec<f64> = self.comparable().iter().map(|s| median(s)).collect();
         let best = medians.iter().copied().fold(f64::INFINITY, f64::min);
         medians
             .iter()
@@ -267,7 +395,7 @@ mod tests {
         while tuner.chosen().is_none() {
             let index = tuner.current();
             // 8 threads: 10 ms; 16 threads: 9 ms (within 2%: the smaller wins... no: 10 > 9.18).
-            tuner.record(index, if index == 0 { 10.0 } else { 9.0 });
+            tuner.record(index, if index == 0 { 10.0 } else { 9.0 }, 1);
             // Verification steps are slower and never enter the choice.
             tuner.record_verify(index, 100.0);
             step += 1;
@@ -300,13 +428,150 @@ mod tests {
         };
         for _ in 0..WARMUP {
             assert_eq!(tuner.current(), 2);
-            tuner.record(2, 50.0);
+            tuner.record(2, 50.0, 1);
         }
         while tuner.chosen().is_none() {
             let index = tuner.current();
-            tuner.record(index, cost(tuner.sizes()[index]));
+            tuner.record(index, cost(tuner.sizes()[index]), 1);
         }
         assert_eq!(tuner.chosen(), Some(12));
         assert_eq!(tuner.current(), 1);
+    }
+
+    #[test]
+    fn the_choice_compares_candidates_at_one_row_count() {
+        // Under continuous batching a step's cost rises with the rows that
+        // decode in it, and the row count moves with the rotation rather
+        // than with the team: here every candidate's run starts with one row
+        // and then decodes more, the more the later it rotates. At any one
+        // row count the teams rank 16 < 12 < 8, so 16 is the right choice;
+        // over all the samples together 8 looks fastest, which is the row
+        // counts deciding and not the teams.
+        let ms = |size: usize, rows: usize| {
+            let team = match size {
+                8 => 11.0,
+                12 => 10.0,
+                _ => 9.0,
+            };
+            team + 5.0 * rows as f64
+        };
+        let mut tuner = Tuner::new(vec![8, 12, 16], 0);
+        for _ in 0..WARMUP {
+            tuner.record(0, 50.0, 1);
+        }
+        let (mut step, mut running) = (0, usize::MAX);
+        while tuner.chosen().is_none() {
+            let index = tuner.current();
+            if index != running {
+                (step, running) = (0, index);
+            }
+            let rows = if step == 0 { 1 } else { 1 + index };
+            step += 1;
+            tuner.record(index, ms(tuner.sizes()[index], rows), rows);
+        }
+        assert_eq!(tuner.chosen(), Some(16));
+        // The report's medians are the ones that were compared: one row
+        // count, so they rank the teams.
+        let report = tuner.report().unwrap();
+        assert_eq!(report.median_ms, vec![16.0, 15.0, 14.0]);
+    }
+
+    /// Tune `tuner` to its choice with `cost` per team size, and return
+    /// the sizes it measured.
+    fn tune(tuner: &mut Tuner, cost: impl Fn(usize) -> f64) -> Vec<usize> {
+        let mut measured = Vec::new();
+        while tuner.chosen().is_none() {
+            let size = tuner.sizes()[tuner.current()];
+            measured.push(size);
+            tuner.record(tuner.current(), cost(size), 1);
+        }
+        measured.sort_unstable();
+        measured.dedup();
+        measured
+    }
+
+    #[test]
+    fn a_limit_caps_the_choice_but_not_the_measurement() {
+        // 12 threads are the fastest, 8 and 6 more than 2% slower.
+        let cost = |size: usize| match size {
+            6 => 9.4,
+            8 => 9.3,
+            _ => 9.0,
+        };
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        assert_eq!(tuner.limit(8), Some(8));
+        assert_eq!((tuner.limit(8), tuner.limit(16), tuner.limit(12)), (None, None, None));
+        assert_eq!(tune(&mut tuner, cost), vec![6, 8, 12]);
+        // Not 6 threads, which are within 2% of 8 but not of 12.
+        assert_eq!(tuner.chosen(), Some(8));
+        let report = tuner.report().unwrap();
+        assert_eq!((report.candidates.clone(), report.chosen), (vec![6, 8, 12], 8));
+        // A choice within the limit stands.
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        tuner.limit(8);
+        tune(&mut tuner, |size| if size == 6 { 9.0 } else { cost(size) });
+        assert_eq!(tuner.chosen(), Some(6));
+        // A limit that excludes nothing changes nothing.
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        assert_eq!(tuner.limit(12), None);
+        tune(&mut tuner, cost);
+        assert_eq!(tuner.chosen(), Some(12));
+    }
+
+    #[test]
+    fn a_limit_after_the_choice_takes_the_largest_candidate_within_it() {
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1);
+        tune(&mut tuner, |size| match size {
+            6 => 9.4,
+            8 => 9.3,
+            _ => 9.0,
+        });
+        assert_eq!(tuner.chosen(), Some(12));
+        assert!(tuner.take_report().is_some());
+        assert_eq!(tuner.limit(8), Some(8));
+        assert_eq!((tuner.chosen(), tuner.current()), (Some(8), 1));
+        assert_eq!(tuner.take_report().map(|report| report.chosen), Some(8));
+        // Below every candidate, without a reserve, the smallest stays.
+        assert_eq!(tuner.limit(4), Some(6));
+        assert_eq!(tuner.chosen(), Some(6));
+    }
+
+    #[test]
+    fn a_limit_below_every_candidate_takes_the_reserve() {
+        // With speculation an 8-core host has no 4-thread candidate; the
+        // pipeline's half of its 8 threads is the reserve, which a limit to
+        // 4 makes a candidate, measured like the others.
+        assert_eq!(pipeline_reserve(&[6, 8], 8), Some(4));
+        let mut tuner = Tuner::new(vec![6, 8], 1).with_reserve(Some(4));
+        assert_eq!(tuner.team_sizes(), [4, 6, 8]);
+        assert_eq!(tuner.sizes(), [6, 8], "held back until a limit needs it");
+        assert_eq!(tuner.limit(4), Some(4));
+        assert_eq!((tuner.sizes(), tuner.current()), (&[4, 6, 8][..], 2));
+        assert_eq!(tune(&mut tuner, |size| size as f64), vec![4, 6, 8]);
+        assert_eq!(tuner.chosen(), Some(4));
+        // A reserve above the limit, or a limit some candidate fits, leaves
+        // it out.
+        let mut tuner = Tuner::new(vec![6, 8], 1).with_reserve(Some(4));
+        assert_eq!(tuner.limit(3), Some(6));
+        assert_eq!(tuner.sizes(), [6, 8]);
+        assert_eq!(pipeline_reserve(&[4, 6, 8], 8), None);
+        let tuner = Tuner::new(vec![4, 6, 8], 2).with_reserve(Some(4));
+        assert_eq!(tuner.team_sizes(), [4, 6, 8]);
+        // After the choice: the choice is dropped until the reserve is
+        // measured too.
+        let mut tuner = Tuner::new(vec![6, 8, 12], 1).with_reserve(Some(4));
+        tune(&mut tuner, |size| size as f64);
+        assert!(tuner.take_report().is_some());
+        assert_eq!(tuner.limit(4), Some(4));
+        assert_eq!((tuner.chosen(), tuner.report()), (None, None));
+        assert_eq!(tune(&mut tuner, |size| size as f64), vec![4, 6, 8, 12]);
+        let report = tuner.take_report().unwrap();
+        assert!(report.median_ms.iter().all(|ms| ms.is_finite()), "{report:?}");
+        assert_eq!((report.candidates, report.chosen), (vec![4, 6, 8, 12], 4));
+        // No reserve that leaves the prefill fewer than two threads: on two
+        // threads the default pool cannot overlap, and the team keeps both.
+        assert_eq!(pipeline_reserve(&[2], 2), None);
+        assert_eq!(pipeline_reserve(&[2, 3], 3), Some(1));
+        assert_eq!(Tuner::new(vec![1], 0).with_reserve(Some(0)).team_sizes(), [1]);
     }
 }

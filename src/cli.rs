@@ -43,7 +43,9 @@ pub struct RunnerArgs {
     /// memory-bound, so past bandwidth saturation extra threads and SMT
     /// siblings only contend; `auto` times a few team sizes on the first
     /// decode steps and keeps the smallest within 2% of the fastest (tokens
-    /// never depend on it). Prefill uses every thread in --threads.
+    /// never depend on it). Prefill uses every thread in --threads, except
+    /// that `run --pipeline` prefills the next page on a second pool
+    /// (--prefill-threads, by default the threads the team leaves).
     #[arg(long, global = true)]
     pub decode_threads: Option<DecodeThreads>,
     /// Speculative decoding: verify up to N tokens drafted from earlier output
@@ -80,8 +82,10 @@ pub struct RunnerArgs {
     /// default) or `exact` (the platform expf, which traces use).
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
-    /// Experiment knobs as `key=value` (`prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`); repeatable.
+    /// Experiment knobs as `key=value`, repeatable: `prefill-bf16=off|attention|all`,
+    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`, `draft-backoff=N`,
+    /// `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path` and
+    /// `decode-exp=exact|fast` (docs/DEVELOPMENT.md).
     #[arg(long = "tune", value_name = "KEY=VALUE", hide = true, global = true)]
     pub tune: Vec<String>,
 }
@@ -195,5 +199,36 @@ mod tests {
             .apply(RunnerConfig::reference())
             .unwrap();
         assert!(bare.repetition_stop && bare.document_drafts && bare.speculation.is_none());
+    }
+
+    /// The `--tune` help names every knob the parser accepts (the parser's
+    /// own list, from its unknown-knob error), each with a value it takes.
+    #[test]
+    fn the_tune_help_lists_every_knob() {
+        use clap::CommandFactory;
+        let command = Test::command();
+        let tune = command.get_arguments().find(|arg| arg.get_id() == "tune").unwrap();
+        let help = tune.get_help().unwrap().to_string();
+        let error = Tuning::default().set("unknown=1").unwrap_err().to_string();
+        let keys = error.split_once('(').unwrap().1.trim_end_matches(')');
+        for key in keys.split(", ") {
+            let start = help
+                .find(&format!("`{key}="))
+                .unwrap_or_else(|| panic!("--tune help misses {key}: {help}"));
+            let example = &help[start + 1..];
+            let example = &example[..example.find('`').unwrap()];
+            // The first listed value, with N as a number.
+            let value = example
+                .split_once('=')
+                .unwrap()
+                .1
+                .split(['|', '.'])
+                .next()
+                .unwrap()
+                .replace('N', "2");
+            Tuning::default()
+                .set(&format!("{key}={value}"))
+                .unwrap_or_else(|error| panic!("{key}={value}: {error}"));
+        }
     }
 }

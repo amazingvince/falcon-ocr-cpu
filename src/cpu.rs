@@ -67,28 +67,7 @@ fn detect() -> Option<usize> {
 
 #[cfg(target_os = "macos")]
 fn detect() -> Option<usize> {
-    unsafe extern "C" {
-        fn sysctlbyname(
-            name: *const std::ffi::c_char,
-            old: *mut std::ffi::c_void,
-            old_len: *mut usize,
-            new: *mut std::ffi::c_void,
-            new_len: usize,
-        ) -> i32;
-    }
-    let mut value: i32 = 0;
-    let mut size = std::mem::size_of::<i32>();
-    // SAFETY: the name is NUL-terminated and `value` has `size` bytes.
-    let status = unsafe {
-        sysctlbyname(
-            c"hw.physicalcpu".as_ptr(),
-            (&mut value as *mut i32).cast(),
-            &mut size,
-            std::ptr::null_mut(),
-            0,
-        )
-    };
-    (status == 0 && value > 0).then_some(value as usize)
+    sysctl_i32(c"hw.physicalcpu")
 }
 
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]

@@ -13,7 +13,7 @@
 //! resampling, and the same few float64 operations in the same order. The
 //! trees (trees.json) come from train_trees.py.
 
-use crate::preprocess::{Filter, resize_gray};
+use crate::preprocess::{Filter, luma, resize_gray};
 use anyhow::{Context, Result, ensure};
 use image::RgbImage;
 use serde::Deserialize;
@@ -65,11 +65,9 @@ const EDGE: i32 = 40;
 
 pub type Statistics = [f64; FEATURES.len()];
 
-/// Pillow's `convert("L")`: ITU-R 601-2 luma in 16-bit fixed point.
+/// Pillow's `convert("L")` of the page.
 fn gray(page: &RgbImage) -> Vec<u8> {
-    page.pixels()
-        .map(|p| ((p[0] as u32 * 19595 + p[1] as u32 * 38470 + p[2] as u32 * 7471 + 0x8000) >> 16) as u8)
-        .collect()
+    page.as_raw().chunks_exact(3).map(luma).collect()
 }
 
 fn median(sorted: &[u64]) -> f64 {
@@ -575,6 +573,25 @@ mod tests {
             .map(|c| c["route"].as_u64().unwrap())
             .collect();
         assert!(routes.len() >= 2, "{routes:?}");
+    }
+
+    #[test]
+    fn a_route_does_not_depend_on_the_pool() {
+        // The page reader of a pipelined run routes on a one-thread pool of
+        // its own, other runs on the runner's pool.
+        let page = synthetic(1100, 1536, 1);
+        let on = |threads: usize| {
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+            pool.install(|| (statistics(&page), route(&page)))
+        };
+        let (want_statistics, want) = on(1);
+        for threads in [2, 3, 7] {
+            let (statistics, mut got) = on(threads);
+            let bits = |x: &Statistics| x.map(f64::to_bits);
+            assert_eq!(bits(&statistics), bits(&want_statistics), "{threads} threads");
+            got.statistics_ms = want.statistics_ms;
+            assert_eq!(got, want, "{threads} threads");
+        }
     }
 
     #[test]

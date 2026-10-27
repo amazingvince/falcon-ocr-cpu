@@ -32,6 +32,7 @@ fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
         max_new_tokens: metadata["max_new_tokens"].as_u64().unwrap() as usize,
         fit_budget: false,
         route: false,
+        crop_margins: None,
     };
     let result = runner
         .recognize_file(reference.join("canonical-rgb.png"), &options)

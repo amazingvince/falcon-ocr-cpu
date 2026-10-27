@@ -81,7 +81,7 @@ impl Drop for PhaseClock {
         }
         self.mark(PHASES - 1);
         if self.rows >= PARALLEL_ROWS {
-            eprintln!("prefill phases rows={}: {}", self.rows, format_phases(&self.totals, 1));
+            crate::note!("prefill phases rows={}: {}", self.rows, format_phases(&self.totals, 1));
         } else {
             DECODE_PHASES.with(|cell| {
                 let mut state = cell.borrow_mut();
@@ -121,7 +121,7 @@ pub(crate) fn report_decode_phases(enabled: bool) {
             } else {
                 format!(" ({rows} rows)")
             };
-            eprintln!(
+            crate::note!(
                 "decode phases per step{label} over {steps} steps: {}",
                 format_phases(totals, *steps)
             );

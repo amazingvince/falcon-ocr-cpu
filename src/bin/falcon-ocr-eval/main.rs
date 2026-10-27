@@ -21,13 +21,17 @@ use std::{
 #[derive(Parser)]
 #[command(about = "Falcon-OCR v1.5 integrated CPU experiment (UNQUALIFIED)")]
 struct Cli {
+    /// Model directory: the FP32 checkpoint, its tokenizer and the GPTQ
+    /// overlay.
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
-    /// Kernel-ready model file (`falcon-ocr pack`); overrides --profile's weights.
+    /// Kernel-ready model file (`falcon-ocr pack`): its weights, with
+    /// --profile's KV cache when one is given (it must name the file's weights).
     #[arg(long, global = true)]
     model_file: Option<PathBuf>,
-    #[arg(long, value_enum, default_value = "reference", global = true)]
-    profile: Profile,
+    /// Weights x KV profile [default: reference, or the --model-file's own].
+    #[arg(long, value_enum, global = true)]
+    profile: Option<Profile>,
     /// Custom W8G64 safetensors overlay, made by tools/convert_w8.py.
     #[arg(long, global = true)]
     w8_artifact: Option<PathBuf>,
@@ -322,12 +326,14 @@ impl falcon_ocr::trace::Trace for Agreement {
     }
 }
 
-/// Page directory name of an input image path (the corpus page ID).
+/// Page directory name of an input image path (the corpus page ID), read
+/// with `/` or `\` separators, so a report written on Windows matches on any
+/// host.
 fn page_id(path: &Path) -> String {
-    path.parent()
-        .and_then(|p| p.file_name())
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default()
+    let path = path.to_string_lossy();
+    let mut parts = path.rsplit(['/', '\\']);
+    parts.next();
+    parts.next().unwrap_or_default().to_owned()
 }
 fn digest(path: &Path) -> Result<String> {
     let mut file = std::fs::File::open(path)?;
@@ -341,6 +347,26 @@ fn digest(path: &Path) -> Result<String> {
         h.update(&buf[..n]);
     }
     Ok(format!("{:x}", h.finalize()))
+}
+/// The profile a run uses: `requested` (default `reference`) or, with a
+/// kernel-ready `model_file`, the file's weights with `requested`'s KV cache
+/// (a requested profile must name the file's weights).
+fn run_profile(model_file: Option<&Path>, requested: Option<Profile>) -> Result<Profile> {
+    let Some(path) = model_file else {
+        return Ok(requested.unwrap_or(Profile::REFERENCE));
+    };
+    let recorded = Model::packed_profile(path)?;
+    let Some(profile) = requested else {
+        return Ok(recorded);
+    };
+    ensure!(
+        profile.weights == recorded.weights,
+        "{} holds {} weights, not those of --profile {}",
+        path.display(),
+        recorded.label(),
+        profile.label()
+    );
+    Ok(profile)
 }
 fn write_new(path: &Path, value: &serde_json::Value) -> Result<()> {
     if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
@@ -387,16 +413,24 @@ fn main() -> Result<()> {
     let config = args.runner.apply(RunnerConfig::reference())?;
     ensure!((1..=8).contains(&config.batch_size), "batch_size must be 1..=8");
     ensure!(config.threads > 0, "supply an explicit positive thread budget");
+    // A kernel-ready file carries its own weights; the loader options of the
+    // checkpoint would be ignored while the reports record them.
+    ensure!(
+        args.model_file.is_none() || (args.w8_artifact.is_none() && args.keep_fp32.is_empty() && !args.weights_bf16),
+        "--w8-artifact, --keep-fp32 and --weights-bf16 apply to the checkpoint loader, not to --model-file"
+    );
     if matches!(args.command, Command::Doctor) {
-        // The same report as `falcon-ocr doctor`, for this profile.
+        // The same report as `falcon-ocr doctor`, for this profile (a model
+        // file's weights with --profile's KV cache).
         return print_doctor(
             &falcon_ocr::auto::ModelRequest {
                 model_dir: &args.model,
                 model_file: args.model_file.as_deref(),
-                profile: Some(args.profile),
+                profile: args.profile.or(args.model_file.is_none().then_some(Profile::REFERENCE)),
                 w8_artifact: args.w8_artifact.as_deref(),
                 allow_rtn: true,
                 allow_research: true,
+                kv_cache: args.profile.map(|p| p.kv),
                 ..Default::default()
             },
             &config,
@@ -405,6 +439,7 @@ fn main() -> Result<()> {
             false,
         );
     }
+    let profile = run_profile(args.model_file.as_deref(), args.profile)?;
     // Fail invalid output/options before model allocation and any recognition.
     match &args.command {
         Command::Bench {
@@ -432,7 +467,7 @@ fn main() -> Result<()> {
         Command::CaptureGram { images, output, .. } => {
             ensure!(!output.exists(), "output directory already exists");
             ensure!(
-                args.profile == Profile::REFERENCE,
+                profile == Profile::REFERENCE,
                 "capture the Gram with the FP32 reference profile"
             );
             for p in images {
@@ -462,10 +497,10 @@ fn main() -> Result<()> {
     }
     let started = Instant::now();
     let model = Arc::new(match &args.model_file {
-        Some(path) => Model::load_packed(path, false)?,
+        Some(path) => Model::load_packed(path, false)?.with_kv_cache(profile.kv),
         None => Model::load_profile_bf16(
             &args.model,
-            args.profile,
+            profile,
             args.w8_artifact.as_deref(),
             &args.keep_fp32,
             args.weights_bf16,
@@ -474,9 +509,11 @@ fn main() -> Result<()> {
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.memory_report();
     let runner = Runner::new(model.clone(), &args.model, config.clone())?;
+    // Reports name the profile that runs (a model file's, with --profile's KV).
+    let profile = model.profile();
     eprintln!(
         "profile={} load/import={:.1}ms; experimental quality is NOT qualified",
-        args.profile.label(),
+        profile.label(),
         load_ms
     );
     match args.command {
@@ -511,8 +548,8 @@ fn main() -> Result<()> {
                 records
                     .push(serde_json::json!({"index":index,"wall_ms":wall_ms,"outputs":outputs,"telemetry":telemetry}));
             }
-            let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-report-v1","profile":args.profile,
-                "quality_qualified":false,"model_revision":falcon_ocr::config::MODEL_REVISION,
+            let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-report-v1","profile":profile,
+                "model_file":args.model_file,"quality_qualified":false,"model_revision":falcon_ocr::config::MODEL_REVISION,
                 "weights_sha256":model.weights_sha256(),"binary_sha256":digest(&std::env::current_exe()?)?,
                 "hardware":hardware,"threads":config.threads,"backend":config.backend,"batch_size":config.batch_size,
                 "head":config.head,"screened_head_bytes":model.screened_head_bytes(),
@@ -527,7 +564,7 @@ fn main() -> Result<()> {
             write_new(&report, &report_value).with_context(|| format!("write {}", report.display()))?;
             println!(
                 "{}",
-                serde_json::json!({"report":report,"profile":args.profile,"samples":samples})
+                serde_json::json!({"report":report,"profile":profile,"samples":samples})
             );
         }
         Command::Trace {
@@ -543,7 +580,8 @@ fn main() -> Result<()> {
             trace.save(&output)?;
             write_new(
                 &output.with_extension("json"),
-                &serde_json::json!({"profile":args.profile,"quality_qualified":false,"output":result,"memory_policy":memory}),
+                &serde_json::json!({"profile":profile,"model_file":args.model_file,"quality_qualified":false,
+                    "output":result,"memory_policy":memory}),
             )?;
         }
         Command::CaptureGram {
@@ -560,6 +598,7 @@ fn main() -> Result<()> {
                 min_dimension: 64,
                 fit_budget: false,
                 route: false,
+                crop_margins: None,
             };
             for image in &images {
                 let t = Instant::now();
@@ -628,6 +667,7 @@ fn main() -> Result<()> {
                     min_dimension,
                     fit_budget: false,
                     route: false,
+                    crop_margins: None,
                 };
                 let mut agreement = Agreement {
                     dump: dump_topk.as_ref().map(|_| Vec::new()),
@@ -679,13 +719,13 @@ fn main() -> Result<()> {
             if let Some(path) = &dump_topk {
                 write_new(
                     path,
-                    &serde_json::json!({"k":TOP_K,"profile":args.profile,
+                    &serde_json::json!({"k":TOP_K,"profile":profile,"model_file":args.model_file,
                     "max_steps":max_steps,"pages":dumped}),
                 )
                 .with_context(|| format!("write {}", path.display()))?;
             }
-            let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":args.profile,
-                "reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
+            let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":profile,
+                "model_file":args.model_file,"reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
                 "exp_mode":format!("{:?}", config.exp),
                 "binary_sha256":digest(&std::env::current_exe()?)?,"threads":config.threads,"backend":config.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
@@ -695,11 +735,72 @@ fn main() -> Result<()> {
             write_new(&report, &report_value).with_context(|| format!("write {}", report.display()))?;
             println!(
                 "{}",
-                serde_json::json!({"report":report,"profile":args.profile,"steps":total_steps,
+                serde_json::json!({"report":report,"profile":profile,"steps":total_steps,
                     "flips":total_flips,"flips_per_1000":per_thousand,"kl_mean":kl_mean})
             );
         }
         Command::Doctor | Command::Route { .. } => unreachable!(),
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn page_ids_read_either_separator() {
+        for path in [
+            "artifacts/corpus/v3/4a756837/canonical-rgb.png",
+            r"artifacts\corpus\v3\4a756837\canonical-rgb.png",
+        ] {
+            assert_eq!(page_id(Path::new(path)), "4a756837");
+        }
+        assert_eq!(page_id(Path::new("canonical-rgb.png")), "");
+    }
+
+    /// A kernel-ready file header naming `profile` (no tensor is read).
+    fn packed_file(dir: &Path, profile: Profile) -> PathBuf {
+        let path = dir.join(format!("{}.safetensors", profile.label()));
+        let data = [0_u8; 4];
+        let view = safetensors::tensor::TensorView::new(safetensors::Dtype::F32, vec![1], &data).unwrap();
+        let metadata = std::collections::HashMap::from([
+            ("format".to_owned(), falcon_ocr::model::PACKED_FORMAT.to_owned()),
+            ("profile".to_owned(), profile.label().to_owned()),
+        ]);
+        safetensors::serialize_to_file(vec![("t", view)], Some(metadata), &path).unwrap();
+        path
+    }
+
+    #[test]
+    fn a_model_file_runs_its_weights_with_the_requested_kv_cache() {
+        let dir = tempfile::tempdir().unwrap();
+        let fast = packed_file(dir.path(), Profile::W8_BODY_KV_Q8);
+        assert_eq!(run_profile(None, None).unwrap(), Profile::REFERENCE);
+        assert_eq!(run_profile(None, Some(Profile::KV_Q8)).unwrap(), Profile::KV_Q8);
+        assert_eq!(run_profile(None, Some(Profile::KV_Q8R)).unwrap(), Profile::KV_Q8R);
+        assert_eq!(run_profile(Some(&fast), None).unwrap(), Profile::W8_BODY_KV_Q8);
+        assert_eq!(
+            run_profile(Some(&fast), Some(Profile::W8_BODY_KV_Q16)).unwrap(),
+            Profile::W8_BODY_KV_Q16
+        );
+        assert_eq!(
+            run_profile(Some(&fast), Some(Profile::W8_BODY_KV_Q8R)).unwrap(),
+            Profile::W8_BODY_KV_Q8R
+        );
+        let error = run_profile(Some(&fast), Some(Profile::W16_BODY_KV_Q8))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("w8-body-kv-q8 weights, not those of --profile w16-body-kv-q8"),
+            "{error}"
+        );
+        let error = run_profile(Some(&fast), Some(Profile::W16_BODY_KV_Q8R))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("w8-body-kv-q8 weights, not those of --profile w16-body-kv-q8r"),
+            "{error}"
+        );
+    }
 }
