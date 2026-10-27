@@ -138,7 +138,10 @@ or the build's image decoder; a record without `options` counts as one that
 ran otherwise. Automatic chunking matches an explicit mode default, and
 compact caches ignore the split-cache knob. An escalated record compares its
 near-exact rerun's kernel settings, allowing the expected switch from
-fast-mode BF16 prefill to FP32. With `--escalate`, a warning counts the
+fast-mode BF16 prefill to FP32, and the weights of the fast attempt it
+replaced, which `escalated_from` records; an escalated record written before
+those were recorded has none to compare and matches any weights. With
+`--escalate`, a warning counts the
 fast-mode records that the repetition stop ended without a near-exact rerun,
 since their pages are skipped.
 
