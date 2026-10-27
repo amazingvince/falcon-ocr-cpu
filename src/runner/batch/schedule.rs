@@ -117,6 +117,15 @@ pub(crate) fn drive<E: Engine>(
         active.clear();
         active.extend_from_slice(scheduler.active());
         if active.is_empty() {
+            // Waiting for the reader to prepare the next page. A failure
+            // waiting behind an earlier page cannot bring us here: pages are
+            // admitted in input order, so the page it waits for was admitted
+            // and has not been emitted, and is therefore active. Were it to
+            // happen, this loop would spin instead of delivering the error.
+            debug_assert!(
+                !emit.has_pending_error(),
+                "a failure waits behind a page that is not decoding"
+            );
             continue;
         }
         finished.clear();

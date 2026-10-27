@@ -402,7 +402,11 @@ fn a_resumed_run_repairs_the_output_and_runs_only_the_missing_pages() {
     assert_eq!(records(&written).len(), 1);
     // A crash cut the next record short; the resumed run removes it, skips
     // the first page and runs the second, as the input's second page.
-    fs::write(&output, format!("{written}{{\"path\":\"{second}\",\"te")).unwrap();
+    // The path goes through serde_json: on Windows it holds backslashes, which are
+    // not valid JSON escapes written raw, and the cut record has to be a record cut
+    // short rather than a syntax error.
+    let path = serde_json::to_string(second).unwrap();
+    fs::write(&output, format!("{written}{{\"path\":{path},\"te")).unwrap();
     let stderr = run(&[first, second]);
     assert!(stderr.contains("removed a last record cut short"), "{stderr}");
     assert!(stderr.contains("pages: 1 done, 0 failed, 1 skipped"), "{stderr}");
