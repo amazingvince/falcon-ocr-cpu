@@ -508,7 +508,7 @@ pub enum Drafter {
 }
 
 /// Everything a [`crate::Runner`] decides about; `Default` is the automatic
-/// configuration and [`RunnerConfig::reference`] the bit-exact one.
+/// configuration and [`RunnerConfig::reference`] the CPU trace configuration.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RunnerConfig {
@@ -575,7 +575,7 @@ impl Default for RunnerConfig {
     }
 }
 impl RunnerConfig {
-    /// The bit-exact reference configuration used by traces and the numerical
+    /// The reference configuration used by CPU traces and the numerical
     /// gates: platform-exact exp, full head, no speculation or repetition
     /// stop, one decode team the size of a 16-thread pool.
     pub fn reference() -> Self {

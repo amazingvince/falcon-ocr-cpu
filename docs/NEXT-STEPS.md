@@ -78,9 +78,9 @@ continue only if its KL beats BF16 projections.
 ### Dead FFN channel pruning
 
 In the pinned checkpoint, 6,108 of the 50,688 FFN channels (12.1%; none in
-layer 0, 18–19% in layers 16–18) have a W2 column norm below 1/1000 of
+layer 0, 18-19% in layers 16-18) have a W2 column norm below 1/1000 of
 their layer's median. For these channels, per-layer median gate and up row
-norms (interleaved in `w13`) are about 440–511 and 978–2,918 times below
+norms (interleaved in `w13`) are about 440-511 and 978-2,918 times below
 their layer's medians. A dead channel's output is estimated at about 1e-12
 of a typical one's.
 
@@ -89,7 +89,7 @@ Source: column and row L2 norms of the pinned checkpoint,
 
 Pruning projects a saving of 12% of the FFN's bytes and FLOPs, 8% of the
 body: about 0.3 ms of fast mode's 8.5 ms/token (12% of its 2.3 ms in W13
-and W2) and 0.55 ms of near-exact's 15 ms/token, or 3–4% of a journal page
+and W2) and 0.55 ms of near-exact's 15 ms/token, or 3-4% of a journal page
 in either mode. It is not bitwise, so token agreement decides.
 
 A first comparison would zero these channels at load, keeping shapes and

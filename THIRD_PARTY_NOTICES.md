@@ -8,8 +8,9 @@ their upstream licenses. Upstream revisions and hashes are recorded in
 
 ## Pillow / Python Imaging Library
 
-The compatible bicubic resampler in `src/preprocess.rs` adapts the coefficient
-calculation and fixed-point arithmetic from Pillow's `src/libImaging/Resample.c`.
+The compatible bicubic resampler in `src/preprocess/resample.rs` adapts the
+coefficient calculation and fixed-point arithmetic from Pillow's
+`src/libImaging/Resample.c`.
 
 Copyright © 1997-2011 by Secret Labs AB
 

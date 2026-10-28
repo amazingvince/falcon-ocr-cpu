@@ -15,7 +15,7 @@ measurement commands and timing protocol.
 Decode streams every body weight, the vocabulary head (or its INT8 screen)
 and the whole KV cache once per token, so its floor is bytes per token
 divided by achievable read bandwidth; `falcon-ocr doctor --probe` measures
-that bandwidth (about 50–54 GB/s here) and prints the floor for the plan.
+that bandwidth (about 50-54 GB/s here) and prints the floor for the plan.
 Prefill is compute-bound (about 6.1 TFLOP per full page).
 
 | Mode | Weights + head per token | KV per position | Decode floor at 52 GB/s | Measured, journal page |
@@ -33,7 +33,7 @@ prefill attention 1.3 s (BF16 tiles), projections 1.3 s (FP32 panels; 0.7 s
 with `--tune prefill-bf16=all`), split/RoPE/append 0.1 s; decode attention
 4.2 ms, W13 1.5, head 1.0, W2 0.8, QKV 0.7, WO 0.4 ms. The FP32 prefill
 attention tiles run QK at about 75% and PV at about 90% of FP32 peak. The
-panel GEMM throughput probe measures 1.7–1.8 TFLOP/s at prefill shapes.
+panel GEMM throughput probe measures 1.7-1.8 TFLOP/s at prefill shapes.
 FP32 prefill takes about 4.1 s against fast mode's 2.9 s with BF16
 attention.
 
@@ -42,7 +42,7 @@ attention.
 | Change | Effect |
 |---|---|
 | Split FP32 cache for exact mode (bitwise) | 42.8 → 39.6 s |
-| Hybrid threads: prefill on all logical CPUs, decode on physical cores | fast −9%, exact −4% |
+| Hybrid threads: prefill on all logical CPUs, decode on physical cores | fast -9%, exact -4% |
 | Fast exp (portable polynomial, token-identical) in prefill attention | prefill 7.6 → 6.6 s |
 | Screened INT8 head (exact) | head 3 → 1 ms per token |
 | Spin team for decode loops | about 3 ms per token |
@@ -53,9 +53,9 @@ attention.
 | Panel GEMM for quantized prefill projections | projections 1.73 → 1.39 s |
 | Fused prefill QKV row (split, norms, RoPE, append in one pass) and folded norms/residuals | prefill 4.27 → 4.08 s |
 | BF16 prefill attention with fused AVX-512 softmax (fast mode) | attention 2.44 → 1.28 s, flips 64 → 63 |
-| Kernel-ready packed files | load 2.2 s → 10 ms, peak memory −1.1 GB |
-| 16-lane AVX-512 prefill tiles (bitwise) | attention −9%; under 1% end to end on Zen 4 |
-| BF16 scales in the Q8/Q16 caches | decode −2% |
+| Kernel-ready packed files | load 2.2 s → 10 ms, peak memory -1.1 GB |
+| 16-lane AVX-512 prefill tiles (bitwise) | attention -9%; under 1% end to end on Zen 4 |
+| BF16 scales in the Q8/Q16 caches | decode -2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
 
 ### Decode exponential
@@ -65,13 +65,13 @@ under `ExpMode::Fast`; `--tune decode-exp`) saves verification work:
 
 | Rows per verification step | Attention time change |
 |---|---:|
-| 2 | −3% |
-| 3 | −7% |
-| 4 | −9% |
-| 5 | −10% |
+| 2 | -3% |
+| 3 | -7% |
+| 4 | -9% |
+| 5 | -10% |
 
 Single-row steps are unchanged. With the draft head, page totals change by
-−2.1% on calibration pages and −0.6% on held-out pages. Flips against FP32
+-2.1% on calibration pages and -0.6% on held-out pages. Flips against FP32
 change from 92 to 94 of 78,282 steps.
 
 ### Trained draft head
@@ -98,8 +98,8 @@ head, continued on 48k pages. The latter cuts held-out page time another
 | Stage-2 head | 138.3 s | 1.46× | |
 | Published stage-3 head | 135.7 s | 1.50× | 76% |
 
-The published head gives 1.5–1.9× decode speedup across modes against no
-speculation and cuts page totals by 21–26% against n-gram drafts. The other
+The published head gives 1.5-1.9× decode speedup across modes against no
+speculation and cuts page totals by 21-26% against n-gram drafts. The other
 modes use the same 16 pages and preserve tokens in every arm:
 
 | Mode | No speculation | N-gram drafts | Published head | Decode speedup vs none | Acceptance |
@@ -112,17 +112,17 @@ their location, training stages and recipe are in
 [research/draft-head](../research/draft-head/README.md).
 
 Calibration sweeps use 16 English pages. INT8 drafter keys and values reduce
-decode time (−1.7%) against FP32 with unchanged acceptance. Image attention,
+decode time (-1.7%) against FP32 with unchanged acceptance. Image attention,
 vocabulary size, low-rank heads, attention windows and gating changes each
 gain 2% or less:
 
 | Alternative | Measurement or limit |
 |---|---|
-| Confidence 0.25–0.45 (`--draft-confidence`) or product-of-probabilities gate vs 0.35 | Within 2% |
+| Confidence 0.25-0.45 (`--draft-confidence`) or product-of-probabilities gate vs 0.35 | Within 2% |
 | 6 drafts per step vs 4 | No gain |
 | 24k draft vocabulary vs 16k | Same acceptance, larger head |
-| Attention window of 256 positions | −4 points acceptance |
-| Rank-384 vocabulary head | −1%, within noise on held-out pages |
+| Attention window of 256 positions | -4 points acceptance |
+| Rank-384 vocabulary head | -1%, within noise on held-out pages |
 | 16 decode threads vs 12 | Slower with and without speculation; +3% with it |
 | Next-token-prediction training only | 23% acceptance; overconfident on later chain steps |
 
@@ -151,7 +151,7 @@ less: prefill takes about 2.8 s per page, roughly a third of the total.
 | BF16 prefill projections by default | Saves 0.6 s for +17% KL |
 
 Multi-page batching (`--batch-size`) is available: on a scanned book it gives
-2–8% more pages per hour where the page pipeline gives 12–20%
+2-8% more pages per hour where the page pipeline gives 12-20%
 ([below](#book-runs)). Fixed cohorts gave +14% on short pages in fast mode
 without the draft head.
 
@@ -174,7 +174,7 @@ Bitwise-identical decode-attention alternatives:
 
 | Idea | Measurement or limit |
 |---|---|
-| One scale load per 32 cached values and both heads' PV per value load in verification | −1% of 3–5-row attention, no end-to-end gain |
+| One scale load per 32 cached values and both heads' PV per value load in verification | -1% of 3-5-row attention, no end-to-end gain |
 | Same PV with register accumulators in single-row decode | 21% faster on cache-resident data, **25% slower** in real decode streaming from memory |
 | Eight keys' horizontal sums at once | Register spills on AVX2's 16 registers |
 | Runtime choice between two instantiations inside one `#[target_feature]` function | Exact path 53% slower; separate entry functions avoid this |
@@ -201,13 +201,13 @@ sequential run's tokens:
 |---|---:|---:|
 | Sequential | 489, 506, 506, 511 | 342, 342 |
 | `--pipeline` | 566, 566 | 409, 409 |
-| `--pipeline --decode-threads 8` | 585, 586 | – |
+| `--pipeline --decode-threads 8` | 585, 586 | - |
 | `--batch-size 4` | 528, 529 | 350, 350 |
-| `--batch-size 4 --decode-threads 8` | 532, 532 | – |
+| `--batch-size 4 --decode-threads 8` | 532, 532 | - |
 | `--batch-size 4 --pipeline` | 533, 380 | 380, 378 |
-| `--batch-size 4 --pipeline --decode-threads 8` | 548, 549 | – |
+| `--batch-size 4 --pipeline --decode-threads 8` | 548, 549 | - |
 | `--crop-margins` | 602, 605 | 416, 415 |
-| `--crop-margins --pipeline --decode-threads 8` | 701, 709 | – |
+| `--crop-margins --pipeline --decode-threads 8` | 701, 709 | - |
 
 The cropped arms give the model fewer input tokens (138,624 → 115,991 over
 the 24 pages) and so change some pages' tokens
@@ -215,15 +215,15 @@ the 24 pages) and so change some pages' tokens
 cropped sequential run.
 
 These pages are prefill-heavy. With fast-mode drafts, three sequential
-rounds spend 4.6 s per page in prefill and 2.4–2.5 s in decode
-(5.7–5.9 ms/token). A fourth round, with 6 decode threads, spends 2.7 s in
+rounds spend 4.6 s per page in prefill and 2.4-2.5 s in decode
+(5.7-5.9 ms/token). A fourth round, with 6 decode threads, spends 2.7 s in
 decode (6.5 ms/token).
 
 | Stage | Fast | Near-exact |
 |---|---:|---:|
-| Pipelined prefill | 6.0–6.2 s on 8 threads | 8.4 s on 10 threads |
-| Sequential decode | 5.7–5.9 ms/token | 9.1 ms/token |
-| Decode beside prefill | 8.8–9.2 ms/token | 14.3 ms/token |
+| Pipelined prefill | 6.0-6.2 s on 8 threads | 8.4 s on 10 threads |
+| Sequential decode | 5.7-5.9 ms/token | 9.1 ms/token |
+| Decode beside prefill | 8.8-9.2 ms/token | 14.3 ms/token |
 
 The pipeline goes at the pace of its prefills: with the decode team pinned
 to 8, 24 × 6.05 s = 145 s against 148 s measured. Prefill and decode share
@@ -254,7 +254,7 @@ The limit's two-round A/B ran on a busier host; tokens were identical:
 | Without limit | 8, 12 | 566, 372 |
 | With limit | 8, 8 (otherwise 12) | 530, 515 |
 
-The three 8-thread rounds use one configuration: their 515–566 spread is
+The three 8-thread rounds use one configuration: their 515-566 spread is
 host noise. The A/B isolates the limit's effect through the 12-thread
 round. Batched and long-output runs chose the same teams in both binaries.
 Removing larger candidates before tuning was rejected: omitting the
@@ -264,14 +264,14 @@ more throughput because overlap starts without waiting for tuning.
 
 With speculation, an 8-thread run on 8 cores has 6- and 8-thread candidates;
 neither fits the half-thread limit. A 4-thread reserve supplies the missing
-choice. On the book's first four pages (379–425 output tokens each), with
+choice. On the book's first four pages (379-425 output tokens each), with
 `--mode fast --threads 8 --pipeline`:
 
 | Decode team / prefill pool | Time, round 1 | Time, round 2 |
 |---|---:|---:|
 | 6 / 2 threads, without reserve | 59.3 s | 48.7 s |
 | 4 / 4 threads, with reserve | 35.5 s | 35.2 s |
-| Sequential, 8 threads | 32.9 s | – |
+| Sequential, 8 threads | 32.9 s | - |
 
 These two interleaved rounds ran at a load average of about 5 and gave
 identical tokens. Even with the reserve, the pipeline does not pay at 8
@@ -284,11 +284,11 @@ to 8 threads:
 
 | Arm | Peak resident memory |
 |---|---:|
-| Sequential | 2,243–2,300 MiB |
-| `--pipeline` | 3,404–3,413 MiB |
-| `--pipeline --crop-margins` | 3,822–3,831 MiB |
-| `--batch-size 4` | 3,899–3,900 MiB |
-| `--batch-size 4 --pipeline` | 3,348–4,275 MiB |
+| Sequential | 2,243-2,300 MiB |
+| `--pipeline` | 3,404-3,413 MiB |
+| `--pipeline --crop-margins` | 3,822-3,831 MiB |
+| `--batch-size 4` | 3,899-3,900 MiB |
+| `--batch-size 4 --pipeline` | 3,348-4,275 MiB |
 
 ### KV caches and exception columns
 
@@ -302,7 +302,7 @@ tokens, with and without speculation:
 | fast | `q8` | 8.28 | 6.35 |
 | fast | `q8r` | 8.37 | 6.39 |
 | fast | `q4r` | 9.54 | 7.18 |
-| fast with 4 W2 exception columns | `q8` | 8.24 | – |
+| fast with 4 W2 exception columns | `q8` | 8.24 | - |
 | near-exact | `q16` | 13.84 | 8.62 |
 | near-exact | `q8r` | 11.30 | 7.51 |
 | near-exact | `q8r`, `--tune decode-exp=exact` | 10.98 | 8.01 |

@@ -56,9 +56,10 @@ handwriting and degraded scans; use near-exact for those pages.
 
 Exact mode matched FP32's tokens on every page measured. Its default
 kernels can change the last bits of logits; `RunnerConfig::reference()` is
-the bitwise configuration. Fast-mode tokens can differ with the CPU's BF16
-support, and x86 and aarch64 can differ in every mode. See
-[Modes](docs/MODES.md) for storage, numerical choices and measured fidelity.
+the configuration used for CPU tensor traces. Fast-mode tokens can differ
+with the CPU's BF16 support, and x86 and aarch64 can differ in every mode.
+See [Modes](docs/MODES.md) for storage, numerical choices and measured
+fidelity.
 
 ## What `auto` decides
 
@@ -144,7 +145,7 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
 - Inputs and the output file are checked before the model loads, so a
   wrong path fails before inference starts.
 - `--pipeline` prefills the next page while the current one decodes; on a
-  scanned book it gave 12–20% more pages per hour
+  scanned book it gave 12-20% more pages per hour
   ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)). `--batch-size N`
   decodes several pages together. Neither changes the tokens.
 - In fast mode, `--escalate` rereads a page that got stuck in a loop with
@@ -170,25 +171,31 @@ fn main() -> anyhow::Result<()> {
 ```
 
 `Model::load_mode` finds the packed file or the checkpoint; `Model::load_packed`
-and `Model::load` are the explicit loaders. `RunnerConfig::default()` is the
-automatic configuration, `RunnerConfig::reference()` the bit-exact one (the
-platform exp, full head, no speculation or repetition stop, a pool-sized
-decode team).
+and `Model::load` are the explicit loaders. `RunnerConfig::default()` selects
+automatic tuning and n-gram drafts. Set `draft_head` and `drafter` explicitly
+to use a trained head in the library.
+
+`RunnerConfig::reference()` uses the platform exp, full head, no speculation
+or repetition stop, and a pool-sized decode team.
 
 `Runner` owns its thread pool; `recognize`, `recognize_file`,
 `recognize_batch` and `recognize_files` return `OcrResult`s in input order,
 each carrying its `plan`. `recognize_files_streaming` hands each page's
 result (or error) to a callback as soon as it and every earlier page are
 done, and `recognize_files_pipelined` does the same with the page pipeline.
+See [multi-page execution](docs/ARCHITECTURE.md#multi-page-execution) for
+streaming, fixed cohorts and pipeline behavior.
 
 ## Building
 
 Install Rust through rustup (the toolchain file selects 1.94.0). Windows:
 the MSVC C++ build tools; `tools/build_windows.ps1 build --release` fetches
 checksum-verified CMake and NASM when they are not installed. Linux: a C
-compiler, GNU make, CMake and NASM (`tools/build_linux.sh build --release`
-fetches local CMake and NASM copies when needed). macOS:
-`brew install cmake`. `cargo build --no-default-features` drops
+compiler, GNU make, CMake and NASM.
+`bash tools/build_linux.sh build --release --locked` fetches local CMake and
+NASM copies when needed and writes binaries to `target/linux/release` by
+default; use that path in place of `target/release` after a helper build.
+macOS: `brew install cmake`. `cargo build --no-default-features` drops
 libjpeg-turbo (JPEG then decodes through the `image` crate, not
 Pillow-exact).
 

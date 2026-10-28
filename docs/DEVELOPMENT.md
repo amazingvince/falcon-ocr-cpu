@@ -11,7 +11,8 @@ libjpeg-turbo, and the tokenizer builds Oniguruma with the C compiler.
 args>` find installed tools or fetch checksum-verified local copies of NASM
 and CMake into `artifacts/tools/` (no global changes); without NASM on
 `PATH`, set `ASM_NASM` to the executable. Linux also needs a C compiler and
-GNU make. `cargo build --no-default-features` drops libjpeg-turbo (JPEG then
+GNU make. The Linux helper writes binaries to `target/linux/release` by
+default. `cargo build --no-default-features` drops libjpeg-turbo (JPEG then
 decodes through the `image` crate, not Pillow-exact).
 
 Cargo features: `turbojpeg` (default on); `gemm-avx512` (the `gemm` crate's
@@ -29,8 +30,9 @@ bash tools/check.sh
 `cargo fmt --all -- --check`,
 `cargo clippy --release --all-targets --locked -- -D warnings`, and
 `cargo test --release --lib --locked`. With `--smoke` it also rebuilds the
-binary and checks the exact-mode smoke trace hash (`e2dad223…`), requiring
-the pinned GPU smoke outputs. Lints: `Cargo.toml` sets `clippy::all` and
+binary and checks the exact-mode CPU smoke trace hash (`e2dad223…`),
+requiring the pinned GPU smoke fixture. Lints: `Cargo.toml` sets
+`clippy::all` and
 `unsafe_op_in_unsafe_fn` to warn (denied in the check), `clippy.toml` allows
 eight arguments, `rustfmt.toml` sets a 120-column width.
 
@@ -258,7 +260,7 @@ Other measurement entry points:
 |---|---|
 | `python research/phase4-hillclimb/attempt3/ab.py --help` | Interleaved fresh-process A/B of two binaries on the same pages |
 | `python research/draft-head/cpu_ab.py --help` | Interleaved drafter settings, page totals and token identity against no speculation; an arm's first flag `@<exe>` selects its binary |
-| `cargo test --release --locked --lib panels::panel::tests::prefill_throughput_probe -- --ignored --nocapture` | Panel GEMM versus the `gemm` crate at prefill shapes; the recorded 7950X result was 1.7–1.8 TFLOP/s |
+| `cargo test --release --locked --lib panels::panel::tests::prefill_throughput_probe -- --ignored --nocapture` | Panel GEMM versus the `gemm` crate at prefill shapes; the recorded 7950X result was 1.7-1.8 TFLOP/s |
 | `cargo run --release --locked --example ocr_bench -- --help` | Warm canonical-RGB recognition, with input and model hashes in its reports; provide images, CPU/environment labels and an output path |
 
 For margin cropping, run a few dozen of your own book pages in the same

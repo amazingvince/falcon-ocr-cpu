@@ -65,14 +65,18 @@ Fast mode also uses it in decode attention over its 8-bit cache, as the NEON
 kernels always do (`--tune decode-exp=exact|fast` overrides): teacher-forced
 on the 55 anchor pages up to 8,192 steps (78,282 steps) it has 94 flips
 against 92 with the platform exp, the English gate below is unchanged, and
-verification steps' attention is 3–10% faster.
+verification steps' attention is 3-10% faster.
 
 Exact mode therefore gives FP32's tokens, not its bits. Under the reference
 configuration (`RunnerConfig::reference()`: the platform exp and the full
-head, which `trace` uses and `falcon-ocr-eval` starts from) it is bitwise the
-FP32 reference: the smoke trace hash is pinned, and the split FP32 cache is
-bitwise the compact one. Under the automatic configuration of `run` the
-polynomial exp moves logits in their last bits: teacher-forced along the
+head, which `trace` uses and `falcon-ocr-eval` starts from), the tests pin a
+CPU smoke trace, and the split FP32 cache is bitwise the compact CPU kernel.
+GPU validation establishes token agreement. The
+[frozen smoke comparison](../reference/windows-rust-smoke-fp32-sinks-pairwise.json)
+retains ten intermediate-tensor tolerance failures.
+
+Under the automatic configuration of `run`, the polynomial exp moves logits
+in their last bits: teacher-forced along the
 1,295 FP32 tokens of a 1418 × 1224 page (Ryzen 7 7700X), 4.8% of exact
 mode's top-32 log-probabilities were bit-identical to the platform exp's,
 the largest difference 1.1e-4, with no flip.
@@ -84,7 +88,7 @@ pages and the four full benchmark pages.
 Storage types were chosen against FP32 on the anchor set (GPU harness):
 INT16 with a scale per 64 inputs (1 flip, KL 1.7e-7) beat FP16 (11 flips)
 and BF16 (51 flips) at the same bytes; GPTQ INT8 (63 flips) beat
-round-to-nearest INT8 (168 flips); 4-bit weights cost 10–12% output error
+round-to-nearest INT8 (168 flips); 4-bit weights cost 10-12% output error
 and are out. An IEEE FP16 KV cache was 1.2% faster than Q16 but raised
 near-exact's flips from 1 to 4, so it was rejected.
 
@@ -182,15 +186,16 @@ of that size. Decode time per token did not measurably change
 
 Fast mode is not qualified for handwritten or degraded pages; use
 `near-exact` there. On the 200 held-out pages it was within budget overall
-(micro CER −0.16 pt) and on 5 of 7 categories, and **failed** on handwriting
+(micro CER -0.16 pt) and on 5 of 7 categories, and **failed** on handwriting
 (+5.4 pt, three pages sent into loops by the 8-bit weights) and degraded
 scans (+1.4 pt of spread drift). The repetition stop fired on five pages
 where FP32 ends at EOS; four are 8-bit-induced loops, and on the fifth FP32
 itself emits a 2,232-token hallucination.
 
 A post-hoc comparison with production BF16 serving found that FP32 itself
-would fail the same per-category budget against production, and a blinded
-LLM judge rated the four systems' content equal except on loop pages.
+would fail the same per-category budget against production. On 25
+handwriting and 25 degraded pages, a blinded LLM judge rated the four
+systems' content equal except on loop pages.
 
 Sources: `reference/phase4-quality-budget.json` (the one registered run),
 `research/phase4-hillclimb/attempt3/RESULTS-V3.md` §6 and §8.
@@ -199,16 +204,16 @@ Sources: `reference/phase4-quality-budget.json` (the one registered run),
 
 Fast mode passed the English gate overall and failed its ordinary-page
 category limit. The set contains 118 English OmniDocBench pages outside
-corpus v1–v3 and every v3 document, one page per document. The model is
+corpus v1-v3 and every v3 document, one page per document. The model is
 trained on English only, and the handwriting and degraded-scan failures
 above were on Chinese pages. The English gate uses the same criteria:
 
 | English gate comparison with FP32 | Micro CER change | Verdict |
 |---|---:|---|
 | Overall | +0.01 pt | Pass |
-| Formulas | −0.06 pt | Pass |
+| Formulas | -0.06 pt | Pass |
 | Tables | +0.02 pt | Pass |
-| Multi-column | −0.08 pt | Pass |
+| Multi-column | -0.08 pt | Pass |
 | Slides | 0.00 pt | Pass |
 | Ordinary pages (19) | +2.48 pt | Fail |
 
@@ -223,7 +228,7 @@ Source: `reference/english-gate-v1-*`, including
 
 In a post-hoc diagnostic, every figure region that the ground truth leaves
 out is painted white on all systems' input (`mask_excluded.py`, 35 of the
-118 pages). Fast mode is −0.11 pt against FP32 overall and +0.02 pt on
+118 pages). Fast mode is -0.11 pt against FP32 overall and +0.02 pt on
 ordinary pages. Future gates on OmniDocBench pages use figure-masked pages
 from the start. The original gate remains failed on ordinary pages; the
 diagnostic supports the practical recommendation of fast mode for printed
@@ -240,7 +245,7 @@ token-identical; half of the other 25 differ by at most 6 characters (a
 fifth only in whitespace, quotes or markdown); 112 pages within 0.5 pt of
 the near-exact CER against the ground truth, 3 worse and 3 better (2 each by
 more than 2 pt, tiny-print pages where one early token changes the rest);
-−0.11 pt overall; no loops. For about 1.7× the speed that is no measurable
+-0.11 pt overall; no loops. For about 1.7× the speed that is no measurable
 loss on printed English.
 
 The cost shows on hard pages: on the held-out set's handwriting and
@@ -303,7 +308,7 @@ pixels are cut off when they lie beyond the padding, except that a
 full-length mark two or three pixels thick, though cut off itself, still
 makes every row (or column) content and keeps the margins at its two ends.
 
-On a 1188 × 1536 page with a text block at x 180–1000, y 200–1350 and
+On a 1188 × 1536 page with a text block at x 180-1000, y 200-1350 and
 default padding:
 
 | Border | Image tokens after cropping |
@@ -326,8 +331,8 @@ whole page.
 
 It is opt-in because it changes the model input. TII's layout pipeline feeds
 cropped regions to the model, so crops are in distribution. On synthetic book
-pages (a text block with about 15% side margins) it removes 42–44% of the
-image tokens at 1536 (6,048 → 3,400–3,485), 40% at 1024 and 35% at 768;
+pages (a text block with about 15% side margins) it removes 42-44% of the
+image tokens at 1536 (6,048 → 3,400-3,485), 40% at 1024 and 35% at 768;
 pages whose content fills the page are not cropped. The router's page-time
 model (fast mode with the draft head,
 `research/resolution-router/analyze_agreement.py`) puts 6,048 → 3,485 image
@@ -338,7 +343,7 @@ On 24 pages of the Internet Archive scan
 `cu31924014450716` (Strunk's *The Elements of Style*, 1920), rendered at
 956 × 1536 by `tools/pdf_to_pages.py`, in near-exact mode on a Ryzen 7 7700X,
 it cropped every page, removed 16% of the input tokens (138,624 → 115,991)
-and 17–18% of the run's time in each of two rounds (+21% pages per hour).
+and 17-18% of the run's time in each of two rounds (+21% pages per hour).
 Every page kept its words. 10 kept their tokens; 6 differ only in markup
 (heading and emphasis marks, superscript notation, quote style), 4 add or
 drop one period, and 1 joins a word hyphenated across a line ("semicolon").

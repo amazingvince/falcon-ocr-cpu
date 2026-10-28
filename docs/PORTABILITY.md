@@ -18,10 +18,10 @@ floor is bytes per token divided by read bandwidth. Prefill is compute-bound.
 
 | Machine class | Read bandwidth | FP32 compute | Limits decode | Limits prefill |
 |---|---:|---:|---|---|
-| Ryzen 7950X, DDR5 (measured) | 50–54 GB/s | 1.9–2.3 TFLOP/s | bytes | FMA throughput, exp |
-| Laptops (DDR4, LPDDR5) | 30–90 GB/s | 0.3–1 TFLOP/s | bytes | FMA throughput |
-| Intel with two AVX-512 FMA units | 60–300 GB/s | 2× AVX2 per core | bytes | FMA; 16-lane tiles pay off |
-| Apple M4 / Pro / Max | 120 / 273 / 410–546 GB/s | 0.6–1.5 TFLOP/s NEON | dequantization compute | NEON FMA |
+| Ryzen 7950X, DDR5 (measured) | 50-54 GB/s | 1.9-2.3 TFLOP/s | bytes | FMA throughput, exp |
+| Laptops (DDR4, LPDDR5) | 30-90 GB/s | 0.3-1 TFLOP/s | bytes | FMA throughput |
+| Intel with two AVX-512 FMA units | 60-300 GB/s | 2× AVX2 per core | bytes | FMA; 16-lane tiles pay off |
+| Apple M4 / Pro / Max | 120 / 273 / 410-546 GB/s | 0.6-1.5 TFLOP/s NEON | dequantization compute | NEON FMA |
 | Graviton 3/4 | 300+ GB/s per socket | many cores | dequantization compute | FMA; BF16/I8MM |
 
 Only the 7950X row is measured here. The other rows are hardware-class
@@ -66,17 +66,17 @@ cross-platform bitwise guarantee. NEON always uses the polynomial exp.
 
 | Kernel | Phase | AVX2 | AVX-512 (`auto`) | NEON | Scalar |
 |---|---|---|---|---|---|
-| FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | generic | same as AVX2 | generic | scalar |
-| 8/16-bit GEMV and fused GLU, 1–8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
+| FP32 GEMV, 1-8 rows (`kernels::linear_with_simd`) | decode | generic | same as AVX2 | generic | scalar |
+| 8/16-bit GEMV and fused GLU, 1-8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
 | W8 exception columns after the GEMV (`quant/linear.rs`, research overlays) | decode | one fused multiply-add per column (FMA instruction) | same as AVX2 | `mul_add` | same as AVX2 |
 | Decode attention, compact and expanded (`attention/decode64.rs`, `online.rs`) | decode | generic head | same as AVX2 | generic head | function-pointer head |
 | Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | same as AVX2 | generic | generic loop |
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
-| BF16 prefill attention (`prefill64/bf16.rs`, fast mode) | prefill | – | AVX512-BF16 | – | – |
+| BF16 prefill attention (`prefill64/bf16.rs`, fast mode) | prefill | - | AVX512-BF16 | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| BF16 panel GEMM (`panels/panel_bf16.rs`, opt-in; not for bodies with exception columns) | prefill | – | AVX512-BF16 | – | – |
+| BF16 panel GEMM (`panels/panel_bf16.rs`, opt-in; not for bodies with exception columns) | prefill | - | AVX512-BF16 | - | - |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |
 | Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |
