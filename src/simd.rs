@@ -5,9 +5,9 @@
 //! [`Simd`] and instantiated per ISA by small entry wrappers that carry the
 //! matching `#[target_feature]` (x86) or nothing (NEON is baseline on
 //! aarch64). Every implementation uses the same lane layout, fused
-//! multiply-add, and the same fixed reduction tree, so an instantiation for
-//! AVX2, AVX-512 or NEON is bitwise equal to the [`Portable`] one on the same
-//! inputs; each machine can test its fast path against portable code.
+//! multiply-add, and the same fixed reduction tree. With the same exp choice,
+//! ISA instantiations agree bitwise with [`Portable`] on the same inputs;
+//! each machine tests its fast path against portable code.
 //!
 //! See `docs/PORTABILITY.md`.
 

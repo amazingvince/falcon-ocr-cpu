@@ -411,7 +411,7 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
         ensure!(
             overlay.is_some() || request.allow_rtn,
             "fast mode needs the GPTQ overlay {} (round-to-nearest quantization triples the changed tokens): \
-             download falcon-ocr-v1.5-fast.safetensors from amazingvince/falcon-ocr-v1.5-cpu into the model \
+             download falcon-ocr-v1.5-fast.safetensors from BEE-spoke-data/falcon-ocr-v1.5-cpu into the model \
              directory, build the overlay with tools/make_gptq_overlay.sh, or pass --allow-rtn",
             dir.join(DEFAULT_OVERLAY).display()
         );
@@ -440,7 +440,7 @@ fn require_checkpoint(dir: &Path, mode: Option<Mode>) -> Result<()> {
         remedies.insert(
             0,
             format!(
-                "download the packed file: huggingface-cli download amazingvince/falcon-ocr-v1.5-cpu {name} \
+                "download the packed file: hf download BEE-spoke-data/falcon-ocr-v1.5-cpu {name} \
                  --local-dir {} (or pass --model-file)",
                 dir.display()
             ),

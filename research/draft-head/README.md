@@ -1,17 +1,31 @@
-# draft-head
+# Draft head
 
 A trained speculative drafter for the CPU runner: an EAGLE-3-style draft head
 (one decoder block over the target's layers 2, 11 and 19, text only, a
-16,384-token draft vocabulary) that the Rust runner loads with
+16,383-token draft vocabulary) that the Rust runner loads with
 `--draft-head <file>` (`src/draft_head.rs`), or by itself when
 `falcon-ocr-v1.5-draft-head.safetensors` sits next to the model files. Drafts
 only change speed: the model verifies every drafted token, and every A/B
 below checks that each page's tokens equal the no-speculation run.
 
-The stage-3 head is published as `falcon-ocr-v1.5-draft-head.safetensors` in
-[amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu)
-(the tensors of `s3-16k-cont`, with the local training path removed from its
-metadata; `matches_the_pytorch_chain` passes on it).
+The published head cuts total time by 21–26% against n-gram drafts on 16
+English held-out pages, with identical tokens. It is
+`falcon-ocr-v1.5-draft-head.safetensors` in
+[BEE-spoke-data/falcon-ocr-v1.5-cpu](https://huggingface.co/BEE-spoke-data/falcon-ocr-v1.5-cpu):
+the tensors of `s3-16k-cont`, with the local training path removed from its
+metadata. Export validation uses `matches_the_pytorch_chain`, which passed
+for this head with its PyTorch fixture.
+
+The training records use three dataset stages:
+
+| Record label | Training pages | Meaning |
+|---|---:|---|
+| Stage 1 | about 4.7k | Initial training set |
+| Stage 2 | about 24.5k | Expanded training set |
+| Stage 3 | 48,069 | Largest set; 106 pages excluded by the 13-gram check |
+
+The published head continues the stage-2 head for one more seven-step
+training epoch on the stage-3 data, rather than retraining from scratch.
 
 ## Results (fast mode, packed model, 12 decode threads, Ryzen 9 7950X)
 
@@ -25,12 +39,19 @@ metadata; `matches_the_pytorch_chain` passes on it).
 | **stage-2 head, int8 drafter KV, confidence 0.35** | **139.9 s** | **95.1 s** | **1.47x** | 75% |
 | stage-2 head, rank-384 vocabulary head | 139.2 s | 94.5 s | 1.48x | 72% |
 
-Stage 3 (48k pages; the stage-2 head trained one more seven-step epoch), a
-later run on the same pages: none 181.2 s, stage-2 head 138.3 s (1.46x),
-**stage-3 head 135.7 s (decode 1.50x, acceptance 76%)**; on the calibration
-pages 182.0 → 176.4 s. Retraining instead (one step-1 epoch, then one
-seven-step epoch on the 48k pages) reached only 74.7% / 40.8% first- and
-second-draft calibration accuracy against 75.0% / 44.6%.
+A separate run on the same pages compares the continued head with its
+stage-2 initializer. The stage-3 training set is about 48k pages:
+
+| Drafter | Page total | Decode speedup vs none | Acceptance |
+|---|---:|---:|---:|
+| none | 181.2 s | 1.00x | |
+| stage-2 head | 138.3 s | 1.46x | |
+| published stage-3 head | 135.7 s | 1.50x | 76% |
+
+On the calibration pages the stage-3 head changes page total from 182.0 to
+176.4 s. Retraining instead (one step-1 epoch, then one seven-step epoch on
+the 48k pages) reaches 74.7% / 40.8% first- and second-draft calibration
+accuracy, against 75.0% / 44.6% for continued training.
 
 Calibration-page sweeps (16 English pages) behind the defaults: confidence
 0.35 (0.25-0.45 and the product-of-probabilities gate are within 2%), at most
@@ -40,10 +61,10 @@ speculation), a 16k draft vocabulary (24k: same acceptance, larger head). A
 head trained on next-token prediction only is overconfident on later chain
 steps (23% acceptance); the seven-step phase is essential.
 
-### Other modes (2026-09-26)
+### Other modes
 
 The same 16 held-out pages with the published head (`cpu_ab.py --mode`;
-tokens identical in every arm):
+tokens identical in every arm). Source: the 2026-09-26 comparison.
 
 | Mode | none | n-gram | head | decode vs none |
 |---|---:|---:|---:|---:|
@@ -69,9 +90,8 @@ model files.
 | CPU A/B | [cpu_ab.py](cpu_ab.py), [compare_pages.py](compare_pages.py) | alternating rounds, page totals, token identity (`@<exe>` runs another binary per arm); never time while a GPU job runs (it slows CPU decode ~30%); compare_pages.py lists the pages two arms disagree on, with CER against the FP32 reference |
 | Cost model | [train/cost_model.py](train/cost_model.py), [train/check_alignment.py](train/check_alignment.py) | offline acceptance and gated-speedup estimates |
 
-Data sets: stage 1 about 4.7k pages, stage 2 about 24.5k, stage 3 48,069
-(106 pages excluded by the 13-gram check). Every page records its source's
-license in the stage manifests; the stage-3 pages by source:
+Every page records its source's license in the stage manifests. The
+stage-3 pages by source are:
 
 | Source (Hugging Face) | Pages | License or terms |
 |---|---:|---|
@@ -85,10 +105,10 @@ license in the stage manifests; the stage-3 pages by source:
 | `HumynLabs` handwritten notes (math, physics, chemistry, biology, CS) | 169 | CC-BY-4.0 |
 
 No non-commercial or evaluation-only set was used. PDFA and IDL carry
-third-party terms rather than a standard license; the user chose to publish
-with them listed (2026-09-26). Data, heads and
-runs live outside the repository (D:/falcon-draft: `heads/s3-16k-cont.safetensors`
-is the current best head; `cpu-ab/` holds every A/B).
+third-party terms rather than a standard license; the published attribution
+lists them. Data, heads and runs live outside the repository at
+`D:/falcon-draft`: `heads/s3-16k-cont.safetensors` is the published head's
+source, and `cpu-ab/` holds every A/B.
 
 ## Lessons
 
@@ -120,9 +140,9 @@ is the current best head; `cpu-ab/` holds every A/B).
 
 ## Operational notes
 
-- The Windows checkout has CRLF line endings; strip them (`sed 's/\r$//'`)
-  from shell scripts before running them in WSL (`D:/falcon-draft/serve_stage3.sh`
-  does this for the vLLM launch). From Git Bash, run WSL commands with
+- Shell scripts checked out with CRLF line endings need LF line endings
+  before running in WSL (`D:/falcon-draft/serve_stage3.sh` performs this
+  conversion for the vLLM launch). From Git Bash, run WSL commands with
   `MSYS_NO_PATHCONV=1` so `/mnt/...` arguments are not rewritten.
 - WSL sets `NAME` to the host name, so `serve_vllm.sh`'s `${NAME:-...}`
   names the first server's container after the host; stop it by that name.

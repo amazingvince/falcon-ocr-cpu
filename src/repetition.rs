@@ -1,4 +1,4 @@
-//! Opt-in stop for degenerate repetition loops.
+//! Stop for degenerate repetition loops, enabled by default.
 //!
 //! Greedy OCR decoding sometimes locks into a loop that repeats a short token
 //! cycle until `max_new_tokens`. On the 67-page v3 calibration set this

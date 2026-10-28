@@ -1,4 +1,4 @@
-//! Isolated entry point; `falcon-ocr` and its defaults remain the reference CLI.
+//! Research entry point for profile, benchmark and agreement experiments.
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
@@ -53,6 +53,7 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Report the host, model files and resolved research profile.
     Doctor,
     /// The resolution router's choice for each image (no model): JSON lines
     /// with the route and, with --statistics, the 26 image statistics.
@@ -62,6 +63,7 @@ enum Command {
         #[arg(long)]
         statistics: bool,
     },
+    /// Time recognition on page images and write a telemetry report.
     Bench {
         #[arg(required = true)]
         images: Vec<PathBuf>,
@@ -80,6 +82,7 @@ enum Command {
         #[arg(long)]
         report: PathBuf,
     },
+    /// Capture tensors from a GPU-exported fixture under this profile.
     Trace {
         #[arg(long)]
         fixture: PathBuf,

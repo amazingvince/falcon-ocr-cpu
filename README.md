@@ -2,86 +2,96 @@
 
 A Rust library and CLI that runs the Falcon-OCR v1.5 vision-language model
 (pinned revision `fe757d59…`) on CPUs: full-page plain OCR of PNG and JPEG
-pages, no GPU, no Python at inference time. Exact mode matched the FP32
-reference token for token on every page measured; near-exact mode (the
-default) changed 1 token in 24,262 against FP32 and runs 1.8× faster; fast
-mode runs 3× faster with 8-bit weights. Everything the runner decides is
-reported, and every fast path is tested bitwise against a portable one.
-Kernel-ready model files are published at
-[huggingface.co/amazingvince/falcon-ocr-v1.5-cpu](https://huggingface.co/amazingvince/falcon-ocr-v1.5-cpu).
+pages, no GPU, no Python at inference time. Near-exact mode is the default;
+fast mode trades fidelity for speed with 8-bit weights. The runner reports
+its model, kernels and thread plan with each result.
+
+Download the kernel-ready weights and draft head from
+[BEE-spoke-data/falcon-ocr-v1.5-cpu](https://huggingface.co/BEE-spoke-data/falcon-ocr-v1.5-cpu).
+The near-exact file is 806 MB, the fast file 638 MB, and the shared draft
+head 94 MB.
 
 ## Quickstart
 
+Install Rust through rustup (the repository selects Rust 1.94.0), a C
+compiler, CMake and NASM. Linux also needs GNU make; Windows needs the MSVC
+C++ build tools. [Building](#building) covers the platform helpers and the
+build without libjpeg-turbo. Python runs the download tool and optional
+helpers; inference runs entirely in Rust.
+
+Clone the repository, then build and download the model files:
+
 ```sh
-cargo build --release --locked            # Rust 1.94 (rust-toolchain.toml); CMake and NASM for libjpeg-turbo
-huggingface-cli download amazingvince/falcon-ocr-v1.5-cpu --local-dir models/falcon-ocr-cpu
+git clone https://github.com/amazingvince/falcon-ocr-cpu.git
+cd falcon-ocr-cpu
+python -m pip install huggingface_hub
+cargo build --release --locked
+hf download BEE-spoke-data/falcon-ocr-v1.5-cpu --local-dir models/falcon-ocr-cpu
+target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --load
 target/release/falcon-ocr --model models/falcon-ocr-cpu run page.png --text
-target/release/falcon-ocr --model models/falcon-ocr-cpu --mode fast run page.png
-target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --probe
+target/release/falcon-ocr --model models/falcon-ocr-cpu --mode fast run page.png --text
 ```
 
-`run` prints one JSON line per page, in input order, as soon as the page
-and those before it are done: the text, token ids, stop reason, timings and
-the plan the runner chose. `--text` prints the text only. With no flags the
-runner picks near-exact mode, loads the packed file from the model directory
-(about 10 ms) and the draft head next to it, and sets threads, kernels, the
-decode team, speculation and the repetition stop from the host. For whole
+`doctor --load` verifies that the model loads and prints the chosen plan and
+load time. Replace `page.png` with a PNG or JPEG page. `--text` prints its
+recognized text; without it, `run` prints one JSON line per page with the
+text, token ids, stop reason, timings and plan, in input order. For whole
 books and PDFs, see [Books and PDFs](#books-and-pdfs).
 
 ## Modes
 
-| Mode | Body weights | KV cache | Prefill attention | Changed tokens vs FP32 (of 24,262) | Journal page, 7950X | Use when |
-|---|---|---|---|---:|---:|---|
-| `exact` | FP32 | FP32 | FP32 | 0 | 38 s | you need FP32's tokens |
-| `near-exact` (default) | 16-bit, scale per 64 | 16-bit, scale per 32 | FP32 | 1 | 21.5 s | everything else |
-| `fast` | 8-bit GPTQ, scale per 64 | 8-bit, scale per 32 | BF16 on AVX512-BF16 CPUs | 63 | 12.6 s | printed pages where speed matters; **failed its held-out budget on handwriting (loops) and degraded scans** |
+| Mode | Body weights | Teacher-forced flips (24,262 steps) | Journal page, 7950X | Use when |
+|---|---|---:|---:|---|
+| `exact` | FP32 | 0 | 38 s | you need FP32's tokens |
+| `near-exact` (default) | 16-bit | 1 | 21.5 s | general use, handwriting and degraded scans |
+| `fast` | 8-bit GPTQ | 63 | 12.6 s | printed pages where speed matters |
 
-The journal page has 6,544 input tokens; timings are with default flags on a
-Ryzen 9 7950X. Exact mode's 0 counts tokens: by default its logits can
-differ from FP32's in the last bits, and only `RunnerConfig::reference()` is
-bitwise. [docs/MODES.md](docs/MODES.md) has the metric, the storage choices
-and the held-out result.
+FP32 means 32-bit floating point. A flip is a different greedy token choice
+when each mode receives the same reference-token prefix.
+
+The journal page has 6,544 input tokens. These timings are on a Ryzen 9
+7950X, Windows 11, without the draft head. Near-exact is about 1.8× faster
+than exact and fast about 3×. Fast mode failed its held-out budgets on
+handwriting and degraded scans; use near-exact for those pages.
+
+Exact mode matched FP32's tokens on every page measured. Its default
+kernels can change the last bits of logits; `RunnerConfig::reference()` is
+the bitwise configuration. Fast-mode tokens can differ with the CPU's BF16
+support, and x86 and aarch64 can differ in every mode. See
+[Modes](docs/MODES.md) for storage, numerical choices and measured fidelity.
 
 ## What `auto` decides
 
-`doctor` prints the plan without reading tensors (`--load` times the load,
-`--probe` measures memory bandwidth and the decode floor):
+The runner uses the mode's packed file in `--model`, or quantizes the FP32
+checkpoint at load (fast mode needs the GPTQ overlay). Packed files load in
+about 10 ms. Prefill processes the input page; decode generates its output
+tokens. The runner picks kernels for the host, uses all logical CPUs for
+prefill, and tunes the decode team to the smallest within 2% of the fastest.
+
+By default it drafts up to four tokens per step and verifies each against
+the model's greedy choice. The downloaded
+`falcon-ocr-v1.5-draft-head.safetensors` is used automatically when it sits
+next to the model files; without it the runner uses n-gram drafts. Threads,
+drafting and the screened head do not change tokens.
+
+The repetition stop ends cycles of at most 128 tokens after at least
+`max(256, 4 × cycle)` repeated tokens. Without `--max-new-tokens`, the
+8,192-token cap is lowered when the input leaves less of the 16,384-token
+context (`budget_clamped` in the result). Both can end a page early without
+changing preceding tokens; `--stop-repetition=false` lets loops run.
+
+`doctor` prints the plan without reading tensors; `--load` times model
+loading and `--probe` measures memory bandwidth and the decode floor.
+[Architecture](docs/ARCHITECTURE.md#automatic-configuration) explains the
+selection rules.
+
+Example load and probe output for near-exact on a Ryzen 9 7950X (16 cores,
+32 threads), Windows 11:
 
 ```text
-host: windows x86_64, 32 logical / 16 physical cores (SMT); avx2 fma f16c avx512f avx512bw avx512bf16
-file: packed near-exact  artifacts/packed\falcon-ocr-v1.5-near-exact.safetensors (806 MB)
-file: packed fast        artifacts/packed\falcon-ocr-v1.5-fast.safetensors (638 MB)
-file: checkpoint         artifacts/packed\model.safetensors (missing)
-file: overlay            artifacts/packed\w8-gptq.safetensors (missing)
-file: tokenizer          artifacts/packed\tokenizer.json (5 MB)
-file: draft head         artifacts/packed\falcon-ocr-v1.5-draft-head.safetensors (94 MB)
-plan: mode near-exact (w16-body-kv-q16) | weights packed artifacts/packed\falcon-ocr-v1.5-near-exact.safetensors | prefill 32 threads, projections panel-avx2, attention avx512-wide | decode auto {12,16,24} threads, avx2 kernels, kv q16 | head Screened | speculation 4 drafts (min match 2), draft head artifacts/packed\falcon-ocr-v1.5-draft-head.safetensors | repetition stop on | exp Fast
 load: 7 ms, screened head 53 MB
 probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 ```
-
-Weights: the packed file for the mode in `--model`, else the FP32 checkpoint
-quantized at load (fast needs the GPTQ overlay). Prefill runs on every
-logical CPU with the fastest kernels the CPU has (AVX2, 16-lane AVX-512
-tiles, BF16 attention for fast mode, NEON on aarch64) and a portable
-polynomial exp in attention. Decode times a few team sizes on the first steps
-and keeps the smallest within 2% of the fastest. Up to 4 tokens are drafted
-from the output so far and verified in one step; every accepted token is the
-model's own greedy choice. A page that repeats a cycle for 256 tokens stops
-with `finish_reason: "repetition"`. Without `--max-new-tokens`, the
-8,192-token output cap is lowered with a warning when a page's input leaves
-less of the 16,384-token context (`budget_clamped` in the result).
-
-The weights file, thread counts, decode team, drafts, head and AVX-512 tiles
-never change tokens (gated by `tests/modes.rs` and the library's bitwise
-tests). Three kernel choices change rounding, and so can change tokens: the
-polynomial exp in prefill attention, and in fast mode the same exp in decode
-attention and BF16 prefill attention on AVX512-BF16 CPUs
-([docs/MODES.md](docs/MODES.md#the-three-modes)). Fast mode's tokens can
-therefore differ between CPUs with and without AVX512-BF16, and x86 and
-aarch64 can differ in every mode. The repetition stop and a lowered output
-cap can end a page early without changing the tokens before the end;
-`--stop-repetition=false` lets loops run.
 
 ## Command line
 
@@ -94,7 +104,9 @@ cap can end a page early without changing the tokens before the end;
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
-| `--draft-head F` | A trained draft head ([research/draft-head](research/draft-head/README.md)); `falcon-ocr-v1.5-draft-head.safetensors` next to the model files is used without the flag; `--drafter ngram\|head\|both` (default `head` with a head, else `ngram`), `--draft-confidence P` (default 0.35) |
+| `--draft-head F` | Select a trained draft head ([research/draft-head](research/draft-head/README.md)) |
+| `--drafter ngram\|head\|both` | Draft source: default `head` when its file is present, otherwise `ngram` |
+| `--draft-confidence P` | Minimum draft-head confidence (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
 | `--batch-size N` | Pages decoded jointly (1..=8); in `run`, a finished page's row goes straight to the next page |
@@ -130,7 +142,7 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
 - `--resume` skips the pages that already have a successful record, and
   `--keep-going` records a page that fails and goes on to the rest.
 - Inputs and the output file are checked before the model loads, so a
-  wrong path fails in seconds rather than hours into the run.
+  wrong path fails before inference starts.
 - `--pipeline` prefills the next page while the current one decodes; on a
   scanned book it gave 12–20% more pages per hour
   ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)). `--batch-size N`
@@ -161,7 +173,9 @@ fn main() -> anyhow::Result<()> {
 and `Model::load` are the explicit loaders. `RunnerConfig::default()` is the
 automatic configuration, `RunnerConfig::reference()` the bit-exact one (the
 platform exp, full head, no speculation or repetition stop, a pool-sized
-decode team). `Runner` owns its thread pool; `recognize`, `recognize_file`,
+decode team).
+
+`Runner` owns its thread pool; `recognize`, `recognize_file`,
 `recognize_batch` and `recognize_files` return `OcrResult`s in input order,
 each carrying its `plan`. `recognize_files_streaming` hands each page's
 result (or error) to a callback as soon as it and every earlier page are
@@ -173,11 +187,14 @@ Install Rust through rustup (the toolchain file selects 1.94.0). Windows:
 the MSVC C++ build tools; `tools/build_windows.ps1 build --release` fetches
 checksum-verified CMake and NASM when they are not installed. Linux: a C
 compiler, GNU make, CMake and NASM (`tools/build_linux.sh build --release`
-fetches CMake). macOS: `brew install cmake`. `cargo build --no-default-features`
-drops libjpeg-turbo (JPEG then decodes through the `image` crate, not
-Pillow-exact). Supported: x86-64 with AVX2 (AVX-512 used when present) on
-Windows and Linux. aarch64 compiles with NEON kernels tested bitwise in CI
-but has not yet run the model.
+fetches local CMake and NASM copies when needed). macOS:
+`brew install cmake`. `cargo build --no-default-features` drops
+libjpeg-turbo (JPEG then decodes through the `image` crate, not
+Pillow-exact).
+
+Supported: x86-64 with AVX2 (AVX-512 used when present) on Windows and
+Linux. aarch64 compiles with NEON kernels tested bitwise in CI but has not
+yet run the model.
 
 ## The checkpoint and the GPTQ overlay
 
@@ -188,16 +205,14 @@ verifies it (SHA-256 `3df91e40…`). `falcon-ocr --mode near-exact pack
 `tools/make_gptq_overlay.sh` builds `artifacts/model/w8-gptq.safetensors`
 (about 20 minutes: Gram capture on 12 calibration pages, GPTQ act-order over
 the 88 body matrices); the published fast file already contains it.
-Experimental: `EXCEPTIONS=N` builds an overlay that keeps the N
-highest-energy input columns of every W2 projection unquantized in FP32
-(`tools/w8_proxy.py` estimates the gain from the Grams first; see
-[docs/MODES.md](docs/MODES.md#exception-columns-experimental)).
+Experimental overlays with FP32 exception columns are described in
+[Modes](docs/MODES.md#exception-columns-experimental).
 
 ## Fidelity and validation
 
 - `tools/check.sh` (or `.ps1`): format, clippy with warnings denied, the
   library's bitwise kernel oracles; `--smoke` adds the exact-mode trace hash.
-- `cargo test --release --locked --test modes --test gpu_parity ... -- --ignored`
+- `cargo test --release --locked --test modes --test gpu_parity -- --ignored`
   with `artifacts/`: exact mode reproduces the GPU smoke tokens under the
   automatic configuration; near-exact and fast reproduce the recorded
   journal tokens; packed files round-trip; the trace hashes are pinned.
@@ -206,26 +221,19 @@ highest-energy input columns of every W2 projection unquantized in FP32
   near-exact, about 63 for fast.
 - Fast mode's one pre-registered run on 200 held-out pages passed overall
   and on 5 of 7 categories and failed on handwriting and degraded scans;
-  it is documented, not hidden ([docs/MODES.md](docs/MODES.md)).
+  see [Modes](docs/MODES.md#fast-modes-held-out-result) for the verdict.
 
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) lists every test and how the
 fixtures are regenerated.
 
 ## Performance notes
 
-Decode streams the weights, the head screen and the KV cache once per token:
-233 MB per token in fast mode, 401 MB in near-exact, 876 MB in exact, plus
-the cache (30–113 KB per position). At the 7950X's 52 GB/s that floor is 8.2,
-15 and 31 ms per token; the runner measures 8.5, 15 and 29. Prefill is
-compute-bound (about 6 TFLOP per full page): 2.9 s in fast mode with BF16
-attention, 4.1 s in FP32. N-gram speculation pays on tables and loops (a
-looping page 44 → 19 s), not on prose; the published draft head also drafts
-prose: on 16 held-out pages it cuts total time against n-gram drafts by 21%
-in fast mode, 25% in near-exact and 26% in exact (decode 1.5–1.9× against no
-speculation), tokens unchanged. It is used automatically when
-`falcon-ocr-v1.5-draft-head.safetensors` sits next to the model files, as it
-does after the Hugging Face download. [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
-lists every accepted and rejected change with its measurement.
+Decode streams the weights and KV cache from memory; prefill is
+compute-bound. The draft head helps prose as well as repetitive pages: on
+16 held-out pages it cut total time against n-gram drafts by 21% in fast
+mode, 25% in near-exact and 26% in exact, with identical tokens.
+[Performance](docs/PERFORMANCE.md) owns the measurements, bandwidth floors
+and accepted and rejected changes.
 
 ## Platform support
 

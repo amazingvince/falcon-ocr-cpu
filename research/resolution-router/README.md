@@ -1,12 +1,18 @@
-# resolution-router
+# Resolution router
 
 A per-page choice of the maximum image dimension (768, 1024 or 1536) for
-fast mode: most English pages read as well at lower resolution, and prefill
-and decode both scale with the image token count. The plan (phases, gates,
-risks) is the "Falcon-OCR resolution router plan" document; this folder holds
-its measurements.
+fast mode. It saves 25.1% of CPU time on its 389-page development set, but
+fails its held-out English gate: character error rate (CER) rises by 0.29
+percentage points against a 0.25-point limit. It stays opt-in. The
+figure-masked comparison below is a post-hoc diagnostic, not a passing gate.
 
-## Result so far
+Prefill and decode both scale with the image token count. The "Falcon-OCR
+resolution router plan" defines the experiment. Its record labels are
+phase 0 for generating agreement data, phase 1 for developing the policy,
+phase 2 for the Rust implementation, and phase 3 for held-out validation
+and quiet-host timing.
+
+## Development-set results
 
 On 389 English OmniDocBench pages with ground truth (the development set
 `reference/router-dev-v1-*`, CPU runner in fast mode with the draft head,
@@ -16,7 +22,7 @@ resolution, rerun at 1536 when a routed page loops or hits the cap):
 
 | Policy | CER against truth | Pages > 2 pt worse | CPU time saved |
 |---|---|---|---|
-| 1536 (today) | 20.89% | | |
+| fixed 1536 | 20.89% | | |
 | trees + floor + safety net (Phase 1) | 20.26% (−0.63 pt) | 35 | 24.2% |
 | **the runner's router (`--max-dimension auto`, Phase 2)** | **20.20% (−0.69 pt)** | 35 | **24.7%** |
 | flat 1024 | 21.43% (+0.54 pt) | 76 | 35.1% |
@@ -24,30 +30,32 @@ resolution, rerun at 1536 when a routed page loops or hits the cap):
 | the plan's category table (true categories) | 22.10% (+1.21 pt) | 57 | 33.9% |
 | per-page oracle | 17.66% (−3.23 pt) | 0 | 36.2% |
 
-95% bootstrap over pages (Phase 1): CER change [−1.28, −0.09] pt, time saved
-[22.1, 26.4]%; the runner's router: [−1.35, −0.18] pt, [22.6, 26.9]%. The threshold was chosen on these pages; the floor comes from
-the plan. Lower resolution often reads *better* (tables, textbooks,
-multi-column pages); it loses on dense small print (magazines, newspapers,
-tiny text), which the image statistics recognize, and on runaway pages, which
-the safety net catches. Final validation belongs to the English gate pages and
-a quiet-host timing run (plan phase 3).
+95% bootstrap over pages for the initial policy (Phase 1): CER change
+[−1.28, −0.09] pt, time saved [22.1, 26.4]%; the runner's router:
+[−1.35, −0.18] pt, [22.6, 26.9]%. The threshold was chosen on these pages;
+the floor comes from the plan. Lower resolution often reads better on
+tables, textbooks and multi-column pages. It loses on dense small print
+(magazines, newspapers, tiny text), which the image statistics recognize,
+and on runaway pages, which the safety net catches. Held-out validation
+and quiet-host timing are reported separately below.
 
-## Phase 2: the runner's router
+## Runner parity and timing
 
-The runner reproduces the router bit for bit. The statistics were redefined
-([router_features.py](router_features.py), version 2) so that every one is an
-integer count or sum finished by a few float64 operations in a fixed order,
-on the page after the model's first resize at 1536, with Pillow's 8-bit
-resampling (which src/preprocess/resample.rs already implements exactly).
-The trees were retrained on them ([train_trees.py](train_trees.py): the same
-labels and settings plus scikit-learn's early stopping, which picks 132 and
-84 trees on a training split: 13,176 nodes, `src/router/trees.json`,
-318 KiB). The same
-policy on the development set: CER −0.69 pt [−1.35, −0.18], CPU time saved
-24.7% [22.6, 26.9] (without early stopping −0.51 pt / 23.7%; all variants are
-within noise of each other and of Phase 1).
+The runner reproduces the Python router bit for bit. Each statistic
+([router_features.py](router_features.py), version 2) is an integer count or
+sum finished by a few float64 operations in a fixed order, on the page
+after the model's first resize at 1536, with Pillow's 8-bit resampling
+(which `src/preprocess/resample.rs` implements exactly).
 
-Checks:
+The trees use these statistics ([train_trees.py](train_trees.py)), the same
+labels and settings as the initial policy, and scikit-learn's early
+stopping, which picks 132 and 84 trees on a training split: 13,176 nodes,
+`src/router/trees.json`, 318 KiB. On the development set the policy gives
+CER −0.69 pt [−1.35, −0.18] and CPU time saved 24.7% [22.6, 26.9]. Without
+early stopping the result is −0.51 pt / 23.7%; the variants are within
+noise of each other and of Phase 1.
+
+The implementation and timing checks are:
 
 - **Parity.** `src/router` matches the Python specification bit for bit
   (every statistic and both raw scores) on synthetic pages and the decode
@@ -58,10 +66,10 @@ Checks:
 - **End to end** ([check_auto.py](check_auto.py)): `bench --max-dimension
   auto` on the development set gave every page exactly the tokens of the
   fixed run at its final resolution (389 of 389; 2 safety-net reruns, both
-  repetition stops), so CER is the simulated −0.69 pt. Timing: over the first
-  234 pages (before a game started on the host and slowed prefill 18% and
-  decode per token 40%) the measured saving was 26.4% against 24.7% simulated
-  from the older fixed runs; routing adds about 50 ms to a routed page
+  repetition stops), so CER is the simulated −0.69 pt. Over the first 234
+  pages, before host load slowed prefill 18% and decode per token 40%,
+  the measured saving was 26.4% against 24.7% simulated from the older
+  fixed runs. Routing adds about 50 ms to a routed page
   (decoding once, two first resizes, the statistics).
 - **Quiet-host timing** (Phase 3): the 389 pages in four chunks, the two
   settings alternated per chunk (1536, auto, auto, 1536, ...), same binary:
@@ -69,7 +77,7 @@ Checks:
   16–32%); routed pages 38.5% faster (3.4 s each); tokens identical to the
   earlier runs in both settings on all 389 pages.
 
-## Phase 3: the held-out English gate (failed)
+## Held-out English gate (failed)
 
 The 118 English gate pages, `--max-dimension auto` against fast mode at 1536,
 with the English gate's criteria registered before the run
@@ -91,12 +99,14 @@ overall change: on a slide and on a chemistry abstract the routed run
 transcribes a figure (a diagram, a reaction scheme's substituent list) as an
 HTML table that the ground truth leaves out. That is the artifact that also
 failed fast mode's English gate, but the verdict stands as registered. The
-real losses match the development set's: a sidebar dropped at 768 and weaker
-LaTeX on formula pages at 1024. Normalizing whitespace, quotes and markdown
-markers leaves +0.24 pt, so the development set's −0.69 pt did not replicate:
-there, the gains came from pages where 1536 itself fails badly (academic
-tables, long formula pages cut short), and the fresh pages have few of those
-(fast at 1536 reads them at 13.4% CER against 20.9% on the development set).
+real losses match the development set's: a sidebar dropped at 768 and
+weaker LaTeX on formula pages at 1024.
+
+Normalizing whitespace, quotes and markdown markers leaves +0.24 pt, so
+the development set's −0.69 pt did not replicate. The development-set
+gains come from pages where 1536 itself fails badly (academic tables, long
+formula pages cut short), and the fresh pages have few of those. Fast at
+1536 reads them at 13.4% CER against 20.9% on the development set.
 
 Consequence: the router stays opt-in, not the fast-mode default, and reads as
 about a quarter less CPU time for about +0.3 pt CER on printed English. The
@@ -118,13 +128,15 @@ pages, median 17.5% of the page), and rerunning the 34 changed pages:
 | slides | 7.23% | 7.04% | −0.18 pt | pass |
 | tables | 9.74% | 9.48% | −0.26 pt | pass |
 
-So the figure artifact explains the failure, and the router is about neutral
-on fresh printed English while saving about a quarter of the CPU time; formula
-pages at 1024 are its weakest spot. This was designed after seeing the failure
-and uses spent pages, so it is a diagnostic, not a pass
-(`reference/english-gate-v1-masked-results.json`). The same masking takes fast
-mode's own English gate from +2.48 pt to +0.02 pt on ordinary pages. Future
-gates use figure-masked pages from the start.
+The figure artifact explains the failure, and the router is about neutral
+on fresh printed English while saving about a quarter of the CPU time.
+Formula pages at 1024 are its weakest spot. This diagnostic uses spent
+pages and was designed after the failure, so it does not replace the
+recorded verdict. The same masking takes fast mode's own English gate from
++2.48 pt to +0.02 pt on ordinary pages. Future gates use figure-masked
+pages from the start.
+
+Source: `reference/english-gate-v1-masked-results.json`.
 
 ## Where it wins and loses
 
@@ -141,8 +153,10 @@ characters and lose 6,357 against 1536.
   near the decision boundary: pages scored 0–0.5 above it gain as much as
   pages scored 0.5–1.0, so a stricter threshold would mostly give back gains.
   The largest real loss is small magazine print at 1024 (15-px lines, 10 px
-  there), where one page drops a sidebar. Much of the rest is formatting:
-  curly for straight apostrophes, line breaks, `#` markers, and two slides
+  there), where one page drops a sidebar.
+
+  Much of the rest is formatting: curly for straight apostrophes, line
+  breaks, `#` markers, and two slides
   whose ground truth is 41 characters while the model writes the slide's
   table as HTML (pretty-printed at 768). Normalizing whitespace, quotes and
   markdown markers leaves the result at −0.63 pt (19.75% → 19.12%) and pages
@@ -152,7 +166,7 @@ characters and lose 6,357 against 1536.
   (AUC 0.85 in Phase 1) is the natural way to catch the small-print pages;
   any such change needs pages the router has not seen.
 
-## What was learned on the way
+## Findings from model comparisons
 
 - **Serving is not deterministic.** Two 1536 runs of the same page through
   the official vLLM image (batched BF16) differ by more than 2% on 23% of
@@ -173,7 +187,7 @@ characters and lose 6,357 against 1536.
 
 ## Files
 
-| Phase | File | Notes |
+| Record phase | File | Notes |
 |---|---|---|
 | 0 | [sample_pages.py](sample_pages.py) | 10,691 draft-head stage-3 pages (English, 1536-px transcripts exist), capped per source, resized with the model's own `resize_image_if_necessary` to 1024 and 768 (PNG) |
 | 0 | [../vllm-serving/scripts/request_vllm_draftgen.py](../vllm-serving/scripts/request_vllm_draftgen.py) | transcripts from the official vLLM image, both GPUs |

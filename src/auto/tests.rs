@@ -71,7 +71,7 @@ fn lookup_prefers_packed_files_then_the_checkpoint_and_names_remedies() {
     let error = resolve_weights(&request).unwrap_err().to_string();
     assert!(error.contains("no near-exact model"), "{error}");
     assert!(
-        error.contains("huggingface-cli") && error.contains("fetch_reference"),
+        error.contains("hf download BEE-spoke-data/falcon-ocr-v1.5-cpu") && error.contains("fetch_reference"),
         "{error}"
     );
     // A checkpoint alone: near-exact quantizes at load, fast needs the overlay.

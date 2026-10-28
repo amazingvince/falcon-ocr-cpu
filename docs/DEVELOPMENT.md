@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-10-02.
+Status: current as of 2026-10-28.
 
 ## Toolchain
 
@@ -19,11 +19,18 @@ AVX-512 kernels for FP32 projections: token-checked, under 2% on Zen 4).
 
 ## The check
 
-`tools/check.sh` (`tools/check.ps1` on Windows) is the gate every change
-passes: `cargo fmt --check`, `cargo clippy --all-targets --locked -D
-warnings`, `cargo test --release --lib --locked`; with `--smoke` it also
-rebuilds the binary and checks the exact-mode smoke trace hash
-(`e2dad223…`). Lints: `Cargo.toml` sets `clippy::all` and
+Run the gate from the repository root:
+
+```sh
+bash tools/check.sh
+```
+
+`tools/check.ps1` is the Windows equivalent. The gate runs
+`cargo fmt --all -- --check`,
+`cargo clippy --release --all-targets --locked -- -D warnings`, and
+`cargo test --release --lib --locked`. With `--smoke` it also rebuilds the
+binary and checks the exact-mode smoke trace hash (`e2dad223…`), requiring
+the pinned GPU smoke outputs. Lints: `Cargo.toml` sets `clippy::all` and
 `unsafe_op_in_unsafe_fn` to warn (denied in the check), `clippy.toml` allows
 eight arguments, `rustfmt.toml` sets a 120-column width.
 
@@ -57,23 +64,30 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   configuration reproduces the GPU smoke tokens; near-exact and fast reproduce
   `tests/fixtures/modes/*.json`; packing round-trips the checkpoint loader
   and matches the published files; speculation, the decode team, drafts, the
-  head and the explicit AVX2 backend never change tokens; the repetition stop
-  yields a prefix; the three trace hashes are pinned. `tests/batch_parity.rs`
-  compares fixed cohorts, continuous batching (`run --batch-size N`) and the
-  page pipeline (`run --pipeline`) with sequential pages: tokens, stops,
+  head and the explicit AVX2 backend preserve the gate's fixture tokens;
+  the repetition stop yields a prefix; the three trace hashes are pinned.
+
+  `tests/batch_parity.rs` compares fixed cohorts, continuous batching
+  (`run --batch-size N`) and the page pipeline (`run --pipeline`) with
+  sequential pages: tokens, stops,
   input sizes, crops and routes, the safety net included, in the reference
   configuration and with the packed near-exact and fast files under the
-  automatic one. `tests/batch_trace.rs` checks that traced cohorts and
+  automatic one.
+
+  `tests/batch_trace.rs` checks that traced cohorts and
   streamed runs name each page's tensors by its input index (`request.{i}`
   for a prefill or a page that runs alone, `batch.{i}` for a cohort's joint
   decode), singleton cohorts and pages dropped from a cohort included.
+
   `cargo test --release --locked --test negative_inputs --test margin_crop
   --test run_cli -- --ignored --test-threads=1` checks the entry points.
   With `artifacts/model`: every public entry point rejects invalid requests
   before model work, including tensor traces and teacher scoring with the
   margin crop, and a page with margins reports its crop and fewer input
-  tokens on every entry point. With the near-exact file in
-  `artifacts/packed`: `run` resumes an interrupted output, under
+  tokens on every entry point.
+
+  With the near-exact file in `artifacts/packed`: `run` resumes an
+  interrupted output, under
   `--keep-going` records a failing page and runs the rest, and goes on when
   stderr is closed.
 - **Draft head** (needs an exported head file and `artifacts/model`):
@@ -83,9 +97,10 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   near tie) with FP32 and INT8 drafter caches, and prints the draft-step
   timing probe (warm and cold).
 - **Token agreement** against the FP32 anchor
-  ([below](#token-agreement)): near-exact has 1 flip and fast mode about 63
-  in 24,262 steps. The CI `weights` job runs the gates and an agreement
-  queue, on the 12 GPTQ capture pages at 8192 steps, on a self-hosted runner
+  ([below](#token-agreement)) measures flips and KL;
+  [MODES.md](MODES.md#the-metric) owns the results. The CI `weights` job runs
+  the gates and an agreement queue on the 12 GPTQ capture pages at 8192
+  steps, on a self-hosted runner
   labelled `falcon-weights`.
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
   `research/corpus-qualification/tests` and
@@ -102,6 +117,12 @@ Fixtures: `tests/fixtures/README.md` says how the preprocessing, decode and
 router fixtures are regenerated from the pinned Pillow/PyTorch environment;
 `tests/fixtures/modes/README.md` how the mode fixtures are recorded with the
 CLI. Regenerate a fixture only when the numerics change on purpose.
+
+The full weights gates also require the original overlay and GPU outputs,
+not just the downloadable packed files. The frozen reference preflight
+pins its recording GPU and environment; a cross-check on another setup is
+not a replacement receipt. Run available gates and report missing inputs
+separately rather than regenerating fixtures to make a check pass.
 
 ## Token agreement
 
@@ -159,6 +180,103 @@ upstream's file unless `AGREE_REFERENCE` names another report, so leave that
 variable out only when `REF` is upstream's; `AGREE_BIN` defaults to the
 Windows `.exe` path. The FP32 top-K run has 0 flips by construction; an
 arm's `kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
+
+## Rebuilding packed files and experimental overlays
+
+The standard packed files use the pinned FP32 checkpoint; fast mode also
+needs a GPTQ overlay. Fetch the checkpoint, build both binaries, and pack:
+
+```sh
+python scripts/fetch_reference.py --output artifacts/model
+cargo build --release --locked --bins
+mkdir -p artifacts/repacked
+target/release/falcon-ocr --mode near-exact pack \
+  --output artifacts/repacked/falcon-ocr-v1.5-near-exact.safetensors
+BIN=target/release/falcon-ocr-eval bash tools/make_gptq_overlay.sh
+target/release/falcon-ocr --mode fast pack \
+  --output artifacts/repacked/falcon-ocr-v1.5-fast.safetensors
+```
+
+Choose a new output directory for each build. The overlay helper captures
+activation Gram matrices (`XᵀX`) on 12 calibration pages, then quantizes
+88 body matrices with GPTQ act-order; it takes about 20 minutes on a
+16-core desktop. `REUSE_GRAMS=1` reuses the existing Gram directory without
+checking which pages produced it. On Windows, use the `.exe` binary paths;
+the helper's default `BIN` is `target/release/falcon-ocr-eval.exe`.
+
+To investigate exception columns with existing Grams:
+
+```sh
+python tools/w8_proxy.py --gram-dir artifacts/w8/gram \
+  --include 'feed_forward\.w2' --jobs 16
+EXCEPTIONS=4 REUSE_GRAMS=1 BIN=target/release/falcon-ocr-eval \
+  bash tools/make_gptq_overlay.sh
+target/release/falcon-ocr --mode fast \
+  --w8-artifact artifacts/model/w8-gptq-exc4.safetensors run page.png
+target/release/falcon-ocr --mode fast \
+  --w8-artifact artifacts/model/w8-gptq-exc4.safetensors pack \
+  --output artifacts/repacked/fast-exc4.safetensors
+```
+
+`page.png` is a page you supply. `tools/w8_proxy.py` reports each matrix's
+top-k activation energy and activation-weighted output error,
+`sqrt(tr(ΔW G ΔWᵀ) / tr(W G Wᵀ))`, for round-to-nearest and GPTQ with
+k = 0, 1, 2, 4, 8, 16 exception columns. `--overlay` evaluates an existing
+v2 overlay offline. This proxy can narrow the choice in minutes before a
+model run; it is not a held-out quality gate.
+
+`tools/w8_variants.py --exceptions N --exceptions-include REGEX` keeps
+the N highest-energy input columns of each matching matrix;
+`--exception-select error` weights selection by expected rounding error.
+Round-to-nearest computes scales and codes with those columns zeroed and
+stores their original values. GPTQ processes them last, so they absorb
+error compensation and store the damped least-squares optimum for the
+chosen codes. [MODES.md](MODES.md#exception-columns-experimental) owns the
+format and fidelity findings.
+
+## Measuring performance and input changes
+
+Compare arms only within one interleaved run on the same quiet host.
+Background work changes timings; a running GPU job (training or vLLM)
+slowed CPU decode by about 30% in the draft-head experiments. Record the
+resolved plan, including the decode team, and pin it when comparing arms
+whose automatic choices differ. [PERFORMANCE.md](PERFORMANCE.md) owns the
+measurements and their host-specific limitations.
+
+For bandwidth, the decode floor, and a reference-profile timing report:
+
+```sh
+B=target/release
+PAGE=artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png
+OUT=artifacts/measure-journal
+mkdir -p "$OUT"
+$B/falcon-ocr --model artifacts/packed doctor --probe --text
+$B/falcon-ocr-eval --profile reference bench "$PAGE" \
+  --samples 3 --report "$OUT/reference.json"
+```
+
+The page needs the restored corpus. Choose a new `OUT` for another run;
+`bench` refuses an existing report. `--tune phases=1` prints the forward
+phase split; `--tune prefill-profile=1` prints prefill-attention stage
+cycles. Use explicit profiles or `--model-file` and runner flags to
+measure the configuration you intend.
+
+Other measurement entry points:
+
+| Tool | What it measures |
+|---|---|
+| `python research/phase4-hillclimb/attempt3/ab.py --help` | Interleaved fresh-process A/B of two binaries on the same pages |
+| `python research/draft-head/cpu_ab.py --help` | Interleaved drafter settings, page totals and token identity against no speculation; an arm's first flag `@<exe>` selects its binary |
+| `cargo test --release --locked --lib panels::panel::tests::prefill_throughput_probe -- --ignored --nocapture` | Panel GEMM versus the `gemm` crate at prefill shapes; the recorded 7950X result was 1.7–1.8 TFLOP/s |
+| `cargo run --release --locked --example ocr_bench -- --help` | Warm canonical-RGB recognition, with input and model hashes in its reports; provide images, CPU/environment labels and an output path |
+
+For margin cropping, run a few dozen of your own book pages in the same
+mode with and without `--crop-margins`. Compare each page's token ids,
+character edit distance divided by the uncropped text's length, stop
+reason, `total_ms`, and CER against ground truth when available.
+`research/resolution-router/analyze_agreement.py` uses that text-distance
+measure. Read the changed pages: lost page numbers or marginal notes are
+failures even if the run is faster.
 
 ## Adding an instruction set
 

@@ -1,13 +1,13 @@
 # Portability
 
-Status: current as of 2026-09-30. Runs and is measured on x86-64 (Windows,
+Status: current as of 2026-10-28. Runs and is measured on x86-64 (Windows,
 Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and
 runs the NEON unit tests on macOS runners); the NEON kernels are bitwise the
 portable ones in those tests, but no aarch64 machine has yet run the model
 with weights.
 
-- Quality bar: token selection, not bit-exact math. Selected tokens must be
-  the same or nearly the same as the FP32 reference (see MODES.md).
+- Quality is measured against FP32's token choices; kernel tests separately
+  check bitwise arithmetic. [MODES.md](MODES.md) owns the fidelity results.
 - Targets: x86 AVX2/FMA, AVX-512 (as `auto` on AVX-512F and AVX512-BF16
   CPUs), aarch64 NEON, and a scalar fallback.
 
@@ -24,6 +24,9 @@ floor is bytes per token divided by read bandwidth. Prefill is compute-bound.
 | Apple M4 / Pro / Max | 120 / 273 / 410–546 GB/s | 0.6–1.5 TFLOP/s NEON | dequantization compute | NEON FMA |
 | Graviton 3/4 | 300+ GB/s per socket | many cores | dequantization compute | FMA; BF16/I8MM |
 
+Only the 7950X row is measured here. The other rows are hardware-class
+estimates, not measurements of this runner on those machines.
+
 Fewer bytes per token is the universal decode lever (16-bit or 8-bit weights,
 the INT8 head screen, Q16/Q8 caches). On high-bandwidth machines the decode
 bottleneck moves to dequantization: those need integer dot products
@@ -35,11 +38,9 @@ performance cores so the decode tuner can try a team of only those.
 
 ## Code structure
 
-`simd::Simd` is an 8-lane logical `f32` vector with the operations the
-kernels use: load, store, splat, add, sub, mul, FMA, max, compare/select,
-exact `i8`/`i16` widening loads, two fixed reduction trees (`sum`, the dot
-tree; `sum_tree`, the RMS-norm tree), the pair operations of the RoPE row
-(`dup_even`, `dup_odd`, `swap_pairs`, `addsub`) and `exp`.
+Each ISA implements the same 8-lane `simd::Simd` interface. Its operations
+and reduction trees are defined in
+[ARCHITECTURE.md](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa).
 
 | Implementation | Registers |
 |---|---|
@@ -48,23 +49,19 @@ tree; `sum_tree`, the RMS-norm tree), the pair operations of the RoPE row
 | `Neon` | two `float32x4_t` |
 | `Portable` | `[f32; 8]` with `mul_add`: the oracle |
 
-Kernels are `#[inline(always)]` generic functions; x86 entry wrappers carry
-`#[target_feature(enable = "avx2,fma")]`, NEON needs none. Dispatch happens
-once per process from runtime detection (`kernels::Simd::resolved`,
-`prefill_plan`), so one baseline-target binary serves every CPU. The same
-lane layout and reduction trees make `kernel::<Avx2>`, `kernel::<Neon>` and
-`kernel::<Portable>` produce identical bits; each machine tests its fast
-path against the portable one. Deviations are explicit and token-checked:
-the 16-lane AVX-512 prefill tiles (bitwise the 8-lane ones), the `gemm` crate
-for FP32 projections, and fast mode's BF16 kernels.
+The x86 entry wrappers carry `#[target_feature(enable = "avx2,fma")]`;
+NEON needs none. Runtime detection (`kernels::Simd::resolved`,
+`prefill_plan`) lets one baseline-target binary serve every CPU. Kernels
+with the same exp choice share the portable oracle's arithmetic; the
+`gemm` projections and BF16 kernels are token-checked numerical deviations.
 
-Math functions come from our own vector code, not the OS math library,
-because UCRT, glibc and Apple libm differ. Recognition uses the portable
-fast exp in prefill attention (token-identical to the platform exp on all
-calibration pages) and in fast mode's decode attention over its 8-bit cache;
-on x86 the other decode attention and traces use the platform-exact AVX2
-exp, so the recorded reference hashes keep reproducing. NEON always uses the
-fast exp.
+Recognition uses the portable polynomial exp in prefill attention
+(token-identical to the platform exp on all calibration pages) and in fast
+mode's decode attention over its 8-bit cache;
+on x86 the other decode attention and traces use a vector exp that matches
+the platform's `f32::exp`, with scalar fallback for uncertain lanes. UCRT,
+glibc and Apple libm can differ, so platform-exact arithmetic is not a
+cross-platform bitwise guarantee. NEON always uses the polynomial exp.
 
 ## Kernel inventory
 
