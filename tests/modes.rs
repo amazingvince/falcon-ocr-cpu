@@ -8,6 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use falcon_ocr::{
     Backend, DecodeThreads, Drafter, FinishReason, GenerationOptions, HeadMode, Mode, Model, Runner, RunnerConfig,
+    Speculation,
     auto::{ModelRequest, load_model, resolve_weights, with_default_draft_head},
     quant::Profile,
     trace::{TensorTrace, Trace},
@@ -287,15 +288,22 @@ fn speculation_decode_team_drafts_and_head_never_change_tokens() {
 }
 
 /// Each drafter must verify and accept real proposals, as well as preserve
-/// the non-speculative tokens and stop reason in every mode.
+/// the non-speculative tokens and stop reason in every mode. Packed exact
+/// mode must also reproduce the published GPU smoke receipt's tokens.
+/// The n-gram-only arm uses three-token matches on the journal page so its
+/// first proposal accepts before timing-based backoff can begin.
 #[test]
-#[ignore = "needs all three packed modes, the published draft head and the SHORT corpus page"]
+#[ignore = "needs all three packed modes, the published draft head, JOURNAL page and smoke image"]
 fn speculative_drafters_verify_accept_and_preserve_tokens_in_every_mode() {
-    let image = image::open(SHORT).unwrap().to_rgb8();
+    let image = image::open(JOURNAL).unwrap().to_rgb8();
     let base = RunnerConfig {
         threads: 8,
         decode_threads: DecodeThreads::Fixed(4),
         document_drafts: false,
+        speculation: Some(Speculation {
+            min_match: 3,
+            ..Speculation::default()
+        }),
         ..RunnerConfig::default()
     };
     let head = with_default_draft_head(base.clone(), Path::new(PACKED_DIR), false);
@@ -315,10 +323,29 @@ fn speculative_drafters_verify_accept_and_preserve_tokens_in_every_mode() {
         .unwrap();
         let model = Arc::new(load_model(&plan, false).unwrap());
         assert_eq!(model.profile(), mode.profile(true));
+        if mode == Mode::Exact {
+            let receipt: serde_json::Value =
+                serde_json::from_str(include_str!("../reference/official-smoke-fp32.json")).unwrap();
+            let expected: Vec<u32> = serde_json::from_value(receipt["token_ids"].clone()).unwrap();
+            let result = runner(model.clone(), PACKED_DIR, head.clone())
+                .recognize_file(
+                    Path::new(SMOKE_DIR).join("canonical-rgb.png"),
+                    &GenerationOptions {
+                        max_dimension: receipt["max_image_size"].as_u64().unwrap() as u32,
+                        min_dimension: receipt["min_image_size"].as_u64().unwrap() as u32,
+                        ..options(receipt["max_new_tokens"].as_u64().unwrap() as usize)
+                    },
+                )
+                .unwrap();
+            assert_eq!(result.token_ids, expected, "packed exact GPU smoke tokens");
+            assert_eq!(result.finish_reason, FinishReason::Eos);
+            assert_eq!(result.mode, Some(Mode::Exact));
+            assert_eq!(result.precision, "fp32");
+        }
         let run = |config| {
             let mut probe = SpeculationProbe::default();
             let result = runner(model.clone(), PACKED_DIR, config)
-                .recognize_with_trace(&image, &options(128), &mut probe)
+                .recognize_with_trace(&image, &options(64), &mut probe)
                 .unwrap();
             (result, probe)
         };

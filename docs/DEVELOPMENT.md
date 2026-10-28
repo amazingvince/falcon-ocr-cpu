@@ -31,10 +31,9 @@ bash tools/check.sh
 `cargo clippy --release --all-targets --locked -- -D warnings`, and
 `cargo test --release --lib --locked`. With `--smoke` it also rebuilds the
 binary and checks the exact-mode CPU smoke trace hash (`e2dad223…`),
-requiring the pinned GPU smoke fixture. Lints: `Cargo.toml` sets
-`clippy::all` and
-`unsafe_op_in_unsafe_fn` to warn (denied in the check), `clippy.toml` allows
-eight arguments, `rustfmt.toml` sets a 120-column width.
+requiring the pinned GPU smoke fixture. Lints: `Cargo.toml` sets `clippy::all`
+and `unsafe_op_in_unsafe_fn` to warn (denied in the check), `clippy.toml`
+allows eight arguments, `rustfmt.toml` sets a 120-column width.
 
 The Ubuntu CI job also checks public and crate-visible Rust documentation.
 Install the checker and run the same gate locally:
@@ -84,7 +83,8 @@ unsafe functions.
 
   The speculative-drafter regression uses only the three packed modes,
   tokenizer/configuration and published draft head in `artifacts/packed`,
-  plus `artifacts/corpus/v3/68a0f0e94a55d7ae/canonical-rgb.png`:
+  plus `artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png` and
+  `artifacts/reference/smoke-fp32/canonical-rgb.png`:
 
   ```sh
   cargo test --release --locked --test modes \
@@ -93,10 +93,12 @@ unsafe functions.
   ```
 
   It compares n-gram, trained-head and combined drafting against disabled
-  speculation in each mode, with a 128-token output cap. Decode callbacks
-  must show multi-row verification and fewer target-model steps than plain
-  decoding, proving drafts were accepted; tokens and stop reasons must
-  match. Missing assets fail the test. The existing self-hosted `weights`
+  speculation in each mode, with three-token n-gram matches and a 64-token
+  output cap. Decode callbacks must show multi-row verification and fewer
+  target-model steps than plain decoding, proving drafts were accepted;
+  tokens and stop reasons must match. Packed exact mode must reproduce the
+  [published GPU smoke tokens](../reference/official-smoke-fp32.json).
+  Missing assets fail the test. The existing self-hosted `weights`
   job includes it on nightly and manual runs when a `falcon-weights`
   runner is available. Hosted PR jobs skip ignored tests; the test downloads
   nothing.
@@ -345,7 +347,8 @@ environment variables.
   artifacts): `cargo clean -p falcon-ocr` before an A/B.
 - Run `cargo test` alone; a second concurrent cargo command can leave it
   printing nothing.
-- The packed round-trip gate writes 1.5 GB of temporary files.
+- The packed round-trip gate needs temporary disk space for all three packed
+  modes at once.
 - Keep the mapped checkpoint or packed file unchanged while a `Model` is
   alive.
 
