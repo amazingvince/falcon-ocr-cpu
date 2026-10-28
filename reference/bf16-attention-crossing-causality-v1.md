@@ -28,7 +28,7 @@ these probes.
 | Layer 0, row 53, head 8 | 43 | 23 | Maximum is identical. A one-FP32-ULP argument shift from the local QK difference crosses the midpoint. |
 | Layer 17, row 54, head 10 | 22 | 2 | Both local score and maximum differ. Replacing either in the AVX512 trace restores the GPU-side cast; scalar has a larger local-score error and needs the score replacement. |
 | Layer 17, row 124, head 11 | 23 | 2 | Local QK and score are identical. The maximum-anchor QK difference alone shifts the cast. |
-| Layer 0, row 13, head 2 | - | 0 in the full tile | Nonfailing control: many QK/FP32 exponential differences, but no BF16 probability crossing. |
+| Layer 0, row 13, head 2 | — | 0 in the full tile | Nonfailing control: many QK/FP32 exponential differences, but no BF16 probability crossing. |
 
 For example, layer17/row124/head11 has identical local QK
 `-0.9768662452697754`. The running maximum is `3.1338367462158203` in the GPU

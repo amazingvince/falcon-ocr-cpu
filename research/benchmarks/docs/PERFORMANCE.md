@@ -20,10 +20,10 @@ remained open, so these are local development measurements, not a dedicated host
 
 | Pages per group | Sequential control medians | Joint / expanded median | Joint / compact median | Expanded throughput gain |
 |---:|---:|---:|---:|---:|
-| 1 | 486-492 ms | 498 ms | 473 ms | 1.2-2.5% slower |
-| 2 | 983-988 ms | 813 ms | 786 ms | 1.21-1.22x |
-| 4 | 1932-1934 ms | 1264 ms | 1249 ms | 1.53x |
-| 8 | 3860-3865 ms | 1995 ms | 1980 ms | 1.93-1.94x |
+| 1 | 486–492 ms | 498 ms | 473 ms | 1.2–2.5% slower |
+| 2 | 983–988 ms | 813 ms | 786 ms | 1.21–1.22x |
+| 4 | 1932–1934 ms | 1264 ms | 1249 ms | 1.53x |
+| 8 | 3860–3865 ms | 1995 ms | 1980 ms | 1.93–1.94x |
 
 Joint decoding reaches 4.01 pages/second for the repeated eight-page group versus
 about 2.07 sequentially on this fixture. Prefill still runs independently.
@@ -53,7 +53,7 @@ orchestration. It is retained for provenance and is not used as the control here
 ## Packed FP32 weights
 
 The opt-in `--weight-layout phase-packed` runner preserves AVX2 reduction order
-while sharing weight loads among 2-8 live decode rows. Single-row decode and
+while sharing weight loads among 2–8 live decode rows. Single-row decode and
 prefill keep their existing paths. A Model packs once and shares the packed copy
 between Runners. Windows and WSL tests preserve single/mixed/batch2/4/8 traces,
 outputs and zero-allocation warm decoding; see `reference/weight-layout-parity.json`.
@@ -64,13 +64,13 @@ two warmups and seven samples per group. Every output token matches.
 
 | Pages per group | Unpacked medians | Packed medians | Latency reduction against both controls |
 |---:|---:|---:|---:|
-| 1 | 488-508 ms | 488-490 ms | Within measurement variation |
-| 2 | 796 ms | 651-655 ms | 17.7-18.1% |
-| 4 | 1301-1312 ms | 922-932 ms | 28.4-29.7% |
-| 8 | 1966-2009 ms | 1525-1559 ms | 20.7-24.1% |
+| 1 | 488–508 ms | 488–490 ms | Within measurement variation |
+| 2 | 796 ms | 651–655 ms | 17.7–18.1% |
+| 4 | 1301–1312 ms | 922–932 ms | 28.4–29.7% |
+| 8 | 1966–2009 ms | 1525–1559 ms | 20.7–24.1% |
 
 Control drift is at most 4.09% (single page); batch drift is at most 2.12%.
-The packed copy adds 876,085,248 bytes (835.5 MiB), takes 131-135 ms to prepare,
+The packed copy adds 876,085,248 bytes (835.5 MiB), takes 131–135 ms to prepare,
 and increases peak resident memory from about 1.36 GB to 2.24 GB across the full
 mode runs. It remains opt-in pending representative full-page
 and mixed-length evidence. These results measure an additional improvement over
@@ -98,18 +98,18 @@ processes and, where a pinned GPU record exists, identical to it.
 
 | Case | Control before | Candidate | Control after | Drift | Candidate vs controls |
 |---|---:|---:|---:|---:|---:|
-| Journal page, batch 1 (6,544-token prefix, 1,140 output tokens, 1536 cap) | 73.403 s | **62.719 s** | 74.167 s | 1.04% | -14.56% / -15.44% |
-| Mixed pair, joint batch 2 (sparse room 6 tokens + table page 2,280 tokens) | 159.286 s | **131.764 s** | 157.735 s | 0.98% | -17.28% / -16.46% |
-| Small fixture, joint group 1 | 0.493 s | 0.485 s | 0.497 s | 0.82% | -1.58% / -2.38% |
-| Small fixture, joint group 2 | 0.800 s | 0.772 s | 0.787 s | 1.58% | -3.43% / -1.90% |
-| Small fixture, joint group 4 | 1.298 s | 1.256 s | 1.267 s | 2.47% | -3.25% / -0.86% |
-| Small fixture, joint group 8 | 2.047 s | 1.961 s | 2.087 s | 1.94% | -4.20% / -6.02% |
+| Journal page, batch 1 (6,544-token prefix, 1,140 output tokens, 1536 cap) | 73.403 s | **62.719 s** | 74.167 s | 1.04% | −14.56% / −15.44% |
+| Mixed pair, joint batch 2 (sparse room 6 tokens + table page 2,280 tokens) | 159.286 s | **131.764 s** | 157.735 s | 0.98% | −17.28% / −16.46% |
+| Small fixture, joint group 1 | 0.493 s | 0.485 s | 0.497 s | 0.82% | −1.58% / −2.38% |
+| Small fixture, joint group 2 | 0.800 s | 0.772 s | 0.787 s | 1.58% | −3.43% / −1.90% |
+| Small fixture, joint group 4 | 1.298 s | 1.256 s | 1.267 s | 2.47% | −3.25% / −0.86% |
+| Small fixture, joint group 8 | 2.047 s | 1.961 s | 2.087 s | 1.94% | −4.20% / −6.02% |
 
 Journal-page stage medians: prefill 12.68 / 12.34 / 12.72 s and decode
 60.73 / 51.58 / 61.30 s for control-before / candidate / control-after; the gain
 is in decode, as the isolated experiments predicted. The target workloads beat
 both controls by more than the 5% promotion threshold, and no secondary workload
-regresses (the small-fixture groups move by -0.9% to -6.0%). Raw processes,
+regresses (the small-fixture groups move by −0.9% to −6.0%). Raw processes,
 commands and the evaluation are in
 `artifacts/benchmarks/attention64-promotion-v1/bracket/` (`bracket.json`,
 `bracket.md`), produced by `research/benchmarks/scripts/promotion_bracket.py`; the control and
@@ -136,22 +136,22 @@ drift is +0.76%, both within the frozen 5% limit.
 
 | Mode | Median page latency | Peak resident memory | Peak private commit |
 |---|---:|---:|---:|
-| Sequential controls | 73.581-74.024 s | 2.973-2.974 GB | 2.449-2.450 GB |
-| Expanded-cache controls | 74.310-74.876 s | 2.974 GB | 2.450 GB |
+| Sequential controls | 73.581–74.024 s | 2.973–2.974 GB | 2.449–2.450 GB |
+| Expanded-cache controls | 74.310–74.876 s | 2.974 GB | 2.450 GB |
 | Compact cache | 67.829 s | 2.576 GB | 1.784 GB |
 | Phase-packed weights, expanded cache | 75.549 s | 3.851 GB | 3.328 GB |
 
 Memory uses decimal GB and process-lifetime high-water marks, including loading
 and warmup. It is not isolated KV allocation or steady-state resident memory.
 
-Compact caching reduces page latency by **8.7-9.4% against both expanded
+Compact caching reduces page latency by **8.7–9.4% against both expanded
 controls**, passing the target for this group. Peak resident memory falls by
 about 398 MB and peak private commit by about 665 MB. Median decode time falls
-from 61.6-62.1 s to 55.4 s; prefill remains about 12.4-12.6 s. Image preprocessing
-is about 54-61 ms, with the image projection taking about 7 ms inside prefill.
+from 61.6–62.1 s to 55.4 s; prefill remains about 12.4–12.6 s. Image preprocessing
+is about 54–61 ms, with the image projection taking about 7 ms inside prefill.
 Stage medians are nested observations and need not sum to the enclosing median.
 
-Packed weights provide no single-page gain here: latency is 0.9-1.7% higher
+Packed weights provide no single-page gain here: latency is 0.9–1.7% higher
 than the expanded controls. The additional packed payload is 835.5 MiB and takes
 130.4 ms to construct, outside the warm samples. With one active row, the runner
 uses its original single-row kernels; this group cannot measure packed batch
@@ -210,11 +210,11 @@ attention, 26.85% to linear projections and 11.68% to GEMM attention. Shared
 these overlapping views must not be added. The first isolated experiment targets
 fixed-size single-query attention operations while preserving arithmetic order.
 Its completed native Windows bracket measured **68.444 s per page**, compared
-with unchanged controls at **75.570 and 72.931 s**: a **6.15-9.43% latency
+with unchanged controls at **75.570 and 72.931 s**: a **6.15–9.43% latency
 reduction**. All nine measured outputs match exactly, and six operator checks
 plus the complete 1,904-tensor smoke trace remain bit-identical. Whole-page
 control drift is 3.49%, within the preset 5% limit. Stage timings varied more:
-control prefill changed by +17.45% and decode by -6.92%, limiting precise
+control prefill changed by +17.45% and decode by −6.92%, limiting precise
 phase-level claims. See the [candidate result](../experiments/attention64/RESULTS-V1.md)
 and [bound receipt](../../../reference/benchmarks/windows-attention64-fullpage-v1.json).
 This is one page and one bracket, with no default promotion. The separate
@@ -222,9 +222,9 @@ compact-cache gain cannot be added without a combined experiment.
 
 That combined experiment is now complete: **63.102 s per page** with compact
 caches and fixed-width attention, versus fresh compact controls at **67.414 and
-67.239 s**. This is **6.15-6.40% additional latency reduction over compact caches
+67.239 s**. This is **6.15–6.40% additional latency reduction over compact caches
 alone**, with 0.259% control drift and all nine measured outputs exact. Decode
-latency fell by 8.10-8.24%; prefill differed by -0.13% to +2.21% versus controls.
+latency fell by 8.10–8.24%; prefill differed by −0.13% to +2.21% versus controls.
 Eleven operator tests, the byte-identical 1,904-tensor compact smoke and eight
 zero-allocation warm decode intervals passed before timing. See the
 [combined result](../experiments/attention64_compact/RESULTS-V1.md). There is no
@@ -233,7 +233,7 @@ be added. The same candidate now also passes Linux-under-WSL operator, complete
 same-platform smoke-tensor and allocation checks; see the
 [Linux functional receipt](../../../reference/linux-attention64-compact-functional-v1.json).
 The frozen sparse/table mixed-B2 follow-up also passed: **128.912 s per pair**
-versus **142.475/141.837 s** compact controls, a **9.11-9.52% latency reduction**
+versus **142.475/141.837 s** compact controls, a **9.11–9.52% latency reduction**
 with **0.448% control drift**. All 18 measured request outputs match the pinned
 GPU IDs, literal text and EOS stops (6 and 2,280 output tokens per pair); the
 [independent review](../../../reference/benchmarks/windows-attention64-compact-mixed-b2-review-v1.json)
@@ -245,7 +245,7 @@ unchanged.
 
 An isolated paired-output AVX2 GEMV follow-up preserved all operator/smoke
 outputs and zero-allocation checks, but measured **62.041 s** versus
-**62.849/62.766 s** combined-attention controls: only **1.16-1.29%** lower
+**62.849/62.766 s** combined-attention controls: only **1.16–1.29%** lower
 latency, below the unchanged 5% target. All nine full-page outputs remained
 exact and control drift was 0.132%. The candidate is unpromoted; see the
 [GEMV result](../experiments/gemv_pair/RESULTS-V1.md). This bounded result does
@@ -255,7 +255,7 @@ limiting resource.
 A subsequent explicit temporal-prefix cache candidate matched thirteen operator
 checks, 4,048 single/mixed tensor digests and two zero-allocation intervals. Its
 full-page bracket measured **60.730 s** versus **62.818/62.758 s** controls:
-**3.23-3.32%** lower latency, with all nine outputs exact and **0.096%** drift.
+**3.23–3.32%** lower latency, with all nine outputs exact and **0.096%** drift.
 This also misses the frozen 5% speed target and remains unpromoted. It saves an
 analytic **140.594 MiB** of reserved KV payload for this prefix/capacity; storage
 reduction is distinct from the speed target and hardware memory traffic. See

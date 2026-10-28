@@ -55,7 +55,7 @@ There is no calibrated (GPTQ/AWQ) and no 4-bit v1.5 model.
   | FP32, fast exp | FP32 | 0 |
 
 - **The 8-bit weights cause the drift.** The projection inputs are extremely anisotropic: in the layer-10 W2 input (squared-ReLU outputs), one channel carries 614,663× the median energy. Plain absmax rounding leaves the dominant channels' error uncorrected.
-- The largest output error was in W13 of layers 0-11 (1-2% relative).
+- The largest output error was in W13 of layers 0–11 (1–2% relative).
 
 ## 3. The quantized model: GPTQ W8, act-order, static G64 groups
 
@@ -94,7 +94,7 @@ All A/Bs are on the journal page, interleaved fresh processes, on a quiet host.
 | Change | Result | Decision |
 |---|---|---|
 | Split FP32 cache for exact mode (bit-identical to compact) | 42.8 → 39.6 s | **default for `--mode exact run`** |
-| 32 threads for everything | prefill -22%, decode +50-60% | rejected as a single setting |
+| 32 threads for everything | prefill −22%, decode +50–60% | rejected as a single setting |
 | **Hybrid threads**: prefill on all logical CPUs, decode on one per physical core (`src/cpu.rs`) | fast 16.4 → 14.9 s, exact 39.8 → 38.4 s | **default** *[superseded by T2: decode team chosen automatically]* |
 | AVX-512F prefill tiles (bitwise identical to AVX2) | attention 2.64 → 2.41 s (under 1% total on Zen 4) | on for AVX-512 hosts; Intel should gain more |
 | gemm AVX-512 kernels | under 2% | rejected |
@@ -104,7 +104,7 @@ All A/Bs are on the journal page, interleaved fresh processes, on a quiet host.
 **Where the time goes now** (journal page, fast mode):
 - **Decode: 8.8 ms/token.** That is about 445 MB/token at roughly 50 GB/s, the measured bandwidth floor.
   - Phases: attention 4.2, W13 1.5, head 1.0, W2 0.8, QKV 0.7, WO 0.4 ms.
-- **Prefill: 4.6 s**, at about 60-70% of FP32 peak.
+- **Prefill: 4.6 s**, at about 60–70% of FP32 peak.
   - attention 2.4 s;
   - projections 1.6 s;
   - split, RoPE and appends 0.4 s.
@@ -134,14 +134,14 @@ falcon-ocr doctor                                          # shows logical CPUs 
 
 | Gate (181 pages where FP32 ends at EOS) | FP32 | Fast (GPTQ) | Change | Result |
 |---|---:|---:|---:|---|
-| Overall micro CER vs ground truth (limit +0.25 pt) | 16.649% | 16.491% | -0.16 pt | PASS |
+| Overall micro CER vs ground truth (limit +0.25 pt) | 16.649% | 16.491% | −0.16 pt | PASS |
 | degraded (22 pages; limit +1 pt) | 25.73% | 27.15% | +1.42 pt | **FAIL** |
 | formulas (29) | 23.21% | 23.45% | +0.24 pt | PASS |
 | handwriting (23) | 57.28% | 62.65% | +5.37 pt | **FAIL** |
-| multi_column (23) | 16.35% | 14.41% | -1.94 pt | PASS |
-| ordinary (33) | 6.91% | 6.80% | -0.11 pt | PASS |
-| tables (26) | 17.85% | 17.28% | -0.57 pt | PASS |
-| tiny_text (25) | 12.17% | 12.06% | -0.10 pt | PASS |
+| multi_column (23) | 16.35% | 14.41% | −1.94 pt | PASS |
+| ordinary (33) | 6.91% | 6.80% | −0.11 pt | PASS |
+| tables (26) | 17.85% | 17.28% | −0.57 pt | PASS |
+| tiny_text (25) | 12.17% | 12.06% | −0.10 pt | PASS |
 | Repetition stop fires on an FP32-EOS page (limit 0) | | 5 pages | | **FAIL** |
 
 **Not gated.**
@@ -153,8 +153,8 @@ falcon-ocr doctor                                          # shows logical CPUs 
 **Post-hoc diagnosis** (explains the failure; it does not change the verdict):
 - **Loops.** The 5 stop firings are genuine loops, not detector false positives (for example "DISC DISC DISC…" and runs of underscores).
   - On 4 pages, W8 sent a page that FP32 ends at EOS into a loop. On the fifth (95928a9b), FP32 itself emitted a 2,232-token hallucination, and the stopped output is better (CER 1.90 → 0.83).
-  - The 3 looped handwriting pages cause all of the handwriting regression. Without them, handwriting is -0.96 pt.
-- **Degraded scans.** Their +1.42 pt is not from loops. It is spread drift: several pages diverge at token 0-1, and the flips at near-ties land slightly worse on average.
+  - The 3 looped handwriting pages cause all of the handwriting regression. Without them, handwriting is −0.96 pt.
+- **Degraded scans.** Their +1.42 pt is not from loops. It is spread drift: several pages diverge at token 0–1, and the flips at near-ties land slightly worse on average.
 - **Conclusion.** Fast mode as registered is **not qualified**. It is within budget overall and on 5 of 7 categories. It fails on handwriting (W8-induced loops) and degraded scans (broad drift).
 - **The held-out set is now used.** Any fix evaluated on these pages would be a post-hoc estimate, not a qualification.
 
@@ -194,7 +194,7 @@ Production serves this model in BF16 on GPU. `research/vllm-serving/scripts/run_
 | Token edits vs production | 0 | 53,114 | 46,808 | 44,084 |
 | Micro CER, pages where all four end at EOS (173) | 16.41% | 15.90% | 15.78% | 15.93% |
 | Runs to the 4,096-token limit | 15 | 19 | 7 | 7 |
-| Stopped by `--stop-repetition` | - | - | 13 | 11 |
+| Stopped by `--stop-repetition` | – | – | 13 | 11 |
 
 The section 6 budget measures against FP32. Measured that way, production itself would fail: overall +1.68 pt, handwriting +29.9, degraded +1.9, tables +2.8. The per-category limit was below the natural spread between two correct implementations.
 
@@ -213,19 +213,19 @@ A different BF16 implementation does not approximate production better than FP32
 
 **LLM judge** (`research/phase4-hillclimb/attempt3/judge_pages.py`, `artifacts/phase4/judge/`). Blinded, shuffled outputs of the four systems were judged against the page image, with the ground truth as an aid, for content errors vs formatting-only differences. Rubric: `artifacts/phase4/judge/<category>/RUBRIC.md` (an ignored artifact, not in the repository). Five pages per category were re-judged under new letters: the mean score change was 1.5 (handwriting) and 0.4 (degraded) points, with the same verdict 34/34 times.
 
-| Content score (0-100), mean over 25 pages | Production BF16 | FP32 | Fast (current) | Fast (BF16-source) |
+| Content score (0–100), mean over 25 pages | Production BF16 | FP32 | Fast (current) | Fast (BF16-source) |
 |---|---:|---:|---:|---:|
 | Handwriting | 63.8 | 63.4 | 62.2 | 64.1 |
-| - pages lost to a loop | 1 | 2 | 3 | 1 |
+| — pages lost to a loop | 1 | 2 | 3 | 1 |
 | Degraded | 82.1 | 82.6 | 82.6 | 82.5 |
-| - pages lost to a loop or garbage | 3 | 3 | 3 | 3 |
+| — pages lost to a loop or garbage | 3 | 3 | 3 | 3 |
 
-- **Handwriting.** Every system misreads roughly 35-50% of the handwritten Chinese, often substituting Latin or Cyrillic fragments, and they share the same misreads. Pages differ mainly by which system falls into a loop. Most of the CER gap in section 6 is formatting (HTML tables vs lines, notebook "NO./Date" furniture, line breaks) plus loops. The ground truth itself has typos on about half the pages.
+- **Handwriting.** Every system misreads roughly 35–50% of the handwritten Chinese, often substituting Latin or Cyrillic fragments, and they share the same misreads. Pages differ mainly by which system falls into a loop. Most of the CER gap in section 6 is formatting (HTML tables vs lines, notebook "NO./Date" furniture, line breaks) plus loops. The ground truth itself has typos on about half the pages.
 - **Degraded.** The four systems are content-equivalent within a few points on every page. All four, production included, fail the same three pages (vertical text, a title page, a leader-dot loop). The section 6 degraded "+1.4 pt" is not a content difference.
 
 **Which matrices to keep at BF16** (Unsloth-style allocation, against production). BF16-source GPTQ was run on the 55 calibration pages with one body matrix at a time kept BF16 (`vllm-cal/sweep-single.json`).
 - W8 accounts for 27% of this fast mode's KL against production. The other 73% comes from FP32 vs production BF16 arithmetic, which no weight allocation can remove.
-- Where the W8 cost sits: W2 (FFN down projection) 69%, QKV 16%, W13 13%, WO 3%. Layers 11 and 7 carry the most (24% and 12%). Single-matrix gains add up (sum 101-105% of the excess).
+- Where the W8 cost sits: W2 (FFN down projection) 69%, QKV 16%, W13 13%, WO 3%. Layers 11 and 7 carry the most (24% and 12%). Single-matrix gains add up (sum 101–105% of the excess).
 - Ranking stability is low overall (Spearman 0.22 between page halves across 88 matrices), but the top matrices hold on both halves.
 - Selecting by ΔKL per byte on half A and then running the combined configuration on the other half (B):
 

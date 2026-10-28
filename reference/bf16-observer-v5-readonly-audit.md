@@ -22,7 +22,7 @@ the partial and full loops, the guard finds eight such denominator FMA addend
 DAGs. Their MMA encoding is version 2, warps `[4,1]`, instruction shape `[16,8]`.
 
 V5 still creates three score/max/exp2 representations: `#blocked`, `#blocked3`
-and `#mma`. In its saved `instrumented-0.ttgir`, lines 469-528 show the separate
+and `#mma`. In its saved `instrumented-0.ttgir`, lines 469–528 show the separate
 maximum and probability paths. The remaining matrix observations store exp2
 arguments and results through the blocked representation. The probability
 operand of the native dot uses the MMA representation. Thus a source expression
@@ -31,10 +31,10 @@ source-level variable name alone does not prove that a store observes the exact
 register later consumed by the dot.
 
 The scalar observations still consume the blocked3 row values through
-conversions to `#blocked2`: maximum-before at lines 457-458 and
-denominator-before at 461-462; maximum-after, alpha argument and alpha result
-at 496-511; and denominator-after at 551-552. The native denominator update
-itself remains `#blocked3` at 543-548. Its sum is 63 serial additions over 64 exp2 values with
+conversions to `#blocked2`: maximum-before at lines 457–458 and
+denominator-before at 461–462; maximum-after, alpha argument and alpha result
+at 496–511; and denominator-after at 551–552. The native denominator update
+itself remains `#blocked3` at 543–548. Its sum is 63 serial additions over 64 exp2 values with
 no shuffle. This denominator is carried by the partial loop and converted back
 to MMA only after that loop at line 643. The full-block sum retains the native
 MMA structure.

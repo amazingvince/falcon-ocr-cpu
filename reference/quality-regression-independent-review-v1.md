@@ -1,12 +1,12 @@
 # Independent quality-report review
 
-After the author completed the bounded fixes, a read-only review of
-`scripts/report_quality_regression.py` and its saved-record tests found no
-remaining concrete correctness defect in the decision and provenance paths.
-The review included synthetic tests, not inference, evaluator execution,
+Reviewed `scripts/report_quality_regression.py` and its saved-record tests after
+the author completed the bounded fixes. No remaining concrete correctness defect
+was found in the reviewed decision and provenance paths. This was a read-only
+implementation review plus synthetic tests, not inference, evaluator execution,
 an additional full-corpus scan or a model-quality acceptance decision.
 
-The review checked:
+The review addressed these concrete cases:
 
 - Missing inventories must be unique, contain only known page keys, match their
   recorded counts and explain exactly the omitted comparison rows. A complete
@@ -18,8 +18,8 @@ The review checked:
 - Text replay is validated against its original run and records. Original
   records, decoder bytes/source and tokenizer assets join the checked source
   set. Changed ancestry fails even if newer summary hashes are self-consistent.
-- Prediction origin and startup-completeness labels use freshly validated
-  evidence rather than possibly stale prior-report flags.
+- Prediction origin and startup-completeness labels come from freshly validated
+  evidence, rather than possibly stale prior-report flags.
 
 Complete literal prediction equality supports zero differential for a fixed
 deterministic text-quality metric using identical truth and settings. It does
@@ -45,7 +45,7 @@ truth and stale summary labels.
 The inspected immutable report is
 `reference/quality-regression-v3-fp32-partial-082-v3.json`: 82 literal-exact pages,
 118 missing pages, 7,334 current inference/lineage checks and 1,063 bound source
-files. It reports `incomplete`, leaves the differential and overall
+files. It correctly reports `incomplete`, leaves the differential and overall
 reporting gates false, identifies saved-token replay, and retains incomplete
 historical startup semantics. Its script and all seven recorded helper hashes
 match the reviewed files. Earlier v1/v2 evidence remains unchanged.

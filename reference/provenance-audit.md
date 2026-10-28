@@ -67,7 +67,7 @@ source-copy, config/tokenizer, precision-record and log files.
 
 5. **Tighten run bookkeeping without changing old records.**
    The GPU driver permits replacement of same-configuration outputs without
-   `--resume` and rewrites the run environment on resume (`:52-55`). Its page and
+   `--resume` and rewrites the run environment on resume (`:52–55`). Its page and
    summary qualification strings still describe a 24-page smoke (`:141,:150`).
    Rust records no planned/selected page count or final run status. The comparator
    correctly rechecks canonical PNG/RGB and ground-truth bytes, page identities,

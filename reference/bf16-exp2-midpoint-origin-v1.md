@@ -9,7 +9,7 @@ At this lane, the saved independent GPU-oracle score/max produce argument `c0c97
 | CPU / GPU oracle | `c0c9799f` | `3c508000` → `3c50` | `3c508001` → `3c51` |
 | CPU / CPU | `c0c979a0` | `3c507ffc` → `3c50` | `3c507ffc` → `3c50` |
 
-For `c0c9799f` (-6.296096324920654), native GPU exp2 lands exactly at the BF16 midpoint; round-to-nearest-even selects `3c50`. Rust returns one FP32 step above it and selects `3c51`. Thus the earlier **Rust-only counterfactual** observation that replacing the CPU maximum with the GPU-oracle maximum restores the GPU BF16 probability does not transfer to native GPU exp2 at that mixed argument.
+For `c0c9799f` (−6.296096324920654), native GPU exp2 lands exactly at the BF16 midpoint; round-to-nearest-even selects `3c50`. Rust returns one FP32 step above it and selects `3c51`. Thus the earlier **Rust-only counterfactual** observation that replacing the CPU maximum with the GPU-oracle maximum restores the GPU BF16 probability does not transfer to native GPU exp2 at that mixed argument.
 
 The standalone replay matched native `ex2.approx.ftz` to Torch exp2 at all1,876 FP32/BF16 outputs; native versus Rust had1,180 FP32 differences and this one BF16 crossing. This result does not establish native fused attention's arguments, denominator, or P×V behavior. The rejected v4 fused capture is excluded; any later accepted observer must be assessed separately.
 

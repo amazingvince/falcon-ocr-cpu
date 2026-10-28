@@ -7,10 +7,10 @@ not completed-record validation. The preserved quality snapshot covered 82 pages
 the completed official component evidence covered the historical 24-page v1 set.
 
 The [audit receipt](full200-quality-readiness-audit-v1.json) preserves inspected
-file hashes, prerequisites and exact proposed commands. The audit ran no
-inference, evaluator, environment setup or full-corpus scan.
+file hashes, prerequisites and exact proposed commands. No inference, evaluator,
+environment setup or full-corpus scan was run by the audit.
 
-Two correctness gaps needed repair before final evaluation:
+Two correctness gaps were identified for repair before final evaluation:
 
 - Official preflight used an older partial GPU predicate that did not reject
   malformed context/diagnostics or explicitly teacher-forced/replayed output.

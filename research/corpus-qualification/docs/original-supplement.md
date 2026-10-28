@@ -10,7 +10,7 @@
 | Rotation | 4 | 1 | One prose page at 0, 90, 180 and 270 degrees counterclockwise |
 | Multilingual | 5 | 5 | Russian, Greek, Arabic, Hebrew and Vietnamese short notices |
 
-Text and page recipes were authored for this project without external document images or passages. The exact intended logical Unicode text is stored inline and in hashed UTF-8 text files. The receipt line spacing and internal spaces are retained. The generated PNGs are RGB, have no EXIF orientation, and record their file and decoded-pixel hashes. Derived images retain their parent IDs; rotations and contrast variants are not independent examples.
+Text and page recipes were authored for this project. No external document images or passages were used. The exact intended logical Unicode text is stored inline and in hashed UTF-8 text files. The receipt line spacing and internal spaces are retained. The generated PNGs are RGB, have no EXIF orientation, and record their file and decoded-pixel hashes. Every derived image retains its parent ID; rotations and contrast variants are not independent examples.
 
 `research/corpus-qualification/scripts/generate_original_supplement.py` uses pinned Pillow 12.3.0, FreeType 2.14.3, RAQM 0.10.5, HarfBuzz 14.2.1 and FriBidi 1.0.13, with two hashed DejaVu font files already installed in the reference Linux environment. Arabic/Hebrew are shaped as right-to-left logical strings. Missing-glyph sentinels and text bounds are checked during generation. The Bitstream Vera/DejaVu notice is preserved beside the images; font binaries are not included in the fixture artifacts.
 
@@ -30,7 +30,7 @@ Both blank images emitted the literal `>>UNUSED_261<<` marker, 14 characters eac
 
 Market receipts emitted their correct cell text inside HTML tables. Primary untouched-output CER therefore includes markup: seven of 13 nonblank pages match normalized authored text, with micro CER 33.7679%. A separately labeled secondary table-text projection removes known table tags, preserves emitted cell order and decodes entities; it yields nine exact nonblank pages and micro CER 2.3468%. This secondary diagnostic was introduced after observing the CPU table output; it does not replace raw metrics, establish table-structure accuracy, or alter exact GPU/CPU comparison.
 
-The earlier CPU-only report retains its pending-GPU status. Seven regression checks in `research/corpus-qualification/tests/test_original_supplement_comparison.py` cover blank denominators/markers, normalization, table projection, edit distances and incomplete/failing parity gates.
+The earlier CPU-only report retains its original pending-GPU status. Seven regression checks in `research/corpus-qualification/tests/test_original_supplement_comparison.py` cover blank denominators/markers, normalization, table projection, edit distances and incomplete/failing parity gates.
 
 ## Completed CPU/GPU comparison
 
@@ -38,7 +38,7 @@ The [completed comparison](../../../reference/original-supplement-fp32-redecoded
 
 The CPU comparison uses `artifacts/cpu/original-supplement-fp32-512-redecoded`, a separately verified decoding replay of the original saved token IDs. It changed none of these 15 texts and preserved every nontext inference field; it is not a new CPU model run. Original records and CPU-only reports remain unchanged. The [binding receipt](../../../reference/original-supplement-fp32-comparison-binding-v1.json) joins the comparison to the GPU validation, rechecks 300 GPU record invariants and 11 archived startup files, and records 108 unchanged files across the comparison.
 
-CPU and GPU share the bounded intended-text results above, including the retained blank markers, HTML receipt markup and content errors. Untouched-output nonblank micro CER/WER are 33.7679%/14.1439%; the explicitly secondary table-content diagnostic gives 2.3468%/3.2258%. Blank CER/WER remain undefined. Parent grouping remains explicit, and these authored fixtures remain separate from the natural 200-page corpus, official quality metrics, full-model intermediate numerical checks and performance qualification. See the [comparison note](../../../reference/original-supplement-fp32-redecoded-gpu-comparison-v1.md) for counts and limitations.
+CPU and GPU therefore share the bounded intended-text results described above, including the retained blank markers, HTML receipt markup and content errors. Untouched-output nonblank micro CER/WER are 33.7679%/14.1439%; the explicitly secondary table-content diagnostic gives 2.3468%/3.2258%. Blank CER/WER remain undefined. Parent grouping remains explicit, and these authored fixtures remain separate from the natural 200-page corpus, official quality metrics, full-model intermediate numerical checks and performance qualification. See the [comparison note](../../../reference/original-supplement-fp32-redecoded-gpu-comparison-v1.md) for counts and limitations.
 
 To reproduce the read-only comparison, choose a new output path:
 

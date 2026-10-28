@@ -34,7 +34,7 @@ Completed subsequent work:
   mode. See `functional-batch-v1-gpu-parity.json`; GPU prepared dimensions were
   not recorded, and this concurrent functional work is not a benchmark.
 - The canonical CUDA rsqrt diagnostic passed all 1,266,679,808 positive normal
-  arguments at biased exponents 104-254, with zero observed-function or integer
+  arguments at biased exponents 104–254, with zero observed-function or integer
   exponent-mapping mismatches. `artifacts/reference/rsqrt-canonical-table-fp32-v1`
   preserves the table and exhaustive report. The completed isolated width-768
   intervention was rejected: frozen tensor failures increased from 10 to 18,
