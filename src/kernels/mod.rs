@@ -8,7 +8,7 @@
 use rayon::prelude::*;
 
 mod attention;
-// Bitwise equal to the platform expf on the softmax domain (exhaustive test).
+/// Exponential kernels, including a platform-expf-equivalent softmax path.
 pub(crate) mod exp;
 mod panels;
 #[cfg(test)]
@@ -164,6 +164,7 @@ pub enum Simd {
 }
 
 impl Simd {
+    /// Check that an explicitly selected backend is available on this CPU.
     pub fn validate(self) -> Result<(), &'static str> {
         match self {
             Self::Auto | Self::Scalar => Ok(()),
@@ -355,6 +356,8 @@ pub fn rms_norm(input: &[f32], out: &mut [f32], width: usize, eps: f32, weight: 
 
 const RMS_NORM_SERIAL_ELEMENTS: usize = 16_384;
 
+/// Normalize one row using its pairwise FP32 mean square and optional weight.
+/// `width` is the normalization divisor; slices must describe the same row.
 #[inline]
 pub(crate) fn rms_norm_row(src: &[f32], dst: &mut [f32], width: usize, eps: f32, weight: Option<&[f32]>) {
     // Pairwise FP32 reduction limits accumulated rounding error on
@@ -411,6 +414,8 @@ pub fn squared_relu_gate(interleaved: &[f32], output: &mut [f32]) {
         .for_each(|(i, y)| *y = squared_relu_glu(interleaved[i * 2], interleaved[i * 2 + 1]));
 }
 
+/// Multiply `up` by the square of the positive part of `gate`.
+/// A NaN or nonpositive gate selects zero before multiplication.
 #[inline(always)]
 pub(crate) fn squared_relu_glu(gate: f32, up: f32) -> f32 {
     // Match the pinned Triton kernel's tl.where(gate > 0, gate, 0),
@@ -462,9 +467,12 @@ pub fn linear_glu_with_simd(
     true
 }
 
+/// Dot product of equally sized FP32 slices.
 pub(crate) type Dot = fn(&[f32], &[f32]) -> f32;
+/// Add a scalar multiple of an FP32 slice to an equally sized slice.
 pub(crate) type Axpy = fn(f32, &[f32], &mut [f32]);
 
+/// Select the dot product for a resolved, available SIMD backend.
 pub(crate) fn dot_kernel(simd: Simd) -> Dot {
     match simd {
         #[cfg(target_arch = "x86_64")]
@@ -481,6 +489,7 @@ pub(crate) fn dot_kernel(simd: Simd) -> Dot {
     }
 }
 
+/// Select the scaled vector addition for a resolved, available SIMD backend.
 pub(crate) fn axpy_kernel(simd: Simd) -> Axpy {
     match simd {
         #[cfg(target_arch = "x86_64")]
@@ -509,12 +518,18 @@ fn axpy_scalar(a: f32, x: &[f32], y: &mut [f32]) {
 mod x86 {
     /// `simd::dot::<Avx2>` behind the AVX2/FMA target feature: the
     /// function-pointer dot of the AVX2 backend.
+    ///
+    /// # Safety
+    /// AVX2 and FMA must be available; the slices must have equal length.
     #[target_feature(enable = "avx2,fma")]
     pub(super) unsafe fn dot_avx2(a: &[f32], b: &[f32]) -> f32 {
         unsafe { crate::simd::dot::<crate::simd::Avx2>(a, b) }
     }
 
     /// `simd::axpy::<Avx2>` behind the AVX2/FMA target feature.
+    ///
+    /// # Safety
+    /// AVX2 and FMA must be available; the slices must have equal length.
     #[target_feature(enable = "avx2,fma")]
     pub(super) unsafe fn axpy_avx2(a: f32, x: &[f32], y: &mut [f32]) {
         unsafe { crate::simd::axpy::<crate::simd::Avx2>(a, x, y) }
@@ -526,6 +541,10 @@ mod x86 {
     pub(crate) mod reference {
         use std::arch::x86_64::*;
 
+        /// Reference AVX2 dot product with four FMA accumulator chains.
+        ///
+        /// # Safety
+        /// AVX2 and FMA must be available; slices must have equal length.
         #[target_feature(enable = "avx2,fma")]
         pub(crate) unsafe fn dot_avx2(a: &[f32], b: &[f32]) -> f32 {
             debug_assert_eq!(a.len(), b.len());
@@ -580,6 +599,10 @@ mod x86 {
             }
         }
 
+        /// Reference AVX2 scaled vector addition.
+        ///
+        /// # Safety
+        /// AVX2 and FMA must be available; slices must have equal length.
         #[target_feature(enable = "avx2,fma")]
         pub(crate) unsafe fn axpy_avx2(a: f32, x: &[f32], y: &mut [f32]) {
             debug_assert_eq!(x.len(), y.len());

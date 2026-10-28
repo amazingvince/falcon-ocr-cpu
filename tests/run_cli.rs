@@ -1,11 +1,7 @@
-//! `falcon-ocr run` checks its flags, inputs and weights before the model
-//! loads, and touches the output file only once the runner is built, so
-//! every case here but the last runs without model assets: a model
-//! directory that holds nothing (or a header-only kernel-ready file) makes
-//! any later step fail with the model's own error, which the input errors
-//! must precede. The last three, ignored, resume a run, keep going past a
-//! failing page and run with a closed stderr, with the published near-exact
-//! file in `artifacts/packed`.
+//! CLI input, output and standalone packed-model contracts.
+//!
+//! Asset-free tests check errors before loading. Ignored cases exercise
+//! generation, resume, failure recovery and model-file asset discovery.
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -226,15 +222,15 @@ fn escalation_needs_fast_mode_and_a_near_exact_model_before_anything_loads() {
     let valid = arg(&case.valid);
     let models = case.path("models");
     fs::create_dir(&models).unwrap();
-    fabricate_packed(&models.join("falcon-ocr-v1.5-fast.safetensors"), "w8-body-kv-q8");
+    fabricate_packed(
+        &models.join("falcon-ocr-v1.5-int8-gptq-g64.safetensors"),
+        "w8-body-kv-q8",
+    );
     assert_error(
         &case.run_with(&models, &["--mode", "fast"], &[valid, "--escalate"]),
         "--escalate needs a near-exact model",
     );
-    fabricate_packed(
-        &models.join("falcon-ocr-v1.5-near-exact.safetensors"),
-        "w16-body-kv-q16",
-    );
+    fabricate_packed(&models.join("falcon-ocr-v1.5-int16-g64.safetensors"), "w16-body-kv-q16");
     // The output file is neither created nor repaired when the check fails.
     let output = case.path("out.jsonl");
     assert_error(
@@ -281,10 +277,7 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
     // Weights that resolve but do not load: still left as it is.
     let models = case.path("models");
     fs::create_dir(&models).unwrap();
-    fabricate_packed(
-        &models.join("falcon-ocr-v1.5-near-exact.safetensors"),
-        "w16-body-kv-q16",
-    );
+    fabricate_packed(&models.join("falcon-ocr-v1.5-int16-g64.safetensors"), "w16-body-kv-q16");
     let stderr = assert_error(
         &case.run_with(&models, &[], &run),
         "packed metadata source_sha256 missing",
@@ -485,4 +478,50 @@ fn a_closed_stderr_does_not_stop_the_run() {
     let status = child.wait().unwrap();
     assert!(status.success(), "{status}");
     assert_eq!(fs::read_to_string(&output).unwrap().lines().count(), 2);
+}
+
+#[test]
+#[ignore = "requires the published model catalog and tokenizer in artifacts/packed"]
+fn eval_reads_tokenizers_beside_each_packed_variant() {
+    let case = Case::new();
+    let packed = Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/packed");
+    for mode in [
+        falcon_ocr::Mode::Exact,
+        falcon_ocr::Mode::NearExact,
+        falcon_ocr::Mode::Fast,
+    ] {
+        let file = packed.join(mode.packed_file_name().unwrap());
+        let command = || {
+            let mut command = Command::new(env!("CARGO_BIN_EXE_falcon-ocr-eval"));
+            command
+                .arg("--model")
+                .arg(case.path("no-checkpoint"))
+                .arg("--model-file")
+                .arg(&file);
+            command
+        };
+        let doctor = command().arg("doctor").output().unwrap();
+        assert!(doctor.status.success(), "{}", String::from_utf8_lossy(&doctor.stderr));
+        let doctor: serde_json::Value = serde_json::from_slice(&doctor.stdout).unwrap();
+        assert_eq!(doctor["files"]["tokenizer"]["present"], true);
+        assert_eq!(
+            doctor["files"]["tokenizer"]["path"],
+            serde_json::json!(packed.join("tokenizer.json"))
+        );
+        assert_eq!(doctor["plan"]["tokenizer_dir"], serde_json::json!(packed));
+        let report = case.path(&format!("{}.json", mode.label()));
+        let output = command()
+            .arg("bench")
+            .arg(&case.valid)
+            .args(["--warmup", "0", "--samples", "1", "--max-new-tokens", "8", "--report"])
+            .arg(&report)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        let report: serde_json::Value = serde_json::from_slice(&fs::read(report).unwrap()).unwrap();
+        assert_eq!(
+            report["samples"][0]["outputs"][0]["plan"]["tokenizer_dir"],
+            serde_json::json!(packed)
+        );
+    }
 }

@@ -1,3 +1,4 @@
+//! Product CLI for model diagnostics, packing, reference traces and page OCR.
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
@@ -34,12 +35,13 @@ macro_rules! note {
 #[command(version, about = "Falcon-OCR v1.5 CPU runner")]
 struct Cli {
     /// Model directory: the FP32 checkpoint and/or the published kernel-ready
-    /// files (`falcon-ocr-v1.5-<mode>.safetensors`).
+    /// files (fp32, int16-g64 or int8-gptq-g64).
     #[arg(long, default_value = "artifacts/model", global = true)]
     model: PathBuf,
     /// What to optimize for [default: near-exact]. Loads the kernel-ready
     /// file for the mode from --model when present, otherwise the FP32
-    /// checkpoint, quantized at load (fast mode needs the GPTQ overlay).
+    /// checkpoint. Near-exact and fast quantize at load; fast needs the
+    /// GPTQ overlay.
     #[arg(long, value_enum, global = true)]
     mode: Option<Mode>,
     /// W8 overlay for `--mode fast` [default: `<model>/w8-gptq.safetensors`,
@@ -57,8 +59,8 @@ struct Cli {
     /// Experimental extra weight copy for AVX2 batch decode; prefill/row1 unchanged.
     #[arg(long, value_enum, default_value = "unpacked", global = true, hide = true)]
     weight_layout: WeightLayout,
-    /// Kernel-ready model file written by `pack` (near-exact or fast; the
-    /// file decides the mode). Mapped and used in place: fast startup, no
+    /// Kernel-ready model file written by `pack` (exact, near-exact or fast;
+    /// the file decides the mode). Mapped and used in place: fast startup, no
     /// FP32 checkpoint needed. The tokenizer is read from the file's folder
     /// when it holds tokenizer.json, otherwise from --model.
     #[arg(long, global = true)]
@@ -94,7 +96,8 @@ enum Command {
     },
     /// Verify the checkpoint hash and tensor contract.
     Inspect,
-    /// Write a kernel-ready model file for --mode near-exact (default) or fast.
+    /// Write a kernel-ready model file for --mode exact, near-exact (default)
+    /// or fast.
     Pack {
         #[arg(long)]
         output: PathBuf,
@@ -198,9 +201,6 @@ fn main() -> Result<()> {
             bail!("trace compares tensors with the FP32 reference and runs in exact mode; drop --mode {mode}")
         }
         (Command::Trace { .. }, _) => Some(Mode::Exact),
-        (Command::Pack { .. }, Some(Mode::Exact)) => {
-            bail!("pack writes a near-exact or fast model file from the checkpoint")
-        }
         (Command::Pack { .. }, mode) => {
             ensure!(
                 cli.model_file.is_none(),

@@ -5,9 +5,9 @@
 //! [`Simd`] and instantiated per ISA by small entry wrappers that carry the
 //! matching `#[target_feature]` (x86) or nothing (NEON is baseline on
 //! aarch64). Every implementation uses the same lane layout, fused
-//! multiply-add, and the same fixed reduction tree, so an instantiation for
-//! AVX2, AVX-512 or NEON is bitwise equal to the [`Portable`] one on the same
-//! inputs; each machine can test its fast path against portable code.
+//! multiply-add, and the same fixed reduction tree. With the same exp choice,
+//! ISA instantiations agree bitwise with [`Portable`] on the same inputs;
+//! each machine tests its fast path against portable code.
 //!
 //! See `docs/PORTABILITY.md`.
 
@@ -18,64 +18,146 @@ pub(crate) use crate::kernels::exp::{EXP_LN2_HI, EXP_LN2_LO, EXP_LOG2E, EXP_MAX,
 /// target features to be enabled in the calling (inlined-into) function.
 pub(crate) trait Simd: Copy + Send + Sync + 'static {
     type V: Copy;
+    /// Returns a vector of zeros.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn zero() -> Self::V;
+    /// Copies `x` into every lane.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn splat(x: f32) -> Self::V;
     /// Eight consecutive `f32`, unaligned.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
+    /// `p` must be valid to read eight initialized elements.
     unsafe fn load(p: *const f32) -> Self::V;
+    /// Stores eight consecutive `f32` values, unaligned.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
+    /// `p` must be valid to write eight elements.
     unsafe fn store(p: *mut f32, v: Self::V);
+    /// Adds corresponding lanes.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn add(a: Self::V, b: Self::V) -> Self::V;
+    /// Subtracts corresponding lanes.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn sub(a: Self::V, b: Self::V) -> Self::V;
+    /// Multiplies corresponding lanes.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn mul(a: Self::V, b: Self::V) -> Self::V;
     /// `a * b + c` with a single rounding.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn fma(a: Self::V, b: Self::V, c: Self::V) -> Self::V;
     /// Eight consecutive `i8` codes converted exactly to `f32`.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
+    /// `p` must be valid to read eight initialized elements.
     unsafe fn load_i8(p: *const i8) -> Self::V;
     /// Eight consecutive `i16` codes converted exactly to `f32`.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
+    /// `p` must be valid to read eight initialized elements.
     unsafe fn load_i16(p: *const i16) -> Self::V;
     /// `((v0+v4) + (v1+v5)) + ((v2+v6) + (v3+v7))`: the x86 `dot_avx2` tree
     /// (128-bit halves added, then two horizontal pair additions).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn sum(v: Self::V) -> f32;
     /// `((v0+v4) + (v2+v6)) + ((v1+v5) + (v3+v7))`: the `sum_squares_pairwise`
     /// tree of the fused QKV row (halves added, then lanes 0+2 and 1+3, then
     /// those two). Distinct from [`Simd::sum`].
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn sum_tree(v: Self::V) -> f32;
     /// Each even lane duplicated into the odd lane after it:
     /// `[v0, v0, v2, v2, ..]` (x86 `moveldup`).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn dup_even(v: Self::V) -> Self::V;
     /// Each odd lane duplicated into the even lane before it:
     /// `[v1, v1, v3, v3, ..]` (x86 `movehdup`).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn dup_odd(v: Self::V) -> Self::V;
     /// Adjacent lanes swapped: `[v1, v0, v3, v2, ..]`.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn swap_pairs(v: Self::V) -> Self::V;
     /// Even lanes `a - b`, odd lanes `a + b` (x86 `addsub`; `a + (-b)` is
     /// bitwise `a - b`, so every ISA agrees).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn addsub(a: Self::V, b: Self::V) -> Self::V;
     /// Lane-wise `if a > b { a } else { b }`: x86 `maxps(a, b)` semantics
     /// (`b` when either is NaN or both are zeros), identical on every ISA.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn max(a: Self::V, b: Self::V) -> Self::V;
     /// All-ones lanes where `a == b` (ordered), zero lanes elsewhere.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn eq(a: Self::V, b: Self::V) -> Self::V;
     /// Lanes of `a` where `mask` is all-ones, else lanes of `b`.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn select(mask: Self::V, a: Self::V, b: Self::V) -> Self::V;
     /// Bit `i` set when lane `i` of `mask` is all-ones.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn mask_bits(mask: Self::V) -> u32;
     /// [`exp_poly`] on every lane (same bits on every ISA).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     unsafe fn exp_fast(x: Self::V) -> Self::V;
     /// The preferred vector exp: [`Simd::exp_fast`], except on AVX2, where it
     /// is the platform-exact vector exp that keeps outputs bitwise equal to
     /// the scalar platform `expf` (and so to earlier results on this host).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     #[inline(always)]
     unsafe fn exp(x: Self::V) -> Self::V {
         unsafe { Self::exp_fast(x) }
     }
     /// [`Simd::exp`] plus a bit mask of lanes the caller must recompute with
     /// scalar `f32::exp` (only the platform-exact AVX2 exp reports lanes).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     #[inline(always)]
     unsafe fn exp_raw(x: Self::V) -> (Self::V, u32) {
         unsafe { (Self::exp(x), 0) }
     }
     /// `values[i] = exp(values[i] - shift)` with [`Simd::exp`] semantics
     /// (the tail uses the scalar form of the same function).
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `Self`.
     #[inline(always)]
     unsafe fn exp_shifted(values: &mut [f32], shift: f32) {
         unsafe {
@@ -625,6 +707,10 @@ impl Simd for Neon {
 }
 
 /// FP32 dot product (`kernels::x86::dot_avx2` order).
+///
+/// # Safety
+/// The calling function must enable the features required by `S`, and `b`
+/// must have the same length as `a`.
 #[inline(always)]
 pub(crate) unsafe fn dot<S: Simd>(a: &[f32], b: &[f32]) -> f32 {
     debug_assert_eq!(a.len(), b.len());
@@ -659,7 +745,12 @@ pub(crate) unsafe fn dot<S: Simd>(a: &[f32], b: &[f32]) -> f32 {
 /// Integer weight codes that [`dot_q`] converts exactly to `f32`.
 pub(crate) trait QCode: Copy + Send + Sync + 'static {
     /// Eight consecutive codes as `f32` lanes.
+    ///
+    /// # Safety
+    /// `p` must be valid to read eight initialized codes, and the calling
+    /// function must enable the features required by `S`.
     unsafe fn load8<S: Simd>(p: *const Self) -> S::V;
+    /// Converts one code exactly to `f32`.
     fn to_f32(self) -> f32;
 }
 impl QCode for i8 {
@@ -687,6 +778,11 @@ impl QCode for i16 {
 /// scale per `G` inputs (`G` a multiple of 32, so each 32-element block uses
 /// one scale, loaded and broadcast once). The same operation order as
 /// [`dot`], so it equals [`dot`] on the dequantized row.
+///
+/// # Safety
+/// The calling function must enable the features required by `S`. `codes`
+/// must have the same length as `x`, `G` must be a nonzero multiple
+/// of 32, and `scales` must cover every group of `x`.
 #[inline(always)]
 pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(x: &[f32], codes: &[C], scales: &[f32]) -> f32 {
     debug_assert_eq!(x.len(), codes.len());
@@ -727,6 +823,11 @@ pub(crate) unsafe fn dot_q<S: Simd, C: QCode, const G: usize>(x: &[f32], codes: 
 /// accumulators. Per row this is exactly `dot_q`'s operation sequence
 /// (phase accumulators, tree, vector and scalar tails), so each result is
 /// bitwise the single-row one.
+///
+/// # Safety
+/// The calling function must enable the features required by `S`. `R` must
+/// be nonzero, each strided input row must contain `codes.len()` elements,
+/// `G` must be a nonzero multiple of 32, and `scales` must cover each group.
 #[inline(always)]
 pub(crate) unsafe fn dot_q_rows<S: Simd, C: QCode, const G: usize, const R: usize>(
     x: &[f32],
@@ -782,6 +883,10 @@ pub(crate) unsafe fn dot_q_rows<S: Simd, C: QCode, const G: usize, const R: usiz
 
 /// `y += a * x` with one FMA per element in eight-wide chunks and an unfused
 /// scalar tail (`kernels::x86::axpy_avx2` order).
+///
+/// # Safety
+/// The calling function must enable the features required by `S`, and `y`
+/// must have the same length as `x`.
 #[inline(always)]
 pub(crate) unsafe fn axpy<S: Simd>(a: f32, x: &[f32], y: &mut [f32]) {
     debug_assert_eq!(x.len(), y.len());

@@ -5,6 +5,7 @@ use std::{ops::Range, sync::Arc};
 use anyhow::{Result, ensure};
 use memmap2::Mmap;
 
+/// Immutable elements stored in a vector or a validated shared file range.
 pub(crate) enum Buf<T: bytemuck::Pod> {
     Owned(Vec<T>),
     /// `range` (bytes) of `map`, checked for size and alignment at creation.

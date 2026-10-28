@@ -78,11 +78,12 @@ pub(crate) fn pipeline_reserve(sizes: &[usize], threads: usize) -> Option<usize>
 pub struct TuneReport {
     /// Candidate team sizes, ascending.
     pub candidates: Vec<usize>,
-    /// Median milliseconds of a single-row decode step per candidate.
+    /// Median decode-step milliseconds per candidate, using a shared row
+    /// count when every candidate measured one.
     pub median_ms: Vec<f64>,
     /// Median milliseconds of the draft-verification steps that ran on each
     /// candidate while tuning (`None` when none did). Reporting only: the
-    /// choice rests on single-row steps.
+    /// choice rests on the comparable decode-step medians.
     pub verify_median_ms: Vec<Option<f64>>,
     /// The team size chosen.
     pub chosen: usize,
@@ -118,6 +119,7 @@ impl std::fmt::Display for TuneReport {
     }
 }
 
+/// Decode-team timing samples and the choice made from comparable row counts.
 pub(crate) struct Tuner {
     sizes: Vec<usize>,
     /// The largest team the choice may take ([`Tuner::limit`]).
@@ -338,6 +340,7 @@ impl Tuner {
     }
 }
 
+/// Median after total-order sorting, or NaN for an empty slice.
 pub(crate) fn median(values: &[f64]) -> f64 {
     let mut v = values.to_vec();
     v.sort_by(|a, b| a.total_cmp(b));

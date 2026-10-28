@@ -17,7 +17,7 @@ attention optimization. See `reference/benchmarks/windows-fullpage-profile-stack
 and `research/benchmarks/experiments/profiling/decode-source-map.md`.
 
 The fixed64 attention experiments already have separate full-page measurements:
-expanded improved 6.15–9.43% against its bracketing controls, compact 6.15–6.40%,
+expanded improved 6.15-9.43% against its bracketing controls, compact 6.15-6.40%,
 with exact outputs. The remaining GEMV path still chooses a dot function pointer
 once per linear call, then invokes it once per output channel. It offers a
 bounded follow-up without changing model storage or a reduction tree.
@@ -35,7 +35,7 @@ scope. See `reference/prefix-temporal-dedup-design-v1.md`.
 ## Exact proposed scope
 
 Only `rows == 1`, resolved AVX2/FMA, and the actual Falcon shapes below enter
-the new path. Leave scalar/AVX-512, batches 2–8, prefill/GEMM and packed weights
+the new path. Leave scalar/AVX-512, batches 2-8, prefill/GEMM and packed weights
 unchanged. Weights remain contiguous HF `[output,input]` FP32 rows.
 
 | Projection | Input width | Output width | Calls per next-token forward |

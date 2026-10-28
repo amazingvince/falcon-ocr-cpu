@@ -1,4 +1,4 @@
-//! Isolated entry point; `falcon-ocr` and its defaults remain the reference CLI.
+//! Research entry point for profile, benchmark and agreement experiments.
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{
@@ -27,6 +27,7 @@ struct Cli {
     model: PathBuf,
     /// Kernel-ready model file (`falcon-ocr pack`): its weights, with
     /// --profile's KV cache when one is given (it must name the file's weights).
+    /// Tokenizers are read beside the file when present, otherwise from --model.
     #[arg(long, global = true)]
     model_file: Option<PathBuf>,
     /// Weights x KV profile [default: reference, or the --model-file's own].
@@ -53,6 +54,7 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Report the host, model files and resolved research profile.
     Doctor,
     /// The resolution router's choice for each image (no model): JSON lines
     /// with the route and, with --statistics, the 26 image statistics.
@@ -62,6 +64,7 @@ enum Command {
         #[arg(long)]
         statistics: bool,
     },
+    /// Time recognition on page images and write a telemetry report.
     Bench {
         #[arg(required = true)]
         images: Vec<PathBuf>,
@@ -80,6 +83,7 @@ enum Command {
         #[arg(long)]
         report: PathBuf,
     },
+    /// Capture tensors from a GPU-exported fixture under this profile.
     Trace {
         #[arg(long)]
         fixture: PathBuf,
@@ -508,7 +512,8 @@ fn main() -> Result<()> {
     });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.memory_report();
-    let runner = Runner::new(model.clone(), &args.model, config.clone())?;
+    let tokenizer_dir = model.source().tokenizer_dir(&args.model);
+    let runner = Runner::new(model.clone(), &tokenizer_dir, config.clone())?;
     // Reports name the profile that runs (a model file's, with --profile's KV).
     let profile = model.profile();
     eprintln!(

@@ -5,12 +5,14 @@ use sha2::{Digest, Sha256};
 use std::path::Path;
 use tokenizers::Tokenizer;
 
+/// The full-page plain OCR instruction, with an image placeholder.
 pub const PLAIN_PROMPT: &str = "<|image|>Extract the text content from this image.\n<|OCR_PLAIN|>";
 const IMAGE_TOKEN: &str = "<|image|>";
 const IMAGE_PREFIX: [u32; 5] = [244, 245, 246, 247, 248];
 const IMAGE_ID: u32 = 227;
 const IMAGE_END: u32 = 230;
 
+/// Pinned tokenizer and prompt tokens for full-page plain OCR.
 pub struct OcrTokenizer {
     tokenizer: Tokenizer,
     prompt_suffix: Vec<u32>,
@@ -18,6 +20,8 @@ pub struct OcrTokenizer {
 }
 
 impl OcrTokenizer {
+    /// Load and verify the pinned tokenizer files and required special tokens.
+    /// Returns an error for missing, modified, or incompatible artifacts.
     pub fn load(model_dir: &Path) -> Result<Self> {
         let path = model_dir.join("tokenizer.json");
         let tokenizer_bytes = pinned_file(
@@ -75,6 +79,8 @@ impl OcrTokenizer {
         })
     }
 
+    /// Build the prompt with one image token per patch. Rejects zero patches
+    /// and lengths that overflow.
     pub fn prompt(&self, patch_count: usize) -> Result<Vec<u32>> {
         ensure!(patch_count > 0, "an OCR prompt requires at least one image patch");
         let capacity = patch_count
@@ -89,6 +95,8 @@ impl OcrTokenizer {
         Ok(ids)
     }
 
+    /// Decode IDs, remove stop-token spellings and trim Python whitespace.
+    /// Other special tokens and interior spacing are preserved.
     pub fn decode(&self, ids: &[u32]) -> Result<String> {
         // The pinned Transformers 5.14.1 TokenizersBackend deliberately skips
         // WordPiece-style space cleanup for this BPE tokenizer, even though the
@@ -106,6 +114,7 @@ impl OcrTokenizer {
             .to_owned())
     }
 
+    /// Return the end-of-text and end-of-query token IDs.
     pub fn stop_ids(&self) -> Vec<u32> {
         self.stops.clone()
     }

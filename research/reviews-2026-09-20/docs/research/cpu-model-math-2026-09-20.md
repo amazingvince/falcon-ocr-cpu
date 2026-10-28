@@ -2,7 +2,7 @@
 
 This source review concerns the pinned v1.5 checkpoint and the direct, single-image OCR path. It derives work and storage counts; it does not measure performance, execute a model, change a numerical bound, or qualify a new backend. The practical priority is attention scheduling/layout experiments that preserve arithmetic, followed by shape-specific matrix work. Quantization and vector transcendental functions need separate numerical qualification.
 
-The model revision is `fe757d59ecd79d4d68760162306a70a015761ad9`; the weights SHA256 is `3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16`. The [configuration][config] is authoritative: residual width 768, 22 layers, 16 query heads, eight KV heads, head width 64, FFN width 2304, and vocabulary 65536. Query width is **1024**, not 768. The paper explains the early-fusion architecture and image/text attention distinction, but its general description does not replace this checkpoint's code and processor. [Falcon Perception technical report](https://arxiv.org/html/2603.27365v1).
+The model revision is `fe757d59ecd79d4d68760162306a70a015761ad9`; the weights SHA256 is `3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16`. The [configuration](#historical-source-paths) is authoritative: residual width 768, 22 layers, 16 query heads, eight KV heads, head width 64, FFN width 2304, and vocabulary 65536. Query width is **1024**, not 768. The paper explains the early-fusion architecture and image/text attention distinction, but its general description does not replace this checkpoint's code and processor. [Falcon Perception technical report](https://arxiv.org/html/2603.27365v1).
 
 ## Exact graph and its consequences
 
@@ -12,14 +12,14 @@ Write the unit-affine RMS normalization of an n-vector as
 R_\epsilon(x)=x/r,\qquad r=\sqrt{\frac1n\sum_i x_i^2+\epsilon}.
 \]
 
-For a block input X, the pinned [attention implementation][up-attn] computes
+For a block input X, the pinned [attention implementation](#historical-source-paths) computes
 
 \[
 [Q_0,K_0,V_0]=R_\epsilon(X)W_{qkv}^{T},\quad
 Q=R_\epsilon(Q_0),\quad K=R_\epsilon(K_0).
 \]
 
-The first normalization is per residual row of width 768. Q/K normalization is separately per head of width 64, with **no learned affine scale**; V is not normalized. Q/K/V widths before repeating are 1024/512/512. These functional normalizations omit `eps`; the pinned strict-FP32 runtime uses FP32 machine epsilon. This is distinct from the final learned normalization's explicit `1e-5`. The [Rust implementation][rust-forward] makes that distinction explicit. Its [RMS reduction][rust-rms] uses its own FP32 summation tree and `sqrt().recip()`, which need not reproduce CUDA's reduction and reciprocal-square-root bits.
+The first normalization is per residual row of width 768. Q/K normalization is separately per head of width 64, with **no learned affine scale**; V is not normalized. Q/K/V widths before repeating are 1024/512/512. These functional normalizations omit `eps`; the pinned strict-FP32 runtime uses FP32 machine epsilon. This is distinct from the final learned normalization's explicit `1e-5`. The [Rust implementation](#historical-source-paths) makes that distinction explicit. Its [RMS reduction](#historical-source-paths) uses its own FP32 summation tree and `sqrt().recip()`, which need not reproduce CUDA's reduction and reciprocal-square-root bits.
 
 After attention, with concatenation of all 16 output heads,
 
@@ -31,11 +31,11 @@ U=X+O W_o^T,\qquad
 a_i=\max(g_i,0)^2 u_i,\qquad X'=U+aW_2^T.
 \]
 
-The [gate kernel][up-ffn] reads alternating gate/up channels: `gate, up, gate, up, ...`; it is squared ReLU, not SiLU or a split of the matrix into two halves. It selects zero when `gate > 0` is false, then evaluates the two products. The [block][up-block] contains two separate residual additions. FP32 fusion/reassociation can change their result; BF16 introduces further actual cast boundaries and must be treated as a separate graph.
+The [gate kernel](#historical-source-paths) reads alternating gate/up channels: `gate, up, gate, up, ...`; it is squared ReLU, not SiLU or a split of the matrix into two halves. It selects zero when `gate > 0` is false, then evaluates the two products. The [block](#historical-source-paths) contains two separate residual additions. FP32 fusion/reassociation can change their result; BF16 introduces further actual cast boundaries and must be treated as a separate graph.
 
-After layer 21, the final normalization is `R_1e-5(x) * gamma`; a separate, untied `[65536,768]` weight matrix produces logits. Greedy decoding needs argmax, not vocabulary softmax. It still requires the current full-vocabulary projection. The Rust path already projects only the final prefill row, a major existing saving compared with evaluating all prefill vocabulary logits. Removing the positive final RMS scale preserves real-arithmetic argmax, but moving it through gamma and the projection changes FP rounding and fails to preserve diagnostic logits; a 768-element norm is a poor target for that tradeoff. [Final norm and output definitions][up-final]; [Rust final-row projection][rust-final].
+After layer 21, the final normalization is `R_1e-5(x) * gamma`; a separate, untied `[65536,768]` weight matrix produces logits. Greedy decoding needs argmax, not vocabulary softmax. It still requires the current full-vocabulary projection. The Rust path already projects only the final prefill row, a major existing saving compared with evaluating all prefill vocabulary logits. Removing the positive final RMS scale preserves real-arithmetic argmax, but moving it through gamma and the projection changes FP rounding and fails to preserve diagnostic logits; a 768-element norm is a poor target for that tradeoff. [Final norm and output definitions](#historical-source-paths); [Rust final-row projection](#historical-source-paths).
 
-Image input has no separate deep vision encoder: each RGB 16×16 patch is a 768-vector, multiplied by a bias-free `[768,768]` projector. Its result replaces the image-token embedding. Image resize, channel order, byte conversion, patch order and normalization remain part of the model input contract. For instance, folding `(u/255 - 0.5)/0.5` to `2u/255 - 1` is algebraic equivalence, not an FP32 bit-identity argument. [Image scatter/projector][up-image].
+Image input has no separate deep vision encoder: each RGB 16×16 patch is a 768-vector, multiplied by a bias-free `[768,768]` projector. Its result replaces the image-token embedding. Image resize, channel order, byte conversion, patch order and normalization remain part of the model input contract. For instance, folding `(u/255 - 0.5)/0.5` to `2u/255 - 1` is algebraic equivalence, not an FP32 bit-identity argument. [Image scatter/projector](#historical-source-paths).
 
 ## RoPE explains what can and cannot be shared
 
@@ -47,7 +47,7 @@ Temporal pair j, for j=0…15, uses
 \omega_j=10000^{-2j/32},\qquad \theta_j=t\omega_j.
 \]
 
-The denominator is **32**, the temporal half-width. The frequency table is computed in the pinned code on CPU as complex64 and subsequently moved to the model device. Regenerating it using another `pow`/`sin` implementation need not reproduce its bits. [Temporal frequencies and multiplication][rope-temporal]; [Rust factors][rust-rope].
+The denominator is **32**, the temporal half-width. The frequency table is computed in the pinned code on CPU as complex64 and subsequently moved to the model device. Regenerating it using another `pow`/`sin` implementation need not reproduce its bits. [Temporal frequencies and multiplication](#historical-source-paths); [Rust factors](#historical-source-paths).
 
 The spatial angle is
 
@@ -55,11 +55,11 @@ The spatial angle is
 \theta_{h,j}=p_y G_{h,j,0}+p_x G_{h,j,1}.
 \]
 
-G is the checkpoint-stored `[16,16,2]` golden-frequency **buffer**, shared across layers and specific to the query head. The local source does not establish that it is a learned parameter. Use those saved values; do not regenerate them from a generic formula. [Spatial projection and rotation][rope-spatial]; [buffer registration][up-final].
+G is the checkpoint-stored `[16,16,2]` golden-frequency **buffer**, shared across layers and specific to the query head. The local source does not establish that it is a learned parameter. Use those saved values; do not regenerate them from a generic formula. [Spatial projection and rotation](#historical-source-paths); [buffer registration](#historical-source-paths).
 
-The processor's grid coordinates matter: for a grid W patches wide and H high, `xlim=sqrt(W/H)` and `ylim=sqrt(H/W)`. Coordinates are inclusive linspaces on `[-xlim,xlim]` and `[-ylim,ylim]`, flattened in patch order. They are not normalized by `max(W,H)`. Only patch tokens get finite spatial coordinates. Registers, class/end markers and text have NaN spatial coordinates and bypass spatial rotation. Temporal positions advance for the image class token, but **not** for patches, four image registers, or the image end token. Thus the image patches share one temporal position; replacing it with their flattened sequence indices changes the checkpoint's model. [Processor positions][positions].
+The processor's grid coordinates matter: for a grid W patches wide and H high, `xlim=sqrt(W/H)` and `ylim=sqrt(H/W)`. Coordinates are inclusive linspaces on `[-xlim,xlim]` and `[-ylim,ylim]`, flattened in patch order. They are not normalized by `max(W,H)`. Only patch tokens get finite spatial coordinates. Registers, class/end markers and text have NaN spatial coordinates and bypass spatial rotation. Temporal positions advance for the image class token, but **not** for patches, four image registers, or the image end token. Thus the image patches share one temporal position; replacing it with their flattened sequence indices changes the checkpoint's model. [Processor positions](#historical-source-paths).
 
-Let `g(h)=floor(h/2)`. The [upstream repetition][up-repeat] duplicates eight normalized K heads into adjacent pairs **before** head-specific spatial rotation. Therefore:
+Let `g(h)=floor(h/2)`. The [upstream repetition](#historical-source-paths) duplicates eight normalized K heads into adjacent pairs **before** head-specific spatial rotation. Therefore:
 
 \[
 K_{\mathrm{prefix},h}=[K^t_{g(h)},K^{xy}_{h}],\qquad
@@ -68,7 +68,7 @@ V_h=V_{g(h)}.
 
 Prefix temporal K halves and all V vectors can be shared. Rotated image spatial K halves generally cannot. Generated text has no spatial rotation, so its complete K vectors can be shared. Feeding only eight rotated image K heads to an ordinary GQA kernel is incorrect. Conventional GQA motivates sharing KV, but this extra spatial rotation changes the sharing boundary. [GQA paper](https://arxiv.org/abs/2305.13245).
 
-The [existing compact cache][rust-cache] stores prefix K at 16 heads, all V at eight heads, and generated K at eight heads. The tested temporal-prefix layout further shares its first half. Its per-token payload is:
+The [existing compact cache](#historical-source-paths) stores prefix K at 16 heads, all V at eight heads, and generated K at eight heads. The tested temporal-prefix layout further shares its first half. Its per-token payload is:
 
 | Representation | Prefix FP32 values | Generated FP32 values |
 | --- | ---: | ---: |
@@ -78,7 +78,7 @@ The [existing compact cache][rust-cache] stores prefix K at 16 heads, all V at e
 
 The last row is `8*32 + 16*32 + 8*64`. It saves 16⅔% of compact prefix KV bytes, or 25% of prefix K bytes. It does not remove dot products. The existing temporal-layout benchmark missed its speed target despite exact functional comparisons; storage arithmetic is not a new performance result. [Temporal experiment results][temporal-results].
 
-For the current AVX2 dot, the first and second 32-channel halves update the **same four eight-lane accumulators**, followed by a fixed reduction. Computing two independently reduced half-dots and adding them changes rounding. A split storage layout can preserve the original sequence of FMAs while loading from two addresses. [AVX2 dot][rust-dot].
+For the current AVX2 dot, the first and second 32-channel halves update the **same four eight-lane accumulators**, followed by a fixed reduction. Computing two independently reduced half-dots and adding them changes rounding. A split storage layout can preserve the original sequence of FMAs while loading from two addresses. [AVX2 dot](#historical-source-paths).
 
 ## Hybrid attention, sinks and stable reduction
 
@@ -88,7 +88,7 @@ For the supported single-image, unpadded document, visible keys satisfy
 j\le i\quad\text{or}\quad i,j\in[a,b),
 \]
 
-where a is the image-class position and b is the image-end position. The image class, registers and patches are mutually visible. The OR with causal attention also permits preceding text/BOS; it is not image-only attention. Packed documents and left padding require the additional native conditions. [Pinned mask composition][mask].
+where a is the image-class position and b is the image-end position. The image class, registers and patches are mutually visible. The OR with causal attention also permits preceding text/BOS; it is not image-only attention. Packed documents and left padding require the additional native conditions. [Pinned mask composition](#historical-source-paths).
 
 For one head and a fixed query, let `s_j=q·k_j/8`, excluding masked keys. The native computation obtains sink-free attention and its natural log-sum-exp:
 
@@ -100,9 +100,9 @@ o=\sigma(L-a_h)o_0
  =\frac{\sum_j e^{s_j}v_j}{e^{a_h}+\sum_j e^{s_j}}.
 \]
 
-The learned sink acts like an additional logit with a zero value vector. The right-hand equation explains the model, but its direct implementation would alter FP rounding. Retain the observed sink-free output, LSE, sigmoid and multiply sequence; the sink's logit is not a regular cached token. [Native sink operation][up-attn].
+The learned sink acts like an additional logit with a zero value vector. The right-hand equation explains the model, but its direct implementation would alter FP rounding. Retain the observed sink-free output, LSE, sigmoid and multiply sequence; the sink's logit is not a regular cached token. [Native sink operation](#historical-source-paths).
 
-The [existing CPU kernels][rust-attn] already implement an online softmax. For each key tile, with running maximum m, denominator l and vector numerator u:
+The [existing CPU kernels](#historical-source-paths) already implement an online softmax. For each key tile, with running maximum m, denominator l and vector numerator u:
 
 \[
 m'=\max(m,\max_j s_j),\quad \alpha=e^{m-m'},
@@ -125,7 +125,7 @@ The unit-affine width-64 RMS norm implies, in real arithmetic,
  =\frac{64\sum_i x_i^2}{\sum_i x_i^2+64\epsilon}\le64.
 \]
 
-Orthogonal RoPE preserves this bound, so Cauchy–Schwarz gives `|q·k/8|≤8`. For finite visible scores, ordinary online probability arguments and noninitial rescaling arguments lie in `[-16,0]`. This gives a model-specific reason to investigate a guarded vector exponential on a limited interval.
+Orthogonal RoPE preserves this bound, so Cauchy-Schwarz gives `|q·k/8|≤8`. For finite visible scores, ordinary online probability arguments and noninitial rescaling arguments lie in `[-16,0]`. This gives a model-specific reason to investigate a guarded vector exponential on a limited interval.
 
 It does **not** prove that actual FP32 inputs obey those exact endpoints: reduction error, approximate CUDA reciprocal square root, trigonometric rounding, complex multiplication and dot products need an error allowance or an actual bound. Masked `-inf`, the first tile and nonfinite inputs require explicit handling/fallback. The learned-sink exponential `exp(a-L)` is outside this interval argument and must retain its separate route. A fast interval approximation is not bit-equivalent to scalar libm, even if its relative error is tiny. Keep scalar exp/log comparisons and unchanged acceptance gates; classify this as an arithmetic candidate, not a free layout change.
 
@@ -185,7 +185,7 @@ Register pressure also matters. Two 64-element FP32 outputs consume all sixteen 
 
 The current online loop interleaves scalar exp calls with 64-wide output updates. ABI clobbers and live state can force spills. Stage the **same** probability results and denominator additions in a 128-float tile, then execute PV with the original key-order FMAs. A 512-byte per-head probability buffer is small compared with the tile's K/V operands. This may let the compiler retain output channels without changing exp implementation. Generated assembly must establish the actual effect; no claim is made that current calls necessarily spill or that staging wins. Preserve denominator addition order, rescaling and final division/sink order.
 
-The root's subsequent review of the [preserved compact-head assembly](../../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/head-disassembly.txt) confirms eight memory-source output FMAs and eight output stores per key at `0x1400b1a3b..0x1400b1ae8`, after the scalar exp call at `0x1400b1a28`. This establishes actual per-key output read/write instructions, without attributing them uniquely to ABI spills or claiming DRAM traffic. The existing logits buffer can be overwritten by probabilities after its maximum has been found, avoiding a second 512-byte buffer. Explicit eight-register PV accumulation is a small concrete candidate; a newly compiled candidate must establish that those registers remain live across the call-free key loop.
+The root's subsequent review of the preserved compact-head assembly (`../../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/head-disassembly.txt`) confirms eight memory-source output FMAs and eight output stores per key at `0x1400b1a3b..0x1400b1ae8`, after the scalar exp call at `0x1400b1a28`. This establishes actual per-key output read/write instructions, without attributing them uniquely to ABI spills or claiming DRAM traffic. The existing logits buffer can be overwritten by probabilities after its maximum has been found, avoiding a second 512-byte buffer. Explicit eight-register PV accumulation is a small concrete candidate; a newly compiled candidate must establish that those registers remain live across the call-free key loop.
 
 ### 4. Matrix and prefill changes should follow actual shapes
 
@@ -227,26 +227,34 @@ The saved 200-page output agreement is strong evidence for the tested FP32 path,
 
 The next exact-preserving performance candidate should therefore change data placement and instruction scheduling while retaining arithmetic. Changes to reduction trees, vector math, precision or the mathematical input need their own isolated evidence. The broader execution-engine recommendations and measured-result limitations are in the [CPU kernel review][review].
 
-[config]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/config.json
-[up-repeat]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:118
-[up-attn]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:139
-[up-ffn]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:185
-[up-block]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:248
-[up-final]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:339
-[up-image]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:407
-[rope-temporal]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/rope.py:5
-[rope-spatial]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/rope.py:58
-[positions]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/processing_falcon_ocr.py:240
-[mask]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/attention.py:103
-[rust-forward]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:267
-[rust-final]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:441
-[rust-cache]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:737
-[rust-rope]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:943
-[rust-rms]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/kernels.rs:189
-[rust-dot]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/kernels.rs:1007
-[rust-attn]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/kernels.rs:307
-[temporal-results]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/experiments/attention64_temporal/RESULTS-V1.md
-[downstream]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/reference/fp32-crossover-downstream-decomposition-v1.md
-[rms-observed]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/reference/rms-observed-rstd-v1.json
-[rms-intervention]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/reference/rms-gpu-rsqrt-width768-intervention-v1.json
-[review]: C:/Users/amazi/Documents/ChatGPT/falcon-ocr/docs/CPU_MATH_AND_KERNEL_REVIEW.md
+[temporal-results]: ../../../benchmarks/experiments/attention64_temporal/RESULTS-V1.md
+[downstream]: ../../../../reference/fp32-crossover-downstream-decomposition-v1.md
+[rms-observed]: ../../../../reference/rms-observed-rstd-v1.json
+[rms-intervention]: ../../../../reference/rms-gpu-rsqrt-width768-intervention-v1.json
+[review]: ../CPU_MATH_AND_KERNEL_REVIEW.md
+
+## Historical source paths
+
+The cited model files and historical Rust paths belong to the original
+Windows checkout. They are not included at those paths in this repository.
+
+| Reference | Original path |
+|---|---|
+| configuration (`config`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/config.json` |
+| upstream repetition (`up-repeat`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:118` |
+| attention implementation; Native sink operation (`up-attn`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:139` |
+| gate kernel (`up-ffn`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:185` |
+| block (`up-block`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:248` |
+| Final norm and output definitions; buffer registration (`up-final`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:339` |
+| Image scatter/projector (`up-image`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/modeling_falcon_ocr.py:407` |
+| Temporal frequencies and multiplication (`rope-temporal`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/rope.py:5` |
+| Spatial projection and rotation (`rope-spatial`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/rope.py:58` |
+| Processor positions (`positions`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/processing_falcon_ocr.py:240` |
+| Pinned mask composition (`mask`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/artifacts/model/attention.py:103` |
+| Rust implementation (`rust-forward`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:267` |
+| Rust final-row projection (`rust-final`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:441` |
+| existing compact cache (`rust-cache`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:737` |
+| Rust factors (`rust-rope`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/model.rs:943` |
+| RMS reduction (`rust-rms`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/kernels.rs:189` |
+| AVX2 dot (`rust-dot`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/kernels.rs:1007` |
+| existing CPU kernels (`rust-attn`) | `C:/Users/amazi/Documents/ChatGPT/falcon-ocr/src/kernels.rs:307` |

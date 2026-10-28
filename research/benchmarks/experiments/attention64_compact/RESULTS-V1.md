@@ -1,6 +1,6 @@
 # Compact caches with fixed-width attention
 
-The combined candidate reduced full-page latency by **6.15–6.40% compared with
+The combined candidate reduced full-page latency by **6.15-6.40% compared with
 compact caches alone**, reaching **63.102 seconds per page** in one native
 Windows bracket. All nine measured recognitions matched the saved baseline's
 1,140 IDs, literal text, EOS, dimensions and counts. The two unchanged compact
@@ -18,8 +18,8 @@ candidate beat both controls by the preset 5% target, and absolute control drift
 passed the preset 5% limit. This is an isolated experimental result; it does not
 by itself authorize default promotion.
 
-Decode latency fell by 8.10–8.24%, with only 0.159% drift between control decode
-medians. Prefill control drift was −2.282%; the candidate's prefill ranged from
+Decode latency fell by 8.10-8.24%, with only 0.159% drift between control decode
+medians. Prefill control drift was -2.282%; the candidate's prefill ranged from
 0.126% faster to 2.206% slower than the two controls. Stage medians are separate
 statistics and need not sum to the median page time. This bracket shows much
 less stage variation than the earlier expanded-cache experiment.
@@ -35,7 +35,7 @@ tiles, image/causal visibility, FMA/reduction order, exponentials and sink
 scaling remain unchanged. Only `src/kernels.rs` differs among the frozen
 control's archived benchmark sources.
 
-A [compiled-head inspection](../../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/symbol-receipt.json)
+A compiled-head inspection (`../../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/symbol-receipt.json`)
 using the matching executable and PDB confirms inline fixed-width dot/AXPY
 operations, no indirect calls, and the preserved prefix/generated-key branch.
 
@@ -71,7 +71,7 @@ eight warmed decode intervals with zero allocations. A separate saved-output
 check verified every tensor payload and 23 output-file hashes.
 
 See the [Linux functional receipt](../../../../reference/linux-attention64-compact-functional-v1.json)
-and [capture report](../../../../artifacts/diagnostics/attention64-compact-linux-v1/report.json).
+and capture report (`../../../../artifacts/diagnostics/attention64-compact-linux-v1/report.json`).
 These are same-platform checks under WSL; they establish neither Windows/Linux
 tensor equality nor bare-metal Linux performance.
 
@@ -80,7 +80,7 @@ tensor equality nor bare-metal Linux performance.
 The frozen sparse-room/table pair completed in **128.912 seconds**, compared
 with **142.475 and 141.837 seconds** for the two unchanged compact controls.
 That is a **9.519% and 9.112%** latency reduction against the respective
-controls. Control drift was **−0.4478%**, within the preset 5% limit; the
+controls. Control drift was **-0.4478%**, within the preset 5% limit; the
 candidate met the preset 5% gain target against both controls.
 
 | Process | Median pair time | Three measured pair times |
@@ -91,7 +91,7 @@ candidate met the preset 5% gain target against both controls.
 
 Each process used two unmeasured warmups and three measured repetitions,
 native Windows FP32 AVX2, 16 threads, joint batch two, compact caches,
-unpacked weights, dimensions 64–1536 and output cap 4096. All **18 measured
+unpacked weights, dimensions 64-1536 and output cap 4096. All **18 measured
 request outputs** preserved the exact 6/2,280 token vectors, literal texts,
 EOS stops, counts and frozen CPU dimensions. Token vectors are stored once
 per case; the unchanged compiled harness enforces their equality on every

@@ -17,11 +17,14 @@ pub use crop::{Crop, margin_crop, prepare_first_cropped};
 pub(crate) use resample::{Filter, resize_gray};
 use resample::{resize_bicubic, resize_gray16, resize_nearest, resize_premultiplied};
 
+/// Side length in pixels of a square image patch.
 pub const PATCH_SIZE: usize = 16;
+/// Number of RGB values in one patch.
 pub const PATCH_VALUES: usize = PATCH_SIZE * PATCH_SIZE * 3;
 const MIN_PIXELS: u64 = 56 * 56;
 const MAX_PIXELS: u64 = 28 * 28 * 1280 * 10;
 
+/// Resized image dimensions, normalized patches and their positions.
 #[derive(Debug, Clone)]
 pub struct PreparedImage {
     pub width: usize,
@@ -36,6 +39,9 @@ pub struct PreparedImage {
     pub crop: Option<Crop>,
 }
 
+/// Apply both resize stages, normalization and patch packing to an RGB image.
+/// Dimensions must be nonzero and satisfy `0 < min_dimension <= max_dimension`;
+/// an aspect ratio that produces a zero-sized first resize is rejected.
 pub fn prepare_rgb(image: &RgbImage, min_dimension: u32, max_dimension: u32) -> Result<PreparedImage> {
     prepare_resized_rgb(&first_resize_rgb(image, min_dimension, max_dimension)?)
 }
@@ -126,6 +132,7 @@ pub fn decode_file(path: &Path) -> Result<(SourceImage, f64)> {
 }
 
 impl SourceImage {
+    /// Original decoded width and height in pixels.
     pub fn dimensions(&self) -> (u32, u32) {
         (self.decoded.width(), self.decoded.height())
     }

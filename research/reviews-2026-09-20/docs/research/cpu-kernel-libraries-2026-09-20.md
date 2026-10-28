@@ -1,4 +1,4 @@
-# Falcon-OCR CPU kernel libraries — 2026-09-20
+# Falcon-OCR CPU kernel libraries - 2026-09-20
 
 The strongest design is a model-specific Rust runner with separate kernels for
 prefill projections, single-token projections, and attention. Keep the existing
@@ -14,7 +14,7 @@ integration effort, not measured speed.
 
 ## The dimensions matter more than the library label
 
-The pinned [configuration](../../../../artifacts/model/config.json) and
+The pinned configuration (`../../../../artifacts/model/config.json`) and
 [model graph](../../../../src/model/) have 22 layers, residual width 768, 16 query
 heads, 8 KV heads, head width 64, FFN width 2304 and vocabulary 65536. For
 `X[M,K] * W[N,K]^T`, the actual shapes are:
@@ -141,7 +141,7 @@ the host's capabilities.
 ### AOCL and BLIS
 
 AOCL-BLAS 5.3.2 adds GEMV kernels/threading while acknowledging regressions in
-some GEMV cases. Therefore “newest AMD library” is not evidence for this exact
+some GEMV cases. Therefore "newest AMD library" is not evidence for this exact
 five-shape B1 workload. Upstream BLIS 2.x offers plugins/control-tree extensions
 for custom packing and kernels, but modifying its internals would be a larger
 project than retaining our existing Rust attention.
@@ -255,7 +255,7 @@ The [existing host ISA probe](../../../../reference/quantization-feasibility-lay
 observed AVX2/FMA, AVX-512F/BW/VL/VNNI/BF16, but no AVX-VNNI, AVX-512FP16 or AMX.
 AVX-512 VNNI and VEX AVX-VNNI are different feature bits. Guard the actual
 instructions plus OS state, including on WSL; never select a kernel merely from
-the string “AVX-512.” WSL functional evidence does not establish bare-metal
+the string "AVX-512." WSL functional evidence does not establish bare-metal
 Linux performance.
 
 The current CPU-preserving contract includes four independent AVX2 dot

@@ -1,10 +1,15 @@
+//! Model identity, supported dimensions and inference configuration validation.
 use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 
+/// Pinned revision of the upstream Falcon-OCR checkpoint.
 pub const MODEL_REVISION: &str = "fe757d59ecd79d4d68760162306a70a015761ad9";
+/// SHA-256 of the original FP32 checkpoint's weight file.
 pub const WEIGHTS_SHA256: &str = "3df91e403dc48794bf1c48511e75c3508b1cc52df599dcc15f1080d46101ab16";
+/// SHA-256 of the upstream model configuration file.
 pub const CONFIG_SHA256: &str = "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e484c29a872e794adf";
 
+/// Kernel dispatch policy, resolved against the host's instruction sets.
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum Backend {
@@ -22,6 +27,7 @@ pub enum Backend {
     Neon,
 }
 
+/// Layout of the working KV cache before any split-prefix sealing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum CacheLayout {
@@ -29,6 +35,7 @@ pub enum CacheLayout {
     #[default]
     Compact,
 }
+/// Optional additional weight layout for joint decode projections.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum WeightLayout {
@@ -213,6 +220,7 @@ impl Tuning {
 }
 
 impl Backend {
+    /// Translate the public backend choice to the kernel dispatcher.
     pub(crate) fn simd(self) -> crate::kernels::Simd {
         match self {
             Self::Auto => crate::kernels::Simd::Auto,
@@ -223,6 +231,8 @@ impl Backend {
     }
 }
 
+/// Checkpoint dimensions, positional constants and special-token IDs.
+/// Only the pinned Falcon-OCR v1.5 architecture passes [`Self::validate`].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ModelConfig {
     pub dim: usize,
@@ -249,6 +259,8 @@ pub struct ModelConfig {
 }
 
 impl ModelConfig {
+    /// Reject dimensions, patch geometry, constants or token IDs that differ
+    /// from the supported checkpoint.
     pub fn validate(&self) -> Result<()> {
         ensure!(
             self.dim == 768
@@ -284,17 +296,21 @@ impl ModelConfig {
         Ok(())
     }
 
+    /// Total query width across all attention heads.
     pub fn query_dim(&self) -> usize {
         self.n_heads * self.head_dim
     }
+    /// Width of either keys or values across the grouped KV heads.
     pub fn kv_dim(&self) -> usize {
         self.n_kv_heads * self.head_dim
     }
+    /// RGB values in one spatial patch, as consumed by the image projector.
     pub fn patch_dim(&self) -> usize {
         self.channel_size * self.spatial_patch_size.pow(2)
     }
 }
 
+/// Page resizing, cropping, routing and output-token budget for recognition.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenerationOptions {
     pub min_dimension: u32,
@@ -337,6 +353,8 @@ impl Default for GenerationOptions {
     }
 }
 impl GenerationOptions {
+    /// Reject invalid resize bounds, an empty output budget or crop padding
+    /// that cannot fit the requested resolution.
     pub fn validate(&self) -> Result<()> {
         ensure!(
             self.min_dimension > 0 && self.min_dimension <= self.max_dimension,
@@ -508,7 +526,7 @@ pub enum Drafter {
 }
 
 /// Everything a [`crate::Runner`] decides about; `Default` is the automatic
-/// configuration and [`RunnerConfig::reference`] the bit-exact one.
+/// configuration and [`RunnerConfig::reference`] the CPU trace configuration.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RunnerConfig {
@@ -575,7 +593,7 @@ impl Default for RunnerConfig {
     }
 }
 impl RunnerConfig {
-    /// The bit-exact reference configuration used by traces and the numerical
+    /// The reference configuration used by CPU traces and the numerical
     /// gates: platform-exact exp, full head, no speculation or repetition
     /// stop, one decode team the size of a 16-thread pool.
     pub fn reference() -> Self {
@@ -590,6 +608,8 @@ impl RunnerConfig {
             ..Self::default()
         }
     }
+    /// Reject unsupported backend or layout choices and invalid batch,
+    /// drafting, cache-chunk or decode-team settings.
     pub fn validate(&self) -> Result<()> {
         ensure!(self.batch_size > 0, "batch_size must be positive");
         self.backend.simd().validate().map_err(anyhow::Error::msg)?;

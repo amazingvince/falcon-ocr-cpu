@@ -7,10 +7,11 @@
 use std::{path::Path, sync::Arc};
 
 use falcon_ocr::{
-    Backend, DecodeThreads, FinishReason, GenerationOptions, HeadMode, Mode, Model, Runner, RunnerConfig,
-    auto::{ModelRequest, load_model, resolve_weights},
+    Backend, DecodeThreads, Drafter, FinishReason, GenerationOptions, HeadMode, Mode, Model, Runner, RunnerConfig,
+    Speculation,
+    auto::{ModelRequest, load_model, resolve_weights, with_default_draft_head},
     quant::Profile,
-    trace::TensorTrace,
+    trace::{TensorTrace, Trace},
 };
 use sha2::{Digest, Sha256};
 
@@ -83,6 +84,27 @@ fn runner(model: Arc<Model>, tokenizer_dir: &str, config: RunnerConfig) -> Runne
 fn tokens(runner: &Runner, page: &str, max_new_tokens: usize) -> (Vec<u32>, FinishReason) {
     let result = runner.recognize_file(page, &options(max_new_tokens)).unwrap();
     (result.token_ids, result.finish_reason)
+}
+
+/// Counts target-model decode steps without enabling tensor capture, which
+/// would disable speculation.
+#[derive(Debug, Default)]
+struct SpeculationProbe {
+    steps: usize,
+    verifies: usize,
+}
+
+impl Trace for SpeculationProbe {
+    fn enabled(&self) -> bool {
+        false
+    }
+    fn decode_step(&mut self, rows: usize, _: f64, _: usize) {
+        self.steps += 1;
+        self.verifies += usize::from(rows > 1);
+    }
+    fn tensor(&mut self, _: &str, _: &[usize], _: &[f32]) -> anyhow::Result<()> {
+        unreachable!("tensor capture is disabled")
+    }
 }
 
 /// The `__metadata__` map of a safetensors file, from its header alone.
@@ -160,11 +182,15 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
 /// HILLCLIMB T12: a kernel-ready file holds exactly what the checkpoint
 /// loader computes, and the published files are those bytes.
 #[test]
-#[ignore = "needs artifacts/model, the GPTQ overlay, artifacts/packed and 1.5 GB of temporary disk"]
+#[ignore = "needs artifacts/model, the GPTQ overlay, artifacts/packed and temporary disk for all modes"]
 fn packed_files_round_trip_the_checkpoint_loader_and_match_the_published_ones() {
     let dir = tempfile::tempdir().unwrap();
-    for mode in [Mode::NearExact, Mode::Fast] {
-        let model = checkpoint_model(mode);
+    for mode in [Mode::Exact, Mode::NearExact, Mode::Fast] {
+        let model = if mode == Mode::Exact {
+            Arc::new(Model::load(MODEL_DIR).unwrap())
+        } else {
+            checkpoint_model(mode)
+        };
         model.prepare_screened_head().unwrap();
         let file = dir.path().join(mode.packed_file_name().unwrap());
         model.write_packed(&file).unwrap();
@@ -259,6 +285,102 @@ fn speculation_decode_team_drafts_and_head_never_change_tokens() {
         assert_eq!(a.token_ids, b.token_ids, "document drafts");
     }
     assert_eq!(with_drafts[1].token_ids, expected.0);
+}
+
+/// Each drafter must verify and accept real proposals, as well as preserve
+/// the non-speculative tokens and stop reason in every mode. Packed exact
+/// mode must also reproduce the published GPU smoke receipt's tokens.
+/// The n-gram-only arm uses three-token matches on the journal page so its
+/// first proposal accepts before timing-based backoff can begin.
+#[test]
+#[ignore = "needs all three packed modes, the published draft head, JOURNAL page and smoke image"]
+fn speculative_drafters_verify_accept_and_preserve_tokens_in_every_mode() {
+    let image = image::open(JOURNAL).unwrap().to_rgb8();
+    let base = RunnerConfig {
+        threads: 8,
+        decode_threads: DecodeThreads::Fixed(4),
+        document_drafts: false,
+        speculation: Some(Speculation {
+            min_match: 3,
+            ..Speculation::default()
+        }),
+        ..RunnerConfig::default()
+    };
+    let head = with_default_draft_head(base.clone(), Path::new(PACKED_DIR), false);
+    assert_eq!(head.drafter, Drafter::Head, "the published head must be discovered");
+    assert!(head.draft_head.is_some());
+    for mode in [Mode::Exact, Mode::NearExact, Mode::Fast] {
+        // Match product loading: exact also needs the split FP32 cache for
+        // speculation, rather than the packed file's reference cache.
+        let packed = Path::new(PACKED_DIR).join(mode.packed_file_name().unwrap());
+        let plan = resolve_weights(&ModelRequest {
+            model_dir: Path::new(PACKED_DIR),
+            model_file: Some(&packed),
+            mode: Some(mode),
+            split_exact: true,
+            ..ModelRequest::default()
+        })
+        .unwrap();
+        let model = Arc::new(load_model(&plan, false).unwrap());
+        assert_eq!(model.profile(), mode.profile(true));
+        if mode == Mode::Exact {
+            let receipt: serde_json::Value =
+                serde_json::from_str(include_str!("../reference/official-smoke-fp32.json")).unwrap();
+            let expected: Vec<u32> = serde_json::from_value(receipt["token_ids"].clone()).unwrap();
+            let result = runner(model.clone(), PACKED_DIR, head.clone())
+                .recognize_file(
+                    Path::new(SMOKE_DIR).join("canonical-rgb.png"),
+                    &GenerationOptions {
+                        max_dimension: receipt["max_image_size"].as_u64().unwrap() as u32,
+                        min_dimension: receipt["min_image_size"].as_u64().unwrap() as u32,
+                        ..options(receipt["max_new_tokens"].as_u64().unwrap() as usize)
+                    },
+                )
+                .unwrap();
+            assert_eq!(result.token_ids, expected, "packed exact GPU smoke tokens");
+            assert_eq!(result.finish_reason, FinishReason::Eos);
+            assert_eq!(result.mode, Some(Mode::Exact));
+            assert_eq!(result.precision, "fp32");
+        }
+        let run = |config| {
+            let mut probe = SpeculationProbe::default();
+            let result = runner(model.clone(), PACKED_DIR, config)
+                .recognize_with_trace(&image, &options(64), &mut probe)
+                .unwrap();
+            (result, probe)
+        };
+        let (plain, probe) = run(RunnerConfig {
+            speculation: None,
+            ..base.clone()
+        });
+        assert_eq!(plain.finish_reason, FinishReason::Length, "{mode}");
+        assert_eq!(probe.verifies, 0, "{mode}: speculation disabled");
+        assert_eq!(plain.output_tokens, probe.steps + 1, "{mode}: plain decode callbacks");
+        for config in [
+            base.clone(),
+            head.clone(),
+            RunnerConfig {
+                drafter: Drafter::Both,
+                ..head.clone()
+            },
+        ] {
+            let drafter = config.drafter;
+            let (result, probe) = run(config);
+            assert_eq!(result.token_ids, plain.token_ids, "{mode} {drafter:?}");
+            assert_eq!(result.finish_reason, plain.finish_reason, "{mode} {drafter:?}");
+            assert!(
+                probe.verifies > 0,
+                "{mode} {drafter:?}: no draft verification: {probe:?}"
+            );
+            // Prefill supplies one token and each target step supplies one
+            // more. Additional output tokens therefore require accepted drafts.
+            assert!(
+                result.output_tokens > probe.steps + 1,
+                "{mode} {drafter:?}: no accepted drafts: {probe:?}"
+            );
+            eprintln!("{mode} {drafter:?}: {} output tokens, {probe:?}", result.output_tokens);
+        }
+    }
 }
 
 /// The repetition stop ends a looping page early without changing what was

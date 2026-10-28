@@ -14,6 +14,7 @@ use std::collections::HashMap;
 /// Longest n-gram looked up.
 const MAX_N: usize = 4;
 
+/// Incremental index of earlier output used to propose n-gram continuations.
 pub(crate) struct NgramDrafter {
     min_match: usize,
     /// (n-gram, length) -> position just after its most recent occurrence.
@@ -55,6 +56,7 @@ impl DocumentHistory {
         }
     }
 
+    /// Discard all pages and their continuation index.
     pub(crate) fn clear(&mut self) {
         self.tokens.clear();
         self.index.clear();
@@ -74,6 +76,7 @@ impl DocumentHistory {
 }
 
 impl NgramDrafter {
+    /// Start an empty index, clamping the minimum match to `1..=MAX_N`.
     pub(crate) fn new(min_match: usize) -> Self {
         Self {
             min_match: min_match.clamp(1, MAX_N),
@@ -142,6 +145,7 @@ const PROBE_EVERY: usize = 16;
 const ALPHA: f64 = 0.15;
 
 impl DraftPolicy {
+    /// Start with optimistic acceptance and no measured step costs.
     pub(crate) fn new() -> Self {
         // Optimistic start: draft until measurements say otherwise.
         Self {
@@ -156,6 +160,7 @@ impl DraftPolicy {
         if old == 0.0 { new } else { old + ALPHA * (new - old) }
     }
 
+    /// Choose whether to draft, including periodic probes below break-even.
     pub(crate) fn should_draft(&mut self) -> bool {
         let pays = self.single_ms == 0.0 || self.extra_ms == 0.0 || self.rate > self.extra_ms / self.single_ms;
         if pays || self.since_probe >= PROBE_EVERY {
@@ -167,10 +172,13 @@ impl DraftPolicy {
         }
     }
 
+    /// Update the single-token step cost with a duration in milliseconds.
     pub(crate) fn single_step(&mut self, ms: f64) {
         self.single_ms = Self::average(self.single_ms, ms);
     }
 
+    /// Update verification cost and acceptance from a timed draft step.
+    /// Steps with no drafted tokens leave the estimates unchanged.
     pub(crate) fn verify_step(&mut self, ms: f64, drafted: usize, accepted: usize) {
         if drafted == 0 {
             return;

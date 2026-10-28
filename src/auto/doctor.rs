@@ -36,10 +36,12 @@ impl FileStatus {
     }
 }
 
-/// The files `doctor` looked for in the model directory.
+/// The model and tokenizer files inspected by `doctor`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Files {
     pub model_file: Option<FileStatus>,
+    /// The kernel-ready FP32 file used by exact mode.
+    pub packed_exact: FileStatus,
     pub packed_near_exact: FileStatus,
     pub packed_fast: FileStatus,
     pub checkpoint: FileStatus,
@@ -94,8 +96,9 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
     config.validate()?;
     let host = HostInfo::detect().clone();
     let dir = request.model_dir;
-    let files = Files {
+    let mut files = Files {
         model_file: request.model_file.map(|p| FileStatus::of(p.to_path_buf())),
+        packed_exact: FileStatus::of(dir.join(Mode::Exact.packed_file_name().unwrap_or_default())),
         packed_near_exact: FileStatus::of(dir.join(Mode::NearExact.packed_file_name().unwrap_or_default())),
         packed_fast: FileStatus::of(dir.join(Mode::Fast.packed_file_name().unwrap_or_default())),
         checkpoint: FileStatus::of(dir.join("model.safetensors")),
@@ -112,6 +115,7 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
         Err(e) => error = Some(format!("{e:#}")),
         Ok(weights) => {
             let tokenizer_dir = weights.source.tokenizer_dir(dir);
+            files.tokenizer = FileStatus::of(tokenizer_dir.join("tokenizer.json"));
             if let WeightsSource::Checkpoint {
                 overlay: Some(path), ..
             } = &weights.source
@@ -182,6 +186,7 @@ impl std::fmt::Display for Doctor {
         )?;
         let files = [
             ("model file", self.files.model_file.as_ref()),
+            ("packed exact", Some(&self.files.packed_exact)),
             ("packed near-exact", Some(&self.files.packed_near_exact)),
             ("packed fast", Some(&self.files.packed_fast)),
             ("checkpoint", Some(&self.files.checkpoint)),

@@ -19,7 +19,7 @@ Batch size one falls back to this same single-image path; it does not call
 `runner.rs:457` calls `trace.decode_start()` immediately before the generation
 loop; `decode_end()` is after it. Prefill produces the first output decision
 before this interval. An N-token completed output therefore normally contains
-N−1 decode forward calls; the final EOS/budget token does not trigger another
+N-1 decode forward calls; the final EOS/budget token does not trigger another
 forward. The interval includes token pushes, stop checks, embedding, forward
 and argmax; final text decoding is outside it. Image decode/resize/patching,
 image projection, transformer prefill, model loading/packing and pool creation
@@ -43,13 +43,13 @@ head width 64, FFN width 2304 and vocabulary 65536 (`config.json`).
 | `Model::forward`, `Workspace::resize`, `rotary_factors` | `model.rs:267,929,958` | Reuse buffers; fetch precomputed temporal factors; build head-specific 32-pair factors once before the layer loop. Nonvisual spatial coordinates are NaN, yielding angle zero. |
 | `kernels::rms_norm`, `sum_squares_pairwise` | `kernels.rs:189,226` | Per layer: one width-768 attention RMS, sixteen width-64 Q rows, sixteen width-64 expanded K rows, one width-768 FFN RMS. Final learned width-768 RMS after all layers. |
 | `linear_with_simd`, its Rayon closure, `x86::dot_avx2` | `kernels.rs:91,1007`; call sites `model.rs:314,400,413,423` | Four GEMVs per layer: QKV `[2048,768]`, WO `[768,1024]`, interleaved W13 `[4608,768]`, W2 `[768,2304]`. Shapes shown as `[output,input]`. |
-| QKV copy / RoPE loops in `Model::forward` | `model.rs:326–377` | Expand K/V pairs into 16 heads, normalize Q/K, apply the same real multiply/subtract/add rotation order. |
+| QKV copy / RoPE loops in `Model::forward` | `model.rs:326-377` | Expand K/V pairs into 16 heads, normalize Q/K, apply the same real multiply/subtract/add rotation order. |
 | `LayerCache::append`, `append_unique_heads` / copy routines | `model.rs:754,836` | Expanded: append 1024 K +1024 V values. Compact: append 512 generated K +512 V; prefix K remains expanded. Capacity was reserved during session setup. |
 | `LayerCache::attention`, `attention_with_simd` or `attention_compact_with_simd` | `model.rs:778`; `kernels.rs:307,630` | One query, 16 parallel head outputs, entire visible prefix/generated history. Per-head 128-key stack tiles, dot64 QK, ordered scalar softmax denominator, vector PV AXPY, separate learned sink scaling. |
-| `x86::dot_avx2`, `x86::axpy_avx2`; possibly `expf`, `logf` or inlined math | `kernels.rs:1007,1060`; attention loop `378–416` / `727–770` | QK dot and PV accumulation for each key/head; exponentials per key, rescale per tile, log and sink exponential per head. Actual Windows CRT/instruction names require the captured symbols/disassembly. |
+| `x86::dot_avx2`, `x86::axpy_avx2`; possibly `expf`, `logf` or inlined math | `kernels.rs:1007,1060`; attention loop `378-416` / `727-770` | QK dot and PV accumulation for each key/head; exponentials per key, rescale per tile, log and sink exponential per head. Actual Windows CRT/instruction names require the captured symbols/disassembly. |
 | `squared_relu_gate`, its Rayon closure | `kernels.rs:249` | 2304 independent `(relu(gate)*relu(gate))*up` values, retaining the two multiplication boundaries. |
 | residual loops in `Model::forward` | `model.rs:409,432` | Two 768-element additions per layer, sequential elementwise arithmetic. |
-| final `linear_with_simd` → `dot_avx2` | `model.rs:439–455` | Vocabulary GEMV `[65536,768]`; same generic symbol as layer projections, so caller location distinguishes it. |
+| final `linear_with_simd` → `dot_avx2` | `model.rs:439-455` | Vocabulary GEMV `[65536,768]`; same generic symbol as layer projections, so caller location distinguishes it. |
 | `runner::argmax` | `runner.rs:662` | Full finite-value check, then full ascending scan with strict `>`; ties choose the lowest index. |
 | `rayon_core::*`, `rayon::iter::plumbing::*`, closures, worker wait/steal frames | kernel parallel iterator call sites | Independent output/head tasks and synchronization. Waiting samples are not necessarily useful arithmetic; inspect CPU versus wall/ready time separately. |
 
@@ -60,7 +60,7 @@ own dispatch but is not called by this row-one path. Similarly, attention GEMM
 requires at least four query rows. `gemm::*` samples in a full-page trace can
 belong to prefill; do not automatically attribute them to decode. Phase-packed
 weights can be prepared at Runner construction when requested, but their
-2–8-row arithmetic is unused for a single page.
+2-8-row arithmetic is unused for a single page.
 
 There are 89 GEMV calls and 245,760 output dot products per next-token forward.
 The visited dense projection matrices contain 835.5 MiB of FP32 weights:

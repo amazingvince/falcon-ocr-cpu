@@ -16,9 +16,11 @@ pub(crate) struct BatchWorkspace {
     pub(super) work: Workspace,
 }
 impl BatchWorkspace {
+    /// Reserve scratch for `rows` selections if the model has a screen.
     pub(crate) fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
         self.work.reserve_screened_head(model, rows);
     }
+    /// Allocate batch scratch for up to `rows` active requests.
     pub fn new(rows: usize, c: &ModelConfig) -> Self {
         let mut work = Workspace::default();
         work.resize(rows, c);
@@ -34,6 +36,7 @@ impl BatchWorkspace {
     }
 }
 
+/// Per-request cache, positions and scratch retained across forward passes.
 pub(crate) struct Session {
     pub(super) layers: Vec<LayerCache>,
     pub(super) workspace: Workspace,
@@ -85,6 +88,7 @@ impl FeatureCapture {
         &self.data[r * width..(r + 1) * width]
     }
 }
+/// A layer's expanded, compact or sealed split-prefix key/value storage.
 pub(super) enum LayerCache {
     Split(crate::quant::kv::SplitPrefix),
     Expanded {
@@ -106,6 +110,8 @@ impl LayerCache {
             _ => None,
         }
     }
+    /// Append expanded rows, retaining unique GQA heads where possible.
+    /// `offset` is the first row's cache position.
     pub(super) fn append(&mut self, k: &[f32], v: &[f32], offset: usize, c: &ModelConfig) {
         match self {
             Self::Split(cache) => cache.append(k, v),
@@ -128,6 +134,8 @@ impl LayerCache {
         }
     }
 
+    /// Compute attention over the cached rows into `output`. A split cache
+    /// requires queries beyond the image interval and panics otherwise.
     #[allow(clippy::too_many_arguments)]
     pub(super) fn attention(
         &self,
@@ -229,9 +237,11 @@ impl Session {
     pub(crate) fn is_split(&self) -> bool {
         self.layers.iter().all(|l| matches!(l, LayerCache::Split(_)))
     }
+    /// Number of positions still available in the cache.
     pub(crate) fn remaining_capacity(&self) -> usize {
         self.capacity - self.len
     }
+    /// Allocated KV payload across layers, including unused vector capacity.
     pub(crate) fn cache_bytes(&self) -> usize {
         self.layers
             .iter()
@@ -247,12 +257,16 @@ impl Session {
             })
             .sum()
     }
+    /// Release all layer caches and return their previously allocated bytes.
     pub(crate) fn retire_cache(&mut self) -> usize {
         let bytes = self.cache_bytes();
         self.layers = Vec::new();
         self.capacity = 0;
         bytes
     }
+    /// Convert a complete compact prefix to the requested split KV format.
+    /// Compact mode is a no-op; other modes require an unsealed compact cache
+    /// with no generated rows and can fail during conversion.
     pub(crate) fn seal_prefix(
         &mut self,
         c: &ModelConfig,
@@ -295,6 +309,7 @@ impl Session {
         }
         Ok(())
     }
+    /// Replace prefill scratch with one-row buffers, retaining head scratch.
     pub(crate) fn prepare_small_decode(&mut self, c: &ModelConfig) {
         let head = std::mem::take(&mut self.workspace.head);
         let selected = std::mem::take(&mut self.workspace.selected);
@@ -315,10 +330,14 @@ impl Session {
         std::mem::swap(&mut self.workspace, &mut previous.workspace);
     }
 
+    /// Release forward scratch while retaining the request's cache.
     pub(crate) fn release_workspace(&mut self) {
         self.workspace = Workspace::default();
     }
 
+    /// Allocate a cache per layer for a prompt and subsequent generated rows.
+    /// Rejects an invalid image interval or prefix, capacity beyond the model
+    /// context, and allocation or size-overflow failures.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         c: &ModelConfig,
@@ -380,11 +399,13 @@ impl Session {
             data: Vec::new(),
         });
     }
+    /// Captured layer outputs, if feature capture has been enabled.
     pub(crate) fn features(&self) -> Option<&FeatureCapture> {
         self.features.as_ref()
     }
 }
 
+/// Reusable intermediate buffers for a forward pass.
 #[derive(Default)]
 pub(super) struct Workspace {
     pub(super) quant_scratch: crate::quant::linear::Scratch,
@@ -420,6 +441,8 @@ impl Workspace {
             }
         }
     }
+    /// Size the layer intermediates for `rows`; head and RoPE buffers are
+    /// managed separately.
     pub(super) fn resize(&mut self, rows: usize, c: &ModelConfig) {
         self.normalized.resize(rows * c.dim, 0.);
         self.qkv.resize(rows * (c.query_dim() + 2 * c.kv_dim()), 0.);

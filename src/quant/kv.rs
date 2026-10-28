@@ -150,6 +150,7 @@ impl Storage {
     }
 }
 
+/// Sealed group-major prefix records and generated tail records for decode.
 pub(crate) struct SplitPrefix {
     records: Records,
     prefix_len: usize,
@@ -515,6 +516,7 @@ impl SplitPrefix {
         self
     }
 
+    /// Allocated prefix and tail record bytes, including unused capacity.
     pub fn bytes(&self) -> usize {
         self.records.bytes() + self.tail.bytes()
     }
@@ -557,6 +559,9 @@ impl SplitPrefix {
         (k, v)
     }
 
+    /// Decodes one query per head against the sealed prefix and appended tail.
+    /// `q` and `output` hold 64 values per head; `sinks` holds one per head.
+    /// `total_len` must equal the prefix length plus the appended tail length.
     pub fn attention_decode(&self, q: &[f32], total_len: usize, sinks: &[f32], output: &mut [f32], simd: Simd) {
         assert_eq!(q.len(), self.heads * 64);
         assert_eq!(output.len(), q.len());

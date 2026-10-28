@@ -330,7 +330,7 @@ impl Existing {
 /// and any other such line is skipped, so the pages of the records it
 /// replaced run again; a file with damaged lines and no record is not an
 /// output. A last line without its newline that is not valid JSON but could
-/// be the start of a record ([`starts_like_a_record`], NULs around it
+/// be the start of a record (`starts_like_a_record`, NULs around it
 /// aside) was cut short by a crash and is dropped; any other last line
 /// without its newline is kept and gets one, or is not a record. A byte
 /// order mark (an editor's) is kept and skipped.

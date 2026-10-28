@@ -39,7 +39,7 @@ These are old synthetic diagnostic activations, originally selected to locate
 FP32 drift. They are **not** calibration or held-out quality data. No group,
 layer policy, clipping threshold, or quality budget may be selected from them.
 
-All four original checkpoint matrices are inspected for every case: QKV consumes
+Every case inspects all four original checkpoint matrices: QKV consumes
 saved attention RMS output; WO consumes saved scaled attention; W13 consumes
 saved FFN RMS output; W2 consumes saved squared-ReLU gate output. Thus all 28
 linear operators receive identical saved GPU inputs, without propagating one
@@ -80,8 +80,8 @@ tensor fixture. The checker independently pins the checkpoint, tensor fixture,
 and sidecar; it also requires a completed, unchanged-source `quant_probe` build,
 the preserved executable, every entry in the source ZIP, and all embedded source
 hashes. It reads `build.json` beside the candidate report by default, or accepts
-an explicit `--build-manifest`. The checker used for a later validation is recorded
-separately from the historical checker preserved in the original build.
+an explicit `--build-manifest`. Later validation records its checker separately
+from the historical checker preserved in the original build.
 
 V1 artifacts remain unchanged. The stricter follow-up validation is recorded in
 [`reference/quantization-v1-strict-validation.json`](../../../../reference/quantization-v1-strict-validation.json).

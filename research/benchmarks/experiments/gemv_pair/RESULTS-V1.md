@@ -1,7 +1,7 @@
 # Paired-output GEMV candidate
 
 Native Windows correctness and full-page output checks passed on 2026-09-20,
-but the latency reduction was only **1.16–1.29%**, below the frozen 5% target.
+but the latency reduction was only **1.16-1.29%**, below the frozen 5% target.
 The candidate remains unpromoted. It extends the frozen combined fixed64
 attention implementation and is isolated from production source/defaults.
 
@@ -71,7 +71,7 @@ two warmups and three measured pages per process:
 | Paired GEMV | 62.041 s | 62040.7347, 61992.8093, 62108.0656 |
 | Control after | 62.766 s | 62914.7365, 62747.1278, 62766.1729 |
 
-Control drift was −0.13195%. Whole-page reductions were 1.28620% and 1.15578%
+Control drift was -0.13195%. Whole-page reductions were 1.28620% and 1.15578%
 against the respective controls; neither meets 5%. Decode medians were
 50.453/49.615/50.345 s and prefill medians 12.308/12.329/12.321 s. Stage timings
 are wall intervals and their medians need not add to the whole-page median.

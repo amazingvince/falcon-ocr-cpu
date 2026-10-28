@@ -23,6 +23,7 @@ pub(super) struct Generation {
 }
 
 impl Generation {
+    /// Start an empty page with the output budget and repetition policy.
     pub(super) fn new(max_new_tokens: usize, stop_loops: bool) -> Self {
         Self {
             tokens: Vec::with_capacity(max_new_tokens),
@@ -47,6 +48,7 @@ impl Generation {
         }
         self.tokens.len() == self.max_new_tokens
     }
+    /// Number of tokens generated so far, including any stop token.
     pub(super) fn len(&self) -> usize {
         self.tokens.len()
     }

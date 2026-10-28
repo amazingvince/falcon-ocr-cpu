@@ -38,6 +38,8 @@ pub(super) struct HeadClock {
     start: Instant,
 }
 impl HeadClock {
+    /// Start timing a head for the row-count bucket, or return `None` when
+    /// phase timing is disabled.
     pub(super) fn new(rows: usize, enabled: bool) -> Option<Self> {
         enabled.then(|| Self {
             rows,
@@ -56,6 +58,7 @@ impl Drop for HeadClock {
     }
 }
 impl PhaseClock {
+    /// Start a forward phase clock; disabled clocks do not record on drop.
     pub(super) fn new(rows: usize, enabled: bool) -> Self {
         Self {
             enabled,

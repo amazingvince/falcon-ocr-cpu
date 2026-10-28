@@ -77,13 +77,5 @@ python tests/generate_router_fixtures.py
 cargo test --lib router
 ```
 
-Windows builds/tests can use the local-tool bootstrap wrapper:
-
-```powershell
-./tools/build_windows.ps1 -CargoArguments @('test','--lib','preprocess')
-```
-
-Linux uses `bash tools/build_linux.sh test --lib preprocess`. Both wrappers
-find installed tools or fetch checksum-verified local NASM/CMake copies. Linux
-requires an existing C compiler and GNU make; Windows requires MSVC Build Tools.
-Tool downloads do not modify global environment configuration.
+For platform build prerequisites and local-tool wrappers, see
+[Toolchain](../../docs/DEVELOPMENT.md#toolchain).

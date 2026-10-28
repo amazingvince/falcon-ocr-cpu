@@ -3,16 +3,22 @@ use anyhow::Result;
 use safetensors::tensor::{Dtype, TensorView, serialize_to_file};
 use std::{collections::BTreeMap, path::Path};
 
+/// Receives optional tensor captures and decode instrumentation callbacks.
 pub trait Trace: Send {
+    /// Whether callers should capture tensors; enabled by default.
     fn enabled(&self) -> bool {
         true
     }
     /// Phase boundaries also fire when tensor capture is disabled, allowing
     /// allocation/profiling instruments to observe the steady decode loop.
     fn decode_start(&mut self) {}
+    /// Mark the end of the decode phase.
     fn decode_end(&mut self) {}
+    /// Report rows processed, elapsed milliseconds and current KV cache bytes.
     fn decode_step(&mut self, _rows: usize, _ms: f64, _kv_bytes: usize) {}
+    /// Report cache bytes before and after sealing and elapsed milliseconds.
     fn prefix_sealed(&mut self, _before: usize, _after: usize, _ms: f64) {}
+    /// Report the bytes released when a session's cache is retired.
     fn cache_retired(&mut self, _bytes: usize) {}
     /// One screened vocabulary-head selection: rows recomputed exactly, and
     /// whether the step fell back to the full FP32 head.
@@ -36,8 +42,10 @@ pub trait Trace: Send {
     /// Row-major input `[rows, width]` of projection `site` (`qkv`, `wo`,
     /// `w13` or `w2`) in `layer`.
     fn linear_input(&mut self, _layer: usize, _site: &'static str, _rows: usize, _data: &[f32]) {}
+    /// Capture named FP32 tensor data and its shape; capture errors propagate.
     fn tensor(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()>;
 }
+/// Disables tensor capture and ignores instrumentation callbacks.
 pub struct NoTrace;
 impl Trace for NoTrace {
     #[inline]
@@ -57,6 +65,7 @@ pub(crate) struct PrefixedTrace<'a> {
     prefix: &'a str,
 }
 impl<'a> PrefixedTrace<'a> {
+    /// Forward callbacks to `inner`, prefixing tensor names with `prefix`.
     pub(crate) fn new(inner: &'a mut dyn Trace, prefix: &'a str) -> Self {
         Self { inner, prefix }
     }
@@ -102,6 +111,7 @@ impl Trace for PrefixedTrace<'_> {
         self.inner.tensor(&format!("{}.{name}", self.prefix), shape, data)
     }
 }
+/// In-memory named FP32 tensors; a repeated name replaces its previous value.
 #[derive(Default)]
 pub struct TensorTrace {
     pub tensors: BTreeMap<String, (Vec<usize>, Vec<f32>)>,
@@ -113,6 +123,7 @@ impl Trace for TensorTrace {
     }
 }
 impl TensorTrace {
+    /// Write captures as safetensors, returning shape or file errors.
     pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
         let views = self
             .tensors

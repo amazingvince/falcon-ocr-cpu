@@ -14,13 +14,13 @@ The Windows loader retains a file handle that denies writing or replacing the
 DLL during the probe. Linux retains its file handle but has no mandatory write
 lock; keep the explicitly selected library immutable while it runs.
 
-The experiment covers all seven captured GPU cases and four projections per
-case: QKV, attention output, W13, and W2. It verifies the complete model weight
-and config hashes plus the independently exported fixture and manifest hashes.
-Both AOCL and current Rust kernels receive the same captured GPU input for each
-operator. Rust uses a four-thread Rayon pool; the AVX2 selection controls small
-row counts, while the `gemm` crate independently dispatches larger prefill
-matrices. The AOCL library is built with OpenMP off and called serially.
+The experiment covers four projections for all seven captured GPU cases: QKV,
+attention output, W13, and W2. It verifies complete model weight and config hashes
+plus independently exported fixture and manifest hashes. AOCL and current Rust
+kernels receive the same captured GPU operator inputs. Rust uses a four-thread
+Rayon pool; AVX2 selection controls small row counts, while the `gemm` crate
+independently dispatches larger prefill matrices. AOCL is built with OpenMP off
+and called serially.
 
 ## Build provenance
 
@@ -28,9 +28,9 @@ The first native Windows DLL was built manually using CMake 4.2.1 and MSVC
 19.44.35222.0. Its SHA-256 is
 `f2ce2248710bdcc5feed97f73eead203733c8ebc6c1d759aa18ececd4e4cab1e`.
 [The preserved Windows build report](../../../reference/aocl-windows-build-v1.json)
-explicitly describes its source archive as captured **after** the build. It is
-not evidence that a startup source snapshot was checked during that initial
-compilation. The historical Windows v1 operator report remains unchanged.
+describes its source archive as captured **after** the build, without evidence
+that a startup source snapshot was checked during that initial compilation.
+The historical Windows v1 operator report remains unchanged.
 
 The WSL Linux library was built using the scripted workflow, GCC/G++ 13.3.0,
 existing local CMake 3.31.10, two build jobs, and no OpenMP. Its SHA-256 is
@@ -49,10 +49,10 @@ build directory and a dirty or wrong source revision. It does not install the
 library or change system dependencies. Use a new build directory for each run.
 
 For the existing Windows checkout shared with WSL, Windows Git's system setting
-is `core.autocrlf=true`. WSL Git otherwise interprets all 641 CRLF files as changed.
-The explicit `--git-autocrlf true` option applies only to child Git commands and
-is recorded in provenance; it changes neither source bytes nor repository/global
-Git configuration. Do not use it to ignore actual source changes.
+is `core.autocrlf=true`; WSL Git otherwise sees all 641 CRLF files as changed.
+`--git-autocrlf true` applies only to child Git commands and is recorded in
+provenance; it changes neither source bytes nor repository/global Git
+configuration. Do not use it to ignore actual source changes.
 
 ## Reproduction
 
@@ -131,8 +131,8 @@ probe binaries have startup and after-build source captures; the Linux capture
 is recorded in [its build manifest](../../../reference/aocl-linux-probe-build-v1.json).
 The [cross-platform comparison](../../../reference/aocl-windows-linux-fp32-comparison-v1.json)
 found **28/28 AOCL outputs and 28/28 Rust outputs bit-identical** between Windows
-and WSL Linux. Thus the isolated numerical tradeoffs above apply to both tested
-builds; this says nothing about their relative throughput.
+and WSL Linux. The isolated numerical tradeoffs therefore apply to both tested
+builds, without establishing relative throughput.
 
 The subsequent [whole-model same-prefix intervention](../../../reference/aocl-w2-intervention-summary-v1.json)
 used AOCL only for prefill W2 and preserved Rust elsewhere. On the synthetic

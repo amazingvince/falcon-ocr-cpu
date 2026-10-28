@@ -1,6 +1,6 @@
 # Fixed-width attention: first full-page result
 
-The isolated AVX2 candidate reduced whole-page latency by **6.15–9.43%** against
+The isolated AVX2 candidate reduced whole-page latency by **6.15-9.43%** against
 unchanged controls in one native Windows bracket. All nine measured recognitions
 matched the frozen baseline's 1,140 token IDs, literal text, EOS, dimensions and
 counts. This is a successful single-page experiment; production defaults remain
@@ -14,13 +14,13 @@ unchanged and broader qualification is pending.
 
 Each process used two unmeasured warmups followed by three measured pages.
 Candidate measurements were 68.545, 68.334 and 68.444 seconds. Whole-page control
-drift was −3.493%, passing the preset absolute 5% limit. The candidate beat both
+drift was -3.493%, passing the preset absolute 5% limit. The candidate beat both
 controls by the preset 5% target. Stage medians are separate statistics and need
 not sum to the median total.
 
-The decode reduction was 7.73–14.11% against the two controls. Stage stability
+The decode reduction was 7.73-14.11% against the two controls. Stage stability
 was weaker than whole-page stability: control prefill changed by +17.45% and
-decode by −6.92%. Candidate prefill was 1.14% slower than the final control and
+decode by -6.92%. Candidate prefill was 1.14% slower than the final control and
 18.79% slower than the first. Therefore the whole-page bracket is the primary
 speed result; these stage measurements do not establish a repeatable prefill
 regression or a precise decode speedup. They warrant follow-up in subsequent
@@ -37,7 +37,7 @@ only those call targets change. Four dot accumulators, FMA sequence, reduction
 tree, 128-key tiles, key order, normalization, exponentials and sinks retain their
 original arithmetic.
 
-A bounded [compiled-head inspection](../../../../artifacts/diagnostics/attention64-v2/benchmark-build/compiled-head/symbol-receipt.json)
+A bounded compiled-head inspection (`../../../../artifacts/diagnostics/attention64-v2/benchmark-build/compiled-head/symbol-receipt.json`)
 confirms eight dot FMAs and the same reduction tree, eight AXPY FMA/store blocks,
 and no indirect calls in the specialized head. Scalar exponentials/logarithm
 remain direct calls. The preserved candidate PDB matches the executable's

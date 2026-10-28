@@ -6,6 +6,13 @@ use super::{
 };
 /// A decode kernel over one prefix/tail store pair (see `SplitPrefix::dispatch`).
 pub(super) trait PairKernel {
+    /// Runs the kernel on the prefix and tail records.
+    ///
+    /// # Safety
+    /// The native vector ISA must be available, and all spans must fit the
+    /// stores and contain two 64-element queries. There must be one to
+    /// `MAX_ROWS` spans and the same number of parts. Spans must share their
+    /// group, prefix length and tail base; nonempty spans must start together.
     unsafe fn run<R: RecordStore, T: RecordStore>(&mut self, store: &R, tail: &T);
 }
 
@@ -82,6 +89,11 @@ use crate::simd::Simd as Isa;
 /// Eight decoded FP32 values of one `W`-element record, at an offset that is
 /// a multiple of 8, as a vector of instruction set `S`.
 pub(super) trait RecordStore {
+    /// Loads eight decoded values from `record` at `offset`.
+    ///
+    /// # Safety
+    /// The calling function must enable the features required by `S`. The
+    /// record and eight values at the 8-aligned offset must fit the store.
     unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V;
 }
 /// FP32 records of `W` elements.

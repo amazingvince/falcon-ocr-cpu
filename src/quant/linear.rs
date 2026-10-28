@@ -5,7 +5,7 @@
 //! codes are effectively lossless against the FP32 weights
 //! (activation-weighted output error about 2.5e-5 relative). A matrix may
 //! also keep a few input columns unquantized in FP32
-//! ([`QuantLinear::with_exceptions`]).
+//! ([exception columns](crate::quant::linear::QuantLinear::with_exceptions)).
 
 use anyhow::ensure;
 use rayon::prelude::*;
@@ -188,6 +188,7 @@ impl QuantLinear {
         })
     }
 
+    /// Matrix dimensions as `(output rows, input columns)`.
     pub fn dimensions(&self) -> (usize, usize) {
         (self.out_dim, self.in_dim)
     }
@@ -205,6 +206,7 @@ impl QuantLinear {
             Codes::I16(_) => 16,
         }
     }
+    /// Per-group scales in row-major order, including a partial final group.
     pub fn scales(&self) -> &[f32] {
         &self.scales
     }

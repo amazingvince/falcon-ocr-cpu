@@ -1,7 +1,7 @@
 # Direct attention over split prefix keys
 
 Status: native correctness checks passed; the completed B1 bracket improved
-latency by 3.23–3.32%, below the frozen 5% target. The candidate is unpromoted.
+latency by 3.23-3.32%, below the frozen 5% target. The candidate is unpromoted.
 This isolated candidate starts from the accepted combined fixed64-attention
 experiment and adds an explicit `TemporalCandidate` cache mode. It excludes
 the paired-GEMV experiment, whose measured gain missed its 5% target.

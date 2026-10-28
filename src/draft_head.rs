@@ -219,6 +219,7 @@ fn quantize_row(x: &[f32], codes: &mut Vec<i8>, scales: &mut Vec<f32>) {
 }
 
 impl DraftState {
+    /// Start an empty page cache with the configured KV representation.
     pub(crate) fn new(options: DraftOptions) -> Self {
         Self {
             options,

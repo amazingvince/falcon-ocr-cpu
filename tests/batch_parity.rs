@@ -339,9 +339,8 @@ fn default_config_batches_and_the_pipeline_keep_every_pages_tokens_in_both_quant
     };
     let runs = [(&options, &pages[..]), (&routed, &routed_pages[..])];
     let packed = Path::new("artifacts/packed");
-    for mode in ["near-exact", "fast"] {
-        let model =
-            Arc::new(Model::load_packed(packed.join(format!("falcon-ocr-v1.5-{mode}.safetensors")), false).unwrap());
+    for mode in [falcon_ocr::Mode::NearExact, falcon_ocr::Mode::Fast] {
+        let model = Arc::new(Model::load_packed(packed.join(mode.packed_file_name().unwrap()), false).unwrap());
         let config = |batch_size: usize| {
             falcon_ocr::auto::with_default_draft_head(
                 RunnerConfig {

@@ -28,6 +28,8 @@ pub struct PhasePackedLinear {
 }
 
 impl PhasePackedLinear {
+    /// Pack row-major `[output_dim, input_dim]` weights into phase order.
+    /// The input slice must contain exactly `output_dim * input_dim` values.
     pub fn new(weights: &[f32], input_dim: usize, output_dim: usize) -> Self {
         assert_eq!(
             weights.len(),
@@ -55,12 +57,15 @@ impl PhasePackedLinear {
         }
     }
 
+    /// Number of input channels per row.
     pub fn input_dim(&self) -> usize {
         self.input_dim
     }
+    /// Number of output channels per row.
     pub fn output_dim(&self) -> usize {
         self.output_dim
     }
+    /// Size of the packed FP32 weights in bytes.
     pub fn packed_weight_bytes(&self) -> usize {
         self.weights.len() * size_of::<f32>()
     }
@@ -138,7 +143,12 @@ unsafe impl Send for OutputColumns {}
 unsafe impl Sync for OutputColumns {}
 
 impl OutputColumns {
-    /// Caller must own this column exclusively throughout the operation.
+    /// Store one output column across the rows.
+    ///
+    /// # Safety
+    /// The pointer must refer to the writable output matrix, `column` must be
+    /// below its width, and `values` must contain one value per row. This
+    /// column must be exclusively owned for the duration of the operation.
     unsafe fn store(&self, column: usize, values: &[f32]) {
         debug_assert!(column < self.width && values.len() == self.rows);
         for (row, &value) in values.iter().enumerate() {
@@ -155,6 +165,12 @@ impl OutputColumns {
 mod x86 {
     use std::arch::x86_64::*;
 
+    /// Compute one packed weight column for `B` input rows.
+    ///
+    /// # Safety
+    /// The CPU must support AVX2 and FMA. `B` must be in 1..=8, `P` must
+    /// be 1, 2, or 4, and input and weight lengths must be `B * width` and
+    /// `width`, respectively. Weights must use the phase-packed layout.
     // Accumulator arrays are indexed by the row/phase loop variables on purpose:
     // the const-generic bounds keep every index in registers.
     #[allow(clippy::needless_range_loop)]

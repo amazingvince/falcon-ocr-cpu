@@ -58,7 +58,7 @@ Benchmark harnesses and the performance evidence before the phase-4 work.
 | [experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION-V2.md](experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION-V2.md) | Temporal-prefix model qualification: isolated build targets | history |
 | [experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION.md](experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION.md) | Isolated temporal-prefix model qualification | superseded by TEMPORAL-MODEL-QUALIFICATION-V2.md |
 | [experiments/cache_layout/audit_temporal_sharing.py](experiments/cache_layout/audit_temporal_sharing.py) | Read-only bitwise audit of a possible split prefix-K representation | history |
-| [experiments/cache_layout/capture_temporal_candidate.py](experiments/cache_layout/capture_temporal_candidate.py) | Copy-only prefix temporal-K storage diagnostic: focused tests, no model inference/timing | history |
+| [experiments/cache_layout/capture_temporal_candidate.py](experiments/cache_layout/capture_temporal_candidate.py) | Copy-only prefix temporal-K storage diagnostic: focused tests, no model inference/timing; needs the pre-split `src/kernels.rs` | history |
 | [experiments/cache_layout/capture_temporal_linux.py](experiments/cache_layout/capture_temporal_linux.py) | Build/test the exact frozen native candidate archive under Linux, CPU-only | history |
 | [experiments/cache_layout/capture_temporal_model.py](experiments/cache_layout/capture_temporal_model.py) | Frozen-copy temporal-cache model qualification. Preparation never runs inference | superseded by capture_temporal_model_v2.py |
 | [experiments/cache_layout/capture_temporal_model_linux_v1.py](experiments/cache_layout/capture_temporal_model_linux_v1.py) | Prepare/build/run unchanged temporal model qualification sources on Linux, in separate stages | history |
@@ -113,9 +113,9 @@ Benchmark harnesses and the performance evidence before the phase-4 work.
 | [experiments/matrix_backend_faer/candidate.rs](experiments/matrix_backend_faer/candidate.rs) | Isolated faer 0.24.4 FP32 adapter. No production integration | history |
 | [experiments/matrix_backend_faer/capture.py](experiments/matrix_backend_faer/capture.py) | Prepare and build one isolated faer/control operator probe; never run it | history |
 | [experiments/matrix_backend_faer/main.rs](experiments/matrix_backend_faer/main.rs) | Isolated actual-operands matrix comparison. No Model/Runner or GPU work | history |
-| [experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md](experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md) | Compact profile boundary review — 2026-09-20 | history |
+| [experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md](experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md) | Compact profile boundary review - 2026-09-20 | history |
 | [experiments/profiling/COMPACT-IP-HISTOGRAM-V1.md](experiments/profiling/COMPACT-IP-HISTOGRAM-V1.md) | Retained compact-head instruction-address diagnostic | history |
-| [experiments/profiling/COMPACT-IP-RESULTS-V1.md](experiments/profiling/COMPACT-IP-RESULTS-V1.md) | Compact-head instruction samples — 2026-09-20 | history |
+| [experiments/profiling/COMPACT-IP-RESULTS-V1.md](experiments/profiling/COMPACT-IP-RESULTS-V1.md) | Compact-head instruction samples - 2026-09-20 | history |
 | [experiments/profiling/COMPACT-PROFILE-RESULTS-V1.md](experiments/profiling/COMPACT-PROFILE-RESULTS-V1.md) | Current compact runner: profile findings | history |
 | [experiments/profiling/COMPACT_PROFILE_ACCEPTANCE.md](experiments/profiling/COMPACT_PROFILE_ACCEPTANCE.md) | Prospective compact profile acceptance v1 | history |
 | [experiments/profiling/COMPACT_PROFILE_README.md](experiments/profiling/COMPACT_PROFILE_README.md) | Combined fixed64 compact B1 profile v1 | history |

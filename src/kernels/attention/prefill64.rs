@@ -39,9 +39,12 @@ use crate::simd::Simd as Isa;
 use rayon::prelude::*;
 
 #[cfg(target_arch = "x86_64")]
+/// BF16 prefill attention using AVX512-BF16 dot products.
 pub(super) mod bf16;
 
+/// Maximum query rows in a prefill tile.
 pub(super) const QUERY_TILE: usize = 32;
+/// Maximum key rows in a prefill tile.
 pub(super) const KEY_TILE: usize = 128;
 const HEAD_DIM: usize = 64;
 
@@ -127,7 +130,7 @@ struct Shape {
 ///
 /// # Safety
 /// AVX2/FMA (NEON on aarch64) must be available and the shapes must satisfy
-/// `CompactKv::validate`.
+/// `CompactKv::validate`. On x86, `wide` also requires AVX-512F.
 pub(super) unsafe fn compact_prefill(
     q: &[f32],
     cache: &CompactKv<'_>,
@@ -678,6 +681,10 @@ mod wide {
 
     /// `st[key * 32 + query] = scale * sum_d q[query][d] * k[key][d]`: all
     /// the tile's queries (one or two 16-lane vectors) by 8-key blocks.
+    ///
+    /// # Safety
+    /// AVX-512F and FMA must be available. `queries` and `keys` must fit
+    /// their tiles; `k` must address `keys` 64-element rows at `k_stride`.
     #[inline(always)]
     pub(super) unsafe fn qk_lanes(
         qt: &[f32; HEAD_DIM * QUERY_TILE],
@@ -760,6 +767,11 @@ mod wide {
 
     /// `out[query][d] += sum_j p[j][query] * v[j][d]`: 6 query rows by the
     /// whole 64-wide row (24 accumulators), one broadcast per probability.
+    ///
+    /// # Safety
+    /// AVX-512F and FMA must be available. Counts must fit their tiles; `v`
+    /// and `out` must address the respective 64-element rows at their strides.
+    /// Output rows must be writable and must not alias inputs.
     #[inline(always)]
     pub(super) unsafe fn pv_lanes(
         st: &[f32; KEY_TILE * QUERY_TILE],

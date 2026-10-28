@@ -27,13 +27,13 @@ one-channel unit cases; the production matrices and full model were not run.
 No performance measurements were collected while corpus work was active.
 
 Preserved evidence is under
-[`artifacts/quantization/q4-avx2-operator-v1/`](../../../../artifacts/quantization/q4-avx2-operator-v1):
+`artifacts/quantization/q4-avx2-operator-v1/` (`../../../../artifacts/quantization/q4-avx2-operator-v1`):
 
-- [Build/source proof](../../../../artifacts/quantization/q4-avx2-operator-v1/build.json):
+- Build/source proof (`../../../../artifacts/quantization/q4-avx2-operator-v1/build.json`):
   `c471065780995eb845bee13203c69745e14a1c51a3a2fc7c6e0e16c15a2e3ef9`.
-- [Independent check](../../../../artifacts/quantization/q4-avx2-operator-v1/independent-check.json):
+- Independent check (`../../../../artifacts/quantization/q4-avx2-operator-v1/independent-check.json`):
   `ba4387838605c4260cc40831f204dadca202f124a8320da1416e0fd0e41613e6`.
-- [Raw operator records](../../../../artifacts/quantization/q4-avx2-operator-v1/operators.json):
+- Raw operator records (`../../../../artifacts/quantization/q4-avx2-operator-v1/operators.json`):
   `982e151912265f8ab8e983bd76333304ed91693fc0aa16e3d96628df496efa26`.
 - Executable SHA256:
   `e67ea77621988f2ff2694fef9606f057623e895a3237d53110b82b3f6b8d26b6`.

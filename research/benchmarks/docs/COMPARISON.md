@@ -126,14 +126,14 @@ on every page:
 
 | max-dim | pages | ours (compact default) | focr (unmodified, ggml-linear) | focr / ours |
 |---|---|---:|---:|---:|
-| 1024 | journal + 3 full pages, to EOS (1117–2423 tokens) | 40.9 – 90.9 s | 215.3 – 520.3 s | 5.3x – 5.8x |
+| 1024 | journal + 3 full pages, to EOS (1117-2423 tokens) | 40.9 - 90.9 s | 215.3 - 520.3 s | 5.3x - 5.8x |
 | 1536 | journal, `bc2882dcec9a3e02` (1140 / 1264 tokens) | 63.8 / 72.6 s | 436.2 / 507.8 s | 6.8x / 7.0x |
 | 1536 | `ebac2ad1cac11a99`, `a1336e3bc391f255` (1536 / 1168 tokens, clean rerun) | 79.6 / 69.5 s | 543.3 / 478.9 s | 6.8x / 6.9x |
 
-Decode throughput: ours 21–30 tok/s, focr 2.2–5.7 tok/s. Prefill: ours
-2.9–3.5 s at 1024 and 12.3–13.7 s at 1536; focr 16–21 s and 75–105 s. Peak
-resident memory: ours 1.8–2.7 GB, focr 11.7–25.5 GB. Enabling AVX-512 in his
-GGML build (modified lane) changes his numbers by +1.2–1.5%, within drift.
+Decode throughput: ours 21-30 tok/s, focr 2.2-5.7 tok/s. Prefill: ours
+2.9-3.5 s at 1024 and 12.3-13.7 s at 1536; focr 16-21 s and 75-105 s. Peak
+resident memory: ours 1.8-2.7 GB, focr 11.7-25.5 GB. Enabling AVX-512 in his
+GGML build (modified lane) changes his numbers by +1.2-1.5%, within drift.
 
 Build identities recorded in every report: ours `falcon-ocr` commit `95daabc0`
 (lane a used the pre-promotion control binary from commit `5275f467`, expanded
@@ -145,9 +145,9 @@ host; drift between the two processes of a side is listed where it exceeded 3%.
 ### Lane a: 8 smoke pages, max-dimension 256, 32 tokens, 16 threads each
 
 All eight pages match token for token (32 tokens, or 3 on the page that stops
-early), geometry matches (176–208 x 256, 176–208 patches), both sides are
+early), geometry matches (176-208 x 256, 176-208 patches), both sides are
 deterministic across processes and against their cold runs. Model time
-(prefill + decode): ours 0.84–0.92 s, focr 3.78–3.98 s, ratio 4.3–4.6x (3.6x on
+(prefill + decode): ours 0.84-0.92 s, focr 3.78-3.98 s, ratio 4.3-4.6x (3.6x on
 the 3-token page). Decode: ours ~45 tok/s, focr ~9.5 tok/s. This lane validates
 the harness; it is not the latency headline.
 
@@ -168,7 +168,7 @@ ours 16, focr 8.
 ### Lane c: four full pages at max-dimension 1024 (focr's default), to EOS
 
 Our default (compact cache; `dim1024-ours-compact/`, measured in a later clean
-window with 0.1–0.3% drift) against focr (`dim1024/`):
+window with 0.1-0.3% drift) against focr (`dim1024/`):
 
 | page | dims / patches | out tokens | ours prefill s | ours decode s | ours model s | focr prefill s | focr decode s | focr model s | focr / ours |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -177,18 +177,18 @@ window with 0.1–0.3% drift) against focr (`dim1024/`):
 | a1336e3bc391f255 | 768x1024 / 3072 | 2014 | 3.53 | 71.29 | 74.79 | 20.99 | 409.11 | 430.10 | 5.75x |
 | bc2882dcec9a3e02 | 768x1024 / 3072 | 2423 | 3.54 | 87.32 | 90.88 | 21.13 | 499.14 | 520.25 | 5.72x |
 
-Decode throughput: ours 27.8–29.7 tok/s, focr 4.9–5.7 tok/s. Every page's
-generated IDs are identical between the implementations (1116–2422 tokens after
+Decode throughput: ours 27.8-29.7 tok/s, focr 4.9-5.7 tok/s. Every page's
+generated IDs are identical between the implementations (1116-2422 tokens after
 stripping the stop token) and all runs stopped at EOS. Peak resident memory:
-ours 1.8–2.2 GB, focr 11.7–12.9 GB (`--weight-mode resident-f32` keeps Rust and
+ours 1.8-2.2 GB, focr 11.7-12.9 GB (`--weight-mode resident-f32` keeps Rust and
 GGML copies of the weights plus a fully preallocated F32 KV cache). focr control
-drift 0.7–2.0%. Cold start (fresh process, includes model load): ours 0.75 s
-load, focr 0.19–0.22 s backend preparation, otherwise the same latencies.
+drift 0.7-2.0%. Cold start (fresh process, includes model load): ours 0.75 s
+load, focr 0.19-0.22 s backend preparation, otherwise the same latencies.
 
 The same pages with our previous `expanded` layout (fixed-width kernels on,
 `dim1024/` ours rows and `dim1024-ours-expanded/`, same window as the focr
 runs): 43.53 / 88.01 / 81.71 / 98.70 s and 43.51 / 85.24 / 81.03 / 98.81 s model
-time. Compact is 6–10% faster even at a 2.7–3.1k-token prefix.
+time. Compact is 6-10% faster even at a 2.7-3.1k-token prefix.
 
 ### Lane d: four full pages at max-dimension 1536 (our default dimension)
 
@@ -211,15 +211,15 @@ disagreed by 37.9% (ours) and 28.6% (focr), and on `a1336e3bc391f255` our
 expanded-cache runs were 33% slower than the same configuration measured later
 (`dim1536-ours-expanded/`: 75.14 s). The table shows the better process; both
 pages are being rerun in a clean window (`dim1536-rerun/`) and this section will
-be updated. The journal and `bc2882dcec9a3e02` rows had 0.2–1.1% drift on both
+be updated. The journal and `bc2882dcec9a3e02` rows had 0.2-1.1% drift on both
 sides and are considered clean.
 
 Every page's generated IDs are identical between the implementations
-(1139–1536 tokens). Decode throughput: ours 14–20 tok/s (expanded cache),
-focr 2.2–3.3 tok/s. Prefill at a 6.1–7.0k-token prefix: ours 11.5–16.7 s,
-focr 75–105 s. Peak resident memory: ours 3.0–3.2 GB, focr 22.8–25.5 GB.
+(1139-1536 tokens). Decode throughput: ours 14-20 tok/s (expanded cache),
+focr 2.2-3.3 tok/s. Prefill at a 6.1-7.0k-token prefix: ours 11.5-16.7 s,
+focr 75-105 s. Peak resident memory: ours 3.0-3.2 GB, focr 22.8-25.5 GB.
 
-Our compact default at 1536 (`dim1536-ours-compact/`, clean window, 0.05–0.11%
+Our compact default at 1536 (`dim1536-ours-compact/`, clean window, 0.05-0.11%
 drift) on the two undisturbed pages, against the focr rows above:
 
 | page | out tokens | ours prefill s | ours decode s | ours model s | focr model s | focr / ours |
@@ -229,7 +229,7 @@ drift) on the two undisturbed pages, against the focr rows above:
 
 The journal figure agrees with the promotion bracket's 62.7 s
 (`research/benchmarks/docs/PERFORMANCE.md`); expanded caches measured 69.2 s here. Peak resident
-memory with the compact cache: 2.6–2.7 GB.
+memory with the compact cache: 2.6-2.7 GB.
 
 Clean rerun of the two disturbed pages (`dim1536-rerun/`, ours compact and focr
 in one window, same ABBA order). The host stopped this lane for low system
