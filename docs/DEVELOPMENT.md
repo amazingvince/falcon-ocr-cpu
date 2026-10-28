@@ -36,6 +36,19 @@ requiring the pinned GPU smoke fixture. Lints: `Cargo.toml` sets
 `unsafe_op_in_unsafe_fn` to warn (denied in the check), `clippy.toml` allows
 eight arguments, `rustfmt.toml` sets a 120-column width.
 
+The Ubuntu CI job also checks public and crate-visible Rust documentation.
+Install the checker and run the same gate locally:
+
+```sh
+cargo install --git https://github.com/pszemraj/rustdoc-checker.git \
+  --rev 0117da4218d0d282ec64c4db741376294f3c6776 --locked
+rustdoc-checker src --strict --mode docs
+```
+
+`--mode docs` requires documentation without prescribing section headings;
+describe behavior, constraints and failures in prose, with `# Safety` for
+unsafe functions.
+
 ## Tests
 
 - **Library tests** (`cargo test --release --lib`) are bitwise oracles: every
