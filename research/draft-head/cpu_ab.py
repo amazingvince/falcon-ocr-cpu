@@ -33,7 +33,7 @@ SPEC = re.compile(r"speculation: (\d+) tokens; (\d+) single steps \(([\d.]+) ms\
 
 def main(argv: list[str] | None = None) -> int:
     """Run the requested arms and compare each output with speculation disabled."""
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--pages", type=Path, required=True)
     ap.add_argument("--head", required=True)
     ap.add_argument("--out", type=Path, required=True)

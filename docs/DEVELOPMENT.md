@@ -98,10 +98,8 @@ unsafe functions.
   target-model steps than plain decoding, proving drafts were accepted;
   tokens and stop reasons must match. Packed exact mode must reproduce the
   [published GPU smoke tokens](../reference/official-smoke-fp32.json).
-  Missing assets fail the test. The existing self-hosted `weights`
-  job includes it on nightly and manual runs when a `falcon-weights`
-  runner is available. Hosted PR jobs skip ignored tests; the test downloads
-  nothing.
+  Missing assets fail the test. The self-hosted `weights` CI job runs it
+  nightly and on manual dispatch.
 
   `tests/batch_parity.rs` compares fixed cohorts, continuous batching
   (`run --batch-size N`) and the page pipeline (`run --pipeline`) with
@@ -347,8 +345,8 @@ environment variables.
   artifacts): `cargo clean -p falcon-ocr` before an A/B.
 - Run `cargo test` alone; a second concurrent cargo command can leave it
   printing nothing.
-- The packed round-trip gate needs temporary disk space for all three packed
-  modes at once.
+- The packed round-trip gate writes all three packed modes to temporary
+  files at once, about 2.6 GB.
 - Keep the mapped checkpoint or packed file unchanged while a `Model` is
   alive.
 

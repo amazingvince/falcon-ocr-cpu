@@ -2,14 +2,6 @@
 
 Benchmark harnesses and the performance evidence before the phase-4 work.
 
-TODO: Prepare a versioned replay of the
-[temporal-candidate capture](experiments/cache_layout/capture_temporal_candidate.py)
-against its historical Windows checkout. Its expected
-[design JSON](../../reference/prefix-temporal-dedup-design-v1.json) digest
-already differs from the checked-in receipt at `b660979`, and it requires
-the removed `src/kernels.rs`. Preserve the archived script and receipts
-when preparing replacement prerequisites.
-
 | File | What it did or produced | Status |
 |---|---|---|
 | [docs/COMPARISON.md](docs/COMPARISON.md) | Head-to-head: this runner versus `focr` (pszemraj/falcon-ocr.rs) | history |
@@ -66,7 +58,7 @@ when preparing replacement prerequisites.
 | [experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION-V2.md](experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION-V2.md) | Temporal-prefix model qualification: isolated build targets | history |
 | [experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION.md](experiments/cache_layout/TEMPORAL-MODEL-QUALIFICATION.md) | Isolated temporal-prefix model qualification | superseded by TEMPORAL-MODEL-QUALIFICATION-V2.md |
 | [experiments/cache_layout/audit_temporal_sharing.py](experiments/cache_layout/audit_temporal_sharing.py) | Read-only bitwise audit of a possible split prefix-K representation | history |
-| [experiments/cache_layout/capture_temporal_candidate.py](experiments/cache_layout/capture_temporal_candidate.py) | Copy-only prefix temporal-K storage diagnostic: focused tests, no model inference/timing | history |
+| [experiments/cache_layout/capture_temporal_candidate.py](experiments/cache_layout/capture_temporal_candidate.py) | Copy-only prefix temporal-K storage diagnostic: focused tests, no model inference/timing; needs the pre-split `src/kernels.rs` | history |
 | [experiments/cache_layout/capture_temporal_linux.py](experiments/cache_layout/capture_temporal_linux.py) | Build/test the exact frozen native candidate archive under Linux, CPU-only | history |
 | [experiments/cache_layout/capture_temporal_model.py](experiments/cache_layout/capture_temporal_model.py) | Frozen-copy temporal-cache model qualification. Preparation never runs inference | superseded by capture_temporal_model_v2.py |
 | [experiments/cache_layout/capture_temporal_model_linux_v1.py](experiments/cache_layout/capture_temporal_model_linux_v1.py) | Prepare/build/run unchanged temporal model qualification sources on Linux, in separate stages | history |
