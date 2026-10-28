@@ -67,7 +67,12 @@ unsafe functions.
   its 26 statistics, both tree scores and the route bit for bit with the
   Python specification on synthetic pages and the decode fixtures.
 - **Ignored gates** need `artifacts/` (the pinned checkpoint, the GPTQ
-  overlay, the packed files, the GPU smoke reference and the corpus):
+  overlay, the packed files, the GPU smoke reference and the corpus).
+  `python scripts/fetch_fixtures.py` brings the two that are made rather
+  than published for inference — the FP32 GPU smoke record and the original
+  GPTQ overlay — and verifies every digest, so these gates no longer run
+  only on the machine that recorded them. The checkpoint comes from
+  `scripts/fetch_reference.py` and the packed files from the catalogue:
 
   ```sh
   cargo test --release --locked --test modes --test gpu_parity --test cache_layout \
