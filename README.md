@@ -175,8 +175,10 @@ fn main() -> anyhow::Result<()> {
 
 `Model::load_mode` finds the packed file or the checkpoint; `Model::load_packed`
 and `Model::load` are the explicit loaders. `RunnerConfig::default()` selects
-automatic tuning and n-gram drafts. Set `draft_head` and `drafter` explicitly
-to use a trained head in the library.
+automatic tuning and n-gram drafts. To discover the published draft head as
+the CLI does, pass the config and model directory to
+[`auto::with_default_draft_head`](src/auto/mod.rs) with `explicit` set to
+`false`. Alternatively, set `draft_head` and `drafter` explicitly.
 
 `RunnerConfig::reference()` uses the platform exp, full head, no speculation
 or repetition stop, and a pool-sized decode team.

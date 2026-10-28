@@ -2,6 +2,14 @@
 
 Benchmark harnesses and the performance evidence before the phase-4 work.
 
+TODO: Prepare a versioned replay of the
+[temporal-candidate capture](experiments/cache_layout/capture_temporal_candidate.py)
+against its historical Windows checkout. Its expected
+[design JSON](../../reference/prefix-temporal-dedup-design-v1.json) digest
+already differs from the checked-in receipt at `b660979`, and it requires
+the removed `src/kernels.rs`. Preserve the archived script and receipts
+when preparing replacement prerequisites.
+
 | File | What it did or produced | Status |
 |---|---|---|
 | [docs/COMPARISON.md](docs/COMPARISON.md) | Head-to-head: this runner versus `focr` (pszemraj/falcon-ocr.rs) | history |

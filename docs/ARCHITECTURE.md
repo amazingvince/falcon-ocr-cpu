@@ -132,8 +132,8 @@ input as given) and `page` (its 0-based index among the inputs), the
 that fails under `--keep-going` gives `{"path", "page", "error"}`. With
 `--text` and no `--output`, its error goes only to stderr. Without
 `--keep-going` the run stops at the first failing page, after the records of
-the pages before it, and pages after it that `--batch-size N` or `--pipeline` had
-already finished are not written and count as not run.
+the pages before it, and pages after it that `--batch-size N` or
+`--pipeline` had already finished are not written and count as not run.
 
 With `--batch-size N` or `--pipeline`, an attempt's `total_ms` is the sum of
 its own stages (`time_to_first_token_ms + decode_ms`), which overlap other
@@ -173,18 +173,18 @@ warning naming the difference: the mode or precision, the GPTQ overlay or
 round-to-nearest weights, `--max-dimension`, `--min-dimension`,
 `--max-new-tokens` or crop padding, `--stop-repetition`, `--exp`, BF16, NEON
 or scalar prefill attention, BF16 projections, a pinned `--tune decode-exp`,
-the effective `--tune split-chunks`
-or the build's image decoder; a record without `options` counts as one that
-ran with different settings. Automatic chunking matches an explicit mode
-default, and compact caches ignore the split-cache knob.
+the effective `--tune split-chunks` or the build's image decoder; a record
+without `options` counts as one that ran with different settings. Automatic
+chunking matches an explicit mode default, and compact caches ignore the
+split-cache knob.
 
 An escalated record compares its near-exact rerun's kernel settings,
 allowing the expected switch from fast-mode BF16 prefill to FP32, and the
 weights of the fast attempt it replaced, which `escalated_from` records;
 an escalated record written before those were recorded has none to compare
-and matches any weights. With
-`--escalate`, a warning counts fast-mode records that the repetition stop
-ended without a near-exact rerun, since their pages are skipped.
+and matches any weights. With `--escalate`, a warning counts fast-mode
+records that the repetition stop ended without a near-exact rerun, since
+their pages are skipped.
 
 **Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
 model when a fast-mode page first ends on the repetition stop and keeps it
@@ -260,8 +260,8 @@ decode task per group streams its records contiguously.
 
 Records are FP32 (`split-f32`, bitwise the compact kernel), 16-bit codes
 with a BF16 absmax scale per 32 values (`q16`), or 8-bit codes (`q8`);
-generated positions go
-into 128-element tail records in the same format as they are appended.
+generated positions go into 128-element tail records in the same format as
+they are appended.
 
 The research formats `q8r` and `q4r` (`falcon-ocr --kv-cache`,
 `falcon-ocr-eval --profile`) rotate each 32-value block before quantizing:

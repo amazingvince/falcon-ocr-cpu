@@ -58,7 +58,7 @@ attention.
 | BF16 scales in the Q8/Q16 caches | decode -2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
 
-### Decode exponential
+## Decode exponential
 
 The portable polynomial exp in fast mode's decode attention (8-bit caches
 under `ExpMode::Fast`; `--tune decode-exp`) saves verification work:
@@ -74,7 +74,7 @@ Single-row steps are unchanged. With the draft head, page totals change by
 -2.1% on calibration pages and -0.6% on held-out pages. Flips against FP32
 change from 92 to 94 of 78,282 steps.
 
-### Trained draft head
+## Trained draft head
 
 Fast mode, packed model, 12 decode threads on the Ryzen 9 7950X: 16 English
 held-out pages, two rounds on a quiet machine. Every arm preserves the

@@ -157,7 +157,7 @@ impl Profile {
             Weights::Int8 => 8,
         }
     }
-    /// Profiles whose outputs are bit-identical to the FP32 reference.
+    /// FP32 weights with an FP32 cache: exact mode's storage profiles.
     pub fn is_exact(self) -> bool {
         self.weights == Weights::F32 && matches!(self.kv, Kv::Compact | Kv::F32Split)
     }
