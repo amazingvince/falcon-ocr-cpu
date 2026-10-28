@@ -1,13 +1,13 @@
 # Independent functional batch harness review
 
-No remaining concrete defect was found in this bounded review of the frozen v1
+This bounded review found no remaining concrete defect in the frozen v1
 functional harness. All 14 synthetic tests passed independently on native Windows;
-reviewed source bytes were identical before and after that test run. No build,
-model inference, GPU job or performance measurement was run by this review.
+reviewed source bytes were identical before and after testing. The review ran no
+build, model inference, GPU job or performance measurement.
 
 The [receipt](functional-batch-independent-review-v1.json) binds the source,
 helpers, tests and unchanged [input lock](functional-batch-v1-lock.json). The
-[test log](functional-batch-independent-review-v1-tests.txt) preserves the actual
+[test log](functional-batch-independent-review-v1-tests.txt) preserves the
 independent test output.
 
 The review checked fresh same-binary sequential controls, exact runtime/options,
