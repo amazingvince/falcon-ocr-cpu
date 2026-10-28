@@ -1,7 +1,7 @@
 # Implementation and acceptance plan
 
-This file records the active goal. Completion requires the implementation,
-qualification and reports below; a successful smoke example alone is insufficient.
+Completion requires the implementation, qualification and reports below;
+a successful smoke example alone is insufficient.
 
 User decision, 2026-09-20: continue on the available local machine and leave
 bare-metal Linux performance measurements pending. Native Windows performance
