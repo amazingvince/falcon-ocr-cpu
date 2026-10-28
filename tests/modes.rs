@@ -7,10 +7,10 @@
 use std::{path::Path, sync::Arc};
 
 use falcon_ocr::{
-    Backend, DecodeThreads, FinishReason, GenerationOptions, HeadMode, Mode, Model, Runner, RunnerConfig,
-    auto::{ModelRequest, load_model, resolve_weights},
+    Backend, DecodeThreads, Drafter, FinishReason, GenerationOptions, HeadMode, Mode, Model, Runner, RunnerConfig,
+    auto::{ModelRequest, load_model, resolve_weights, with_default_draft_head},
     quant::Profile,
-    trace::TensorTrace,
+    trace::{TensorTrace, Trace},
 };
 use sha2::{Digest, Sha256};
 
@@ -83,6 +83,27 @@ fn runner(model: Arc<Model>, tokenizer_dir: &str, config: RunnerConfig) -> Runne
 fn tokens(runner: &Runner, page: &str, max_new_tokens: usize) -> (Vec<u32>, FinishReason) {
     let result = runner.recognize_file(page, &options(max_new_tokens)).unwrap();
     (result.token_ids, result.finish_reason)
+}
+
+/// Counts target-model decode steps without enabling tensor capture, which
+/// would disable speculation.
+#[derive(Debug, Default)]
+struct SpeculationProbe {
+    steps: usize,
+    verifies: usize,
+}
+
+impl Trace for SpeculationProbe {
+    fn enabled(&self) -> bool {
+        false
+    }
+    fn decode_step(&mut self, rows: usize, _: f64, _: usize) {
+        self.steps += 1;
+        self.verifies += usize::from(rows > 1);
+    }
+    fn tensor(&mut self, _: &str, _: &[usize], _: &[f32]) -> anyhow::Result<()> {
+        unreachable!("tensor capture is disabled")
+    }
 }
 
 /// The `__metadata__` map of a safetensors file, from its header alone.
@@ -263,6 +284,76 @@ fn speculation_decode_team_drafts_and_head_never_change_tokens() {
         assert_eq!(a.token_ids, b.token_ids, "document drafts");
     }
     assert_eq!(with_drafts[1].token_ids, expected.0);
+}
+
+/// Each drafter must verify and accept real proposals, as well as preserve
+/// the non-speculative tokens and stop reason in every mode.
+#[test]
+#[ignore = "needs all three packed modes, the published draft head and the SHORT corpus page"]
+fn speculative_drafters_verify_accept_and_preserve_tokens_in_every_mode() {
+    let image = image::open(SHORT).unwrap().to_rgb8();
+    let base = RunnerConfig {
+        threads: 8,
+        decode_threads: DecodeThreads::Fixed(4),
+        document_drafts: false,
+        ..RunnerConfig::default()
+    };
+    let head = with_default_draft_head(base.clone(), Path::new(PACKED_DIR), false);
+    assert_eq!(head.drafter, Drafter::Head, "the published head must be discovered");
+    assert!(head.draft_head.is_some());
+    for mode in [Mode::Exact, Mode::NearExact, Mode::Fast] {
+        // Match product loading: exact also needs the split FP32 cache for
+        // speculation, rather than the packed file's reference cache.
+        let packed = Path::new(PACKED_DIR).join(mode.packed_file_name().unwrap());
+        let plan = resolve_weights(&ModelRequest {
+            model_dir: Path::new(PACKED_DIR),
+            model_file: Some(&packed),
+            mode: Some(mode),
+            split_exact: true,
+            ..ModelRequest::default()
+        })
+        .unwrap();
+        let model = Arc::new(load_model(&plan, false).unwrap());
+        assert_eq!(model.profile(), mode.profile(true));
+        let run = |config| {
+            let mut probe = SpeculationProbe::default();
+            let result = runner(model.clone(), PACKED_DIR, config)
+                .recognize_with_trace(&image, &options(128), &mut probe)
+                .unwrap();
+            (result, probe)
+        };
+        let (plain, probe) = run(RunnerConfig {
+            speculation: None,
+            ..base.clone()
+        });
+        assert_eq!(plain.finish_reason, FinishReason::Length, "{mode}");
+        assert_eq!(probe.verifies, 0, "{mode}: speculation disabled");
+        assert_eq!(plain.output_tokens, probe.steps + 1, "{mode}: plain decode callbacks");
+        for config in [
+            base.clone(),
+            head.clone(),
+            RunnerConfig {
+                drafter: Drafter::Both,
+                ..head.clone()
+            },
+        ] {
+            let drafter = config.drafter;
+            let (result, probe) = run(config);
+            assert_eq!(result.token_ids, plain.token_ids, "{mode} {drafter:?}");
+            assert_eq!(result.finish_reason, plain.finish_reason, "{mode} {drafter:?}");
+            assert!(
+                probe.verifies > 0,
+                "{mode} {drafter:?}: no draft verification: {probe:?}"
+            );
+            // Prefill supplies one token and each target step supplies one
+            // more. Additional output tokens therefore require accepted drafts.
+            assert!(
+                result.output_tokens > probe.steps + 1,
+                "{mode} {drafter:?}: no accepted drafts: {probe:?}"
+            );
+            eprintln!("{mode} {drafter:?}: {} output tokens, {probe:?}", result.output_tokens);
+        }
+    }
 }
 
 /// The repetition stop ends a looping page early without changing what was

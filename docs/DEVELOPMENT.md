@@ -82,6 +82,25 @@ unsafe functions.
   head and the explicit AVX2 backend preserve the gate's fixture tokens;
   the repetition stop yields a prefix; the three trace hashes are pinned.
 
+  The speculative-drafter regression uses only the three packed modes,
+  tokenizer/configuration and published draft head in `artifacts/packed`,
+  plus `artifacts/corpus/v3/68a0f0e94a55d7ae/canonical-rgb.png`:
+
+  ```sh
+  cargo test --release --locked --test modes \
+    speculative_drafters_verify_accept_and_preserve_tokens_in_every_mode \
+    -- --ignored --nocapture
+  ```
+
+  It compares n-gram, trained-head and combined drafting against disabled
+  speculation in each mode, with a 128-token output cap. Decode callbacks
+  must show multi-row verification and fewer target-model steps than plain
+  decoding, proving drafts were accepted; tokens and stop reasons must
+  match. Missing assets fail the test. The existing self-hosted `weights`
+  job includes it on nightly and manual runs when a `falcon-weights`
+  runner is available. Hosted PR jobs skip ignored tests; the test downloads
+  nothing.
+
   `tests/batch_parity.rs` compares fixed cohorts, continuous batching
   (`run --batch-size N`) and the page pipeline (`run --pipeline`) with
   sequential pages: tokens, stops,
