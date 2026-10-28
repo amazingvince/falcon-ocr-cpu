@@ -251,53 +251,17 @@ hard to read.
 
 ## Resolution routing
 
-`--max-dimension auto` lets the runner choose each page's maximum dimension:
-768, 1024 or 1536. Prefill and decode both scale with the image token count,
-and most printed English pages read as well at a lower resolution.
+`--max-dimension auto` chooses 768, 1024 or 1536 per page. It changes the
+model input and output, so it stays opt-in and exact/near-exact comparisons
+use a fixed resolution. See
+[resolution routing](ARCHITECTURE.md#resolution-routing) for the runtime
+behavior.
 
-The router (`src/router`, ~12 ms per page) computes 26 image statistics
-after the processor's first resize at 1536: size, ink, contrast, a
-projection-profile estimate of the text lines, column gaps, and how much
-the ink changes when the page is scaled to 1024 or 768 and back. It scores
-two gradient-boosted tree models and takes the smallest resolution whose
-model says the page is routable and at which the median text line stays at
-least 8 px tall.
-
-A routed page is exactly the input `--max-dimension 768` or `1024` would
-give it. If the routed run loops or reaches the length limit, the page is
-rerun at 1536 (the safety net; the result's `route.safety_net` records the
-first attempt).
-
-On the router development set (389 English OmniDocBench pages with ground
-truth, none in any corpus or the English gate; fast mode with the draft head)
-it routed 73 pages to 768 and 185 to 1024, reran 2, and changed micro CER
-against the ground truth from 20.89% to 20.20% (−0.69 pt; 95% bootstrap
-[−1.35, −0.18]) while saving a quarter of the CPU time (25.1% measured on a
-quiet host, 58.0 → 43.5 minutes, the two settings alternated in four chunks;
-routed pages 38.5% faster).
-
-Lower resolution often reads better (tables, textbooks, multi-column
-pages); dense small print (magazines, newspapers) stays at 1536. The router
-was tuned on this set.
-
-On the held-out English gate pages (the 118 pages above, against fast mode at
-1536, pre-registered with the same criteria) the router **failed**: overall
-+0.29 pt (limit +0.25), ordinary +1.45 pt and slides +6.66 pt (limit +1.0);
-formulas +0.90, tables −0.11 and multi-column −0.53 pt passed, with no
-repetition stop and the same route mix as the development set. About two
-thirds of the overall change comes from two pages where the routed run
-transcribes a figure as an HTML table that the ground truth leaves out; the
-rest is real: a sidebar dropped at 768 and weaker LaTeX at 1024.
-
-The development set's improvement did not replicate: the router saves about
-a quarter of the CPU time for roughly +0.3 pt CER on printed English. It
-stays opt-in; it changes the output, so exact and near-exact comparisons use
-a fixed resolution. With figures masked (the post-hoc check above) it is
-+0.06 pt against fast at 1536 and within every category limit, formulas
-(+0.86 pt) being the closest. This diagnostic does not qualify the router.
-
-Sources: [research/resolution-router](../research/resolution-router/README.md),
-`reference/router-english-gate-v1-results.json`.
+The router **failed** its held-out English gate (+0.29 pt overall against a
++0.25 pt limit); the figure-masked diagnostic does not replace that verdict.
+The [development-set results](../research/resolution-router/README.md#development-set-results)
+and [held-out English gate](../research/resolution-router/README.md#held-out-english-gate-failed)
+include the timing, category comparisons, diagnostics and receipts.
 
 ## Margin cropping
 
@@ -401,18 +365,9 @@ better: CER 1.90 → 0.83), so there the default output is shorter than FP32's.
 Legitimately periodic content longer than that (a 256-token page of identical
 lines) would be cut: pass `--stop-repetition=false`.
 
-`run --escalate` (fast mode) rereads every page that the stop ended with the
-near-exact model: the near-exact packed file next to `--model-file`, else
-what `--mode near-exact` finds in the model directory (its packed file or the
-checkpoint quantized at load), loaded when a page first needs it. Pages are
-reread one at a time, and in a batch the other rows wait meanwhile. The
-near-exact result replaces the page's record, which keeps the fast attempt as
-`escalated_from` (`mode`, `finish_reason`, `output_tokens`, `total_ms`, like
-the router's `safety_net`; the page's `total_ms` includes it); a routed page
-is reread at the size its fast run ended at. When the near-exact model
-cannot be loaded or the rerun fails, the page keeps its fast result with the
-reason in `escalation_error` and a warning on stderr, and after a failed
-load the run stops trying.
+`run --escalate` rereads fast-mode pages ended by the repetition stop with
+the near-exact model. [Long runs](ARCHITECTURE.md#long-runs) describes model
+selection, batching, records and failure handling.
 
 The repetition stop ends the 8-bit-induced loops seen on held-out
 handwriting. Rereading only those pages gives near-FP32 output while
@@ -464,29 +419,9 @@ the profile that ran and the file. The checkpoint loader's `--w8-artifact`,
 
 ### Rotated KV cache (experimental)
 
-`q8r` and `q4r` store every 32-value block of the cache (the temporal and
-spatial key halves and the two value halves, prefix and generated positions)
-as `H D x` before quantizing it: `H` is the 32 × 32 Sylvester Hadamard matrix
-and `D` a fixed ±1 diagonal per block kind (`src/quant/rotation.rs`). `q8r`
-then uses `q8`'s codes and BF16 scale per 32 values; `q4r` uses 4-bit codes
-(-7..=7) with the same scale. Rotation spreads an outlier channel across
-the 31 other values of its block.
-
-Decode rotates each query instead of the cache,
-`(2^-5 H D q) · (H D k) = q · k`, and un-rotates each head's output once,
-`o = 2^-5 D H o'`, so the records and kernels are `q8`'s. `q8r` streams the
-same 170 bytes per record and adds 32-point transforms: four per head, row
-and layer (two query halves, two output halves), four per group for each
-appended position and five per record when the prefix is sealed.
-
-With one position chunk (`--tune split-chunks=1`), the output is bitwise the
-compact kernel over the dequantized rotated records with the rotated
-query, followed by the inverse rotation.
-
-Coded caches scan four chunks by default, and merging their partial
-softmaxes changes rounding. `q4r` takes 90 bytes per record and decodes its
-codes through the 8-bit loads (bitwise tested on every instruction set;
-there is no vector nibble unpack).
+`q8r` and `q4r` rotate cache blocks before 8- or 4-bit quantization. Their
+representation, decode transforms and chunk-rounding behavior are described
+in [KV cache formats](ARCHITECTURE.md#kv-cache-formats).
 
 The uses studied: a more faithful fast mode (`w8-body-kv-q8r`), a cheaper
 cache for near-exact (`w16-body-kv-q8r` streams 23% fewer bytes per decode

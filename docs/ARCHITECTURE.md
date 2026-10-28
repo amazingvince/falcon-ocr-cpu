@@ -61,6 +61,23 @@ is deferred: prefill attention itself runs in FP32 (or BF16 in fast mode on
 AVX512-BF16 CPUs). Every image key exists before any prefix result is
 finalized; nothing treats partial image strips as causal prompts.
 
+### Resolution routing
+
+`--max-dimension auto` (`router/`, about 12 ms per page) chooses a first
+resize cap of 768, 1024 or 1536. It computes 26 statistics after the first
+resize at 1536: size, ink, contrast, a projection-profile estimate of text
+lines, column gaps, and ink changes after scaling to 1024 or 768 and back.
+Two embedded gradient-boosted tree models (`src/router/trees.json`) score
+the page. The router takes the smallest resolution whose model predicts
+routability at p >= 0.5 and whose median text line remains at least 8 px tall.
+
+A routed page has exactly the input that a fixed `--max-dimension 768` or
+`1024` would produce. A repetition or length stop reruns the page at 1536;
+`route.safety_net` records the first attempt. Routing changes the model
+input and output, so exact and near-exact comparisons use a fixed
+resolution. [The router study](../research/resolution-router/README.md)
+reports Python parity, timing and quality results.
+
 ### Multi-page execution
 
 `Runner::recognize_files_streaming` delivers each page's result or error to
@@ -171,11 +188,19 @@ ended without a near-exact rerun, since their pages are skipped.
 
 **Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
 model when a fast-mode page first ends on the repetition stop and keeps it
-beside the fast one; the other batch rows wait with their caches while the
-page is reread. The record becomes the near-exact result with the fast
-attempt in `escalated_from`, or keeps the fast result with an
-`escalation_error` when the near-exact model cannot be loaded or the rerun
-fails ([MODES.md](MODES.md#loops-and-the-repetition-stop)).
+beside the fast one. It selects the near-exact packed file next to
+`--model-file`, otherwise the packed file or FP32 checkpoint in the model
+directory, as `--mode near-exact` would. Pages are reread one at a time;
+other batch rows wait with their caches. A routed page uses the size its
+fast run ended at.
+
+The near-exact result replaces the record, keeping the fast attempt in
+`escalated_from` (`mode`, `finish_reason`, `output_tokens`, `total_ms`, like
+`route.safety_net`); the page's `total_ms` includes that attempt. If loading
+or the rerun fails, the fast result remains with `escalation_error` and a
+warning on stderr. After a failed load, the run stops trying. The
+[mode results](MODES.md#loops-and-the-repetition-stop) explain the
+repetition-only policy and its measured effect.
 
 ## Modules
 
@@ -186,7 +211,7 @@ fails ([MODES.md](MODES.md#loops-and-the-repetition-stop)).
 | `cli.rs` | `RunnerArgs` shared by both binaries and `print_doctor` |
 | `main.rs`, `bin/falcon-ocr-eval/` | The CLI; the research binary (profiles, bench, agree, trace, Gram capture) with its telemetry |
 | `preprocess/`, `tokenizer.rs` | Pillow-exact image preparation (`SourceImage`: one decode, the first resize at any cap; `resample.rs`: the Pillow resampling port, with 8-bit bilinear and bicubic for the router; `crop.rs`: the opt-in margin crop); the pinned tokenizer and stop ids |
-| `router/` | The resolution router (`--max-dimension auto`, `research/resolution-router`): 26 image statistics of the page after the first resize at 1536, bit-exact with the Python specification; the two embedded gradient-boosted tree models (`trees.json`); the 768/1024/1536 choice with its 8-px text-line floor; the safety-net record |
+| `router/` | [Resolution routing](#resolution-routing): image statistics, embedded trees, resolution choice and safety net |
 | `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, optional FP32 exception columns, panel prefill; `linear/dot.rs` its single- and multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records, and the research Q8R and Q4R ones; `kv/codec.rs` its scalar codes and scales, `kv/decode.rs` its decode attention kernels), `rotation.rs` (the randomized Hadamard rotation of 32-value blocks behind Q8R and Q4R) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |
@@ -238,13 +263,31 @@ with a BF16 absmax scale per 32 values (`q16`), or 8-bit codes (`q8`);
 generated positions go
 into 128-element tail records in the same format as they are appended.
 
-The research formats `q8r` and `q4r` (8- and 4-bit codes; `falcon-ocr
---kv-cache`, `falcon-ocr-eval --profile`) store every 32-value block as
-`H D x` (a Hadamard matrix times fixed signs, `quant/rotation.rs`) before
-quantizing it; decode rotates the query and un-rotates each head's output
-instead of the records, so they share `q8`'s kernels
-([MODES.md](MODES.md#rotated-kv-cache-experimental)). The `expanded` layout
-(every KV head duplicated) remains selectable.
+The research formats `q8r` and `q4r` (`falcon-ocr --kv-cache`,
+`falcon-ocr-eval --profile`) rotate each 32-value block before quantizing:
+the temporal and spatial key halves and both value halves, in prefix and
+generated positions. The transform is `H D x`, where `H` is the 32 × 32
+Sylvester Hadamard matrix and `D` a fixed ±1 diagonal per block kind
+(`quant/rotation.rs`).
+Rotation spreads an outlier channel across the block's other 31 values.
+`q8r` uses `q8`'s codes and BF16 scale per 32 values; `q4r` uses 4-bit
+codes (-7..=7) with the same scale.
+
+Decode rotates queries, `(2^-5 H D q) · (H D k) = q · k`, and un-rotates
+each head's output, `o = 2^-5 D H o'`, so both formats share `q8`'s kernels.
+`q8r` streams 170 bytes per record. Its 32-point transforms run four times
+per head, row and layer (two query halves and two output halves), four per
+group for each appended position and five per record when sealing the
+prefix. `q4r` takes 90 bytes per record and unpacks through the 8-bit loads;
+there is no vector nibble unpack. The kernels are bitwise tested on every
+instruction set.
+
+With one position chunk (`--tune split-chunks=1`), output is bitwise the
+compact kernel over the dequantized rotated records and rotated query,
+followed by the inverse rotation. Coded caches scan four chunks by default;
+merging their partial softmaxes changes rounding. See
+[MODES.md](MODES.md#rotated-kv-cache-experimental) for agreement results.
+The `expanded` layout (every KV head duplicated) remains selectable.
 
 Every non-compact profile seals prefills for single pages, fixed cohorts
 and continuous batching. The compact `reference` profile never seals.
@@ -272,8 +315,8 @@ pay. Drafts come from n-gram matches in the output so far or, with
 2, 11 and 19 at every verified position (captured during the forward) and
 drafts while its top token's probability is at least 0.35.
 
-The repetition stop ends a page once it repeats a cycle of at most 128
-tokens for at least `max(256, 4 × cycle)` tokens.
+The [repetition stop](MODES.md#loops-and-the-repetition-stop) can end a
+page before EOS or the output budget.
 
 ## Automatic configuration
 

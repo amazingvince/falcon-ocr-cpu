@@ -82,8 +82,8 @@ changing preceding tokens; `--stop-repetition=false` lets loops run.
 
 `doctor` prints the plan without reading tensors; `--load` times model
 loading and `--probe` measures memory bandwidth and the decode floor.
-[Architecture](docs/ARCHITECTURE.md#automatic-configuration) explains the
-selection rules.
+For model and thread selection, see
+[automatic configuration](docs/ARCHITECTURE.md#automatic-configuration).
 
 Example load and probe output for near-exact on a Ryzen 9 7950X (16 cores,
 32 threads), Windows 11:
@@ -150,8 +150,8 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
 - In fast mode, `--escalate` rereads a page that got stuck in a loop with
   the near-exact model.
 
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#long-runs) has the record format
-and how `--resume` matches and repairs the file.
+Record format and resume matching:
+[long runs](docs/ARCHITECTURE.md#long-runs).
 
 ## Library
 
@@ -192,10 +192,6 @@ fetches local CMake and NASM copies when needed). macOS:
 libjpeg-turbo (JPEG then decodes through the `image` crate, not
 Pillow-exact).
 
-Supported: x86-64 with AVX2 (AVX-512 used when present) on Windows and
-Linux. aarch64 compiles with NEON kernels tested bitwise in CI but has not
-yet run the model.
-
 ## The checkpoint and the GPTQ overlay
 
 Exact mode, packing and the overlay need the FP32 checkpoint:
@@ -203,8 +199,8 @@ Exact mode, packing and the overlay need the FP32 checkpoint:
 verifies it (SHA-256 `3df91e40…`). `falcon-ocr --mode near-exact pack
 --output F` and `--mode fast pack` write the packed files.
 `tools/make_gptq_overlay.sh` builds `artifacts/model/w8-gptq.safetensors`
-(about 20 minutes: Gram capture on 12 calibration pages, GPTQ act-order over
-the 88 body matrices); the published fast file already contains it.
+([rebuilding instructions](docs/DEVELOPMENT.md#rebuilding-packed-files-and-experimental-overlays));
+the published fast file already contains it.
 Experimental overlays with FP32 exception columns are described in
 [Modes](docs/MODES.md#exception-columns-experimental).
 
@@ -216,15 +212,10 @@ Experimental overlays with FP32 exception columns are described in
   with `artifacts/`: exact mode reproduces the GPU smoke tokens under the
   automatic configuration; near-exact and fast reproduce the recorded
   journal tokens; packed files round-trip; the trace hashes are pinned.
-- `falcon-ocr-eval agree` teacher-forces the 55 anchor pages along the FP32
-  tokens and counts the steps where the mode's own choice differs: 1 for
-  near-exact, about 63 for fast.
-- Fast mode's one pre-registered run on 200 held-out pages passed overall
-  and on 5 of 7 categories and failed on handwriting and degraded scans;
-  see [Modes](docs/MODES.md#fast-modes-held-out-result) for the verdict.
+- `falcon-ocr-eval agree` measures teacher-forced flips and KL
+  ([mode comparisons](docs/MODES.md#the-metric)).
 
-[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) lists every test and how the
-fixtures are regenerated.
+Tests and fixture regeneration: [Development](docs/DEVELOPMENT.md).
 
 ## Performance notes
 
@@ -232,8 +223,8 @@ Decode streams the weights and KV cache from memory; prefill is
 compute-bound. The draft head helps prose as well as repetitive pages: on
 16 held-out pages it cut total time against n-gram drafts by 21% in fast
 mode, 25% in near-exact and 26% in exact, with identical tokens.
-[Performance](docs/PERFORMANCE.md) owns the measurements, bandwidth floors
-and accepted and rejected changes.
+[Performance](docs/PERFORMANCE.md): measurements, bandwidth floors, and
+accepted and rejected changes.
 
 ## Platform support
 

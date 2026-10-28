@@ -98,8 +98,8 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   timing probe (warm and cold).
 - **Token agreement** against the FP32 anchor
   ([below](#token-agreement)) measures flips and KL;
-  [MODES.md](MODES.md#the-metric) owns the results. The CI `weights` job runs
-  the gates and an agreement queue on the 12 GPTQ capture pages at 8192
+  [mode comparisons](MODES.md#the-metric). The CI `weights` job runs the
+  gates and an agreement queue on the 12 GPTQ capture pages at 8192
   steps, on a self-hosted runner
   labelled `falcon-weights`.
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
@@ -113,10 +113,9 @@ eight arguments, `rustfmt.toml` sets a 120-column width.
   (the `tests` exclude in `pyproject.toml` skips that folder in `ruff check
   tools`).
 
-Fixtures: `tests/fixtures/README.md` says how the preprocessing, decode and
-router fixtures are regenerated from the pinned Pillow/PyTorch environment;
-`tests/fixtures/modes/README.md` how the mode fixtures are recorded with the
-CLI. Regenerate a fixture only when the numerics change on purpose.
+Fixture generation: [preprocessing, decode and router fixtures](../tests/fixtures/README.md)
+and [mode fixtures](../tests/fixtures/modes/README.md). Regenerate a fixture
+only when the numerics change on purpose.
 
 The full weights gates also require the original overlay and GPU outputs,
 not just the downloadable packed files. The frozen reference preflight
@@ -126,17 +125,12 @@ separately rather than regenerating fixtures to make a check pass.
 
 ## Token agreement
 
-`falcon-ocr-eval agree` teacher-forces each page along the tokens of an FP32
-reference, a `falcon-ocr-eval --profile reference bench` report over the
-calibration pages, and counts flips and KL
-([MODES.md](MODES.md#the-metric)). The anchor pages are the reference's
-pages outside the GPTQ capture set (`tools/gptq-calibration-pages.txt`).
-Upstream's `artifacts/phase4/checks/calibration-reference.json` gives the
-55-page, 24,262-step anchor whose flips MODES.md and the `--help` text
-quote. A host without that file makes its own reference over the 64 pages of
-`reference/corpus-v3-calibration-lock.json` with up to 512 tokens each,
-which gives the 52-page, 22,726-step anchor of MODES.md's Ryzen 7 7700X
-results.
+`falcon-ocr-eval agree` takes an FP32 reference from a
+`falcon-ocr-eval --profile reference bench` report. Use upstream's
+`artifacts/phase4/checks/calibration-reference.json` when available;
+otherwise build a reference from `reference/corpus-v3-calibration-lock.json`
+with up to 512 tokens per page. For the metric and the two anchor sets, see
+[mode comparisons](MODES.md#the-metric).
 
 From the repository root (bash; `falcon-ocr-eval` from `cargo build
 --release --locked`), writing to the git-ignored `artifacts/agree/`; to use
@@ -228,11 +222,8 @@ model run; it is not a held-out quality gate.
 `tools/w8_variants.py --exceptions N --exceptions-include REGEX` keeps
 the N highest-energy input columns of each matching matrix;
 `--exception-select error` weights selection by expected rounding error.
-Round-to-nearest computes scales and codes with those columns zeroed and
-stores their original values. GPTQ processes them last, so they absorb
-error compensation and store the damped least-squares optimum for the
-chosen codes. [MODES.md](MODES.md#exception-columns-experimental) owns the
-format and fidelity findings.
+For column values, compensation, format and fidelity, see
+[exception columns](MODES.md#exception-columns-experimental).
 
 ## Measuring performance and input changes
 
@@ -240,8 +231,8 @@ Compare arms only within one interleaved run on the same quiet host.
 Background work changes timings; a running GPU job (training or vLLM)
 slowed CPU decode by about 30% in the draft-head experiments. Record the
 resolved plan, including the decode team, and pin it when comparing arms
-whose automatic choices differ. [PERFORMANCE.md](PERFORMANCE.md) owns the
-measurements and their host-specific limitations.
+whose automatic choices differ.
+[Measurements and host-specific limits](PERFORMANCE.md).
 
 For bandwidth, the decode floor, and a reference-profile timing report:
 
@@ -310,19 +301,9 @@ environment variables.
 - Run `cargo test` alone; a second concurrent cargo command can leave it
   printing nothing.
 - The packed round-trip gate writes 1.5 GB of temporary files.
-- Timing A/Bs are meaningless while other jobs run: interleave fresh
-  processes on a quiet host and compare arms within one run.
 - Keep the mapped checkpoint or packed file unchanged while a `Model` is
   alive.
 
 ## Repository layout
 
-`src/` (library and the two binaries), `tests/` (Rust gates and fixtures),
-`examples/ocr_bench.rs`, `tools/` (product-path helpers), `docs/` (this
-folder: ARCHITECTURE, MODES, PERFORMANCE, PORTABILITY, DEVELOPMENT, and
-NEXT-STEPS for what remains open and the proposals),
-`scripts/` (the frozen GPU-reference closure the receipts hash by path; do
-not edit), `reference/` and `requirements/` (frozen receipts and pins),
-`research/` (indexed history: the phase-4 hill climb, the GPU reference
-protocol, vLLM serving, corpus qualification, benchmarks, the retired BF16
-graph, AOCL and quantization feasibility, and the reviews of 2026-09-20).
+See the [repository layout](../README.md#repository-layout).

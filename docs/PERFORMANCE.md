@@ -76,28 +76,65 @@ change from 92 to 94 of 78,282 steps.
 
 ### Trained draft head
 
-On 16 English held-out pages in fast mode, a trained head with INT8 drafter
-KV lowers page time while preserving tokens:
+Fast mode, packed model, 12 decode threads on the Ryzen 9 7950X: 16 English
+held-out pages, two rounds on a quiet machine. Every arm preserves the
+no-speculation tokens:
 
-| Drafter | Page total | Decode speedup against no speculation |
-|---|---:|---:|
-| No speculation | 184.5 s | 1.00× |
-| N-gram drafts | 172.7 s | 1.09× |
-| Stage-2 trained head | 139.9 s | 1.47× |
+| Drafter | Page total | Decode | Decode speedup vs none | Acceptance |
+|---|---:|---:|---:|---:|
+| No speculation | 184.5 s | 139.9 s | 1.00× | |
+| N-gram drafts (`--drafter ngram`) | 172.7 s | 128.0 s | 1.09× | 34% |
+| Stage-1 head, FP32 drafter KV, confidence 0.45 | 153.9 s | 109.2 s | 1.28× | 76% |
+| Stage-2 head, INT8 drafter KV, confidence 0.35 | 139.9 s | 95.1 s | 1.47× | 75% |
+| Stage-2 head, rank-384 vocabulary head | 139.2 s | 94.5 s | 1.48× | 72% |
+
+A separate run compares the stage-2 initializer with the published stage-3
+head, continued on 48k pages. The latter cuts held-out page time another
+1.9%; on the calibration pages its total changes from 182.0 to 176.4 s:
+
+| Drafter | Page total | Decode speedup vs none | Acceptance |
+|---|---:|---:|---:|
+| No speculation | 181.2 s | 1.00× | |
+| Stage-2 head | 138.3 s | 1.46× | |
+| Published stage-3 head | 135.7 s | 1.50× | 76% |
 
 The published head gives 1.5–1.9× decode speedup across modes against no
-speculation. The stage-3 head (trained on 48k pages) has a separate
-baseline: 181.2 → 135.7 s, decode 1.50×. The published head also preserves
-tokens in the other modes on the same pages:
+speculation and cuts page totals by 21–26% against n-gram drafts. The other
+modes use the same 16 pages and preserve tokens in every arm:
 
-| Mode | N-gram drafts | Published head | Decode speedup against no speculation |
-|---|---:|---:|---:|
-| Near-exact | 277.4 s | 208.1 s | 1.87× |
-| Exact | 531.0 s | 392.5 s | 1.67× |
+| Mode | No speculation | N-gram drafts | Published head | Decode speedup vs none | Acceptance |
+|---|---:|---:|---:|---:|---:|
+| Near-exact (2 rounds) | 334.8 s | 277.4 s | 208.1 s | 1.87× | 77% |
+| Exact (1 round) | 612.6 s | 531.0 s | 392.5 s | 1.67× | |
 
-The runner selects `--draft-head` automatically when the published file is
-next to the model files. Source:
+Source: the 2026-09-26 comparison and the fast-mode `cpu-ab/` records;
+their location, training stages and recipe are in
 [research/draft-head](../research/draft-head/README.md).
+
+Calibration sweeps use 16 English pages. INT8 drafter keys and values reduce
+decode time (−1.7%) against FP32 with unchanged acceptance. Image attention,
+vocabulary size, low-rank heads, attention windows and gating changes each
+gain 2% or less:
+
+| Alternative | Measurement or limit |
+|---|---|
+| Confidence 0.25–0.45 (`--draft-confidence`) or product-of-probabilities gate vs 0.35 | Within 2% |
+| 6 drafts per step vs 4 | No gain |
+| 24k draft vocabulary vs 16k | Same acceptance, larger head |
+| Attention window of 256 positions | −4 points acceptance |
+| Rank-384 vocabulary head | −1%, within noise on held-out pages |
+| 16 decode threads vs 12 | Slower with and without speculation; +3% with it |
+| Next-token-prediction training only | 23% acceptance; overconfident on later chain steps |
+
+A verification row costs about 1.1 ms, 13% of an 8.8 ms target step, mostly
+attention over image positions. A target step streams about 400 MB and
+evicts the drafter. Cold draft steps cost 0.67 ms with FP32 drafter KV,
+0.51 ms with INT8, and 0.29 ms with INT8 and a rank-256 head; their cost
+follows bytes rather than FLOPs.
+
+The GPU cost model predicts 1.59× decode, while held-out CPU decode reaches
+1.47× because of failed first drafts and cold caches. Page totals improve
+less: prefill takes about 2.8 s per page, roughly a third of the total.
 
 ## Rejected or unadopted
 
@@ -130,22 +167,8 @@ There are 9 repetition stops at 1280 against 7 at 1536. It has no held-out
 validation, so the default remains 1536. Source:
 `research/phase4-hillclimb/attempt3/HILLCLIMB.md`, T14.
 
-The per-page resolution router (`--max-dimension auto`) saves 25% of CPU
-time and improves CER on its development set (quiet host), but fails the
-held-out English gate (+0.29 pt). It stays opt-in; the quality results are
-in [MODES.md](MODES.md#resolution-routing).
-
-Draft-head alternatives on 16 calibration pages:
-
-| Idea | Measurement or limit |
-|---|---|
-| Other confidence thresholds; product-of-probabilities gate | Within 2% |
-| 6 drafts per step | No gain over 4 |
-| 24k draft vocabulary | Same acceptance, larger head |
-| Attention window of 256 positions | −4 points acceptance |
-| Rank-384 vocabulary head | −1%, within noise on held-out pages |
-| 16 decode threads with speculation | +3% time |
-| Next-token-prediction training only | 23% acceptance; overconfident on later chain steps |
+Resolution-router timing and quality results are in
+[the router study](../research/resolution-router/README.md).
 
 Bitwise-identical decode-attention alternatives:
 
@@ -297,6 +320,4 @@ runs used n-gram drafts and are left out. Their fidelity is in
 
 ## Measuring
 
-[DEVELOPMENT.md](DEVELOPMENT.md) owns the benchmark commands, telemetry
-flags, interleaved comparisons and quiet-host timing protocol. The tables
-above identify their hardware and exceptions to that protocol.
+See [measurement commands and protocol](DEVELOPMENT.md#measuring-performance-and-input-changes).

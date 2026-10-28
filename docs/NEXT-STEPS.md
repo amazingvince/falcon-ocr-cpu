@@ -1,8 +1,7 @@
 # Next steps
 
 Status: current as of 2026-10-28. Unresolved qualification and hardware
-work, followed by research proposals. Fidelity and timing results live in
-[MODES.md](MODES.md) and [PERFORMANCE.md](PERFORMANCE.md).
+work, followed by research proposals.
 
 ## Still open
 
@@ -38,20 +37,11 @@ faster near-exact on `q8r` (18 flips against near-exact's 1). See
 
 ### Exception columns as fast mode's default
 
-Four FP32 columns per FFN output projection (`W2`) cut fast mode's KL
-against FP32 by 39% (3.04e-4 → 1.84e-4 on the 7700X anchor) for 271 KB
-more per decode step, 0.15% of its weight bytes. The flip count (64 → 63)
-does not resolve a gain at that set's size. The output-quality gain needs
-held-out qualification.
-
-The runner already supports `falcon-ocr-kernel-v2`; adopting exception
-columns as a default would require republished files and qualification.
-The proxy curve flattens after 4 columns (7.14e-4 → 6.37e-4 at 16), and
-other matrices are untested: QKV carries 16% of the 8-bit cost. The first
-comparison would be agreement at 8 and 16 columns, and with QKV included,
-before a fresh held-out English gate.
-
-Source: [MODES.md](MODES.md#exception-columns-experimental).
+Compare agreement at 8 and 16 exception columns and with QKV included,
+then run a fresh held-out English gate before changing the default or
+republishing files. QKV carries 16% of the 8-bit cost and is untested.
+The [exception-column results](MODES.md#exception-columns-experimental)
+give the existing W2 proxy curve, fidelity and format support.
 
 ### GPTQ damping relative to the median
 
@@ -110,15 +100,9 @@ panel shapes must accept per-layer widths. Exact mode would stay unpruned.
 
 ### `--max-dimension 1280` per book
 
-On 64 calibration pages in near-exact mode, 1280 took 20% less time than
-1536. Its CER improved on the 48 pages that end at EOS at 1536, 1280 and
-1024, but worsened on the 55 that end at EOS at 1536, with 9 repetition
-stops against 7. Source:
-[PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted).
-
 The projected saving is about 20% of a book's time, on top of margin
-cropping, where its print reads as well at 1280. More loops and lost small
-print are the risks; the per-page router failed its held-out English gate
-(+0.29 pt). A first comparison would run a few dozen of that book's pages
-at 1536 and 1280, as for margin cropping, and adopt 1280 only if no page
-loses content and no loop is added.
+cropping, where its print reads as well at 1280; the
+[calibration comparison](PERFORMANCE.md#rejected-or-unadopted) shows the
+loop and small-print risks. Compare a few dozen of that book's pages at
+1536 and 1280, as for margin cropping, and adopt 1280 only if no page loses
+content and no loop is added.

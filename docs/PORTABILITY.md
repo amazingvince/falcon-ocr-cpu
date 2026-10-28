@@ -7,7 +7,7 @@ portable ones in those tests, but no aarch64 machine has yet run the model
 with weights.
 
 - Quality is measured against FP32's token choices; kernel tests separately
-  check bitwise arithmetic. [MODES.md](MODES.md) owns the fidelity results.
+  check bitwise arithmetic. [Mode fidelity results](MODES.md).
 - Targets: x86 AVX2/FMA, AVX-512 (as `auto` on AVX-512F and AVX512-BF16
   CPUs), aarch64 NEON, and a scalar fallback.
 
@@ -38,9 +38,8 @@ performance cores so the decode tuner can try a team of only those.
 
 ## Code structure
 
-Each ISA implements the same 8-lane `simd::Simd` interface. Its operations
-and reduction trees are defined in
-[ARCHITECTURE.md](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa).
+Each ISA implements the same 8-lane `simd::Simd` interface
+([operations and reduction trees](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa)).
 
 | Implementation | Registers |
 |---|---|
@@ -103,4 +102,4 @@ mode runs its FP32 prefill.
 SDOT/I8MM W8 decode kernels for high-bandwidth ARM; an Accelerate backend for
 prefill projections on macOS; FP32 AVX-512 panel tiles for Intel hosts
 without BF16; the first weights run on an M4 (numbers into MODES.md and
-PERFORMANCE.md). [NEXT-STEPS.md](NEXT-STEPS.md) lists what else is open.
+PERFORMANCE.md). Other unmeasured work: [next steps](NEXT-STEPS.md).
