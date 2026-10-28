@@ -4,7 +4,7 @@
 //!
 //! The resampling coefficients and fixed-point arithmetic below are adapted from
 //! Pillow 11.3.0's src/libImaging/Resample.c:
-//! https://github.com/python-pillow/Pillow/blob/11.3.0/src/libImaging/Resample.c
+//! <https://github.com/python-pillow/Pillow/blob/11.3.0/src/libImaging/Resample.c>
 //! The I;16 rounding, the pass order for very tall images (src/PIL/Image.py) and
 //! the nearest-neighbour positions (src/libImaging/Geometry.c) follow Pillow
 //! 12.3.0, the pinned processor's version.

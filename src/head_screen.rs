@@ -35,6 +35,7 @@ const ETA: f32 = 7.888_609e-31; // 2^-100
 /// Inputs per [`ScreenedHead::select_rows`] call.
 pub(crate) const MAX_ROWS: usize = 8;
 
+/// Quantized vocabulary head and bounds used to screen exact argmax candidates.
 pub(crate) struct ScreenedHead {
     vocab: usize,
     dim: usize,
@@ -55,6 +56,7 @@ pub(crate) struct HeadScratch {
 }
 
 impl HeadScratch {
+    /// Size scratch for this head and reserve room for the candidate limit.
     pub(crate) fn reserve(&mut self, head: &ScreenedHead) {
         self.upper.resize(head.vocab, 0.0);
         self.lower_max.resize(head.vocab.div_ceil(BLOCK), f32::NEG_INFINITY);
@@ -151,6 +153,7 @@ impl ScreenedHead {
         (self.codes.bytes(), self.scales.bytes(), self.weight_abs_max, self.kappa)
     }
 
+    /// Bytes occupied by quantized codes and scales.
     pub(crate) fn payload_bytes(&self) -> usize {
         self.codes.len() + self.scales.len() * size_of::<f32>()
     }

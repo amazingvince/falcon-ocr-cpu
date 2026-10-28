@@ -3,7 +3,9 @@
 //! with its optional block rotation.
 //! FP32 graph arithmetic is unchanged unless a weight or cache is encoded, and
 //! every encoded path is tested bitwise against its dequantized reference.
+/// Split-prefix KV cache storage and decode.
 pub(crate) mod kv;
+/// Quantized linear weights and their matrix operations.
 pub mod linear;
 mod rotation;
 
@@ -111,6 +113,7 @@ impl Profile {
         Self::W8_BODY_KV_Q4R,
     ];
 
+    /// Combines a body weight format with a KV cache format.
     pub const fn new(weights: Weights, kv: Kv) -> Self {
         Self { weights, kv }
     }
@@ -142,6 +145,7 @@ impl Profile {
     pub fn parse(label: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|p| p.label() == label)
     }
+    /// Whether the body weights use integer codes.
     pub fn quantizes_body(self) -> bool {
         self.weights != Weights::F32
     }

@@ -119,6 +119,7 @@ impl std::fmt::Display for TuneReport {
     }
 }
 
+/// Decode-team timing samples and the choice made from comparable row counts.
 pub(crate) struct Tuner {
     sizes: Vec<usize>,
     /// The largest team the choice may take ([`Tuner::limit`]).
@@ -339,6 +340,7 @@ impl Tuner {
     }
 }
 
+/// Median after total-order sorting, or NaN for an empty slice.
 pub(crate) fn median(values: &[f64]) -> f64 {
     let mut v = values.to_vec();
     v.sort_by(|a, b| a.total_cmp(b));

@@ -1,3 +1,5 @@
+//! Model loading, per-request state and forward execution.
+
 use std::{
     ops::Range,
     sync::{Arc, OnceLock},
@@ -127,9 +129,11 @@ pub struct Model {
 }
 
 impl Model {
+    /// Configuration validated when the model was loaded.
     pub fn config(&self) -> &ModelConfig {
         &self.config
     }
+    /// SHA-256 identifying the source checkpoint weights.
     pub fn weights_sha256(&self) -> &str {
         &self.weights_sha256
     }
@@ -191,6 +195,7 @@ impl Model {
     pub fn weight_packing_ms(&self) -> f64 {
         self.packed.get().map_or(0.0, |p| p.packing_ms)
     }
+    /// Lazily pack the FP32 body and output matrices once for phase execution.
     pub(crate) fn prepare_phase_packed(&self) {
         self.packed.get_or_init(|| {
             let started = Instant::now();
@@ -303,6 +308,9 @@ impl Model {
         &self.w(&self.embedding)[token as usize * d..(token as usize + 1) * d]
     }
 
+    /// Fill `h` with token embeddings, substituting projected image patches
+    /// when supplied. Returns projection time in milliseconds; rejects invalid
+    /// patch dimensions, vocabulary IDs or mismatched image and patch counts.
     pub(crate) fn embed(
         &self,
         tokens: &[u32],
@@ -356,6 +364,9 @@ impl Model {
         Ok(image_projection_ms)
     }
 
+    /// Run the supplied hidden rows and positions through the model, updating
+    /// the session cache and returning full logits borrowed from its workspace.
+    /// Forward and trace errors propagate to the caller.
     pub(crate) fn forward<'s>(
         &self,
         h: &mut [f32],

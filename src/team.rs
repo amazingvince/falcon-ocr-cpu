@@ -41,6 +41,7 @@ struct Shared {
     threads: OnceLock<Vec<Thread>>,
 }
 
+/// Decode-loop executor whose participant count includes the calling thread.
 pub(crate) struct Team {
     shared: Arc<Shared>,
     workers: Vec<JoinHandle<()>>,
@@ -97,6 +98,7 @@ impl Team {
         })
     }
 
+    /// Number of participants, including the caller.
     pub(crate) fn size(&self) -> usize {
         self.size
     }
@@ -241,6 +243,8 @@ pub(crate) struct SharedMut<T>(*mut T);
 unsafe impl<T: Send> Send for SharedMut<T> {}
 unsafe impl<T: Send> Sync for SharedMut<T> {}
 impl<T> SharedMut<T> {
+    /// Capture a slice's base pointer without extending its lifetime; callers
+    /// must keep the buffer alive and coordinate all access through it.
     pub(crate) fn new(slice: &mut [T]) -> Self {
         Self(slice.as_mut_ptr())
     }

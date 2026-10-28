@@ -24,6 +24,7 @@ pub(crate) struct RepetitionStop {
 }
 
 impl RepetitionStop {
+    /// Start tracking a new page with no repeated runs.
     pub(crate) fn new() -> Self {
         Self {
             runs: vec![0; MAX_PERIOD + 1],

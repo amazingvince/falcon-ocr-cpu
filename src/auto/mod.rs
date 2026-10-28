@@ -66,6 +66,7 @@ pub fn with_default_draft_head(config: RunnerConfig, dir: &Path, explicit: bool)
 }
 
 impl Mode {
+    /// Stable mode name used by the CLI and serialized plans.
     pub fn label(self) -> &'static str {
         match self {
             Self::Exact => "exact",
@@ -573,6 +574,7 @@ pub struct ThreadPlan {
     pub decode: DecodePlan,
 }
 
+/// A fixed decode team or the candidates measured before selecting one.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DecodePlan {

@@ -1,3 +1,5 @@
+//! Operator tests and SIMD comparisons against their reference paths.
+
 use super::*;
 
 // A fixed, deterministic generator keeps tests independent of rand versions.

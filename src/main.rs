@@ -1,3 +1,4 @@
+//! Product CLI for model diagnostics, packing, reference traces and page OCR.
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use falcon_ocr::{

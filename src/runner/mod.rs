@@ -1,3 +1,4 @@
+//! Page recognition, decoding, and result reporting for a loaded model.
 use crate::{
     config::{CacheLayout, GenerationOptions, HeadMode, RunnerConfig, WeightLayout},
     model::{Model, Next, Session, image_range, positions},
@@ -24,6 +25,7 @@ use generate::{DecodeLoop, Generation, Page};
 pub use pipeline::Pipeline;
 pub use std::ops::ControlFlow;
 
+/// Why a page stopped generating tokens.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum FinishReason {
@@ -32,6 +34,7 @@ pub enum FinishReason {
     /// Stopped by the repetition stop (`RunnerConfig::repetition_stop`).
     Repetition,
 }
+/// Per-page durations in milliseconds for preparation and inference.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Timings {
     /// File decode time; zero for an already decoded RGB buffer.
@@ -67,6 +70,7 @@ pub struct Timings {
     /// page (time waiting for a row or a pool is not counted).
     pub time_to_first_token_ms: f64,
 }
+/// Recognized text, tokens, execution provenance, and timings for one page.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OcrResult {
     pub text: String,
@@ -135,6 +139,7 @@ fn legacy_cache_layout() -> CacheLayout {
 
 pub use crate::config::DecodeThreads;
 
+/// Runs OCR with a loaded model, tokenizer, and configured execution teams.
 pub struct Runner {
     model: Arc<Model>,
     tokenizer: OcrTokenizer,
@@ -250,6 +255,9 @@ impl<'a> DecodeTeam<'a> {
 }
 
 impl Runner {
+    /// Build execution teams and load the tokenizer from `model_dir`.
+    /// Head-based drafters also load the configured draft head. Rejects invalid
+    /// configurations, incompatible profiles and failed resource setup.
     pub fn new(model: Arc<Model>, model_dir: impl AsRef<Path>, config: RunnerConfig) -> Result<Self> {
         config.validate()?;
         if model.profile() != crate::quant::Profile::REFERENCE {
@@ -363,6 +371,7 @@ impl Runner {
         self.resolved.head = mode;
         Ok(())
     }
+    /// The vocabulary-head mode currently used for greedy decoding.
     pub fn head_mode(&self) -> HeadMode {
         self.head
     }
@@ -375,9 +384,13 @@ impl Runner {
     pub fn resolved(&self) -> &crate::auto::Resolved {
         &self.resolved
     }
+    /// Recognize one PNG or JPEG, including file decode in its timings.
+    /// Returns image, option-validation or inference failures to the caller.
     pub fn recognize_file(&self, path: impl AsRef<Path>, options: &GenerationOptions) -> Result<OcrResult> {
         self.recognize_file_with_trace(path, options, &mut NoTrace)
     }
+    /// [`Self::recognize_file`] with tensor and phase callbacks to `trace`.
+    /// A trace error aborts the page.
     pub fn recognize_file_with_trace(
         &self,
         path: impl AsRef<Path>,
@@ -419,9 +432,13 @@ impl Runner {
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         self.run_prepared_scoped(prepared, tokens, options, 0.0, trace, teacher)
     }
+    /// Recognize a decoded RGB image, reporting zero file-decode time.
+    /// Returns option-validation, preprocessing or inference failures.
     pub fn recognize(&self, image: &RgbImage, options: &GenerationOptions) -> Result<OcrResult> {
         self.recognize_with_trace(image, options, &mut NoTrace)
     }
+    /// [`Self::recognize`] with tensor and phase callbacks sent to `trace`.
+    /// A trace error aborts the page.
     pub fn recognize_with_trace(
         &self,
         image: &RgbImage,

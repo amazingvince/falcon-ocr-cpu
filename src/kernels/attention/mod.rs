@@ -30,6 +30,7 @@ pub(crate) enum Bf16Kv<'a> {
 mod decode64;
 mod online;
 #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
+/// Fixed 64-wide head prefill attention kernels.
 pub(super) mod prefill64;
 mod tiled;
 
@@ -45,6 +46,7 @@ pub struct Geometry {
 }
 
 impl Geometry {
+    /// Set the absolute query offset and half-open image token interval.
     pub const fn new(query_offset: usize, image_start: usize, image_end: usize) -> Self {
         Self {
             query_offset,
@@ -122,10 +124,12 @@ impl<'a> CompactKv<'a> {
     pub fn expanded(k: &'a [f32], v: &'a [f32], kv_len: usize, n_heads: usize, head_dim: usize) -> Self {
         Self::prefill(k, v, kv_len, n_heads, n_heads, head_dim)
     }
+    /// Number of elements per token across all query heads.
     #[inline]
     pub fn query_width(&self) -> usize {
         self.n_heads * self.head_dim
     }
+    /// Number of elements per token across all KV heads.
     #[inline]
     pub fn kv_width(&self) -> usize {
         self.n_kv_heads * self.head_dim

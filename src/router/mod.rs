@@ -27,6 +27,7 @@ pub const SIZES: [u32; 2] = [768, 1024];
 /// a page is never routed there.
 pub const LINE_FLOOR_PX: f64 = 8.0;
 
+/// Names of the router statistics in model input order.
 pub const FEATURES: [&str; 26] = [
     "width",
     "height",
@@ -63,6 +64,7 @@ const DARK: u8 = 80;
 const LOSS_DIFF: i32 = 60;
 const EDGE: i32 = 40;
 
+/// Page statistics in the order named by [`FEATURES`].
 pub type Statistics = [f64; FEATURES.len()];
 
 /// Pillow's `convert("L")` of the page.

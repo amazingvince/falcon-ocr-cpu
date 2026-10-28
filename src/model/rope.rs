@@ -84,6 +84,7 @@ pub(super) fn split_norm_rope(c: &ModelConfig, rows: usize, work: &mut super::ca
     }
 }
 
+/// Precompute `[cos, sin]` temporal rotations for every context position.
 pub(crate) fn temporal_factors(c: &ModelConfig) -> Vec<[f32; 2]> {
     let pairs = c.head_dim / 4;
     let mut result = Vec::with_capacity(c.max_seq_len * pairs);
@@ -97,6 +98,9 @@ pub(crate) fn temporal_factors(c: &ModelConfig) -> Vec<[f32; 2]> {
     result
 }
 
+/// Fill row-major, per-head rotations from temporal positions and spatial
+/// coordinates. Non-finite coordinates leave the spatial half unchanged.
+/// Positions and input arrays must fit the configured table and head geometry.
 pub(crate) fn rotary_factors(
     c: &ModelConfig,
     t: &[usize],
@@ -139,7 +143,6 @@ pub(crate) fn rotary_factors(
     }
 }
 
-/// `h += projected`, row-parallel for prefill-sized inputs.
 /// `rms_norm`'s factor of every `width`-wide row of `h` (eps `f32::EPSILON`, no weight).
 pub(super) fn row_scales(h: &[f32], width: usize, out: &mut Vec<f32>) {
     out.resize(h.len() / width, 0.0);
@@ -148,6 +151,7 @@ pub(super) fn row_scales(h: &[f32], width: usize, out: &mut Vec<f32>) {
         .for_each(|(scale, row)| *scale = kernels::rms_scale(row, width, f32::EPSILON));
 }
 
+/// Add projected values to hidden states, parallelizing prefill-sized inputs.
 pub(super) fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
     if h.len() >= PARALLEL_ROWS * dim {
         h.par_chunks_mut(dim).zip(projected.par_chunks(dim)).for_each(|(h, a)| {
@@ -162,6 +166,8 @@ pub(super) fn add_residual(h: &mut [f32], projected: &[f32], dim: usize) {
     }
 }
 
+/// Locate the image class and end tokens. Reject missing, reversed or repeated
+/// markers, since a request supports exactly one image.
 pub(crate) fn image_range(tokens: &[u32], c: &ModelConfig) -> Result<(usize, usize)> {
     let start = tokens
         .iter()
@@ -180,6 +186,9 @@ pub(crate) fn image_range(tokens: &[u32], c: &ModelConfig) -> Result<(usize, usi
     Ok((start, end))
 }
 
+/// Build temporal and spatial positions for the tokens, consuming one patch
+/// coordinate per image patch token. Rejects missing or unused coordinates
+/// and an image continuation before any class or text token.
 pub(crate) fn positions(tokens: &[u32], patch_hw: &[[f32; 2]], c: &ModelConfig) -> Result<(Vec<usize>, Vec<[f32; 2]>)> {
     let mut temporal = Vec::with_capacity(tokens.len());
     let mut spatial = Vec::with_capacity(tokens.len());

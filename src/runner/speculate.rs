@@ -13,6 +13,9 @@ use anyhow::Result;
 use super::{Runner, generate::DecodeLoop, select};
 
 impl Runner {
+    /// Advance a page with verified drafts until its stop condition is met.
+    /// Limits drafts to the remaining output and cache capacity; model or
+    /// token selection failures propagate to the caller.
     pub(super) fn decode_speculative(
         &self,
         d: &mut DecodeLoop<'_, '_>,

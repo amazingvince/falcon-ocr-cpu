@@ -158,6 +158,9 @@ impl Model {
         self.map = Store::Owned(words);
     }
 
+    /// Load the pinned checkpoint and prepare its body for `profile`.
+    /// An overlay is accepted only for an 8-bit body; without one, integer
+    /// weights use round-to-nearest quantization at load.
     pub fn load_profile(
         dir: impl AsRef<Path>,
         profile: crate::quant::Profile,
@@ -320,6 +323,7 @@ impl Model {
         model.quantize_ms = started.elapsed().as_secs_f64() * 1000.0;
         Ok(model)
     }
+    /// Weight and KV storage profile selected for this model.
     pub fn profile(&self) -> crate::quant::Profile {
         self.profile
     }
