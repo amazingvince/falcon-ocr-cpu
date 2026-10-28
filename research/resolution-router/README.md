@@ -1,13 +1,11 @@
 # Resolution router
 
-A per-page choice of the maximum image dimension (768, 1024 or 1536) for
-fast mode. It saves 25.1% of CPU time on its 389-page development set, but
-fails its held-out English gate: character error rate (CER) rises by 0.29
-percentage points against a 0.25-point limit. It stays opt-in. The
+The resolution router saves 25.1% of CPU time on its 389-page development
+set, but fails its held-out English gate: character error rate (CER) rises
+by 0.29 percentage points against a 0.25-point limit. It stays opt-in. The
 figure-masked comparison below is a post-hoc diagnostic, not a passing gate.
 
-Prefill and decode both scale with the image token count. The "Falcon-OCR
-resolution router plan" defines the experiment. Its record labels are
+The "Falcon-OCR resolution router plan" defines the experiment. Its labels are
 phase 0 for generating agreement data, phase 1 for developing the policy,
 phase 2 for the Rust implementation, and phase 3 for held-out validation
 and quiet-host timing.
@@ -16,9 +14,8 @@ and quiet-host timing.
 
 On 389 English OmniDocBench pages with ground truth (the development set
 `reference/router-dev-v1-*`, CPU runner in fast mode with the draft head,
-measured CPU time), the chosen policy (gradient-boosted trees on 26 image
-statistics, route when p >= 0.5, an 8-px median text-line floor at the target
-resolution, rerun at 1536 when a routed page loops or hits the cap):
+measured CPU time). The policy is described in
+[ARCHITECTURE.md](../../docs/ARCHITECTURE.md#resolution-routing).
 
 | Policy | CER against truth | Pages > 2 pt worse | CPU time saved |
 |---|---|---|---|

@@ -1,6 +1,6 @@
 # Research archive
 
-Status: indexed on 2026-10-01. Nothing here is compiled, and CI runs only the Python tests in `corpus-qualification/tests` and `quantization-feasibility/tests`; it is the record of how the runner got where it is. Each folder's README lists its files, what they produced and whether the result was accepted, rejected or superseded. Receipts and pinned hashes stay in `reference/`; the frozen GPU-reference scripts stay in `scripts/`.
+Status: indexed on 2026-10-01. Nothing here is compiled, and CI runs only the Python tests in `corpus-qualification/tests` and `quantization-feasibility/tests`; it is the record of how the runner got where it is. Receipts and pinned hashes stay in `reference/`; the frozen GPU-reference scripts stay in `scripts/`.
 
 | Folder | Files | About |
 |---|---:|---|

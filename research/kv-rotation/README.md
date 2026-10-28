@@ -45,10 +45,9 @@ same channel in every token and layer, 50 times the RMS of the others before
 the norm). Layer 0 is also run on the one real input that needs no inference:
 normalized token embeddings of 4,096 random vocabulary entries, as text keys.
 
-Every block of 32 values (temporal key half, spatial key half, low and high
-value half) is stored as Q8 or Q4 (absmax codes against a BF16 scale rounded
-up, as the runner stores them) or rotated first (Q8R, Q4R: `H D x` with the
-runner's signs).
+The study compares Q8 and Q4 with their rotated forms Q8R and Q4R, using
+the [runner's representation](../../docs/ARCHITECTURE.md#kv-cache-formats)
+and absmax codes against a BF16 scale rounded up.
 
 Reported: the relative error of the blocks per kind, and the relative
 error of every head's attention output (FP64 softmax over the dequantized
@@ -129,19 +128,13 @@ queries, with no gain on peaked queries. One layer's output error rises
 ### Real-page agreement
 
 The static study cannot see whether real activations carry outlier
-channels into the keys or values. Its prediction of little gain for
-`q8r` matches the agreement results: rotation lowers the 8-bit cache's KL
-by 11% with FP32 weights and by 4% in fast mode, and flips stay within
-noise. FP32 weights with the Q8 cache flipped 0.77 steps per 1,000 on the
-screening set, and per-channel key scales were flip-neutral in the hill
-climb.
-
-[docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md#token-agreement) has the
-commands; [docs/MODES.md](../../docs/MODES.md#rotated-kv-cache-experimental)
-owns the real-page results and defines the agreement sets.
+channels into the keys or values. See the
+[real-page agreement results](../../docs/MODES.md#rotated-kv-cache-experimental)
+and [reproduction commands](../../docs/DEVELOPMENT.md#token-agreement).
+On the screening set, FP32 weights with the Q8 cache flipped 0.77 steps per
+1,000; per-channel key scales were flip-neutral in the hill climb.
 
 ### Four-bit cache
 
 Four bits cost about 18 times the error of eight (10% of a block, rotated
-or not). On the anchor pages `q4r` multiplies fast mode's flips by 5 and
-its KL by 30.
+or not); the real-page comparison is linked above.
