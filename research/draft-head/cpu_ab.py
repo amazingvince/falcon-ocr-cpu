@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""CPU A/B of speculative drafters with the main binary (`--mode`, default fast;
-the packed file of the mode, the checkpoint for exact).
+"""Compare speculative drafters using the published CPU model catalog.
+
+The mode defaults to fast; each mode loads its encoding-specific packed file.
 
 Arms: no speculation, the n-gram drafter, the trained draft head, and both.
 Each (arm, round) is one `falcon-ocr run` over all pages; rounds alternate
@@ -8,8 +9,9 @@ the arm order. Reports per arm the median over rounds of total and decode
 time, decode ms per token, drafted/accepted counts, and whether every page's
 tokens equal the no-speculation arm's (speculation must never change output).
 
-  python research/draft-head/cpu_ab.py --pages D:/falcon-draft/heldout-english-16.txt \
-      --head D:/falcon-draft/heads/text-twophase.safetensors --out D:/falcon-draft/cpu-ab/heldout16
+  python research/draft-head/cpu_ab.py --pages pages.txt \
+      --head artifacts/packed/falcon-ocr-v1.5-draft-head.safetensors \
+      --out artifacts/draft-ab
 """
 from __future__ import annotations
 
@@ -18,16 +20,20 @@ import json
 import re
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
-BINARY = str(Path("target/release/falcon-ocr.exe").resolve())
+BINARY = str(
+    (Path("target/release") / ("falcon-ocr.exe" if sys.platform == "win32" else "falcon-ocr")).resolve()
+)
 SPEC = re.compile(r"speculation: (\d+) tokens; (\d+) single steps \(([\d.]+) ms\), (\d+) verify steps \(([\d.]+) ms\),\s+"
                   r"drafted (\d+), accepted (\d+)")
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def main(argv: list[str] | None = None) -> int:
+    """Run the requested arms and compare each output with speculation disabled."""
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     ap.add_argument("--pages", type=Path, required=True)
     ap.add_argument("--head", required=True)
     ap.add_argument("--out", type=Path, required=True)
@@ -39,8 +45,8 @@ def main() -> None:
     ap.add_argument("--arm", action="append", default=[],
                     help="name=extra flags (replaces the default arms; `nospec` is always added); "
                          "a first flag `@<exe>` runs that binary instead of target/release")
-    a = ap.parse_args()
-    pages = [p.strip() for p in a.pages.read_text().splitlines() if p.strip()]
+    a = ap.parse_args(argv)
+    pages = [p.strip() for p in a.pages.read_text(encoding="utf-8").splitlines() if p.strip()]
     arms = {
         "nospec": ["--speculate", "0"],
         "ngram": ["--speculate", "4", "--drafter", "ngram"],
@@ -64,8 +70,7 @@ def main() -> None:
             binary = BINARY
             if flags and flags[0].startswith("@"):
                 binary, flags = str(Path(flags[0][1:]).resolve()), flags[1:]
-            model = [] if a.mode == "exact" else ["--model-file", f"artifacts/packed/falcon-ocr-v1.5-{a.mode}.safetensors"]
-            base = [binary, "--mode", a.mode, *model, *threads,
+            base = [binary, "--mode", a.mode, "--model", "artifacts/packed", *threads,
                     "--document-drafts=false", "--tune", "phases=1"]
             cmd = base + flags + ["run", *pages, "--max-new-tokens", a.max_new_tokens]
             out, err = a.out / f"{name}-r{r}.jsonl", a.out / f"{name}-r{r}.stderr"
@@ -100,8 +105,9 @@ def main() -> None:
         print(f"{name:7} total {s['total_s']:7.1f} s  decode {s['decode_s']:7.1f} s  {s['decode_ms_per_token']:.2f} ms/token "
               f"(decode {speed:.2f}x vs nospec)  verify steps {s['verify_steps']:.0f}  drafted {s['drafted']:.0f} "
               f"accepted {s['accepted']:.0f}  identical {s['tokens_identical_to_nospec']}")
-    (a.out / "summary.json").write_text(json.dumps(summary, indent=2))
+    (a.out / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
