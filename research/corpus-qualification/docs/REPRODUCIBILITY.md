@@ -51,8 +51,8 @@ contractions, markup, stop tokens and Unicode whitespace; it passes on both OSes
 directory. It performs no model forward. Its contract retains the original
 inference contract and adds hashes for the original run, frozen decoder binary,
 preserved decoder source, tokenizer assets and replay code. Each derived page
-binds the original record and text. Every result field other than text—including
-IDs, stopping, counts and timings—must remain identical. Timings describe the
+binds the original record and text. Every result field other than text-including
+IDs, stopping, counts and timings-must remain identical. Timings describe the
 original inference and are not measurements of the corrected decoder.
 
 Use `capture_rust_build.py --example redecode_corpus` and invoke that preserved

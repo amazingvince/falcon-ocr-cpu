@@ -94,19 +94,19 @@ Ratio of the rotated to the plain output error per layer (min / median / max):
 | Q8R / Q8 | 0.90 / 0.98 / 1.00 | 0.98 / 1.00 / 1.03 | 0.71 / 0.91 / 1.25 | 0.91 / 0.98 / 1.02 |
 | Q4R / Q4 | 0.91 / 0.99 / 1.01 | 0.98 / 1.01 / 1.03 | 0.91 / 1.01 / 1.05 | 0.93 / 0.99 / 1.02 |
 
-Layer 0 on real token embeddings: every block kind has max/RMS 2.36–2.40;
+Layer 0 on real token embeddings: every block kind has max/RMS 2.36-2.40;
 Q8R/Q8 output error 1.00 (diffuse) and 1.01 (peaked), Q4R/Q4 0.92 and 1.00.
 
 Where the plain blocks are not Gaussian: the temporal key halves of layers
-13 and 16–21 (max/RMS 2.60–2.77 with isotropic inputs, up to 2.96 with the
-massive channel), where rotation cuts the Q8 block error by 12–23% (layer 16:
+13 and 16-21 (max/RMS 2.60-2.77 with isotropic inputs, up to 2.96 with the
+massive channel), where rotation cuts the Q8 block error by 12-23% (layer 16:
 6.39e-3 → 5.30e-3).
 
 The weights show why (`weights` in `results.json`): within a 32-value
 block, the rows of `W_k` differ in norm by up to 4.1× (layer 19; 2.9 and
 3.3 in layers 18 and 20), so a few key channels carry several times the
 others' variance. The rows of `W_v` differ by at most 1.6× and its columns
-look Gaussian (max/RMS 2.36–2.41), so the values have no outlier channels
+look Gaussian (max/RMS 2.36-2.41), so the values have no outlier channels
 with these inputs; the value halves gain nothing.
 
 ## Interpretation
@@ -116,7 +116,7 @@ with these inputs; the value halves gain nothing.
 On this model's weights the cache blocks are nearly Gaussian unless the
 activations make them otherwise. The unit tests find equal error on
 Gaussian blocks, a quarter of the Q8 error with outlier channels at
-10–50× the RMS, and more error than plain Q8 on blocks flatter than
+10-50× the RMS, and more error than plain Q8 on blocks flatter than
 Gaussian: 5.7e-4 against 2.4e-4 worst output error in
 `low_precision_stays_close_to_fp32`.
 

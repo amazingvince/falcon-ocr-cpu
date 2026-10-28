@@ -33,11 +33,11 @@
 | W8 body + BF16 KV (`w8-body-kv-bf16`) | 18/67 | 18/58 | 8,658 / 56,385 | 18.54% → 23.73% | 2 | 2,535 s |
 
 - **Pages where both runs stop at EOS (56 pages).** W8 + Q8 has 2,361 token edits in 54,011 tokens (4.4%). Against ground truth: 17 pages better, 18 worse, 21 unchanged. Micro CER goes 17.71% → 17.20%. The EOS-row increase above (18.54% → 23.73%) comes entirely from the 2 pages that W8 sent into repetition loops (278259ab4fff8ac3, df13ca79dd59b21e).
-- **Weights, not KV format, cause most of the W8 drift.** W8 + Q8 and W8 + BF16 agree with each other on 47/67 pages, and each agrees with FP32 on only 18–19.
+- **Weights, not KV format, cause most of the W8 drift.** W8 + Q8 and W8 + BF16 agree with each other on 47/67 pages, and each agrees with FP32 on only 18-19.
 - **Divergences start at near-ties.**
   - The median first divergence is at token ~116.
   - After the first flip, the page continues as a different but plausible transcription.
-  - FP32 weights with Q8 KV flip far less often, and mostly by 1–7 tokens.
+  - FP32 weights with Q8 KV flip far less often, and mostly by 1-7 tokens.
 - **Noise floor.** Rounding-level differences essentially never flip tokens on this model. GPU FP32 against CPU FP32 is 24/24 pages and 29,205 tokens identical (`artifacts/cpu/linux-v3-gpu-comparison-complete-v1.json`). Q8 KV and W8 perturb logits well above rounding level.
 - **FP32 + fast exp alone** (`reference`, `FALCON_OCR_EXP=fast`, `stage6`) is identical to FP32 on 67/67 pages: 0 edits in 93,249 tokens, the same stops.
   - So the fast exp is token-safe, and the 19 pages that differ under `kv-q8` come from Q8 KV.
@@ -75,13 +75,13 @@
 ## Repetition stop (`--stop-repetition`, opt-in)
 
 - **Rule:** stop once the newest tokens repeat a cycle of p ≤ 128 tokens for at least max(256, 4p) tokens. The finish reason is `repetition`, and output up to that step is unchanged. Implemented in `src/repetition.rs`.
-- **Calibration outputs:** 9 of 67 FP32 pages run to 4,096 tokens, which is 40% of all decode steps. Seven of the nine are exact loops, with periods of 1–38 tokens and periodic tails of 2,675–4,072 tokens. The longest periodic window on any page that ends at EOS is 74 tokens.
+- **Calibration outputs:** 9 of 67 FP32 pages run to 4,096 tokens, which is 40% of all decode steps. Seven of the nine are exact loops, with periods of 1-38 tokens and periodic tails of 2,675-4,072 tokens. The longest periodic window on any page that ends at EOS is 74 tokens.
 - **Offline simulation** (CER uses proportional text truncation):
 
   | Outputs | Pages fired on | Fired on an EOS page | Decode tokens | Micro CER vs truth |
   |---|---:|---:|---:|---|
-  | FP32 | 7 | 0 | −26.2% | 53.6% → 37.5% |
-  | W8 + Q8 | 9 (both W8-induced loops included) | 0 | −29.2% | 56.5% → 37.3% |
+  | FP32 | 7 | 0 | -26.2% | 53.6% → 37.5% |
+  | W8 + Q8 | 9 (both W8-induced loops included) | 0 | -29.2% | 56.5% → 37.3% |
 
 - **End to end:** FP32 on 1306da2487430257 stops at token 294 with `finish_reason: "repetition"`. Those 294 tokens are identical to the FP32 run.
 

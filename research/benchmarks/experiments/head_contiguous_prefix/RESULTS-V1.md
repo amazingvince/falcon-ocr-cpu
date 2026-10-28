@@ -1,7 +1,7 @@
 # Head-contiguous prefix cache: native Windows result
 
 The candidate preserves the checked CPU tensors and outputs, but improves this
-full page by only **0.61–1.40%** against the two controls. It misses the fixed
+full page by only **0.61-1.40%** against the two controls. It misses the fixed
 5% target. Retain the combined compact/fixed64 implementation; this experiment
 is not promoted, and no follow-up layout or prefetch sweep was performed.
 
@@ -20,7 +20,7 @@ literal texts, finish reasons, counts and dimensions match the frozen output.
 | Head-contiguous candidate | 63.0483 s | 10.2629 s | 52.6405 s |
 | Compact control after | 63.4384 s | 10.2148 s | 53.1183 s |
 
-Control drift is **−0.7879%**, within the prospective 5% limit. Candidate
+Control drift is **-0.7879%**, within the prospective 5% limit. Candidate
 page-latency reductions are 1.3980% and 0.6149%; decode reductions are
 1.7026% and 0.8994%. Prefill increases by 0.2182% and 0.4716%.
 Stage medians need not sum to the page median. This small observed improvement
@@ -39,7 +39,7 @@ allocation, filling and release occur inside page execution.
 | Compact after | 2457.031 MiB | 1702.059 MiB |
 
 These are process-lifetime high-water marks, not per-phase peaks or KV payload.
-Candidate peak private commit is 12.50–12.95 MiB higher. Its persistent cache
+Candidate peak private commit is 12.50-12.95 MiB higher. Its persistent cache
 payload is unchanged: `22*4*(1536*P + 1024*Gmax)` bytes, or 1,253,638,144 bytes
 at P=6544/Gmax=4096. The added transient prefill scratch has 12.78125 MiB of
 logical FP32 payload. The process counters do not independently prove that
@@ -97,9 +97,9 @@ experiments. No new library was installed by this cache experiment.
 
 ## Reproducibility
 
-The [prospective plan](../../../../artifacts/benchmarks/head-contiguous-prefix-fullpage-window-v1/plan.json)
+The prospective plan (`../../../../artifacts/benchmarks/head-contiguous-prefix-fullpage-window-v1/plan.json`)
 binds the workload, binaries, qualification and thresholds. The
-[comparison](../../../../artifacts/benchmarks/head-contiguous-prefix-fullpage-window-v1/comparison.json)
+comparison (`../../../../artifacts/benchmarks/head-contiguous-prefix-fullpage-window-v1/comparison.json`)
 records every measured sample, output decision and stage median. Raw reports,
 commands, logs and process start/exit records are alongside it. Functional
 receipts are under `artifacts/diagnostics/head-contiguous-prefix-v1`.

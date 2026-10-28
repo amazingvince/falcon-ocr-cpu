@@ -1,7 +1,7 @@
 # Staged-probability attention: native Windows result
 
 The experiment preserves the checked CPU results and produces the intended
-register-resident PV loop, but makes this full page **2.01–2.04% slower**.
+register-resident PV loop, but makes this full page **2.01-2.04% slower**.
 Retain the existing combined fixed64 compact runner. The candidate misses the
 prospective 5% improvement target and is not promoted.
 
@@ -25,13 +25,13 @@ outputs matched the frozen token vector, literal text, stop, counts and dimensio
 
 Control drift was **0.0208%**. Candidate page latency increased by 2.0361%
 against the first control and 2.0149% against the second. Decode intervals
-increased by 2.63–2.67%. Stage intervals are descriptive, not isolated kernel
+increased by 2.63-2.67%. Stage intervals are descriptive, not isolated kernel
 measurements; their medians need not sum to the page median. This is one page
 and one controlled bracket, not a general performance claim for other CPUs.
 
-The [comparison](../../../../artifacts/benchmarks/attention64-staged-fullpage-window-v1/comparison.json)
+The comparison (`../../../../artifacts/benchmarks/attention64-staged-fullpage-window-v1/comparison.json`)
 records the individual samples, exact-output checks and target decision.
-The [prospective plan](../../../../artifacts/benchmarks/attention64-staged-fullpage-window-v1/plan.json)
+The prospective plan (`../../../../artifacts/benchmarks/attention64-staged-fullpage-window-v1/plan.json`)
 fixes the workload, binaries, 5% target and control-drift limit before execution.
 The [independent saved-result review](../../../../reference/benchmarks/windows-attention64-staged-fullpage-review-v1.json)
 passed 606 checks across 27 unchanged files, reproducing the timing arithmetic,
@@ -83,7 +83,7 @@ reported both outcomes.
 
 Windows reported that the UAC launch was canceled before the launcher started.
 No recorder or profiled model run began, and no profile result is claimed.
-The [canceled-launch receipt](../../../../artifacts/diagnostics/fullpage-compact-profile-uac-attempt-v1.json)
+The canceled-launch receipt (`../../../../artifacts/diagnostics/fullpage-compact-profile-uac-attempt-v1.json`)
 is preserved. The prepared plan is
 `D:/falcon-ocr-rust-builds/profiles/fullpage-compact-fixed64-v1/plan.json`.
 A future launch requires Windows elevation. The separately prepared XML

@@ -13,10 +13,10 @@ Decode (one token at a time) streams every weight and the whole image KV cache o
 
 | Machine class | Read bandwidth | FP32 compute (all cores) | What limits decode | What limits prefill |
 |---|---:|---:|---|---|
-| Ryzen 7950X, DDR5 (measured) | 50–54 GB/s | 1.9–2.3 TFLOP/s | bytes | FMA throughput, exp |
-| Typical laptop (DDR4/LPDDR5) | 30–90 GB/s | 0.3–1 TFLOP/s | bytes | FMA throughput |
-| Intel Xeon/Core with AVX-512 (2 FMA units) | 60–300 GB/s | 2× AVX2 per core | bytes | FMA; 16-lane tiles pay off |
-| Apple M4 / Pro / Max | 120 / 273 / 410–546 GB/s | ~0.6–1.5 TFLOP/s NEON; plus AMX/SME via Accelerate | **dequant compute** at high bandwidth | NEON FMA; matrix unit via Accelerate |
+| Ryzen 7950X, DDR5 (measured) | 50-54 GB/s | 1.9-2.3 TFLOP/s | bytes | FMA throughput, exp |
+| Typical laptop (DDR4/LPDDR5) | 30-90 GB/s | 0.3-1 TFLOP/s | bytes | FMA throughput |
+| Intel Xeon/Core with AVX-512 (2 FMA units) | 60-300 GB/s | 2× AVX2 per core | bytes | FMA; 16-lane tiles pay off |
+| Apple M4 / Pro / Max | 120 / 273 / 410-546 GB/s | ~0.6-1.5 TFLOP/s NEON; plus AMX/SME via Accelerate | **dequant compute** at high bandwidth | NEON FMA; matrix unit via Accelerate |
 | Graviton 3/4 (NEON, SVE, BF16, I8MM) | 300+ GB/s per socket | many cores | dequant compute | FMA; BF16/I8MM |
 
 Consequences:
@@ -77,7 +77,7 @@ Status after the overnight pass of 2026-09-23 (see `research/phase4-hillclimb/at
 
 | Kernel | Phase | AVX2 | AVX-512 | NEON | Portable |
 |---|---|---|---|---|---|
-| FP32 GEMV, 1–8 rows (`kernels::linear_with_simd`) | decode | hand-written (equal to generic) | hand-written | generic | scalar |
+| FP32 GEMV, 1-8 rows (`kernels::linear_with_simd`) | decode | hand-written (equal to generic) | hand-written | generic | scalar |
 | Fused GLU (`linear_glu_with_simd`) | decode | via dot kernel | via dot kernel | via dot kernel | scalar |
 | W8 GEMV and fused GLU (`attempt::quant`) | decode | generic | generic (AVX2 code) | generic | scalar |
 | Compact and expanded decode attention (`kernels/attention64.rs`) | decode | generic | generic loop | generic | generic loop |

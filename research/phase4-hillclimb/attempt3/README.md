@@ -1,4 +1,4 @@
-# Attempt 3 — integrated Falcon-OCR v1.5 CPU experiment
+# Attempt 3 - integrated Falcon-OCR v1.5 CPU experiment
 
 > **Archived 2026-09-24.** This README described the attempt-3 source drop of 2026-09-21 before it had been compiled; the status line below is historical. The code was integrated, measured and reworked into the runner ([RESULTS-V3.md](RESULTS-V3.md), [HILLCLIMB.md](HILLCLIMB.md)); what shipped is in [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md).
 
@@ -48,7 +48,7 @@ All non-reference profiles enable memory hygiene. Names shown are the exact CLI 
 | `w8-all-kv-bf16` | W8G64 | W8G64 | Split/shared BF16 | FP32 |
 | `w8-all-kv-q8` | W8G64 | W8G64 | Split/shared INT8, G32 | FP32 |
 
-“W8-all” means all transformer linears **and the output head**, not every tensor. Input embeddings and the image projector remain protected.
+"W8-all" means all transformer linears **and the output head**, not every tensor. Input embeddings and the image projector remain protected.
 
 **Recommended first combined candidate:** `w8-body-kv-bf16`. This is an experimental choice that protects the vocabulary head, not a claim of established accuracy. Test its constituent changes first. Compare it with `w8-all-kv-bf16` only after observing actual head sensitivity. Keep Q8-prefix profiles as a later, higher-risk storage experiment.
 
@@ -125,7 +125,7 @@ For a single diagnostic run without the bracket:
 .\target\release\falcon-ocr-attempt.exe --model artifacts/model --threads 16 --backend auto --profile w8-body-kv-bf16 bench C:\ocr-pages\journal.png --max-new-tokens 4096 --max-dimension 1536 --warmup 1 --samples 3 --report artifacts/attempt3/combined-one-arm.json
 ```
 
-This quantizes weights once at load when no overlay is supplied. It is not a comparative speed claim on its own. `max-new-tokens=4096` is a deliberate explicit measurement budget, not a change to the released context or a guarantee that every page fits. Prefix plus requested output capacity must fit 16,384. Truncation is reported and blocks a complete-page same-output speed claim. Keep the same budget and processed image size across all compared profiles.
+This quantizes weights once at load when no overlay is supplied. This alone is not a comparative speed claim. `max-new-tokens=4096` is an explicit measurement budget, not a change to the released context or a guarantee that every page fits. Prefix plus requested output capacity must fit 16,384. Truncation is reported and blocks a complete-page same-output speed claim. Keep the same budget and processed image size across all compared profiles.
 
 ## 5. Ablation sequence
 
@@ -139,7 +139,7 @@ Run separate fresh brackets in this order:
 6. **`w8-all` / `w8-all-kv-bf16`**: test the vocabulary head rather than assuming it can be compressed freely.
 7. **`kv-q8` / `w8-all-kv-q8`**: investigate more aggressive prefix storage only after the preceding quality results.
 
-The harness always brackets against `reference`; compare constituent profile reports as well to attribute hygiene/layout versus numeric effects. It does not automatically promote any candidate.
+The harness always brackets against `reference`; compare constituent profile reports to attribute hygiene/layout versus numeric effects. It does not automatically promote candidates.
 
 Example direct invocation for several profiles:
 
@@ -205,7 +205,7 @@ The comparison refuses mismatched identities, dimensions, budgets or inconsisten
 - both finish with EOS, not the token cap;
 - control median drift stays within the predeclared 5% diagnostic threshold.
 
-This is a **conservative same-output speed screen**, not an assertion that every harmless quantized-token difference means bad OCR. Output drift is retained for substantive evaluation. Optional `ground_truth` paths, one per image, in the manifest add exact character edit-distance diagnostics where the computation budget allows. Null CER means the exact calculation was not completed; there is no substituted approximate score. Numeric-string sequence comparison is a diagnostic, not clinical/financial correctness certification or a complete table/formula metric.
+This is a **conservative same-output speed screen**, not a claim that every harmless quantized-token difference means bad OCR. Output drift is retained for substantive evaluation. Optional `ground_truth` paths, one per image, in the manifest add exact character edit-distance diagnostics where the computation budget allows. Null CER means the exact calculation was not completed; no approximate score is substituted. Numeric-string sequence comparison is a diagnostic, not clinical/financial correctness certification or a complete table/formula metric.
 
 Every report remains `quality_qualified: false`, including exact-match results. Qualification requires your held-out long-page corpus, ground-truth OCR metrics, representative scripts/formulas/tables/numerals, and explicitly chosen tolerances. Preserve failures and output lengths. Do not lower resolution, truncate text, relax the historical numerical gate, or cherry-pick samples to make a profile look fast.
 

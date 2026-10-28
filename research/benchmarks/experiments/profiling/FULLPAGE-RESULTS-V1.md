@@ -53,7 +53,7 @@ CPU smoke comparison, with all 17 teacher tokens and text unchanged. See
 `artifacts/diagnostics/attention64-v2/smoke/report.json`. The unprofiled bracket
 is frozen at `artifacts/benchmarks/attention64-fullpage-window-v1/plan.json`,
 SHA256 `38d1fa812e0cf2d78a05355593f6d236fafdc018d5398754e8c9bb0674e63c28`.
-It completed with nine exact measured outputs and a 6.15–9.43% whole-page latency
+It completed with nine exact measured outputs and a 6.15-9.43% whole-page latency
 reduction against the two unchanged controls. See the
 [candidate result](../attention64/RESULTS-V1.md) for measurements and limits.
 

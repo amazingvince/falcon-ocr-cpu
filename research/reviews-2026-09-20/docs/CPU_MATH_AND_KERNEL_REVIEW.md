@@ -1,4 +1,4 @@
-# CPU math and kernel review — 2026-09-20
+# CPU math and kernel review - 2026-09-20
 
 The proposed solution is a model-specific Rust execution engine with separate
 prefill and decode kernels, an explicit attention-cache layout, and replaceable
@@ -11,7 +11,7 @@ a separate accuracy contract. Proposed gains cannot be inferred from static code
 
 Execution update: the probability-staging experiment below has now been built
 and measured. It preserved the checked CPU tensors and page outputs and achieved
-the intended register allocation, but made the tested page 2.01–2.04% slower.
+the intended register allocation, but made the tested page 2.01-2.04% slower.
 Retain the existing compact runner; see the
 [staged-attention results](../../benchmarks/experiments/attention64_staged/RESULTS-V1.md).
 The new compact profile has now been captured and examined. It retains strict
@@ -19,7 +19,7 @@ audit/export failures, but its explicitly attributed samples identify QK and PV
 as the dominant compact-head regions; see the
 [compact profile results](../../benchmarks/experiments/profiling/COMPACT-PROFILE-RESULTS-V1.md).
 The subsequent head-contiguous prefix-cache experiment preserved its checked
-tensors and outputs, but improved the full page by only 0.61–1.40%, missing the
+tensors and outputs, but improved the full page by only 0.61-1.40%, missing the
 5% target. It remains unpromoted; see the
 [cache-layout results](../../benchmarks/experiments/head_contiguous_prefix/RESULTS-V1.md).
 The earlier canceled elevation attempt remains recorded separately.
@@ -40,10 +40,10 @@ latency. The server's BF16 default also differs from our strict FP32 reference.
 ## What the measurements actually establish
 
 The combined compact-cache/fixed64-attention candidate completed a controlled
-single-page bracket at 63.102 seconds, a 6.15–6.40% reduction against fresh compact
+single-page bracket at 63.102 seconds, a 6.15-6.40% reduction against fresh compact
 controls. Later unchanged controls ran around 62.8 seconds. A paired-output GEMV
-experiment improved whole-page time by only 1.16–1.29%; split temporal-key storage
-improved it by 3.23–3.32%, with about 141 MiB lower peak process memory. Both latter
+experiment improved whole-page time by only 1.16-1.29%; split temporal-key storage
+improved it by 3.23-3.32%, with about 141 MiB lower peak process memory. Both latter
 experiments missed the existing 5% speed target. These are separate brackets;
 their percentage improvements cannot be added.
 
@@ -117,11 +117,11 @@ arithmetic intensity is about two FLOPs per four-byte weight, or 0.5 FLOP/byte.
 Prefill reuses each weight across many rows. This is why one choice of library,
 packing, and thread count need not win both phases.
 
-Implementation anchors: [configuration](../../../artifacts/model/config.json),
+Implementation anchors: configuration (`../../../artifacts/model/config.json`),
 [model graph](../../../src/model/), [operators](../../../src/kernels/).
 
 For the measured page, prefix length P=6544 and emitted-token count T=1140.
-Prefill emits the first token, leaving T−1=1139 incremental steps with cache
+Prefill emits the first token, leaving T-1=1139 incremental steps with cache
 lengths P+1 through P+1139. Average attended length is therefore 7114.
 Decode QK and PV together cost approximately
 
@@ -134,7 +134,7 @@ sinks. Together with the linear projections, it is about 1.079 GFLOPs per step.
 These are analytic operation counts, not measured retired instructions.
 
 Long output increases this cost: total incremental attention is proportional to
-`(T−1)P + T(T−1)/2`. The second term grows quadratically with output length.
+`(T-1)P + T(T-1)/2`. The second term grows quadratically with output length.
 An implementation tuned only on 17-token smoke output misses this behavior.
 For prefill, the dense all-pairs attention upper count is about 3.859 TFLOPs at
 P=6544; the hybrid mask removes some work, while padded GEMM tiles can still
@@ -195,7 +195,7 @@ y = sum_j exp(s_j) v_j / (exp(a) + sum_j exp(s_j)).
 ```
 
 The pinned reference instead computes attention over the real values, calculates
-`LSE=logsumexp(s)`, and multiplies by `sigmoid(LSE−a)`. Those forms are
+`LSE=logsumexp(s)`, and multiplies by `sigmoid(LSE-a)`. Those forms are
 algebraically equal but have different FP32 rounding. Retain the reference
 operation boundaries for the faithful implementation.
 
@@ -203,11 +203,11 @@ The existing online softmax already carries bounded per-head state `(m,l,u)`:
 
 ```text
 m_new = max(m, max(scores_in_tile))
-r     = exp(m − m_new)                         # 0 for the initial empty state
-l_new = r*l + sum_j exp(s_j − m_new)
-u_new = r*u + sum_j exp(s_j − m_new)*v_j
+r     = exp(m - m_new)                         # 0 for the initial empty state
+l_new = r*l + sum_j exp(s_j - m_new)
+u_new = r*u + sum_j exp(s_j - m_new)*v_j
 LSE   = m + log(l)
-y     = (u/l) * sigmoid(LSE − a)
+y     = (u/l) * sigmoid(LSE - a)
 ```
 
 It avoids a sequence-squared score allocation today. The IO-aware tiling idea
@@ -232,7 +232,7 @@ reduction order. Classify that as an arithmetic change.
 The FFN also needs its exact graph: split *interleaved* gate/up outputs, compute
 `relu(gate)^2 * up`, then multiply by W2 and add the residual. It is not a SiLU
 gate. Input and Q/K RMSNorm use FP32 epsilon in this runner; final learned
-normalization uses the configuration's 1e−5. Substituting a library's default
+normalization uses the configuration's 1e-5. Substituting a library's default
 epsilon or a generic activation would change the model.
 
 ## Concrete attention experiments
@@ -245,8 +245,8 @@ eight output stores for each key. This is 256 output bytes read and 256 written
 per key at the instruction level, mostly expected to be hot data. It is not
 evidence of 512 extra DRAM bytes per key. The PDB's function extent and direct-call
 symbols identify the actual function; objdump's nearest-export label is unrelated.
-See the [preserved assembly](../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/head-disassembly.txt)
-and [symbol receipt](../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/symbol-receipt.json).
+See the preserved assembly (`../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/head-disassembly.txt`)
+and symbol receipt (`../../../artifacts/diagnostics/attention64-compact-v1/benchmark-build/compiled-compact-head/symbol-receipt.json`).
 
 After finding the tile maximum and rescaling, overwrite its existing 128-logit
 buffer with the same scalar `expf` results, adding probabilities to the denominator
@@ -451,7 +451,7 @@ can pin threads, while [`hwlocality`](https://docs.rs/hwlocality/latest/hwlocali
 provides richer topology/binding facilities with native hwloc integration.
 Logical CPU IDs must not be assumed to encode physical core/CCD placement.
 
-Image preparation was about 54–61 milliseconds in the existing full-page
+Image preparation was about 54-61 milliseconds in the existing full-page
 measurement, compared with tens of seconds of inference. Optimizing it cannot
 produce a 5% warm-page improvement on that workload. Keep the exact Pillow-like
 resize contract; use fast image crates only after checking pixel rounding,
@@ -478,7 +478,7 @@ can be evaluated at a much smaller boundary.
 
 1. Retain the compact/fixed64 control. The profile is captured with explicit
    audit/export limitations. Scalar-probability staging was about 2% slower;
-   head-contiguous prefix storage improved the page by only 0.61–1.40%.
+   head-contiguous prefix storage improved the page by only 0.61-1.40%.
    Both preserved their checked outputs, but neither met the promotion target.
 2. Compare a short matrix-backend shortlist on actual operands/shapes, then
    integrate one winner in isolation. Keep prefill and B1 choices independent;

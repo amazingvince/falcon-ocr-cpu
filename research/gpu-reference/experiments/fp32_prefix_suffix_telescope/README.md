@@ -14,10 +14,10 @@ These are fixed-order conditional substitutions through a nonlinear suffix. They
 
 | Order | Branch | Complete input | Exact controls |
 |---|---|---|---|
-| 1 | `control_gpu` | Original GPU embedding | Input, Q/K/V/attention/hidden for blocks0–8, V9: 47 arrays |
+| 1 | `control_gpu` | Original GPU embedding | Input, Q/K/V/attention/hidden for blocks0-8, V9: 47 arrays |
 | 2 | `E8` | Original CPU layer7 hidden | All17 accepted first-crossover stages |
 | 3 | `E7` | Original CPU layer6 hidden | Joined accepted layer7 and downstream captures: 30 arrays |
-| 4–10 | `E0` through `E6` | Corresponding saved CPU boundary | New input and V9 only |
+| 4-10 | `E0` through `E6` | Corresponding saved CPU boundary | New input and V9 only |
 | 11 | `E9` | Original CPU layer8 hidden | New input and V9 only |
 
 There are exactly 54 full native transformer block calls and 11 complete native layer9 pre-QKV calls. All three controls must pass before any of the eight new endpoints run. Failure stops the attempt, retains partial tensors and a rejected report, and permits no retry, alternative branch, cropped input, algorithm variant or tolerance adjustment. Final capture is 110 arrays, including 94 exact control arrays and 11 full entry copies.

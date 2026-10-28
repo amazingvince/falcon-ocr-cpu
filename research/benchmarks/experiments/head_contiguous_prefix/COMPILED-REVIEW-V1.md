@@ -1,9 +1,9 @@
 # Compiled head-contiguous prefix review
 
 Manual review of one saved function found the intended prefix K/V address
-change and preserved fixed64 arithmetic. This is compiled-code evidence, not a
-speed claim or a proof about the entire binary. No build, model, test, symbol
-rescan or benchmark was run for this review.
+change and preserved fixed64 arithmetic. This is compiled-code evidence, neither
+a speed claim nor a proof about the entire binary. No build, model, test, symbol
+rescan or benchmark ran for this review.
 
 The exact PDB procedure is
 `falcon_ocr::kernels::head_prefix64::prefix_head`, section 1, decimal offset
@@ -88,10 +88,10 @@ not dot/PV accumulator spills. Remaining stack slots hold arguments,
 counters and address state. The output AXPY stores target the output buffer.
 No additional floating-point accumulator spill is visible in this function.
 
-The saved listing lacks raw instruction bytes, so complete byte-by-byte
-decode coverage remains unverified. The claim is limited to the resolved
-function and inspected dataflow. Memory-stall cause, hardware traffic,
-latency and overall performance cannot be inferred from these instructions.
+The listing lacks raw instruction bytes, leaving complete byte-by-byte decode
+coverage unverified. Claims cover only the resolved function and inspected
+dataflow; the instructions establish no memory-stall cause, hardware traffic,
+latency or overall performance.
 
 ## Evidence
 
@@ -103,6 +103,6 @@ latency and overall performance cannot be inferred from these instructions.
 
 The inspector's first output-file digest was collected after writing, leaving
 a save-to-final-hash provenance window. This manual review binds the current
-saved text explicitly; it does not retroactively eliminate that window or
-claim that the inspector originally analyzed immutable output files. A
-separately preserved rerender check may supply additional evidence.
+saved text without closing that earlier window or establishing that the
+inspector analyzed immutable output files. A separately preserved rerender
+check may supply additional evidence.

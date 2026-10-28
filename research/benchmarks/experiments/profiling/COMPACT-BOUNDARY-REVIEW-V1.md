@@ -1,4 +1,4 @@
-# Compact profile boundary review — 2026-09-20
+# Compact profile boundary review - 2026-09-20
 
 The strict complete-profile audit remains **failed**. The bounded saved lookup
 reconciles exactly one out-of-process-lifetime CPU sample, with an entirely

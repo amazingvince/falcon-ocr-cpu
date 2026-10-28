@@ -94,7 +94,7 @@ trace, allocation and full-page parity gates before the controlled timing
 bracket. No speed gain is inferred from this profile.
 
 The staged-probability/register-PV candidate remains rejected: it was
-2.01–2.04% slower despite achieving the intended assembly and checked parity.
+2.01-2.04% slower despite achieving the intended assembly and checked parity.
 Neither this profile nor a plausible cache hypothesis overrides that result.
 Linear-library comparisons remain useful subsequent work. Vector-exp changes
 and quantization add numerical changes and remain separate experiments.

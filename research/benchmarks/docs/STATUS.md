@@ -40,7 +40,7 @@ and passes its scoped arithmetic checks; timing and full-model qualification
 remain pending.
 
 The head-contiguous prefix experiment completed with all nine full-page outputs
-exact, but its 0.61–1.40% gain missed the 5% target. It is not promoted. See
+exact, but its 0.61-1.40% gain missed the 5% target. It is not promoted. See
 `research/benchmarks/experiments/head_contiguous_prefix/RESULTS-V1.md`. Matrix-kernel comparisons
 are now the main performance priority, alongside the continuing numerical work.
 
@@ -66,7 +66,7 @@ parseable export. These limits are explicit in
 specializes fixed-size AVX2 attention without changing its arithmetic order;
 six operator checks and all 1,904 saved smoke tensors now match bit for bit.
 Its completed full-page control/candidate/control bracket measured 68.444 s
-against 75.570/72.931 s controls: 6.15–9.43% less whole-page latency, with all
+against 75.570/72.931 s controls: 6.15-9.43% less whole-page latency, with all
 nine measured outputs exact. Whole-page control drift passed at 3.49%; stage
 timings varied more, so their precise gains remain less certain. See
 `research/benchmarks/experiments/attention64/RESULTS-V1.md`. This isolated candidate is not promoted
@@ -78,7 +78,7 @@ compact-cache path. Its source retains the original prefix/generated indexing
 and arithmetic. Eleven operator checks and the byte-identical 1,904-tensor
 compact smoke passed; eight warmed decode intervals allocated zero heap memory.
 The fresh compact control/candidate/control bracket completed at 63.102 s per
-page versus 67.414/67.239 s compact controls: a further 6.15–6.40% reduction,
+page versus 67.414/67.239 s compact controls: a further 6.15-6.40% reduction,
 with all nine measured outputs exact and 0.259% control drift. See
 `research/benchmarks/experiments/attention64_compact/RESULTS-V1.md`. This proves an added gain over
 compact caches on this page; it does not establish additive historical gains
@@ -87,7 +87,7 @@ qualification: eleven operators, all 1,904 same-platform smoke tensors, 17 teach
 IDs/text/stopping behavior and eight zero-allocation decode intervals. See
 `reference/linux-attention64-compact-functional-v1.json`. A fresh three-process
 compact mixed-B2 comparison completed for the frozen sparse/table pair:
-128.912 s per pair versus 142.475/141.837 s controls, a 9.11–9.52% reduction
+128.912 s per pair versus 142.475/141.837 s controls, a 9.11-9.52% reduction
 with 0.448% control drift. All 18 measured request outputs exactly match the
 pinned GPU outputs (6 and 2,280 tokens per pair); the independent saved-result
 review passed in `reference/benchmarks/windows-attention64-compact-mixed-b2-review-v1.json`.
@@ -96,7 +96,7 @@ sustained B2/B4/B8 throughput. The interrupted earlier matrix remains preserved.
 In parallel, the bounded layer-7
 numerical crossover completed with all ten original controls exact. At the
 preselected hidden coordinate [112,249], the incoming-state term is +0.00233459
-and the same-entry engine term is −0.00003815; they partially cancel. This
+and the same-entry engine term is -0.00003815; they partially cancel. This
 supports an earlier origin for that coordinate's difference, without identifying
 a faulty operator or extending the attribution to every row. See
 `reference/fp32-crossover-layer7-decomposition-v1.md`; the independent saved-result
@@ -113,7 +113,7 @@ All seven operators (including 73,728 real-input outputs), the byte-identical
 code confirms shared input loads, independent accumulators and no hot-loop
 calls or spills. The independently reviewed full-page bracket completed at
 62.041 s versus 62.849/62.766 s controls, with all nine outputs exact and 0.132%
-control drift. Its 1.16–1.29% latency reduction misses the frozen 5% target, so
+control drift. Its 1.16-1.29% latency reduction misses the frozen 5% target, so
 the candidate remains unpromoted and further qualification is not queued.
 See `research/benchmarks/experiments/gemv_pair/RESULTS-V1.md`.
 
@@ -124,7 +124,7 @@ The fresh Windows build passed thirteen operator/cache tests, all 1,904 canonica
 and 2,144 mixed tensor hashes, seventeen teacher decisions, independent free
 outputs and two zero-allocation decode intervals. Its independently reviewed
 single-page bracket measured 60.730 s versus 62.818/62.758 s controls, with all
-nine outputs exact and 0.096% control drift. The 3.23–3.32% gain misses the 5%
+nine outputs exact and 0.096% control drift. The 3.23-3.32% gain misses the 5%
 target, so this candidate remains unpromoted. Its analytic 140.594 MiB reserved
 KV saving is a separate benefit. A test-import compile failure and its source
 snapshot were preserved before the corrected fresh build.
@@ -134,7 +134,7 @@ The numerical follow-up returned to the original layer-9 V failure through a
 controlled downstream continuation. That diagnostic
 completed with all 17 fresh control stages exact and all 34 new payloads checked.
 At V[112,14,2], the original +0.00662231 difference decomposes into downstream
-engine +0.00003815, propagated layer-7 engine −0.00004578 and earlier-state
+engine +0.00003815, propagated layer-7 engine -0.00004578 and earlier-state
 +0.00662994. The earlier-state term alone still exceeds the unchanged bound;
 no numerical gate has closed. See
 `reference/fp32-crossover-downstream-completion-v1.json`; the independent
@@ -263,7 +263,7 @@ also passed.
   traces and outputs on Windows and WSL, including live-batch compaction and
   warmed zero-allocation decode. Packing is shared once per Model and adds
   835.5 MiB. Repeated native Windows small-fixture runs lower batch2/4/8 latency
-  by 18%, 28–30% and 21–24%, with unchanged single-page latency within variation.
+  by 18%, 28-30% and 21-24%, with unchanged single-page latency within variation.
   Full-page qualification remains pending; Unpacked stays the default.
 - The expanded corpus exposed punctuation-space mismatches despite identical
   generated IDs. The pinned Transformers 5.14.1 BPE backend ignores the model's
@@ -385,8 +385,8 @@ under the unchanged policy; see `reference/w2-observed-fullgraph-intervention-v1
 
 The later [same-binary Windows comparison](PERFORMANCE.md) pauses other project
 CPU/GPU jobs and brackets candidates with repeated controls. On the small fixture,
-joint decoding improves group-8 throughput by 1.93–1.94x; single-page latency is
-1.2–2.5% slower. Control drift is at most 1.28%, and every output ID matches.
+joint decoding improves group-8 throughput by 1.93-1.94x; single-page latency is
+1.2-2.5% slower. Control drift is at most 1.28%, and every output ID matches.
 Full-page/mixed-length performance qualification is still pending. Compact cache
 batch speed gains are below 5% here, so Expanded remains the default. *[superseded 2026-09-23: see the note above]*
 
@@ -457,8 +457,8 @@ AVX-512 as the default. *[superseded 2026-09-24: `--backend auto` uses 16-lane A
   and end-to-end benchmark/memory reporting. A reproducible baseline harness and
   a narrow allocation-free decode test now exist. The first six-process full-page
   batch-one bracket now passes output identity and control stability checks.
-  Compact caches take 67.829 s versus 74.310–74.876 s for expanded controls, an
-  8.7–9.4% reduction, and lower process peak resident memory from 2.974 to 2.576 GB.
+  Compact caches take 67.829 s versus 74.310-74.876 s for expanded controls, an
+  8.7-9.4% reduction, and lower process peak resident memory from 2.974 to 2.576 GB.
   Packed weights show no single-row gain; their intended batch compute path is
   inactive at batch one. Larger and mixed workloads remain required, and no
   default is promoted. See `reference/benchmarks/windows-fullpages-b1-v1.json`

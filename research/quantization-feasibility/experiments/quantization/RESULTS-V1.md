@@ -30,7 +30,7 @@ weight compression from FP32 accumulator rounding. Aggregation weights by signal
 energy, so these percentages are not average per-case errors.
 
 Per-case variability is substantial: sampled W4 group-64 W13 relative L2 spans
-5.76–28.05%, for example. This limited fixture cannot establish accuracy after
+5.76-28.05%, for example. This limited fixture cannot establish accuracy after
 gating/residuals or across generated tokens. W8 serves as the requested control;
 these results select **no group size, layer policy, clipping rule or quality
 budget**. The fixture remains neither calibration data nor held-out quality

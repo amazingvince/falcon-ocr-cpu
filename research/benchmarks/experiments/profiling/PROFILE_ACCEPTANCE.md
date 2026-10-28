@@ -30,7 +30,7 @@ For a usable complete sampled profile:
   Only attribute resolved evidence to specific kernels. Inlining and generic
   shared kernel symbols may limit attribution.
 
-The capture plan's earlier descriptive phrase “zero event/sample/stack losses”
+The capture plan's earlier descriptive phrase "zero event/sample/stack losses"
 does not require an unattainable claim of perfect stack collection. The explicit
 99% attached-stack criterion above is the prospective analysis rule. Missing
 coverage stays visible and is never relabeled as model agreement.

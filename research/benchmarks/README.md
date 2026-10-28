@@ -113,9 +113,9 @@ Benchmark harnesses and the performance evidence before the phase-4 work.
 | [experiments/matrix_backend_faer/candidate.rs](experiments/matrix_backend_faer/candidate.rs) | Isolated faer 0.24.4 FP32 adapter. No production integration | history |
 | [experiments/matrix_backend_faer/capture.py](experiments/matrix_backend_faer/capture.py) | Prepare and build one isolated faer/control operator probe; never run it | history |
 | [experiments/matrix_backend_faer/main.rs](experiments/matrix_backend_faer/main.rs) | Isolated actual-operands matrix comparison. No Model/Runner or GPU work | history |
-| [experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md](experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md) | Compact profile boundary review — 2026-09-20 | history |
+| [experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md](experiments/profiling/COMPACT-BOUNDARY-REVIEW-V1.md) | Compact profile boundary review - 2026-09-20 | history |
 | [experiments/profiling/COMPACT-IP-HISTOGRAM-V1.md](experiments/profiling/COMPACT-IP-HISTOGRAM-V1.md) | Retained compact-head instruction-address diagnostic | history |
-| [experiments/profiling/COMPACT-IP-RESULTS-V1.md](experiments/profiling/COMPACT-IP-RESULTS-V1.md) | Compact-head instruction samples — 2026-09-20 | history |
+| [experiments/profiling/COMPACT-IP-RESULTS-V1.md](experiments/profiling/COMPACT-IP-RESULTS-V1.md) | Compact-head instruction samples - 2026-09-20 | history |
 | [experiments/profiling/COMPACT-PROFILE-RESULTS-V1.md](experiments/profiling/COMPACT-PROFILE-RESULTS-V1.md) | Current compact runner: profile findings | history |
 | [experiments/profiling/COMPACT_PROFILE_ACCEPTANCE.md](experiments/profiling/COMPACT_PROFILE_ACCEPTANCE.md) | Prospective compact profile acceptance v1 | history |
 | [experiments/profiling/COMPACT_PROFILE_README.md](experiments/profiling/COMPACT_PROFILE_README.md) | Combined fixed64 compact B1 profile v1 | history |

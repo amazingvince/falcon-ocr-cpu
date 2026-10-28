@@ -3,7 +3,7 @@
 Recommend one copied-project candidate combining the already validated
 prefix-temporal storage representation with a direct two-pointer AVX2 dot64.
 Start from the frozen **combined fixed64 attention** archive, without the
-paired-GEMV candidate: the latter's 1.16–1.29% B1 improvement did not meet its
+paired-GEMV candidate: the latter's 1.16-1.29% B1 improvement did not meet its
 frozen 5% target. This assessment describes the final explicit-layout route;
 the source-only implementation is in `experiments/attention64_temporal`.
 This note is not execution or performance evidence.
@@ -140,7 +140,7 @@ files and two added files above, bind the complete source archive, and keep all
 other sources/flags fixed. `benchmark_temporal_candidate.py` implements this
 explicit CLI/report mapping and exact source allowlist as a new protocol.
 
-Use the existing frozen prose input, FP32 AVX2, 16 threads, dimensions 64–1536,
+Use the existing frozen prose input, FP32 AVX2, 16 threads, dimensions 64-1536,
 cap 4,096, unpacked weights, B1, two warmups and three measured repetitions in
 control/candidate/control order. Exact all-nine 1,140-ID/text/EOS/dimension
 outputs, <=5% absolute control drift and >=5% improvement against both controls

@@ -23,9 +23,9 @@ are checked again at the end. It leaves historical startup-attestation gaps
 explicit and stores no source/prediction text or token sequences in the report.
 
 Complete literal prediction identity proves zero differential for every
-deterministic fixed quality metric applied to identical ground truth and
-evaluation settings. This satisfies both differential budgets without choosing
-a primary metric after seeing results. It does not establish high absolute
+deterministic fixed quality metric with identical ground truth and evaluation
+settings. This satisfies both differential budgets without choosing a primary
+metric after seeing results. It does not establish high absolute
 accuracy, numerical tensor parity, complete domain coverage, or performance.
 Different valid token sequences can still yield identical text: token parity
 and this text-quality proof remain separate.
@@ -87,7 +87,7 @@ tokens. Nineteen outputs stop at the explicit 4,096-token cap and remain include
 
 Insertion errors can exceed the reference length, so these rates are not capped
 at 100%. Page means give short references the same weight as long ones. These
-assembled-text diagnostics preserve markup and are distinct from the official
+assembled-text diagnostics preserve markup and differ from the official
 matched text/formula/table/reading-order metrics reported in
 [EVALUATION.md](EVALUATION.md). The measured accuracy limitations belong to both
 implementations; exact output parity is not a claim that the model reads every

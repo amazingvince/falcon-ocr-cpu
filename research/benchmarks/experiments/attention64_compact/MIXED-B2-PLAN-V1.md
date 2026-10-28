@@ -8,7 +8,7 @@ preserved and is not resumed.
 
 Three fresh processes run control, candidate, control. Each uses two unmeasured
 warmups and three measured recognitions, FP32 AVX2, 16 threads, joint batch two,
-unpacked weights, dimensions 64–1536 and a 4,096-token output cap. The limit is
+unpacked weights, dimensions 64-1536 and a 4,096-token output cap. The limit is
 1,800 seconds per process. Exact GPU output signatures are frozen before launch:
 6 and 2,280 IDs, both EOS, plus literal text and prefix counts. Prepared dimensions
 come from the frozen workload and must match every CPU output; the historical
@@ -29,7 +29,7 @@ window. Normal desktop services may remain and are recorded in the launch
 attestation. Input/model/source identity checks run outside that window. A
 failed or partial bracket is preserved; rerunning requires a fresh plan.
 
-- [Frozen plan](../../../../artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/plan.json)
+- Frozen plan (`../../../../artifacts/benchmarks/attention64-compact-mixed-b2-window-v1/plan.json`)
 - [Execution helper](../profiling/benchmark_mixed_compact_candidate.py)
 - [Protocol regression checks](../profiling/test_benchmark_mixed_compact_candidate.py)
 - [Independent source review](../../../../reference/benchmarks/attention64-compact-mixed-b2-source-review-v1.json)

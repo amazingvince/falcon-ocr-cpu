@@ -1,4 +1,4 @@
-# Compact-head instruction samples — 2026-09-20
+# Compact-head instruction samples - 2026-09-20
 
 The saved histogram places most compact-head leaf samples in **QK dataflow
 (56.10%)** and **PV update blocks (42.85%)**. This supports investigating the
@@ -56,14 +56,14 @@ in these leaf-region totals.
 
 | RVA | Samples | Instruction / operand role |
 | --- | ---: | --- |
-| `b17c5` | 294,962 | `vfmadd132ps 0x20(%rax), %ymm9, %ymm3` — QK, K memory operand |
-| `b1a42` | 184,681 | `vfmadd213ps (%rbx), %ymm0, %ymm1` — PV, output accumulator memory operand |
-| `b1810` | 135,810 | `vmovups 0xe0(%r14,%rsi,4), %ymm4` — Q-vector load |
-| `b1ac1` | 102,539 | `vfmadd213ps 0xc0(%rbx), %ymm0, %ymm1` — PV accumulator operand |
-| `b17d1` | 98,400 | `vfmadd132ps 0x60(%rax), %ymm9, %ymm5` — QK K operand |
-| `b1a64` | 75,685 | `vfmadd213ps 0x40(%rbx), %ymm0, %ymm1` — PV accumulator operand |
-| `b17ea` | 65,346 | `vmovups 0xa0(%r14,%rsi,4), %ymm2` — Q-vector load |
-| `b1a8b` | 60,454 | `vfmadd213ps 0x80(%rbx), %ymm0, %ymm1` — PV accumulator operand |
+| `b17c5` | 294,962 | `vfmadd132ps 0x20(%rax), %ymm9, %ymm3` - QK, K memory operand |
+| `b1a42` | 184,681 | `vfmadd213ps (%rbx), %ymm0, %ymm1` - PV, output accumulator memory operand |
+| `b1810` | 135,810 | `vmovups 0xe0(%r14,%rsi,4), %ymm4` - Q-vector load |
+| `b1ac1` | 102,539 | `vfmadd213ps 0xc0(%rbx), %ymm0, %ymm1` - PV accumulator operand |
+| `b17d1` | 98,400 | `vfmadd132ps 0x60(%rax), %ymm9, %ymm5` - QK K operand |
+| `b1a64` | 75,685 | `vfmadd213ps 0x40(%rbx), %ymm0, %ymm1` - PV accumulator operand |
+| `b17ea` | 65,346 | `vmovups 0xa0(%r14,%rsi,4), %ymm2` - Q-vector load |
+| `b1a8b` | 60,454 | `vfmadd213ps 0x80(%rbx), %ymm0, %ymm1` - PV accumulator operand |
 
 The prominent Q-vector loads are an especially useful warning against reading
 sampled memory operands as measured cache misses: the same query is reused
