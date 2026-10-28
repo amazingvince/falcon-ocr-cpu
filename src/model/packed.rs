@@ -1,4 +1,4 @@
-//! Kernel-ready model files: writing a quantized model with its screened head
+//! Kernel-ready model files: writing a model with its screened head
 //! and mapping one back in place.
 use std::{
     collections::HashMap,
@@ -17,12 +17,13 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     config::{ModelConfig, WEIGHTS_SHA256},
-    quant::linear::QuantLinear,
+    quant::{Profile, Weights, linear::QuantLinear},
 };
 
 use super::{Layer, Model, Store, Weight, rope::temporal_factors};
 
-/// Format tag of kernel-ready model files.
+/// Format tag of kernel-ready files with quantized bodies and no exception
+/// columns.
 pub const PACKED_FORMAT: &str = "falcon-ocr-kernel-v1";
 /// Format tag of kernel-ready files whose body has exception columns (an
 /// overlay of format `falcon-ocr-attempt3-w8g64-v2`): [`PACKED_FORMAT`] plus
@@ -32,22 +33,31 @@ pub const PACKED_FORMAT: &str = "falcon-ocr-kernel-v1";
 /// that predate exception columns refuse it instead of computing with the
 /// columns zeroed; files without exception columns keep [`PACKED_FORMAT`].
 pub const PACKED_FORMAT_EXCEPTIONS: &str = "falcon-ocr-kernel-v2";
-/// The body matrices of a layer, in file order.
+/// Format tag of kernel-ready files with unquantized FP32 body matrices.
+pub const PACKED_FORMAT_FP32: &str = "falcon-ocr-kernel-fp32-v1";
+/// The body matrices of a layer, in writer and digest order.
 pub(super) const BODY: [&str; 4] = ["attention.wqkv", "attention.wo", "feed_forward.w13", "feed_forward.w2"];
 /// Tensor suffixes of a body matrix's exception columns and values.
 const EXCEPTION_SUFFIXES: [&str; 2] = [".__exc_cols", ".__exc_vals"];
 
 impl Model {
-    /// Write a kernel-ready model file: every tensor this quantized model
+    /// Write a kernel-ready model file: every tensor this model
     /// reads, in the layout its kernels use (FP32 embedding, head, norms,
-    /// projector and sinks; 8/16-bit body codes with FP32 scales and any
-    /// exception columns; the INT8 head screen and its bound constants), so
-    /// `load_packed` maps it with no conversion. Needs a quantized body and a
-    /// prepared screened head. A body with exception columns is written as
-    /// [`PACKED_FORMAT_EXCEPTIONS`], any other exactly as before.
+    /// projector and sinks; FP32 body matrices or 8/16-bit codes with FP32
+    /// scales and any exception columns; the INT8 head screen and its bound
+    /// constants), so `load_packed` maps it with no conversion. Needs a prepared
+    /// screened head. FP32 bodies use [`PACKED_FORMAT_FP32`]; quantized bodies
+    /// use [`PACKED_FORMAT_EXCEPTIONS`] with exception columns or
+    /// [`PACKED_FORMAT`] without them.
     pub fn write_packed(&self, path: impl AsRef<Path>) -> Result<()> {
         let profile = self.profile;
-        ensure!(profile.quantizes_body(), "packing needs a quantized body and FP32 head");
+        let format = if profile.weights == Weights::F32 {
+            PackedFormat::Fp32
+        } else {
+            PackedFormat::Quantized {
+                exceptions: self.exception_bytes() > 0,
+            }
+        };
         let screen = self
             .screened
             .get()
@@ -81,6 +91,7 @@ impl Model {
             fp32(&self.golden),
         ));
         let mut bits = None;
+        let shapes = body_shapes(c);
         for (i, layer) in self.layers.iter().enumerate() {
             tensors.push((
                 format!("layers.{i}.attention.sinks"),
@@ -88,7 +99,20 @@ impl Model {
                 vec![c.n_heads],
                 fp32(&layer.sinks),
             ));
-            for (name, weight) in BODY.iter().zip([&layer.qkv, &layer.wo, &layer.w13, &layer.w2]) {
+            for ((name, weight), &(out, input)) in BODY
+                .iter()
+                .zip([&layer.qkv, &layer.wo, &layer.w13, &layer.w2])
+                .zip(&shapes)
+            {
+                if format == PackedFormat::Fp32 {
+                    tensors.push((
+                        format!("layers.{i}.{name}.weight"),
+                        Dtype::F32,
+                        vec![out, input],
+                        fp32(weight),
+                    ));
+                    continue;
+                }
                 let q = weight
                     .quantized
                     .as_ref()
@@ -100,7 +124,6 @@ impl Model {
                 tensors.extend(matrix_tensors(&format!("layers.{i}.{name}"), q));
             }
         }
-        let exceptions = self.exception_bytes() > 0;
         let (screen_codes, screen_scales, weight_abs_max, kappa) = screen.raw_parts();
         tensors.push((
             "output.__screen_codes".into(),
@@ -115,15 +138,17 @@ impl Model {
             screen_scales,
         ));
         let mut metadata = HashMap::new();
-        let format = if exceptions {
-            PACKED_FORMAT_EXCEPTIONS
-        } else {
-            PACKED_FORMAT
-        };
-        metadata.insert("format".to_owned(), format.to_owned());
+        metadata.insert("format".to_owned(), format.tag().to_owned());
         metadata.insert("profile".to_owned(), profile.label().to_owned());
-        metadata.insert("weight_bits".to_owned(), bits.unwrap_or(8).to_string());
-        metadata.insert("group_size".to_owned(), "64".to_owned());
+        let weight_bits = if format == PackedFormat::Fp32 {
+            32
+        } else {
+            bits.unwrap_or(8)
+        };
+        metadata.insert("weight_bits".to_owned(), weight_bits.to_string());
+        if matches!(format, PackedFormat::Quantized { .. }) {
+            metadata.insert("group_size".to_owned(), "64".to_owned());
+        }
         metadata.insert("source_sha256".to_owned(), self.weights_sha256.clone());
         metadata.insert("model_revision".to_owned(), crate::config::MODEL_REVISION.to_owned());
         metadata.insert("config".to_owned(), serde_json::to_string(&self.config)?);
@@ -157,14 +182,8 @@ impl Model {
     pub fn packed_profile(path: impl AsRef<Path>) -> Result<crate::quant::Profile> {
         let path = path.as_ref();
         let meta = packed_metadata(path).with_context(|| format!("read {}", path.display()))?;
-        ensure!(
-            packed_format(&meta).is_some(),
-            "{} is not a {PACKED_FORMAT} or {PACKED_FORMAT_EXCEPTIONS} file",
-            path.display()
-        );
-        let profile = meta.get("profile").context("packed metadata profile missing")?;
-        <crate::quant::Profile as clap::ValueEnum>::from_str(profile, false)
-            .map_err(|e| anyhow::anyhow!("packed profile: {e}"))
+        let format = packed_format(&meta).with_context(|| format!("{} is not a kernel-ready file", path.display()))?;
+        packed_profile(&meta, format)
     }
 
     /// Map a kernel-ready model file written by [`Model::write_packed`] and
@@ -184,8 +203,7 @@ impl Model {
                 .map(String::as_str)
                 .with_context(|| format!("packed metadata {key} missing"))
         };
-        let exceptions =
-            packed_format(meta).with_context(|| format!("not a {PACKED_FORMAT} or {PACKED_FORMAT_EXCEPTIONS} file"))?;
+        let format = packed_format(meta).context("not a kernel-ready file")?;
         ensure!(
             get("source_sha256")? == WEIGHTS_SHA256,
             "packed file comes from another checkpoint"
@@ -196,13 +214,9 @@ impl Model {
         );
         let config: ModelConfig = serde_json::from_str(get("config")?)?;
         config.validate()?;
-        let profile = <crate::quant::Profile as clap::ValueEnum>::from_str(get("profile")?, false)
-            .map_err(|e| anyhow::anyhow!("packed profile: {e}"))?;
-        let bits: u32 = get("weight_bits")?.parse()?;
-        ensure!(
-            bits == profile.weight_bits() && get("group_size")? == "64",
-            "packed weight format"
-        );
+        let profile = packed_profile(meta, format)?;
+        validate_weight_format(meta, format, profile)?;
+        let bits = profile.weight_bits();
         let constant = |key: &str| -> Result<f32> { Ok(f32::from_bits(u32::from_str_radix(get(key)?, 16)?)) };
         let find = |name: &str, dtype: Dtype, shape: &[usize]| tensor_range(&tensors, &map, name, dtype, shape);
         let fp32 = |name: &str, shape: &[usize]| -> Result<Weight> {
@@ -216,24 +230,17 @@ impl Model {
         let norm = fp32("norm.weight", &[c.dim])?;
         let output = fp32("output.weight", &[c.vocab_size, c.dim])?;
         let golden = fp32("freqs_cis_golden", &[c.n_heads, c.head_dim / 4, 2])?;
-        let shapes = [
-            (c.query_dim() + 2 * c.kv_dim(), c.dim),
-            (c.dim, c.query_dim()),
-            (2 * c.ffn_dim, c.dim),
-            (c.dim, c.ffn_dim),
-        ];
+        let shapes = body_shapes(c);
         let mut layers = Vec::with_capacity(c.n_layers);
         for i in 0..c.n_layers {
             let mut body = Vec::with_capacity(4);
             for (name, &(out, input)) in BODY.iter().zip(&shapes) {
-                let q = map_matrix(
-                    &tensors,
-                    &map,
-                    &format!("layers.{i}.{name}"),
-                    (out, input),
-                    bits,
-                    exceptions,
-                )?;
+                let prefix = format!("layers.{i}.{name}");
+                let PackedFormat::Quantized { exceptions } = format else {
+                    body.push(fp32(&format!("{prefix}.weight"), &[out, input])?);
+                    continue;
+                };
+                let q = map_matrix(&tensors, &map, &prefix, (out, input), bits, exceptions)?;
                 // Quantized matrices are only read through their codes.
                 body.push(Weight {
                     range: 0..0,
@@ -259,9 +266,9 @@ impl Model {
             constant("screen_kappa")?,
         )?;
         if verify {
-            // `write_packed` hashes in its own tensor order; recompute in that order.
+            // Recompute in the tensor order `write_packed` hashes.
             let names = tensors.names();
-            let order = packed_order(&config, |matrix| {
+            let order = packed_order(&config, format, |matrix| {
                 names
                     .iter()
                     .any(|n| n.strip_suffix(EXCEPTION_SUFFIXES[0]) == Some(matrix))
@@ -300,14 +307,70 @@ impl Model {
     }
 }
 
-/// Whether a kernel-ready file's metadata names a known format, and if so
-/// whether that format allows exception columns.
-fn packed_format(meta: &HashMap<String, String>) -> Option<bool> {
+/// Body tensor layout identified by a kernel-ready file's format tag.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PackedFormat {
+    Fp32,
+    Quantized { exceptions: bool },
+}
+
+impl PackedFormat {
+    /// The public format string for this body layout.
+    fn tag(self) -> &'static str {
+        match self {
+            Self::Fp32 => PACKED_FORMAT_FP32,
+            Self::Quantized { exceptions: false } => PACKED_FORMAT,
+            Self::Quantized { exceptions: true } => PACKED_FORMAT_EXCEPTIONS,
+        }
+    }
+}
+
+/// The body tensor layout a kernel-ready file's metadata identifies.
+fn packed_format(meta: &HashMap<String, String>) -> Option<PackedFormat> {
     match meta.get("format").map(String::as_str) {
-        Some(PACKED_FORMAT) => Some(false),
-        Some(PACKED_FORMAT_EXCEPTIONS) => Some(true),
+        Some(PACKED_FORMAT_FP32) => Some(PackedFormat::Fp32),
+        Some(PACKED_FORMAT) => Some(PackedFormat::Quantized { exceptions: false }),
+        Some(PACKED_FORMAT_EXCEPTIONS) => Some(PackedFormat::Quantized { exceptions: true }),
         _ => None,
     }
+}
+
+/// Parse the stored profile, requiring FP32 weights for the FP32 format.
+fn packed_profile(meta: &HashMap<String, String>, format: PackedFormat) -> Result<Profile> {
+    let label = meta.get("profile").context("packed metadata profile missing")?;
+    let profile =
+        <Profile as clap::ValueEnum>::from_str(label, false).map_err(|e| anyhow::anyhow!("packed profile: {e}"))?;
+    ensure!(
+        format != PackedFormat::Fp32 || profile.weights == Weights::F32,
+        "packed weight format"
+    );
+    Ok(profile)
+}
+
+/// Check the profile's weight bits and quantization group metadata.
+fn validate_weight_format(meta: &HashMap<String, String>, format: PackedFormat, profile: Profile) -> Result<()> {
+    let bits: u32 = meta
+        .get("weight_bits")
+        .context("packed metadata weight_bits missing")?
+        .parse()?;
+    let matches_format = match format {
+        PackedFormat::Fp32 => profile.weights == Weights::F32 && !meta.contains_key("group_size"),
+        PackedFormat::Quantized { .. } => {
+            profile.quantizes_body() && meta.get("group_size").map(String::as_str) == Some("64")
+        }
+    };
+    ensure!(bits == profile.weight_bits() && matches_format, "packed weight format");
+    Ok(())
+}
+
+/// Output and input dimensions of each matrix in [`BODY`].
+fn body_shapes(c: &ModelConfig) -> [(usize, usize); 4] {
+    [
+        (c.query_dim() + 2 * c.kv_dim(), c.dim),
+        (c.dim, c.query_dim()),
+        (2 * c.ffn_dim, c.dim),
+        (c.dim, c.ffn_dim),
+    ]
 }
 
 /// Byte range of tensor `name` in `map`, which must have `dtype` and `shape`.
@@ -457,8 +520,8 @@ pub(super) fn tensor_bytes_with_suffix(
 
 /// Tensor names in the order `write_packed` pushes (and hashes) them;
 /// `exceptions(prefix)` says whether body matrix `layers.{i}.{matrix}` has
-/// exception columns.
-fn packed_order(c: &ModelConfig, exceptions: impl Fn(&str) -> bool) -> Vec<String> {
+/// exception columns (unused for FP32 bodies).
+fn packed_order(c: &ModelConfig, format: PackedFormat, exceptions: impl Fn(&str) -> bool) -> Vec<String> {
     let mut names = vec![
         "tok_embeddings.weight".to_owned(),
         "img_projector.weight".to_owned(),
@@ -470,6 +533,10 @@ fn packed_order(c: &ModelConfig, exceptions: impl Fn(&str) -> bool) -> Vec<Strin
         names.push(format!("layers.{i}.attention.sinks"));
         for name in BODY {
             let prefix = format!("layers.{i}.{name}");
+            if format == PackedFormat::Fp32 {
+                names.push(format!("{prefix}.weight"));
+                continue;
+            }
             names.push(format!("{prefix}.__codes"));
             names.push(format!("{prefix}.__scales"));
             if exceptions(&prefix) {
@@ -671,12 +738,19 @@ mod tests {
     #[test]
     fn formats_and_the_digest_order_follow_the_exception_columns() {
         let format = |value: &str| packed_format(&HashMap::from([("format".to_owned(), value.to_owned())]));
-        assert_eq!(format(PACKED_FORMAT), Some(false));
-        assert_eq!(format(PACKED_FORMAT_EXCEPTIONS), Some(true));
+        assert_eq!(
+            format(PACKED_FORMAT),
+            Some(PackedFormat::Quantized { exceptions: false })
+        );
+        assert_eq!(
+            format(PACKED_FORMAT_EXCEPTIONS),
+            Some(PackedFormat::Quantized { exceptions: true })
+        );
+        assert_eq!(format(PACKED_FORMAT_FP32), Some(PackedFormat::Fp32));
         assert_eq!(format("falcon-ocr-kernel-v3"), None);
         let c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
         // Without exception columns: the v1 order, unchanged.
-        let v1 = packed_order(&c, |_| false);
+        let v1 = packed_order(&c, PackedFormat::Quantized { exceptions: false }, |_| false);
         assert_eq!(v1.len(), 5 + 22 * 9 + 2);
         assert_eq!(
             v1[5..8],
@@ -686,7 +760,9 @@ mod tests {
                 "layers.0.attention.wqkv.__scales"
             ]
         );
-        let v2 = packed_order(&c, |matrix| matrix == "layers.3.feed_forward.w2");
+        let v2 = packed_order(&c, PackedFormat::Quantized { exceptions: true }, |matrix| {
+            matrix == "layers.3.feed_forward.w2"
+        });
         assert_eq!(v2.len(), v1.len() + 2);
         let at = v2
             .iter()
@@ -699,6 +775,106 @@ mod tests {
                 "layers.3.feed_forward.w2.__exc_vals",
                 "layers.4.attention.sinks"
             ]
+        );
+        let fp32 = packed_order(&c, PackedFormat::Fp32, |_| panic!("FP32 has no exception columns"));
+        assert_eq!(fp32.len(), 5 + 22 * 5 + 2);
+        assert_eq!(
+            fp32[5..11],
+            [
+                "layers.0.attention.sinks",
+                "layers.0.attention.wqkv.weight",
+                "layers.0.attention.wo.weight",
+                "layers.0.feed_forward.w13.weight",
+                "layers.0.feed_forward.w2.weight",
+                "layers.1.attention.sinks"
+            ]
+        );
+        assert_eq!(
+            fp32[fp32.len() - 2..],
+            ["output.__screen_codes", "output.__screen_scales"]
+        );
+    }
+
+    /// Header-only inspection accepts FP32 storage with each supported cache
+    /// profile; full loading refuses contradictory body metadata.
+    #[test]
+    fn fp32_header_profiles_require_fp32_body_metadata() {
+        use std::io::Write;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("header.safetensors");
+        let config = include_str!("../../tests/fixtures/model-config.json");
+        for profile in Profile::ALL {
+            let meta = HashMap::from([
+                ("format", PACKED_FORMAT_FP32.to_owned()),
+                ("profile", profile.label().to_owned()),
+                ("weight_bits", profile.weight_bits().to_string()),
+                ("config", config.to_owned()),
+            ]);
+            let header = serde_json::to_vec(&serde_json::json!({"__metadata__": meta})).unwrap();
+            let mut file = File::create(&path).unwrap();
+            file.write_all(&(header.len() as u64).to_le_bytes()).unwrap();
+            file.write_all(&header).unwrap();
+            let parsed = Model::packed_profile(&path);
+            assert_eq!(parsed.is_ok(), profile.weights == Weights::F32, "{profile}");
+            if let Ok(parsed) = parsed {
+                assert_eq!(parsed, profile);
+                assert_eq!(packed_facts(&path).unwrap().2, 0);
+            }
+        }
+        let meta = HashMap::from([
+            ("profile".to_owned(), "reference".to_owned()),
+            ("weight_bits".to_owned(), "32".to_owned()),
+        ]);
+        assert_eq!(packed_profile(&meta, PackedFormat::Fp32).unwrap(), Profile::REFERENCE);
+        assert!(
+            validate_weight_format(&meta, PackedFormat::Quantized { exceptions: false }, Profile::REFERENCE).is_err()
+        );
+        let mut wrong_bits = meta.clone();
+        wrong_bits.insert("weight_bits".to_owned(), "16".to_owned());
+        assert!(validate_weight_format(&wrong_bits, PackedFormat::Fp32, Profile::REFERENCE).is_err());
+        let mut grouped = meta;
+        grouped.insert("group_size".to_owned(), "64".to_owned());
+        assert!(validate_weight_format(&grouped, PackedFormat::Fp32, Profile::REFERENCE).is_err());
+        let minimal = HashMap::from([("profile".to_owned(), "w16-body-kv-q16".to_owned())]);
+        assert_eq!(
+            packed_profile(&minimal, PackedFormat::Quantized { exceptions: false }).unwrap(),
+            Profile::W16_BODY_KV_Q16
+        );
+    }
+
+    /// Raw FP32 body tensors map without changing any bits, and their name,
+    /// payload and order all contribute to the packed tensor digest.
+    #[test]
+    fn fp32_body_tensor_mapping_preserves_bits_and_digest() {
+        let name = "layers.0.attention.wo.weight";
+        let data: Vec<u8> = [0, 0x8000_0000, 0x7fc0_0123, 0x7f80_0000, 0x3f80_0000, 0xbf80_0000]
+            .into_iter()
+            .flat_map(u32::to_le_bytes)
+            .collect();
+        let view = safetensors::tensor::TensorView::new(Dtype::F32, vec![2, 3], &data).unwrap();
+        let bytes = safetensors::serialize([(name, view)], None).unwrap();
+        let mut map = memmap2::MmapMut::map_anon(bytes.len()).unwrap();
+        map.copy_from_slice(&bytes);
+        let map = Arc::new(map.make_read_only().unwrap());
+        let tensors = SafeTensors::deserialize(&map).unwrap();
+        let range = tensor_range(&tensors, &map, name, Dtype::F32, &[2, 3]).unwrap();
+        assert_eq!(&map[range.clone()], data);
+        crate::buf::Buf::<f32>::mapped(&map, range.clone(), 6).unwrap();
+        assert!(tensor_range(&tensors, &map, name, Dtype::I16, &[2, 3]).is_err());
+        assert!(tensor_range(&tensors, &map, name, Dtype::F32, &[3, 2]).is_err());
+        let digest = packed_digest([(name, data.as_slice())].into_iter());
+        assert_eq!(digest, packed_digest([(name, &map[range])].into_iter()));
+        assert_ne!(
+            digest,
+            packed_digest([("layers.0.attention.wo.__codes", data.as_slice())].into_iter())
+        );
+        let mut changed = data.clone();
+        changed[0] ^= 1;
+        assert_ne!(digest, packed_digest([(name, changed.as_slice())].into_iter()));
+        assert_ne!(
+            packed_digest([(name, data.as_slice()), ("norm.weight", changed.as_slice())].into_iter()),
+            packed_digest([("norm.weight", changed.as_slice()), (name, data.as_slice())].into_iter())
         );
     }
 }

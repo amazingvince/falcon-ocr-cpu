@@ -320,10 +320,11 @@ page before EOS or the output budget.
 
 ## Automatic configuration
 
-`auto::resolve_weights` looks for `<model>/falcon-ocr-v1.5-<mode>.safetensors`
-first (mapped in place, loads in about 10 ms), then the FP32 checkpoint,
-quantized at load (fast mode needs the GPTQ overlay; an explicit
-`--w8-artifact` always reads the checkpoint). `auto::Resolved` states
+`auto::resolve_weights` looks for the mode's
+[catalog file](MODES.md#packed-model-files) in `--model` first and maps it
+in place. Otherwise exact reads the FP32 checkpoint; near-exact and fast
+quantize it at load. Fast mode needs the GPTQ overlay; an explicit
+`--w8-artifact` always reads the checkpoint. `auto::Resolved` states
 everything the runner will do: mode and profile, weights source, prefill and
 decode kernels, thread plan, KV format, bytes per token, image decoder and
 tuning. `falcon-ocr doctor` prints it without reading tensors; every result

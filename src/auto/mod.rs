@@ -96,9 +96,9 @@ impl Mode {
     /// File name of the published kernel-ready model file for this mode.
     pub fn packed_file_name(self) -> Option<&'static str> {
         match self {
-            Self::Exact => None,
-            Self::NearExact => Some("falcon-ocr-v1.5-near-exact.safetensors"),
-            Self::Fast => Some("falcon-ocr-v1.5-fast.safetensors"),
+            Self::Exact => Some("falcon-ocr-v1.5-fp32.safetensors"),
+            Self::NearExact => Some("falcon-ocr-v1.5-int16-g64.safetensors"),
+            Self::Fast => Some("falcon-ocr-v1.5-int8-gptq-g64.safetensors"),
         }
     }
 }
@@ -233,8 +233,8 @@ pub struct ModelRequest<'a> {
     /// Let fast mode quantize round-to-nearest at load when no overlay exists
     /// (about three times the changed tokens of GPTQ).
     pub allow_rtn: bool,
-    /// Exact mode may use the split FP32 cache (single pages, compact
-    /// layout, unpacked weights).
+    /// Product exact mode uses the split FP32 cache for single pages with
+    /// compact layout and unpacked weights, including kernel-ready files.
     pub split_exact: bool,
     /// Skip the packed files and read the checkpoint (`pack` writes them).
     pub from_checkpoint: bool,
@@ -243,7 +243,8 @@ pub struct ModelRequest<'a> {
     /// With `model_file` it must name the file's weights (`kv_cache` picks the
     /// cache).
     pub profile: Option<Profile>,
-    /// Research: accept a kernel-ready file of any profile.
+    /// Research: accept a kernel-ready file of any profile and preserve its
+    /// cache unless `kv_cache` overrides it.
     pub allow_research: bool,
     /// Research: replace the KV half of the profile the rest of the request
     /// resolves to (`falcon-ocr --kv-cache`). The cache is built at run time,
@@ -292,7 +293,8 @@ pub fn resolve_weights(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
 }
 
 /// [`resolve_weights`] without the KV override: the profile the model file
-/// records, or the one the mode or research profile names.
+/// records (product exact uses the requested FP32 cache), or the mode or
+/// research profile names.
 fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
     let dir = request.model_dir;
     if let Some(path) = request.model_file {
@@ -330,7 +332,11 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
                 path: path.to_path_buf(),
             },
             mode,
-            profile,
+            profile: if mode == Some(Mode::Exact) && !request.allow_research {
+                Mode::Exact.profile(request.split_exact)
+            } else {
+                profile
+            },
         });
     }
     if let Some(profile) = request.profile {
@@ -384,7 +390,11 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
             return Ok(WeightsPlan {
                 source: WeightsSource::Packed { path: packed },
                 mode: Some(mode),
-                profile,
+                profile: if mode == Mode::Exact && !request.allow_research {
+                    mode.profile(request.split_exact)
+                } else {
+                    profile
+                },
             });
         }
     }
@@ -410,7 +420,7 @@ fn recorded_plan(request: &ModelRequest<'_>) -> Result<WeightsPlan> {
         ensure!(
             overlay.is_some() || request.allow_rtn,
             "fast mode needs the GPTQ overlay {} (round-to-nearest quantization triples the changed tokens): \
-             download falcon-ocr-v1.5-fast.safetensors from BEE-spoke-data/falcon-ocr-v1.5-cpu into the model \
+             download falcon-ocr-v1.5-int8-gptq-g64.safetensors from BEE-spoke-data/falcon-ocr-v1.5-cpu into the model \
              directory, build the overlay with tools/make_gptq_overlay.sh, or pass --allow-rtn",
             dir.join(DEFAULT_OVERLAY).display()
         );

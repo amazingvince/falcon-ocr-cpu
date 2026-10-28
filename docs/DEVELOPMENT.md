@@ -179,18 +179,29 @@ arm's `kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
 
 ## Rebuilding packed files and experimental overlays
 
-The standard packed files use the pinned FP32 checkpoint; fast mode also
-needs a GPTQ overlay. Fetch the checkpoint, build both binaries, and pack:
+The FP32, INT16 and GPTQ INT8 packed files use the pinned FP32 checkpoint;
+fast mode also needs a GPTQ overlay. Install the Python helpers with
+`python -m pip install -r requirements/tools.txt`. Before rebuilding fast,
+restore the pages in [the calibration list](../tools/gptq-calibration-pages.txt)
+using [restore_corpus.py](../research/corpus-qualification/scripts/restore_corpus.py).
+It takes `--images` pointing to the local OmniDocBench `images/` directory,
+`--annotations` pointing to its `OmniDocBench.json`, and
+`--lock reference/corpus-v3-calibration-lock.json`. Use the dataset revision
+and Pillow version recorded in [that lock](../reference/corpus-v3-calibration-lock.json).
+
+Fetch the checkpoint, build both binaries, and pack:
 
 ```sh
 python scripts/fetch_reference.py --output artifacts/model
 cargo build --release --locked --bins
 mkdir -p artifacts/repacked
+target/release/falcon-ocr --mode exact pack \
+  --output artifacts/repacked/falcon-ocr-v1.5-fp32.safetensors
 target/release/falcon-ocr --mode near-exact pack \
-  --output artifacts/repacked/falcon-ocr-v1.5-near-exact.safetensors
+  --output artifacts/repacked/falcon-ocr-v1.5-int16-g64.safetensors
 BIN=target/release/falcon-ocr-eval bash tools/make_gptq_overlay.sh
 target/release/falcon-ocr --mode fast pack \
-  --output artifacts/repacked/falcon-ocr-v1.5-fast.safetensors
+  --output artifacts/repacked/falcon-ocr-v1.5-int8-gptq-g64.safetensors
 ```
 
 Choose a new output directory for each build. The overlay helper captures

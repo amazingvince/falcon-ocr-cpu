@@ -28,7 +28,7 @@ pub(crate) use cache::{BatchWorkspace, Session};
 pub use load::MemoryReport;
 pub(crate) use load::overlay_exception_bytes;
 pub(crate) use packed::packed_facts;
-pub use packed::{PACKED_FORMAT, PACKED_FORMAT_EXCEPTIONS};
+pub use packed::{PACKED_FORMAT, PACKED_FORMAT_EXCEPTIONS, PACKED_FORMAT_FP32};
 
 /// Where a model's weights came from.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

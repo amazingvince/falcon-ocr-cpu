@@ -54,9 +54,9 @@ recorded verdict; new qualification needs fresh pages.
 | Journal page | 38 s | 21.5 s | 12.6 s (14 s without AVX512-BF16) |
 | Profile label | `split-f32` (`reference` for traces and batches) | `w16-body-kv-q16` | `w8-body-kv-q8` |
 
-Near-exact and fast map their packed files when present. Otherwise they
-quantize the FP32 checkpoint at load; fast needs its GPTQ overlay. See
-[Packed model files](#packed-model-files).
+Every mode maps its packed file when present. Without one, exact reads the
+FP32 checkpoint; near-exact and fast quantize it at load, and fast needs its
+GPTQ overlay. See [Packed model files](#packed-model-files).
 
 Every mode uses the exact screened head and the portable polynomial exp in
 prefill attention, which changes rounding but no token against the platform
@@ -393,17 +393,42 @@ looped at 335 and 2,139); the other 7 also loop in near-exact mode.
 
 ## Packed model files
 
-`falcon-ocr --mode near-exact|fast pack --output F` writes one safetensors
-file holding every tensor in the layout the kernels read (FP32 embedding,
-head, norms, projector and sinks; body codes and scales, and any exception
-columns; the INT8 head screen and its bounds), with the recipe and a tensor
-digest in its metadata (format `falcon-ocr-kernel-v1`, or `-v2` with
-exception columns).
-`--model-file F` (or a `falcon-ocr-v1.5-<mode>.safetensors` in `--model`)
-maps it and uses it in place: load 2.2 s → 10 ms, peak resident memory
-2.9 → 1.8 GB, tokens identical to the checkpoint loader (gated by
-`tests/modes.rs`). The published files are on Hugging Face at
+`falcon-ocr pack --output F` writes a kernel-ready SafeTensors file.
+Select `--mode exact` for FP32, `--mode near-exact` (default) for INT16, or
+`--mode fast` for GPTQ INT8. The published filenames identify body weight
+storage, independently of the mode names and KV cache choices above:
+
+| File | Mode | Size |
+|---|---|---:|
+| `falcon-ocr-v1.5-fp32.safetensors` | `exact` | 1,133 MB |
+| `falcon-ocr-v1.5-int16-g64.safetensors` | `near-exact` | 806 MB |
+| `falcon-ocr-v1.5-int8-gptq-g64.safetensors` | `fast` | 638 MB |
+| `falcon-ocr-v1.5-draft-head.safetensors` | Shared draft head | 94 MB |
+
+INT16 means scaled integer codes, not FP16 or BF16. GPTQ INT8 describes
+this runner's group-64 quantizer, not a GGUF encoding. All models retain
+FP32 embeddings, vocabulary head, norms, projector and sinks, plus the INT8
+head screen and its bounds. These are runner-specific model files, not
+Transformers checkpoints.
+
+FP32 body tensors use `falcon-ocr-kernel-fp32-v1`, with `weight_bits=32`
+and no quantization group. INT16 and INT8 keep `falcon-ocr-kernel-v1`, or
+`falcon-ocr-kernel-v2` with exception columns. Metadata records the profile,
+source checkpoint and tensor digest. The formats are independent of the
+filenames; older binaries reject the FP32 format.
+
+`--model-file F`, or the mode's catalog file in `--model`, maps tensors in
+place. In the recorded quantized-file comparison, load fell from 2.2 s to
+10 ms and peak resident memory from 2.9 to 1.8 GB, with identical tokens to
+the checkpoint loader (`tests/modes.rs`). The files are on
 [BEE-spoke-data/falcon-ocr-v1.5-cpu](https://huggingface.co/BEE-spoke-data/falcon-ocr-v1.5-cpu).
+
+Upgrade the runner and download the catalog files together. The renamed
+INT16 and INT8 files replace the old `near-exact` and `fast` filenames;
+the mode flags stay the same. Older binaries can load the quantized files
+through an explicit `--model-file`, but cannot discover the renamed files
+automatically or load the FP32 format. Old cached copies can be removed
+after refreshing the model directory.
 
 ## Research profiles
 

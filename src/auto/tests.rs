@@ -3,11 +3,21 @@
 use super::*;
 
 fn fabricate_packed(path: &Path, profile: &str) {
+    let parsed = Profile::parse(profile).unwrap();
     let data = [0u8; 4];
     let view = safetensors::tensor::TensorView::new(safetensors::Dtype::F32, vec![1], &data).unwrap();
     let mut metadata = std::collections::HashMap::new();
-    metadata.insert("format".to_owned(), crate::model::PACKED_FORMAT.to_owned());
+    let format = if parsed.quantizes_body() {
+        crate::model::PACKED_FORMAT
+    } else {
+        crate::model::PACKED_FORMAT_FP32
+    };
+    metadata.insert("format".to_owned(), format.to_owned());
     metadata.insert("profile".to_owned(), profile.to_owned());
+    metadata.insert(
+        "config".to_owned(),
+        include_str!("../../tests/fixtures/model-config.json").to_owned(),
+    );
     safetensors::serialize_to_file(vec![("t", view)], Some(metadata), path).unwrap();
 }
 
@@ -21,8 +31,15 @@ fn mode_labels_profiles_and_packed_names_round_trip() {
     assert_eq!(Mode::Exact.profile(true), Profile::SPLIT_F32);
     assert_eq!(Mode::Exact.profile(false), Profile::REFERENCE);
     assert_eq!(Mode::of_profile(Profile::W8_BODY), None);
-    assert_eq!(Mode::Exact.packed_file_name(), None);
-    assert!(Mode::Fast.packed_file_name().unwrap().contains("fast"));
+    assert_eq!(Mode::Exact.packed_file_name(), Some("falcon-ocr-v1.5-fp32.safetensors"));
+    assert_eq!(
+        Mode::NearExact.packed_file_name(),
+        Some("falcon-ocr-v1.5-int16-g64.safetensors")
+    );
+    assert_eq!(
+        Mode::Fast.packed_file_name(),
+        Some("falcon-ocr-v1.5-int8-gptq-g64.safetensors")
+    );
 }
 
 #[test]
@@ -45,7 +62,7 @@ fn the_published_draft_head_drafts_unless_a_drafter_was_chosen() {
     };
     assert_eq!(with_default_draft_head(off, dir.path(), false).draft_head, None);
     // The folder of --model-file, else --model.
-    let file = dir.path().join("falcon-ocr-v1.5-fast.safetensors");
+    let file = dir.path().join(Mode::Fast.packed_file_name().unwrap());
     let request = ModelRequest {
         model_dir: Path::new("elsewhere"),
         model_file: Some(&file),
@@ -57,6 +74,87 @@ fn the_published_draft_head_drafts_unless_a_drafter_was_chosen() {
         ..ModelRequest::default()
     };
     assert_eq!(model_files_dir(&request), dir.path());
+}
+
+#[test]
+fn packed_fp32_uses_exact_cache_defaults_and_explicit_overrides() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    let packed = root.join(Mode::Exact.packed_file_name().unwrap());
+    let request = ModelRequest {
+        model_dir: root,
+        mode: Some(Mode::Exact),
+        ..ModelRequest::default()
+    };
+    let error = resolve_weights(&request).unwrap_err().to_string();
+    assert!(error.contains("falcon-ocr-v1.5-fp32.safetensors"), "{error}");
+    for recorded in [Profile::REFERENCE, Profile::SPLIT_F32] {
+        fabricate_packed(&packed, recorded.label());
+        for explicit in [false, true] {
+            for split_exact in [false, true] {
+                let selected = ModelRequest {
+                    model_file: explicit.then_some(packed.as_path()),
+                    split_exact,
+                    ..request.clone()
+                };
+                let plan = resolve_weights(&selected).unwrap();
+                assert_eq!(plan.source, WeightsSource::Packed { path: packed.clone() });
+                assert_eq!(plan.mode, Some(Mode::Exact));
+                assert_eq!(plan.profile, Mode::Exact.profile(split_exact));
+                let facts = ModelFacts::from_plan(&plan).unwrap();
+                assert_eq!(facts.body_bits, None);
+                let report = doctor(&selected, &RunnerConfig::default(), false, false).unwrap();
+                assert!(report.files.packed_exact.present);
+                assert_eq!(report.files.packed_exact.path, packed);
+                let resolved = report.plan.unwrap();
+                assert_eq!(resolved.bytes.weights_per_token, 4 * 168_689_664);
+                assert_eq!(resolved.kv_cache, if split_exact { "f32-split" } else { "f32-compact" });
+                let research = ModelRequest {
+                    allow_research: true,
+                    ..selected.clone()
+                };
+                assert_eq!(resolve_weights(&research).unwrap().profile, recorded);
+                let research_report = doctor(&research, &RunnerConfig::reference(), false, false).unwrap();
+                assert_eq!(
+                    research_report.plan.unwrap().kv_cache,
+                    if recorded == Profile::SPLIT_F32 {
+                        "f32-split"
+                    } else {
+                        "f32-compact"
+                    }
+                );
+                let replaced = resolve_weights(&ModelRequest {
+                    kv_cache: Some(Kv::Q8),
+                    ..selected
+                })
+                .unwrap();
+                assert_eq!((replaced.mode, replaced.profile), (None, Profile::KV_Q8));
+            }
+        }
+    }
+    // Explicit selection infers exact mode and refuses another mode's weights.
+    let selected = ModelRequest {
+        model_file: Some(&packed),
+        mode: None,
+        ..request.clone()
+    };
+    assert_eq!(resolve_weights(&selected).unwrap().mode, Some(Mode::Exact));
+    assert!(
+        resolve_weights(&ModelRequest {
+            mode: Some(Mode::NearExact),
+            ..selected
+        })
+        .is_err()
+    );
+    // Packing reads the original checkpoint even when the FP32 file exists.
+    std::fs::write(root.join("model.safetensors"), b"stub").unwrap();
+    let plan = resolve_weights(&ModelRequest {
+        from_checkpoint: true,
+        ..request
+    })
+    .unwrap();
+    assert!(matches!(plan.source, WeightsSource::Checkpoint { .. }));
+    assert_eq!(plan.profile, Profile::REFERENCE);
 }
 
 #[test]

@@ -160,11 +160,15 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
 /// HILLCLIMB T12: a kernel-ready file holds exactly what the checkpoint
 /// loader computes, and the published files are those bytes.
 #[test]
-#[ignore = "needs artifacts/model, the GPTQ overlay, artifacts/packed and 1.5 GB of temporary disk"]
+#[ignore = "needs artifacts/model, the GPTQ overlay, artifacts/packed and temporary disk for all modes"]
 fn packed_files_round_trip_the_checkpoint_loader_and_match_the_published_ones() {
     let dir = tempfile::tempdir().unwrap();
-    for mode in [Mode::NearExact, Mode::Fast] {
-        let model = checkpoint_model(mode);
+    for mode in [Mode::Exact, Mode::NearExact, Mode::Fast] {
+        let model = if mode == Mode::Exact {
+            Arc::new(Model::load(MODEL_DIR).unwrap())
+        } else {
+            checkpoint_model(mode)
+        };
         model.prepare_screened_head().unwrap();
         let file = dir.path().join(mode.packed_file_name().unwrap());
         model.write_packed(&file).unwrap();

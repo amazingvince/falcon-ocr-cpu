@@ -5,6 +5,10 @@ work, followed by research proposals.
 
 ## Still open
 
+- **Weight variants and containers.** [Additional dtypes and quantizers](https://github.com/amazingvince/falcon-ocr-cpu/issues/15)
+  and [GGUF export/loading](https://github.com/amazingvince/falcon-ocr-cpu/issues/16)
+  are separate follow-ups to the FP32, INT16 and GPTQ INT8 catalog.
+
 - **Reference-dependent gates.** `tests/weight_layout.rs` and `tools/check.sh
   --smoke` need the GPU smoke outputs (`metadata.json`, `trace.safetensors`
   from the frozen reference), as `tests/gpu_parity.rs` and

@@ -8,8 +8,9 @@ its model, kernels and thread plan with each result.
 
 Download the kernel-ready weights and draft head from
 [BEE-spoke-data/falcon-ocr-v1.5-cpu](https://huggingface.co/BEE-spoke-data/falcon-ocr-v1.5-cpu).
-The near-exact file is 806 MB, the fast file 638 MB, and the shared draft
-head 94 MB.
+Filenames identify the body weight encoding: FP32, INT16 group-64 or GPTQ
+INT8 group-64. The [model catalog](docs/MODES.md#packed-model-files) maps
+files to modes.
 
 ## Quickstart
 
@@ -30,6 +31,7 @@ hf download BEE-spoke-data/falcon-ocr-v1.5-cpu --local-dir models/falcon-ocr-cpu
 target/release/falcon-ocr --model models/falcon-ocr-cpu doctor --text --load
 target/release/falcon-ocr --model models/falcon-ocr-cpu run page.png --text
 target/release/falcon-ocr --model models/falcon-ocr-cpu --mode fast run page.png --text
+target/release/falcon-ocr --model models/falcon-ocr-cpu --mode exact run page.png --text
 ```
 
 `doctor --load` verifies that the model loads and prints the chosen plan and
@@ -63,11 +65,12 @@ fidelity.
 
 ## What `auto` decides
 
-The runner uses the mode's packed file in `--model`, or quantizes the FP32
-checkpoint at load (fast mode needs the GPTQ overlay). Packed files load in
-about 10 ms. Prefill processes the input page; decode generates its output
-tokens. The runner picks kernels for the host, uses all logical CPUs for
-prefill, and tunes the decode team to the smallest within 2% of the fastest.
+The runner uses the mode's packed file in `--model`. Without it, exact reads
+the FP32 checkpoint; near-exact and fast quantize at load, and fast needs the
+GPTQ overlay. The recorded quantized-file load is about 10 ms. Prefill
+processes the input page; decode generates its output tokens. The runner
+picks kernels for the host, uses all logical CPUs for prefill, and tunes the
+decode team to the smallest within 2% of the fastest.
 
 By default it drafts up to four tokens per step and verifies each against
 the model's greedy choice. The downloaded
@@ -201,10 +204,11 @@ Pillow-exact).
 
 ## The checkpoint and the GPTQ overlay
 
-Exact mode, packing and the overlay need the FP32 checkpoint:
+Packing and rebuilding the GPTQ overlay need the original FP32 checkpoint:
 `python scripts/fetch_reference.py --output artifacts/model` downloads and
-verifies it (SHA-256 `3df91e40…`). `falcon-ocr --mode near-exact pack
---output F` and `--mode fast pack` write the packed files.
+verifies it (SHA-256 `3df91e40…`). `falcon-ocr --mode exact pack --output F`
+writes the FP32 file; near-exact and fast pack their respective encodings.
+Exact mode can load the published FP32 file directly.
 `tools/make_gptq_overlay.sh` builds `artifacts/model/w8-gptq.safetensors`
 ([rebuilding instructions](docs/DEVELOPMENT.md#rebuilding-packed-files-and-experimental-overlays));
 the published fast file already contains it.

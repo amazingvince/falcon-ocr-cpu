@@ -27,6 +27,7 @@ struct Cli {
     model: PathBuf,
     /// Kernel-ready model file (`falcon-ocr pack`): its weights, with
     /// --profile's KV cache when one is given (it must name the file's weights).
+    /// Tokenizers are read beside the file when present, otherwise from --model.
     #[arg(long, global = true)]
     model_file: Option<PathBuf>,
     /// Weights x KV profile [default: reference, or the --model-file's own].
@@ -511,7 +512,8 @@ fn main() -> Result<()> {
     });
     let load_ms = started.elapsed().as_secs_f64() * 1000.0;
     let memory = model.memory_report();
-    let runner = Runner::new(model.clone(), &args.model, config.clone())?;
+    let tokenizer_dir = model.source().tokenizer_dir(&args.model);
+    let runner = Runner::new(model.clone(), &tokenizer_dir, config.clone())?;
     // Reports name the profile that runs (a model file's, with --profile's KV).
     let profile = model.profile();
     eprintln!(
