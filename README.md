@@ -213,7 +213,10 @@ writes the FP32 file; near-exact and fast pack their respective encodings.
 Exact mode can load the published FP32 file directly.
 `tools/make_gptq_overlay.sh` builds `artifacts/model/w8-gptq.safetensors`
 ([rebuilding instructions](docs/DEVELOPMENT.md#rebuilding-packed-files-and-experimental-overlays));
-the published fast file already contains it.
+the published fast file already contains it. The original overlay's digest
+is pinned by `tests/fixtures/modes/fast-journal-300.json`;
+`python scripts/fetch_fixtures.py` downloads that overlay and the GPU smoke
+record used by the validation gates.
 Experimental overlays with FP32 exception columns are described in
 [Modes](docs/MODES.md#exception-columns-experimental).
 
