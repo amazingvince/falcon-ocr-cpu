@@ -1,10 +1,11 @@
-//! Integration tests require the explicitly downloaded pinned model/reference.
-//! Run `cargo test --release --test gpu_parity -- --ignored` after GPU export.
+//! Integration tests use the pinned checkpoint and recorded GPU smoke output.
+//! Fetch the recording with `python scripts/fetch_fixtures.py`, then run
+//! `cargo test --release --locked --test gpu_parity -- --ignored`.
 use falcon_ocr::{Backend, FinishReason, GenerationOptions, Model, Runner, RunnerConfig, kernels::Simd};
 use std::{path::Path, sync::Arc};
 
 #[test]
-#[ignore = "requires pinned model and generated strict GPU reference fixture"]
+#[ignore = "requires pinned model and downloaded GPU smoke recording"]
 fn free_running_cpu_matches_gpu_smoke_tokens_and_stop() {
     let model_dir = Path::new("artifacts/model");
     let reference = Path::new("artifacts/reference/smoke-fp32");
