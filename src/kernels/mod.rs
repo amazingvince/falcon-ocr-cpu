@@ -44,14 +44,20 @@ pub(crate) fn wide_attention(simd: Simd) -> bool {
 }
 
 /// Whether the split cache's verification rows run the AVX-512 kernels: the
-/// `auto` backend on a CPU with AVX-512F and AVX-512VL (bitwise identical to
-/// the 8-lane kernels; an explicit `avx2` backend keeps 8 lanes). The row
-/// kernels use AVX-512F only; VL lets the 8-lane code compiled into the same
-/// entries use all 32 vector registers.
+/// `auto` backend on a CPU with the 8-lane row kernels' AVX2, FMA and F16C
+/// plus AVX-512F and AVX-512VL (bitwise identical to the 8-lane kernels; an
+/// explicit `avx2` backend keeps 8 lanes). The row kernels use AVX-512F
+/// only; VL lets the 8-lane code compiled into the same entries use all 32
+/// vector registers. `quant::kv`'s dispatch and the plan's "(avx512
+/// verification rows)" both read this predicate.
 pub(crate) fn wide_rows(simd: Simd) -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        simd == Simd::Auto && avx512_available() && std::is_x86_feature_detected!("avx512vl")
+        simd == Simd::Auto
+            && avx2_available()
+            && std::is_x86_feature_detected!("f16c")
+            && avx512_available()
+            && std::is_x86_feature_detected!("avx512vl")
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
