@@ -613,6 +613,11 @@ pub struct Resolved {
     pub tokenizer_dir: PathBuf,
     /// Instruction set of the decode GEMV and attention kernels.
     pub decode_isa: String,
+    /// Whether speculation's verification rows over a split cache run the
+    /// AVX-512 kernels (`kernels::wide_rows`), bitwise those of
+    /// `decode_isa`'s.
+    #[serde(default)]
+    pub wide_rows: bool,
     pub prefill: PrefillPlan,
     pub exp: ExpMode,
     pub head: HeadMode,
@@ -663,6 +668,7 @@ impl Resolved {
             overlay_sha256: facts.overlay_sha256.clone(),
             tokenizer_dir: tokenizer_dir.to_path_buf(),
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
+            wide_rows: config.speculation.is_some() && profile.kv != Kv::Compact && crate::kernels::wide_rows(simd),
             prefill: crate::kernels::prefill_plan(facts.body_bits, facts.exception_bytes > 0, simd, &config.tuning),
             exp: config.exp,
             head: config.head,
@@ -778,13 +784,18 @@ impl std::fmt::Display for Resolved {
         write!(
             f,
             "mode {} ({}) | weights {weights} | prefill {} threads, projections {}, attention {} | decode {decode} \
-             threads, {} kernels, kv {} | head {:?} | speculation {speculation} | repetition stop {} | exp {:?}",
+             threads, {} kernels{}, kv {} | head {:?} | speculation {speculation} | repetition stop {} | exp {:?}",
             self.mode.map_or("research", Mode::label),
             self.profile.label(),
             self.threads.prefill,
             self.prefill.projection,
             self.prefill.attention,
             self.decode_isa,
+            if self.wide_rows {
+                " (avx512 verification rows)"
+            } else {
+                ""
+            },
             self.kv_cache,
             self.head,
             if self.repetition_stop { "on" } else { "off" },

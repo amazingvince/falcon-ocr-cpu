@@ -21,11 +21,24 @@ pub(super) struct RowsKernel<'a, 'b> {
     pub(super) spans: &'a [Span<'b>],
     pub(super) parts: &'a mut [Partial],
     pub(super) fast_exp: bool,
+    /// Run the AVX-512 entries (x86 only; see `kernels::wide_rows`), whose
+    /// row kernels (`wide`) keep every element's operations.
+    pub(super) wide: bool,
 }
 impl PairKernel for RowsKernel<'_, '_> {
     #[inline(always)]
     unsafe fn run<R: RecordStore, T: RecordStore>(&mut self, store: &R, tail: &T) {
         unsafe {
+            #[cfg(target_arch = "x86_64")]
+            if self.wide {
+                return if self.fast_exp {
+                    pair_rows_wide_fast(store, tail, self.spans, self.parts)
+                } else {
+                    pair_rows_wide(store, tail, self.spans, self.parts)
+                };
+            }
+            #[cfg(not(target_arch = "x86_64"))]
+            debug_assert!(!self.wide, "the AVX-512 row kernels are x86-only");
             if self.fast_exp {
                 pair_rows_native_fast(store, tail, self.spans, self.parts)
             } else {
@@ -95,6 +108,22 @@ pub(super) trait RecordStore {
     /// The calling function must enable the features required by `S`. The
     /// record and eight values at the 8-aligned offset must fit the store.
     unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V;
+    /// The four [`RecordStore::load8`] vectors of the 32-value block at
+    /// `offset`, a multiple of 32 (quantized stores load its scale once).
+    ///
+    /// # Safety
+    /// As [`RecordStore::load8`], for the whole block.
+    #[inline(always)]
+    unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
+        unsafe {
+            [
+                self.load8::<S>(record, offset),
+                self.load8::<S>(record, offset + 8),
+                self.load8::<S>(record, offset + 16),
+                self.load8::<S>(record, offset + 24),
+            ]
+        }
+    }
 }
 /// FP32 records of `W` elements.
 pub(super) struct F32Rec<'a, const W: usize>(pub(super) &'a [f32]);
@@ -123,6 +152,24 @@ impl<const W: usize> RecordStore for Q8Rec<'_, W> {
             )
         }
     }
+    #[inline(always)]
+    unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
+        let at = record * W + offset;
+        debug_assert!(at.is_multiple_of(32) && (record + 1) * W <= self.codes.len());
+        // SAFETY: the block and its scale lie in the store (the contract).
+        unsafe {
+            let scale = S::splat(bf16_f32(*self.scales.get_unchecked(at / 32)));
+            let codes = self.codes.as_ptr().add(at);
+            // No closures: std's array helpers may stay out of line, and the
+            // vector code inside them with them.
+            [
+                S::mul(S::load_i8(codes), scale),
+                S::mul(S::load_i8(codes.add(8)), scale),
+                S::mul(S::load_i8(codes.add(16)), scale),
+                S::mul(S::load_i8(codes.add(24)), scale),
+            ]
+        }
+    }
 }
 
 /// 16-bit records of `W` elements.
@@ -141,6 +188,22 @@ impl<const W: usize> RecordStore for Q16Rec<'_, W> {
                 S::load_i16(self.codes.as_ptr().add(record * W + offset)),
                 S::splat(bf16_f32(*self.scales.get_unchecked((record * W + offset) / 32))),
             )
+        }
+    }
+    #[inline(always)]
+    unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
+        let at = record * W + offset;
+        debug_assert!(at.is_multiple_of(32) && (record + 1) * W <= self.codes.len());
+        // SAFETY: the block and its scale lie in the store (the contract).
+        unsafe {
+            let scale = S::splat(bf16_f32(*self.scales.get_unchecked(at / 32)));
+            let codes = self.codes.as_ptr().add(at);
+            [
+                S::mul(S::load_i16(codes), scale),
+                S::mul(S::load_i16(codes.add(8)), scale),
+                S::mul(S::load_i16(codes.add(16)), scale),
+                S::mul(S::load_i16(codes.add(24)), scale),
+            ]
         }
     }
 }
@@ -175,6 +238,28 @@ impl<const W: usize> RecordStore for Q4Rec<'_, W> {
             )
         }
     }
+    #[inline(always)]
+    unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
+        let at = record * W + offset;
+        debug_assert!(at.is_multiple_of(32) && (record + 1) * W <= 2 * self.codes.len());
+        // SAFETY: the block's 16 code bytes and its scale lie in the store
+        // (the contract); the codes are unpacked into a local array.
+        unsafe {
+            let bytes = self.codes.as_ptr().add(at / 2).cast::<[u8; 16]>().read_unaligned();
+            let mut codes = [0_i8; 32];
+            for (i, code) in codes.iter_mut().enumerate() {
+                *code = nibble(bytes[i / 2], i % 2);
+            }
+            let scale = S::splat(bf16_f32(*self.scales.get_unchecked(at / 32)));
+            let codes = codes.as_ptr();
+            [
+                S::mul(S::load_i8(codes), scale),
+                S::mul(S::load_i8(codes.add(8)), scale),
+                S::mul(S::load_i8(codes.add(16)), scale),
+                S::mul(S::load_i8(codes.add(24)), scale),
+            ]
+        }
+    }
 }
 
 /// `dot64(q, key)` for both heads of a record: the shared temporal half feeds
@@ -187,20 +272,20 @@ unsafe fn qk2<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize, 
     unsafe {
         let mut a = [S::zero(); 4];
         let mut b = [S::zero(); 4];
+        let t = store.load32::<S>(record, layout.temporal);
         for j in 0..4 {
-            let t = store.load8::<S>(record, layout.temporal + 8 * j);
-            a[j] = S::fma(S::load(q0.as_ptr().add(8 * j)), t, a[j]);
-            b[j] = S::fma(S::load(q1.as_ptr().add(8 * j)), t, b[j]);
+            a[j] = S::fma(S::load(q0.as_ptr().add(8 * j)), t[j], a[j]);
+            b[j] = S::fma(S::load(q1.as_ptr().add(8 * j)), t[j], b[j]);
         }
+        let s0 = store.load32::<S>(record, layout.spatial[0]);
+        let s1 = if layout.spatial[1] == layout.spatial[0] {
+            s0
+        } else {
+            store.load32::<S>(record, layout.spatial[1])
+        };
         for j in 0..4 {
-            let s0 = store.load8::<S>(record, layout.spatial[0] + 8 * j);
-            a[j] = S::fma(S::load(q0.as_ptr().add(32 + 8 * j)), s0, a[j]);
-            let s1 = if layout.spatial[1] == layout.spatial[0] {
-                s0
-            } else {
-                store.load8::<S>(record, layout.spatial[1] + 8 * j)
-            };
-            b[j] = S::fma(S::load(q1.as_ptr().add(32 + 8 * j)), s1, b[j]);
+            a[j] = S::fma(S::load(q0.as_ptr().add(32 + 8 * j)), s0[j], a[j]);
+            b[j] = S::fma(S::load(q1.as_ptr().add(32 + 8 * j)), s1[j], b[j]);
         }
         (
             S::sum(S::add(S::add(a[0], a[1]), S::add(a[2], a[3]))),
@@ -225,18 +310,10 @@ unsafe fn pv2<S: Isa>(v: [S::V; 8], p0: f32, p1: f32, o0: &mut [f32; 64], o1: &m
 
 #[inline(always)]
 unsafe fn record_value<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize) -> [S::V; 8] {
-    let value = layout.value;
     unsafe {
-        [
-            store.load8::<S>(record, value),
-            store.load8::<S>(record, value + 8),
-            store.load8::<S>(record, value + 16),
-            store.load8::<S>(record, value + 24),
-            store.load8::<S>(record, value + 32),
-            store.load8::<S>(record, value + 40),
-            store.load8::<S>(record, value + 48),
-            store.load8::<S>(record, value + 56),
-        ]
+        let [v0, v1, v2, v3] = store.load32::<S>(record, layout.value);
+        let [v4, v5, v6, v7] = store.load32::<S>(record, layout.value + 32);
+        [v0, v1, v2, v3, v4, v5, v6, v7]
     }
 }
 
@@ -358,16 +435,37 @@ pub(super) unsafe fn pair_entry<R: RecordStore, T: RecordStore>(
 const SUB: usize = 32;
 /// Decoded key layout in the sub-tile buffer: temporal half, then the two
 /// heads' spatial halves.
-const KEY_ROW: usize = 96;
+pub(super) const KEY_ROW: usize = 96;
 
-/// One record's decoded key halves into `dst` (`KEY_ROW` values).
+/// Where [`decode_key`] puts key `j` of a sub-tile: the offset of its first
+/// eight-value chunk and the distance between chunks. The 8-lane kernels
+/// read `KEY_ROW` contiguous values per key; the AVX-512 ones (`WIDE`) read
+/// the paired layout (`wide::paired`).
 #[inline(always)]
-unsafe fn decode_key<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize, dst: *mut f32) {
+fn key_slot<const WIDE: bool>(j: usize) -> (usize, usize) {
+    #[cfg(target_arch = "x86_64")]
+    if WIDE {
+        return (super::wide::paired(j, 0), 16);
+    }
+    (j * KEY_ROW, 8)
+}
+
+/// One record's decoded key halves into `dst`: chunk `c` of its `KEY_ROW`
+/// values at `dst + c * stride`.
+#[inline(always)]
+unsafe fn decode_key<S: Isa, R: RecordStore>(store: &R, layout: Layout, record: usize, dst: *mut f32, stride: usize) {
     unsafe {
+        let t = store.load32::<S>(record, layout.temporal);
+        let s0 = store.load32::<S>(record, layout.spatial[0]);
+        let s1 = if layout.spatial[1] == layout.spatial[0] {
+            s0
+        } else {
+            store.load32::<S>(record, layout.spatial[1])
+        };
         for j in 0..4 {
-            S::store(dst.add(8 * j), store.load8::<S>(record, layout.temporal + 8 * j));
-            S::store(dst.add(32 + 8 * j), store.load8::<S>(record, layout.spatial[0] + 8 * j));
-            S::store(dst.add(64 + 8 * j), store.load8::<S>(record, layout.spatial[1] + 8 * j));
+            S::store(dst.add(stride * j), t[j]);
+            S::store(dst.add(stride * (4 + j)), s0[j]);
+            S::store(dst.add(stride * (8 + j)), s1[j]);
         }
     }
 }
@@ -418,16 +516,68 @@ unsafe fn pv_decoded<S: Isa>(values: *const f32, probabilities: &[f32], denomina
     }
 }
 
+/// One row's logits of both heads over keys `sub..hi` of the tile, from the
+/// sub-tile's decoded keys (`keys`, starting at key `sub`): scaled into
+/// `logits` and folded into `block_max`.
+#[inline(always)]
+unsafe fn qk_row<S: Isa, const WIDE: bool>(
+    keys: *const f32,
+    span: &Span<'_>,
+    sub: usize,
+    hi: usize,
+    logits: &mut [[f32; TILE]; 2],
+    block_max: &mut [f32; 2],
+) {
+    let scale = (64_f32).sqrt().recip();
+    // SAFETY: the sub-tile buffer holds `SUB` keys and `hi - sub <= SUB`.
+    unsafe {
+        #[cfg(target_arch = "x86_64")]
+        if WIDE {
+            return super::wide::qk_row(keys, span.q0, span.q1, sub, hi, scale, logits, block_max);
+        }
+        let [l0, l1] = logits;
+        for (j, (l0, l1)) in (sub..hi).zip(l0[sub..hi].iter_mut().zip(&mut l1[sub..hi])) {
+            let (s0, s1) = qk2_decoded::<S>(keys.add((j - sub) * KEY_ROW), span.q0, span.q1);
+            *l0 = s0 * scale;
+            block_max[0] = block_max[0].max(*l0);
+            *l1 = s1 * scale;
+            block_max[1] = block_max[1].max(*l1);
+        }
+    }
+}
+
+/// One row's PV updates of both heads over the sub-tile's decoded values
+/// with its probabilities `p` (one per key and head).
+#[inline(always)]
+unsafe fn pv_row<S: Isa, const WIDE: bool>(
+    values: *const f32,
+    p: [&[f32]; 2],
+    denominator: &mut [f32; 2],
+    out: &mut [[f32; 64]; 2],
+) {
+    // SAFETY: the sub-tile buffer holds a value row per probability.
+    unsafe {
+        #[cfg(target_arch = "x86_64")]
+        if WIDE {
+            return super::wide::pv(values, p, denominator, out);
+        }
+        for h in 0..2 {
+            pv_decoded::<S>(values, p[h], &mut denominator[h], &mut out[h]);
+        }
+    }
+}
+
 /// [`pair`] for several query rows of one group over spans that start at the
 /// same position and end at their own lengths (empty spans are skipped). Each
 /// row performs exactly [`pair`]'s operation sequence (per element: the same
 /// FMA chains in key order, reductions, softmax and denominators). The rows
 /// share the record decoding: each 32-key sub-tile's keys and values are
 /// decoded once into a small buffer, and each row then runs over it with its
-/// outputs in registers.
+/// outputs in registers. `WIDE` (x86) runs the rows through the AVX-512
+/// kernels of `wide`, which keep every element's operations.
 #[inline(always)]
 #[allow(clippy::needless_range_loop)] // key index j addresses every row's logits and the record
-unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
+unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore, const WIDE: bool>(
     store: &R,
     tail: &T,
     spans: &[Span<'_>],
@@ -435,7 +585,6 @@ unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
 ) {
     let n = spans.len();
     debug_assert!(n <= MAX_ROWS && parts.len() == n);
-    let scale = (64_f32).sqrt().recip();
     let mut max = [[f32::NEG_INFINITY; 2]; MAX_ROWS];
     let mut denominator = [[0.0_f32; 2]; MAX_ROWS];
     let mut logits = [[[0.0_f32; TILE]; 2]; MAX_ROWS];
@@ -470,21 +619,18 @@ unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
                 let width = SUB.min(len - sub);
                 for j in 0..width {
                     let key = start + sub + j;
-                    let dst = keys.as_mut_ptr().add(j * KEY_ROW);
+                    let (slot, stride) = key_slot::<WIDE>(j);
+                    let dst = keys.as_mut_ptr().add(slot);
                     if key < prefix_len {
-                        decode_key::<S, R>(store, PREFIX, first_record + key, dst);
+                        decode_key::<S, R>(store, PREFIX, first_record + key, dst, stride);
                     } else {
-                        decode_key::<S, T>(tail, TAIL, tail_record(key), dst);
+                        decode_key::<S, T>(tail, TAIL, tail_record(key), dst, stride);
                     }
                 }
                 for r in 0..n {
-                    let span = &spans[r];
-                    for j in sub..lens[r].min(sub + width) {
-                        let (s0, s1) = qk2_decoded::<S>(keys.as_ptr().add((j - sub) * KEY_ROW), span.q0, span.q1);
-                        logits[r][0][j] = s0 * scale;
-                        block_max[r][0] = block_max[r][0].max(logits[r][0][j]);
-                        logits[r][1][j] = s1 * scale;
-                        block_max[r][1] = block_max[r][1].max(logits[r][1][j]);
+                    let hi = lens[r].min(sub + width);
+                    if hi > sub {
+                        qk_row::<S, WIDE>(keys.as_ptr(), &spans[r], sub, hi, &mut logits[r], &mut block_max[r]);
                     }
                 }
             }
@@ -525,15 +671,12 @@ unsafe fn pair_rows<S: Isa, R: RecordStore, T: RecordStore>(
                 }
                 for r in 0..n {
                     let hi = lens[r].min(sub + width);
-                    if hi <= sub {
-                        continue;
-                    }
-                    for h in 0..2 {
-                        pv_decoded::<S>(
+                    if hi > sub {
+                        pv_row::<S, WIDE>(
                             values.as_ptr(),
-                            &logits[r][h][sub..hi],
-                            &mut denominator[r][h],
-                            &mut parts[r].out[h],
+                            [&logits[r][0][sub..hi], &logits[r][1][sub..hi]],
+                            &mut denominator[r],
+                            &mut parts[r].out,
                         );
                     }
                 }
@@ -560,7 +703,7 @@ unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
     spans: &[Span<'_>],
     parts: &mut [Partial],
 ) {
-    unsafe { pair_rows::<crate::simd::Avx2, R, T>(store, tail, spans, parts) }
+    unsafe { pair_rows::<crate::simd::Avx2, R, T, false>(store, tail, spans, parts) }
 }
 /// [`pair_rows_native`] with the portable polynomial exp.
 #[cfg(target_arch = "x86_64")]
@@ -571,7 +714,29 @@ unsafe fn pair_rows_native_fast<R: RecordStore, T: RecordStore>(
     spans: &[Span<'_>],
     parts: &mut [Partial],
 ) {
-    unsafe { pair_rows::<crate::simd::Avx2Fast, R, T>(store, tail, spans, parts) }
+    unsafe { pair_rows::<crate::simd::Avx2Fast, R, T, false>(store, tail, spans, parts) }
+}
+/// [`pair_rows_native`] with the AVX-512 row kernels (`wide`).
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma,f16c,avx512f,avx512vl")]
+unsafe fn pair_rows_wide<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    unsafe { pair_rows::<crate::simd::Avx2, R, T, true>(store, tail, spans, parts) }
+}
+/// [`pair_rows_native_fast`] with the AVX-512 row kernels (`wide`).
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2,fma,f16c,avx512f,avx512vl")]
+unsafe fn pair_rows_wide_fast<R: RecordStore, T: RecordStore>(
+    store: &R,
+    tail: &T,
+    spans: &[Span<'_>],
+    parts: &mut [Partial],
+) {
+    unsafe { pair_rows::<crate::simd::Avx2Fast, R, T, true>(store, tail, spans, parts) }
 }
 #[cfg(target_arch = "aarch64")]
 unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
@@ -580,7 +745,7 @@ unsafe fn pair_rows_native<R: RecordStore, T: RecordStore>(
     spans: &[Span<'_>],
     parts: &mut [Partial],
 ) {
-    unsafe { pair_rows::<crate::simd::Neon, R, T>(store, tail, spans, parts) }
+    unsafe { pair_rows::<crate::simd::Neon, R, T, false>(store, tail, spans, parts) }
 }
 /// NEON's exp is already the polynomial one.
 #[cfg(target_arch = "aarch64")]

@@ -45,6 +45,8 @@ use rayon::prelude::*;
 
 mod codec;
 mod decode;
+#[cfg(target_arch = "x86_64")]
+mod wide;
 
 use codec::{bf16_f32, bf16_up, each_block, nibble, q4_block, q8_code, q8_scale, q16_code, q16_scale, zeroed};
 use decode::{F32Rec, PairKernel, Partial, Q4Rec, Q8Rec, Q16Rec, RowsKernel, Span, pair_entry};
@@ -876,12 +878,12 @@ impl SplitPrefix {
             && std::is_x86_feature_detected!("fma")
             && std::is_x86_feature_detected!("f16c")
         {
-            self.attention_pairs_rows(q, rows, last, sinks, output);
+            self.attention_pairs_rows(q, rows, last, sinks, output, kernels::wide_rows(simd));
             return;
         }
         #[cfg(target_arch = "aarch64")]
         if selected == Simd::Neon {
-            self.attention_pairs_rows(q, rows, last, sinks, output);
+            self.attention_pairs_rows(q, rows, last, sinks, output, false);
             return;
         }
         for r in 0..rows {
@@ -897,7 +899,7 @@ impl SplitPrefix {
 
     #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
     #[allow(clippy::needless_range_loop)] // rows are grouped by index into fixed-size arrays
-    fn attention_pairs_rows(&self, q: &[f32], rows: usize, last: usize, sinks: &[f32], output: &mut [f32]) {
+    fn attention_pairs_rows(&self, q: &[f32], rows: usize, last: usize, sinks: &[f32], output: &mut [f32], wide: bool) {
         let width = self.heads * 64;
         let groups = self.kv_heads;
         // The position partition `attention_pairs` uses at each length.
@@ -949,6 +951,7 @@ impl SplitPrefix {
                         spans: &spans[..n],
                         parts: &mut local[..n],
                         fast_exp: self.fast_exp,
+                        wide,
                     })
                 };
                 for (i, part) in local[..n].iter().enumerate() {

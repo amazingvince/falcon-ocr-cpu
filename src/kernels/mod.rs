@@ -52,6 +52,21 @@ pub(crate) fn wide_attention(simd: Simd) -> bool {
     cfg!(target_arch = "x86_64") && simd == Simd::Auto && avx512_available()
 }
 
+/// Whether the split cache's verification rows run the AVX-512 kernels: the
+/// `auto` backend on a CPU with AVX-512F and AVX-512VL (bitwise identical to
+/// the 8-lane kernels; an explicit `avx2` backend keeps 8 lanes).
+pub(crate) fn wide_rows(simd: Simd) -> bool {
+    #[cfg(target_arch = "x86_64")]
+    {
+        simd == Simd::Auto && avx512_available() && std::is_x86_feature_detected!("avx512vl")
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        let _ = simd;
+        false
+    }
+}
+
 /// Prefill projection kernel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
