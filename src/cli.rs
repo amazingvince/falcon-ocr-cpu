@@ -34,10 +34,12 @@ pub struct RunnerArgs {
     #[arg(long, value_enum, global = true)]
     pub head: Option<HeadMode>,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at
-    /// least max(256, 4 * cycle) tokens (finish_reason "repetition"); output
-    /// up to that step is unchanged [default: on for recognition, off for
-    /// falcon-ocr-eval]. `--stop-repetition=false` lets loops run to
-    /// --max-new-tokens.
+    /// least max(256, 4 * cycle) tokens, or a cycle of at most 128 tokens (a
+    /// number counting as one) in which only numbers change, each by a fixed
+    /// step, 32 times over at least 256 tokens
+    /// (finish_reason "repetition"); output up to that step is unchanged
+    /// [default: on for recognition, off for falcon-ocr-eval].
+    /// `--stop-repetition=false` lets loops run to --max-new-tokens.
     #[arg(long, num_args = 0..=1, require_equals = true, default_missing_value = "true", action = ArgAction::Set, global = true)]
     pub stop_repetition: Option<bool>,
     /// Decode threads: a number, `pool` (as many as --threads) or `auto`
