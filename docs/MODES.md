@@ -384,7 +384,11 @@ near-exact's previous kernels (`avx512-wide`, `avx2`). `static` gives the
 static tiles to fast mode's attention where that runs in FP32
 (`--backend avx2`, CPUs without AVX512-BF16, `--tune prefill-bf16=off`),
 which keeps the online softmax by default because the gate ran near-exact
-only. The kernel is in
+only. On fast mode's anchor with `--backend avx2` and the GPTQ overlay, the
+static softmax leaves agreement unchanged: 65 flips in 22,726 steps for
+both, mean KL 3.03e-4 against 3.01e-4
+(`artifacts/fast-fp32-static-2026-11-03/`); no held-out gate has tested it
+there. The kernel is in
 [ARCHITECTURE.md](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa).
 It is not bitwise the online softmax: it always evaluates the polynomial
 exp of `--exp fast` (the automatic configuration's), and on the score
