@@ -36,7 +36,7 @@ pub struct RunnerArgs {
     /// Stop a page once it repeats a cycle of at most 128 tokens for at
     /// least max(256, 4 * cycle) tokens, or a cycle of at most 128 tokens (a
     /// number counting as one) in which only numbers change, each by a fixed
-    /// step, 32 times over at least 256 tokens
+    /// step, 64 times over at least 256 tokens
     /// (finish_reason "repetition"); output up to that step is unchanged
     /// [default: on for recognition, off for falcon-ocr-eval].
     /// `--stop-repetition=false` lets loops run to --max-new-tokens.

@@ -422,7 +422,7 @@ pub struct RunnerConfig {
     pub draft_confidence: f32,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at least
     /// `max(256, 4 * cycle)` tokens, or counts in one (only numbers change,
-    /// each by a fixed step) 32 times over at least 256 tokens
+    /// each by a fixed step) 64 times over at least 256 tokens
     /// (`FinishReason::Repetition`). Never applied to teacher-forced runs.
     pub repetition_stop: bool,
     /// The decode spin team.
