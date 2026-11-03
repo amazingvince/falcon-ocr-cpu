@@ -9,7 +9,7 @@
 //! anchor like any lossy fast-mode change.
 use super::{
     HEAD_DIM, KEY_TILE, OutputPtr, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes, pv_uses_main_path,
-    qk_uses_main_path, reference_key_tile, softmax_lanes,
+    qk_uses_main_path, reference_key_tile, softmax_lanes, tile_span,
 };
 use crate::config::{ExpMode, PrefillSoftmax};
 use crate::kernels::{Bf16Kv, CompactKv, Geometry, PrefillOptions};
@@ -258,23 +258,6 @@ unsafe fn tile_head_fast(
     // The fused softmax (accepted A/B); the separate-pass form stays as the
     // oracle of `fused_softmax_matches_separate_passes`.
     unsafe { tile_head::<crate::simd::Avx2Fast, true>(operands, shape, tile, queries, head, kv_head, sinks, output) }
-}
-
-/// The span of the query tile starting at row `first_query`: its first
-/// absolute position, the end of the keys its queries see (`[0,
-/// visible_end)`) and whether every query is an image token (nothing to
-/// mask), as in the parent's `tile_head`.
-pub(super) fn tile_span(shape: &Shape, first_query: usize, queries: usize) -> (usize, usize, bool) {
-    let first_absolute = shape.query_offset + first_query;
-    let last_absolute = first_absolute + queries - 1;
-    let intersects_image = first_absolute < shape.image_end && last_absolute >= shape.image_start;
-    let visible_end = if intersects_image {
-        (last_absolute + 1).max(shape.image_end)
-    } else {
-        last_absolute + 1
-    };
-    let all_image = first_absolute >= shape.image_start && last_absolute < shape.image_end;
-    (first_absolute, visible_end, all_image)
 }
 
 /// The tile's queries of `head` as BF16 pairs, `[d / 2][32 queries]`, zero

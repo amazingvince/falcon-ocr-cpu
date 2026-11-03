@@ -27,8 +27,8 @@
 //! that, exp overflows or every term underflows), which the norms guarantee
 //! ten times over. Every tile shape takes the BF16 products here, including
 //! the short tiles the online kernel computes in FP32.
-use super::{Operands, PAIRS, bh, pv_lanes, query_pairs, tile_span};
-use crate::kernels::attention::prefill64::{HEAD_DIM, KEY_TILE, QUERY_TILE, STAGE_CYCLES, Shape, cycles};
+use super::{Operands, PAIRS, bh, pv_lanes, query_pairs};
+use crate::kernels::attention::prefill64::{HEAD_DIM, KEY_TILE, QUERY_TILE, STAGE_CYCLES, Shape, cycles, tile_span};
 use std::arch::x86_64::*;
 
 /// Minimax coefficients of `2^f` on [-1/2, 1/2], constant term first

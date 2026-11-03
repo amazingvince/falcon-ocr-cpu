@@ -28,7 +28,7 @@
 //! that a page-long row's denominator overflows, and beyond 87 the unchecked
 //! exp leaves `exp_poly`), which the norms guarantee ten times over.
 use super::{
-    HEAD_DIM, KEY_TILE, QUERY_TILE, STAGE_CYCLES, Shape, bf16::tile_span, cycles, mask_lanes, pv_lanes, qk_lanes, wide,
+    HEAD_DIM, KEY_TILE, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes, pv_lanes, qk_lanes, tile_span, wide,
 };
 use crate::kernels::CompactKv;
 use crate::simd::{Avx2, EXP_LN2_HI, EXP_LN2_LO, EXP_LOG2E, EXP_P};

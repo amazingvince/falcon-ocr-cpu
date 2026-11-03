@@ -42,9 +42,12 @@ use rayon::prelude::*;
 #[cfg(target_arch = "x86_64")]
 /// BF16 prefill attention using AVX512-BF16 dot products.
 pub(super) mod bf16;
+/// The keys a query tile sees.
+mod span;
 #[cfg(target_arch = "x86_64")]
 /// The FP32 tiles with the static-shift softmax.
 mod static_shift;
+use span::tile_span;
 
 /// Maximum query rows in a prefill tile.
 pub(super) const QUERY_TILE: usize = 32;
@@ -317,16 +320,7 @@ unsafe fn tile_head<S: Isa, const WIDE: bool>(
     output: *mut f32,
 ) {
     let first_query = tile * QUERY_TILE;
-    let first_absolute = shape.query_offset + first_query;
-    let last_absolute = first_absolute + queries - 1;
-    let intersects_image = first_absolute < shape.image_end && last_absolute >= shape.image_start;
-    let visible_end = if intersects_image {
-        (last_absolute + 1).max(shape.image_end)
-    } else {
-        last_absolute + 1
-    };
-    // Rows of image queries see every key below image_end; nothing to mask.
-    let all_image = first_absolute >= shape.image_start && last_absolute < shape.image_end;
+    let (first_absolute, visible_end, all_image) = tile_span(shape, first_query, queries);
     let mut qt = [0.0_f32; HEAD_DIM * QUERY_TILE];
     for r in 0..queries {
         let row = &q[(first_query + r) * shape.query_width + head * HEAD_DIM..][..HEAD_DIM];
