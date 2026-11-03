@@ -1381,21 +1381,10 @@ mod tests {
             return;
         }
         let (n_heads, n_kv_heads) = (16, 8);
-        // (query_len, image_start, image_end): tail tiles, text before and
-        // after the image, image ends inside and on key-tile boundaries.
-        for (query_len, image_start, image_end) in [
-            (70, 3, 65),
-            (300, 5, 262),
-            (257, 0, 257),
-            (160, 16, 144),
-            (129, 1, 128),
-            (40, 0, 3),
-            (95, 10, 90),
-        ] {
-            let q = values(query_len * n_heads * 64, 17 + query_len as u32, 3.0);
-            let k = values(query_len * n_heads * 64, 19 + query_len as u32, 3.0);
-            let v = values(query_len * n_kv_heads * 64, 23 + query_len as u32, 3.0);
-            let sinks = values(n_heads, 29, 2.0);
+        // Tail tiles, text before and after the image, image ends inside and
+        // on key-tile boundaries.
+        for (query_len, image_start, image_end) in CASES {
+            let (q, k, v, sinks) = operands(query_len);
             let mut expected = vec![f32::NAN; q.len()];
             super::super::tiled::attention_gemm(
                 &q,
