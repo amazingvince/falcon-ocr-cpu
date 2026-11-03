@@ -192,4 +192,7 @@ impl CountingLoop {
 }
 
 #[cfg(test)]
+mod probe;
+
+#[cfg(test)]
 mod tests;
