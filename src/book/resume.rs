@@ -66,11 +66,11 @@ impl Settings {
 }
 
 /// The runner's choices in a record's `plan` that change tokens: the
-/// repetition stop, the prefill exp, the prefill attention (BF16, NEON's
-/// polynomial exp, scalar, or the FP32 tiles, whose AVX2 and AVX-512 forms
-/// agree bitwise), BF16 or INT16 projections (the INT16 VNNI and AVX2
-/// kernels agree bitwise), decode chunking, a pinned decode exp and the
-/// image decoder.
+/// repetition stop, the prefill exp, the prefill attention (BF16 with the
+/// online or the static softmax, NEON's polynomial exp, scalar, or the FP32
+/// tiles, whose AVX2 and AVX-512 forms agree bitwise), BF16 or INT16
+/// projections (the INT16 VNNI and AVX2 kernels agree bitwise), decode
+/// chunking, a pinned decode exp and the image decoder.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kernels {
     pub repetition_stop: bool,
@@ -203,9 +203,9 @@ impl Run {
                     && let Some(expected) = &mut expected
                 {
                     // Escalation shares the run's configuration, but its
-                    // 16-bit body cannot use fast mode's BF16 or INT16
-                    // prefill.
-                    if expected.attention == "bf16" {
+                    // 16-bit body cannot use fast mode's BF16 (online or
+                    // static softmax) or INT16 prefill.
+                    if matches!(expected.attention.as_str(), "bf16" | "bf16-static") {
                         expected.attention = "fp32".to_owned();
                     }
                     expected.bf16_projections = false;

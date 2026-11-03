@@ -180,11 +180,11 @@ chunking matches an explicit mode default, and compact caches ignore the
 split-cache knob.
 
 An escalated record compares its near-exact rerun's kernel settings,
-allowing the expected switch from fast mode's online-softmax BF16 attention
-and BF16 or INT16 projections to FP32, and the weights of the fast attempt
-it replaced, which `escalated_from` records;
-an escalated record written before those were recorded has none to compare
-and matches any weights. With `--escalate`, a warning counts fast-mode
+allowing the expected switch from fast mode's BF16 attention (either
+softmax) and BF16 or INT16 projections to FP32, and the weights of the fast
+attempt it replaced, which `escalated_from` records; an escalated record
+written before those were recorded has none to compare and matches any
+weights. With `--escalate`, a warning counts fast-mode
 records that the repetition stop ended without a near-exact rerun, since
 their pages are skipped.
 
