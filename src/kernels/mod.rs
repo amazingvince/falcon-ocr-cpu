@@ -212,8 +212,8 @@ fn i16_projection(simd: Simd) -> Option<PrefillProjection> {
 /// Explicit unavailable variants return an error from [`Simd::validate`] and
 /// panic if passed directly to a kernel. `Auto` resolves to AVX2/FMA on x86-64
 /// (decode kernels are 8-lane; AVX-512F only widens the prefill attention
-/// tiles, bitwise identically, and AVX512-BF16 serves the 8-bit prefill) and
-/// to NEON on aarch64.
+/// tiles, bitwise identically; AVX512-BF16 serves the 8-bit prefill, and
+/// AVX512-VNNI its opt-in INT16 projections) and to NEON on aarch64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Simd {
     Auto,
