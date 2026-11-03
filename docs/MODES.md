@@ -342,12 +342,12 @@ Micro CER on the pages where the reference ends at EOS:
 | Tables | 36 | 18.358% | 18.291% | -0.066 pt |
 
 The other 5 pages, all tables, reach the 4,096-token cap in both arms; no
-page changes its stop reason, and the repetition stop fires on none. 148
-of the 156 pages are token-identical (144 of the 151 EOS pages), with 289
-token edits in the EOS pages' 182,447 tokens. The gate's binary predates
-the counting rule of the
-[repetition stop](#loops-and-the-repetition-stop), which ends none of the
-gate's 312 outputs (both arms) when they are replayed through it.
+page changes its stop reason, and the repetition stop fires on none. 148 of
+the 156 pages are token-identical (144 of the 151 EOS pages), with 289 token
+edits in the EOS pages' 182,447 tokens. The gate's binary predates the
+counting rule of the [repetition stop](#loops-and-the-repetition-stop), which
+at 64 cycles ends none of the gate's 312 outputs (both arms) when they are
+replayed through it (`artifacts/repetition-probe-2026-11-03/`).
 
 ## Static softmax in the FP32 tiles (experimental)
 
@@ -631,46 +631,58 @@ genuine FP32 loops, even one that FP32 itself ends at EOS after a
 better: CER 1.90 → 0.83), so there the default output is shorter than
 FP32's.
 
-The counting rule ends loops whose lines differ only in numbers that
-count, such as `44 女 …`, `45 女 …`. The pinned tokenizer gives every
-digit its own token (`OcrTokenizer::load` checks IDs 539-548), so the rule
-reads each run of digit tokens as one number and compares each symbol, a
+The counting rule ends loops whose lines differ only in numbers that count,
+such as `44 女 …`, `45 女 …`. The pinned tokenizer gives every digit its own
+token (`OcrTokenizer::load` checks IDs 539-548; the ignored
+`pinned_tokenizer_prompt_and_decode` checks that a date and a grouped number
+encode into them digit by digit, with no digit in any other token), so the
+rule reads each run of digit tokens as one number and compares each symbol, a
 number or another token, with the one a period of at most 128 symbols
 earlier. Other tokens must be equal, each number must differ from its
 counterpart a period earlier by the same step in every cycle, and at least
 one step must be nonzero, which leaves exact loops to the exact rule. The
-rule fires once such a window holds 32 whole cycles and spans at least 256
+rule fires once such a window holds 64 whole cycles and spans at least 256
 tokens (`MIN_COUNT_REPEATS`, `MIN_WINDOW` in `src/repetition.rs`).
 
-The threshold comes from recorded text: 423 distinct output sequences
-under `artifacts/` (calibration, anchor, book, stress and probe runs) and
-the 1,651 OmniDocBench ground-truth pages, tokenized with tables in the
-model's style. The longest counting window in legitimate text is 20
-cycles, a scoring table counting down from 20 bonus points (v3 page
-`aa8e1119117b1822`, which ends at EOS); the next longest is 9, and a
-threshold of 16 would cut the scoring table. The three counting loops on
-record reach 65, 77 and 212 cycles. At 32 the rule ends 4 of these 2,074
-outputs, none of which ends at EOS:
+The threshold comes from recorded text, replayed through the stop without a
+model (`repetition::probe::recorded_outputs_probe`; the inputs, builders and
+both probe outputs are in `artifacts/repetition-probe-2026-11-03/`): 1,047
+recorded outputs (560 distinct token sequences) of calibration, anchor, book,
+stress, probe and gate runs under `artifacts/`, and the 1,651 OmniDocBench
+ground-truth pages, tokenized with tables in the model's style; 2,698 outputs
+and 2,879,678 tokens in all. In outputs that end at EOS and in ground truth,
+the longest counting window is 20 cycles, a scoring table counting down from
+20 bonus points (v3 page `aa8e1119117b1822`, in its output and its ground
+truth); the next longest is 9, and a threshold of 16 would cut the scoring
+table. Templated pages count for longer: a Celsius-to-Fahrenheit table of 41
+rows, a 40-item answer sheet and a 52-week planner hold 40 to 52 cycles,
+which a threshold of 32 would cut
+(`templated_rows_with_fixed_steps_are_not_loops` in
+`src/repetition/tests.rs`). The three counting loops on record reach 65, 119
+and 212 cycles. At 64 the rule ends 7 of the 2,698 outputs, on the same three
+pages as at 32, and none that ends at EOS or is ground truth:
 
-| Page | Output | Tokens before | Counting rule |
+| Page | Output | Tokens before | Counting rule (at 32) |
 |---|---|---:|---:|
-| Mild deep-fried `ad43a4d35e59199e` | Fast and near-exact (identical): rows 44 to 255 | 4,096 (cap) | 695 |
-| Anchor `3b0add7f7d14d45c` | Fast mode's current kernels: a list `(1)` to `(100)` of one date, `1980年12月24日 星期五` | 2,247 (exact rule) | 728 |
-| `3ae00f1496cda3ff` | FP32, CPU reference and PyTorch GPU cross-check: the years 1981, 1982, … | 512 and 384 (budgets) | 308 |
+| Mild deep-fried `ad43a4d35e59199e` | Fast mode's current kernels and near-exact with either FP32 softmax (identical): rows 44 to 255 | 4,096 (cap) | 1,279 (695) |
+| Anchor `3b0add7f7d14d45c` | Fast mode's current kernels: a list `(1)` to `(100)` of one date, `1980年12月24日 星期五` | 2,247 (exact rule) | 1,368 (728) |
+| `3ae00f1496cda3ff` | The FP32 CPU reference and near-exact with either FP32 softmax: the years 1981, 1982, … | 512 (budget), 4,096 (cap) | 434 (308) |
 
-The deep-fried page is a degraded Traditional Chinese page
-([free-running validation](#free-running-validation)); its counting loop
-now ends in row 75. Fast mode's previous prefill kernels fell into an exact
-two-line loop there instead, which the exact rule ended at 314 tokens. In
-each output the loop continues past the cut, and fast mode's outputs of
-`3ae00f1496cda3ff` end at EOS without the year run. Both rules together
-cost about 0.3 µs per token (one run on a busy 7700X), against about 9 ms
-per decode step.
+The deep-fried page is a degraded Traditional Chinese page ([free-running
+validation](#free-running-validation)); its counting loop now ends in row
+107. Fast mode's previous prefill kernels fell into an exact two-line loop
+there instead, which the exact rule ended at 314 tokens. The anchor's date
+list now ends after item 64, and the year run after 2044. The PyTorch GPU
+cross-check of `3ae00f1496cda3ff`, whose 384-token budget ends its year run
+after 55 cycles, no longer fires. In each output the loop continues past the
+cut, and fast mode's outputs of `3ae00f1496cda3ff` end at EOS without the
+year run. Both rules together cost about 0.3 µs per token (one probe run on a
+7700X), against about 9 ms per decode step.
 
-Legitimate content that matches a rule is cut: a 256-token page of
-identical lines, or 32 or more rows identical apart from counting numbers
-(a long blank numbered form, a number chart). Pass
-`--stop-repetition=false` for such pages.
+Legitimate content that matches a rule is cut: a 256-token page of identical
+lines, or 64 or more rows identical apart from counting numbers (a long blank
+numbered form, a number chart). Pass `--stop-repetition=false` for such
+pages.
 
 `run --escalate` rereads fast-mode pages that either rule ends with the
 near-exact model, and under `--max-dimension auto` the router's

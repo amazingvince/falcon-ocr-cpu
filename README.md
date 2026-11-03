@@ -83,7 +83,7 @@ drafting and the screened head do not change tokens.
 
 The repetition stop ends cycles of at most 128 tokens after at least
 `max(256, 4 × cycle)` repeated tokens, and counting loops, whose cycles
-differ only in numbers that each move by a fixed step, after 32 cycles
+differ only in numbers that each move by a fixed step, after 64 cycles
 spanning at least 256 tokens
 ([loops](docs/MODES.md#loops-and-the-repetition-stop)). Without
 `--max-new-tokens`, the 8,192-token cap is lowered when the input leaves
