@@ -83,6 +83,21 @@ pub enum PrefillBf16 {
     All,
 }
 
+/// Softmax of the BF16 prefill attention (`Tuning::prefill_softmax`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PrefillSoftmax {
+    /// Online softmax: a running maximum per query row, with the output and
+    /// denominator rescaled whenever it grows.
+    #[default]
+    Online,
+    /// No shift at all: the per-head RMS norms bound every score by 8 in
+    /// magnitude, so `exp(score)` neither overflows nor underflows, and key
+    /// tiles add without rescaling (`prefill64::bf16::static_shift`). Changes
+    /// fast mode's prefill rounding.
+    Static,
+}
+
 /// Storage of the draft head's keys and values (`Tuning::draft_kv`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -97,7 +112,8 @@ pub enum DraftKv {
 
 /// Experiment and diagnostic knobs. The defaults are the accepted
 /// configuration; every field is scheduling or instrumentation only, except
-/// `prefill_bf16` and `prefill_i16`, which change fast-mode prefill rounding.
+/// `prefill_bf16`, `prefill_i16` and `prefill_softmax`, which change
+/// fast-mode prefill rounding.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
@@ -108,6 +124,8 @@ pub struct Tuning {
     /// `auto` backend has it, bitwise the same AVX2 kernel otherwise. Takes
     /// precedence over `prefill_bf16 = All` for the projections.
     pub prefill_i16: bool,
+    /// Softmax of the BF16 prefill attention (with AVX512BW as well).
+    pub prefill_softmax: PrefillSoftmax,
     /// Position chunks per KV group in split-cache decode attention (1..=4).
     /// `None` keeps the mode default: one exact scan for FP32 caches, four
     /// chunks (merged partial softmaxes, rounding-level) for quantized ones.
@@ -137,8 +155,10 @@ pub struct Tuning {
 }
 impl Tuning {
     /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
-    /// `prefill-i16=true|false`, `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
-    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`,
+    /// `prefill-i16=true|false`, `prefill-softmax=online|static`,
+    /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
+    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,
+    /// `draft-gate=token|path`,
     /// `decode-exp=exact|fast`).
     pub fn set(&mut self, pair: &str) -> Result<()> {
         let (key, value) = pair
@@ -161,6 +181,13 @@ impl Tuning {
                 }
             }
             "prefill-i16" => self.prefill_i16 = flag(value)?,
+            "prefill-softmax" => {
+                self.prefill_softmax = match value {
+                    "online" => PrefillSoftmax::Online,
+                    "static" => PrefillSoftmax::Static,
+                    _ => bail!("tuning knob prefill-softmax: expected online or static, got `{value}`"),
+                }
+            }
             "split-chunks" => {
                 let chunks: usize = value
                     .parse()
@@ -205,8 +232,8 @@ impl Tuning {
                 }
             }
             _ => bail!(
-                "unknown tuning knob `{key}` (prefill-bf16, prefill-i16, split-chunks, phases, prefill-profile, \
-                 draft-backoff, draft-window, draft-kv, draft-gate, decode-exp)"
+                "unknown tuning knob `{key}` (prefill-bf16, prefill-i16, prefill-softmax, split-chunks, phases, \
+                 prefill-profile, draft-backoff, draft-window, draft-kv, draft-gate, decode-exp)"
             ),
         }
         Ok(())
@@ -728,6 +755,7 @@ mod tests {
         let tuning = Tuning::from_pairs([
             "prefill-bf16=all",
             "prefill-i16=on",
+            "prefill-softmax=static",
             "split-chunks=3",
             "phases=1",
             "draft-window=256",
@@ -741,12 +769,14 @@ mod tests {
         assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::All);
         assert!(tuning.prefill_i16);
+        assert_eq!(tuning.prefill_softmax, PrefillSoftmax::Static);
         assert_eq!(tuning.split_chunks, Some(3));
         assert!(tuning.phases && !tuning.prefill_profile);
         assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
         for bad in [
             "split-chunks=5",
             "split-chunks=x",
+            "prefill-softmax=max",
             "phases=maybe",
             "draft-kv=f16",
             "draft-window=-1",

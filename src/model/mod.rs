@@ -587,11 +587,10 @@ impl Model {
         // Quantized prefill: the RMS norms fold into the GEMM's row packing and
         // the residual adds into its epilogue, with the same per-element
         // operations as the separate passes.
-        // `kernels::prefill_plan` is the one place that decides which prefill
-        // kernels a body and CPU get (`auto::Resolved` reports the same plan).
+        // `kernels::prefill_plan` alone picks the prefill kernels (`auto::Resolved` reports it).
         let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, &tuning);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
-        let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;
+        let bf16_attention = plan.attention.bf16_softmax().filter(|_| panel);
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             let step = LayerStep {
@@ -615,7 +614,7 @@ impl Model {
             // A whole prefix in one call also gets its BF16 attention copies
             // from the same pass.
             stored_bf16 = fused
-                && bf16_attention
+                && bf16_attention.is_some()
                 && offset == 0
                 && session.layers[i].compact_prefix_len() == Some(rows)
                 && kernels::prefill_bf16_rows_available();
@@ -644,7 +643,7 @@ impl Model {
             }
             clock.mark(3);
             let cache = &mut session.layers[i];
-            let bf16_kv = if !bf16_attention {
+            let bf16_kv = if bf16_attention.is_none() {
                 None
             } else if stored_bf16 {
                 Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values))
@@ -664,6 +663,7 @@ impl Model {
                 kernels::PrefillOptions {
                     exp,
                     profile: tuning.prefill_profile,
+                    softmax: bf16_attention.unwrap_or_default(),
                 },
             );
             clock.mark(4);
@@ -847,7 +847,7 @@ impl Model {
                     None,
                     kernels::PrefillOptions {
                         exp: session.exp,
-                        profile: false,
+                        ..kernels::PrefillOptions::EXACT
                     },
                 );
             }

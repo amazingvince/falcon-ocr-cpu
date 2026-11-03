@@ -25,7 +25,7 @@ use super::{
     rotary_factors, split_norm_rope,
 };
 use crate::{
-    config::{CacheLayout, ExpMode, ModelConfig, Tuning},
+    config::{CacheLayout, ExpMode, ModelConfig, PrefillSoftmax, Tuning},
     kernels::{self, Bf16Kv, Geometry, PrefillOptions, PrefillProjection as Projection, Simd},
     quant::{Kv, linear::QuantLinear},
 };
@@ -103,7 +103,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
     let geometry = Geometry::new(0, image_start, image_end);
     let fast = PrefillOptions {
         exp: ExpMode::Fast,
-        profile: false,
+        ..PrefillOptions::EXACT
     };
     // BF16 panels and attention copies where the CPU has AVX512-BF16, and
     // the INT16 panels where the plan has them.
@@ -178,21 +178,27 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                     if bf16 {
                         push("BF16 key copies", work.bf16_keys.clone());
                         push("BF16 value copies", work.bf16_values.clone());
-                        let mut attention = vec![f32::NAN; rows * qdim];
-                        let converted = Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values));
-                        cache.layers[0].attention(
-                            &work.q,
-                            rows,
-                            rows,
-                            &c,
-                            geometry,
-                            &sinks,
-                            &mut attention,
-                            Simd::Auto,
-                            converted,
-                            fast,
-                        );
-                        push("BF16 attention", bits(&attention));
+                        for softmax in [PrefillSoftmax::Online, PrefillSoftmax::Static] {
+                            let mut attention = vec![f32::NAN; rows * qdim];
+                            let converted = Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values));
+                            cache.layers[0].attention(
+                                &work.q,
+                                rows,
+                                rows,
+                                &c,
+                                geometry,
+                                &sinks,
+                                &mut attention,
+                                Simd::Auto,
+                                converted,
+                                PrefillOptions { softmax, ..fast },
+                            );
+                            let stage = match softmax {
+                                PrefillSoftmax::Online => "BF16 attention",
+                                PrefillSoftmax::Static => "BF16 attention, static softmax",
+                            };
+                            push(stage, bits(&attention));
+                        }
                     }
                     cache.layers[0].attention(
                         &work.q,
@@ -268,6 +274,10 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
     if bf16 {
         assert_ne!(output("W8: QKV projection"), output("W8 panel-bf16: QKV projection"));
         assert_ne!(output("W8: attention"), output("W8: BF16 attention"));
+        assert_ne!(
+            output("W8: BF16 attention"),
+            output("W8: BF16 attention, static softmax")
+        );
     }
     for threads in [2, 3, 7] {
         let other = run(threads);

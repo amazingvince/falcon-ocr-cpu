@@ -13,7 +13,7 @@ use super::avx512_available;
 #[cfg(target_arch = "x86_64")]
 use super::panel_bf16;
 use super::{Simd, avx2_available, elements, native_vector};
-use crate::config::ExpMode;
+use crate::config::{ExpMode, PrefillSoftmax};
 
 /// BF16 copies of a prefill's keys and values for the BF16 attention kernel:
 /// either written by the fused QKV pass (`Converted`) or converted by the
@@ -197,19 +197,23 @@ impl<'a> CompactKv<'a> {
     }
 }
 
-/// Prefill tile options: the softmax exp and the stage cycle counters.
-/// Decode paths ignore both.
+/// Prefill tile options: the softmax exp, the stage cycle counters and the
+/// BF16 kernel's softmax. Decode paths ignore all three; the FP32 tiles
+/// ignore `softmax`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PrefillOptions {
     pub exp: ExpMode,
     pub profile: bool,
+    pub softmax: PrefillSoftmax,
 }
 
 impl PrefillOptions {
-    /// The platform-exact exp, no counters: the reference configuration.
+    /// The platform-exact exp, no counters, online softmax: the reference
+    /// configuration.
     pub const EXACT: Self = Self {
         exp: ExpMode::Exact,
         profile: false,
+        softmax: PrefillSoftmax::Online,
     };
 }
 
@@ -306,8 +310,11 @@ pub(crate) fn attention_with(
 /// BF16 form of the pure-prefill attention (fast mode on AVX512-BF16 CPUs,
 /// see `prefill64::bf16`): Q, K, V and the probabilities round to BF16;
 /// scores, softmax and outputs stay FP32. `bf16` supplies the BF16 key and
-/// value copies or the scratch to convert them into. Returns false, writing
-/// nothing, when the CPU or the shape does not qualify.
+/// value copies or the scratch to convert them into; `options.softmax`
+/// selects the online or the static-shift softmax (the latter needs scores
+/// bounded by 8 in magnitude and AVX512BW, and otherwise runs online).
+/// Returns false, writing nothing, when the CPU or the shape does not
+/// qualify.
 pub(crate) fn attention_prefill_bf16(
     q: &[f32],
     kv: &CompactKv<'_>,

@@ -383,7 +383,12 @@ fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
     let geometry = Geometry::new(0, 3, 65);
     let fast = PrefillOptions {
         exp: crate::config::ExpMode::Fast,
-        profile: false,
+        ..PrefillOptions::EXACT
+    };
+    // Operands in [-1, 1] keep every score within the static bound of 8.
+    let fast_static = PrefillOptions {
+        softmax: crate::config::PrefillSoftmax::Static,
+        ..fast
     };
     let vocab = 4096;
     let head = values(vocab * dim, 31);
@@ -429,11 +434,13 @@ fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
                 attention_with(&q, &kv, queries, geometry, &sinks, &mut attention, Simd::Auto, options);
                 outputs.push(attention);
             }
-            let mut bf16 = vec![f32::NAN; q.len()];
-            let (mut bf16_keys, mut bf16_values) = (Vec::new(), Vec::new());
-            let converted = Bf16Kv::Convert(&mut bf16_keys, &mut bf16_values);
-            if attention_prefill_bf16(&q, &kv, queries, geometry, &sinks, &mut bf16, converted, fast) {
-                outputs.push(bf16);
+            for options in [fast, fast_static] {
+                let mut bf16 = vec![f32::NAN; q.len()];
+                let (mut bf16_keys, mut bf16_values) = (Vec::new(), Vec::new());
+                let converted = Bf16Kv::Convert(&mut bf16_keys, &mut bf16_values);
+                if attention_prefill_bf16(&q, &kv, queries, geometry, &sinks, &mut bf16, converted, options) {
+                    outputs.push(bf16);
+                }
             }
             let mut normalized = vec![f32::NAN; input.len()];
             rms_norm(&input, &mut normalized, dim, 1e-5, None);
@@ -614,7 +621,7 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
 
 #[test]
 fn exception_columns_keep_fp32_projection_panels() {
-    use crate::config::{PrefillBf16, Tuning};
+    use crate::config::{PrefillBf16, PrefillSoftmax, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
             for setting in [PrefillBf16::Off, PrefillBf16::Attention, PrefillBf16::All] {
@@ -629,6 +636,22 @@ fn exception_columns_keep_fp32_projection_panels() {
                         prefill_plan(bits, false, simd, &tuning),
                         prefill_plan(bits, true, simd, &tuning),
                     );
+                    // The static softmax only replaces the BF16 attention's softmax.
+                    let static_softmax = prefill_plan(
+                        bits,
+                        false,
+                        simd,
+                        &Tuning {
+                            prefill_softmax: PrefillSoftmax::Static,
+                            ..tuning
+                        },
+                    );
+                    assert_eq!(static_softmax.projection, plain.projection, "{case}");
+                    let expected = match plain.attention {
+                        PrefillAttention::Bf16 if prefill_bf16_rows_available() => PrefillAttention::Bf16Static,
+                        other => other,
+                    };
+                    assert_eq!(static_softmax.attention, expected, "{case}");
                     assert_eq!(exceptions.attention, plain.attention, "{case}");
                     let expected = match plain.projection {
                         PrefillProjection::PanelBf16
