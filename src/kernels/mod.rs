@@ -54,7 +54,9 @@ pub(crate) fn wide_attention(simd: Simd) -> bool {
 
 /// Whether the split cache's verification rows run the AVX-512 kernels: the
 /// `auto` backend on a CPU with AVX-512F and AVX-512VL (bitwise identical to
-/// the 8-lane kernels; an explicit `avx2` backend keeps 8 lanes).
+/// the 8-lane kernels; an explicit `avx2` backend keeps 8 lanes). The row
+/// kernels use AVX-512F only; VL lets the 8-lane code compiled into the same
+/// entries use all 32 vector registers.
 pub(crate) fn wide_rows(simd: Simd) -> bool {
     #[cfg(target_arch = "x86_64")]
     {
@@ -226,9 +228,10 @@ fn i16_projection(simd: Simd) -> Option<PrefillProjection> {
 ///
 /// Explicit unavailable variants return an error from [`Simd::validate`] and
 /// panic if passed directly to a kernel. `Auto` resolves to AVX2/FMA on x86-64
-/// (decode kernels are 8-lane; AVX-512F only widens the prefill attention
-/// tiles, bitwise identically; AVX512-BF16 serves the 8-bit prefill, and
-/// AVX512-VNNI its opt-in INT16 projections) and to NEON on aarch64.
+/// (decode kernels are 8-lane; AVX-512F widens the prefill attention tiles
+/// and the verification rows of split-cache decode attention, both bitwise
+/// identically; AVX512-BF16 serves the 8-bit prefill, and AVX512-VNNI its
+/// opt-in INT16 projections) and to NEON on aarch64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Simd {
     Auto,
