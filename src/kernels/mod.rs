@@ -177,14 +177,15 @@ impl std::fmt::Display for PrefillAttention {
 }
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
-/// for FP32), with or without W8 `exceptions` columns, on this CPU with the
-/// `simd` backend and the `tuning` knobs `prefill_bf16`,
-/// `prefill_bf16_w16`, `prefill_projections`, `prefill_softmax` and
-/// `prefill_softmax_fp32`: the single predicate set behind
-/// `Model::forward_layers` and `auto::Resolved`. By default an 8-bit body
-/// without exception columns takes the INT16 projections on x86 CPUs with
-/// AVX2 (VNNI under the `auto` backend where the CPU has it), and its BF16
-/// attention takes the static-shift softmax where the CPU also has
+/// for FP32), with or without matrices the INT16 panels cannot hold
+/// (`i16_misfit`, `Model::i16_misfit`: W8 exception columns or groups of
+/// 32), on this CPU with the `simd` backend and the `tuning` knobs
+/// `prefill_bf16`, `prefill_bf16_w16`, `prefill_projections`,
+/// `prefill_softmax` and `prefill_softmax_fp32`: the single predicate set
+/// behind `Model::forward_layers` and `auto::Resolved`. By default an 8-bit
+/// body that the INT16 panels hold takes the INT16 projections on x86 CPUs
+/// with AVX2 (VNNI under the `auto` backend where the CPU has it), and its
+/// BF16 attention takes the static-shift softmax where the CPU also has
 /// AVX512BW; 16-bit and FP32 bodies never take either by default. A 16-bit
 /// body takes the 8-bit one's BF16 attention, softmax included, wherever
 /// that runs, when `prefill_bf16_w16` asks for it; an FP32 body never
@@ -197,7 +198,7 @@ impl std::fmt::Display for PrefillAttention {
 /// regardless.
 pub fn prefill_plan(
     body_bits: Option<u32>,
-    exceptions: bool,
+    i16_misfit: bool,
     simd: Simd,
     tuning: &crate::config::Tuning,
 ) -> PrefillPlan {
@@ -209,15 +210,16 @@ pub fn prefill_plan(
     // 8-bit bodies (fast mode) run the prefill projections with INT16
     // activations and the attention in BF16 where the CPU has AVX512-BF16
     // (`attention_prefill_bf16`); 16-bit bodies (near-exact mode) take the
-    // same attention only on request. INT16 panels hold codes only, so a
-    // body with exception columns keeps FP32 projection panels.
+    // same attention only on request. INT16 panels hold codes only, in
+    // groups of 64, so a body with exception columns or groups of 32 keeps
+    // FP32 projection panels (`QuantLinear::prefill` asserts as much).
     let bf16_body = match body_bits {
         Some(8) => true,
         Some(16) => tuning.prefill_bf16_w16 != PrefillBf16::Off,
         _ => false,
     };
     let bf16_attention = panel && bf16_body && simd == Simd::Auto && bf16_available();
-    let i16 = panel && body_bits == Some(8) && !exceptions && tuning.prefill_projections == PrefillProjections::I16;
+    let i16 = panel && body_bits == Some(8) && !i16_misfit && tuning.prefill_projections == PrefillProjections::I16;
     let projection = if !panel {
         PrefillProjection::GemmF32
     } else if i16 && let Some(isa) = i16_projection(simd) {

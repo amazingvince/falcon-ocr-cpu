@@ -250,8 +250,8 @@ fn exception_decode_is_bitwise_the_documented_order() {
 }
 
 /// Large-M products (prefill, and the dense fallback) use the exact
-/// weights in place; with INT16 projections requested, a matrix with
-/// exception columns keeps the FP32 panels.
+/// weights in place; the INT16 panels, which hold only codes, do not take
+/// a matrix with exception columns.
 #[test]
 fn exception_large_m_and_prefill_use_the_exact_weights() {
     use crate::kernels::panel_gemm::Epilogue;
@@ -303,23 +303,9 @@ fn exception_large_m_and_prefill_use_the_exact_weights() {
                 &mut Scratch::default(),
                 PrefillProjection::PanelAvx2,
             );
-            // Requests for the code-only INT16 panels keep the FP32 panels
-            // for a matrix with exception columns.
-            for kernel in [PrefillProjection::PanelI16Vnni, PrefillProjection::PanelI16Avx2] {
-                let mut other = vec![f32::NAN; rows * n];
-                q.prefill(
-                    &x,
-                    rows,
-                    None,
-                    Epilogue::Store(&mut other),
-                    &mut Scratch::default(),
-                    kernel,
-                );
-                assert!(
-                    other.iter().zip(&fp32).all(|(a, b)| a.to_bits() == b.to_bits()),
-                    "{kernel}"
-                );
-            }
+            // The code-only INT16 panels cannot hold it, so no plan gives it
+            // them (`prefill_with_int16_panels_rejects_a_matrix_they_cannot_hold`).
+            assert!(!q.fits_i16_panels());
             for (r, c) in (0..rows).flat_map(|r| (0..n).map(move |c| (r, c))) {
                 let products: Vec<f64> = (0..k).map(|j| x[r * k + j] as f64 * exact[c * k + j] as f64).collect();
                 let sum: f64 = products.iter().sum();
@@ -330,6 +316,34 @@ fn exception_large_m_and_prefill_use_the_exact_weights() {
             }
         }
     }
+}
+
+/// Only 8-bit codes in groups of 64 without exception columns, in whole
+/// 32-row panels, fit the INT16 panels; asked to run any other matrix they
+/// panic instead of quietly running the FP32 panels under a plan that
+/// reports INT16.
+#[test]
+#[cfg(target_arch = "x86_64")]
+#[should_panic(expected = "`prefill_plan` must plan the FP32 panels")]
+fn prefill_with_int16_panels_rejects_a_matrix_they_cannot_hold() {
+    use crate::kernels::{PrefillProjection, panel_gemm::Epilogue};
+    let (n, k) = (32, 128);
+    let w: Vec<_> = (0..n * k).map(|i| ((i * 6007 % 1999) as f32 - 999.0) / 613.0).collect();
+    assert!(QuantLinear::quantize(&w, n, k, 64).unwrap().fits_i16_panels());
+    assert!(!QuantLinear::quantize(&w, 16, 2 * k, 64).unwrap().fits_i16_panels());
+    assert!(!QuantLinear::quantize_bits(&w, n, k, 64, 16).unwrap().fits_i16_panels());
+    let grouped = QuantLinear::quantize(&w, n, k, 32).unwrap();
+    assert!(!grouped.fits_i16_panels());
+    let x = vec![0.5_f32; 9 * k];
+    let mut out = vec![0.0_f32; 9 * n];
+    grouped.prefill(
+        &x,
+        9,
+        None,
+        Epilogue::Store(&mut out),
+        &mut Scratch::default(),
+        PrefillProjection::PanelI16Avx2,
+    );
 }
 
 #[test]

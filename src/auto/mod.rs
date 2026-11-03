@@ -522,35 +522,48 @@ pub struct ModelFacts {
     /// token on top of the codes (zero without any).
     #[serde(default)]
     pub exception_bytes: usize,
+    /// `Model::i16_misfit`: a body matrix the INT16 prefill panels cannot
+    /// hold; for a plan, exception columns or a W8 overlay's groups of 32.
+    #[serde(default)]
+    pub i16_misfit: bool,
 }
 
 impl ModelFacts {
     /// From a plan without reading tensors: the checkpoint's `config.json`
     /// or the packed file's header (which also names its overlay digest),
-    /// and the exception columns the packed file or overlay header lists.
-    /// An overlay whose header cannot be read counts none: loading it fails,
-    /// and `doctor` reports why.
+    /// and the exception columns the packed file or overlay header lists
+    /// and the overlay's group size (packed files and quantization at load
+    /// use groups of 64). An overlay whose header cannot be read counts no
+    /// exception columns and groups of 64: loading it fails, and `doctor`
+    /// reports why.
     pub fn from_plan(plan: &WeightsPlan) -> Result<Self> {
-        let (config, overlay_sha256, exception_bytes) = match &plan.source {
-            WeightsSource::Packed { path } => crate::model::packed_facts(path)?,
+        let (config, overlay_sha256, exception_bytes, groups_of_32) = match &plan.source {
+            WeightsSource::Packed { path } => {
+                let (config, overlay_sha256, exception_bytes) = crate::model::packed_facts(path)?;
+                (config, overlay_sha256, exception_bytes, false)
+            }
             WeightsSource::Checkpoint { dir, overlay, .. } => {
                 let path = dir.join("config.json");
                 let bytes = std::fs::read(&path).with_context(|| format!("read {}", path.display()))?;
                 let config: ModelConfig = serde_json::from_slice(&bytes)?;
                 config.validate()?;
-                let exception_bytes = overlay
+                let facts = overlay
                     .as_deref()
-                    .and_then(|overlay| crate::model::overlay_exception_bytes(overlay).ok());
-                (config, None, exception_bytes.unwrap_or(0))
+                    .and_then(|overlay| crate::model::overlay_facts(overlay).ok());
+                let (exception_bytes, groups_of_32) = facts.unwrap_or((0, false));
+                (config, None, exception_bytes, groups_of_32)
             }
         };
+        let body_bits = plan.profile.quantizes_body().then(|| plan.profile.weight_bits());
         Ok(Self {
             source: plan.source.clone(),
             profile: plan.profile,
             config,
-            body_bits: plan.profile.quantizes_body().then(|| plan.profile.weight_bits()),
+            body_bits,
             overlay_sha256,
             exception_bytes,
+            // As `Model::i16_misfit`: 16-bit codes too.
+            i16_misfit: body_bits == Some(16) || exception_bytes > 0 || groups_of_32,
         })
     }
 }
@@ -565,6 +578,7 @@ impl Model {
             body_bits: self.body_bits(),
             overlay_sha256: self.overlay_sha256().map(str::to_owned),
             exception_bytes: self.exception_bytes(),
+            i16_misfit: self.i16_misfit(),
         }
     }
 }
@@ -671,7 +685,7 @@ impl Resolved {
             tokenizer_dir: tokenizer_dir.to_path_buf(),
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
             wide_rows: config.speculation.is_some() && profile.kv != Kv::Compact && crate::kernels::wide_rows(simd),
-            prefill: crate::kernels::prefill_plan(facts.body_bits, facts.exception_bytes > 0, simd, &config.tuning),
+            prefill: crate::kernels::prefill_plan(facts.body_bits, facts.i16_misfit, simd, &config.tuning),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,

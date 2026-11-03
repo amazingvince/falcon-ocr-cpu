@@ -17,6 +17,7 @@ use crate::{
     trace::Trace,
 };
 
+mod body;
 mod cache;
 mod fused;
 mod load;
@@ -28,7 +29,7 @@ mod rope;
 
 pub(crate) use cache::{BatchWorkspace, Session};
 pub use load::MemoryReport;
-pub(crate) use load::overlay_exception_bytes;
+pub(crate) use load::overlay_facts;
 pub(crate) use packed::packed_facts;
 pub use packed::{PACKED_FORMAT, PACKED_FORMAT_EXCEPTIONS, PACKED_FORMAT_FP32};
 
@@ -144,33 +145,6 @@ impl Model {
     /// SHA-256 of the W8 overlay the body was imported from, if any.
     pub fn overlay_sha256(&self) -> Option<&str> {
         self.overlay_sha256.as_deref()
-    }
-    /// Bit width of the quantized body when every body matrix of every layer
-    /// is quantized to one width with panel-shaped output dims (the prefill
-    /// GEMM's precondition); `None` for an FP32 or mixed body.
-    pub fn body_bits(&self) -> Option<u32> {
-        let mut bits = None;
-        for layer in &self.layers {
-            for w in [&layer.qkv, &layer.wo, &layer.w13, &layer.w2] {
-                let q = w.quantized.as_ref().filter(|q| q.panel_shaped())?;
-                match bits {
-                    None => bits = Some(q.bits()),
-                    Some(b) if b == q.bits() => {}
-                    Some(_) => return None,
-                }
-            }
-        }
-        bits
-    }
-    /// Bytes of the body's exception columns (indices and FP32 weights),
-    /// which a decode step reads on top of the codes; zero without any.
-    pub fn exception_bytes(&self) -> usize {
-        self.layers
-            .iter()
-            .flat_map(|layer| [&layer.qkv, &layer.wo, &layer.w13, &layer.w2])
-            .filter_map(|w| w.quantized.as_ref())
-            .map(|q| q.exception_bytes())
-            .sum()
     }
     /// Actual additional shared tensor payload, excluding allocator metadata.
     /// This remains resident if another Runner on this Model enabled packing.
@@ -588,7 +562,7 @@ impl Model {
         // the residual adds into its epilogue, with the same per-element
         // operations as the separate passes.
         // `kernels::prefill_plan` alone picks the prefill kernels (`auto::Resolved` reports it).
-        let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, &tuning);
+        let plan = kernels::prefill_plan(self.body_bits(), self.i16_misfit(), simd, &tuning);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
         let (bf16_attention, fp32_softmax) = plan.softmaxes(panel);
         let mut stored_bf16;

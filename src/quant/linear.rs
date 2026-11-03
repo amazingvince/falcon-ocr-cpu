@@ -19,6 +19,12 @@ mod tests;
 
 use dot::{Dot, DotRows, OutputCell, OutputPtr, balanced_tasks, fill_row, output_ptr, select_dot, select_dot_rows};
 
+/// Rows of one INT16 prefill panel (`kernels::panel_i16::NR`, which exists
+/// on x86 only).
+const I16_PANEL_ROWS: usize = 32;
+#[cfg(target_arch = "x86_64")]
+const _: () = assert!(crate::kernels::panel_i16::NR == I16_PANEL_ROWS);
+
 /// Row-major weight codes of one matrix (owned, or mapped from a
 /// kernel-ready model file).
 #[derive(Debug)]
@@ -615,11 +621,11 @@ impl QuantLinear {
 
     /// Prefill product through `kernels::panel_gemm` with a folded row scale
     /// (RMS norm) and a fused epilogue (store, gate or residual add). The
-    /// caller checks `panel_gemm` first. With `kernel` set to the INT16
-    /// panels (`kernels::prefill_plan`), 8-bit matrices with group size 64
-    /// use them, except a matrix with exception columns: those panels hold
-    /// only the codes, so it keeps the FP32 panels (its FP32 weights at its
-    /// exception columns).
+    /// caller checks `panel_gemm` first. `kernel` is the plan's
+    /// (`kernels::prefill_plan`); the INT16 panels take only a matrix that
+    /// [`Self::fits_i16_panels`], which the plan checks for every body
+    /// matrix, and panic on any other, so that no matrix silently runs the
+    /// FP32 panels under a plan that reports INT16.
     pub(crate) fn prefill(
         &self,
         input: &[f32],
@@ -639,14 +645,24 @@ impl QuantLinear {
                 PrefillProjection::PanelI16Avx2 => Some(panel_i16::Isa::Avx2),
                 _ => None,
             };
-            if let Codes::I8(codes) = &self.codes
-                && let Some(isa) = isa
-                && self.group_size == 64
-                && self.out_dim.is_multiple_of(panel_i16::NR)
-                && self.in_dim.is_multiple_of(64)
-                && self.exceptions.is_none()
-                && isa.available()
-            {
+            if let Some(isa) = isa {
+                assert!(
+                    self.fits_i16_panels() && isa.available(),
+                    "the plan's {kernel} projections cannot take this {}x{} matrix of {}-bit codes in groups of {}{} \
+                     on this CPU: `prefill_plan` must plan the FP32 panels for its body",
+                    self.out_dim,
+                    self.in_dim,
+                    self.bits(),
+                    self.group_size,
+                    if self.exceptions.is_some() {
+                        " with exception columns"
+                    } else {
+                        ""
+                    },
+                );
+                let Codes::I8(codes) = &self.codes else {
+                    unreachable!("fits_i16_panels checked the code width")
+                };
                 // Exact INT32 group sums of INT16 activations and 8-bit
                 // codes; only the activations round (see `panel_i16`).
                 panel_i16::pack::<{ panel_i16::NR }>(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.i16);
@@ -689,6 +705,17 @@ impl QuantLinear {
     /// Whether the output dimension fills whole panels (`kernels::panel_gemm::NR`).
     pub(crate) fn panel_shaped(&self) -> bool {
         self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
+    }
+    /// Whether the code-only INT16 prefill panels (`kernels::panel_i16`)
+    /// hold this matrix: 8-bit codes in groups of 64 without exception
+    /// columns (the panels hold only the codes), an output dimension that
+    /// fills whole 32-row panels and an input dimension of whole groups.
+    pub(crate) fn fits_i16_panels(&self) -> bool {
+        matches!(self.codes, Codes::I8(_))
+            && self.group_size == 64
+            && self.exceptions.is_none()
+            && self.out_dim.is_multiple_of(I16_PANEL_ROWS)
+            && self.in_dim.is_multiple_of(64)
     }
 
     /// The dot kernel for this matrix's code type, group size and backend.

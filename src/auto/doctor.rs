@@ -119,7 +119,7 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
             if let WeightsSource::Checkpoint {
                 overlay: Some(path), ..
             } = &weights.source
-                && let Err(e) = crate::model::overlay_exception_bytes(path)
+                && let Err(e) = crate::model::overlay_facts(path)
             {
                 error = Some(format!("W8 overlay header: {e:#}"));
             }

@@ -24,8 +24,8 @@ pub enum PrefillProjections {
     /// INT16 activations (one step per row and 64 inputs) against the 8-bit
     /// codes in INT16 panels, on x86 CPUs with AVX2: AVX512-VNNI where the
     /// `auto` backend has it, bitwise the same AVX2 kernel otherwise. A body
-    /// with exception columns, aarch64 and CPUs without AVX2 keep the FP32
-    /// panels. Rounds fast mode's prefill activations.
+    /// with exception columns or groups of 32, aarch64 and CPUs without
+    /// AVX2 keep the FP32 panels. Rounds fast mode's prefill activations.
     #[default]
     I16,
 }

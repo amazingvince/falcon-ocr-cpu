@@ -545,6 +545,39 @@ fn plans_count_exception_columns_from_headers() {
     };
     let facts = ModelFacts::from_plan(&checkpoint).unwrap();
     assert_eq!(facts.exception_bytes, exception_bytes);
+    // The INT16 prefill panels hold neither exception columns nor groups
+    // of 32, so such bodies plan the FP32 panels.
+    assert!(facts.i16_misfit);
+    for (group_size, misfit) in [("32", true), ("64", false)] {
+        let grouped = root.join(format!("g{group_size}.safetensors"));
+        safetensors::serialize_to_file(
+            [(
+                "layers.0.attention.wo.weight.__w8_scales",
+                TensorView::new(Dtype::F32, vec![1], &[0u8; 4]).unwrap(),
+            )],
+            Some([("group_size".to_owned(), group_size.to_owned())].into()),
+            &grouped,
+        )
+        .unwrap();
+        let plan = WeightsPlan {
+            source: WeightsSource::Checkpoint {
+                dir: root.to_path_buf(),
+                overlay: Some(grouped),
+                rtn: false,
+            },
+            ..checkpoint.clone()
+        };
+        let facts = ModelFacts::from_plan(&plan).unwrap();
+        assert_eq!((facts.exception_bytes, facts.i16_misfit), (0, misfit), "{group_size}");
+        let projection = Resolved::new(HostInfo::detect(), &RunnerConfig::default(), &facts, root)
+            .prefill
+            .projection;
+        let i16 = matches!(
+            projection,
+            crate::kernels::PrefillProjection::PanelI16Vnni | crate::kernels::PrefillProjection::PanelI16Avx2
+        );
+        assert!(!(misfit && i16), "{group_size}: {projection}");
+    }
     let packed = root.join("packed.safetensors");
     write(
         &packed,

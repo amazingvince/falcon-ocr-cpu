@@ -483,11 +483,20 @@ fn overlay_exceptions(tensors: &SafeTensors<'_>, name: &str, output: usize) -> R
     Ok(Some((columns, values)))
 }
 
-/// Bytes of the exception columns a W8 overlay's header lists (read
-/// without the tensors), for byte budgets.
-pub(crate) fn overlay_exception_bytes(path: &Path) -> Result<usize> {
+/// Bytes of the exception columns a W8 overlay's header lists, for byte
+/// budgets, and whether its metadata names groups of 32, which the INT16
+/// prefill panels cannot hold: read without the tensors.
+pub(crate) fn overlay_facts(path: &Path) -> Result<(usize, bool)> {
     let header = super::packed::safetensors_header(path).with_context(|| format!("read {}", path.display()))?;
-    Ok(super::packed::tensor_bytes_with_suffix(&header, &W8_SUFFIXES[2..]))
+    let groups_of_32 = header
+        .get("__metadata__")
+        .and_then(|meta| meta.get("group_size"))
+        .and_then(serde_json::Value::as_str)
+        == Some("32");
+    Ok((
+        super::packed::tensor_bytes_with_suffix(&header, &W8_SUFFIXES[2..]),
+        groups_of_32,
+    ))
 }
 
 /// FP32 bits rounded to the nearest BF16 value (ties to even), as FP32 bits.

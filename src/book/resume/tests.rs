@@ -755,6 +755,7 @@ fn a_resume_with_other_runner_choices_warns() {
         body_bits: Some(8),
         overlay_sha256: None,
         exception_bytes: 0,
+        i16_misfit: false,
     };
     let config = crate::RunnerConfig {
         repetition_stop: false,
