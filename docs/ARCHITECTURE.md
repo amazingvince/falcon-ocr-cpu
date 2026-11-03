@@ -172,28 +172,32 @@ again (a file with damaged lines and no record is refused).
 A record that ran with different settings is kept and skipped with a
 warning naming the difference: the mode or precision, the GPTQ overlay or
 round-to-nearest weights, `--max-dimension`, `--min-dimension`,
-`--max-new-tokens` or crop padding, `--stop-repetition`, `--exp`, the
-prefill attention (BF16 or the FP32 tiles, each with the online or the
-static softmax; NEON; scalar), BF16 or INT16 projections, a pinned
-`--tune decode-exp`, the effective `--tune split-chunks` or the build's
-image decoder; a record without `options` counts as one that ran with
-different settings. Automatic chunking matches an explicit mode default,
-and compact caches ignore the split-cache knob.
+`--max-new-tokens` or crop padding, `--stop-repetition` (with the stop on,
+a record whose plan lacks `repetition_counting`, written before the
+counting rule, warns as "repetition stop without counting loops"), `--exp`,
+the prefill attention (BF16 or the FP32 tiles, each with the online or the
+static softmax; NEON; scalar), BF16 or INT16 projections (the AVX2 and
+AVX-512 forms of the FP32 tiles, and of the INT16 panels, count as one), a
+pinned `--tune decode-exp`, the effective `--tune split-chunks` or the
+build's image decoder; a record without `options` counts as one that ran
+with different settings. Automatic chunking matches an explicit mode
+default, and compact caches ignore the split-cache knob.
 
-An escalated record compares its near-exact rerun's kernel settings and
-the weights of the fast attempt it replaced, which `escalated_from`
-records. The rerun shares the run's tuning but not its 8-bit kernels: it
-expects FP32 projections, and in place of fast mode's BF16 attention
-(either softmax) the FP32 tiles with the softmax that the run's
-`--tune prefill-softmax-fp32` gives them, or under
-`--tune prefill-bf16-w16=attention` the run's own BF16 attention; so for a
-run with BF16 attention those knobs tell apart only escalated records. A
-fast run on the FP32 tiles reruns on them whatever `prefill-bf16-w16`
-says. An escalated record written
-before the weights were recorded has none to compare and matches any
-weights. With `--escalate`, a warning counts fast-mode records that the
-repetition stop ended without a near-exact rerun, since their pages are
-skipped.
+An escalated record compares its near-exact rerun's kernel settings and the
+weights and prefill kernels of the fast attempt it replaced, which
+`escalated_from` records. The rerun shares the run's tuning but not its
+8-bit kernels: it expects FP32 projections, and in place of fast mode's
+BF16 attention (either softmax) the FP32 tiles with the softmax that the
+run's `--tune prefill-softmax-fp32` gives them, or under `--tune
+prefill-bf16-w16=attention` the run's own BF16 attention; so for a run with
+BF16 attention those knobs tell apart only escalated records. A fast run on
+the FP32 tiles reruns on them whatever `prefill-bf16-w16` says. The fast
+attempt's prefill must match the run's own attention and projections, by
+the kinds above, since they decide which pages escalate. An escalated
+record written before the weights or the attempt's prefill kernels were
+recorded matches any weights or any prefill kernels. With `--escalate`, a
+warning counts fast-mode records that the repetition stop ended without a
+near-exact rerun, since their pages are skipped.
 
 **Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
 model when a fast-mode page first ends on the repetition stop and keeps it
@@ -204,24 +208,25 @@ other batch rows wait with their caches. A routed page uses the size its
 fast run ended at.
 
 The near-exact result replaces the record, keeping the fast attempt in
-`escalated_from` (`mode`, `finish_reason`, `output_tokens`, `total_ms`, like
-`route.safety_net`); the page's `total_ms` includes that attempt. If loading
-or the rerun fails, the fast result remains with `escalation_error` and a
-warning on stderr. After a failed load, the run stops trying. The
-[mode results](MODES.md#loops-and-the-repetition-stop) explain the
-repetition-only policy and its measured effect.
+`escalated_from` (`mode`, `finish_reason`, `output_tokens`, `total_ms`,
+like `route.safety_net`, and the attempt's `precision`, `overlay_sha256`
+and `prefill`, its plan's prefill kernels); the page's `total_ms` includes
+that attempt. If loading or the rerun fails, the fast result remains with
+`escalation_error` and a warning on stderr. After a failed load, the run
+stops trying. The [mode results](MODES.md#loops-and-the-repetition-stop)
+explain the repetition-only policy and its measured effect.
 
 ## Modules
 
 | Module | Holds |
 |---|---|
-| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget`, `route` and `crop_margins`), `MaxDimension`, `RunnerConfig` (`Default` = automatic, `reference()` = CPU traces and numerical gates), `Tuning`, `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DraftKv`, `DecodeThreads` |
+| `lib.rs`, `config.rs` | Public re-exports; `ModelConfig`, `GenerationOptions` (with `fit_budget`, `route` and `crop_margins`), `MaxDimension`, `RunnerConfig` (`Default` = automatic, `reference()` = CPU traces and numerical gates), `Backend`, `HeadMode`, `ExpMode`, `Speculation`, `Drafter`, `DecodeThreads`; `config/tuning.rs` (`Tuning`, the `--tune` knobs, with their value types `PrefillBf16`, `PrefillProjections`, `PrefillSoftmax` and `DraftKv`) |
 | `auto/` | `HostInfo::detect`, `Mode`, `resolve_weights` (packed file, then checkpoint), `Resolved` (the plan a runner executes); `doctor.rs` (`doctor`: host, files, plan, load and probe) |
 | `cli.rs` | `RunnerArgs` shared by both binaries and `print_doctor` |
 | `main.rs`, `bin/falcon-ocr-eval/` | The CLI; the research binary (profiles, bench, agree, trace, Gram capture) with its telemetry |
 | `preprocess/`, `tokenizer.rs` | Pillow-exact image preparation (`SourceImage`: one decode, the first resize at any cap; `resample.rs`: the Pillow resampling port, with 8-bit bilinear and bicubic for the router; `crop.rs`: the opt-in margin crop); the pinned tokenizer and stop ids |
 | `router/` | [Resolution routing](#resolution-routing): image statistics, embedded trees, resolution choice and safety net |
-| `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
+| `model/` | `Model` (mapped weights, `Weight`, `Layer`), `body.rs` (what the prefill plan and byte budgets read about the body matrices: `body_bits`, `exception_bytes`, `i16_misfit`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, optional FP32 exception columns, panel prefill; `linear/dot.rs` its single- and multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records, and the research Q8R and Q4R ones; `kv/codec.rs` its scalar codes and scales, `kv/decode.rs` its decode attention kernels), `rotation.rs` (the randomized Hadamard rotation of 32-value blocks behind Q8R and Q4R) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form, online or static-shift softmax); `panels/` (the shared panel-GEMM scheduler and the FP32 and INT16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
@@ -267,17 +272,19 @@ mode's uses: the per-head RMS norms keep every score `q · k / 8` within
 [-8, 8], so `exp(score)` needs no shift. The running maximum, the
 block-maximum pass, the rescales of the output rows and denominators and
 the separate denominator pass disappear; one pass after QK computes each
-probability, zeroes the masked lanes and adds the probability to its
-query's denominator in key order. QK and PV are the online tiles' lane
-kernels (8 lanes, or 16 under `auto` with AVX-512F) for every tile shape,
-including the short tiles that the online tiles send through `gemm`. The
-exp is `simd::exp_poly`'s operation sequence without its range checks, so
-every lane is bitwise `exp_poly` for |score| <= 87, whatever `ExpMode`
-says; its argument is the score itself, where the online tiles round
-`score - max` first, so the two softmaxes are not bitwise equal. Scores
-must stay below about 80 in magnitude, beyond which a page-long row's
-denominator overflows; the norms leave a factor of ten. The 8- and 16-lane
-forms agree bit for bit with each other and with a scalar oracle.
+probability, zeroes the masked lanes (scores of -inf; a NaN score stays
+NaN, as in the online tiles and the scalar oracle) and adds the
+probability to its query's denominator in key order. QK and PV are the
+online tiles' lane kernels (8 lanes, or 16 under `auto` with AVX-512F) for
+every tile shape, including the short tiles that the online tiles send
+through `gemm`. The exp is `simd::exp_poly`'s operation sequence without
+its range checks, so every lane is bitwise `exp_poly` for |score| <= 87,
+whatever `ExpMode` says; its argument is the score itself, where the online
+tiles round `score - max` first, so the two softmaxes are not bitwise
+equal. Scores must stay below about 80 in magnitude, beyond which a
+page-long row's denominator overflows; the norms leave a factor of ten. The
+8- and 16-lane forms agree bit for bit with each other and with a scalar
+oracle.
 
 `kernels::prefill_plan` is the one predicate that decides which prefill
 projection and attention kernels a body, a CPU, the backend and the
@@ -294,7 +301,15 @@ key and value copies are scratch beside the FP32 compact cache, which the
 Q16 cache is sealed from, as in fast mode with Q8. Traces,
 linear-input captures and prefills of at most 8 rows keep the online
 softmax, and so does every plan with BF16 attention, including its calls
-that fall back to the FP32 tiles.
+that fall back to the FP32 tiles. It plans the INT16 projections only for an
+8-bit body whose every matrix the panels hold
+(`QuantLinear::fits_i16_panels`: 8-bit codes in groups of 64 without
+exception columns, whole 32-row panels and whole input groups), and keeps the
+FP32 panels otherwise. `Model::i16_misfit` asks that of a loaded body; the
+plan `doctor` builds from file headers (`ModelFacts::from_plan`) finds the
+same misfits from exception bytes and from a W8 overlay whose metadata names
+groups of 32. `QuantLinear::prefill` asserts that every matrix under the
+INT16 projections fits them.
 
 ## KV cache formats
 
@@ -358,15 +373,16 @@ error bound and recomputes only the rows that can win.
 By default speculative decoding drafts up to four tokens and verifies them
 in one multi-row step whose rows are bitwise the single-row steps;
 `draft::DraftPolicy` turns drafting off while it does not
-pay. Each split-cache group decodes a 32-key sub-tile once for all rows. On
-AVX-512 CPUs under the `auto` backend (`kernels::wide_rows`, reported as
-the plan's `wide_rows`), `quant/kv/wide.rs` runs each row's QK and PV on
-512-bit vectors that hold two 8-lane vectors, with the 8-lane kernels'
-FMA chains and `Simd::sum` reduction tree, so the rows stay bitwise the
-same. Drafts come from n-gram matches in the output so far or, with
-`--draft-head`, from a trained head that reads the outputs of target layers
-2, 11 and 19 at every verified position (captured during the forward) and
-drafts while its top token's probability is at least 0.35.
+pay. Each split-cache group decodes a 32-key sub-tile once for all rows.
+Under the `auto` backend on CPUs with AVX-512F and AVX-512VL besides the
+8-lane kernels' AVX2, FMA and F16C (`kernels::wide_rows`, the one predicate
+behind the dispatch and the plan's `wide_rows`), `quant/kv/wide.rs` runs
+each row's QK and PV on 512-bit vectors that hold two 8-lane vectors, with
+the 8-lane kernels' FMA chains and `Simd::sum` reduction tree, so the rows
+stay bitwise the same. Drafts come from n-gram matches in the output so far
+or, with `--draft-head`, from a trained head that reads the outputs of
+target layers 2, 11 and 19 at every verified position (captured during the
+forward) and drafts while its top token's probability is at least 0.35.
 
 The [repetition stop](MODES.md#loops-and-the-repetition-stop) can end a
 page before EOS or the output budget.

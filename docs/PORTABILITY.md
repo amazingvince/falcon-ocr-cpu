@@ -79,7 +79,7 @@ always uses the polynomial exp.
 | Static-shift softmax of those tiles (`prefill64/static_shift.rs`, opt-in; 16- and 8-bit bodies) | prefill | 8-lane tiles | 16-lane tiles (AVX-512F), bitwise | - | - |
 | BF16 prefill attention (`prefill64/bf16.rs`, fast mode; near-exact with `--tune prefill-bf16-w16=attention`) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
+| INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies in groups of 64 without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |
 | Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |

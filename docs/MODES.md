@@ -212,7 +212,10 @@ order. The AVX512-VNNI kernel (`vpdpwssd`, plan label `panel-i16-vnni`; the
 `auto` backend on CPUs with AVX512F and VNNI) and the AVX2 kernel
 (`vpmaddwd`, `panel-i16-avx2`; other x86 CPUs with AVX2, and `--backend
 avx2`) agree bit for bit with each other and with a scalar oracle, because
-the integer part is exact. A body with exception columns keeps FP32 panels,
+the integer part is exact. The panels hold only codes in groups of 64, so a
+body with exception columns, or a W8 overlay in groups of 32, keeps FP32
+panels, and the plan says so
+([`prefill_plan`](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa));
 aarch64 keeps them too (it has no INT16 kernel yet), and `--backend scalar`
 and x86 CPUs without AVX2 run the projections through the `gemm` crate.
 

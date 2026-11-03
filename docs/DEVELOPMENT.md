@@ -108,10 +108,13 @@ the platform-dependent math; the token-parity gates are separate checks.
 
   `tests/modes.rs` is the mode gate: exact mode under the automatic
   configuration reproduces the GPU smoke tokens; near-exact and fast reproduce
-  `tests/fixtures/modes/*.json`; packing round-trips the checkpoint loader
-  and matches the published files; speculation, the decode team, drafts, the
-  head and the explicit AVX2 backend preserve the gate's fixture tokens;
-  the repetition stop yields a prefix; the three trace hashes are pinned.
+  `tests/fixtures/modes/*.json` on a host that plans the fixtures' prefill
+  kernels, and on any other host the gate fails up front, naming both plans
+  ([mode fixtures](../tests/fixtures/modes/README.md)); packing round-trips
+  the checkpoint loader and matches the published files; speculation, the
+  decode team, drafts, the head and the explicit AVX2 backend preserve the
+  gate's fixture tokens; the repetition stop yields a prefix; the three trace
+  hashes are pinned.
 
   The speculative-drafter regression uses only the three packed modes,
   tokenizer/configuration and published draft head in `artifacts/packed`,
@@ -416,7 +419,11 @@ split caches; pin it when comparing caches, see
 [MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase
 split of forwards on stderr), `prefill-profile=1` (prefill attention stage
 cycles), and the draft head's `draft-backoff=N`, `draft-window=N`,
-`draft-kv=f32|q8` and `draft-gate=token|path`.
+`draft-kv=f32|q8` and `draft-gate=token|path`. Only the five
+`prefill-bf16*`, `prefill-projections` and `prefill-softmax*` knobs,
+`split-chunks` and `decode-exp` change rounding, the last two that of
+split-cache decode attention; the others schedule or measure (`Tuning` in
+`src/config/tuning.rs`).
 `--kv-cache compact|f32-split|q16|q8|q8r|q4r` (`falcon-ocr` run and doctor)
 replaces the KV half of the resolved profile; the plan and every result
 name the profile that runs, a research one unless it is a mode's own.
