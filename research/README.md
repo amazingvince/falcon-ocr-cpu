@@ -8,6 +8,7 @@ Status: indexed on 2026-10-01. Nothing here is compiled, and CI runs only the Py
 | [benchmarks/](benchmarks/README.md) | 177 | Benchmark harnesses and the performance evidence before the phase-4 work. |
 | [bf16-graph/](bf16-graph/README.md) | 40 | The retired experimental BF16 execution graph (source only, not compiled). |
 | [corpus-qualification/](corpus-qualification/README.md) | 50 | Building and qualifying the evaluation corpus, the 200-page quality gate and its Python tests. |
+| [decode-attention-sparsity/](decode-attention-sparsity/README.md) | 2 | A GPU study of how much softmax mass decode attention puts on each 32-position image block, and whether a decode kernel could skip blocks: the exact-mass oracle against cheap per-block bounds and the Q8 KV cache's error (not worth building). |
 | [draft-head/](draft-head/README.md) | 12 | The trained speculative draft head (EAGLE-3 style): data pipeline, training, export, CPU A/Bs and lessons. Active. |
 | [gpu-reference/](gpu-reference/README.md) | 91 | The strict FP32 GPU export, reference capture and comparison protocol whose receipts live in `reference/`. |
 | [kv-rotation/](kv-rotation/README.md) | 2 | A static study of the rotated KV caches (`q8r`, `q4r`) on the real weights with synthetic activations: block and attention-output errors of Q8, Q8R, Q4 and Q4R per layer. Active; the real-page token agreement is in `docs/MODES.md`. |
