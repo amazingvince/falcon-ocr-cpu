@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-11-02.
+Status: current as of 2026-11-03.
 
 ## Toolchain
 
@@ -67,7 +67,13 @@ the platform-dependent math; the token-parity gates are separate checks.
   and post-transform).
   A fast path without such a test does not ship. The prefill stages are also
   compared bitwise across pool sizes (`model::pool_tests`, `kernels::tests`),
-  which the page pipeline's second pool relies on.
+  which the page pipeline's second pool relies on. The AVX-512 oracles (the
+  16-lane prefill tiles, the BF16 attention and its static softmax, the
+  INT16 VNNI panels, the verification rows under `auto`) return early, or
+  drop their AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted
+  CI runners included; the ignored
+  `kernels::tests::host_runs_every_avx512_kernel` fails on such a CPU
+  ([the `weights` job](#the-weights-ci-job) runs it).
   The ignored tokenizer-decode and RoPE checks additionally need
   `artifacts/reference/tokenizer-cleanup-v1/fixture.json` and
   `artifacts/reference/rope-operators.safetensors`, respectively; neither is
@@ -87,7 +93,7 @@ the platform-dependent math; the token-parity gates are separate checks.
   `scripts/fetch_reference.py` and the packed files from the catalogue:
 
   ```sh
-  cargo test --release --locked --test modes --test gpu_parity --test cache_layout \
+  cargo test --release --locked --test modes --test gpu_parity --test cache_layout --test weight_layout \
     --test batch_parity --test batch_trace --test decode_allocations --test head_screen -- --ignored
   ```
 
@@ -130,6 +136,11 @@ the platform-dependent math; the token-parity gates are separate checks.
   for a prefill or a page that runs alone, `batch.{i}` for a cohort's joint
   decode), singleton cohorts and pages dropped from a cohort included.
 
+  `tests/weight_layout.rs` checks that phase-packed weights give the
+  unpacked layout's tokens and tensors bit for bit: the teacher-forced GPU
+  smoke trace, a mixed cohort under both cache layouts, and full 2-, 4- and
+  8-row batches.
+
   `cargo test --release --locked --test negative_inputs --test margin_crop
   --test run_cli -- --ignored --test-threads=1` checks the entry points.
   With `artifacts/model`: every public entry point rejects invalid requests
@@ -151,10 +162,7 @@ the platform-dependent math; the token-parity gates are separate checks.
   parity sidecar, and the fixture download does not supply it.
 - **Token agreement** against the FP32 anchor
   ([below](#token-agreement)) measures flips and KL;
-  [mode comparisons](MODES.md#the-metric). The CI `weights` job runs the
-  gates and an agreement queue on the 12 GPTQ capture pages at 8192
-  steps, on a self-hosted runner
-  labelled `falcon-weights`.
+  [mode comparisons](MODES.md#the-metric).
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
   `research/corpus-qualification/tests` and
   `research/quantization-feasibility/tests` (CI runs these two; they need
@@ -175,6 +183,31 @@ not just the downloadable packed files. The frozen reference preflight
 pins its recording GPU and environment; a cross-check on another setup is
 not a replacement receipt. Run available gates and report missing inputs
 separately rather than regenerating fixtures to make a check pass.
+
+### The `weights` CI job
+
+Nightly and on manual dispatch, a self-hosted runner labelled
+`falcon-weights` (an AVX-512 F/BW/VL/VNNI/BF16 CPU with `artifacts/` and
+upstream's [calibration reference](#token-agreement)) runs these steps; on
+such a machine they run the same way by hand, from the repository root:
+
+```sh
+cargo build --release --locked --bins
+# The AVX-512 oracles, then a failure if this CPU skipped any of them
+cargo test --release --lib --locked
+cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_runs_every_avx512_kernel
+cargo test --release --locked --test modes --test gpu_parity --test cache_layout --test weight_layout \
+  --test batch_parity --test batch_trace --test decode_allocations --test head_screen -- --ignored
+cargo test --release --locked --test negative_inputs --test margin_crop --test run_cli \
+  -- --ignored --test-threads=1
+# The 12 GPTQ capture pages at 8192 steps (off Windows, prefix
+# AGREE_BIN=target/release/falcon-ocr-eval)
+bash tools/agree_queue.sh artifacts/phase4/agree/ci tools/gptq-calibration-pages.txt 8192 \
+  near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors
+```
+
+The two library commands need no `artifacts/`: on any such CPU they check
+the AVX-512 kernels without the model files.
 
 ## Token agreement
 

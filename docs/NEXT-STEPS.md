@@ -1,6 +1,6 @@
 # Next steps
 
-Status: current as of 2026-11-02. Unresolved qualification and hardware
+Status: current as of 2026-11-03. Unresolved qualification and hardware
 work, followed by research proposals.
 
 ## Still open
@@ -9,11 +9,11 @@ work, followed by research proposals.
   and [GGUF export/loading](https://github.com/amazingvince/falcon-ocr-cpu/issues/16)
   are separate follow-ups to the FP32, INT16 and GPTQ INT8 catalog.
 
-- **Reference-dependent gates.** `tests/weight_layout.rs` and `tools/check.sh
-  --smoke` need the GPU smoke outputs (`metadata.json`, `trace.safetensors`
-  from the frozen reference), as `tests/gpu_parity.rs` and
-  `tests/cache_layout.rs` do, but the self-hosted `weights` CI job, whose
-  machine holds those outputs, runs only the latter two. The reference's
+- **Reference-dependent gates.** `tools/check.sh --smoke` needs the GPU
+  smoke outputs (`metadata.json`, `trace.safetensors` from the frozen
+  reference), as `tests/gpu_parity.rs`, `tests/cache_layout.rs` and
+  `tests/weight_layout.rs` do, but the self-hosted `weights` CI job, whose
+  machine holds those outputs, runs only the three tests. The reference's
   preflight pins the RTX 4090 the outputs were recorded on, so no other
   machine can remake them.
 - **The 55-page anchor.** The Ryzen 7 7700X agreement numbers in
