@@ -23,10 +23,8 @@ work, followed by research proposals.
   ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
   give 24,262-step numbers comparable with the modes table.
 - **Default qualification.** Held-out gates decide defaults that change
-  tokens: margin cropping for books, `--max-dimension 1280`, a rotated cache,
-  exception columns, and fast mode's INT16 prefill projections
-  (`--tune prefill-i16=true`) and static softmax
-  (`--tune prefill-softmax=static`). The gate method is in
+  tokens: margin cropping for books, `--max-dimension 1280`, a rotated cache
+  and exception columns. The gate method is in
   [MODES.md](MODES.md#the-metric).
 - **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
   timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were
@@ -67,24 +65,23 @@ the 7700X.
 
 ### INT16 prefill projections: what remains
 
-The opt-in INT16 projections
-([MODES.md](MODES.md#int16-projections-and-static-softmax-experimental))
-cut the journal page's projection time from 2.4 to 1.2 s on the 7700X for
-+1.4% KL, where BF16 projections cost +19%
+The INT16 projections, fast mode's default since 2026-11-03
+([MODES.md](MODES.md#int16-projections-and-static-softmax)), cut the
+journal page's projection time from 2.4 to 1.2 s on the 7700X for +1.4% KL,
+where BF16 projections cost +19%
 ([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
-They supersede the W8A8 rotated INT8 proposal. Three pieces are left:
+Two pieces are left:
 
 - **A NEON kernel.** aarch64 keeps the FP32 panels for fast mode.
 - **Exception columns in the INT16 epilogue.** A body with exception
-  columns keeps FP32 panels, so the knob does nothing for it.
-- **INT8 activations.** `vpdpbusd` issues once per cycle like `vpdpwssd`
-  and does 64 MACs against its 32, so INT8 activations would double the MAC
-  rate again, saving at most about 0.6 s of the 1.2 s that remain. They must
-  handle the layer-10 W2 channel with 614,663 times the median energy: a
-  Hadamard rotation spreads it, but the other channels share the 8-bit step
-  it sizes. A first comparison would simulate W8A8 with rotated activations
-  in `research/phase4-hillclimb/attempt3/gpu_harness.py` on the anchor
-  pages and continue only if its KL stays near the INT16 projections'.
+  columns keeps FP32 panels, so it runs without the INT16 speedup.
+
+INT8 activations, which would double the MAC rate again with `vpdpbusd`,
+were simulated exactly and rejected: on two anchor pages they raise fast
+mode's KL against FP32 up to 20-fold, and on QKV, WO and W13, which have
+no outlier channels, the loss comes from the 8-bit step's resolution, so
+neither a per-group outlier fallback nor a Hadamard rotation would rescue
+them ([PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted)).
 
 ### Dead FFN channel pruning
 
@@ -117,3 +114,18 @@ cropping, where its print reads as well at 1280; the
 loop and small-print risks. Compare a few dozen of that book's pages at
 1536 and 1280, as for margin cropping, and adopt 1280 only if no page loses
 content and no loop is added.
+
+### Repetition stop for counting loops
+
+The repetition stop compares tokens exactly, so a loop whose lines differ
+only in an incrementing number never fires it: fast and near-exact mode
+both write such rows to the token limit on a deep-fried anchor page
+([MODES.md](MODES.md#loops-and-the-repetition-stop)). A stop that treats
+tokens made only of digits as equal when it compares a token with the one
+a period earlier would end such loops. Like the current stop it only
+truncates, so it changes no token before the step where it fires. The
+risk is legitimately numbered content: a numbered list or table whose rows
+repeat apart from the number would be cut. A first comparison would check
+on the calibration pages and the
+[stress pages](../tests/fixtures/stress/README.md) that it never fires on a
+page that ends at EOS, as the current stop was checked.

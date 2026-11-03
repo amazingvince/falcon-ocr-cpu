@@ -53,8 +53,11 @@ when each mode receives the same reference-token prefix.
 
 The journal page has 6,544 input tokens. These timings are on a Ryzen 9
 7950X, Windows 11, without the draft head. Near-exact is about 1.8× faster
-than exact and fast about 3×. Fast mode failed its held-out budgets on
-handwriting and degraded scans; use near-exact for those pages.
+than exact and fast about 3×. Fast mode's flips and time predate its
+current prefill kernels, which cut its prefill by about 30% on a Ryzen 7
+7700X ([Modes](docs/MODES.md#int16-projections-and-static-softmax)). Fast
+mode failed its held-out budgets on handwriting and degraded scans; use
+near-exact for those pages.
 
 Exact mode matched FP32's tokens on every page measured. Its default
 kernels can change the last bits of logits; `RunnerConfig::reference()` is
@@ -104,7 +107,7 @@ probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 | `--model DIR` | Checkpoint and/or packed files (default `artifacts/model`) |
 | `--model-file F` | A packed file; it decides the mode. `--verify-model-file` checks every tensor digest first |
 | `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay, `--allow-rtn` lets fast mode quantize without one |
-| `--backend auto\|avx2\|scalar\|neon` | `avx2` forces 8-lane FP32 kernels; `scalar` is for debugging |
+| `--backend auto\|avx2\|scalar\|neon` | `avx2` keeps every kernel at 8 lanes (FP32 attention, fast mode's INT16 projections on AVX2); `scalar` is for debugging |
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
@@ -248,7 +251,7 @@ accepted and rejected changes.
 |---|---|---|---|
 | Builds and tests in CI | yes | yes (plus an aarch64 cross check) | macOS arm64: library tests |
 | Runs the model | measured | measured (under WSL, and natively on a Ryzen 7 7700X) | not yet run |
-| Kernels | AVX2, AVX-512 tiles, AVX512-BF16 (fast) | same | NEON (fast mode's BF16 kernels are x86-only) |
+| Kernels | AVX2, AVX-512 tiles, AVX512-BF16 and INT16 projections (fast) | same | NEON (fast mode's BF16 and INT16 kernels are x86-only) |
 
 ## Repository layout
 

@@ -13,15 +13,15 @@ whose tokens differ against the images.
 | `smoke_screenshot.png` | 2572 × 1874 | Screenshot of a desktop mail client |
 | `kroger-bench-09_fried.jpg` | 800 × 465 | Photo of a grocery advertisement, already deep-fried |
 
-`fried/` holds deep-fried versions of the first three, made with the
-user's local deep-fryer, a port of deepfriedmemes.com's filter chain that
-is not in this repository. It ran as-is through its command line with
+`fried/` holds deep-fried versions of the first three, made with a local
+deep-fryer script, a port of deepfriedmemes.com's filter chain that is not
+in this repository. It ran as-is through its command line with
 `--max-dimension 0` (no resize, so each file keeps its source's size) and
 these options per level:
 
 | Folder | Options | Effect |
 |---|---|---|
-| `mild/` | `--contrast 60 --sharpen 40 --noise 8 --jpeg-quality 0.3 --jpeg-iterations-after 6` | Weaker filters, then 6 JPEG re-encodes at quality 30-32 |
+| `mild/` | `--contrast 60 --sharpen 40 --noise 8 --jpeg-quality 0.3 --jpeg-iterations-after 6` | Brightness 15, contrast 60, sharpen 40, noise 8, then 6 JPEG re-encodes at quality 30-32 |
 | `classic/` | none (the tool's defaults) | Brightness 15, contrast 155, sharpen 83, noise 18, then 28 JPEG re-encodes at quality 17-19 |
 | `enhanced/` | `--mode enhanced` | Sigmoid contrast and boosted saturation in HSV space, the same brightness, sharpening and noise, then the same re-encodes |
 | `classic-2026-11-02/` | none | An earlier classic draw of the same three images |
@@ -45,3 +45,9 @@ differing token, `finish_reason`, and the text of every page that differs,
 read against its image. `--max-new-tokens 4096` bounds a loop that the
 repetition stop does not catch. Two readings that differ only where the
 image itself is illegible say nothing about the change.
+
+The comparison that preceded fast mode's current prefill defaults ran on
+these pages; [MODES.md](../../../docs/MODES.md#free-running-validation)
+summarizes it and
+[reference/fast-defaults-free-running-v1.json](../../../reference/fast-defaults-free-running-v1.json)
+holds its per-page results.

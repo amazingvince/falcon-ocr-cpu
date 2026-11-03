@@ -262,6 +262,12 @@ variable out only when `REF` is upstream's; `AGREE_BIN` defaults to the
 Windows `.exe` path. The FP32 top-K run has 0 flips by construction; an
 arm's `kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
 
+8-bit arms take fast mode's default INT16 prefill projections, under
+`--backend avx2` on their AVX2 kernel. The 7700X exception-column and
+rotated-cache arms in MODES.md, and upstream's 24,262-step fast-mode
+result, ran before that default, on FP32 projection panels; add
+`AGREE_EXTRA="--tune prefill-projections=fp32"` to reproduce them.
+
 ## Rebuilding packed files and experimental overlays
 
 The FP32, INT16 and GPTQ INT8 packed files use the pinned FP32 checkpoint;
@@ -380,21 +386,23 @@ checks with weights: smoke trace, token agreement, a speed report.
 ## Knobs for experiments
 
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
-takes `prefill-bf16=off|attention`, `prefill-i16=true|false` (INT16
-activations in fast mode's prefill projections, see
-[MODES.md](MODES.md#int16-projections-and-static-softmax-experimental)),
-`prefill-softmax=online|static` (a softmax without running maximum in fast
-mode's BF16 prefill attention, same section), `split-chunks=1..4` (position
-chunks of the split cache scan), `decode-exp=exact|fast` (the exp of decode
-attention over split caches; pin it when comparing caches, see
-[MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase split
-of forwards on stderr), `prefill-profile=1` (prefill attention stage cycles),
-and the draft head's `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`
-and `draft-gate=token|path`. `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
-(`falcon-ocr` run and doctor) replaces the KV half of the resolved profile;
-the plan and every result name the profile that runs, a research one unless
-it is a mode's own. These flags are hidden from `--help`; nothing reads
-environment variables.
+takes `prefill-bf16=off|attention` (BF16 prefill attention in fast mode,
+default `attention`), `prefill-projections=fp32|i16` (FP32 or INT16
+activations in fast mode's prefill projections, default `i16`; see
+[MODES.md](MODES.md#int16-projections-and-static-softmax)),
+`prefill-softmax=online|static` (the online softmax or the static one
+without running maximum in fast mode's BF16 prefill attention, default
+`static`; same section), `split-chunks=1..4` (position chunks of the split
+cache scan), `decode-exp=exact|fast` (the exp of decode attention over
+split caches; pin it when comparing caches, see
+[MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase
+split of forwards on stderr), `prefill-profile=1` (prefill attention stage
+cycles), and the draft head's `draft-backoff=N`, `draft-window=N`,
+`draft-kv=f32|q8` and `draft-gate=token|path`.
+`--kv-cache compact|f32-split|q16|q8|q8r|q4r` (`falcon-ocr` run and doctor)
+replaces the KV half of the resolved profile; the plan and every result
+name the profile that runs, a research one unless it is a mode's own.
+These flags are hidden from `--help`; nothing reads environment variables.
 
 ## Gotchas
 

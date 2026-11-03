@@ -1,6 +1,6 @@
 # Portability
 
-Status: current as of 2026-11-02. Runs and is measured on x86-64 (Windows,
+Status: current as of 2026-11-03. Runs and is measured on x86-64 (Windows,
 Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and
 runs the NEON unit tests on macOS runners); the NEON kernels are bitwise the
 portable ones in those tests, but no aarch64 machine has yet run the model
@@ -76,27 +76,28 @@ always uses the polynomial exp.
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
-| BF16 prefill attention (`prefill64/bf16.rs`, fast mode); opt-in static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW | - | - |
+| BF16 prefill attention (`prefill64/bf16.rs`, fast mode) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| INT16-activation panel GEMM (`panels/panel_i16.rs`, opt-in; 8-bit bodies without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
+| INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |
 | Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |
 | Thread defaults (`cpu.rs`) | both | logical CPUs for prefill, tuned team for decode | same | `hw.physicalcpu`, `hw.perflevel0.physicalcpu` | Linux sysfs (`cpu_core`, `cpu_capacity`) |
 
-`--backend avx2` forces 8-lane FP32 kernels everywhere (no wide tiles, no
-BF16; the opt-in INT16 projections take their AVX2 kernel);
-`--backend scalar` replaces the vector kernels and the projections' GEMM for
-numerical debugging.
+`--backend avx2` keeps every kernel at 8 lanes: no wide tiles, FP32 prefill
+attention instead of BF16, and fast mode's INT16 projections on their AVX2
+kernel (`panel-i16-avx2`); `--backend scalar` replaces the vector kernels
+and the projections' GEMM for numerical debugging.
 
-The INT16 panels (`--tune prefill-i16=true`) are x86-only. `auto` runs the
-VNNI kernel on CPUs with AVX512F and AVX512-VNNI and the AVX2 kernel on
-other CPUs with AVX2; the two agree bitwise. Unlike the BF16 kernels, they
-do not need AVX512-BF16. aarch64, `--backend scalar` and a CPU without AVX2
-keep the FP32 panels. The static softmax (`--tune prefill-softmax=static`)
-needs AVX512-BF16 and AVX512BW; a CPU with AVX512-BF16 but not AVX512BW
-keeps the online softmax, and every other CPU keeps its existing prefill
-attention.
+Fast mode's INT16 panels are x86-only. `auto` runs the VNNI kernel on CPUs
+with AVX512F and AVX512-VNNI and the AVX2 kernel on other CPUs with AVX2;
+the two agree bitwise. Unlike the BF16 kernels, they do not need
+AVX512-BF16. aarch64 keeps the FP32 panels, and `--backend scalar` and
+CPUs without AVX2 run the projections through the `gemm` crate. Fast
+mode's static softmax needs AVX512-BF16 and AVX512BW; a CPU with
+AVX512-BF16 but not AVX512BW keeps the online softmax, and every other CPU
+keeps its FP32 prefill attention. `--tune prefill-projections=fp32` and
+`--tune prefill-softmax=online` select the previous kernels on any CPU.
 
 ## Running on Apple Silicon
 
@@ -106,8 +107,8 @@ calibration pages against the stored FP32 outputs, and a speed report against
 the machine's measured bandwidth. `--backend auto` selects NEON; the panel
 GEMM, prefill tiles, decode attention, cache scans and the fused row all have
 NEON instantiations. Prefill projections of exact mode use the `gemm` crate's
-own NEON kernels. Fast mode's BF16 kernels are AVX-512-only and its opt-in
-INT16 projections x86-only: on ARM, fast mode runs its FP32 prefill.
+own NEON kernels. Fast mode's BF16 kernels are AVX-512-only and its INT16
+projections x86-only: on ARM, fast mode runs its FP32 prefill.
 
 ## Follow-ups
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of 2026-11-02.
+Status: current as of 2026-11-03.
 
 ## Model contract
 
@@ -181,7 +181,7 @@ split-cache knob.
 
 An escalated record compares its near-exact rerun's kernel settings,
 allowing the expected switch from fast mode's BF16 attention (either
-softmax) and BF16 or INT16 projections to FP32, and the weights of the fast
+softmax) and INT16 projections to FP32, and the weights of the fast
 attempt it replaced, which `escalated_from` records; an escalated record
 written before those were recorded has none to compare and matches any
 weights. With `--escalate`, a warning counts fast-mode
@@ -241,20 +241,20 @@ scalar loop. Runtime feature detection decides dispatch once per process,
 so one baseline-target binary runs everywhere.
 
 The 16-lane AVX-512 prefill tiles are bitwise the 8-lane ones. The `gemm`
-crate's FP32 prefill projections, fast mode's BF16 kernels, its opt-in INT16
+crate's FP32 prefill projections, fast mode's BF16 kernels, its INT16
 panels (`panels/panel_i16.rs`) and static-shift softmax
 (`attention/prefill64/bf16/static_shift.rs`), and the choice between
 platform and polynomial exp can change rounding; their fidelity is
 token-checked. The INT16 panels' integer sums are exact, so their VNNI, AVX2
 and scalar kernels agree bitwise. See [PORTABILITY.md](PORTABILITY.md) for
 ISA-specific paths and [MODES.md](MODES.md#the-three-modes) for the
-numerical choices, including the
-[two opt-in ones](MODES.md#int16-projections-and-static-softmax-experimental).
+numerical choices, including
+[fast mode's prefill kernels](MODES.md#int16-projections-and-static-softmax).
 
 `kernels::prefill_plan` is the one predicate that decides which prefill
-projection and attention kernels a body, a CPU and the `prefill-bf16`,
-`prefill-i16` and `prefill-softmax` knobs get; `Model::forward_layers` runs
-it and `auto::Resolved` reports it.
+projection and attention kernels a body, a CPU, the backend and the
+`prefill-bf16`, `prefill-projections` and `prefill-softmax` knobs get;
+`Model::forward_layers` runs it and `auto::Resolved` reports it.
 
 ## KV cache formats
 

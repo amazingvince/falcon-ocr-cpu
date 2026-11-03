@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-11-02. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-11-03. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
 unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
@@ -28,8 +28,10 @@ has 0 flips, near-exact 1 (KL 7.1e-8) and fast mode 67 (KL 3.0e-4). Compare
 these arms with each other, not with the 24,262-step results. KL is over
 each step's 32 most likely FP32 tokens (`falcon-ocr-eval agree
 --reference-topk`); every arm uses `tools/agree_queue.sh`'s flags (`--exp
-fast --backend avx2`). [DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)
-gives the commands for either reference.
+fast --backend avx2`). Those 8-bit arms ran before fast mode's INT16
+prefill projections became the default, so they used FP32 projection
+panels. [DEVELOPMENT.md](DEVELOPMENT.md#token-agreement) gives the commands
+for either reference and the flag that reproduces those arms.
 
 Character error rate (CER) counts character insertions, deletions and
 substitutions relative to the reference text's length. Micro CER pools the
@@ -46,13 +48,20 @@ recorded verdict; new qualification needs fresh pages.
 |---|---|---|---|
 | Body weights | FP32 | 16-bit codes, FP32 absmax scale per 64 inputs | 8-bit GPTQ act-order codes, FP32 scale per 64 inputs (`w8-gptq.safetensors`) |
 | KV cache after sealing | FP32 split records | 16-bit codes, BF16 scale per 32 values | 8-bit codes, BF16 scale per 32 values |
-| Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | FP32 panel GEMM (`--tune prefill-i16=true`: INT16 activations) |
-| Prefill attention | FP32 | FP32 | BF16 products on AVX512-BF16 CPUs (`--tune prefill-softmax=static`: static softmax), FP32 elsewhere |
+| Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | INT16 activations against the 8-bit codes on x86 CPUs with AVX2, FP32 panel GEMM elsewhere |
+| Prefill attention | FP32 | FP32 | BF16 products with the static softmax on AVX512-BF16 CPUs, FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
 | Against FP32, 24,262 steps | **0 flips** | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
 | Journal page | 38 s | 21.5 s | 12.6 s (14 s without AVX512-BF16) |
 | Profile label | `split-f32` (`reference` for traces and batches) | `w16-body-kv-q16` | `w8-body-kv-q8` |
+
+Fast mode's flips and journal-page times predate its current prefill
+kernels, the INT16 projections and the static softmax
+([below](#int16-projections-and-static-softmax)). On the Ryzen 7 7700X
+they move its flips on that host's 22,726-step anchor from 67 to 66 and
+take the journal page's transformer prefill from 5.3 to 3.7 s
+([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
 
 Every mode maps its packed file when present. Without one, exact reads the
 FP32 checkpoint; near-exact and fast quantize it at load, and fast needs its
@@ -126,12 +135,12 @@ fused FFN gate/up projection (`W13`) 18 KB, against about 1.7 MB more for a
 whole W2 kept in BF16.
 
 Every product uses the FP32 columns: prefill and other large products have
-them in place (INT16 panels hold codes only, so under `--tune
-prefill-i16=true` a body with exception columns keeps FP32 projection
-panels, as its plan reports), and decode adds one fused multiply-add per
-exception column and output row after the 8-bit kernel, in ascending column
-order, so draft verification stays bitwise the single-row steps. `doctor`
-and every result's plan count the extra bytes.
+them in place (INT16 panels hold codes only, so a body with exception
+columns keeps FP32 projection panels instead of fast mode's INT16 ones, as
+its plan reports), and decode adds one fused multiply-add per exception
+column and output row after the 8-bit kernel, in ascending column order, so
+draft verification stays bitwise the single-row steps. `doctor` and every
+result's plan count the extra bytes.
 
 Round-to-nearest quantization computes scales and codes with the exception
 columns zeroed and keeps their original values. GPTQ never quantizes them
@@ -182,40 +191,45 @@ of that size. Decode time per token did not measurably change
 (8.24 against 8.28 ms on the journal page,
 [PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)).
 
-## INT16 projections and static softmax (experimental)
+## INT16 projections and static softmax
 
-Two opt-in knobs change fast mode's prefill rounding. Neither touches
+Two kernels change fast mode's prefill rounding; both have been its
+defaults since 2026-11-03 ([the decision](#the-decision)). Neither touches
 decode, and exact and near-exact never use them. `doctor` and every
-result's plan name the kernels they select (`panel-i16-vnni`,
-`panel-i16-avx2`, `bf16-static`).
+result's plan name the kernels (`panel-i16-vnni`, `panel-i16-avx2`,
+`bf16-static`); `--tune prefill-projections=fp32` and `--tune
+prefill-softmax=online` (both binaries) restore the previous ones
+(`panel-avx2`, `bf16`).
 
-`--tune prefill-i16=true` (both binaries) runs the prefill projections of
-an 8-bit body with INT16 activations. Each row is quantized per 64-input
-group to INT16 with one FP32 step, the group's absmax / 32,767 (round to
-nearest, ties to even; the RMS-norm row factor multiplies the step). The
-GPTQ codes are sign-extended into INT16 panels, so a group's dot product
-is an exact INT32 sum (64 × 32,767 × 127 < 2^31). Per group and output the
-sum converts to FP32 and joins the accumulator as
-`fma(sum, s_w · s_a, acc)`, in ascending group order. The AVX512-VNNI
-kernel (`vpdpwssd`, plan label `panel-i16-vnni`; the `auto` backend on CPUs
-with AVX512F and VNNI) and the AVX2 kernel (`vpmaddwd`, `panel-i16-avx2`;
-other x86 CPUs with AVX2, and `--backend avx2`) agree bit for bit with each
-other and with a scalar oracle, because the integer part is exact. A body
-with exception columns keeps FP32 panels, and aarch64 has no INT16 kernel
-yet.
+The prefill projections of an 8-bit body run with INT16 activations. Each
+row is quantized per 64-input group to INT16 with one FP32 step, the
+group's absmax / 32,767 (round to nearest, ties to even; the RMS-norm row
+factor multiplies the step). The GPTQ codes are sign-extended into INT16
+panels, so a group's dot product is an exact INT32 sum
+(64 × 32,767 × 127 < 2^31). Per group and output the sum converts to FP32
+and joins the accumulator as `fma(sum, s_w · s_a, acc)`, in ascending group
+order. The AVX512-VNNI kernel (`vpdpwssd`, plan label `panel-i16-vnni`; the
+`auto` backend on CPUs with AVX512F and VNNI) and the AVX2 kernel
+(`vpmaddwd`, `panel-i16-avx2`; other x86 CPUs with AVX2, and `--backend
+avx2`) agree bit for bit with each other and with a scalar oracle, because
+the integer part is exact. A body with exception columns keeps FP32 panels,
+aarch64 keeps them too (it has no INT16 kernel yet), and `--backend scalar`
+and x86 CPUs without AVX2 run the projections through the `gemm` crate.
 
-`--tune prefill-softmax=static` (default `online`) replaces the online
-softmax of fast mode's BF16 prefill attention (plan label `bf16-static`;
-it needs AVX512-BF16 and AVX512BW). Falcon-OCR RMS-normalizes every query
-and key head without a weight before the rotary positions, which preserve
-norms, so |q| and |k| are at most 8 and, with the 1/8 score scale, every
-score lies in [-8, 8]; the largest |score| over all 22 layers and 16 heads
-of the journal page is 7.992. `exp(score)` needs no maximum subtraction:
-the kernel has no running maximum, no block-maximum pass and no rescale of
-the output rows, and key tiles add without correction. The exp (a degree-3
-polynomial with relative error 7.5e-5, scaled by `vscalefps`) runs in the
-QK epilogue. The denominator sums the BF16-rounded probabilities that PV
-multiplies, so the weights PV applies sum to one.
+The static softmax replaces the online softmax of fast mode's BF16 prefill
+attention (plan label `bf16-static`). It needs AVX512-BF16 and AVX512BW: a
+CPU with AVX512-BF16 but not AVX512BW keeps the online softmax (`bf16`),
+and one without AVX512-BF16, or `--backend avx2`, runs FP32 attention.
+Falcon-OCR RMS-normalizes every query and key head without a weight before
+the rotary positions, which preserve norms, so |q| and |k| are at most 8
+and, with the 1/8 score scale, every score lies in [-8, 8]; the largest
+|score| over all 22 layers and 16 heads of the journal page is 7.992.
+`exp(score)` needs no maximum subtraction: the kernel has no running
+maximum, no block-maximum pass and no rescale of the output rows, and key
+tiles add without correction. The exp (a degree-3 polynomial with relative
+error 7.5e-5, scaled by `vscalefps`) runs in the QK epilogue. The
+denominator sums the BF16-rounded probabilities that PV multiplies, so the
+weights PV applies sum to one.
 
 Each adds little error. An INT16 activation moves by at most half a step,
 1/65,534 of its group's absmax, where BF16 rounds each value by up to 2^-8
@@ -226,30 +240,95 @@ probability before PV, and the rounded denominator cancels the common part
 of that rounding. Exp overflows only beyond |score| of about 87, so the
 bound of 8 leaves a factor of ten.
 
+### Teacher-forced agreement
+
 Agreement is on the 7700X anchor ([The metric](#the-metric)): 22,726
 steps, `falcon-ocr-eval --exp fast --threads 16 --profile w8-body-kv-q8`
 with the published GPTQ overlay, `agree --max-steps 512` and
-`--reference-topk`. These arms use the default backend, so even the first
-row has BF16 prefill attention; the exception-column tables above ran
-`--backend avx2` and give 67 flips and KL 3.04e-4 for the same overlay.
+`--reference-topk`. The arms ran while both kernels were opt-in knobs, on
+the default backend, so even the first row has BF16 prefill attention; the
+exception-column tables above ran `--backend avx2` and give 67 flips and
+KL 3.04e-4 for the same overlay.
 
 | Prefill arm | Flips | KL against FP32 |
 |---|---:|---:|
-| Default (online softmax, FP32 panels) | 67 | 2.94e-4 |
-| `prefill-bf16=all` | 79 | 3.51e-4 |
-| `prefill-i16=true` | 65 | 2.98e-4 |
-| `prefill-softmax=static` | 61 | 2.91e-4 |
-| Both new knobs | 66 | 2.99e-4 |
+| Previous default (FP32 panels, online softmax) | 67 | 2.94e-4 |
+| BF16 projections (removed) | 79 | 3.51e-4 |
+| INT16 projections | 65 | 2.98e-4 |
+| Static softmax | 61 | 2.91e-4 |
+| Both (the current default) | 66 | 2.99e-4 |
 
 KL moves +1.4% with INT16 projections, -1.0% with the static softmax and
 +1.7% with both, against +19% for BF16 projections; flips (65, 61 and 66
 against 67) do not resolve differences of that size. Tokens held: on the
-journal page (6,544 input tokens) the default, each knob and both give the
-same 1,140 tokens ending at EOS, and the smoke page gives the receipt's 17
-tokens under each. Their speed is in
+journal page (6,544 input tokens) the previous default, each kernel and
+both give the same 1,140 tokens ending at EOS, and the smoke page gives the
+receipt's 17 tokens under each. Their speed is in
 [PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax).
-Neither has run a held-out gate, so both stay opt-in
-([NEXT-STEPS.md](NEXT-STEPS.md#still-open)).
+
+The BF16 projections (plan label `panel-bf16`) were the other way to speed
+up the 8-bit projections. They matched the INT16 ones' prefill speed on the
+7700X but raised KL by 19% where the INT16 ones raise it by 1.4%, and they
+needed AVX512-BF16, where the INT16 kernel also runs on AVX2 CPUs, so they
+were removed ([PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted)).
+
+### Free-running validation
+
+Before the switch, one binary ran the previous defaults ("old") and the
+two kernels ("new") in fresh processes on a Ryzen 7 7700X with the
+published packed files and otherwise default settings, and near-exact, the
+FP32 stand-in ([Fast against near-exact](#fast-against-near-exact)), on the
+deep-fried pages. The test images and their deep-fried copies are in
+[tests/fixtures/stress](../tests/fixtures/stress/README.md); per-page
+results are in
+[reference/fast-defaults-free-running-v1.json](../reference/fast-defaults-free-running-v1.json).
+
+| Pages | Old and new token-identical | Other results |
+|---|---:|---|
+| 4 test images and an earlier deep-fried copy of 3 of them | 5 of 7 | The 4 originals identical |
+| The 52 anchor pages ([The metric](#the-metric)) | 28 of 52 | Micro CER 40.67% old, 40.31% new; EOS on 44, the repetition stop on the same 8 |
+| 45 deep-fried pages: 3 test images and the first 12 anchor pages (degraded and handwriting) at 3 levels, `--max-new-tokens 4096` | 25 of 45 | Old and new each token-identical to near-exact on 16 |
+
+The two test images that differ are deep-fried JPEGs, and each difference
+is one character of hard-to-read text, judged against the image: on the
+wiki screenshot old reads the hexadecimal line
+`464fdaf1672d7bef5e891c6e227/` exactly and new drops one `f`; on the book
+scan new reads the margin label "String for Rip Cord Support" and old
+"Sting for". Of the 24 anchor pages that differ, CER (distance to one
+reference text, not a quality verdict) is lower for new on 10, higher on
+11 and equal on 3. The nine deep-fried test images are token-identical in
+7 cases and have text similarity 0.993 and 0.999 in the other two. Micro
+CER of the 36 deep-fried anchor pages is 65.09% old, 77.65% new and
+76.62% near-exact; one page, a counting loop that new and near-exact share
+([Loops and the repetition stop](#loops-and-the-repetition-stop)),
+accounts for the difference, so that aggregate is no quality comparison.
+
+### The decision
+
+Both kernels became fast mode's defaults, and the BF16 projections were
+removed, on 2026-11-03, before the held-out gate below had a verdict, on
+three grounds: agreement with FP32 is unchanged within what flips resolve
+(66 against 67 flips, KL +1.7%); free running found no systematic
+difference (one character of hard-to-read text each way, and a loop that
+near-exact shares); and the two kernels cut fast mode's transformer
+prefill by 31% on the 7700X. The fast-mode results in the next three
+sections ran its earlier prefill kernels.
+
+### Held-out gate
+
+`fast-defaults-gate-v1` compares the new kernels with the previous
+defaults on fresh pages. Its budget,
+[reference/fast-defaults-gate-v1-budget.json](../reference/fast-defaults-gate-v1-budget.json),
+was registered before either arm had output on its pages: 156 English
+OmniDocBench pages from the router development pool, one per document
+family and none from a family in corpus v1-v3 or the English gate (formulas
+42, tables 41, multi-column 30, other 43), with figure regions that have no
+ground truth painted white on 66. Both arms run `--max-new-tokens 4096`;
+the reference is the previous fast defaults. The criteria are the English
+gate's: overall micro CER at most 0.25 pt above the reference, at most
+1.0 pt above it in every category with at least 10 pages where the
+reference ends at EOS, and no repetition stop on such a page. Its verdict
+is recorded in `reference/fast-defaults-gate-v1-results.json`.
 
 ## Fast mode's held-out result
 
@@ -438,6 +517,18 @@ also ends genuine FP32 loops, even one that FP32 itself ends at EOS after a
 better: CER 1.90 → 0.83), so there the default output is shorter than FP32's.
 Legitimately periodic content longer than that (a 256-token page of identical
 lines) would be cut: pass `--stop-repetition=false`.
+
+The stop compares tokens exactly, so a loop whose lines differ only in an
+incrementing number never fires it and runs to the token limit. On the
+mild deep-fried copy of anchor page `ad43a4d35e59199e`, a degraded
+Traditional Chinese page
+([free-running validation](#free-running-validation)), fast and near-exact
+mode write the same rows, numbered 44 to 255 and otherwise identical, until
+the 4,096-token cap; fast mode's previous prefill kernels fell into an
+exact two-line loop there instead, which the stop ended at 314 tokens.
+Neither output recovers the page.
+[NEXT-STEPS.md](NEXT-STEPS.md#repetition-stop-for-counting-loops) proposes
+covering such loops.
 
 `run --escalate` rereads fast-mode pages ended by the repetition stop with
 the near-exact model. [Long runs](ARCHITECTURE.md#long-runs) describes model

@@ -1,6 +1,6 @@
 # Performance
 
-Status: current as of 2026-11-02. Host, unless a section says otherwise:
+Status: current as of 2026-11-03. Host, unless a section says otherwise:
 Ryzen 9 7950X (16 cores, 32 threads, DDR5, AVX-512 with BF16), Windows 11.
 Page: the journal benchmark page, 6,544 input tokens. Earlier measurements on
 the tiny 256×128 fixture are archived in
@@ -28,14 +28,17 @@ Prefill is compute-bound (about 6.1 TFLOP per full page).
 about 90% of the bandwidth floor in every mode; the remaining decode lever is
 fewer bytes, and the 4-bit formats cost too much fidelity for this model.
 
-Where a fast-mode page goes (prefill 2.9 s, decode 8.5 ms/token):
-prefill attention 1.3 s (BF16 tiles), projections 1.3 s (FP32 panels),
-split/RoPE/append 0.1 s; decode attention 4.2 ms, W13 1.5, head 1.0, W2
-0.8, QKV 0.7, WO 0.4 ms. The FP32 prefill
-attention tiles run QK at about 75% and PV at about 90% of FP32 peak. The
-panel GEMM throughput probe measures 1.7-1.8 TFLOP/s at prefill shapes.
-FP32 prefill takes about 4.1 s against fast mode's 2.9 s with BF16
-attention.
+Where a fast-mode page went with its earlier prefill kernels (prefill
+2.9 s, decode 8.5 ms/token): prefill attention 1.3 s (BF16 tiles, online
+softmax), projections 1.3 s (FP32 panels), split/RoPE/append 0.1 s; decode
+attention 4.2 ms, W13 1.5, head 1.0, W2 0.8, QKV 0.7, WO 0.4 ms. The FP32
+prefill attention tiles run QK at about 75% and PV at about 90% of FP32
+peak. The panel GEMM throughput probe measures 1.7-1.8 TFLOP/s at prefill
+shapes. FP32 prefill takes about 4.1 s against fast mode's 2.9 s with BF16
+attention. Fast mode's current defaults, INT16 projections and the static
+softmax, halve the projections and shorten the attention; their
+measurements are on the Ryzen 7 7700X
+([below](#int16-projections-and-static-softmax)).
 
 ## Accepted changes (journal page, interleaved fresh processes, 3 rounds)
 
@@ -57,6 +60,7 @@ attention.
 | 16-lane AVX-512 prefill tiles (bitwise) | attention -9%; under 1% end to end on Zen 4 |
 | BF16 scales in the Q8/Q16 caches | decode -2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
+| INT16 prefill projections and static softmax (fast mode; Ryzen 7 7700X, [below](#int16-projections-and-static-softmax)) | transformer prefill 5.28 → 3.65 s, flips 67 → 66 |
 
 ## Decode exponential
 
@@ -148,8 +152,25 @@ less: prefill takes about 2.8 s per page, roughly a third of the total.
 | Key-transposed decode attention | Decode is already at the bandwidth floor |
 | Head-major K/V copies; interleaved FP32 softmax | Within noise; FP32 prefill attention is near its ceiling |
 | IEEE FP16 KV for near-exact | Flips 1 → 4 |
-| BF16 prefill projections by default | Saves 0.6 s for +17% KL; the opt-in INT16 projections are the alternative ([MODES.md](MODES.md#int16-projections-and-static-softmax-experimental)) |
+| BF16 prefill projections (`panel-bf16`; removed 2026-11-03) | Transformer prefill 4,048 ms against the INT16 projections' 4,066 and the FP32 panels' 5,247 ms (7700X, journal page, 300 tokens, median of 5 interleaved rounds); 26.5-28 MACs per cycle per core against INT16's 24.5-27.4; but +19% KL against FP32 where INT16 adds 1.4% ([MODES.md](MODES.md#teacher-forced-agreement)), and AVX512-BF16 only |
 | INT8 QK for BF16 prefill attention (`vpdpbusd`, per-(token, head) absmax Q and K) | Logit error RMS 3.8× BF16's and attention output error 2.5×, to save at most about 0.4 s per page (7700X); not built |
+| INT8 activations in the 8-bit prefill projections (u8 × s8 `vpdpbusd`) | Simulated exactly: flips 5 → 40 and KL 20× on two anchor pages (7700X); not built (below) |
+
+The INT8-activation simulation quantized each 64-input activation group to
+8-bit levels (absmax / 127, the same rounding) and ran it through the INT16
+kernels, whose integer sums equal a `vpdpbusd` kernel's. Teacher-forced on
+anchor pages `4a756837631f4f69` and `705b5079f112131e` (1,024 steps against
+the 7700X FP32 reference), the current defaults give 5 flips and KL
+8.18e-4; 8-bit activations give 40 flips and KL 1.66e-2 in all four
+projections, 32 and 1.24e-2 in all but W2, and 7 and 1.10e-3 (QKV), 7 and
+1.61e-3 (WO), 21 and 5.66e-3 (W13) or 11 and 1.96e-3 (W2) in one. QKV
+alone, on one page, adds 1.33e-5 to the 52-page anchor's mean KL, most of
+a 5% allowance on the default's 2.99e-4, so no full run was made. The
+cause is resolution, not outliers: in the GPTQ calibration Grams the
+strongest channel's RMS in a 64-input group is at most 6 (WO), 10 (QKV)
+and 13 (W13) times the group's median, yet those fail, W13 worst; only W2
+has outlier groups (30% above 32×, up to 7,942× in layer 2), so neither a
+per-group outlier fallback nor a Hadamard rotation would rescue INT8.
 
 Multi-page batching (`--batch-size`) is available: on a scanned book it gives
 2-8% more pages per hour where the page pipeline gives 12-20%
@@ -321,24 +342,35 @@ runs used n-gram drafts and are left out. Their fidelity is in
 
 ### INT16 projections and static softmax
 
-The two opt-in prefill knobs of
-[MODES.md](MODES.md#int16-projections-and-static-softmax-experimental),
-which has their fidelity and token checks. Journal page, `--mode fast
+Fast mode's default prefill kernels since 2026-11-03;
+[MODES.md](MODES.md#int16-projections-and-static-softmax) has their
+fidelity, token checks and the decision. Journal page, `--mode fast
 --speculate 0 --decode-threads 8 --max-new-tokens 300 --tune phases=1`,
-three interleaved rounds of fresh processes with no other work on the host.
-Transformer prefill is the median [range] in milliseconds; the attention
-and projection columns are its phase split:
+three interleaved rounds of fresh processes with no other work on the host,
+while both kernels were opt-in knobs. On a current build the previous
+default is `--tune prefill-projections=fp32 --tune prefill-softmax=online`,
+and each single-kernel arm sets one of the two. Transformer prefill is the
+median [range] in milliseconds; the attention and projection columns are
+its phase split:
 
-| Arm | Transformer prefill | Attention | Projections | Against default |
+| Arm | Transformer prefill | Attention | Projections | Against previous default |
 |---|---:|---:|---:|---:|
-| Default | 5,284 [5,122-5,312] | 2,618 | 2,411 | |
-| `prefill-i16=true` | 4,103 [4,097-4,109] | 2,610 | 1,245 | -22% |
-| `prefill-softmax=static` | 4,832 [4,812-4,836] | 2,161 | 2,420 | -9% |
-| Both | 3,652 [3,634-3,654] | 2,151 | 1,249 | -31% |
+| Previous default (FP32 panels, online softmax) | 5,284 [5,122-5,312] | 2,618 | 2,411 | |
+| INT16 projections | 4,103 [4,097-4,109] | 2,610 | 1,245 | -22% |
+| Static softmax | 4,832 [4,812-4,836] | 2,161 | 2,420 | -9% |
+| Both (the current default) | 3,652 [3,634-3,654] | 2,151 | 1,249 | -31% |
 
-The knobs act on different stages and add: INT16 activations halve the
+The kernels act on different stages and add: INT16 activations halve the
 projections (2,411 to 1,245 ms) and leave attention alone, and the static
 softmax takes 0.46 s off attention and leaves the projections alone.
+
+On the whole journal page with the draft head (`--mode fast
+--decode-threads 8`, three interleaved rounds of fresh processes), a build
+with both kernels and the [verification-row change](#verification-rows)
+took 10.36 s against 12.64 s for the build before both changes (medians):
+prefill 5.61 → 3.94 s, decode 6.98 → 6.37 s, the same 1,140 tokens.
+Near-exact, which neither prefill kernel touches, went from 18.77 to
+18.10 s in the same rounds.
 
 Projection GEMM at m = 6,544 on 16 threads, in multiply-accumulates (MACs)
 per cycle per core:
@@ -346,16 +378,16 @@ per cycle per core:
 | Kernel | MACs per cycle per core |
 |---|---:|
 | FP32 panels | about 14.3 |
-| BF16 panels | 26.5-28 |
 | INT16 panels, AVX512-VNNI | 24.5-27.4 |
 | INT16 panels, AVX2 | 19-20 |
 
 Measured per-core instruction throughput on this Zen 4: a zmm FMA issues
 once per cycle and a ymm FMA twice, and zmm `vpdpwssd`, `vpdpbusd` and
 `vdpbf16ps` once each. The FP32 panels' ceiling is therefore 16 MACs per
-cycle (two ymm FMAs of 8 lanes) and the BF16 and INT16-VNNI kernels' 32 (one
-instruction of 16 lanes × 2 products): the FP32 panels reach 89% of theirs,
-BF16 panels 83-88% and INT16-VNNI panels 77-86%.
+cycle (two ymm FMAs of 8 lanes) and the INT16-VNNI kernel's 32 (one
+instruction of 16 lanes × 2 products): the FP32 panels reach 89% of theirs
+and the INT16-VNNI panels 77-86%. The removed BF16 panels ran 26.5-28
+([Rejected or unadopted](#rejected-or-unadopted)).
 
 The static softmax removes most of the softmax stage. In the online kernel
 the stage took 44.4e9 thread cycles, 25% of attention; fused into the QK
