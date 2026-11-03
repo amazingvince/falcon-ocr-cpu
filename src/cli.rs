@@ -87,8 +87,7 @@ pub struct RunnerArgs {
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
     /// Experiment knobs as `key=value`, repeatable:
-    /// `prefill-bf16=off|attention`, `prefill-bf16-w16=off|attention`,
-    /// `prefill-projections=fp32|i16`,
+    /// `prefill-bf16=off|attention`, `prefill-projections=fp32|i16`,
     /// `prefill-softmax=online|static`, `prefill-softmax-fp32=online|static`,
     /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`,
     /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,

@@ -3,9 +3,7 @@ use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 
 /// Whether the prefill attention of an 8-bit model uses BF16 products on an
-/// AVX512-BF16 CPU (`Tuning::prefill_bf16`; fidelity-neutral against the
-/// FP32 anchor), or that of a 16-bit model too
-/// (`Tuning::prefill_bf16_w16`, unqualified).
+/// AVX512-BF16 CPU; fidelity-neutral against the FP32 anchor.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum PrefillBf16 {
@@ -62,19 +60,14 @@ pub enum DraftKv {
 /// Experiment and diagnostic knobs. The defaults are the accepted
 /// configuration; every field is scheduling or instrumentation only, except
 /// `prefill_bf16`, `prefill_projections` and `prefill_softmax`, which change
-/// fast-mode prefill rounding, `prefill_bf16_w16`, which changes
-/// near-exact's, `prefill_softmax_fp32`, which changes it for 16- and 8-bit
-/// bodies, and `split_chunks` and `decode_fast_exp`, which change the
-/// rounding of split-cache decode attention.
+/// fast-mode prefill rounding, `prefill_softmax_fp32`, which changes it for
+/// 16- and 8-bit bodies, and `split_chunks` and `decode_fast_exp`, which
+/// change the rounding of split-cache decode attention.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
     /// BF16 prefill attention of 8-bit models on AVX512-BF16 CPUs.
     pub prefill_bf16: PrefillBf16,
-    /// The same BF16 prefill attention, with the same softmax, for 16-bit
-    /// bodies (near-exact mode), wherever `prefill_bf16` gives it to 8-bit
-    /// ones (default off). FP32 bodies (exact mode) never take it.
-    pub prefill_bf16_w16: PrefillBf16,
     /// Activations of 8-bit models' prefill projections.
     pub prefill_projections: PrefillProjections,
     /// Softmax of the BF16 prefill attention (default static).
@@ -112,14 +105,12 @@ pub struct Tuning {
 }
 impl Default for Tuning {
     /// The accepted configuration: for 8-bit bodies BF16 attention with the
-    /// static softmax and INT16 projections, the FP32 tiles with the online
-    /// softmax for 16-bit ones, the draft head's Q8 cache, no backoff,
-    /// window or path gate, the mode's split chunks and decode exp, and no
-    /// instrumentation.
+    /// static softmax and INT16 projections, the online softmax in the FP32
+    /// tiles, the draft head's Q8 cache, no backoff, window or path gate,
+    /// the mode's split chunks and decode exp, and no instrumentation.
     fn default() -> Self {
         Self {
             prefill_bf16: PrefillBf16::default(),
-            prefill_bf16_w16: PrefillBf16::Off,
             prefill_projections: PrefillProjections::default(),
             prefill_softmax: PrefillSoftmax::Static,
             prefill_softmax_fp32: PrefillSoftmax::Online,
@@ -136,7 +127,6 @@ impl Default for Tuning {
 }
 impl Tuning {
     /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention`,
-    /// `prefill-bf16-w16=off|attention`,
     /// `prefill-projections=fp32|i16`, `prefill-softmax=online|static`,
     /// `prefill-softmax-fp32=online|static`, `split-chunks=1..4`,
     /// `phases=true|false`, `prefill-profile=true|false`, `draft-backoff=N`,
@@ -160,16 +150,14 @@ impl Tuning {
                 _ => bail!("tuning knob {key}: expected online or static, got `{value}`"),
             }
         };
-        let bf16 = |value: &str| -> Result<PrefillBf16> {
-            match value {
-                "off" | "0" => Ok(PrefillBf16::Off),
-                "attention" | "attn" => Ok(PrefillBf16::Attention),
-                _ => bail!("tuning knob {key}: expected off or attention, got `{value}`"),
-            }
-        };
         match key {
-            "prefill-bf16" => self.prefill_bf16 = bf16(value)?,
-            "prefill-bf16-w16" => self.prefill_bf16_w16 = bf16(value)?,
+            "prefill-bf16" => {
+                self.prefill_bf16 = match value {
+                    "off" | "0" => PrefillBf16::Off,
+                    "attention" | "attn" => PrefillBf16::Attention,
+                    _ => bail!("tuning knob prefill-bf16: expected off or attention, got `{value}`"),
+                }
+            }
             "prefill-projections" => {
                 self.prefill_projections = match value {
                     "fp32" => PrefillProjections::Fp32,
@@ -223,7 +211,7 @@ impl Tuning {
                 }
             }
             _ => bail!(
-                "unknown tuning knob `{key}` (prefill-bf16, prefill-bf16-w16, prefill-projections, prefill-softmax, \
+                "unknown tuning knob `{key}` (prefill-bf16, prefill-projections, prefill-softmax, \
                  prefill-softmax-fp32, split-chunks, phases, prefill-profile, draft-backoff, draft-window, draft-kv, \
                  draft-gate, decode-exp)"
             ),
@@ -253,7 +241,6 @@ mod tests {
     fn tuning_knobs_parse_and_reject_unknown_keys() {
         let tuning = Tuning::from_pairs([
             "prefill-bf16=off",
-            "prefill-bf16-w16=attention",
             "prefill-projections=fp32",
             "prefill-softmax=online",
             "prefill-softmax-fp32=static",
@@ -269,7 +256,6 @@ mod tests {
         assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
         assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::Off);
-        assert_eq!(tuning.prefill_bf16_w16, PrefillBf16::Attention);
         assert_eq!(tuning.prefill_projections, PrefillProjections::Fp32);
         assert_eq!(tuning.prefill_softmax, PrefillSoftmax::Online);
         assert_eq!(tuning.prefill_softmax_fp32, PrefillSoftmax::Static);
@@ -277,27 +263,23 @@ mod tests {
         assert!(tuning.phases && !tuning.prefill_profile);
         assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
         // Fast mode's accepted prefill: BF16 attention with the static
-        // softmax and INT16 projections; the FP32 tiles stay online, and
-        // 16-bit bodies keep them.
+        // softmax and INT16 projections; the FP32 tiles stay online.
         let defaults = Tuning::default();
         assert_eq!(defaults.prefill_bf16, PrefillBf16::Attention);
-        assert_eq!(defaults.prefill_bf16_w16, PrefillBf16::Off);
         assert_eq!(defaults.prefill_projections, PrefillProjections::I16);
         assert_eq!(defaults.prefill_softmax, PrefillSoftmax::Static);
         assert_eq!(defaults.prefill_softmax_fp32, PrefillSoftmax::Online);
-        // A plan written before the FP32 and 16-bit knobs reads as their
-        // defaults.
+        // A plan written before the FP32 knob reads as its default.
         let older: Tuning = serde_json::from_str(r#"{"prefill_softmax":"online"}"#).unwrap();
         assert_eq!(older.prefill_softmax_fp32, PrefillSoftmax::Online);
-        assert_eq!(older.prefill_bf16_w16, PrefillBf16::Off);
+        // Removed knobs are unknown keys.
         for bad in [
-            "prefill-bf16-w16=all",
-            "prefill-bf16-w16=static",
             "prefill-softmax-fp32=fast",
             "split-chunks=5",
             "split-chunks=x",
             "prefill-bf16=all",
             "prefill-i16=true",
+            "prefill-bf16-w16=attention",
             "prefill-projections=bf16",
             "prefill-softmax=max",
             "phases=maybe",

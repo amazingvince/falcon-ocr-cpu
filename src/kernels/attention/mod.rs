@@ -311,8 +311,7 @@ pub(crate) fn attention_with(
 }
 
 /// BF16 form of the pure-prefill attention (fast mode on AVX512-BF16 CPUs,
-/// near-exact mode on request; see `prefill64::bf16`): Q, K, V and the
-/// probabilities round to BF16;
+/// see `prefill64::bf16`): Q, K, V and the probabilities round to BF16;
 /// scores, softmax and outputs stay FP32. `bf16` supplies the BF16 key and
 /// value copies or the scratch to convert them into; `options.softmax`
 /// selects the online or the static-shift softmax (the latter needs scores

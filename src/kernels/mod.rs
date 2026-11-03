@@ -180,22 +180,19 @@ impl std::fmt::Display for PrefillAttention {
 /// for FP32), with or without matrices the INT16 panels cannot hold
 /// (`i16_misfit`, `Model::i16_misfit`: W8 exception columns or groups of
 /// 32), on this CPU with the `simd` backend and the `tuning` knobs
-/// `prefill_bf16`, `prefill_bf16_w16`, `prefill_projections`,
-/// `prefill_softmax` and `prefill_softmax_fp32`: the single predicate set
-/// behind `Model::forward_layers` and `auto::Resolved`. By default an 8-bit
-/// body that the INT16 panels hold takes the INT16 projections on x86 CPUs
-/// with AVX2 (VNNI under the `auto` backend where the CPU has it), and its
-/// BF16 attention takes the static-shift softmax where the CPU also has
-/// AVX512BW; 16-bit and FP32 bodies never take either by default. A 16-bit
-/// body takes the 8-bit one's BF16 attention, softmax included, wherever
-/// that runs, when `prefill_bf16_w16` asks for it; an FP32 body never
-/// does. The FP32 tiles take the static-shift softmax (`avx2-static`,
-/// `avx512-wide-static`) only when `prefill_softmax_fp32` asks for it, for
-/// a 16- or 8-bit body on x86, never for an FP32 body. Only the `auto`
-/// backend takes the AVX-512 paths (wide FP32 tiles, BF16 attention and
-/// VNNI); `avx2` is 8-lane throughout. Traces, linear-input captures and
-/// prefills of at most 8 rows take the FP32 path with the online softmax
-/// regardless.
+/// `prefill_bf16`, `prefill_projections`, `prefill_softmax` and
+/// `prefill_softmax_fp32`: the single predicate set behind
+/// `Model::forward_layers` and `auto::Resolved`. By default an 8-bit body
+/// that the INT16 panels hold takes the INT16 projections on x86 CPUs with
+/// AVX2 (VNNI under the `auto` backend where the CPU has it), and its BF16
+/// attention takes the static-shift softmax where the CPU also has
+/// AVX512BW; 16-bit and FP32 bodies never take either. The FP32 tiles take
+/// the static-shift softmax (`avx2-static`, `avx512-wide-static`) only when
+/// `prefill_softmax_fp32` asks for it, for a 16- or 8-bit body on x86,
+/// never for an FP32 body. Only the `auto` backend takes the AVX-512 paths
+/// (wide FP32 tiles, and BF16 attention and VNNI for 8-bit bodies); `avx2`
+/// is 8-lane throughout. Traces, linear-input captures and prefills of at
+/// most 8 rows take the FP32 path with the online softmax regardless.
 pub fn prefill_plan(
     body_bits: Option<u32>,
     i16_misfit: bool,
@@ -209,16 +206,10 @@ pub fn prefill_plan(
     let static_fp32 = panel && tuning.prefill_softmax_fp32 == PrefillSoftmax::Static;
     // 8-bit bodies (fast mode) run the prefill projections with INT16
     // activations and the attention in BF16 where the CPU has AVX512-BF16
-    // (`attention_prefill_bf16`); 16-bit bodies (near-exact mode) take the
-    // same attention only on request. INT16 panels hold codes only, in
-    // groups of 64, so a body with exception columns or groups of 32 keeps
-    // FP32 projection panels (`QuantLinear::prefill` asserts as much).
-    let bf16_body = match body_bits {
-        Some(8) => true,
-        Some(16) => tuning.prefill_bf16_w16 != PrefillBf16::Off,
-        _ => false,
-    };
-    let bf16_attention = panel && bf16_body && simd == Simd::Auto && bf16_available();
+    // (`attention_prefill_bf16`). INT16 panels hold codes only, in groups
+    // of 64, so a body with exception columns or groups of 32 keeps FP32
+    // projection panels (`QuantLinear::prefill` asserts as much).
+    let bf16_attention = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
     let i16 = panel && body_bits == Some(8) && !i16_misfit && tuning.prefill_projections == PrefillProjections::I16;
     let projection = if !panel {
         PrefillProjection::GemmF32
@@ -281,9 +272,8 @@ fn i16_projection(simd: Simd) -> Option<PrefillProjection> {
 /// panic if passed directly to a kernel. `Auto` resolves to AVX2/FMA on x86-64
 /// (decode kernels are 8-lane; AVX-512F widens the prefill attention tiles
 /// and the verification rows of split-cache decode attention, both bitwise
-/// identically; AVX512-BF16 serves the 8-bit prefill attention, and the
-/// 16-bit one on request, and AVX512-VNNI the 8-bit INT16 projections) and
-/// to NEON on aarch64.
+/// identically; AVX512-BF16 serves the 8-bit prefill attention, and
+/// AVX512-VNNI its INT16 projections) and to NEON on aarch64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Simd {
     Auto,

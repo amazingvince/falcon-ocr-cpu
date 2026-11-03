@@ -1,5 +1,4 @@
-//! BF16 prefill attention for AVX512-BF16 CPUs (fast mode, and near-exact
-//! mode under `Tuning::prefill_bf16_w16`).
+//! BF16 prefill attention for AVX512-BF16 CPUs (fast mode only).
 //!
 //! The same tiling, mask and FP32 online softmax as the parent kernel, but
 //! the QK and PV products use `vdpbf16ps` (32 multiply-adds per instruction
