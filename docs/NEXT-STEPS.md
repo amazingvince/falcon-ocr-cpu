@@ -1,6 +1,6 @@
 # Next steps
 
-Status: current as of 2026-10-28. Unresolved qualification and hardware
+Status: current as of 2026-11-02. Unresolved qualification and hardware
 work, followed by research proposals.
 
 ## Still open
@@ -23,8 +23,11 @@ work, followed by research proposals.
   ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
   give 24,262-step numbers comparable with the modes table.
 - **Default qualification.** Held-out gates decide defaults that change
-  tokens: margin cropping for books, `--max-dimension 1280`, a rotated cache
-  and exception columns. The gate method is in [MODES.md](MODES.md#the-metric).
+  tokens: margin cropping for books, `--max-dimension 1280`, a rotated cache,
+  exception columns, and fast mode's INT16 prefill projections
+  (`--tune prefill-i16=true`) and static softmax
+  (`--tune prefill-softmax=static`). The gate method is in
+  [MODES.md](MODES.md#the-metric).
 - **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
   timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were
   measured on one Linux desktop; no aarch64 machine has run the model with
@@ -62,22 +65,26 @@ pages more closely without improving other pages.
 Source: `artifacts/w8/gram/layers.10.feed_forward.w2.weight.gram.npy` on
 the 7700X.
 
-### W8A8 rotated INT8 prefill
+### INT16 prefill projections: what remains
 
-Prefill is compute-bound: about 6.1 TFLOP for the journal page, 2.2 in
-projections and 3.9 in attention. INT8 dot products (VNNI) could reduce the
-projections' 1.3 s of fast mode's 2.9 s prefill. On pipelined book pages,
-prefill sets the run's pace. The upper-bound saving is those 1.3 s; BF16
-projections (`--tune prefill-bf16=all`) save 0.6 s but were rejected for
-+17% KL. Source: [PERFORMANCE.md](PERFORMANCE.md).
+The opt-in INT16 projections
+([MODES.md](MODES.md#int16-projections-and-static-softmax-experimental))
+cut the journal page's projection time from 2.4 to 1.2 s on the 7700X for
++1.4% KL, where BF16 projections (`--tune prefill-bf16=all`) cost +19%
+([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
+They supersede the W8A8 rotated INT8 proposal. Three pieces are left:
 
-Per-token INT8 activation quantization must handle the layer-10 W2 channel
-with 614,663 times the median energy. A Hadamard rotation spreads it, but
-the other channels share the 8-bit step it sizes. The hypothesis is that
-this is lossier than the rejected BF16 projections. A first comparison
-would simulate W8A8 with rotated activations in
-`research/phase4-hillclimb/attempt3/gpu_harness.py` on the anchor pages and
-continue only if its KL beats BF16 projections.
+- **A NEON kernel.** aarch64 keeps the FP32 panels for fast mode.
+- **Exception columns in the INT16 epilogue.** A body with exception
+  columns keeps FP32 panels, so the knob does nothing for it.
+- **INT8 activations.** `vpdpbusd` issues once per cycle like `vpdpwssd`
+  and does 64 MACs against its 32, so INT8 activations would double the MAC
+  rate again, saving at most about 0.6 s of the 1.2 s that remain. They must
+  handle the layer-10 W2 channel with 614,663 times the median energy: a
+  Hadamard rotation spreads it, but the other channels share the 8-bit step
+  it sizes. A first comparison would simulate W8A8 with rotated activations
+  in `research/phase4-hillclimb/attempt3/gpu_harness.py` on the anchor
+  pages and continue only if its KL stays near the INT16 projections'.
 
 ### Dead FFN channel pruning
 

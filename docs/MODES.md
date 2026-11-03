@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-10-28. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-11-02. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
 unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
@@ -46,8 +46,8 @@ recorded verdict; new qualification needs fresh pages.
 |---|---|---|---|
 | Body weights | FP32 | 16-bit codes, FP32 absmax scale per 64 inputs | 8-bit GPTQ act-order codes, FP32 scale per 64 inputs (`w8-gptq.safetensors`) |
 | KV cache after sealing | FP32 split records | 16-bit codes, BF16 scale per 32 values | 8-bit codes, BF16 scale per 32 values |
-| Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | FP32 panel GEMM (`--tune prefill-bf16=all`: BF16) |
-| Prefill attention | FP32 | FP32 | BF16 products on AVX512-BF16 CPUs, FP32 elsewhere |
+| Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | FP32 panel GEMM (`--tune prefill-bf16=all`: BF16; `--tune prefill-i16=true`: INT16 activations) |
+| Prefill attention | FP32 | FP32 | BF16 products on AVX512-BF16 CPUs (`--tune prefill-softmax=static`: static softmax), FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
 | Against FP32, 24,262 steps | **0 flips** | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
@@ -126,12 +126,12 @@ fused FFN gate/up projection (`W13`) 18 KB, against about 1.7 MB more for a
 whole W2 kept in BF16.
 
 Every product uses the FP32 columns: prefill and other large products have
-them in place (BF16 panels hold codes only, so under `--tune
-prefill-bf16=all` a body with exception columns keeps FP32 projection panels,
-as its plan reports), and decode adds one fused multiply-add per exception
-column and output row after the 8-bit kernel, in ascending column order, so
-draft verification stays bitwise the single-row steps. `doctor` and every
-result's plan count the extra bytes.
+them in place (BF16 and INT16 panels hold codes only, so under `--tune
+prefill-bf16=all` or `prefill-i16=true` a body with exception columns keeps
+FP32 projection panels, as its plan reports), and decode adds one fused
+multiply-add per exception column and output row after the 8-bit kernel, in
+ascending column order, so draft verification stays bitwise the single-row
+steps. `doctor` and every result's plan count the extra bytes.
 
 Round-to-nearest quantization computes scales and codes with the exception
 columns zeroed and keeps their original values. GPTQ never quantizes them
@@ -181,6 +181,75 @@ Four exception columns reduce KL by 39%; flips do not resolve a difference
 of that size. Decode time per token did not measurably change
 (8.24 against 8.28 ms on the journal page,
 [PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)).
+
+## INT16 projections and static softmax (experimental)
+
+Two opt-in knobs change fast mode's prefill rounding. Neither touches
+decode, and exact and near-exact never use them. `doctor` and every
+result's plan name the kernels they select (`panel-i16-vnni`,
+`panel-i16-avx2`, `bf16-static`).
+
+`--tune prefill-i16=true` (both binaries) runs the prefill projections of
+an 8-bit body with INT16 activations. Each row is quantized per 64-input
+group to INT16 with one FP32 step, the group's absmax / 32,767 (round to
+nearest, ties to even; the RMS-norm row factor multiplies the step). The
+GPTQ codes are sign-extended into INT16 panels, so a group's dot product
+is an exact INT32 sum (64 × 32,767 × 127 < 2^31). Per group and output the
+sum converts to FP32 and joins the accumulator as
+`fma(sum, s_w · s_a, acc)`, in ascending group order. The AVX512-VNNI
+kernel (`vpdpwssd`, plan label `panel-i16-vnni`; the `auto` backend on CPUs
+with AVX512F and VNNI) and the AVX2 kernel (`vpmaddwd`, `panel-i16-avx2`;
+other x86 CPUs with AVX2, and `--backend avx2`) agree bit for bit with each
+other and with a scalar oracle, because the integer part is exact. The knob
+overrides `prefill-bf16=all` for the projections. A body with exception
+columns keeps FP32 panels, and aarch64 has no INT16 kernel yet.
+
+`--tune prefill-softmax=static` (default `online`) replaces the online
+softmax of fast mode's BF16 prefill attention (plan label `bf16-static`;
+it needs AVX512-BF16 and AVX512BW). Falcon-OCR RMS-normalizes every query
+and key head without a weight before the rotary positions, which preserve
+norms, so |q| and |k| are at most 8 and, with the 1/8 score scale, every
+score lies in [-8, 8]; the largest |score| over all 22 layers and 16 heads
+of the journal page is 7.992. `exp(score)` needs no maximum subtraction:
+the kernel has no running maximum, no block-maximum pass and no rescale of
+the output rows, and key tiles add without correction. The exp (a degree-3
+polynomial with relative error 7.5e-5, scaled by `vscalefps`) runs in the
+QK epilogue. The denominator sums the BF16-rounded probabilities that PV
+multiplies, so the weights PV applies sum to one.
+
+Each adds little error. An INT16 activation moves by at most half a step,
+1/65,534 of its group's absmax, where BF16 rounds each value by up to 2^-8
+of itself (8 significant bits); the weights keep their GPTQ codes, so the
+activation rounding is the only new error. The static softmax adds the
+polynomial's 7.5e-5, below the up to 2^-8 that BF16 rounding gives every
+probability before PV, and the rounded denominator cancels the common part
+of that rounding. Exp overflows only beyond |score| of about 87, so the
+bound of 8 leaves a factor of ten.
+
+Agreement is on the 7700X anchor ([The metric](#the-metric)): 22,726
+steps, `falcon-ocr-eval --exp fast --threads 16 --profile w8-body-kv-q8`
+with the published GPTQ overlay, `agree --max-steps 512` and
+`--reference-topk`. These arms use the default backend, so even the first
+row has BF16 prefill attention; the exception-column tables above ran
+`--backend avx2` and give 67 flips and KL 3.04e-4 for the same overlay.
+
+| Prefill arm | Flips | KL against FP32 |
+|---|---:|---:|
+| Default (online softmax, FP32 panels) | 67 | 2.94e-4 |
+| `prefill-bf16=all` | 79 | 3.51e-4 |
+| `prefill-i16=true` | 65 | 2.98e-4 |
+| `prefill-softmax=static` | 61 | 2.91e-4 |
+| Both new knobs | 66 | 2.99e-4 |
+
+KL moves +1.4% with INT16 projections, -1.0% with the static softmax and
++1.7% with both, against +19% for BF16 projections; flips (65, 61 and 66
+against 67) do not resolve differences of that size. Tokens held: on the
+journal page (6,544 input tokens) the default, each knob and both give the
+same 1,140 tokens ending at EOS, and the smoke page gives the receipt's 17
+tokens under each. Their speed is in
+[PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax).
+Neither has run a held-out gate, so both stay opt-in
+([NEXT-STEPS.md](NEXT-STEPS.md#still-open)).
 
 ## Fast mode's held-out result
 

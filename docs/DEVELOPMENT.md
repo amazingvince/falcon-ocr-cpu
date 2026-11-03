@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-10-29.
+Status: current as of 2026-11-02.
 
 ## Toolchain
 
@@ -347,8 +347,12 @@ checks with weights: smoke trace, token agreement, a speed report.
 ## Knobs for experiments
 
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
-takes `prefill-bf16=off|attention|all`, `split-chunks=1..4` (position chunks
-of the split cache scan), `decode-exp=exact|fast` (the exp of decode
+takes `prefill-bf16=off|attention|all`, `prefill-i16=true|false` (INT16
+activations in fast mode's prefill projections, see
+[MODES.md](MODES.md#int16-projections-and-static-softmax-experimental)),
+`prefill-softmax=online|static` (a softmax without running maximum in fast
+mode's BF16 prefill attention, same section), `split-chunks=1..4` (position
+chunks of the split cache scan), `decode-exp=exact|fast` (the exp of decode
 attention over split caches; pin it when comparing caches, see
 [MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase split
 of forwards on stderr), `prefill-profile=1` (prefill attention stage cycles),

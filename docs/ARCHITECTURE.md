@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of 2026-10-28.
+Status: current as of 2026-11-02.
 
 ## Model contract
 
@@ -171,16 +171,18 @@ again (a file with damaged lines and no record is refused).
 A record that ran with different settings is kept and skipped with a
 warning naming the difference: the mode or precision, the GPTQ overlay or
 round-to-nearest weights, `--max-dimension`, `--min-dimension`,
-`--max-new-tokens` or crop padding, `--stop-repetition`, `--exp`, BF16, NEON
-or scalar prefill attention, BF16 projections, a pinned `--tune decode-exp`,
-the effective `--tune split-chunks` or the build's image decoder; a record
-without `options` counts as one that ran with different settings. Automatic
+`--max-new-tokens` or crop padding, `--stop-repetition`, `--exp`, BF16
+(online or static softmax), NEON or scalar prefill attention, BF16 or INT16
+projections, a pinned `--tune decode-exp`, the effective
+`--tune split-chunks` or the build's image decoder; a record without
+`options` counts as one that ran with different settings. Automatic
 chunking matches an explicit mode default, and compact caches ignore the
 split-cache knob.
 
 An escalated record compares its near-exact rerun's kernel settings,
-allowing the expected switch from fast-mode BF16 prefill to FP32, and the
-weights of the fast attempt it replaced, which `escalated_from` records;
+allowing the expected switch from fast mode's online-softmax BF16 attention
+and BF16 or INT16 projections to FP32, and the weights of the fast attempt
+it replaced, which `escalated_from` records;
 an escalated record written before those were recorded has none to compare
 and matches any weights. With `--escalate`, a warning counts fast-mode
 records that the repetition stop ended without a near-exact rerun, since
@@ -214,7 +216,7 @@ repetition-only policy and its measured effect.
 | `router/` | [Resolution routing](#resolution-routing): image statistics, embedded trees, resolution choice and safety net |
 | `model/` | `Model` (mapped weights, `Weight`, `Layer`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, optional FP32 exception columns, panel prefill; `linear/dot.rs` its single- and multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records, and the research Q8R and Q4R ones; `kv/codec.rs` its scalar codes and scales, `kv/decode.rs` its decode attention kernels), `rotation.rs` (the randomized Hadamard rotation of 32-value blocks behind Q8R and Q4R) |
-| `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form); `panels/` (the shared panel-GEMM scheduler and the FP32 and BF16 micro-kernels); `exp.rs` |
+| `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form, online or static-shift softmax); `panels/` (the shared panel-GEMM scheduler and the FP32, BF16 and INT16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
 | `runner/` | `Runner` (prefill, sealing, decode), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `stream.rs` (results in input order as pages finish), `batch/` (continuous batching: the scheduler, the page feed, the rows), `pipeline.rs` (the page pipeline), `escalate.rs` (fast-mode loops reread in near-exact mode), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
 | `book/` | Long runs of `falcon-ocr run`: the input list, the input check before the model loads, the per-page JSON record, the output file `--resume` continues (`resume.rs`), the summary |
@@ -239,14 +241,20 @@ scalar loop. Runtime feature detection decides dispatch once per process,
 so one baseline-target binary runs everywhere.
 
 The 16-lane AVX-512 prefill tiles are bitwise the 8-lane ones. The `gemm`
-crate's FP32 prefill projections, fast mode's BF16 kernels, and the choice
-between platform and polynomial exp can change rounding; their fidelity is
-token-checked. See [PORTABILITY.md](PORTABILITY.md) for ISA-specific paths
-and [MODES.md](MODES.md#the-three-modes) for the numerical choices.
+crate's FP32 prefill projections, fast mode's BF16 kernels, its opt-in INT16
+panels (`panels/panel_i16.rs`) and static-shift softmax
+(`attention/prefill64/bf16/static_shift.rs`), and the choice between
+platform and polynomial exp can change rounding; their fidelity is
+token-checked. The INT16 panels' integer sums are exact, so their VNNI, AVX2
+and scalar kernels agree bitwise. See [PORTABILITY.md](PORTABILITY.md) for
+ISA-specific paths and [MODES.md](MODES.md#the-three-modes) for the
+numerical choices, including the
+[two opt-in ones](MODES.md#int16-projections-and-static-softmax-experimental).
 
 `kernels::prefill_plan` is the one predicate that decides which prefill
-projection and attention kernels a body and CPU get; `Model::forward_layers`
-runs it and `auto::Resolved` reports it.
+projection and attention kernels a body, a CPU and the `prefill-bf16`,
+`prefill-i16` and `prefill-softmax` knobs get; `Model::forward_layers` runs
+it and `auto::Resolved` reports it.
 
 ## KV cache formats
 
