@@ -675,7 +675,7 @@ mod tests {
     use super::*;
 
     fn available() -> bool {
-        crate::kernels::panel_bf16::available()
+        crate::kernels::avx512bf16_available()
             && std::is_x86_feature_detected!("avx2")
             && std::is_x86_feature_detected!("fma")
     }

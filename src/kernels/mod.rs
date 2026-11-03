@@ -22,8 +22,6 @@ pub use attention::{CompactKv, Geometry, PrefillOptions, attention, attention_wi
 pub(crate) use exp as vexp;
 pub(crate) use panels::panel as panel_gemm;
 #[cfg(target_arch = "x86_64")]
-pub(crate) use panels::panel_bf16;
-#[cfg(target_arch = "x86_64")]
 pub(crate) use panels::panel_i16;
 
 /// Prefill attention stage split (`Tuning::prefill_profile`); a no-op unless
@@ -32,17 +30,10 @@ pub(crate) fn report_prefill_stage_cycles(enabled: bool) {
     attention::prefill64::report_stage_cycles(enabled);
 }
 
-/// Whether this CPU runs the BF16 prefill kernels (AVX2/FMA, AVX-512F and
+/// Whether this CPU runs the BF16 prefill attention (AVX2/FMA, AVX-512F and
 /// AVX512-BF16).
 pub(crate) fn bf16_available() -> bool {
-    #[cfg(target_arch = "x86_64")]
-    {
-        avx2_available() && panel_bf16::available()
-    }
-    #[cfg(not(target_arch = "x86_64"))]
-    {
-        false
-    }
+    avx2_available() && avx512bf16_available()
 }
 
 /// Whether the FP32 prefill attention runs the 16-lane AVX-512 tiles: the
@@ -77,8 +68,6 @@ pub enum PrefillProjection {
     GemmF32,
     /// Quantized codes dequantized into FP32 panels, AVX2/FMA tiles.
     PanelAvx2,
-    /// Quantized codes into BF16 panels, AVX512-BF16 dot products.
-    PanelBf16,
     /// 8-bit codes into INT16 panels, INT16 activations, AVX512-VNNI
     /// (`panel_i16`).
     PanelI16Vnni,
@@ -127,7 +116,6 @@ impl std::fmt::Display for PrefillProjection {
         f.write_str(match self {
             Self::GemmF32 => "gemm-f32",
             Self::PanelAvx2 => "panel-avx2",
-            Self::PanelBf16 => "panel-bf16",
             Self::PanelI16Vnni => "panel-i16-vnni",
             Self::PanelI16Avx2 => "panel-i16-avx2",
         })
@@ -165,19 +153,16 @@ pub fn prefill_plan(
     use crate::config::{PrefillBf16, PrefillSoftmax};
     let (prefill_bf16, softmax) = (tuning.prefill_bf16, tuning.prefill_softmax);
     let panel = body_bits.is_some() && panel_gemm::available(simd);
-    // 8-bit bodies (fast mode) also run prefill attention, and with
-    // `prefill_bf16 = All` the projections, in BF16 where the CPU has
-    // AVX512-BF16 (`attention_prefill_bf16`). BF16 and INT16 panels hold
-    // codes only, so a body with exception columns keeps FP32 projection
-    // panels.
+    // 8-bit bodies (fast mode) also run prefill attention in BF16 where the
+    // CPU has AVX512-BF16 (`attention_prefill_bf16`), and with `prefill_i16`
+    // the projections with INT16 activations. INT16 panels hold codes only,
+    // so a body with exception columns keeps FP32 projection panels.
     let eight_bit = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
     let i16 = panel && body_bits == Some(8) && !exceptions && tuning.prefill_i16;
     let projection = if !panel {
         PrefillProjection::GemmF32
     } else if i16 && let Some(isa) = i16_projection(simd) {
         isa
-    } else if eight_bit && !exceptions && prefill_bf16 == PrefillBf16::All {
-        PrefillProjection::PanelBf16
     } else {
         PrefillProjection::PanelAvx2
     };
@@ -230,8 +215,8 @@ fn i16_projection(simd: Simd) -> Option<PrefillProjection> {
 /// panic if passed directly to a kernel. `Auto` resolves to AVX2/FMA on x86-64
 /// (decode kernels are 8-lane; AVX-512F widens the prefill attention tiles
 /// and the verification rows of split-cache decode attention, both bitwise
-/// identically; AVX512-BF16 serves the 8-bit prefill, and AVX512-VNNI its
-/// opt-in INT16 projections) and to NEON on aarch64.
+/// identically; AVX512-BF16 serves the 8-bit prefill attention, and
+/// AVX512-VNNI its opt-in INT16 projections) and to NEON on aarch64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Simd {
     Auto,
@@ -292,6 +277,19 @@ fn avx512_available() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
         std::is_x86_feature_detected!("avx512f")
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        false
+    }
+}
+
+/// AVX-512F and AVX512-BF16: the `vdpbf16ps` products of the BF16 prefill
+/// attention.
+fn avx512bf16_available() -> bool {
+    #[cfg(target_arch = "x86_64")]
+    {
+        std::is_x86_feature_detected!("avx512f") && std::is_x86_feature_detected!("avx512bf16")
     }
     #[cfg(not(target_arch = "x86_64"))]
     {

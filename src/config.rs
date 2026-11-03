@@ -71,16 +71,14 @@ pub enum ExpMode {
     Fast,
 }
 
-/// Which prefill stages of an 8-bit model use BF16 products on an
-/// AVX512-BF16 CPU. Attention alone is fidelity-neutral against the FP32
-/// anchor; the projections add about 17% KL, so they are opt-in.
+/// Whether the prefill attention of an 8-bit model uses BF16 products on an
+/// AVX512-BF16 CPU; fidelity-neutral against the FP32 anchor.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum PrefillBf16 {
     Off,
     #[default]
     Attention,
-    All,
 }
 
 /// Softmax of the BF16 prefill attention (`Tuning::prefill_softmax`).
@@ -117,12 +115,11 @@ pub enum DraftKv {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
-    /// BF16 prefill stages of 8-bit models on AVX512-BF16 CPUs.
+    /// BF16 prefill attention of 8-bit models on AVX512-BF16 CPUs.
     pub prefill_bf16: PrefillBf16,
     /// Prefill projections of 8-bit models with INT16 activations (one step
     /// per row and 64 inputs) on x86 CPUs with AVX2: AVX512-VNNI where the
-    /// `auto` backend has it, bitwise the same AVX2 kernel otherwise. Takes
-    /// precedence over `prefill_bf16 = All` for the projections.
+    /// `auto` backend has it, bitwise the same AVX2 kernel otherwise.
     pub prefill_i16: bool,
     /// Softmax of the BF16 prefill attention (with AVX512BW as well).
     pub prefill_softmax: PrefillSoftmax,
@@ -154,7 +151,7 @@ pub struct Tuning {
     pub decode_fast_exp: Option<bool>,
 }
 impl Tuning {
-    /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
+    /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention`,
     /// `prefill-i16=true|false`, `prefill-softmax=online|static`,
     /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
     /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,
@@ -176,8 +173,7 @@ impl Tuning {
                 self.prefill_bf16 = match value {
                     "off" | "0" => PrefillBf16::Off,
                     "attention" | "attn" => PrefillBf16::Attention,
-                    "all" | "1" => PrefillBf16::All,
-                    _ => bail!("tuning knob prefill-bf16: expected off, attention or all, got `{value}`"),
+                    _ => bail!("tuning knob prefill-bf16: expected off or attention, got `{value}`"),
                 }
             }
             "prefill-i16" => self.prefill_i16 = flag(value)?,
@@ -753,7 +749,7 @@ mod tests {
     #[test]
     fn tuning_knobs_parse_and_reject_unknown_keys() {
         let tuning = Tuning::from_pairs([
-            "prefill-bf16=all",
+            "prefill-bf16=off",
             "prefill-i16=on",
             "prefill-softmax=static",
             "split-chunks=3",
@@ -767,7 +763,7 @@ mod tests {
         assert_eq!(tuning.decode_fast_exp, Some(true));
         assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
         assert!(tuning.draft_path_gate);
-        assert_eq!(tuning.prefill_bf16, PrefillBf16::All);
+        assert_eq!(tuning.prefill_bf16, PrefillBf16::Off);
         assert!(tuning.prefill_i16);
         assert_eq!(tuning.prefill_softmax, PrefillSoftmax::Static);
         assert_eq!(tuning.split_chunks, Some(3));
@@ -776,6 +772,7 @@ mod tests {
         for bad in [
             "split-chunks=5",
             "split-chunks=x",
+            "prefill-bf16=all",
             "prefill-softmax=max",
             "phases=maybe",
             "draft-kv=f16",

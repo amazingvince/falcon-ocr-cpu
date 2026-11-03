@@ -347,7 +347,7 @@ checks with weights: smoke trace, token agreement, a speed report.
 ## Knobs for experiments
 
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
-takes `prefill-bf16=off|attention|all`, `prefill-i16=true|false` (INT16
+takes `prefill-bf16=off|attention`, `prefill-i16=true|false` (INT16
 activations in fast mode's prefill projections, see
 [MODES.md](MODES.md#int16-projections-and-static-softmax-experimental)),
 `prefill-softmax=online|static` (a softmax without running maximum in fast

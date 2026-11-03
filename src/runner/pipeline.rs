@@ -12,7 +12,7 @@
 //! stage computes each output independently of its pool's thread count, and
 //! drafts only read the outputs of earlier pages, which are complete before
 //! a page decodes. Pools of 1, 2, 3 and 7 threads agree bit for bit on one
-//! quantized layer's stages (`model::pool_tests`: W8 on FP32 and BF16
+//! quantized layer's stages (`model::pool_tests`: W8 on FP32 and INT16
 //! panels and W16; QKV with folded row scales, rotary factors, the fused and
 //! unfused QKV passes, FP32 and BF16 attention, the output projection and
 //! gated FFN epilogues, sealing in every split format) and on the FP32

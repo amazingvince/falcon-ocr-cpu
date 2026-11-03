@@ -290,8 +290,8 @@ fn timed(reps: usize, mut f: impl FnMut()) -> (f64, f64, f64) {
 }
 
 /// Prefill-shaped throughput of the INT16 kernels (both panel widths)
-/// against the FP32 and BF16 panels, in multiply-adds per cycle per physical
-/// core at the sampled clock.
+/// against the FP32 panels, in multiply-adds per cycle per physical core at
+/// the sampled clock.
 #[test]
 #[ignore = "timing probe; run in release with --nocapture"]
 fn i16_prefill_throughput_probe() {
@@ -333,15 +333,6 @@ fn i16_prefill_throughput_probe() {
                 panel_gemm::gemm(&a, m, k, &dense, n, None, panel_gemm::Epilogue::Store(&mut out))
             });
             report("f32 panels", t);
-        }
-        if crate::kernels::panel_bf16::available() {
-            use crate::kernels::panel_bf16;
-            let mut panels = panel_bf16::Panels::default();
-            panel_bf16::pack(n, k, &codes, &scales, &mut panels);
-            let t = timed(reps, || {
-                panel_bf16::gemm(&a, m, k, &panels, n, None, panel_gemm::Epilogue::Store(&mut out))
-            });
-            report("bf16 panels", t);
         }
         for isa in [Isa::Vnni, Isa::Avx2].into_iter().filter(|isa| isa.available()) {
             let mut panels = Panels::default();
@@ -388,15 +379,6 @@ fn i16_prefill_throughput_probe() {
             single.install(|| panel_gemm::gemm(&a, m, k, &dense, n, None, panel_gemm::Epilogue::Store(&mut out)))
         });
         report("f32 panels", t);
-    }
-    if crate::kernels::panel_bf16::available() {
-        use crate::kernels::panel_bf16;
-        let mut panels = panel_bf16::Panels::default();
-        panel_bf16::pack(n, k, &codes, &scales, &mut panels);
-        let t = timed(reps, || {
-            single.install(|| panel_bf16::gemm(&a, m, k, &panels, n, None, panel_gemm::Epilogue::Store(&mut out)))
-        });
-        report("bf16 panels", t);
     }
     for isa in [Isa::Vnni, Isa::Avx2].into_iter().filter(|isa| isa.available()) {
         let mut panels = Panels::default();

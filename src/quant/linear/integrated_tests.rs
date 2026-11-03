@@ -250,7 +250,7 @@ fn exception_decode_is_bitwise_the_documented_order() {
 }
 
 /// Large-M products (prefill, and the dense fallback) use the exact
-/// weights in place; with BF16 projections requested, a matrix with
+/// weights in place; with INT16 projections requested, a matrix with
 /// exception columns keeps the FP32 panels.
 #[test]
 fn exception_large_m_and_prefill_use_the_exact_weights() {
@@ -303,13 +303,9 @@ fn exception_large_m_and_prefill_use_the_exact_weights() {
                 &mut Scratch::default(),
                 PrefillProjection::PanelAvx2,
             );
-            // Requests for the code-only BF16 and INT16 panels keep the FP32
-            // panels for a matrix with exception columns.
-            for kernel in [
-                PrefillProjection::PanelBf16,
-                PrefillProjection::PanelI16Vnni,
-                PrefillProjection::PanelI16Avx2,
-            ] {
+            // Requests for the code-only INT16 panels keep the FP32 panels
+            // for a matrix with exception columns.
+            for kernel in [PrefillProjection::PanelI16Vnni, PrefillProjection::PanelI16Avx2] {
                 let mut other = vec![f32::NAN; rows * n];
                 q.prefill(
                     &x,

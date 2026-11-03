@@ -46,7 +46,7 @@ recorded verdict; new qualification needs fresh pages.
 |---|---|---|---|
 | Body weights | FP32 | 16-bit codes, FP32 absmax scale per 64 inputs | 8-bit GPTQ act-order codes, FP32 scale per 64 inputs (`w8-gptq.safetensors`) |
 | KV cache after sealing | FP32 split records | 16-bit codes, BF16 scale per 32 values | 8-bit codes, BF16 scale per 32 values |
-| Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | FP32 panel GEMM (`--tune prefill-bf16=all`: BF16; `--tune prefill-i16=true`: INT16 activations) |
+| Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | FP32 panel GEMM (`--tune prefill-i16=true`: INT16 activations) |
 | Prefill attention | FP32 | FP32 | BF16 products on AVX512-BF16 CPUs (`--tune prefill-softmax=static`: static softmax), FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
@@ -126,12 +126,12 @@ fused FFN gate/up projection (`W13`) 18 KB, against about 1.7 MB more for a
 whole W2 kept in BF16.
 
 Every product uses the FP32 columns: prefill and other large products have
-them in place (BF16 and INT16 panels hold codes only, so under `--tune
-prefill-bf16=all` or `prefill-i16=true` a body with exception columns keeps
-FP32 projection panels, as its plan reports), and decode adds one fused
-multiply-add per exception column and output row after the 8-bit kernel, in
-ascending column order, so draft verification stays bitwise the single-row
-steps. `doctor` and every result's plan count the extra bytes.
+them in place (INT16 panels hold codes only, so under `--tune
+prefill-i16=true` a body with exception columns keeps FP32 projection
+panels, as its plan reports), and decode adds one fused multiply-add per
+exception column and output row after the 8-bit kernel, in ascending column
+order, so draft verification stays bitwise the single-row steps. `doctor`
+and every result's plan count the extra bytes.
 
 Round-to-nearest quantization computes scales and codes with the exception
 columns zeroed and keeps their original values. GPTQ never quantizes them
@@ -200,9 +200,9 @@ sum converts to FP32 and joins the accumulator as
 kernel (`vpdpwssd`, plan label `panel-i16-vnni`; the `auto` backend on CPUs
 with AVX512F and VNNI) and the AVX2 kernel (`vpmaddwd`, `panel-i16-avx2`;
 other x86 CPUs with AVX2, and `--backend avx2`) agree bit for bit with each
-other and with a scalar oracle, because the integer part is exact. The knob
-overrides `prefill-bf16=all` for the projections. A body with exception
-columns keeps FP32 panels, and aarch64 has no INT16 kernel yet.
+other and with a scalar oracle, because the integer part is exact. A body
+with exception columns keeps FP32 panels, and aarch64 has no INT16 kernel
+yet.
 
 `--tune prefill-softmax=static` (default `online`) replaces the online
 softmax of fast mode's BF16 prefill attention (plan label `bf16-static`;

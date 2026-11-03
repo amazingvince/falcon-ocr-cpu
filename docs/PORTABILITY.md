@@ -78,7 +78,6 @@ always uses the polynomial exp.
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
 | BF16 prefill attention (`prefill64/bf16.rs`, fast mode); opt-in static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| BF16 panel GEMM (`panels/panel_bf16.rs`, opt-in; not for bodies with exception columns) | prefill | - | AVX512-BF16 | - | - |
 | INT16-activation panel GEMM (`panels/panel_i16.rs`, opt-in; 8-bit bodies without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |

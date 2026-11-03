@@ -9,9 +9,7 @@
 //! prefill uses blocked GEMM (or the fixed-width tiles) for QK and PV, decode
 //! uses vector dot products. Nothing materializes a sequence-squared matrix.
 #[cfg(target_arch = "x86_64")]
-use super::avx512_available;
-#[cfg(target_arch = "x86_64")]
-use super::panel_bf16;
+use super::avx512bf16_available;
 use super::{Simd, avx2_available, elements, native_vector};
 use crate::config::{ExpMode, PrefillSoftmax};
 
@@ -333,8 +331,7 @@ pub(crate) fn attention_prefill_bf16(
         && query_len == kv.total_len
         && kv.total_len == kv.prefix_len
         && avx2_available()
-        && avx512_available()
-        && panel_bf16::available()
+        && avx512bf16_available()
     {
         // SAFETY: AVX2/FMA/AVX-512F/AVX512-BF16 detected; shapes validated.
         unsafe {
@@ -351,7 +348,7 @@ pub(crate) fn attention_prefill_bf16(
 pub(crate) fn prefill_bf16_rows_available() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        panel_bf16::available() && std::is_x86_feature_detected!("avx512bw")
+        avx512bf16_available() && std::is_x86_feature_detected!("avx512bw")
     }
     #[cfg(not(target_arch = "x86_64"))]
     false

@@ -624,7 +624,7 @@ fn exception_columns_keep_fp32_projection_panels() {
     use crate::config::{PrefillBf16, PrefillSoftmax, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
-            for setting in [PrefillBf16::Off, PrefillBf16::Attention, PrefillBf16::All] {
+            for setting in [PrefillBf16::Off, PrefillBf16::Attention] {
                 for prefill_i16 in [false, true] {
                     let tuning = Tuning {
                         prefill_bf16: setting,
@@ -654,9 +654,9 @@ fn exception_columns_keep_fp32_projection_panels() {
                     assert_eq!(static_softmax.attention, expected, "{case}");
                     assert_eq!(exceptions.attention, plain.attention, "{case}");
                     let expected = match plain.projection {
-                        PrefillProjection::PanelBf16
-                        | PrefillProjection::PanelI16Vnni
-                        | PrefillProjection::PanelI16Avx2 => PrefillProjection::PanelAvx2,
+                        PrefillProjection::PanelI16Vnni | PrefillProjection::PanelI16Avx2 => {
+                            PrefillProjection::PanelAvx2
+                        }
                         other => other,
                     };
                     assert_eq!(exceptions.projection, expected, "{case}");

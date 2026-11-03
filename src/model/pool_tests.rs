@@ -6,7 +6,7 @@
 //! thread count, while the partitions (row blocks, panel splits, records)
 //! change with it. This runs the product's stages of one layer, at a page's
 //! row count (at least `PARALLEL_ROWS`, so the row-parallel and fused passes
-//! run), for W8 with FP32, BF16 and INT16 panels and for W16, and compares
+//! run), for W8 with FP32 and INT16 panels and for W16, and compares
 //! every output bit for bit: the QKV projection with the RMS norm folded
 //! into row scales, the rotary factors, the fused QKV pass with its BF16
 //! attention copies, prefill attention (FP32 and BF16), the output
@@ -105,8 +105,8 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         exp: ExpMode::Fast,
         ..PrefillOptions::EXACT
     };
-    // BF16 panels and attention copies where the CPU has AVX512-BF16, and
-    // the INT16 panels where the plan has them.
+    // BF16 attention copies where the CPU has AVX512-BF16, and the INT16
+    // panels where the plan has them.
     let bf16 = kernels::prefill_bf16_rows_available();
     let i16 = Tuning {
         prefill_i16: true,
@@ -133,11 +133,8 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         pool.install(|| {
             let mut out = Vec::new();
             for (bits_per_code, layer) in &bodies {
-                let code_only = [
-                    bf16.then_some(Projection::PanelBf16),
-                    (i16 != Projection::PanelAvx2).then_some(i16),
-                ];
-                for kernel in std::iter::once(Projection::PanelAvx2).chain(code_only.into_iter().flatten()) {
+                let code_only = (i16 != Projection::PanelAvx2).then_some(i16);
+                for kernel in std::iter::once(Projection::PanelAvx2).chain(code_only) {
                     if kernel != Projection::PanelAvx2 && *bits_per_code != 8 {
                         continue;
                     }
@@ -272,7 +269,6 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         );
     }
     if bf16 {
-        assert_ne!(output("W8: QKV projection"), output("W8 panel-bf16: QKV projection"));
         assert_ne!(output("W8: attention"), output("W8: BF16 attention"));
         assert_ne!(
             output("W8: BF16 attention"),

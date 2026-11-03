@@ -29,9 +29,9 @@ about 90% of the bandwidth floor in every mode; the remaining decode lever is
 fewer bytes, and the 4-bit formats cost too much fidelity for this model.
 
 Where a fast-mode page goes (prefill 2.9 s, decode 8.5 ms/token):
-prefill attention 1.3 s (BF16 tiles), projections 1.3 s (FP32 panels; 0.7 s
-with `--tune prefill-bf16=all`), split/RoPE/append 0.1 s; decode attention
-4.2 ms, W13 1.5, head 1.0, W2 0.8, QKV 0.7, WO 0.4 ms. The FP32 prefill
+prefill attention 1.3 s (BF16 tiles), projections 1.3 s (FP32 panels),
+split/RoPE/append 0.1 s; decode attention 4.2 ms, W13 1.5, head 1.0, W2
+0.8, QKV 0.7, WO 0.4 ms. The FP32 prefill
 attention tiles run QK at about 75% and PV at about 90% of FP32 peak. The
 panel GEMM throughput probe measures 1.7-1.8 TFLOP/s at prefill shapes.
 FP32 prefill takes about 4.1 s against fast mode's 2.9 s with BF16

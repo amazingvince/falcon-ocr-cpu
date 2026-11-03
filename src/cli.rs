@@ -83,7 +83,7 @@ pub struct RunnerArgs {
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
     /// Experiment knobs as `key=value`, repeatable:
-    /// `prefill-bf16=off|attention|all`, `prefill-i16=true|false`,
+    /// `prefill-bf16=off|attention`, `prefill-i16=true|false`,
     /// `prefill-softmax=online|static`, `split-chunks=1..4`, `phases=1`,
     /// `prefill-profile=1`, `draft-backoff=N`, `draft-window=N`,
     /// `draft-kv=f32|q8`, `draft-gate=token|path` and `decode-exp=exact|fast`

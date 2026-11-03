@@ -70,7 +70,7 @@ the 7700X.
 The opt-in INT16 projections
 ([MODES.md](MODES.md#int16-projections-and-static-softmax-experimental))
 cut the journal page's projection time from 2.4 to 1.2 s on the 7700X for
-+1.4% KL, where BF16 projections (`--tune prefill-bf16=all`) cost +19%
++1.4% KL, where BF16 projections cost +19%
 ([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
 They supersede the W8A8 rotated INT8 proposal. Three pieces are left:
 
