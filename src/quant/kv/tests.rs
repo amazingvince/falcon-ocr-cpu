@@ -459,6 +459,52 @@ fn q4_codes_pack_two_per_byte_and_decode_like_q8() {
 }
 
 #[test]
+fn codes_round_like_round_ties_even() {
+    // `round_clamped` against the libm rounding it replaces: every
+    // half-integer tie and its neighbours, values past each limit, tiny
+    // values, infinities and NaN.
+    for limit in [7.0_f64, 127.0, 32767.0] {
+        let reference = |x: f64| x.round_ties_even().clamp(-limit, limit);
+        let mut values = vec![
+            0.0,
+            -0.0,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            1e-300,
+            -1e-300,
+            1e300,
+            -1e300,
+        ];
+        for k in -(limit as i64) - 3..=limit as i64 + 3 {
+            for base in [k as f64, k as f64 + 0.5] {
+                values.extend([base, base.next_up(), base.next_down(), base + 0.25, base - 0.25]);
+            }
+        }
+        // Equal as numbers: a negative value that rounds to zero gives +0
+        // instead of -0, the same integer code.
+        for x in values {
+            assert_eq!(codec::round_clamped(x, limit), reference(x), "{x} limit {limit}");
+        }
+        assert!(codec::round_clamped(f64::NAN, limit).is_nan());
+    }
+    // The codes themselves, including the zero scale and a NaN value.
+    for scale in [0.0_f32, 1e-3, 0.37, f32::from_bits(1)] {
+        for value in [0.0_f32, -0.0, 0.25, -1.5, 3.7, 1e3, -1e3, f32::NAN] {
+            let x = value as f64 / scale as f64;
+            let expect = |limit: f64| {
+                if scale == 0.0 {
+                    0.0
+                } else {
+                    x.round_ties_even().clamp(-limit, limit)
+                }
+            };
+            assert_eq!(q8_code(value, scale), expect(127.0) as i8, "{value} / {scale}");
+            assert_eq!(q16_code(value, scale), expect(32767.0) as i16, "{value} / {scale}");
+        }
+    }
+}
+
+#[test]
 fn q4_scales_round_up_to_bf16() {
     // Absmax 1: 1/7 is no BF16 value, so the stored scale is the smallest
     // BF16 above it (never below, which would push codes past 7).

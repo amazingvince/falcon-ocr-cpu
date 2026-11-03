@@ -53,13 +53,26 @@ pub(super) fn bf16_f32(bits: u16) -> f32 {
     f32::from_bits(u32::from(bits) << 16)
 }
 
+/// `x` clamped to `±limit` (an integer below 2^51) and rounded to nearest
+/// even: `x.round_ties_even().clamp(-limit, limit)` (NaN stays NaN), without
+/// the libm call `round_ties_even` costs on baseline x86-64. Adding 1.5 *
+/// 2^52 leaves one integer step per ulp, so the addition rounds to an
+/// integer, ties to even (the default rounding mode), and the subtraction
+/// is exact. Clamping first is the same: a value past the limit rounds to
+/// at least the limit.
+#[inline(always)]
+pub(super) fn round_clamped(x: f64, limit: f64) -> f64 {
+    const SHIFT: f64 = 6_755_399_441_055_744.0;
+    (x.clamp(-limit, limit) + SHIFT) - SHIFT
+}
+
 /// `value / scale` rounded to nearest even and clamped to ±32,767; 0 for a
 /// zero scale.
 pub(super) fn q16_code(value: f32, scale: f32) -> i16 {
     if scale == 0.0 {
         0
     } else {
-        (value as f64 / scale as f64).round_ties_even().clamp(-32767.0, 32767.0) as i16
+        round_clamped(value as f64 / scale as f64, 32767.0) as i16
     }
 }
 
@@ -69,7 +82,7 @@ pub(super) fn q8_code(value: f32, scale: f32) -> i8 {
     if scale == 0.0 {
         0
     } else {
-        (value as f64 / scale as f64).round_ties_even().clamp(-127.0, 127.0) as i8
+        round_clamped(value as f64 / scale as f64, 127.0) as i8
     }
 }
 
@@ -90,7 +103,7 @@ fn q4_code(value: f32, scale: f32) -> i8 {
     if scale == 0.0 {
         0
     } else {
-        (value as f64 / scale as f64).round_ties_even().clamp(-7.0, 7.0) as i8
+        round_clamped(value as f64 / scale as f64, 7.0) as i8
     }
 }
 
