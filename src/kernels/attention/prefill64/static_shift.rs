@@ -173,7 +173,8 @@ unsafe fn tile_head<const WIDE: bool>(
 /// `st[key][query] = exp(st[key][query])` over the tile's keys and queries,
 /// eight lanes per vector, each probability added to its query's
 /// denominator in key order. With `MASKED`, scores of -inf (`mask_lanes`)
-/// give +0.
+/// give +0; a NaN score stays NaN (the unordered compare), as in the
+/// all-image tiles, the online kernels and the scalar oracle.
 #[inline(always)]
 unsafe fn exp_lanes8<const MASKED: bool>(
     queries: usize,
@@ -190,7 +191,7 @@ unsafe fn exp_lanes8<const MASKED: bool>(
                 let score = _mm256_loadu_ps(at);
                 let mut p = exp8(score);
                 if MASKED {
-                    p = _mm256_and_ps(p, _mm256_cmp_ps::<_CMP_NEQ_OQ>(score, hidden));
+                    p = _mm256_and_ps(p, _mm256_cmp_ps::<_CMP_NEQ_UQ>(score, hidden));
                 }
                 sum = _mm256_add_ps(sum, p);
                 _mm256_storeu_ps(at, p);
@@ -217,7 +218,7 @@ unsafe fn exp_lanes16<const MASKED: bool>(
                 let score = _mm512_loadu_ps(at);
                 let mut p = exp16(score);
                 if MASKED {
-                    p = _mm512_maskz_mov_ps(_mm512_cmp_ps_mask::<_CMP_NEQ_OQ>(score, hidden), p);
+                    p = _mm512_maskz_mov_ps(_mm512_cmp_ps_mask::<_CMP_NEQ_UQ>(score, hidden), p);
                 }
                 sum = _mm512_add_ps(sum, p);
                 _mm512_storeu_ps(at, p);

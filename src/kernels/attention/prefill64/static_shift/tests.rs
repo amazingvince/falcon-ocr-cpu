@@ -231,6 +231,51 @@ fn static_tiles_match_the_scalar_oracle_bitwise() {
     }
 }
 
+/// A NaN score stays NaN in the masked tiles (those not all image), as in
+/// the all-image tiles, the online kernels and the scalar oracle: the -inf
+/// mask's compare is unordered, so it zeroes only the masked lanes.
+#[test]
+fn nan_keys_propagate_in_masked_tiles() {
+    if !available() {
+        return;
+    }
+    let (queries, total, offset, image_start, image_end) = (70, 70, 0, 3, 65);
+    let (q, mut k, v, sinks) = operands(queries, total);
+    // Head 0 of key 66, text after the image: rows 66 to 69 see it, in the
+    // query tile of rows 64 to 69, where rows 64 and 65 mask it.
+    k[66 * 16 * HEAD_DIM] = f32::NAN;
+    for wide in [false, true] {
+        if wide && !wide_available() {
+            continue;
+        }
+        let mut out = vec![0.0_f32; q.len()];
+        // SAFETY: features checked above (AVX-512F before `wide`); shapes
+        // consistent.
+        unsafe {
+            compact_prefill(
+                &q,
+                &CompactKv::prefill(&k, &v, total, 16, 8, HEAD_DIM),
+                queries,
+                Geometry::new(offset, image_start, image_end),
+                &sinks,
+                &mut out,
+                wide,
+                options(ExpMode::Fast),
+            );
+        }
+        for row in 0..queries {
+            for head in 0..16 {
+                let poisoned = head == 0 && row >= 66;
+                let values = &out[(row * 16 + head) * HEAD_DIM..][..HEAD_DIM];
+                assert!(
+                    values.iter().all(|x| x.is_nan() == poisoned),
+                    "wide={wide} row {row} head {head}"
+                );
+            }
+        }
+    }
+}
+
 /// Against an f64 reference with the exact exp: the static tiles are as
 /// close as the online ones (printed for comparison), well inside 1e-5.
 #[test]

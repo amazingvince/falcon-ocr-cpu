@@ -257,7 +257,7 @@ fn round(x: f32) -> f64 {
 /// the same BF16 operands with the exact exp. Each weight `bf16(p) / sum`
 /// differs from `p / P` by its probability's relative error less their
 /// weighted mean, at most twice the per-probability bound (BF16 rounding
-/// 2^-9 plus the polynomial's 7.5e-5), times max |v| = 3, plus FP32
+/// 2^-8 plus the polynomial's 7.5e-5), times max |v| = 3, plus FP32
 /// accumulation slack. Also prints the online kernel's error on the same
 /// operands.
 #[test]
@@ -330,7 +330,7 @@ fn matches_f64_reference() {
             }
         }
         assert!(
-            worst <= 3.0 * 2.0 * (2f64.powi(-9) + 7.5e-5) + 1e-4,
+            worst <= 3.0 * 2.0 * (2f64.powi(-8) + 7.5e-5) + 1e-4,
             "query_len {query_len}: worst {worst}"
         );
         eprintln!("query_len {query_len}: worst {worst:.2e} (online softmax {worst_online:.2e})");
