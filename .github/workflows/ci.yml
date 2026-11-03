@@ -84,19 +84,24 @@ jobs:
       - run: cargo build --release --locked --bins
 
   weights:
-    # A machine with `artifacts/` (pinned checkpoint, GPTQ overlay, packed
-    # files, the GPU smoke reference and the corpus): the ignored gates.
+    # An AVX-512 F/BW/VL/VNNI/BF16 machine with `artifacts/` (pinned
+    # checkpoint, GPTQ overlay, packed files, the GPU smoke reference and the
+    # corpus): the AVX-512 oracles and the ignored gates.
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: [self-hosted, falcon-weights]
     steps:
       - uses: actions/checkout@v4
       - run: rustup show
       - run: cargo build --release --locked --bins
-      - name: Mode, parity, cache, batch, allocation and head gates
+      - name: AVX-512 kernels against their oracles (hosted runners skip them)
+        run: cargo test --release --lib --locked
+      - name: Fail if this host skipped any AVX-512 oracle
+        run: cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_runs_every_avx512_kernel
+      - name: Mode, parity, cache, weight layout, batch, allocation and head gates
         run: >-
           cargo test --release --locked
-          --test modes --test gpu_parity --test cache_layout --test batch_parity
-          --test batch_trace --test decode_allocations --test head_screen
+          --test modes --test gpu_parity --test cache_layout --test weight_layout
+          --test batch_parity --test batch_trace --test decode_allocations --test head_screen
           -- --ignored
       - name: Runner input rejections, margin cropping and a resumed run
         run: cargo test --release --locked --test negative_inputs --test margin_crop --test run_cli -- --ignored --test-threads=1
