@@ -39,7 +39,18 @@ struct Fixture {
     max_dimension: u32,
     min_dimension: u32,
     max_new_tokens: usize,
+    /// The prefill kernels of the recording host (`Resolved::prefill`).
+    prefill: serde_json::Value,
     token_ids: Vec<u32>,
+}
+
+/// The attention and projection kinds of a plan's `prefill` as `--resume`
+/// compares them (`book::Kernels`): kernels of one kind agree bitwise.
+fn prefill_kinds(runner: &Runner, prefill: &serde_json::Value) -> (String, String) {
+    let mut plan = serde_json::to_value(runner.resolved()).unwrap();
+    plan["prefill"] = prefill.clone();
+    let kernels = falcon_ocr::book::Kernels::from_plan(&plan).unwrap();
+    (kernels.attention, kernels.projection)
 }
 
 fn fixture(name: &str) -> Fixture {
@@ -161,6 +172,16 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
         assert_eq!(model.overlay_sha256(), fixture.overlay_sha256.as_deref(), "{name}");
         let runner = runner(model, MODEL_DIR, RunnerConfig::default());
         assert_eq!(runner.resolved().mode, Some(fixture.mode));
+        // The tokens hold for the recording host's prefill kernels only:
+        // another host's plan fails here, not as a token diff.
+        let planned = serde_json::to_value(runner.resolved().prefill).unwrap();
+        assert_eq!(
+            prefill_kinds(&runner, &planned),
+            prefill_kinds(&runner, &fixture.prefill),
+            "{name}: this host plans the prefill as {planned}, the fixture was recorded with {}; \
+             its tokens do not apply to this host's kernels",
+            fixture.prefill
+        );
         let result = runner
             .recognize_file(
                 &fixture.page,
