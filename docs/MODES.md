@@ -525,32 +525,63 @@ pages on a book before choosing this option.
 
 ## Loops and the repetition stop
 
-The stop (`--stop-repetition`, on by default) ends a page once it repeats a
-cycle of at most 128 tokens for at least `max(256, 4 × cycle)` tokens, with
-`finish_reason: "repetition"`; output before the stop is unchanged
-(`tests/modes.rs`), but the page ends early. On the calibration pages it never
-fired on a page that ends normally and cut decode work by about a third. It
-also ends genuine FP32 loops, even one that FP32 itself ends at EOS after a
+The stop (`--stop-repetition`, on by default) has two rules. Either ends
+the page with `finish_reason: "repetition"`; output before the stop is
+unchanged (`tests/modes.rs`), but the page ends early. The exact rule fires
+once the output repeats a cycle of at most 128 tokens for at least
+`max(256, 4 × cycle)` tokens. On the calibration pages it never fired on a
+page that ends normally and cut decode work by about a third. It also ends
+genuine FP32 loops, even one that FP32 itself ends at EOS after a
 2,232-token hallucination (a held-out page, where the stopped output read
-better: CER 1.90 → 0.83), so there the default output is shorter than FP32's.
-Legitimately periodic content longer than that (a 256-token page of identical
-lines) would be cut: pass `--stop-repetition=false`.
+better: CER 1.90 → 0.83), so there the default output is shorter than
+FP32's.
 
-The stop compares tokens exactly, so a loop whose lines differ only in an
-incrementing number never fires it and runs to the token limit. On the
-mild deep-fried copy of anchor page `ad43a4d35e59199e`, a degraded
-Traditional Chinese page
-([free-running validation](#free-running-validation)), fast and near-exact
-mode write the same rows, numbered 44 to 255 and otherwise identical, until
-the 4,096-token cap; fast mode's previous prefill kernels fell into an
-exact two-line loop there instead, which the stop ended at 314 tokens.
-Neither output recovers the page.
-[NEXT-STEPS.md](NEXT-STEPS.md#repetition-stop-for-counting-loops) proposes
-covering such loops.
+The counting rule ends loops whose lines differ only in numbers that
+count, such as `44 女 …`, `45 女 …`. The pinned tokenizer gives every
+digit its own token (`OcrTokenizer::load` checks IDs 539-548), so the rule
+reads each run of digit tokens as one number and compares each symbol, a
+number or another token, with the one a period of at most 128 symbols
+earlier. Other tokens must be equal, each number must differ from its
+counterpart a period earlier by the same step in every cycle, and at least
+one step must be nonzero, which leaves exact loops to the exact rule. The
+rule fires once such a window holds 32 whole cycles and spans at least 256
+tokens (`MIN_COUNT_REPEATS`, `MIN_WINDOW` in `src/repetition.rs`).
 
-`run --escalate` rereads fast-mode pages ended by the repetition stop with
-the near-exact model. [Long runs](ARCHITECTURE.md#long-runs) describes model
-selection, batching, records and failure handling.
+The threshold comes from recorded text: 423 distinct output sequences
+under `artifacts/` (calibration, anchor, book, stress and probe runs) and
+the 1,651 OmniDocBench ground-truth pages, tokenized with tables in the
+model's style. The longest counting window in legitimate text is 20
+cycles, a scoring table counting down from 20 bonus points (v3 page
+`aa8e1119117b1822`, which ends at EOS); the next longest is 9, and a
+threshold of 16 would cut the scoring table. The three counting loops on
+record reach 65, 77 and 212 cycles. At 32 the rule ends 4 of these 2,074
+outputs, none of which ends at EOS:
+
+| Page | Output | Tokens before | Counting rule |
+|---|---|---:|---:|
+| Mild deep-fried `ad43a4d35e59199e` | Fast and near-exact (identical): rows 44 to 255 | 4,096 (cap) | 695 |
+| Anchor `3b0add7f7d14d45c` | Fast mode's current kernels: a list `(1)` to `(100)` of one date, `1980年12月24日 星期五` | 2,247 (exact rule) | 728 |
+| `3ae00f1496cda3ff` | FP32, CPU reference and PyTorch GPU cross-check: the years 1981, 1982, … | 512 and 384 (budgets) | 308 |
+
+The deep-fried page is a degraded Traditional Chinese page
+([free-running validation](#free-running-validation)); its counting loop
+now ends in row 75. Fast mode's previous prefill kernels fell into an exact
+two-line loop there instead, which the exact rule ended at 314 tokens. In
+each output the loop continues past the cut, and fast mode's outputs of
+`3ae00f1496cda3ff` end at EOS without the year run. Both rules together
+cost about 0.3 µs per token (one run on a busy 7700X), against about 9 ms
+per decode step.
+
+Legitimate content that matches a rule is cut: a 256-token page of
+identical lines, or 32 or more rows identical apart from counting numbers
+(a long blank numbered form, a number chart). Pass
+`--stop-repetition=false` for such pages.
+
+`run --escalate` rereads fast-mode pages that either rule ends with the
+near-exact model, and under `--max-dimension auto` the router's
+[safety net](ARCHITECTURE.md#resolution-routing) reruns them at 1536.
+[Long runs](ARCHITECTURE.md#long-runs) describes model selection,
+batching, records and failure handling.
 
 The repetition stop ends the 8-bit-induced loops seen on held-out
 handwriting. Rereading only those pages gives near-FP32 output while

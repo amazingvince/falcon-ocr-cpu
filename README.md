@@ -82,10 +82,14 @@ next to the model files; without it the runner uses n-gram drafts. Threads,
 drafting and the screened head do not change tokens.
 
 The repetition stop ends cycles of at most 128 tokens after at least
-`max(256, 4 × cycle)` repeated tokens. Without `--max-new-tokens`, the
-8,192-token cap is lowered when the input leaves less of the 16,384-token
-context (`budget_clamped` in the result). Both can end a page early without
-changing preceding tokens; `--stop-repetition=false` lets loops run.
+`max(256, 4 × cycle)` repeated tokens, and counting loops, whose cycles
+differ only in numbers that each move by a fixed step, after 32 cycles
+spanning at least 256 tokens
+([loops](docs/MODES.md#loops-and-the-repetition-stop)). Without
+`--max-new-tokens`, the 8,192-token cap is lowered when the input leaves
+less of the 16,384-token context (`budget_clamped` in the result). Both can
+end a page early without changing preceding tokens;
+`--stop-repetition=false` lets loops run.
 
 `doctor` prints the plan without reading tensors; `--load` times model
 loading and `--probe` measures memory bandwidth and the decode floor.

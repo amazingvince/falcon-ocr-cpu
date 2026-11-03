@@ -363,6 +363,7 @@ Other measurement entry points:
 | `python research/phase4-hillclimb/attempt3/ab.py --help` | Interleaved fresh-process A/B of two binaries on the same pages |
 | `python research/draft-head/cpu_ab.py --help` | Interleaved drafter settings, page totals and token identity against no speculation; an arm's first flag `@<exe>` selects its binary |
 | `cargo test --release --locked --lib panels::panel::tests::prefill_throughput_probe -- --ignored --nocapture` | Panel GEMM versus the `gemm` crate at prefill shapes; the recorded 7950X result was 1.7-1.8 TFLOP/s |
+| `PROBE_OUTPUTS=a.jsonl:b.jsonl cargo test --release --locked --lib repetition::probe::recorded_outputs_probe -- --ignored --nocapture` | Replays the `token_ids` of every JSON line in the listed files (a path list; `run` output works as it is) through the repetition stop, without a model: where the exact and the counting rule would end each output, its most counting cycles, the text around each counting cut (tokenizer from `FALCON_OCR_MODEL`, default `artifacts/model`), and the time both rules take per token |
 | `cargo run --release --locked --example ocr_bench -- --help` | Warm canonical-RGB recognition, with input and model hashes in its reports; provide images, CPU/environment labels and an output path |
 
 For margin cropping, run a few dozen of your own book pages in the same

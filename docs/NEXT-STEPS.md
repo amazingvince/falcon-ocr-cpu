@@ -114,18 +114,3 @@ cropping, where its print reads as well at 1280; the
 loop and small-print risks. Compare a few dozen of that book's pages at
 1536 and 1280, as for margin cropping, and adopt 1280 only if no page loses
 content and no loop is added.
-
-### Repetition stop for counting loops
-
-The repetition stop compares tokens exactly, so a loop whose lines differ
-only in an incrementing number never fires it: fast and near-exact mode
-both write such rows to the token limit on a deep-fried anchor page
-([MODES.md](MODES.md#loops-and-the-repetition-stop)). A stop that treats
-tokens made only of digits as equal when it compares a token with the one
-a period earlier would end such loops. Like the current stop it only
-truncates, so it changes no token before the step where it fires. The
-risk is legitimately numbered content: a numbered list or table whose rows
-repeat apart from the number would be cut. A first comparison would check
-on the calibration pages and the
-[stress pages](../tests/fixtures/stress/README.md) that it never fires on a
-page that ends at EOS, as the current stop was checked.
