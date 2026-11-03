@@ -346,7 +346,8 @@ page changes its stop reason, and the repetition stop fires on none. 148
 of the 156 pages are token-identical (144 of the 151 EOS pages), with 289
 token edits in the EOS pages' 182,447 tokens. The gate's binary predates
 the counting rule of the
-[repetition stop](#loops-and-the-repetition-stop).
+[repetition stop](#loops-and-the-repetition-stop), which ends none of the
+gate's 312 outputs (both arms) when they are replayed through it.
 
 ## Fast mode's held-out result
 
