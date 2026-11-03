@@ -26,7 +26,9 @@ work, followed by research proposals.
   tokens: margin cropping for books, `--max-dimension 1280`, a rotated
   cache, exception columns and, for near-exact, the FP32 tiles' static
   softmax (`--tune prefill-softmax-fp32=static`,
-  [MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental)).
+  [MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental)) and
+  BF16 prefill attention (`--tune prefill-bf16-w16=attention`,
+  [MODES.md](MODES.md#bf16-attention-in-near-exact-mode-experimental)).
   The gate method is in [MODES.md](MODES.md#the-metric).
 - **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
   timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were

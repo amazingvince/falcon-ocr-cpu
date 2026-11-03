@@ -70,7 +70,10 @@ the platform-dependent math; the token-parity gates are separate checks.
   compared with a scalar oracle of their own
   (`kernels::attention::prefill64::static_shift::tests`), and
   `kernels::tests::fp32_static_softmax_is_opt_in_and_never_exact` checks
-  that only its knob plans it and never for an FP32 body. The prefill
+  that only its knob plans it and never for an FP32 body.
+  `kernels::tests::bf16_attention_for_16_bit_bodies_is_opt_in_and_never_exact`
+  checks the same for 16-bit bodies' BF16 attention, which reuses fast
+  mode's kernels and their oracles. The prefill
   stages are also compared bitwise across pool sizes (`model::pool_tests`,
   `kernels::tests`), which the page pipeline's second pool relies on. The
   AVX-512 oracles (the 16-lane prefill tiles with either softmax, the BF16
@@ -394,7 +397,11 @@ checks with weights: smoke trace, token agreement, a speed report.
 
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
 takes `prefill-bf16=off|attention` (BF16 prefill attention in fast mode,
-default `attention`), `prefill-projections=fp32|i16` (FP32 or INT16
+default `attention`), `prefill-bf16-w16=off|attention` (the same BF16
+attention for near-exact's 16-bit body wherever `prefill-bf16` gives it to
+fast mode, default `off`; see
+[MODES.md](MODES.md#bf16-attention-in-near-exact-mode-experimental)),
+`prefill-projections=fp32|i16` (FP32 or INT16
 activations in fast mode's prefill projections, default `i16`; see
 [MODES.md](MODES.md#int16-projections-and-static-softmax)),
 `prefill-softmax=online|static` (the online softmax or the static one

@@ -395,6 +395,26 @@ smoke page gives the receipt's 17 tokens with the knob in near-exact
 changes near-exact's rounding, so it stays opt-in until a held-out gate in
 near-exact mode decides ([NEXT-STEPS.md](NEXT-STEPS.md#still-open)).
 
+## BF16 attention in near-exact mode (experimental)
+
+`--tune prefill-bf16-w16=attention` (both binaries; default `off`) gives
+near-exact's 16-bit body fast mode's BF16 prefill attention
+([above](#int16-projections-and-static-softmax)) with the softmax that
+`--tune prefill-softmax` selects: plan label `bf16-static` by default,
+`bf16` with `online`. It runs exactly where fast mode's does: the `auto`
+backend on CPUs with AVX512-BF16 (the static softmax also needs
+AVX512BW), with `--tune prefill-bf16` on. `--backend avx2`, other CPUs and
+`--tune prefill-bf16=off` keep the FP32 tiles, and exact mode's FP32 body
+never takes it. Only the attention changes: the projections stay
+`panel-avx2`, and the BF16 key and value copies are scratch beside the
+FP32 compact cache that the Q16 cache is sealed from. Under `--escalate`,
+a fast run with the knob rereads its
+loops with BF16 attention too. On the smoke page near-exact with the knob
+(`bf16-static`) gives the receipt's 17 tokens ending at EOS. Its agreement
+with FP32 is not measured yet; it changes near-exact's rounding, so it
+stays opt-in until agreement and a held-out gate in near-exact mode decide
+([NEXT-STEPS.md](NEXT-STEPS.md#still-open)).
+
 ## Fast mode's held-out result
 
 Fast mode is not qualified for handwritten or degraded pages; use

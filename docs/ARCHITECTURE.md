@@ -58,7 +58,8 @@ image file -> decode, resize, patches, tokens and positions   (preprocess/)
 
 Sealing happens only when another forward pass is needed, so KV compression
 is deferred: prefill attention itself runs in FP32 (or BF16 in fast mode on
-AVX512-BF16 CPUs). Every image key exists before any prefix result is
+AVX512-BF16 CPUs, and in near-exact mode there on request), over the FP32
+compact cache. Every image key exists before any prefix result is
 finalized; nothing treats partial image strips as causal prompts.
 
 ### Resolution routing
@@ -184,8 +185,11 @@ the weights of the fast attempt it replaced, which `escalated_from`
 records. The rerun shares the run's tuning but not its 8-bit kernels: it
 expects FP32 projections, and in place of fast mode's BF16 attention
 (either softmax) the FP32 tiles with the softmax that the run's
-`--tune prefill-softmax-fp32` gives them, so for a run with BF16 attention
-that knob tells apart only escalated records. An escalated record written
+`--tune prefill-softmax-fp32` gives them, or under
+`--tune prefill-bf16-w16=attention` the run's own BF16 attention; so for a
+run with BF16 attention those knobs tell apart only escalated records. A
+fast run on the FP32 tiles reruns on them whatever `prefill-bf16-w16`
+says. An escalated record written
 before the weights were recorded has none to compare and matches any
 weights. With `--escalate`, a warning counts fast-mode records that the
 repetition stop ended without a near-exact rerun, since their pages are
@@ -277,11 +281,17 @@ forms agree bit for bit with each other and with a scalar oracle.
 
 `kernels::prefill_plan` is the one predicate that decides which prefill
 projection and attention kernels a body, a CPU, the backend and the
-`prefill-bf16`, `prefill-projections`, `prefill-softmax` and
-`prefill-softmax-fp32` knobs get; `Model::forward_layers` runs it and
-`auto::Resolved` reports it. It gives the FP32 tiles the static softmax
-only for 16- and 8-bit bodies on x86 CPUs with AVX2 and FMA, outside
-`--backend scalar`, and never for exact mode's FP32 body. Traces,
+`prefill-bf16`, `prefill-bf16-w16`, `prefill-projections`,
+`prefill-softmax` and `prefill-softmax-fp32` knobs get;
+`Model::forward_layers` runs it and `auto::Resolved` reports it. It gives
+the FP32 tiles the static softmax only for 16- and 8-bit bodies on x86
+CPUs with AVX2 and FMA, outside `--backend scalar`, and never for exact
+mode's FP32 body. It gives a 16-bit body BF16 attention only under
+`prefill-bf16-w16=attention`, and then exactly where an 8-bit body gets
+it (the `auto` backend on an AVX512-BF16 CPU, `prefill-bf16` on), with the
+same kernel and softmax (plan label `bf16-static`, or `bf16`). Its BF16
+key and value copies are scratch beside the FP32 compact cache, which the
+Q16 cache is sealed from, as in fast mode with Q8. Traces,
 linear-input captures and prefills of at most 8 rows keep the online
 softmax, and so does every plan with BF16 attention, including its calls
 that fall back to the FP32 tiles.
