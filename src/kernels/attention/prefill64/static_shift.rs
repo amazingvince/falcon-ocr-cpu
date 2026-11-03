@@ -230,7 +230,10 @@ unsafe fn exp_lanes16<const MASKED: bool>(
 }
 
 /// `exp_poly` on eight lanes without its range checks: the same IEEE
-/// operations, so the same bits wherever |x| <= 87.
+/// operations, so the same bits wherever |x| <= 87. It is not
+/// `Simd::exp_fast`, whose range checks (three compares and blends per
+/// vector, on every tile) made the 8-lane tiles about 5% slower than this
+/// exp with `exp_lanes8`'s compare and AND on masked tiles only.
 #[inline(always)]
 unsafe fn exp8(x: __m256) -> __m256 {
     unsafe {
