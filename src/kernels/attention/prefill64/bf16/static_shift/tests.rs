@@ -123,7 +123,8 @@ const CASES: [(usize, usize, usize); 6] = [
 
 /// The same tile in separate passes: the online kernel's `qk_lanes` with the
 /// same exponent scale, the parent's `mask_lanes`, [`exp2_scalar`] per score
-/// in key order, `pair_rows`, then the same PV and normalization.
+/// with the denominators summing its BF16 rounding (`half`) in key order,
+/// `pair_rows`, then the same PV and normalization.
 #[target_feature(enable = "avx2,fma,avx512f,avx512bf16,avx512bw")]
 unsafe fn separate_tile_head(
     operands: &Operands<'_>,
@@ -165,7 +166,7 @@ unsafe fn separate_tile_head(
             for (r, denominator) in denominators.iter_mut().enumerate() {
                 let s = &mut st[j * QUERY_TILE + r];
                 *s = if *s == f32::NEG_INFINITY { 0.0 } else { exp2_scalar(*s) };
-                *denominator += *s;
+                *denominator += half::bf16::from_f32(*s).to_f32();
             }
         }
         for kp in 0..keys.div_ceil(2) {
@@ -254,10 +255,12 @@ fn round(x: f32) -> f64 {
 }
 
 /// The whole kernel (through `compact_prefill`) against an f64 reference on
-/// the same BF16 operands with the exact exp: within the BF16 rounding of
-/// the probabilities (relative 2^-8) plus twice the polynomial's 7.5e-5,
-/// times max |v| = 3, plus FP32 accumulation slack. Also prints the online
-/// kernel's error on the same operands.
+/// the same BF16 operands with the exact exp. Each weight `bf16(p) / sum`
+/// differs from `p / P` by its probability's relative error less their
+/// weighted mean, at most twice the per-probability bound (BF16 rounding
+/// 2^-9 plus the polynomial's 7.5e-5), times max |v| = 3, plus FP32
+/// accumulation slack. Also prints the online kernel's error on the same
+/// operands.
 #[test]
 fn matches_f64_reference() {
     if !available() {
@@ -328,7 +331,7 @@ fn matches_f64_reference() {
             }
         }
         assert!(
-            worst <= 3.0 * (2f64.powi(-8) + 1.5e-4) + 1e-4,
+            worst <= 3.0 * 2.0 * (2f64.powi(-9) + 7.5e-5) + 1e-4,
             "query_len {query_len}: worst {worst}"
         );
         eprintln!("query_len {query_len}: worst {worst:.2e} (online softmax {worst_online:.2e})");

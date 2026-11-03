@@ -16,7 +16,11 @@
 //!   the up to 2^-8 of the BF16 rounding every probability gets before PV)
 //!   and `2^n` comes from `vscalefps`, which also zeroes masked lanes;
 //! * the probabilities go to BF16 pairs for the parent's `pv_lanes`, and the
-//!   FP32 denominators sum them in key order.
+//!   FP32 denominators sum those same rounded values in key order, so the
+//!   weights PV applies sum to one. (The online kernel sums the unrounded
+//!   values; there the largest probability is exactly 1 and loses nothing to
+//!   rounding, here every one rounds, and normalizing by the rounded sum
+//!   cancels the common part of that error.)
 //!
 //! The sink enters at the end through `logsumexp = ln(denominator)`, as in
 //! the online kernels. Scores must stay below about 87 in magnitude (beyond
@@ -174,8 +178,8 @@ fn exponent_scale(shape: &Shape) -> f32 {
 
 /// Keys `[key_start, key_start + keys)` against the tile's queries (one or
 /// two 16-lane vectors): `p = 2^(scale * q.k)` for the lanes that see each
-/// key and 0 for the rest, summed into `denominators` in key order and
-/// stored as BF16 pairs `pairs[key / 2][query]` for `pv_lanes`.
+/// key and 0 for the rest, stored as BF16 pairs `pairs[key / 2][query]` for
+/// `pv_lanes` and summed, as rounded, into `denominators` in key order.
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 unsafe fn qk_exp_lanes(
@@ -285,20 +289,20 @@ impl Block<'_> {
                 };
                 for v in 0..V {
                     let even = exp2_lanes(_mm512_mul_ps(self.scale, acc[n][v]), (even_lanes >> (16 * v)) as u16);
-                    sums[v] = _mm512_add_ps(sums[v], even);
                     let odd = if n + 1 < N {
-                        let p = exp2_lanes(_mm512_mul_ps(self.scale, acc[n + 1][v]), (odd_lanes >> (16 * v)) as u16);
-                        sums[v] = _mm512_add_ps(sums[v], p);
-                        p
+                        exp2_lanes(_mm512_mul_ps(self.scale, acc[n + 1][v]), (odd_lanes >> (16 * v)) as u16)
                     } else {
                         _mm512_setzero_ps()
                     };
                     // `[bf16(even) x 16 | bf16(odd) x 16]`, then per-lane pairs.
                     let halves: __m512i = std::mem::transmute(_mm512_cvtne2ps_pbh(odd, even));
-                    _mm512_storeu_si512(
-                        pairs.as_mut_ptr().add((key + n) / 2 * QUERY_TILE + 16 * v).cast(),
-                        _mm512_permutexvar_epi16(self.interleave, halves),
-                    );
+                    let pair = _mm512_permutexvar_epi16(self.interleave, halves);
+                    _mm512_storeu_si512(pairs.as_mut_ptr().add((key + n) / 2 * QUERY_TILE + 16 * v).cast(), pair);
+                    // The denominators sum the rounded probabilities PV
+                    // multiplies (the BF16 halves as FP32), even key first.
+                    let even = _mm512_castsi512_ps(_mm512_slli_epi32::<16>(pair));
+                    let odd = _mm512_castsi512_ps(_mm512_and_si512(pair, _mm512_set1_epi32(0xFFFF_0000_u32 as i32)));
+                    sums[v] = _mm512_add_ps(_mm512_add_ps(sums[v], even), odd);
                 }
             }
         }
