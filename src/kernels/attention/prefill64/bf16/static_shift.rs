@@ -23,10 +23,12 @@
 //!   cancels the common part of that error.)
 //!
 //! The sink enters at the end through `logsumexp = ln(denominator)`, as in
-//! the online kernels. Scores must stay below about 87 in magnitude (beyond
-//! that, exp overflows or every term underflows), which the norms guarantee
-//! ten times over. Every tile shape takes the BF16 products here, including
-//! the short tiles the online kernel computes in FP32.
+//! the online kernels. Scores must stay below about 80 in magnitude (beyond
+//! that a page-long row's denominator, a sum of up to 16,384 terms,
+//! overflows, as ln(FLT_MAX / 16,384) = 79.0; beyond about 88 each exp
+//! overflows, and far enough below zero every term underflows), which the
+//! norms guarantee ten times over. Every tile shape takes the BF16 products
+//! here, including the short tiles the online kernel computes in FP32.
 use super::{Operands, PAIRS, bh, pv_lanes, query_pairs};
 use crate::kernels::attention::prefill64::{HEAD_DIM, KEY_TILE, QUERY_TILE, STAGE_CYCLES, Shape, cycles, tile_span};
 use std::arch::x86_64::*;
