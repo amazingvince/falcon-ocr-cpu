@@ -77,10 +77,12 @@ pub struct Kernels {
     pub exp: String,
     /// `fp32`, `fp32-static`, `bf16`, `bf16-static`, `neon` or `scalar`.
     pub attention: String,
-    /// For a BF16 attention plan, the FP32 tiles' `attention` that a
-    /// near-exact rerun of its pages (`--escalate`, with the run's tuning)
-    /// takes: `fp32-static` under `prefill-softmax-fp32=static`, else
-    /// `fp32`. `None` for the other plans, whose reruns keep `attention`.
+    /// For a BF16 attention plan, the `attention` that a near-exact rerun of
+    /// its pages (`--escalate`, with the run's tuning) takes: the plan's own
+    /// under `prefill-bf16-w16=attention`, which gives 16-bit bodies the
+    /// BF16 kernel exactly where 8-bit ones have it, else the FP32 tiles,
+    /// `fp32-static` under `prefill-softmax-fp32=static` and `fp32`
+    /// otherwise. `None` for the other plans, whose reruns keep `attention`.
     pub escalation_attention: Option<String>,
     /// The prefill projections' rounding: `i16` for the INT16 panels (their
     /// VNNI and AVX2 kernels agree bitwise), `bf16` for the removed BF16
@@ -104,13 +106,25 @@ impl Kernels {
             "avx2-static" | "avx512-wide-static" => "fp32-static",
             other => other,
         };
-        let fp32_static = plan
-            .get("tuning")
-            .and_then(|tuning| tuning.get("prefill_softmax_fp32"))
-            .and_then(Value::as_str)
-            == Some("static");
-        let escalation_attention = matches!(attention, "bf16" | "bf16-static")
-            .then(|| if fp32_static { "fp32-static" } else { "fp32" }.to_owned());
+        let knob = |name: &str| {
+            plan.get("tuning")
+                .and_then(|tuning| tuning.get(name))
+                .and_then(Value::as_str)
+        };
+        // Plans written before a knob existed read as its default (off,
+        // online).
+        let (w16_bf16, fp32_static) = (
+            knob("prefill_bf16_w16") == Some("attention"),
+            knob("prefill_softmax_fp32") == Some("static"),
+        );
+        let escalation_attention = matches!(attention, "bf16" | "bf16-static").then(|| {
+            match (w16_bf16, fp32_static) {
+                (true, _) => attention,
+                (false, true) => "fp32-static",
+                (false, false) => "fp32",
+            }
+            .to_owned()
+        });
         let projection = match prefill.get("projection")?.as_str()? {
             "panel-bf16" => "bf16",
             "panel-i16-vnni" | "panel-i16-avx2" => "i16",
@@ -160,8 +174,10 @@ impl Kernels {
             "bf16" => flags.push("BF16 attention".to_owned()),
             other => flags.push(format!("{other} attention")),
         }
-        if self.escalation_attention.as_deref() == Some("fp32-static") {
-            flags.push("--tune prefill-softmax-fp32=static".to_owned());
+        match self.escalation_attention.as_deref() {
+            Some("fp32-static") => flags.push("--tune prefill-softmax-fp32=static".to_owned()),
+            Some("bf16" | "bf16-static") => flags.push("--tune prefill-bf16-w16=attention".to_owned()),
+            _ => {}
         }
         match self.projection.as_str() {
             "bf16" => flags.push("BF16 projections".to_owned()),
@@ -205,7 +221,8 @@ pub struct Run {
     pub kernels: Option<Kernels>,
     /// The record is an escalated one (it has an `escalated_from`): its
     /// `kernels` are a near-exact rerun's, which a fast run's 16-bit body
-    /// reaches with FP32 prefill attention and projections.
+    /// reaches with FP32 prefill projections and the run's attention, or a
+    /// BF16 run's [`Kernels::escalation_attention`].
     pub escalated: bool,
 }
 
@@ -223,20 +240,23 @@ impl Run {
             && self.kernels.as_ref().is_none_or(|kernels| {
                 let mut expected = run.kernels.clone();
                 if let Some(expected) = &mut expected {
-                    let rerun = expected.escalation_attention.take();
+                    // The knobs behind a BF16 run's escalation attention
+                    // change only the pages it escalates, and a record's
+                    // own value describes reruns it did not make, so the
+                    // field itself is never compared.
+                    let rerun =
+                        std::mem::replace(&mut expected.escalation_attention, kernels.escalation_attention.clone());
                     if self.escalated {
                         // Escalation shares the run's configuration, but its
-                        // 16-bit body cannot use fast mode's BF16 attention
-                        // (online or static softmax) or INT16 projections:
-                        // it runs the FP32 tiles with the run's FP32 softmax.
+                        // 16-bit body cannot use fast mode's INT16
+                        // projections, and it takes fast mode's BF16
+                        // attention only under `prefill-bf16-w16=attention`;
+                        // otherwise it runs the FP32 tiles with the run's
+                        // FP32 softmax.
                         if let Some(rerun) = rerun {
                             expected.attention = rerun;
                         }
                         expected.projection = "fp32".to_owned();
-                    } else {
-                        // The FP32 softmax of a BF16 run changes only the
-                        // pages it escalates.
-                        expected.escalation_attention = kernels.escalation_attention.clone();
                     }
                 }
                 Some(kernels) == expected.as_ref()
