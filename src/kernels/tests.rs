@@ -390,6 +390,10 @@ fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
         softmax: crate::config::PrefillSoftmax::Static,
         ..fast
     };
+    let fp32_static = PrefillOptions {
+        fp32_softmax: crate::config::PrefillSoftmax::Static,
+        ..PrefillOptions::EXACT
+    };
     let vocab = 4096;
     let head = values(vocab * dim, 31);
     let screened = crate::head_screen::ScreenedHead::build(&head, vocab, dim).unwrap();
@@ -429,7 +433,7 @@ fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
                 );
                 outputs.push(panel);
             }
-            for options in [PrefillOptions::EXACT, fast] {
+            for options in [PrefillOptions::EXACT, fast, fp32_static] {
                 let mut attention = vec![f32::NAN; q.len()];
                 attention_with(&q, &kv, queries, geometry, &sinks, &mut attention, Simd::Auto, options);
                 outputs.push(attention);
@@ -617,6 +621,49 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
         &[0.0; 2],
         &mut [0.0; 2],
     );
+}
+
+/// `prefill-softmax-fp32=static` gives the FP32 tiles of 16- and 8-bit
+/// bodies the static-shift softmax and changes nothing else; exact mode's
+/// FP32 body keeps the online softmax, and no default takes it.
+#[test]
+fn fp32_static_softmax_is_opt_in_and_never_exact() {
+    use crate::config::{PrefillBf16, PrefillSoftmax, Tuning};
+    for simd in implementations() {
+        for bits in [None, Some(8), Some(16)] {
+            for exceptions in [false, true] {
+                for bf16 in [PrefillBf16::Attention, PrefillBf16::Off] {
+                    let tuning = Tuning {
+                        prefill_bf16: bf16,
+                        ..Tuning::default()
+                    };
+                    let plain = prefill_plan(bits, exceptions, simd, &tuning);
+                    let knob = Tuning {
+                        prefill_softmax_fp32: PrefillSoftmax::Static,
+                        ..tuning
+                    };
+                    let planned = prefill_plan(bits, exceptions, simd, &knob);
+                    let case = format!("{simd:?} {bits:?} exceptions {exceptions} {bf16:?}");
+                    assert_eq!(plain.attention.fp32_softmax(), PrefillSoftmax::Online, "{case}");
+                    assert_eq!(planned.projection, plain.projection, "{case}");
+                    let quantized = bits.is_some() && panel_gemm::available(simd);
+                    let expected = match plain.attention {
+                        PrefillAttention::Avx2 if quantized => PrefillAttention::Avx2Static,
+                        PrefillAttention::Avx512Wide if quantized => PrefillAttention::Avx512WideStatic,
+                        other => other,
+                    };
+                    assert_eq!(planned.attention, expected, "{case}");
+                    // Traces, captures and short prefills keep the online
+                    // softmax.
+                    assert_eq!(planned.softmaxes(false), (None, PrefillSoftmax::Online), "{case}");
+                    if bits.is_none() {
+                        assert_eq!(planned, plain, "{case}");
+                        assert_eq!(planned.softmaxes(true).1, PrefillSoftmax::Online, "{case}");
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[test]

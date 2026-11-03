@@ -9,10 +9,10 @@
 //! run), for W8 with FP32 and INT16 panels and for W16, and compares
 //! every output bit for bit: the QKV projection with the RMS norm folded
 //! into row scales, the rotary factors, the fused QKV pass with its BF16
-//! attention copies, prefill attention (FP32 and BF16), the output
-//! projection and FFN (residual adds and the gate in the epilogues), sealing
-//! in every split format (the rotated research ones too), and the unfused
-//! split with its residual add.
+//! attention copies, prefill attention (FP32 with either softmax, and
+//! BF16), the output projection and FFN (residual adds and the gate in the
+//! epilogues), sealing in every split format (the rotated research ones
+//! too), and the unfused split with its residual add.
 //! `kernels::tests::prefill_kernels_are_bitwise_independent_of_the_pool_size`
 //! covers the FP32 projections, attention, norms and first-token heads.
 use std::sync::Arc;
@@ -206,6 +206,24 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                         PrefillOptions::EXACT,
                     );
                     push("attention", bits(&work.attn));
+                    let mut attention = vec![f32::NAN; rows * qdim];
+                    let fp32_static = PrefillOptions {
+                        fp32_softmax: PrefillSoftmax::Static,
+                        ..PrefillOptions::EXACT
+                    };
+                    cache.layers[0].attention(
+                        &work.q,
+                        rows,
+                        rows,
+                        &c,
+                        geometry,
+                        &sinks,
+                        &mut attention,
+                        Simd::Auto,
+                        None,
+                        fp32_static,
+                    );
+                    push("attention, static softmax", bits(&attention));
                     panel_out_ffn(
                         &c,
                         layer,
@@ -263,6 +281,14 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
             output("W8: QKV projection"),
             output(&format!("W8 {i16}: QKV projection"))
         );
+    }
+    let static_tiles = Tuning {
+        prefill_softmax_fp32: PrefillSoftmax::Static,
+        ..Tuning::default()
+    };
+    let planned = kernels::prefill_plan(Some(16), false, Simd::Auto, &static_tiles).attention;
+    if planned.fp32_softmax() == PrefillSoftmax::Static {
+        assert_ne!(output("W16: attention"), output("W16: attention, static softmax"));
     }
     if bf16 {
         assert_ne!(output("W8: attention"), output("W8: BF16 attention"));

@@ -32,15 +32,19 @@
 //! `ExpMode::Fast` (`RunnerConfig::exp`) switches x86 to the portable fast
 //! exp (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
 //! portable instantiations, but no longer equal to the platform `expf`.
+//! `PrefillOptions::fp32_softmax` swaps in `static_shift`'s tiles on x86.
 use super::{CompactKv, Geometry, PrefillOptions};
 #[cfg(target_arch = "x86_64")]
-use crate::config::ExpMode;
+use crate::config::{ExpMode, PrefillSoftmax};
 use crate::simd::Simd as Isa;
 use rayon::prelude::*;
 
 #[cfg(target_arch = "x86_64")]
 /// BF16 prefill attention using AVX512-BF16 dot products.
 pub(super) mod bf16;
+#[cfg(target_arch = "x86_64")]
+/// The FP32 tiles with the static-shift softmax.
+mod static_shift;
 
 /// Maximum query rows in a prefill tile.
 pub(super) const QUERY_TILE: usize = 32;
@@ -126,7 +130,8 @@ struct Shape {
 }
 
 /// Prefill of `cache` (`head_dim == 64`): a pure prefix, or one with generated
-/// keys past the prefix (read from their own rows); `wide` selects the 16-lane tiles.
+/// keys past the prefix (read from their own rows); `wide` selects the 16-lane
+/// tiles, a static `options.fp32_softmax` the static-shift ones (pure prefixes).
 ///
 /// # Safety
 /// AVX2/FMA (NEON on aarch64) must be available and the shapes must satisfy
@@ -142,15 +147,17 @@ pub(super) unsafe fn compact_prefill(
     options: PrefillOptions,
 ) {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = match (options.exp == ExpMode::Fast, wide) {
-        (true, true) => tile_head_fast_wide,
-        (true, false) => tile_head_fast,
-        (false, true) => tile_head_native_wide,
-        (false, false) => tile_head_native,
+    let tile: TileFn = match (options.fp32_softmax, options.exp == ExpMode::Fast, wide) {
+        (PrefillSoftmax::Static, _, true) => static_shift::tile_head_wide,
+        (PrefillSoftmax::Static, _, false) => static_shift::tile_head_narrow,
+        (PrefillSoftmax::Online, true, true) => tile_head_fast_wide,
+        (PrefillSoftmax::Online, true, false) => tile_head_fast,
+        (PrefillSoftmax::Online, false, true) => tile_head_native_wide,
+        (PrefillSoftmax::Online, false, false) => tile_head_native,
     };
     #[cfg(not(target_arch = "x86_64"))]
     let tile: TileFn = {
-        let _ = (wide, options.exp);
+        let _ = (wide, options.exp, options.fp32_softmax);
         tile_head_native
     };
     unsafe { compact_prefill_with(tile, q, cache, query_len, geometry, sinks, output, options.profile) }

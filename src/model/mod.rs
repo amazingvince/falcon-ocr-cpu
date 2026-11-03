@@ -590,7 +590,7 @@ impl Model {
         // `kernels::prefill_plan` alone picks the prefill kernels (`auto::Resolved` reports it).
         let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, &tuning);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
-        let bf16_attention = plan.attention.bf16_softmax().filter(|_| panel);
+        let (bf16_attention, fp32_softmax) = plan.softmaxes(panel);
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             let step = LayerStep {
@@ -664,6 +664,7 @@ impl Model {
                     exp,
                     profile: tuning.prefill_profile,
                     softmax: bf16_attention.unwrap_or(crate::config::PrefillSoftmax::Online),
+                    fp32_softmax,
                 },
             );
             clock.mark(4);

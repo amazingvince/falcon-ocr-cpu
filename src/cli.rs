@@ -88,9 +88,10 @@ pub struct RunnerArgs {
     pub exp: Option<ExpMode>,
     /// Experiment knobs as `key=value`, repeatable:
     /// `prefill-bf16=off|attention`, `prefill-projections=fp32|i16`,
-    /// `prefill-softmax=online|static`, `split-chunks=1..4`, `phases=1`,
-    /// `prefill-profile=1`, `draft-backoff=N`, `draft-window=N`,
-    /// `draft-kv=f32|q8`, `draft-gate=token|path` and `decode-exp=exact|fast`
+    /// `prefill-softmax=online|static`, `prefill-softmax-fp32=online|static`,
+    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`,
+    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,
+    /// `draft-gate=token|path` and `decode-exp=exact|fast`
     /// (docs/DEVELOPMENT.md).
     #[arg(long = "tune", value_name = "KEY=VALUE", hide = true, global = true)]
     pub tune: Vec<String>,

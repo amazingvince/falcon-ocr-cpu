@@ -82,8 +82,13 @@ pub enum PrefillAttention {
     Scalar,
     /// 8-lane FP32 tiles.
     Avx2,
+    /// [`Self::Avx2`] with the static-shift softmax
+    /// (`Tuning::prefill_softmax_fp32`), bitwise [`Self::Avx512WideStatic`].
+    Avx2Static,
     /// 16-lane FP32 tiles.
     Avx512Wide,
+    /// [`Self::Avx512Wide`] with the static-shift softmax.
+    Avx512WideStatic,
     /// BF16 keys and values, AVX512-BF16 dot products.
     Bf16,
     /// [`Self::Bf16`] with the static-shift softmax
@@ -99,7 +104,22 @@ impl PrefillAttention {
         match self {
             Self::Bf16 => Some(PrefillSoftmax::Online),
             Self::Bf16Static => Some(PrefillSoftmax::Static),
-            Self::Scalar | Self::Avx2 | Self::Avx512Wide | Self::Neon => None,
+            Self::Scalar | Self::Avx2 | Self::Avx2Static | Self::Avx512Wide | Self::Avx512WideStatic | Self::Neon => {
+                None
+            }
+        }
+    }
+
+    /// The softmax of the FP32 tiles: static for the `-static` FP32
+    /// kernels, online otherwise, including where a BF16 kernel's call
+    /// falls back to the FP32 tiles.
+    pub fn fp32_softmax(self) -> crate::config::PrefillSoftmax {
+        use crate::config::PrefillSoftmax;
+        match self {
+            Self::Avx2Static | Self::Avx512WideStatic => PrefillSoftmax::Static,
+            Self::Scalar | Self::Avx2 | Self::Avx512Wide | Self::Bf16 | Self::Bf16Static | Self::Neon => {
+                PrefillSoftmax::Online
+            }
         }
     }
 }
@@ -109,6 +129,19 @@ impl PrefillAttention {
 pub struct PrefillPlan {
     pub projection: PrefillProjection,
     pub attention: PrefillAttention,
+}
+
+impl PrefillPlan {
+    /// The softmaxes of one prefill call: the BF16 kernel's (`None` without
+    /// BF16 attention) and the FP32 tiles', as planned where the plan's
+    /// kernels run (`panel`), else none and the online softmax (traces,
+    /// linear-input captures and prefills of at most 8 rows).
+    pub fn softmaxes(&self, panel: bool) -> (Option<crate::config::PrefillSoftmax>, crate::config::PrefillSoftmax) {
+        match panel {
+            true => (self.attention.bf16_softmax(), self.attention.fp32_softmax()),
+            false => (None, crate::config::PrefillSoftmax::Online),
+        }
+    }
 }
 
 impl std::fmt::Display for PrefillProjection {
@@ -127,7 +160,9 @@ impl std::fmt::Display for PrefillAttention {
         f.write_str(match self {
             Self::Scalar => "scalar",
             Self::Avx2 => "avx2",
+            Self::Avx2Static => "avx2-static",
             Self::Avx512Wide => "avx512-wide",
+            Self::Avx512WideStatic => "avx512-wide-static",
             Self::Bf16 => "bf16",
             Self::Bf16Static => "bf16-static",
             Self::Neon => "neon",
@@ -137,16 +172,19 @@ impl std::fmt::Display for PrefillAttention {
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
 /// for FP32), with or without W8 `exceptions` columns, on this CPU with the
-/// `simd` backend and the `tuning` knobs `prefill_bf16`, `prefill_projections`
-/// and `prefill_softmax`: the single predicate set behind
-/// `Model::forward_layers` and `auto::Resolved`. By default an 8-bit body
-/// without exception columns takes the INT16 projections on x86 CPUs with
-/// AVX2 (VNNI under the `auto` backend where the CPU has it), and its BF16
-/// attention takes the static-shift softmax where the CPU also has AVX512BW;
-/// 16-bit and FP32 bodies never take either. Only the `auto` backend takes
-/// the AVX-512 paths (wide FP32 tiles, BF16 and VNNI for 8-bit bodies);
-/// `avx2` is 8-lane throughout. Traces, linear-input captures and prefills
-/// of at most 8 rows take the FP32 path regardless.
+/// `simd` backend and the `tuning` knobs `prefill_bf16`, `prefill_projections`,
+/// `prefill_softmax` and `prefill_softmax_fp32`: the single predicate set
+/// behind `Model::forward_layers` and `auto::Resolved`. By default an 8-bit
+/// body without exception columns takes the INT16 projections on x86 CPUs
+/// with AVX2 (VNNI under the `auto` backend where the CPU has it), and its
+/// BF16 attention takes the static-shift softmax where the CPU also has
+/// AVX512BW; 16-bit and FP32 bodies never take either. The FP32 tiles take
+/// the static-shift softmax (`avx2-static`, `avx512-wide-static`) only when
+/// `prefill_softmax_fp32` asks for it, for a 16- or 8-bit body on x86, never
+/// for an FP32 body. Only the `auto` backend takes the AVX-512 paths (wide
+/// FP32 tiles, BF16 and VNNI for 8-bit bodies); `avx2` is 8-lane throughout.
+/// Traces, linear-input captures and prefills of at most 8 rows take the
+/// FP32 path with the online softmax regardless.
 pub fn prefill_plan(
     body_bits: Option<u32>,
     exceptions: bool,
@@ -156,6 +194,8 @@ pub fn prefill_plan(
     use crate::config::{PrefillBf16, PrefillProjections, PrefillSoftmax};
     let (prefill_bf16, softmax) = (tuning.prefill_bf16, tuning.prefill_softmax);
     let panel = body_bits.is_some() && panel_gemm::available(simd);
+    // Exact mode's FP32 body keeps the reference's online softmax.
+    let static_fp32 = panel && tuning.prefill_softmax_fp32 == PrefillSoftmax::Static;
     // 8-bit bodies (fast mode) run the prefill projections with INT16
     // activations and the attention in BF16 where the CPU has AVX512-BF16
     // (`attention_prefill_bf16`). INT16 panels hold codes only, so a body
@@ -178,10 +218,15 @@ pub fn prefill_plan(
             PrefillAttention::Bf16
         }
     } else if wide_attention(simd) {
-        PrefillAttention::Avx512Wide
+        if static_fp32 {
+            PrefillAttention::Avx512WideStatic
+        } else {
+            PrefillAttention::Avx512Wide
+        }
     } else {
         match simd.resolved() {
             Simd::Scalar => PrefillAttention::Scalar,
+            Simd::Avx2 if static_fp32 => PrefillAttention::Avx2Static,
             Simd::Avx2 => PrefillAttention::Avx2,
             Simd::Neon => PrefillAttention::Neon,
             Simd::Auto => unreachable!("resolved"),

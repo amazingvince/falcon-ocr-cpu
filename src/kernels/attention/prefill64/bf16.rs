@@ -86,7 +86,13 @@ pub(in crate::kernels) unsafe fn compact_prefill(
     options: PrefillOptions,
 ) {
     let (k, v, n_heads, n_kv_heads) = (cache.prefix_k, cache.v, cache.n_heads, cache.n_kv_heads);
-    let PrefillOptions { exp, profile, softmax } = options;
+    // The short tiles' FP32 path keeps the online softmax.
+    let PrefillOptions {
+        exp,
+        profile,
+        softmax,
+        fp32_softmax: _,
+    } = options;
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
         kv_width: n_kv_heads * HEAD_DIM,
@@ -258,7 +264,7 @@ unsafe fn tile_head_fast(
 /// absolute position, the end of the keys its queries see (`[0,
 /// visible_end)`) and whether every query is an image token (nothing to
 /// mask), as in the parent's `tile_head`.
-fn tile_span(shape: &Shape, first_query: usize, queries: usize) -> (usize, usize, bool) {
+pub(super) fn tile_span(shape: &Shape, first_query: usize, queries: usize) -> (usize, usize, bool) {
     let first_absolute = shape.query_offset + first_query;
     let last_absolute = first_absolute + queries - 1;
     let intersects_image = first_absolute < shape.image_end && last_absolute >= shape.image_start;

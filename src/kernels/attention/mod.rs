@@ -195,23 +195,28 @@ impl<'a> CompactKv<'a> {
     }
 }
 
-/// Prefill tile options: the softmax exp, the stage cycle counters and the
-/// BF16 kernel's softmax. Decode paths ignore all three; the FP32 tiles
-/// ignore `softmax`.
+/// Prefill tile options: the online softmax's exp, the stage cycle
+/// counters, the BF16 kernel's softmax (`softmax`) and the FP32 tiles'
+/// (`fp32_softmax`, x86 only). Decode paths ignore all four; each kernel
+/// ignores the other's softmax, so a BF16 call that falls back to the FP32
+/// tiles runs `fp32_softmax`. The static softmaxes need every score within
+/// the per-head norm bound of 8 and use their own exp whatever `exp` says.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PrefillOptions {
     pub exp: ExpMode,
     pub profile: bool,
     pub softmax: PrefillSoftmax,
+    pub fp32_softmax: PrefillSoftmax,
 }
 
 impl PrefillOptions {
-    /// The platform-exact exp, no counters, online softmax: the reference
+    /// The platform-exact exp, no counters, online softmaxes: the reference
     /// configuration.
     pub const EXACT: Self = Self {
         exp: ExpMode::Exact,
         profile: false,
         softmax: PrefillSoftmax::Online,
+        fp32_softmax: PrefillSoftmax::Online,
     };
 }
 
