@@ -323,12 +323,30 @@ was registered before either arm had output on its pages: 156 English
 OmniDocBench pages from the router development pool, one per document
 family and none from a family in corpus v1-v3 or the English gate (formulas
 42, tables 41, multi-column 30, other 43), with figure regions that have no
-ground truth painted white on 66. Both arms run `--max-new-tokens 4096`;
+ground truth painted white on 66. Both arms ran `--max-new-tokens 4096`;
 the reference is the previous fast defaults. The criteria are the English
 gate's: overall micro CER at most 0.25 pt above the reference, at most
 1.0 pt above it in every category with at least 10 pages where the
-reference ends at EOS, and no repetition stop on such a page. Its verdict
-is recorded in `reference/fast-defaults-gate-v1-results.json`.
+reference ends at EOS, and no repetition stop on such a page.
+
+The gate passed
+([reference/fast-defaults-gate-v1-results.json](../reference/fast-defaults-gate-v1-results.json)).
+Micro CER on the pages where the reference ends at EOS:
+
+| Pages | Count | Previous defaults | INT16 and static | Change |
+|---|---:|---:|---:|---:|
+| All | 151 | 21.654% | 21.629% | -0.025 pt |
+| Formulas | 42 | 33.501% | 33.489% | -0.012 pt |
+| Multi-column | 30 | 12.323% | 12.323% | 0 |
+| Other | 43 | 14.440% | 14.440% | 0 |
+| Tables | 36 | 18.358% | 18.291% | -0.066 pt |
+
+The other 5 pages, all tables, reach the 4,096-token cap in both arms; no
+page changes its stop reason, and the repetition stop fires on none. 148
+of the 156 pages are token-identical (144 of the 151 EOS pages), with 289
+token edits in the EOS pages' 182,447 tokens. The gate's binary predates
+the counting rule of the
+[repetition stop](#loops-and-the-repetition-stop).
 
 ## Fast mode's held-out result
 
