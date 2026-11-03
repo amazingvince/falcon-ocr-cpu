@@ -288,13 +288,15 @@ online tiles and the scalar oracle) and adds the probability to its
 query's denominator in key order. QK and PV are the online tiles' lane
 kernels (8 lanes, or 16 under `auto` with AVX-512F) for every tile shape,
 including the short tiles that the online tiles send through `gemm`. The
-exp is `simd::exp_poly`'s operation sequence without its range checks, so
-every lane is bitwise `exp_poly` for |score| <= 87, whatever `ExpMode`
-says; its argument is the score itself, where the online tiles round
-`score - max` first, so the two softmaxes are not bitwise equal. Scores
-must stay below about 80 in magnitude, beyond which a page-long row's
-denominator overflows; the norms leave a factor of ten. The 8- and 16-lane
-forms agree bit for bit with each other and with a scalar oracle.
+exp is `simd::exp_poly`'s operation sequence without its range checks
+(`Simd::exp_fast`, with them, made the 8-lane tiles
+[slower](PERFORMANCE.md#rejected-or-unadopted)), so every lane is bitwise
+`exp_poly` for |score| <= 87, whatever `ExpMode` says; its argument is the
+score itself, where the online tiles round `score - max` first, so the two
+softmaxes are not bitwise equal. Scores must stay below about 80 in
+magnitude, beyond which a page-long row's denominator overflows; the norms
+leave a factor of ten. The 8- and 16-lane forms agree bit for bit with
+each other and with a scalar oracle.
 
 `kernels::prefill_plan` is the one predicate that decides which prefill
 projection and attention kernels a body, a CPU, the backend and the
