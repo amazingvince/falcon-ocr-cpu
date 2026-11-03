@@ -318,7 +318,12 @@ error bound and recomputes only the rows that can win.
 By default speculative decoding drafts up to four tokens and verifies them
 in one multi-row step whose rows are bitwise the single-row steps;
 `draft::DraftPolicy` turns drafting off while it does not
-pay. Drafts come from n-gram matches in the output so far or, with
+pay. Each split-cache group decodes a 32-key sub-tile once for all rows. On
+AVX-512 CPUs under the `auto` backend (`kernels::wide_rows`, reported as
+the plan's `wide_rows`), `quant/kv/wide.rs` runs each row's QK and PV on
+512-bit vectors that hold two 8-lane vectors, with the 8-lane kernels'
+FMA chains and `Simd::sum` reduction tree, so the rows stay bitwise the
+same. Drafts come from n-gram matches in the output so far or, with
 `--draft-head`, from a trained head that reads the outputs of target layers
 2, 11 and 19 at every verified position (captured during the forward) and
 drafts while its top token's probability is at least 0.35.

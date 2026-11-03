@@ -362,6 +362,35 @@ the stage took 44.4e9 thread cycles, 25% of attention; fused into the QK
 epilogue, the exp adds 12.0e9, and `--tune prefill-profile=1` reports the
 softmax inside the qk share and 0% for the softmax itself.
 
+### Verification rows
+
+Two bitwise changes make drafted rows cheaper: the AVX-512 row kernels of
+split-cache decode attention
+([ARCHITECTURE.md](ARCHITECTURE.md#decode-machinery)), and quantizing each
+appended position's KV codes without a libm `roundeven` call per element
+(the same codes, ties included). The journal page with the draft head and
+`--decode-threads 8 --tune phases=1`, before and after, interleaved fresh
+processes (fast mode 4 rounds, near-exact 3); every run gave the same 1,140
+tokens. Decode attention per step by rows in the step, medians in ms:
+
+| Mode | 1 | 2 | 3 | 4 | 5 | Per extra row | Decode, page |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| fast, before | 4.14 | 6.30 | 7.99 | 9.68 | 11.54 | 1.85 | 7,260 |
+| fast, after | 4.08 | 5.14 | 6.15 | 7.31 | 8.72 | 1.16 | 6,419 |
+| near-exact, before | 7.53 | 8.88 | 10.54 | 12.34 | 14.55 | 1.76 | 10,601 |
+| near-exact, after | 7.51 | 8.27 | 9.10 | 10.20 | 11.86 | 1.09 | 9,922 |
+
+Decode time falls 11.6% in fast mode and 6.4% in near-exact. Appending one
+position per row (`cache_append`) went from 0.18 to 0.06 ms per row and
+step. `verify_rows_probe` (22 layers, 8 threads) puts each extra row at
+1.76 → 1.07 ms for `q8`, 1.71 → 1.04 for `q16` and 0.78 → 0.47 for
+`f32-split`; single-row decode attention
+(`decode_attention_bandwidth_probe`) does not slow down. An extra row still
+costs about 27 cycles per group and key on one thread against a 16-cycle
+FMA floor. Not adopted: a batched horizontal sum of eight keys on 8-lane
+vectors (about 3% at 5-8 rows), two rows per PV pass sharing value loads
+(no gain; the kernels are FMA-bound) and 16-key sub-tiles (mixed).
+
 ## Measuring
 
 See [measurement commands and protocol](DEVELOPMENT.md#measuring-performance-and-input-changes).
