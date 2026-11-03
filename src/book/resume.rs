@@ -66,14 +66,16 @@ impl Settings {
 }
 
 /// The runner's choices in a record's `plan` that change tokens: the
-/// repetition stop, the prefill exp, the prefill attention (BF16 or the FP32
-/// tiles, each with the online or the static softmax, the FP32 tiles' AVX2
-/// and AVX-512 forms agreeing bitwise; NEON's polynomial exp; scalar), the
-/// projection kind, decode chunking, a pinned decode exp and the image
-/// decoder.
+/// repetition stop and whether it ends counting loops, the prefill exp, the
+/// prefill attention (BF16 or the FP32 tiles, each with the online or the
+/// static softmax, the FP32 tiles' AVX2 and AVX-512 forms agreeing bitwise;
+/// NEON's polynomial exp; scalar), the projection kind, decode chunking, a
+/// pinned decode exp and the image decoder.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kernels {
     pub repetition_stop: bool,
+    /// `plan.repetition_counting`; false for a plan written before it.
+    pub repetition_counting: bool,
     pub exp: String,
     /// `fp32`, `fp32-static`, `bf16`, `bf16-static`, `neon` or `scalar`.
     pub attention: String,
@@ -142,6 +144,10 @@ impl Kernels {
         };
         Some(Self {
             repetition_stop: plan.get("repetition_stop")?.as_bool()?,
+            repetition_counting: plan
+                .get("repetition_counting")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
             exp: plan.get("exp")?.as_str()?.to_owned(),
             attention: attention.to_owned(),
             escalation_attention,
@@ -165,6 +171,8 @@ impl Kernels {
         let mut flags = Vec::new();
         if !self.repetition_stop {
             flags.push("--stop-repetition=false".to_owned());
+        } else if !self.repetition_counting {
+            flags.push("repetition stop without counting loops".to_owned());
         }
         if self.exp != "fast" {
             flags.push(format!("--exp {}", self.exp));

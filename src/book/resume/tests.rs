@@ -402,7 +402,7 @@ fn a_resume_with_other_options_warns() {
 fn a_resume_compares_the_fp32_softmax() {
     let plan = |attention: &str, fp32: &str| {
         serde_json::json!({
-            "repetition_stop": true, "exp": "fast",
+            "repetition_stop": true, "repetition_counting": true, "exp": "fast",
             "prefill": {"projection": "panel-avx2", "attention": attention},
             "tuning": {"decode_fast_exp": null, "prefill_softmax_fp32": fp32}
         })
@@ -470,7 +470,7 @@ fn a_resume_compares_the_fp32_softmax() {
 fn a_resume_compares_bf16_attention_of_16_bit_bodies() {
     let plan = |attention: &str, w16: Option<&str>| {
         let mut plan = serde_json::json!({
-            "repetition_stop": true, "exp": "fast",
+            "repetition_stop": true, "repetition_counting": true, "exp": "fast",
             "prefill": {"projection": "panel-avx2", "attention": attention},
             "tuning": {"decode_fast_exp": null, "prefill_softmax_fp32": "online"}
         });
@@ -555,6 +555,45 @@ fn a_resume_compares_bf16_attention_of_16_bit_bodies() {
     assert!(found.contains("--tune prefill-bf16-w16=attention"), "{found}");
 }
 
+/// Plans record whether the repetition stop ends counting loops. A record
+/// whose plan predates the field ran a stop without this build's counting
+/// rule, so it warns when resumed with the stop on; with the stop off on
+/// both sides, neither ran it.
+#[test]
+fn a_resume_tells_a_stop_without_counting_loops_apart() {
+    let fixed = GenerationOptions {
+        fit_budget: true,
+        ..GenerationOptions::default()
+    };
+    let plan = |stop: bool, counting: Option<bool>| {
+        let mut plan = serde_json::json!({
+            "repetition_stop": stop, "exp": "fast",
+            "prefill": {"projection": "panel-avx2", "attention": "avx2"},
+            "tuning": {"decode_fast_exp": null}
+        });
+        if let Some(counting) = counting {
+            plan["repetition_counting"] = counting.into();
+        }
+        plan
+    };
+    let warning = |saved: Value, current: Value| {
+        let record = serde_json::json!({
+            "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8", "plan": saved
+        });
+        let kernels = Kernels::from_plan(&current);
+        resume_warning(
+            &scan_output(&line(&record.to_string(), &fixed)),
+            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels),
+        )
+    };
+    let found = warning(plan(true, None), plan(true, Some(true))).expect("an older stop must warn");
+    let shown = "1 in fast (w8-body-kv-q8, round-to-nearest, repetition stop without counting loops);";
+    assert!(found.contains(shown), "{found}");
+    assert_eq!(warning(plan(true, Some(true)), plan(true, Some(true))), None);
+    assert_eq!(warning(plan(false, None), plan(false, Some(false))), None);
+    assert!(warning(plan(true, Some(true)), plan(false, Some(false))).is_some());
+}
+
 /// Records' plans hold the runner's token-changing choices: a resume
 /// with another repetition stop, exp or prefill rounding warns, and the
 /// AVX2 and AVX-512 FP32 tiles, which agree bitwise, count as one.
@@ -562,7 +601,7 @@ fn a_resume_compares_bf16_attention_of_16_bit_bodies() {
 fn a_resume_with_other_runner_choices_warns() {
     let plan = |repetition_stop: bool, exp: &str, attention: &str, projection: &str| {
         serde_json::json!({
-            "repetition_stop": repetition_stop, "exp": exp,
+            "repetition_stop": repetition_stop, "repetition_counting": repetition_stop, "exp": exp,
             "prefill": {"projection": projection, "attention": attention},
             "tuning": {"decode_fast_exp": null}
         })
@@ -764,7 +803,22 @@ fn a_resume_with_other_runner_choices_warns() {
     };
     let resolved = crate::Resolved::new(crate::HostInfo::detect(), &config, &facts, Path::new("model"));
     let kernels = Kernels::of(&resolved).unwrap();
-    assert_eq!((kernels.repetition_stop, kernels.exp.as_str()), (false, "exact"));
+    assert_eq!(
+        (
+            kernels.repetition_stop,
+            kernels.repetition_counting,
+            kernels.exp.as_str()
+        ),
+        (false, false, "exact")
+    );
+    // This build's stop always ends counting loops too.
+    let stopping = crate::Resolved::new(
+        crate::HostInfo::detect(),
+        &crate::RunnerConfig::default(),
+        &facts,
+        Path::new("model"),
+    );
+    assert!(Kernels::of(&stopping).unwrap().repetition_counting);
     assert!(["fp32", "bf16", "bf16-static", "neon", "scalar"].contains(&kernels.attention.as_str()));
     // Fast mode's INT16 projections where this host runs them.
     let i16 = matches!(

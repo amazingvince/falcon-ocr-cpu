@@ -645,6 +645,12 @@ pub struct Resolved {
     pub draft_head: Option<PathBuf>,
     pub document_drafts: bool,
     pub repetition_stop: bool,
+    /// The repetition stop also ends counting loops (`repetition`'s
+    /// counting rule): whenever the stop is on. Plans written before the
+    /// field existed read as false, so a `--resume` with the stop on warns
+    /// about their records.
+    #[serde(default)]
+    pub repetition_counting: bool,
     pub threads: ThreadPlan,
     /// KV cache record format after the prefix is sealed.
     pub kv_cache: String,
@@ -693,6 +699,7 @@ impl Resolved {
             draft_head: config.draft_head.clone().filter(|_| config.drafter != Drafter::Ngram),
             document_drafts: config.document_drafts,
             repetition_stop: config.repetition_stop,
+            repetition_counting: config.repetition_stop,
             threads: ThreadPlan {
                 prefill: threads,
                 decode,
