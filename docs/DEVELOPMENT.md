@@ -64,23 +64,21 @@ the platform-dependent math; the token-parity gates are separate checks.
   dequantized products, fast exp against the platform exp over the softmax
   domain, the split cache against the compact kernel over its decoded values
   at one position chunk (rotated caches with the rotation as the only pre-
-  and post-transform).
-  A fast path without such a test does not ship. The FP32 tiles' static
-  softmax keeps no reference order, so its 8- and 16-lane tiles are
-  compared with a scalar oracle of their own
+  and post-transform). A fast path without such a test does not ship. The
+  FP32 tiles' static softmax keeps no reference order, so its 8- and 16-lane
+  tiles are compared with a scalar oracle of their own
   (`kernels::attention::prefill64::static_shift::tests`), and
-  `kernels::tests::fp32_static_softmax_is_opt_in_and_never_exact` checks
-  that only its knob plans it and never for an FP32 body.
+  `kernels::tests::fp32_static_softmax_is_opt_in_and_never_exact` checks that
+  only its knob plans it and never for an FP32 body.
   `kernels::tests::bf16_attention_for_16_bit_bodies_is_opt_in_and_never_exact`
-  checks the same for 16-bit bodies' BF16 attention, which reuses fast
-  mode's kernels and their oracles. The prefill
-  stages are also compared bitwise across pool sizes (`model::pool_tests`,
-  `kernels::tests`), which the page pipeline's second pool relies on. The
-  AVX-512 oracles (the 16-lane prefill tiles with either softmax, the BF16
-  attention and its static softmax, the INT16 VNNI panels, the
-  verification rows under `auto`) return early, or drop their AVX-512 arm,
-  on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted CI runners included;
-  the ignored
+  checks the same for 16-bit bodies' BF16 attention, which reuses fast mode's
+  kernels and their oracles. The prefill stages are also compared bitwise
+  across pool sizes (`model::pool_tests`, `kernels::tests`), which the page
+  pipeline's second pool relies on. The AVX-512 oracles (the 16-lane prefill
+  tiles with either softmax, the BF16 attention and its static softmax, the
+  INT16 VNNI panels, the verification rows under `auto`) return early, or
+  drop their AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted
+  CI runners included; the ignored
   `kernels::tests::host_runs_every_avx512_kernel` fails on such a CPU
   ([the `weights` job](#the-weights-ci-job) runs it).
   The ignored tokenizer-decode and RoPE checks additionally need

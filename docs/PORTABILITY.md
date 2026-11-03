@@ -52,7 +52,9 @@ The x86 entry wrappers carry `#[target_feature(enable = "avx2,fma")]`;
 NEON needs none. Runtime detection (`kernels::Simd::resolved`,
 `prefill_plan`) lets one baseline-target binary serve every CPU. Kernels
 with the same exp choice share the portable oracle's arithmetic; the
-`gemm` projections and BF16 kernels are token-checked numerical deviations.
+`gemm` projections, the BF16 kernels, fast mode's INT16 panels and the
+static-shift softmaxes (fast mode's and the FP32 tiles' opt-in one) are
+token-checked numerical deviations.
 
 Recognition uses the portable polynomial exp in prefill attention
 (token-identical to the platform exp on all calibration pages) and in fast
@@ -72,7 +74,7 @@ always uses the polynomial exp.
 | 8/16-bit GEMV and fused GLU, 1-8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
 | W8 exception columns after the GEMV (`quant/linear.rs`, research overlays) | decode | one fused multiply-add per column (FMA instruction) | same as AVX2 | `mul_add` | same as AVX2 |
 | Decode attention, compact and expanded (`attention/decode64.rs`, `online.rs`) | decode | generic head | same as AVX2 | generic head | function-pointer head |
-| Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | same as AVX2 | generic | generic loop |
+| Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | scan same as AVX2; verify rows on 512-bit row kernels (`quant/kv/wide.rs`, AVX-512F and VL), bitwise | generic | generic loop |
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |

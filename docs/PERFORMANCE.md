@@ -152,8 +152,8 @@ less: prefill takes about 2.8 s per page, roughly a third of the total.
 | Key-transposed decode attention | Decode is already at the bandwidth floor |
 | Head-major K/V copies; interleaved FP32 softmax | Within noise; FP32 prefill attention is near its ceiling |
 | IEEE FP16 KV for near-exact | Flips 1 → 4 |
-| BF16 prefill projections (`panel-bf16`; removed 2026-11-03) | Transformer prefill 4,048 ms against the INT16 projections' 4,066 and the FP32 panels' 5,247 ms (7700X, journal page, 300 tokens, median of 5 interleaved rounds); 26.5-28 MACs per cycle per core against INT16's 24.5-27.4; but +19% KL against FP32 where INT16 adds 1.4% ([MODES.md](MODES.md#teacher-forced-agreement)), and AVX512-BF16 only |
-| INT8 QK for BF16 prefill attention (`vpdpbusd`, per-(token, head) absmax Q and K) | Logit error RMS 3.8× BF16's and attention output error 2.5×, to save at most about 0.4 s per page (7700X); not built |
+| BF16 prefill projections (`panel-bf16`; removed 2026-11-03) | Transformer prefill 4,048 ms against the INT16 projections' 4,066 and the FP32 panels' 5,247 ms (7700X, journal page, 300 tokens, `--tune prefill-profile=1`, median of 5 interleaved rounds); 26.5-28 MACs per cycle per core against INT16's 24.5-27.4; but +19% KL against FP32 where INT16 adds 1.2% ([MODES.md](MODES.md#teacher-forced-agreement)), and AVX512-BF16 only |
+| INT8 QK for BF16 prefill attention (`vpdpbusd`, per-(token, head) absmax Q and K) | Logit error RMS 3.8× BF16's and attention output error 2.5×, to save at most about 0.5 s per page (7700X, estimated: by its share of thread cycles QK takes about 1.0 s of the 2.15 s BF16 attention, and `vpdpbusd` does twice `vdpbf16ps`'s multiply-adds); not built |
 | INT8 activations in the 8-bit prefill projections (u8 × s8 `vpdpbusd`) | Simulated exactly: flips 5 → 40 and KL 20× on two anchor pages (7700X); not built (below) |
 | Speculation depths 5-7 (`--speculate 5` to `7`, its maximum) against the default 4 | Journal page with the draft head, `--decode-threads 8`, decode medians of 3 interleaved rounds (7700X): fast 6.39 s at depth 4 and 6.29-6.37 s at 5-7 (9.12 s without speculation), near-exact 9.71 and 9.62-9.69 s (16.16 s); at most 1.6% less decode, with no trend across depths and about the spread between one arm's rounds (0.8-1.4%, 5% in one arm); page totals within 0.7% of depth 4; the same 1,140 tokens in every run |
 
@@ -167,11 +167,12 @@ projections, 32 and 1.24e-2 in all but W2, and 7 and 1.10e-3 (QKV), 7 and
 1.61e-3 (WO), 21 and 5.66e-3 (W13) or 11 and 1.96e-3 (W2) in one. QKV
 alone, on one page, adds 1.33e-5 to the 52-page anchor's mean KL, most of
 a 5% allowance on the default's 2.99e-4, so no full run was made. The
-cause is resolution, not outliers: in the GPTQ calibration Grams the
-strongest channel's RMS in a 64-input group is at most 6 (WO), 10 (QKV)
-and 13 (W13) times the group's median, yet those fail, W13 worst; only W2
-has outlier groups (30% above 32×, up to 7,942× in layer 2), so neither a
-per-group outlier fallback nor a Hadamard rotation would rescue INT8.
+cause is resolution, not outliers: in the GPTQ calibration Grams
+(`artifacts/w8/gram/`, from their diagonals) the strongest channel's RMS in
+a 64-input group is at most 6 (WO), 10 (QKV) and 13 (W13) times the group's
+median, yet those fail, W13 worst; only W2 has outlier groups (30% of its
+792 above 32×, up to 7,942× in layer 2), so neither a per-group outlier
+fallback nor a Hadamard rotation would rescue INT8.
 
 Multi-page batching (`--batch-size`) is available: on a scanned book it gives
 2-8% more pages per hour where the page pipeline gives 12-20%
@@ -211,10 +212,27 @@ Host: Ryzen 7 7700X (8 cores, 16 threads, DDR5, AVX-512 with BF16), Linux.
 The published packed files with the draft head beside them and the default
 configuration; fresh processes one after another on a quiet host except
 the tuner-limit and reserve comparisons identified below. Raw scripts and
-records live under `artifacts/` on that host only: `verify/pr/`;
-`fp32-static-2026-11-03/` and `queue-2026-11-03/` for the FP32 tiles'
-static softmax; `w16-bf16-attn-2026-11-03/` for near-exact's BF16
-attention; and `profile-2026-11-03/` for the profiled whole pages.
+records live under `artifacts/` on that host only:
+
+- `verify/pr/`, whose `timing/` holds the book runs and the KV-cache and
+  exception-column timings;
+- `gate-2026-11-02/` for fast mode's prefill kernels: the five agreement
+  arms (`arms/`), the four-arm prefill A/B (`ab-prefill/`) and the
+  whole-page A/B with the verification rows (`ab-combo/`);
+- `prefill-int16-2026-11-02/` for the INT16 and BF16 projections: their A/B
+  (`ab-locked-1/`) and the projection-GEMM throughput probes;
+- `prefill-softmax-2026-11-02/` for fast mode's static softmax: the
+  score-bound, polynomial and INT8-QK analysis (`analysis-results.txt`) and
+  the stage-cycle A/Bs of the first and the shipped kernel (`ab1/`,
+  `ab2/`);
+- `act8-2026-11-03/` for the INT8-activation simulation;
+- `verify-attn-2026-11-02/` for the verification rows: the page runs
+  (`runs/`) and the kernel probes (`timing.log`);
+- `fp32-static-2026-11-03/` and `queue-2026-11-03/timing/` for the FP32
+  tiles' static softmax, and `queue-2026-11-03/spec/` for the speculation
+  depths;
+- `w16-bf16-attn-2026-11-03/` for near-exact's BF16 attention, and
+  `profile-2026-11-03/` for the profiled whole pages.
 
 ### Book runs
 
@@ -393,10 +411,12 @@ instruction of 16 lanes × 2 products): the FP32 panels reach 89% of theirs
 and the INT16-VNNI panels 77-86%. The removed BF16 panels ran 26.5-28
 ([Rejected or unadopted](#rejected-or-unadopted)).
 
-The static softmax removes most of the softmax stage. In the online kernel
-the stage took 44.4e9 thread cycles, 25% of attention; fused into the QK
-epilogue, the exp adds 12.0e9, and `--tune prefill-profile=1` reports the
-softmax inside the qk share and 0% for the softmax itself.
+The static softmax removes most of the softmax stage. In the shipped
+kernel's A/B (`--tune prefill-profile=1`, journal page, 4 interleaved
+rounds; `prefill-softmax-2026-11-02/ab2/`) the online kernel's stage took
+44.8e9 thread cycles, 25% of attention; fused into the QK epilogue, the exp
+adds 12.8e9 (QK 68.1e9 → 80.9e9), and the profile reports the softmax
+inside the qk share and 0% for the softmax itself.
 
 ### Near-exact prefill attention
 
@@ -417,19 +437,19 @@ milliseconds; attention is its phase split:
 | FP32 tiles, static softmax | `avx512-wide-static` | 7,157 [7,154-7,173] | 4,478 |
 | BF16, static softmax | `bf16-static` | 4,864 [4,840-4,869] | 2,174 |
 
-The other phases take 2.54-2.55 s in every arm. The static softmax takes
-0.76 s (14%) off attention, 9.5% of transformer prefill; an earlier run of
-the two FP32 arms gave 7,903 and 7,116 ms, within 0.6% of these. BF16
-attention takes 3.06 s (58%) off attention and 38.5% off transformer
-prefill, 2.29 s more than the static softmax; its attention phase is about
-fast mode's 2,151 ms with the same kernel
-([above](#int16-projections-and-static-softmax)). Teacher-forced against
-FP32 the static softmax has the online softmax's 1 flip and 1.3% more KL,
-and BF16 attention 13 flips and 127 times the KL. Under
-`--tune prefill-profile=1`, on a busy host and so an indication only, the
-softmax stage (in the static tiles: masking, exp and denominators) takes
-24.9% and 24.5% of FP32 attention's thread cycles in two online runs and
-7.3% with the static softmax.
+The other phase lines sum to 2.54-2.55 s in every arm (transformer prefill
+less attention is 2.68-2.69 s). The static softmax takes 0.76 s (14%) off
+attention, 9.5% of transformer prefill; an earlier run of the two FP32 arms
+gave 7,903 and 7,116 ms, within 0.6% of these. BF16 attention takes 3.06 s
+(58%) off attention and 38.5% off transformer prefill, 2.29 s more than the
+static softmax; its attention phase is about fast mode's 2,151 ms with the
+same kernel ([above](#int16-projections-and-static-softmax)).
+Teacher-forced against FP32 the static softmax has the online softmax's 1
+flip and 1.3% more KL, and BF16 attention 13 flips and 127 times the KL.
+Under `--tune prefill-profile=1`, on a busy host and so an indication only,
+the softmax stage (in the static tiles: masking, exp and denominators)
+takes 24.9% and 24.5% of FP32 attention's thread cycles in two online runs
+and 7.3% with the static softmax.
 
 For scale, one profiled run each of the whole journal page with the draft
 head (`--decode-threads 8 --tune phases=1 --tune prefill-profile=1`, which
@@ -457,13 +477,16 @@ tokens. Decode attention per step by rows in the step, medians in ms:
 | near-exact, after | 7.51 | 8.27 | 9.10 | 10.20 | 11.86 | 1.09 | 9,922 |
 
 Decode time falls 11.6% in fast mode and 6.4% in near-exact. Appending one
-position per row (`cache_append`) went from 0.18 to 0.06 ms per row and
-step. `verify_rows_probe` (22 layers, 8 threads) puts each extra row at
-1.76 → 1.07 ms for `q8`, 1.71 → 1.04 for `q16` and 0.78 → 0.47 for
+position per row (`cache_append`) went from 0.18 to 0.06 ms per row in
+single-row steps and from 0.17-0.18 to 0.04-0.05 ms per row in steps of 2
+to 5 rows. `verify_rows_probe` (22 layers, 8 threads) puts each extra row
+at 1.76 → 1.07 ms for `q8`, 1.71 → 1.04 for `q16` and 0.78 → 0.47 for
 `f32-split`; single-row decode attention
-(`decode_attention_bandwidth_probe`) does not slow down. An extra row still
-costs about 27 cycles per group and key on one thread against a 16-cycle
-FMA floor. Not adopted: a batched horizontal sum of eight keys on 8-lane
+(`decode_attention_bandwidth_probe`) does not slow down. On one thread, in
+an 8-row step, an extra `q8` row still costs about 27 cycles per group and
+key (6.2 ms over 22 layers, 8 KV groups and 6,552 keys, at about 5 GHz),
+against the 16 cycles that its 256 multiply-adds take at 16 FMA lanes per
+cycle. Not adopted: a batched horizontal sum of eight keys on 8-lane
 vectors (about 3% at 5-8 rows), two rows per PV pass sharing value loads
 (no gain; the kernels are FMA-bound) and 16-key sub-tiles (mixed).
 

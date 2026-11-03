@@ -195,8 +195,11 @@ of that size. Decode time per token did not measurably change
 
 Two kernels change fast mode's prefill rounding; both have been its
 defaults since 2026-11-03 ([the decision](#the-decision)). Neither touches
-decode, and exact and near-exact never use them. `doctor` and every
-result's plan name the kernels (`panel-i16-vnni`, `panel-i16-avx2`,
+decode. Exact mode never uses either; near-exact never uses the INT16
+projections and takes this static softmax only with the BF16 attention of
+`--tune prefill-bf16-w16=attention`
+([below](#bf16-attention-in-near-exact-mode-experimental)). `doctor` and
+every result's plan name the kernels (`panel-i16-vnni`, `panel-i16-avx2`,
 `bf16-static`); `--tune prefill-projections=fp32` and `--tune
 prefill-softmax=online` (both binaries) restore the previous ones
 (`panel-avx2`, `bf16`).
@@ -240,8 +243,10 @@ of itself (8 significant bits); the weights keep their GPTQ codes, so the
 activation rounding is the only new error. The static softmax adds the
 polynomial's 7.5e-5, below the up to 2^-8 that BF16 rounding gives every
 probability before PV, and the rounded denominator cancels the common part
-of that rounding. Exp overflows only beyond |score| of about 87, so the
-bound of 8 leaves a factor of ten.
+of that rounding. The binding limit on scores is the denominator: summed
+over a page-long row of 16,384 keys, it overflows FP32 once scores pass
+about 80 (ln(FLT_MAX / 16,384) ≈ 79), so the bound of 8 leaves a factor of
+ten.
 
 ### Teacher-forced agreement
 
@@ -261,17 +266,18 @@ KL 3.04e-4 for the same overlay.
 | Static softmax | 61 | 2.91e-4 |
 | Both (the current default) | 66 | 2.99e-4 |
 
-KL moves +1.4% with INT16 projections, -1.0% with the static softmax and
-+1.7% with both, against +19% for BF16 projections; flips (65, 61 and 66
-against 67) do not resolve differences of that size. Tokens held: on the
-journal page (6,544 input tokens) the previous default, each kernel and
-both give the same 1,140 tokens ending at EOS, and the smoke page gives the
-receipt's 17 tokens under each. Their speed is in
+KL moves +1.2% with INT16 projections, -1.2% with the static softmax and
++1.8% with both (from the unrounded `kl_mean`), against +19% for BF16
+projections; flips (65, 61 and 66 against 67) do not resolve differences of
+that size. Tokens held: on the journal page (6,544 input tokens) the
+previous default, each kernel and both give the same 1,140 tokens ending at
+EOS, and the smoke page gives the receipt's 17 tokens under each. Their
+speed is in
 [PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax).
 
 The BF16 projections (plan label `panel-bf16`) were the other way to speed
 up the 8-bit projections. They matched the INT16 ones' prefill speed on the
-7700X but raised KL by 19% where the INT16 ones raise it by 1.4%, and they
+7700X but raised KL by 19% where the INT16 ones raise it by 1.2%, and they
 needed AVX512-BF16, where the INT16 kernel also runs on AVX2 CPUs, so they
 were removed ([PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted)).
 
@@ -311,11 +317,13 @@ accounts for the difference, so that aggregate is no quality comparison.
 Both kernels became fast mode's defaults, and the BF16 projections were
 removed, on 2026-11-03, before the held-out gate below had a verdict, on
 three grounds: agreement with FP32 is unchanged within what flips resolve
-(66 against 67 flips, KL +1.7%); free running found no systematic
+(66 against 67 flips, KL +1.8%); free running found no systematic
 difference (one character of hard-to-read text each way, and a loop that
 near-exact shares); and the two kernels cut fast mode's transformer
-prefill by 31% on the 7700X. The fast-mode results in the next three
-sections ran its earlier prefill kernels.
+prefill by 31% on the 7700X. The fast-mode results in [Fast mode's held-out
+result](#fast-modes-held-out-result), [Fast mode on English
+print](#fast-mode-on-english-print) and [Fast against
+near-exact](#fast-against-near-exact) ran its earlier prefill kernels.
 
 ### Held-out gate
 

@@ -17,9 +17,11 @@ work, followed by research proposals.
   preflight pins the RTX 4090 the outputs were recorded on, so no other
   machine can remake them.
 - **The 55-page anchor.** The Ryzen 7 7700X agreement numbers in
-  [MODES.md](MODES.md#the-metric) (exception columns, rotated caches) are on
-  that host's 52-page anchor, so they compare arms with each other. Scored
-  against upstream's `artifacts/phase4/checks/calibration-reference.json`
+  [MODES.md](MODES.md#the-metric) (exception columns, rotated caches, fast
+  mode's prefill kernels, the FP32 tiles' static softmax, near-exact's BF16
+  attention) are on that host's 52-page anchor, so they compare arms with
+  each other. Scored against upstream's
+  `artifacts/phase4/checks/calibration-reference.json`
   ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
   give 24,262-step numbers comparable with the modes table.
 - **Default qualification.** Held-out gates decide defaults that change
@@ -71,7 +73,7 @@ the 7700X.
 
 The INT16 projections, fast mode's default since 2026-11-03
 ([MODES.md](MODES.md#int16-projections-and-static-softmax)), cut the
-journal page's projection time from 2.4 to 1.2 s on the 7700X for +1.4% KL,
+journal page's projection time from 2.4 to 1.2 s on the 7700X for +1.2% KL,
 where BF16 projections cost +19%
 ([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
 Two pieces are left:
