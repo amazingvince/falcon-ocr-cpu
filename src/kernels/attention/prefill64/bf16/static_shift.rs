@@ -1,5 +1,5 @@
 //! Static-shift softmax for the BF16 prefill tiles (`PrefillSoftmax::Static`,
-//! `--tune prefill-softmax=static`).
+//! the default; `--tune prefill-softmax=online` restores the online one).
 //!
 //! Falcon-OCR RMS-normalizes every query and key head without a weight
 //! before the rotary positions, which preserve norms, so a 64-wide head has

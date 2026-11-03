@@ -1,10 +1,11 @@
 //! Quantized linear layers (W8A32 / W16A32): signed row-major codes in
 //! [-127,127] (8-bit) or [-32767,32767] (16-bit), an FP32 absmax/qmax scale
-//! per K group, ties-to-even, FP32 dequant and ascending-K FMA. Neither
-//! activations nor accumulators are integer/BF16; this is not W8A8. 16-bit
-//! codes are effectively lossless against the FP32 weights
-//! (activation-weighted output error about 2.5e-5 relative). A matrix may
-//! also keep a few input columns unquantized in FP32
+//! per K group, ties-to-even, FP32 dequant and ascending-K FMA. Activations
+//! and accumulators stay FP32, except the large-M prefill of 8-bit codes on
+//! the INT16 panels (`kernels::panel_i16`: INT16 activations, exact INT32
+//! group sums); this is not W8A8. 16-bit codes are effectively lossless
+//! against the FP32 weights (activation-weighted output error about 2.5e-5
+//! relative). A matrix may also keep a few input columns unquantized in FP32
 //! ([exception columns](crate::quant::linear::QuantLinear::with_exceptions)).
 
 use anyhow::ensure;

@@ -603,7 +603,13 @@ fn a_resume_with_other_runner_choices_warns() {
     let resolved = crate::Resolved::new(crate::HostInfo::detect(), &config, &facts, Path::new("model"));
     let kernels = Kernels::of(&resolved).unwrap();
     assert_eq!((kernels.repetition_stop, kernels.exp.as_str()), (false, "exact"));
-    assert!(["fp32", "bf16", "neon", "scalar"].contains(&kernels.attention.as_str()));
+    assert!(["fp32", "bf16", "bf16-static", "neon", "scalar"].contains(&kernels.attention.as_str()));
+    // Fast mode's INT16 projections where this host runs them.
+    let i16 = matches!(
+        resolved.prefill.projection,
+        crate::kernels::PrefillProjection::PanelI16Vnni | crate::kernels::PrefillProjection::PanelI16Avx2
+    );
+    assert_eq!(kernels.projection, if i16 { "i16" } else { "fp32" });
     assert_eq!(kernels.split_chunks, Some(4));
     assert_eq!(kernels.image_decoder.as_deref(), Some(resolved.image_decoder.as_str()));
 }

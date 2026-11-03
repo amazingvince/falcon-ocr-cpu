@@ -108,11 +108,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
     // BF16 attention copies where the CPU has AVX512-BF16, and the INT16
     // panels where the plan has them.
     let bf16 = kernels::prefill_bf16_rows_available();
-    let i16 = Tuning {
-        prefill_i16: true,
-        ..Tuning::default()
-    };
-    let i16 = kernels::prefill_plan(Some(8), false, Simd::Auto, &i16).projection;
+    let i16 = kernels::prefill_plan(Some(8), false, Simd::Auto, &Tuning::default()).projection;
     let bodies = [(8, layer(&c, 8)), (16, layer(&c, 16))];
     let session = || {
         Session::new(

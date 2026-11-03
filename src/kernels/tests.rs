@@ -621,17 +621,18 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
 
 #[test]
 fn exception_columns_keep_fp32_projection_panels() {
-    use crate::config::{PrefillBf16, PrefillSoftmax, Tuning};
+    use crate::config::{PrefillBf16, PrefillProjections, PrefillSoftmax, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
             for setting in [PrefillBf16::Off, PrefillBf16::Attention] {
-                for prefill_i16 in [false, true] {
+                for projections in [PrefillProjections::Fp32, PrefillProjections::I16] {
                     let tuning = Tuning {
                         prefill_bf16: setting,
-                        prefill_i16,
+                        prefill_projections: projections,
+                        prefill_softmax: PrefillSoftmax::Online,
                         ..Tuning::default()
                     };
-                    let case = format!("{simd:?} {bits:?} {setting:?} i16 {prefill_i16}");
+                    let case = format!("{simd:?} {bits:?} {setting:?} {projections:?}");
                     let (plain, exceptions) = (
                         prefill_plan(bits, false, simd, &tuning),
                         prefill_plan(bits, true, simd, &tuning),
@@ -666,14 +667,17 @@ fn exception_columns_keep_fp32_projection_panels() {
                         plain.projection,
                         PrefillProjection::PanelI16Vnni | PrefillProjection::PanelI16Avx2
                     );
-                    assert!(!i16 || (prefill_i16 && bits == Some(8)), "{case}");
-                    let without = Tuning {
-                        prefill_i16: false,
+                    assert!(
+                        !i16 || (projections == PrefillProjections::I16 && bits == Some(8)),
+                        "{case}"
+                    );
+                    let fp32 = Tuning {
+                        prefill_projections: PrefillProjections::Fp32,
                         ..tuning
                     };
-                    assert_eq!(prefill_plan(bits, false, simd, &without).attention, plain.attention);
+                    assert_eq!(prefill_plan(bits, false, simd, &fp32).attention, plain.attention);
                     #[cfg(target_arch = "x86_64")]
-                    if prefill_i16 && bits == Some(8) && panel_gemm::available(simd) {
+                    if projections == PrefillProjections::I16 && bits == Some(8) && panel_gemm::available(simd) {
                         let vnni = simd == Simd::Auto && panel_i16::Isa::Vnni.available();
                         let expected = if vnni {
                             PrefillProjection::PanelI16Vnni
@@ -683,6 +687,21 @@ fn exception_columns_keep_fp32_projection_panels() {
                         assert_eq!(plain.projection, expected, "{case}");
                     }
                 }
+            }
+            // The defaults (INT16 projections, static softmax) change only
+            // 8-bit bodies: FP32 and 16-bit ones plan as with the FP32
+            // projections and the online softmax.
+            let reference = Tuning {
+                prefill_projections: PrefillProjections::Fp32,
+                prefill_softmax: PrefillSoftmax::Online,
+                ..Tuning::default()
+            };
+            for exceptions in [false, true].into_iter().filter(|_| bits != Some(8)) {
+                assert_eq!(
+                    prefill_plan(bits, exceptions, simd, &Tuning::default()),
+                    prefill_plan(bits, exceptions, simd, &reference),
+                    "{simd:?} {bits:?} exceptions {exceptions}"
+                );
             }
         }
     }

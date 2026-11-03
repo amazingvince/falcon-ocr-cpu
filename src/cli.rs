@@ -18,8 +18,10 @@ pub struct RunnerArgs {
     #[arg(long, global = true)]
     pub threads: Option<usize>,
     /// Kernels: `auto` takes the fastest this CPU runs (AVX2 decode, AVX-512
-    /// prefill tiles and BF16 prefill attention where present, NEON on
-    /// aarch64); `avx2` is 8-lane FP32 everywhere; `scalar` [default: auto].
+    /// prefill tiles, BF16 prefill attention and VNNI INT16 projections where
+    /// present, NEON on aarch64); `avx2` is 8-lane everywhere (FP32 attention,
+    /// fast mode's INT16 projections on their AVX2 kernel); `scalar`
+    /// [default: auto].
     #[arg(long, value_enum, global = true)]
     pub backend: Option<Backend>,
     /// Requests decoded jointly, 1..=8 [default: 1].
@@ -83,7 +85,7 @@ pub struct RunnerArgs {
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
     /// Experiment knobs as `key=value`, repeatable:
-    /// `prefill-bf16=off|attention`, `prefill-i16=true|false`,
+    /// `prefill-bf16=off|attention`, `prefill-projections=fp32|i16`,
     /// `prefill-softmax=online|static`, `split-chunks=1..4`, `phases=1`,
     /// `prefill-profile=1`, `draft-backoff=N`, `draft-window=N`,
     /// `draft-kv=f32|q8`, `draft-gate=token|path` and `decode-exp=exact|fast`

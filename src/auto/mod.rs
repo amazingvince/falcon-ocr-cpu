@@ -25,9 +25,11 @@ pub enum Mode {
     /// or 32 cache values): about 1.8x faster than exact, 1 changed token in
     /// 24,262 teacher-forced steps (KL 9e-8).
     NearExact,
-    /// 8-bit GPTQ body weights and an 8-bit KV cache, BF16 prefill attention
-    /// on AVX512-BF16 CPUs: about 3x faster than exact, 63 changed tokens in
-    /// 24,262; failed its held-out budget on handwriting loops and degraded
+    /// 8-bit GPTQ body weights and an 8-bit KV cache, INT16-activation
+    /// prefill projections on x86 CPUs with AVX2 and BF16 prefill attention
+    /// with a static softmax on AVX512-BF16 CPUs: about 3x faster than exact,
+    /// 63 changed tokens in 24,262 (with FP32 projections and the online
+    /// softmax); failed its held-out budget on handwriting loops and degraded
     /// scans.
     Fast,
 }

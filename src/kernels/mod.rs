@@ -137,28 +137,31 @@ impl std::fmt::Display for PrefillAttention {
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
 /// for FP32), with or without W8 `exceptions` columns, on this CPU with the
-/// `simd` backend and the `tuning` knobs `prefill_bf16`, `prefill_i16` and
-/// `prefill_softmax`: the single predicate set behind `Model::forward_layers`
-/// and `auto::Resolved`. Only the `auto` backend takes the AVX-512 paths
-/// (wide FP32 tiles, BF16 and VNNI for 8-bit bodies); `avx2` is 8-lane
-/// throughout. BF16 attention takes the static-shift softmax where the CPU
-/// also has AVX512BW. Traces, linear-input captures and prefills of at most 8
-/// rows take the FP32 path regardless.
+/// `simd` backend and the `tuning` knobs `prefill_bf16`, `prefill_projections`
+/// and `prefill_softmax`: the single predicate set behind
+/// `Model::forward_layers` and `auto::Resolved`. By default an 8-bit body
+/// without exception columns takes the INT16 projections on x86 CPUs with
+/// AVX2 (VNNI under the `auto` backend where the CPU has it), and its BF16
+/// attention takes the static-shift softmax where the CPU also has AVX512BW;
+/// 16-bit and FP32 bodies never take either. Only the `auto` backend takes
+/// the AVX-512 paths (wide FP32 tiles, BF16 and VNNI for 8-bit bodies);
+/// `avx2` is 8-lane throughout. Traces, linear-input captures and prefills
+/// of at most 8 rows take the FP32 path regardless.
 pub fn prefill_plan(
     body_bits: Option<u32>,
     exceptions: bool,
     simd: Simd,
     tuning: &crate::config::Tuning,
 ) -> PrefillPlan {
-    use crate::config::{PrefillBf16, PrefillSoftmax};
+    use crate::config::{PrefillBf16, PrefillProjections, PrefillSoftmax};
     let (prefill_bf16, softmax) = (tuning.prefill_bf16, tuning.prefill_softmax);
     let panel = body_bits.is_some() && panel_gemm::available(simd);
-    // 8-bit bodies (fast mode) also run prefill attention in BF16 where the
-    // CPU has AVX512-BF16 (`attention_prefill_bf16`), and with `prefill_i16`
-    // the projections with INT16 activations. INT16 panels hold codes only,
-    // so a body with exception columns keeps FP32 projection panels.
+    // 8-bit bodies (fast mode) run the prefill projections with INT16
+    // activations and the attention in BF16 where the CPU has AVX512-BF16
+    // (`attention_prefill_bf16`). INT16 panels hold codes only, so a body
+    // with exception columns keeps FP32 projection panels.
     let eight_bit = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
-    let i16 = panel && body_bits == Some(8) && !exceptions && tuning.prefill_i16;
+    let i16 = panel && body_bits == Some(8) && !exceptions && tuning.prefill_projections == PrefillProjections::I16;
     let projection = if !panel {
         PrefillProjection::GemmF32
     } else if i16 && let Some(isa) = i16_projection(simd) {
@@ -216,7 +219,7 @@ fn i16_projection(simd: Simd) -> Option<PrefillProjection> {
 /// (decode kernels are 8-lane; AVX-512F widens the prefill attention tiles
 /// and the verification rows of split-cache decode attention, both bitwise
 /// identically; AVX512-BF16 serves the 8-bit prefill attention, and
-/// AVX512-VNNI its opt-in INT16 projections) and to NEON on aarch64.
+/// AVX512-VNNI its INT16 projections) and to NEON on aarch64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Simd {
     Auto,

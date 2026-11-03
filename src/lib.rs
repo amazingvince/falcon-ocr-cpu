@@ -51,7 +51,7 @@ mod tune;
 pub use auto::{HostInfo, Mode, Resolved};
 pub use config::{
     Backend, CacheLayout, DecodeThreads, DraftKv, Drafter, ExpMode, GenerationOptions, HeadMode, MaxDimension,
-    ModelConfig, PrefillBf16, PrefillSoftmax, RunnerConfig, Speculation, Tuning, WeightLayout,
+    ModelConfig, PrefillBf16, PrefillProjections, PrefillSoftmax, RunnerConfig, Speculation, Tuning, WeightLayout,
 };
 pub use model::{Model, WeightsSource};
 pub use runner::{FinishReason, OcrResult, Pipeline, Runner, Timings};

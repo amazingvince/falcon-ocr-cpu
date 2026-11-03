@@ -14,14 +14,17 @@ pub const CONFIG_SHA256: &str = "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e
 #[serde(rename_all = "snake_case")]
 pub enum Backend {
     /// The fastest kernels this CPU runs: AVX2/FMA decode, 16-lane AVX-512F
-    /// prefill tiles and BF16 prefill attention (8-bit bodies) where present,
-    /// NEON on aarch64. Records written with the retired `avx512` backend
-    /// read as `auto`, which is what it computed.
+    /// prefill tiles, and for 8-bit bodies BF16 prefill attention and
+    /// AVX512-VNNI INT16 projections where present, NEON on aarch64. Records
+    /// written with the retired `avx512` backend read as `auto`, which is
+    /// what it computed.
     #[default]
     #[serde(alias = "avx512")]
     Auto,
     Scalar,
-    /// 8-lane FP32 kernels everywhere, whatever else the CPU has.
+    /// 8-lane kernels everywhere, whatever else the CPU has: FP32 attention
+    /// and FP32 panels, except the INT16 projections of 8-bit bodies, which
+    /// take their AVX2 kernel (bitwise the VNNI one).
     Avx2,
     /// aarch64 Advanced SIMD; `auto` selects it on aarch64.
     Neon,
@@ -81,18 +84,35 @@ pub enum PrefillBf16 {
     Attention,
 }
 
+/// Activations of an 8-bit model's prefill projections
+/// (`Tuning::prefill_projections`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PrefillProjections {
+    /// FP32 activations against FP32 panels dequantized from the codes.
+    Fp32,
+    /// INT16 activations (one step per row and 64 inputs) against the 8-bit
+    /// codes in INT16 panels, on x86 CPUs with AVX2: AVX512-VNNI where the
+    /// `auto` backend has it, bitwise the same AVX2 kernel otherwise. A body
+    /// with exception columns, aarch64 and CPUs without AVX2 keep the FP32
+    /// panels. Rounds fast mode's prefill activations.
+    #[default]
+    I16,
+}
+
 /// Softmax of the BF16 prefill attention (`Tuning::prefill_softmax`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PrefillSoftmax {
     /// Online softmax: a running maximum per query row, with the output and
-    /// denominator rescaled whenever it grows.
-    #[default]
+    /// denominator rescaled whenever it grows. CPUs without AVX512BW run it
+    /// whatever the knob says.
     Online,
     /// No shift at all: the per-head RMS norms bound every score by 8 in
     /// magnitude, so `exp(score)` neither overflows nor underflows, and key
-    /// tiles add without rescaling (`prefill64::bf16::static_shift`). Changes
-    /// fast mode's prefill rounding.
+    /// tiles add without rescaling (`prefill64::bf16::static_shift`). Rounds
+    /// differently from the online softmax.
+    #[default]
     Static,
 }
 
@@ -110,18 +130,16 @@ pub enum DraftKv {
 
 /// Experiment and diagnostic knobs. The defaults are the accepted
 /// configuration; every field is scheduling or instrumentation only, except
-/// `prefill_bf16`, `prefill_i16` and `prefill_softmax`, which change
+/// `prefill_bf16`, `prefill_projections` and `prefill_softmax`, which change
 /// fast-mode prefill rounding.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
     /// BF16 prefill attention of 8-bit models on AVX512-BF16 CPUs.
     pub prefill_bf16: PrefillBf16,
-    /// Prefill projections of 8-bit models with INT16 activations (one step
-    /// per row and 64 inputs) on x86 CPUs with AVX2: AVX512-VNNI where the
-    /// `auto` backend has it, bitwise the same AVX2 kernel otherwise.
-    pub prefill_i16: bool,
-    /// Softmax of the BF16 prefill attention (with AVX512BW as well).
+    /// Activations of 8-bit models' prefill projections.
+    pub prefill_projections: PrefillProjections,
+    /// Softmax of the BF16 prefill attention.
     pub prefill_softmax: PrefillSoftmax,
     /// Position chunks per KV group in split-cache decode attention (1..=4).
     /// `None` keeps the mode default: one exact scan for FP32 caches, four
@@ -152,7 +170,7 @@ pub struct Tuning {
 }
 impl Tuning {
     /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention`,
-    /// `prefill-i16=true|false`, `prefill-softmax=online|static`,
+    /// `prefill-projections=fp32|i16`, `prefill-softmax=online|static`,
     /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
     /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,
     /// `draft-gate=token|path`,
@@ -176,7 +194,13 @@ impl Tuning {
                     _ => bail!("tuning knob prefill-bf16: expected off or attention, got `{value}`"),
                 }
             }
-            "prefill-i16" => self.prefill_i16 = flag(value)?,
+            "prefill-projections" => {
+                self.prefill_projections = match value {
+                    "fp32" => PrefillProjections::Fp32,
+                    "i16" => PrefillProjections::I16,
+                    _ => bail!("tuning knob prefill-projections: expected fp32 or i16, got `{value}`"),
+                }
+            }
             "prefill-softmax" => {
                 self.prefill_softmax = match value {
                     "online" => PrefillSoftmax::Online,
@@ -228,8 +252,8 @@ impl Tuning {
                 }
             }
             _ => bail!(
-                "unknown tuning knob `{key}` (prefill-bf16, prefill-i16, prefill-softmax, split-chunks, phases, \
-                 prefill-profile, draft-backoff, draft-window, draft-kv, draft-gate, decode-exp)"
+                "unknown tuning knob `{key}` (prefill-bf16, prefill-projections, prefill-softmax, split-chunks, \
+                 phases, prefill-profile, draft-backoff, draft-window, draft-kv, draft-gate, decode-exp)"
             ),
         }
         Ok(())
@@ -750,8 +774,8 @@ mod tests {
     fn tuning_knobs_parse_and_reject_unknown_keys() {
         let tuning = Tuning::from_pairs([
             "prefill-bf16=off",
-            "prefill-i16=on",
-            "prefill-softmax=static",
+            "prefill-projections=fp32",
+            "prefill-softmax=online",
             "split-chunks=3",
             "phases=1",
             "draft-window=256",
@@ -764,15 +788,23 @@ mod tests {
         assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
         assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::Off);
-        assert!(tuning.prefill_i16);
-        assert_eq!(tuning.prefill_softmax, PrefillSoftmax::Static);
+        assert_eq!(tuning.prefill_projections, PrefillProjections::Fp32);
+        assert_eq!(tuning.prefill_softmax, PrefillSoftmax::Online);
         assert_eq!(tuning.split_chunks, Some(3));
         assert!(tuning.phases && !tuning.prefill_profile);
         assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
+        // Fast mode's accepted prefill: BF16 attention with the static
+        // softmax and INT16 projections.
+        let defaults = Tuning::default();
+        assert_eq!(defaults.prefill_bf16, PrefillBf16::Attention);
+        assert_eq!(defaults.prefill_projections, PrefillProjections::I16);
+        assert_eq!(defaults.prefill_softmax, PrefillSoftmax::Static);
         for bad in [
             "split-chunks=5",
             "split-chunks=x",
             "prefill-bf16=all",
+            "prefill-i16=true",
+            "prefill-projections=bf16",
             "prefill-softmax=max",
             "phases=maybe",
             "draft-kv=f16",

@@ -663,7 +663,7 @@ impl Model {
                 kernels::PrefillOptions {
                     exp,
                     profile: tuning.prefill_profile,
-                    softmax: bf16_attention.unwrap_or_default(),
+                    softmax: bf16_attention.unwrap_or(crate::config::PrefillSoftmax::Online),
                 },
             );
             clock.mark(4);

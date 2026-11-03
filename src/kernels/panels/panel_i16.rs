@@ -11,8 +11,8 @@
 //!
 //! Only the activation rounding separates this from the FP32 panels: an
 //! input moves by at most half a step, 1/65534 of its group's absmax,
-//! against BF16's 2^-8 of every value. Opt-in for 8-bit models
-//! (`Tuning::prefill_i16`).
+//! against BF16's 2^-8 of every value. The default for 8-bit models
+//! (`Tuning::prefill_projections`).
 use rayon::prelude::*;
 
 use super::{
