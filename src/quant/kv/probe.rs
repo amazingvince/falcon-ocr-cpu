@@ -1,9 +1,12 @@
 //! Ignored timing probes of decode attention over the split cache.
 use super::*;
 
-/// Verification attention time per step by row count (22 layers of Q8
-/// caches, 6,544 prefix positions, 12 threads): the cost of each extra
-/// drafted row.
+/// Verification attention time per step by row count (22 layers, 6,544
+/// prefix positions): the cost of each extra drafted row. `PROBE_MODE` picks
+/// the cache (`q8`, the default, `q16`, `f32`, `q8r` or `q4r`) and
+/// `PROBE_THREADS` the threads (default 12). The decode exp is the one the
+/// modes use (`default_fast_exp` with fast exps allowed): polynomial for the
+/// 8- and 4-bit caches, platform-exact for Q16 and FP32.
 #[test]
 #[ignore = "timing probe; run in release with --nocapture"]
 fn verify_rows_probe() {
@@ -29,7 +32,9 @@ fn verify_rows_probe() {
     });
     let caches: Vec<SplitPrefix> = (0..layers)
         .map(|_| {
-            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 16, &c, mode, None).unwrap();
+            let mut cache = SplitPrefix::from_compact(&k, &v, p, p + 16, &c, mode, None)
+                .unwrap()
+                .with_fast_exp(default_fast_exp(mode, true, None));
             for _ in 0..generated {
                 cache.push_unique(&tail, &tail);
             }
