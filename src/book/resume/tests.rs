@@ -446,9 +446,35 @@ fn a_resume_with_other_runner_choices_warns() {
             "{warning}"
         );
     }
+    // Projections compare by kind: the INT16 VNNI and AVX2 kernels agree
+    // bitwise, and a record written with the removed BF16 panels matches
+    // no current run.
+    for (saved, current, matches) in [
+        ("panel-i16-vnni", "panel-i16-avx2", true),
+        ("panel-i16-avx2", "panel-i16-vnni", true),
+        ("panel-bf16", "panel-avx2", false),
+        ("panel-bf16", "panel-i16-vnni", false),
+        ("panel-bf16", "panel-i16-avx2", false),
+        ("panel-avx2", "panel-i16-vnni", false),
+        ("panel-i16-avx2", "panel-avx2", false),
+    ] {
+        let mut kind = record.clone();
+        kind["plan"] = plan(true, "fast", "avx2", saved);
+        let existing = scan_output(&line(&kind.to_string(), &fixed));
+        let this = this_run(
+            Some(Mode::Fast),
+            "w8-body-kv-q8",
+            None,
+            &fixed,
+            Kernels::from_plan(&plan(true, "fast", "avx2", current)),
+        );
+        let warning = resume_warning(&existing, &this);
+        assert_eq!(warning.is_none(), matches, "{saved} against {current}: {warning:?}");
+    }
     // Escalation keeps the near-exact plan. Its FP32 prefill is
-    // expected even when fast mode uses BF16, but exp, the stop and
-    // pinned decode exp still have to agree with the resumed run.
+    // expected even when fast mode uses BF16 attention or INT16
+    // projections, but exp, the stop and pinned decode exp still have to
+    // agree with the resumed run.
     let mut escalated = record.clone();
     escalated["mode"] = "near-exact".into();
     escalated["precision"] = "w16-body-kv-q16".into();

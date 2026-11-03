@@ -68,16 +68,17 @@ impl Settings {
 /// The runner's choices in a record's `plan` that change tokens: the
 /// repetition stop, the prefill exp, the prefill attention (BF16 with the
 /// online or the static softmax, NEON's polynomial exp, scalar, or the FP32
-/// tiles, whose AVX2 and AVX-512 forms agree bitwise), BF16 or INT16
-/// projections (the INT16 VNNI and AVX2 kernels agree bitwise), decode
-/// chunking, a pinned decode exp and the image decoder.
+/// tiles, whose AVX2 and AVX-512 forms agree bitwise), the projection kind,
+/// decode chunking, a pinned decode exp and the image decoder.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kernels {
     pub repetition_stop: bool,
     pub exp: String,
     pub attention: String,
-    pub bf16_projections: bool,
-    pub i16_projections: bool,
+    /// The prefill projections' rounding: `i16` for the INT16 panels (their
+    /// VNNI and AVX2 kernels agree bitwise), `bf16` for the removed BF16
+    /// panels that older records name, `fp32` for every other kernel.
+    pub projection: String,
     pub decode_exp: Option<bool>,
     /// Effective chunks of the split-cache scan, including the mode's
     /// default; `None` for a compact cache or an unrecorded cache kind.
@@ -95,6 +96,11 @@ impl Kernels {
             "avx2" | "avx512-wide" => "fp32",
             other => other,
         };
+        let projection = match prefill.get("projection")?.as_str()? {
+            "panel-bf16" => "bf16",
+            "panel-i16-vnni" | "panel-i16-avx2" => "i16",
+            _ => "fp32",
+        };
         let chunks = plan
             .get("tuning")
             .and_then(|tuning| tuning.get("split_chunks"))
@@ -109,8 +115,7 @@ impl Kernels {
             repetition_stop: plan.get("repetition_stop")?.as_bool()?,
             exp: plan.get("exp")?.as_str()?.to_owned(),
             attention: attention.to_owned(),
-            bf16_projections: prefill.get("projection")?.as_str()? == "panel-bf16",
-            i16_projections: prefill.get("projection")?.as_str()?.starts_with("panel-i16"),
+            projection: projection.to_owned(),
             decode_exp: plan
                 .get("tuning")
                 .and_then(|tuning| tuning.get("decode_fast_exp"))
@@ -139,11 +144,10 @@ impl Kernels {
             "bf16" => flags.push("BF16 attention".to_owned()),
             other => flags.push(format!("{other} attention")),
         }
-        if self.bf16_projections {
-            flags.push("BF16 projections".to_owned());
-        }
-        if self.i16_projections {
-            flags.push("INT16 projections".to_owned());
+        match self.projection.as_str() {
+            "bf16" => flags.push("BF16 projections".to_owned()),
+            "i16" => flags.push("INT16 projections".to_owned()),
+            _ => {}
         }
         if let Some(fast) = self.decode_exp {
             flags.push(format!("--tune decode-exp={}", if fast { "fast" } else { "exact" }));
@@ -182,7 +186,7 @@ pub struct Run {
     pub kernels: Option<Kernels>,
     /// The record is an escalated one (it has an `escalated_from`): its
     /// `kernels` are a near-exact rerun's, which a fast run's 16-bit body
-    /// reaches without BF16 prefill.
+    /// reaches with FP32 prefill attention and projections.
     pub escalated: bool,
 }
 
@@ -203,13 +207,12 @@ impl Run {
                     && let Some(expected) = &mut expected
                 {
                     // Escalation shares the run's configuration, but its
-                    // 16-bit body cannot use fast mode's BF16 (online or
-                    // static softmax) or INT16 prefill.
+                    // 16-bit body cannot use fast mode's BF16 attention
+                    // (online or static softmax) or INT16 projections.
                     if matches!(expected.attention.as_str(), "bf16" | "bf16-static") {
                         expected.attention = "fp32".to_owned();
                     }
-                    expected.bf16_projections = false;
-                    expected.i16_projections = false;
+                    expected.projection = "fp32".to_owned();
                 }
                 Some(kernels) == expected.as_ref()
             })
