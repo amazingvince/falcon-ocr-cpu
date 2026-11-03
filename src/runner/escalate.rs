@@ -49,6 +49,12 @@ pub struct EscalatedAttempt {
     pub precision: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub overlay_sha256: Option<String>,
+    /// The fast attempt's prefill kernels (its plan's `prefill`), which
+    /// `--resume` compares too: the rerun's plan names near-exact's. Absent
+    /// in records written before they were recorded, and for an attempt
+    /// without a plan.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prefill: Option<crate::kernels::PrefillPlan>,
 }
 
 /// Whether `result` is reread in near-exact mode: a fast-mode page that the
@@ -78,6 +84,7 @@ pub fn escalated(fast: OcrResult, mut rerun: OcrResult) -> OcrResult {
         total_ms: fast.timings.total_ms,
         precision: Some(fast.precision.clone()),
         overlay_sha256: fast.plan.as_ref().and_then(|plan| plan.overlay_sha256.clone()),
+        prefill: fast.plan.as_ref().map(|plan| plan.prefill),
     });
     rerun.timings.total_ms += fast.timings.total_ms;
     rerun.route = fast.route;
@@ -242,9 +249,11 @@ mod tests {
                 output_tokens: 2,
                 total_ms: 100.0,
                 // The fast attempt's weights, which `--resume` compares; this
-                // result carries no plan, so there is no overlay digest.
+                // result carries no plan, so there is no overlay digest and
+                // no prefill.
                 precision: Some("w8-body-kv-q8".to_owned()),
                 overlay_sha256: None,
+                prefill: None,
             })
         );
         assert_eq!(

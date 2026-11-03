@@ -102,12 +102,8 @@ impl Kernels {
     /// From a record's `plan` (a serialized `Resolved`); `None` when it does
     /// not hold them.
     pub fn from_plan(plan: &Value) -> Option<Self> {
-        let prefill = plan.get("prefill")?;
-        let attention = match prefill.get("attention")?.as_str()? {
-            "avx2" | "avx512-wide" => "fp32",
-            "avx2-static" | "avx512-wide-static" => "fp32-static",
-            other => other,
-        };
+        let (attention, projection) = prefill_kinds(plan.get("prefill")?)?;
+        let attention = attention.as_str();
         let knob = |name: &str| {
             plan.get("tuning")
                 .and_then(|tuning| tuning.get(name))
@@ -127,11 +123,6 @@ impl Kernels {
             }
             .to_owned()
         });
-        let projection = match prefill.get("projection")?.as_str()? {
-            "panel-bf16" => "bf16",
-            "panel-i16-vnni" | "panel-i16-avx2" => "i16",
-            _ => "fp32",
-        };
         let chunks = plan
             .get("tuning")
             .and_then(|tuning| tuning.get("split_chunks"))
@@ -151,7 +142,7 @@ impl Kernels {
             exp: plan.get("exp")?.as_str()?.to_owned(),
             attention: attention.to_owned(),
             escalation_attention,
-            projection: projection.to_owned(),
+            projection,
             decode_exp: plan
                 .get("tuning")
                 .and_then(|tuning| tuning.get("decode_fast_exp"))
@@ -177,21 +168,13 @@ impl Kernels {
         if self.exp != "fast" {
             flags.push(format!("--exp {}", self.exp));
         }
-        match self.attention.as_str() {
-            "fp32" => {}
-            "bf16" => flags.push("BF16 attention".to_owned()),
-            other => flags.push(format!("{other} attention")),
-        }
+        flags.extend(attention_flag(&self.attention));
         match self.escalation_attention.as_deref() {
             Some("fp32-static") => flags.push("--tune prefill-softmax-fp32=static".to_owned()),
             Some("bf16" | "bf16-static") => flags.push("--tune prefill-bf16-w16=attention".to_owned()),
             _ => {}
         }
-        match self.projection.as_str() {
-            "bf16" => flags.push("BF16 projections".to_owned()),
-            "i16" => flags.push("INT16 projections".to_owned()),
-            _ => {}
-        }
+        flags.extend(projection_flag(&self.projection));
         if let Some(fast) = self.decode_exp {
             flags.push(format!("--tune decode-exp={}", if fast { "fast" } else { "exact" }));
         }
@@ -202,6 +185,41 @@ impl Kernels {
             flags.push(format!("image decoder: {decoder}"));
         }
         flags
+    }
+}
+
+/// The attention and projection kinds of a plan's `prefill` (a
+/// `kernels::PrefillPlan`), as [`Kernels::attention`] and
+/// [`Kernels::projection`] name them.
+fn prefill_kinds(prefill: &Value) -> Option<(String, String)> {
+    let attention = match prefill.get("attention")?.as_str()? {
+        "avx2" | "avx512-wide" => "fp32",
+        "avx2-static" | "avx512-wide-static" => "fp32-static",
+        other => other,
+    };
+    let projection = match prefill.get("projection")?.as_str()? {
+        "panel-bf16" => "bf16",
+        "panel-i16-vnni" | "panel-i16-avx2" => "i16",
+        _ => "fp32",
+    };
+    Some((attention.to_owned(), projection.to_owned()))
+}
+
+/// How a resume warning names an attention kind; none for the FP32 tiles.
+fn attention_flag(attention: &str) -> Option<String> {
+    match attention {
+        "fp32" => None,
+        "bf16" => Some("BF16 attention".to_owned()),
+        other => Some(format!("{other} attention")),
+    }
+}
+
+/// How a resume warning names a projection kind; none for FP32.
+fn projection_flag(projection: &str) -> Option<String> {
+    match projection {
+        "bf16" => Some("BF16 projections".to_owned()),
+        "i16" => Some("INT16 projections".to_owned()),
+        _ => None,
     }
 }
 
@@ -232,6 +250,13 @@ pub struct Run {
     /// reaches with FP32 prefill projections and the run's attention, or a
     /// BF16 run's [`Kernels::escalation_attention`].
     pub escalated: bool,
+    /// For an escalated record, the attention and projection kinds (as
+    /// [`Kernels`] names them) of its fast attempt's prefill
+    /// (`escalated_from.prefill`), which the resumed run's must equal: a
+    /// fast run with other prefill kernels would have reached the page
+    /// otherwise. `None` for a record written before they were recorded,
+    /// which matches any run's.
+    pub attempt_prefill: Option<(String, String)>,
 }
 
 impl Run {
@@ -245,6 +270,11 @@ impl Run {
                 .is_none_or(|precision| Some(precision) == run.precision.as_ref() && self.overlay == run.overlay)
             && self.settings.is_some()
             && self.settings == run.settings
+            && self.attempt_prefill.as_ref().is_none_or(|(attention, projection)| {
+                run.kernels
+                    .as_ref()
+                    .is_some_and(|kernels| (&kernels.attention, &kernels.projection) == (attention, projection))
+            })
             && self.kernels.as_ref().is_none_or(|kernels| {
                 let mut expected = run.kernels.clone();
                 if let Some(expected) = &mut expected {
@@ -300,6 +330,17 @@ impl std::fmt::Display for Run {
             }
         }
         details.extend(self.kernels.iter().flat_map(Kernels::flags));
+        if let Some((attention, projection)) = &self.attempt_prefill {
+            let kernels: Vec<String> = attention_flag(attention)
+                .into_iter()
+                .chain(projection_flag(projection))
+                .collect();
+            details.push(if kernels.is_empty() {
+                "fast attempt: FP32 prefill".to_owned()
+            } else {
+                format!("fast attempt: {}", kernels.join(" and "))
+            });
+        }
         if self.escalated {
             write!(f, "escalated from ")?;
         }
@@ -371,6 +412,8 @@ impl Existing {
                 settings,
                 kernels: record.get("plan").and_then(Kernels::from_plan),
                 escalated: true,
+                // Likewise the fast attempt's prefill kernels.
+                attempt_prefill: attempt.get("prefill").and_then(prefill_kinds),
             },
             None => Run {
                 mode: text(record.get("mode")),
@@ -380,6 +423,7 @@ impl Existing {
                 settings,
                 kernels: record.get("plan").and_then(Kernels::from_plan),
                 escalated: false,
+                attempt_prefill: None,
             },
         };
         *self.runs.entry(run).or_default() += 1;
@@ -556,6 +600,7 @@ pub fn this_run(
         kernels,
         // A run escalates pages; it never is an escalation itself.
         escalated: false,
+        attempt_prefill: None,
     }
 }
 

@@ -674,7 +674,8 @@ fn a_resume_with_other_runner_choices_warns() {
     // Escalation keeps the near-exact plan. Its FP32 prefill is
     // expected even when fast mode uses BF16 attention or INT16
     // projections, but exp, the stop and pinned decode exp still have to
-    // agree with the resumed run.
+    // agree with the resumed run. A record that does not name its fast
+    // attempt's prefill matches a run with any.
     let mut escalated = record.clone();
     escalated["mode"] = "near-exact".into();
     escalated["precision"] = "w16-body-kv-q16".into();
@@ -699,6 +700,27 @@ fn a_resume_with_other_runner_choices_warns() {
                 resume_warning(&existing, &resumed(plan(true, "fast", attention, projection))),
                 None
             );
+        }
+    }
+    // One that names them matches only runs whose prefill kinds are its
+    // fast attempt's (the INT16 kernels agree bitwise): a fast run with
+    // other kernels would have reached the page otherwise.
+    let mut named = escalated.clone();
+    named["escalated_from"]["prefill"] =
+        serde_json::json!({"projection": "panel-i16-vnni", "attention": "bf16-static"});
+    let existing_named = scan_output(&line(&named.to_string(), &fixed));
+    for (attention, projection, matches) in [
+        ("bf16-static", "panel-i16-vnni", true),
+        ("bf16-static", "panel-i16-avx2", true),
+        ("bf16", "panel-i16-vnni", false),
+        ("bf16-static", "panel-avx2", false),
+        ("avx512-wide", "panel-avx2", false),
+    ] {
+        let warning = resume_warning(&existing_named, &resumed(plan(true, "fast", attention, projection)));
+        assert_eq!(warning.is_none(), matches, "{attention} {projection}: {warning:?}");
+        if let Some(warning) = warning {
+            let shown = "1 escalated from fast (fast attempt: bf16-static attention and INT16 projections);";
+            assert!(warning.contains(shown), "{warning}");
         }
     }
     let mut pinned = plan(true, "fast", "bf16", "panel-avx2");
