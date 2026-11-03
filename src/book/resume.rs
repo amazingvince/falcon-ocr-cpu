@@ -66,15 +66,22 @@ impl Settings {
 }
 
 /// The runner's choices in a record's `plan` that change tokens: the
-/// repetition stop, the prefill exp, the prefill attention (BF16 with the
-/// online or the static softmax, NEON's polynomial exp, scalar, or the FP32
-/// tiles, whose AVX2 and AVX-512 forms agree bitwise), the projection kind,
-/// decode chunking, a pinned decode exp and the image decoder.
+/// repetition stop, the prefill exp, the prefill attention (BF16 or the FP32
+/// tiles, each with the online or the static softmax, the FP32 tiles' AVX2
+/// and AVX-512 forms agreeing bitwise; NEON's polynomial exp; scalar), the
+/// projection kind, decode chunking, a pinned decode exp and the image
+/// decoder.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kernels {
     pub repetition_stop: bool,
     pub exp: String,
+    /// `fp32`, `fp32-static`, `bf16`, `bf16-static`, `neon` or `scalar`.
     pub attention: String,
+    /// For a BF16 attention plan, the FP32 tiles' `attention` that a
+    /// near-exact rerun of its pages (`--escalate`, with the run's tuning)
+    /// takes: `fp32-static` under `prefill-softmax-fp32=static`, else
+    /// `fp32`. `None` for the other plans, whose reruns keep `attention`.
+    pub escalation_attention: Option<String>,
     /// The prefill projections' rounding: `i16` for the INT16 panels (their
     /// VNNI and AVX2 kernels agree bitwise), `bf16` for the removed BF16
     /// panels that older records name, `fp32` for every other kernel.
@@ -94,8 +101,16 @@ impl Kernels {
         let prefill = plan.get("prefill")?;
         let attention = match prefill.get("attention")?.as_str()? {
             "avx2" | "avx512-wide" => "fp32",
+            "avx2-static" | "avx512-wide-static" => "fp32-static",
             other => other,
         };
+        let fp32_static = plan
+            .get("tuning")
+            .and_then(|tuning| tuning.get("prefill_softmax_fp32"))
+            .and_then(Value::as_str)
+            == Some("static");
+        let escalation_attention = matches!(attention, "bf16" | "bf16-static")
+            .then(|| if fp32_static { "fp32-static" } else { "fp32" }.to_owned());
         let projection = match prefill.get("projection")?.as_str()? {
             "panel-bf16" => "bf16",
             "panel-i16-vnni" | "panel-i16-avx2" => "i16",
@@ -115,6 +130,7 @@ impl Kernels {
             repetition_stop: plan.get("repetition_stop")?.as_bool()?,
             exp: plan.get("exp")?.as_str()?.to_owned(),
             attention: attention.to_owned(),
+            escalation_attention,
             projection: projection.to_owned(),
             decode_exp: plan
                 .get("tuning")
@@ -143,6 +159,9 @@ impl Kernels {
             "fp32" => {}
             "bf16" => flags.push("BF16 attention".to_owned()),
             other => flags.push(format!("{other} attention")),
+        }
+        if self.escalation_attention.as_deref() == Some("fp32-static") {
+            flags.push("--tune prefill-softmax-fp32=static".to_owned());
         }
         match self.projection.as_str() {
             "bf16" => flags.push("BF16 projections".to_owned()),
@@ -203,16 +222,22 @@ impl Run {
             && self.settings == run.settings
             && self.kernels.as_ref().is_none_or(|kernels| {
                 let mut expected = run.kernels.clone();
-                if self.escalated
-                    && let Some(expected) = &mut expected
-                {
-                    // Escalation shares the run's configuration, but its
-                    // 16-bit body cannot use fast mode's BF16 attention
-                    // (online or static softmax) or INT16 projections.
-                    if matches!(expected.attention.as_str(), "bf16" | "bf16-static") {
-                        expected.attention = "fp32".to_owned();
+                if let Some(expected) = &mut expected {
+                    let rerun = expected.escalation_attention.take();
+                    if self.escalated {
+                        // Escalation shares the run's configuration, but its
+                        // 16-bit body cannot use fast mode's BF16 attention
+                        // (online or static softmax) or INT16 projections:
+                        // it runs the FP32 tiles with the run's FP32 softmax.
+                        if let Some(rerun) = rerun {
+                            expected.attention = rerun;
+                        }
+                        expected.projection = "fp32".to_owned();
+                    } else {
+                        // The FP32 softmax of a BF16 run changes only the
+                        // pages it escalates.
+                        expected.escalation_attention = kernels.escalation_attention.clone();
                     }
-                    expected.projection = "fp32".to_owned();
                 }
                 Some(kernels) == expected.as_ref()
             })

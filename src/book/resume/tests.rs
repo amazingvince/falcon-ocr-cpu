@@ -394,6 +394,72 @@ fn a_resume_with_other_options_warns() {
     );
 }
 
+/// The FP32 tiles' softmax is a runner choice: records with the static
+/// softmax (either tile width) match only runs with it. A BF16 run's own
+/// records ignore `prefill-softmax-fp32`, but its escalated ones reran on
+/// the FP32 tiles with it and match only runs that would rerun them alike.
+#[test]
+fn a_resume_compares_the_fp32_softmax() {
+    let plan = |attention: &str, fp32: &str| {
+        serde_json::json!({
+            "repetition_stop": true, "exp": "fast",
+            "prefill": {"projection": "panel-avx2", "attention": attention},
+            "tuning": {"decode_fast_exp": null, "prefill_softmax_fp32": fp32}
+        })
+    };
+    let record = |attention: &str, fp32: &str| {
+        serde_json::json!({
+            "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8",
+            "plan": plan(attention, fp32)
+        })
+    };
+    let fixed = GenerationOptions {
+        fit_budget: true,
+        ..GenerationOptions::default()
+    };
+    let warning = |record: &Value, attention: &str, fp32: &str| {
+        let existing = scan_output(&line(&record.to_string(), &fixed));
+        let kernels = Kernels::from_plan(&plan(attention, fp32));
+        resume_warning(
+            &existing,
+            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels),
+        )
+    };
+    for (saved, current, matches) in [
+        (("avx2-static", "static"), ("avx512-wide-static", "static"), true),
+        (("avx512-wide-static", "static"), ("avx2-static", "static"), true),
+        (("avx2-static", "static"), ("avx2", "online"), false),
+        (("avx512-wide", "online"), ("avx512-wide-static", "static"), false),
+        (("bf16-static", "online"), ("bf16-static", "static"), true),
+        (("bf16", "static"), ("bf16", "online"), true),
+    ] {
+        let found = warning(&record(saved.0, saved.1), current.0, current.1);
+        assert_eq!(found.is_none(), matches, "{saved:?} against {current:?}: {found:?}");
+    }
+    let found = warning(&record("avx2", "online"), "avx2-static", "static").unwrap();
+    assert!(found.contains("fp32-static attention"), "{found}");
+    for (rerun, knob) in [("avx512-wide-static", "static"), ("avx2", "online")] {
+        let mut escalated = record(rerun, knob);
+        escalated["mode"] = "near-exact".into();
+        escalated["precision"] = "w16-body-kv-q16".into();
+        escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
+        for (attention, fp32) in [
+            ("bf16-static", "static"),
+            ("bf16", "static"),
+            ("avx2-static", "static"),
+            ("bf16-static", "online"),
+            ("avx512-wide", "online"),
+        ] {
+            let found = warning(&escalated, attention, fp32);
+            assert_eq!(
+                found.is_none(),
+                fp32 == knob,
+                "rerun {rerun} against {attention} {fp32}: {found:?}"
+            );
+        }
+    }
+}
+
 /// Records' plans hold the runner's token-changing choices: a resume
 /// with another repetition stop, exp or prefill rounding warns, and the
 /// AVX2 and AVX-512 FP32 tiles, which agree bitwise, count as one.
