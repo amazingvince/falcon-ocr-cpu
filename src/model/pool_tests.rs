@@ -282,11 +282,8 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
             output(&format!("W8 {i16}: QKV projection"))
         );
     }
-    let static_tiles = Tuning {
-        prefill_softmax_fp32: PrefillSoftmax::Static,
-        ..Tuning::default()
-    };
-    let planned = kernels::prefill_plan(Some(16), false, Simd::Auto, &static_tiles).attention;
+    // Near-exact's default: the static tiles wherever the CPU has them.
+    let planned = kernels::prefill_plan(Some(16), false, Simd::Auto, &Tuning::default()).attention;
     if planned.fp32_softmax() == PrefillSoftmax::Static {
         assert_ne!(output("W16: attention"), output("W16: attention, static softmax"));
     }

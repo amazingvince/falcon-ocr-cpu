@@ -72,10 +72,12 @@ pub struct Tuning {
     pub prefill_projections: PrefillProjections,
     /// Softmax of the BF16 prefill attention (default static).
     pub prefill_softmax: PrefillSoftmax,
-    /// Softmax of the FP32 prefill tiles of 16- and 8-bit bodies on x86
-    /// (default online). FP32 bodies (exact mode) keep the online softmax
-    /// whatever this says, and so do aarch64 and the scalar backend.
-    pub prefill_softmax_fp32: PrefillSoftmax,
+    /// Softmax of the FP32 prefill tiles of 16- and 8-bit bodies on x86.
+    /// `None` keeps the default: static for 16-bit bodies (near-exact mode,
+    /// qualified on held-out pages), online for 8-bit ones (fast mode's FP32
+    /// fallback, unqualified). FP32 bodies (exact mode) keep the online
+    /// softmax whatever this says, and so do aarch64 and the scalar backend.
+    pub prefill_softmax_fp32: Option<PrefillSoftmax>,
     /// Position chunks per KV group in split-cache decode attention (1..=4).
     /// `None` keeps the mode default: one exact scan for FP32 caches, four
     /// chunks (merged partial softmaxes, rounding-level) for quantized ones.
@@ -105,7 +107,7 @@ pub struct Tuning {
 }
 impl Default for Tuning {
     /// The accepted configuration: for 8-bit bodies BF16 attention with the
-    /// static softmax and INT16 projections, the online softmax in the FP32
+    /// static softmax and INT16 projections, the body's softmax in the FP32
     /// tiles, the draft head's Q8 cache, no backoff, window or path gate,
     /// the mode's split chunks and decode exp, and no instrumentation.
     fn default() -> Self {
@@ -113,7 +115,7 @@ impl Default for Tuning {
             prefill_bf16: PrefillBf16::default(),
             prefill_projections: PrefillProjections::default(),
             prefill_softmax: PrefillSoftmax::Static,
-            prefill_softmax_fp32: PrefillSoftmax::Online,
+            prefill_softmax_fp32: None,
             split_chunks: None,
             phases: false,
             prefill_profile: false,
@@ -166,7 +168,7 @@ impl Tuning {
                 }
             }
             "prefill-softmax" => self.prefill_softmax = softmax(value)?,
-            "prefill-softmax-fp32" => self.prefill_softmax_fp32 = softmax(value)?,
+            "prefill-softmax-fp32" => self.prefill_softmax_fp32 = Some(softmax(value)?),
             "split-chunks" => {
                 let chunks: usize = value
                     .parse()
@@ -258,21 +260,29 @@ mod tests {
         assert_eq!(tuning.prefill_bf16, PrefillBf16::Off);
         assert_eq!(tuning.prefill_projections, PrefillProjections::Fp32);
         assert_eq!(tuning.prefill_softmax, PrefillSoftmax::Online);
-        assert_eq!(tuning.prefill_softmax_fp32, PrefillSoftmax::Static);
+        assert_eq!(tuning.prefill_softmax_fp32, Some(PrefillSoftmax::Static));
         assert_eq!(tuning.split_chunks, Some(3));
         assert!(tuning.phases && !tuning.prefill_profile);
         assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
+        let online = Tuning::from_pairs(["prefill-softmax-fp32=online"]).unwrap();
+        assert_eq!(online.prefill_softmax_fp32, Some(PrefillSoftmax::Online));
         // Fast mode's accepted prefill: BF16 attention with the static
-        // softmax and INT16 projections; the FP32 tiles stay online.
+        // softmax and INT16 projections; the FP32 tiles take the body's
+        // default softmax (`prefill_plan`).
         let defaults = Tuning::default();
         assert_eq!(defaults.prefill_bf16, PrefillBf16::Attention);
         assert_eq!(defaults.prefill_projections, PrefillProjections::I16);
         assert_eq!(defaults.prefill_softmax, PrefillSoftmax::Static);
-        assert_eq!(defaults.prefill_softmax_fp32, PrefillSoftmax::Online);
-        // A plan written before the FP32 knob reads as its default.
+        assert_eq!(defaults.prefill_softmax_fp32, None);
+        // A plan written before the FP32 knob reads as the default; one
+        // written while the knob had a fixed default keeps its value.
         let older: Tuning = serde_json::from_str(r#"{"prefill_softmax":"online"}"#).unwrap();
-        assert_eq!(older.prefill_softmax_fp32, PrefillSoftmax::Online);
-        // Removed knobs are unknown keys.
+        assert_eq!(older.prefill_softmax_fp32, None);
+        let fixed: Tuning = serde_json::from_str(r#"{"prefill_softmax_fp32":"online"}"#).unwrap();
+        assert_eq!(fixed.prefill_softmax_fp32, Some(PrefillSoftmax::Online));
+        let serialized = serde_json::to_value(defaults).unwrap();
+        assert_eq!(serialized["prefill_softmax_fp32"], serde_json::Value::Null);
+        // Bad values, and unknown keys including the removed knobs.
         for bad in [
             "prefill-softmax-fp32=fast",
             "split-chunks=5",

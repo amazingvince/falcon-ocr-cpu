@@ -88,8 +88,9 @@ pub enum PrefillAttention {
     Scalar,
     /// 8-lane FP32 tiles.
     Avx2,
-    /// [`Self::Avx2`] with the static-shift softmax
-    /// (`Tuning::prefill_softmax_fp32`), bitwise [`Self::Avx512WideStatic`].
+    /// [`Self::Avx2`] with the static-shift softmax (16-bit bodies by
+    /// default, `Tuning::prefill_softmax_fp32`), bitwise
+    /// [`Self::Avx512WideStatic`].
     Avx2Static,
     /// 16-lane FP32 tiles.
     Avx512Wide,
@@ -186,13 +187,15 @@ impl std::fmt::Display for PrefillAttention {
 /// that the INT16 panels hold takes the INT16 projections on x86 CPUs with
 /// AVX2 (VNNI under the `auto` backend where the CPU has it), and its BF16
 /// attention takes the static-shift softmax where the CPU also has
-/// AVX512BW; 16-bit and FP32 bodies never take either. The FP32 tiles take
-/// the static-shift softmax (`avx2-static`, `avx512-wide-static`) only when
-/// `prefill_softmax_fp32` asks for it, for a 16- or 8-bit body on x86,
-/// never for an FP32 body. Only the `auto` backend takes the AVX-512 paths
-/// (wide FP32 tiles, and BF16 attention and VNNI for 8-bit bodies); `avx2`
-/// is 8-lane throughout. Traces, linear-input captures and prefills of at
-/// most 8 rows take the FP32 path with the online softmax regardless.
+/// AVX512BW; 16-bit and FP32 bodies never take either. The FP32 tiles of a
+/// 16-bit body take the static-shift softmax (`avx2-static`,
+/// `avx512-wide-static`) on x86 unless `prefill_softmax_fp32` asks for the
+/// online one; those of an 8-bit body (where it has no BF16 attention) only
+/// when it asks for the static one, and those of an FP32 body never. Only
+/// the `auto` backend takes the AVX-512 paths (wide FP32 tiles, and BF16
+/// attention and VNNI for 8-bit bodies); `avx2` is 8-lane throughout.
+/// Traces, linear-input captures and prefills of at most 8 rows take the
+/// FP32 path with the online softmax regardless.
 pub fn prefill_plan(
     body_bits: Option<u32>,
     i16_misfit: bool,
@@ -202,8 +205,15 @@ pub fn prefill_plan(
     use crate::config::{PrefillBf16, PrefillProjections, PrefillSoftmax};
     let (prefill_bf16, softmax) = (tuning.prefill_bf16, tuning.prefill_softmax);
     let panel = body_bits.is_some() && panel_gemm::available(simd);
-    // Exact mode's FP32 body keeps the reference's online softmax.
-    let static_fp32 = panel && tuning.prefill_softmax_fp32 == PrefillSoftmax::Static;
+    // The near-exact-softmax-gate-v1 budget qualified the static softmax
+    // for 16-bit bodies (near-exact mode); fast mode's FP32 fallback was not
+    // gated and keeps the online one, and exact mode's FP32 body keeps the
+    // reference's online softmax (`panel` is false for it).
+    let fp32_softmax = tuning.prefill_softmax_fp32.unwrap_or(match body_bits {
+        Some(16) => PrefillSoftmax::Static,
+        _ => PrefillSoftmax::Online,
+    });
+    let static_fp32 = panel && fp32_softmax == PrefillSoftmax::Static;
     // 8-bit bodies (fast mode) run the prefill projections with INT16
     // activations and the attention in BF16 where the CPU has AVX512-BF16
     // (`attention_prefill_bf16`). INT16 panels hold codes only, in groups

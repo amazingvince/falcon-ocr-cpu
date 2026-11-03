@@ -1,7 +1,8 @@
 //! Static-shift softmax for the FP32 prefill tiles (x86, when
 //! `PrefillOptions::fp32_softmax` is static: `Model::forward_layers` takes
-//! it from `prefill_plan`, which plans it under
-//! `Tuning::prefill_softmax_fp32` for 16- and 8-bit bodies only, so exact
+//! it from `prefill_plan`, which plans it for 16-bit bodies unless
+//! `Tuning::prefill_softmax_fp32` asks for the online softmax, for 8-bit
+//! ones only when it asks for this one, and never for FP32 bodies, so exact
 //! mode never runs it).
 //!
 //! As in `bf16::static_shift`, the per-head RMS norms bound every score

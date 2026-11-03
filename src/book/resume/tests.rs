@@ -395,19 +395,23 @@ fn a_resume_with_other_options_warns() {
 }
 
 /// The FP32 tiles' softmax is a runner choice: records with the static
-/// softmax (either tile width) match only runs with it. A BF16 run's own
-/// records ignore `prefill-softmax-fp32`, but its escalated ones reran on
-/// the FP32 tiles with it and match only runs that would rerun them alike.
+/// softmax (either tile width) match only runs with it. A fast run's own
+/// BF16 records ignore `prefill-softmax-fp32`, but its escalated ones reran
+/// on the FP32 tiles with a 16-bit body's softmax (static unless the knob
+/// says online, also where the fast run's own FP32 tiles are online) and
+/// match only runs that would rerun them alike.
 #[test]
 fn a_resume_compares_the_fp32_softmax() {
-    let plan = |attention: &str, fp32: &str| {
+    // `fp32` is the plan's `prefill_softmax_fp32`: `None` serializes as the
+    // default's null.
+    let plan = |attention: &str, fp32: Option<&str>| {
         serde_json::json!({
             "repetition_stop": true, "repetition_counting": true, "exp": "fast",
             "prefill": {"projection": "panel-avx2", "attention": attention},
             "tuning": {"decode_fast_exp": null, "prefill_softmax_fp32": fp32}
         })
     };
-    let record = |attention: &str, fp32: &str| {
+    let record = |attention: &str, fp32: Option<&str>| {
         serde_json::json!({
             "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8",
             "plan": plan(attention, fp32)
@@ -417,7 +421,7 @@ fn a_resume_compares_the_fp32_softmax() {
         fit_budget: true,
         ..GenerationOptions::default()
     };
-    let warning = |record: &Value, attention: &str, fp32: &str| {
+    let warning = |record: &Value, attention: &str, fp32: Option<&str>| {
         let existing = scan_output(&line(&record.to_string(), &fixed));
         let kernels = Kernels::from_plan(&plan(attention, fp32));
         resume_warning(
@@ -425,39 +429,88 @@ fn a_resume_compares_the_fp32_softmax() {
             &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels),
         )
     };
+    let (fixed_static, online) = (Some("static"), Some("online"));
     for (saved, current, matches) in [
-        (("avx2-static", "static"), ("avx512-wide-static", "static"), true),
-        (("avx512-wide-static", "static"), ("avx2-static", "static"), true),
-        (("avx2-static", "static"), ("avx2", "online"), false),
-        (("avx512-wide", "online"), ("avx512-wide-static", "static"), false),
-        (("bf16-static", "online"), ("bf16-static", "static"), true),
-        (("bf16", "static"), ("bf16", "online"), true),
+        (
+            ("avx2-static", fixed_static),
+            ("avx512-wide-static", fixed_static),
+            true,
+        ),
+        (
+            ("avx512-wide-static", fixed_static),
+            ("avx2-static", fixed_static),
+            true,
+        ),
+        (("avx2-static", fixed_static), ("avx2", online), false),
+        (("avx512-wide", online), ("avx512-wide-static", fixed_static), false),
+        (("bf16-static", online), ("bf16-static", fixed_static), true),
+        (("bf16", fixed_static), ("bf16", online), true),
+        // Fast mode's FP32 fallback stays online by default.
+        (("avx512-wide", online), ("avx2", None), true),
+        (("bf16-static", None), ("bf16-static", online), true),
     ] {
         let found = warning(&record(saved.0, saved.1), current.0, current.1);
         assert_eq!(found.is_none(), matches, "{saved:?} against {current:?}: {found:?}");
     }
-    let found = warning(&record("avx2", "online"), "avx2-static", "static").unwrap();
+    let found = warning(&record("avx2", online), "avx2-static", fixed_static).unwrap();
     assert!(found.contains("fp32-static attention"), "{found}");
-    for (rerun, knob) in [("avx512-wide-static", "static"), ("avx2", "online")] {
+    // (record's rerun, its knob, the rerun's static softmax).
+    for (rerun, knob, rerun_static) in [
+        ("avx512-wide-static", fixed_static, true),
+        ("avx2", online, false),
+        ("avx512-wide-static", None, true),
+    ] {
         let mut escalated = record(rerun, knob);
         escalated["mode"] = "near-exact".into();
         escalated["precision"] = "w16-body-kv-q16".into();
         escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
-        for (attention, fp32) in [
-            ("bf16-static", "static"),
-            ("bf16", "static"),
-            ("avx2-static", "static"),
-            ("bf16-static", "online"),
-            ("avx512-wide", "online"),
+        // (fast run's attention, its knob, its rerun's static softmax).
+        for (attention, fp32, reruns_static) in [
+            ("bf16-static", fixed_static, true),
+            ("bf16", fixed_static, true),
+            ("avx2-static", fixed_static, true),
+            ("bf16-static", online, false),
+            ("avx512-wide", online, false),
+            ("bf16-static", None, true),
+            ("avx512-wide", None, true),
         ] {
             let found = warning(&escalated, attention, fp32);
             assert_eq!(
                 found.is_none(),
-                fp32 == knob,
-                "rerun {rerun} against {attention} {fp32}: {found:?}"
+                reruns_static == rerun_static,
+                "rerun {rerun} against {attention} {fp32:?}: {found:?}"
             );
         }
     }
+    let mut escalated = record("avx2", online);
+    escalated["mode"] = "near-exact".into();
+    escalated["precision"] = "w16-body-kv-q16".into();
+    escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
+    let found = warning(&escalated, "avx512-wide", None).unwrap();
+    assert!(found.contains("fp32-static attention for escalated pages"), "{found}");
+    // Plans whose reruns keep their attention: near-exact's own (either
+    // softmax), exact mode's FP32 body, NEON and plans from before the knob
+    // (`fp32` of `None`: no field).
+    let rerun = |attention: &str, projection: &str, fp32: Option<Option<&str>>| {
+        let mut plan = plan(attention, None);
+        plan["prefill"]["projection"] = projection.into();
+        let tuning = plan["tuning"].as_object_mut().unwrap();
+        tuning.remove("prefill_softmax_fp32");
+        if let Some(fp32) = fp32 {
+            tuning.insert("prefill_softmax_fp32".to_owned(), serde_json::json!(fp32));
+        }
+        Kernels::from_plan(&plan).unwrap().escalation_attention
+    };
+    assert_eq!(rerun("avx512-wide-static", "panel-avx2", Some(None)), None);
+    assert_eq!(rerun("avx512-wide", "panel-avx2", Some(online)), None);
+    assert_eq!(rerun("avx512-wide", "gemm-f32", Some(None)), None);
+    assert_eq!(rerun("neon", "panel-avx2", Some(None)), None);
+    assert_eq!(rerun("avx512-wide", "panel-i16-vnni", None), None);
+    assert_eq!(rerun("bf16-static", "panel-i16-vnni", None).as_deref(), Some("fp32"));
+    assert_eq!(
+        rerun("avx512-wide", "panel-i16-vnni", Some(None)).as_deref(),
+        Some("fp32-static")
+    );
 }
 
 /// Plans record whether the repetition stop ends counting loops. A record
@@ -504,6 +557,8 @@ fn a_resume_tells_a_stop_without_counting_loops_apart() {
 /// AVX2 and AVX-512 FP32 tiles, which agree bitwise, count as one.
 #[test]
 fn a_resume_with_other_runner_choices_warns() {
+    // Plans without `prefill_softmax_fp32` predate the knob: their FP32
+    // tiles and their near-exact reruns ran the online softmax.
     let plan = |repetition_stop: bool, exp: &str, attention: &str, projection: &str| {
         serde_json::json!({
             "repetition_stop": repetition_stop, "repetition_counting": repetition_stop, "exp": exp,
@@ -536,7 +591,10 @@ fn a_resume_with_other_runner_choices_warns() {
     for (other, flag) in [
         (plan(false, "fast", "avx2", "panel-avx2"), "--stop-repetition=false"),
         (plan(true, "exact", "avx2", "panel-avx2"), "--exp exact"),
-        (plan(true, "fast", "bf16", "panel-avx2"), "BF16 attention"),
+        (
+            plan(true, "fast", "bf16", "panel-avx2"),
+            "BF16 attention, fp32 attention for escalated pages",
+        ),
         (plan(true, "fast", "neon", "panel-avx2"), "neon attention"),
         (plan(true, "fast", "avx2", "panel-bf16"), "BF16 projections"),
         (plan(true, "fast", "avx2", "panel-i16-vnni"), "INT16 projections"),
@@ -747,6 +805,23 @@ fn a_resume_with_other_runner_choices_warns() {
     );
     assert!(Kernels::of(&stopping).unwrap().repetition_counting);
     assert!(["fp32", "bf16", "bf16-static", "neon", "scalar"].contains(&kernels.attention.as_str()));
+    // Its near-exact reruns take the 16-bit body's default plan, which is
+    // what a near-exact runner on this host plans.
+    let near_exact = crate::auto::ModelFacts {
+        profile: crate::quant::Profile::W16_BODY_KV_Q16,
+        body_bits: Some(16),
+        ..facts.clone()
+    };
+    let rerun = Kernels::of(&crate::Resolved::new(
+        crate::HostInfo::detect(),
+        &config,
+        &near_exact,
+        Path::new("model"),
+    ))
+    .unwrap();
+    assert_eq!(rerun.escalation_attention, None);
+    let expected = kernels.escalation_attention.as_ref().unwrap_or(&kernels.attention);
+    assert_eq!(&rerun.attention, expected);
     // Fast mode's INT16 projections where this host runs them.
     let i16 = matches!(
         resolved.prefill.projection,

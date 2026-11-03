@@ -22,8 +22,10 @@ pub enum Mode {
     /// FP32 weights and caches: matches the FP32 reference's measured tokens.
     Exact,
     /// 16-bit body weights and 16-bit KV cache (absmax scale per 64 weights
-    /// or 32 cache values): about 1.8x faster than exact, 1 changed token in
-    /// 24,262 teacher-forced steps (KL 9e-8).
+    /// or 32 cache values), and the static softmax in the FP32 prefill tiles
+    /// on x86: about 1.8x faster than exact, 1 changed token in 24,262
+    /// teacher-forced steps (KL 9e-8, with the online softmax; the static
+    /// one flips the same single step on the 7700X anchor).
     NearExact,
     /// 8-bit GPTQ body weights and an 8-bit KV cache, INT16-activation
     /// prefill projections on x86 CPUs with AVX2 and BF16 prefill attention
