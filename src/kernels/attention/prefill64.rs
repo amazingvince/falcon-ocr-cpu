@@ -961,7 +961,7 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     fn available() -> bool {
-        std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
+        crate::kernels::avx2_available()
     }
 
     /// Random prefill operands: (q, k, v, sinks) for 16 query / 8 KV heads.
@@ -1061,7 +1061,7 @@ mod tests {
             let mut expected = vec![f32::NAN; q.len()];
             super::super::tiled::attention_gemm(&q, &cache, geometry, &sinks, &mut expected);
             for wide in [false, true] {
-                if wide && !std::is_x86_feature_detected!("avx512f") {
+                if wide && !wide_available() {
                     continue;
                 }
                 let mut actual = vec![f32::NAN; q.len()];
@@ -1119,7 +1119,7 @@ mod tests {
 
     #[cfg(target_arch = "x86_64")]
     fn wide_available() -> bool {
-        available() && std::is_x86_feature_detected!("avx512f")
+        available() && crate::kernels::avx512_available()
     }
 
     /// The AVX-512 QK and PV kernels equal the AVX2 ones bit for bit on every

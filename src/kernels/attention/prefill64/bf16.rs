@@ -674,10 +674,9 @@ unsafe fn pv_rows<const R: usize>(
 mod tests {
     use super::*;
 
+    /// Asserted by `kernels::tests::host_runs_every_avx512_kernel`.
     fn available() -> bool {
-        crate::kernels::avx512bf16_available()
-            && std::is_x86_feature_detected!("avx2")
-            && std::is_x86_feature_detected!("fma")
+        crate::kernels::bf16_available()
     }
 
     fn values(n: usize, seed: u32, range: f32) -> Vec<f32> {
@@ -794,7 +793,7 @@ mod tests {
     /// converts itself, so both paths give bitwise equal outputs.
     #[test]
     fn stored_rows_match_the_kernel_conversion() {
-        if !available() || !std::is_x86_feature_detected!("avx512bw") {
+        if !available() || !crate::kernels::prefill_bf16_rows_available() {
             return;
         }
         for (query_len, image_start, image_end) in [(70, 3, 65), (95, 10, 90), (129, 1, 128)] {

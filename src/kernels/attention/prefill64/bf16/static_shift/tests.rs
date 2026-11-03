@@ -7,11 +7,10 @@ use crate::kernels::attention::prefill64::bf16::{compact_prefill, pair_rows, qk_
 use crate::kernels::attention::prefill64::mask_lanes;
 use crate::kernels::{Bf16Kv, CompactKv, Geometry, PrefillOptions};
 
+/// The BF16 attention and its AVX512BW row layouts; asserted by
+/// `kernels::tests::host_runs_every_avx512_kernel`.
 fn available() -> bool {
-    crate::kernels::avx512bf16_available()
-        && std::is_x86_feature_detected!("avx2")
-        && std::is_x86_feature_detected!("fma")
-        && std::is_x86_feature_detected!("avx512bw")
+    crate::kernels::bf16_available() && crate::kernels::prefill_bf16_rows_available()
 }
 
 /// A fixed generator in [-range, range).
