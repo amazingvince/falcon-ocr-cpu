@@ -61,6 +61,7 @@ measurements are on the Ryzen 7 7700X
 | BF16 scales in the Q8/Q16 caches | decode -2% |
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
 | INT16 prefill projections and static softmax (fast mode; Ryzen 7 7700X, [below](#int16-projections-and-static-softmax)) | transformer prefill 5.28 → 3.65 s, flips 67 → 66 |
+| Static softmax in the FP32 prefill tiles (near-exact; Ryzen 7 7700X, [below](#near-exact-prefill-attention)) | transformer prefill 7.91 → 7.16 s, flips 1 → 1 |
 
 ## Decode exponential
 
@@ -153,6 +154,7 @@ less: prefill takes about 2.8 s per page, roughly a third of the total.
 | Head-major K/V copies; interleaved FP32 softmax | Within noise; FP32 prefill attention is near its ceiling |
 | IEEE FP16 KV for near-exact | Flips 1 → 4 |
 | BF16 prefill projections (`panel-bf16`; removed 2026-11-03) | Transformer prefill 4,048 ms against the INT16 projections' 4,066 and the FP32 panels' 5,247 ms (7700X, journal page, 300 tokens, `--tune prefill-profile=1`, median of 5 interleaved rounds); 26.5-28 MACs per cycle per core against INT16's 24.5-27.4; but +19% KL against FP32 where INT16 adds 1.2% ([MODES.md](MODES.md#teacher-forced-agreement)), and AVX512-BF16 only |
+| BF16 prefill attention for near-exact's 16-bit body (`--tune prefill-bf16-w16=attention`; removed 2026-11-03) | Transformer prefill 4,864 ms against the FP32 tiles' 7,157 with the static softmax (-32%) and 7,909 with the online one (-38.5%) (7700X, journal page, [below](#near-exact-prefill-attention)); but 13 flips and KL 9.07e-6 against FP32 where the online FP32 tiles have 1 flip and 7.15e-8, and it failed near-exact's held-out gate: micro CER +0.503 pt overall and +5.230 pt on slides, and two repetition stops on pages the reference ends at EOS ([MODES.md](MODES.md#bf16-attention-in-near-exact-mode-rejected)) |
 | INT8 QK for BF16 prefill attention (`vpdpbusd`, per-(token, head) absmax Q and K) | Logit error RMS 3.8× BF16's and attention output error 2.5×, to save at most about 0.5 s per page (7700X, estimated: by its share of thread cycles QK takes about 1.0 s of the 2.15 s BF16 attention, and `vpdpbusd` does twice `vdpbf16ps`'s multiply-adds); not built |
 | INT8 activations in the 8-bit prefill projections (u8 × s8 `vpdpbusd`) | Simulated exactly: flips 5 → 40 and KL 20× on two anchor pages (7700X); not built (below) |
 | Speculation depths 5-7 (`--speculate 5` to `7`, its maximum) against the default 4 | Journal page with the draft head, `--decode-threads 8`, decode medians of 3 interleaved rounds (7700X): fast 6.39 s at depth 4 and 6.29-6.37 s at 5-7 (9.12 s without speculation), near-exact 9.71 and 9.62-9.69 s (16.16 s); at most 1.6% less decode, with no trend across depths and about the spread between one arm's rounds (0.8-1.4%, 5% in one arm); page totals within 0.7% of depth 4; the same 1,140 tokens in every run |
@@ -231,7 +233,7 @@ records live under `artifacts/` on that host only:
 - `fp32-static-2026-11-03/` and `queue-2026-11-03/timing/` for the FP32
   tiles' static softmax, and `queue-2026-11-03/spec/` for the speculation
   depths;
-- `w16-bf16-attn-2026-11-03/` for near-exact's BF16 attention, and
+- `w16-bf16-attn-2026-11-03/` for near-exact's removed BF16 attention, and
   `profile-2026-11-03/` for the profiled whole pages.
 
 ### Book runs
@@ -420,22 +422,23 @@ inside the qk share and 0% for the softmax itself.
 
 ### Near-exact prefill attention
 
-Two opt-in knobs speed up near-exact's prefill attention: the FP32 tiles'
-static softmax (`--tune prefill-softmax-fp32=static`) and fast mode's BF16
-attention (`--tune prefill-bf16-w16=attention`).
-[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental) has
-their fidelity, token checks and
-[held-out gate](MODES.md#near-exacts-held-out-gate). Journal page,
-`--mode near-exact --speculate 0 --decode-threads 8 --max-new-tokens 8
---tune phases=1`, three interleaved rounds of fresh processes with no
-other work on the host. Transformer prefill is the median [range] in
+The FP32 tiles' static softmax has been near-exact's default since
+2026-11-03. Fast mode's BF16 attention for the 16-bit body, measured beside
+it, failed the same held-out gate and was removed.
+[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles) has their fidelity,
+token checks and [held-out gate](MODES.md#near-exacts-held-out-gate).
+Journal page, `--mode near-exact --speculate 0 --decode-threads 8
+--max-new-tokens 8 --tune phases=1`, three interleaved rounds of fresh
+processes with no other work on the host, while both were opt-in knobs; on
+a current build the previous default is `--tune
+prefill-softmax-fp32=online`. Transformer prefill is the median [range] in
 milliseconds; attention is its phase split:
 
 | Prefill attention | Plan | Transformer prefill | Attention |
 |---|---|---:|---:|
-| FP32 tiles, online softmax (the default) | `avx512-wide` | 7,909 [7,887-7,934] | 5,234 |
-| FP32 tiles, static softmax | `avx512-wide-static` | 7,157 [7,154-7,173] | 4,478 |
-| BF16, static softmax | `bf16-static` | 4,864 [4,840-4,869] | 2,174 |
+| FP32 tiles, online softmax (the previous default) | `avx512-wide` | 7,909 [7,887-7,934] | 5,234 |
+| FP32 tiles, static softmax (the default) | `avx512-wide-static` | 7,157 [7,154-7,173] | 4,478 |
+| BF16, static softmax (removed) | `bf16-static` | 4,864 [4,840-4,869] | 2,174 |
 
 The other phase lines sum to 2.54-2.55 s in every arm (transformer prefill
 less attention is 2.68-2.69 s). The static softmax takes 0.76 s (14%) off
@@ -445,17 +448,19 @@ gave 7,903 and 7,116 ms, within 0.6% of these. BF16 attention takes 3.06 s
 static softmax; its attention phase is about fast mode's 2,151 ms with the
 same kernel ([above](#int16-projections-and-static-softmax)).
 Teacher-forced against FP32 the static softmax has the online softmax's 1
-flip and 1.3% more KL, and BF16 attention 13 flips and 127 times the KL.
-Under `--tune prefill-profile=1`, on a busy host and so an indication only,
-the softmax stage (in the static tiles: masking, exp and denominators)
-takes 24.9% and 24.5% of FP32 attention's thread cycles in two online runs
-and 7.3% with the static softmax.
+flip and 1.3% more KL, and BF16 attention 13 flips and 127 times the KL;
+on the held-out gate's 207 pages the static softmax changed no token and
+BF16 attention raised the gated micro CER by 0.503 pt. Under `--tune
+prefill-profile=1`, on a busy host and so an indication only, the softmax
+stage (in the static tiles: masking, exp and denominators) takes 24.9% and
+24.5% of FP32 attention's thread cycles in two online runs and 7.3% with
+the static softmax.
 
 For scale, one profiled run each of the whole journal page with the draft
 head (`--decode-threads 8 --tune phases=1 --tune prefill-profile=1`, which
 add synchronization) took 17.1 s in near-exact with the static softmax
 (prefill 7.4 s, decode 9.6 s) and 10.3 s in fast mode (3.9 and 6.3 s).
-BF16 attention's 2.3 s against the static softmax is about 13% of that
+BF16 attention's 2.3 s against the static softmax was about 13% of that
 near-exact page.
 
 ### Verification rows

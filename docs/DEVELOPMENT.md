@@ -68,19 +68,17 @@ the platform-dependent math; the token-parity gates are separate checks.
   FP32 tiles' static softmax keeps no reference order, so its 8- and 16-lane
   tiles are compared with a scalar oracle of their own
   (`kernels::attention::prefill64::static_shift::tests`), and
-  `kernels::tests::fp32_static_softmax_is_opt_in_and_never_exact` checks that
-  only its knob plans it and never for an FP32 body.
-  `kernels::tests::bf16_attention_for_16_bit_bodies_is_opt_in_and_never_exact`
-  checks the same for 16-bit bodies' BF16 attention, which reuses fast mode's
-  kernels and their oracles. The prefill stages are also compared bitwise
-  across pool sizes (`model::pool_tests`, `kernels::tests`), which the page
-  pipeline's second pool relies on. The AVX-512 oracles (the 16-lane prefill
-  tiles with either softmax, the BF16 attention and its static softmax, the
-  INT16 VNNI panels, the verification rows under `auto`) return early, or
-  drop their AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted
-  CI runners included; the ignored
-  `kernels::tests::host_runs_every_avx512_kernel` fails on such a CPU
-  ([the `weights` job](#the-weights-ci-job) runs it).
+  `kernels::tests::fp32_static_softmax_is_near_exact_default_and_never_exact`
+  checks that the default plans it for 16-bit bodies only, that the knob
+  sets it for 16- and 8-bit bodies, and that an FP32 body never takes it.
+  The prefill stages are also compared bitwise across pool sizes
+  (`model::pool_tests`, `kernels::tests`), which the page pipeline's second
+  pool relies on. The AVX-512 oracles (the 16-lane prefill tiles with
+  either softmax, the BF16 attention and its static softmax, the INT16 VNNI
+  panels, the verification rows under `auto`) return early, or drop their
+  AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted CI runners
+  included; the ignored `kernels::tests::host_runs_every_avx512_kernel`
+  fails on such a CPU ([the `weights` job](#the-weights-ci-job) runs it).
   The ignored tokenizer-decode and RoPE checks additionally need
   `artifacts/reference/tokenizer-cleanup-v1/fixture.json` and
   `artifacts/reference/rope-operators.safetensors`, respectively; neither is
@@ -277,6 +275,13 @@ arm's `kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
 rotated-cache arms in MODES.md, and upstream's 24,262-step fast-mode
 result, ran before that default, on FP32 projection panels; add
 `AGREE_EXTRA="--tune prefill-projections=fp32"` to reproduce them.
+16-bit arms take near-exact's default static softmax in the FP32 tiles
+(`avx2-static` under `--backend avx2`). The 7700X near-exact and 16-bit
+rotated-cache arms in MODES.md, and upstream's 24,262-step near-exact
+result, ran before that default, with the online softmax; add
+`AGREE_EXTRA="--tune prefill-softmax-fp32=online"` to reproduce them. That
+setting leaves 8-bit arms under `--backend avx2` unchanged, since their
+FP32 tiles default to the online softmax.
 
 ## Rebuilding packed files and experimental overlays
 
@@ -398,29 +403,26 @@ checks with weights: smoke trace, token agreement, a speed report.
 
 `--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
 takes `prefill-bf16=off|attention` (BF16 prefill attention in fast mode,
-default `attention`), `prefill-bf16-w16=off|attention` (the same BF16
-attention for near-exact's 16-bit body wherever `prefill-bf16` gives it to
-fast mode, default `off`; see
-[MODES.md](MODES.md#bf16-attention-in-near-exact-mode-experimental)),
-`prefill-projections=fp32|i16` (FP32 or INT16
+default `attention`), `prefill-projections=fp32|i16` (FP32 or INT16
 activations in fast mode's prefill projections, default `i16`; see
 [MODES.md](MODES.md#int16-projections-and-static-softmax)),
 `prefill-softmax=online|static` (the online softmax or the static one
 without running maximum in fast mode's BF16 prefill attention, default
 `static`; same section), `prefill-softmax-fp32=online|static` (the same
-choice in the FP32 prefill tiles of 16- and 8-bit bodies on x86, default
-`online`; see
-[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental)),
+choice in the FP32 prefill tiles of 16- and 8-bit bodies on x86; by
+default static for 16-bit bodies and online for 8-bit ones; see
+[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles)),
 `split-chunks=1..4` (position chunks of the split cache scan),
 `decode-exp=exact|fast` (the exp of decode attention over
 split caches; pin it when comparing caches, see
 [MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase
 split of forwards on stderr), `prefill-profile=1` (prefill attention stage
 cycles), and the draft head's `draft-backoff=N`, `draft-window=N`,
-`draft-kv=f32|q8` and `draft-gate=token|path`. Only the five
-`prefill-bf16*`, `prefill-projections` and `prefill-softmax*` knobs,
-`split-chunks` and `decode-exp` change rounding, the last two that of
-split-cache decode attention; the others schedule or measure (`Tuning` in
+`draft-kv=f32|q8` and `draft-gate=token|path`; any other key, such as the
+removed `prefill-bf16-w16`, is an error. Only the four `prefill-bf16`,
+`prefill-projections` and `prefill-softmax*` knobs, `split-chunks` and
+`decode-exp` change rounding, the last two that of split-cache decode
+attention; the others schedule or measure (`Tuning` in
 `src/config/tuning.rs`).
 `--kv-cache compact|f32-split|q16|q8|q8r|q4r` (`falcon-ocr` run and doctor)
 replaces the KV half of the resolved profile; the plan and every result

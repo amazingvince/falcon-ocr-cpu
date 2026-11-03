@@ -53,8 +53,8 @@ NEON needs none. Runtime detection (`kernels::Simd::resolved`,
 `prefill_plan`) lets one baseline-target binary serve every CPU. Kernels
 with the same exp choice share the portable oracle's arithmetic; the
 `gemm` projections, the BF16 kernels, fast mode's INT16 panels and the
-static-shift softmaxes (fast mode's and the FP32 tiles' opt-in one) are
-token-checked numerical deviations.
+static-shift softmaxes (fast mode's, and near-exact's in the FP32 tiles)
+are token-checked numerical deviations.
 
 Recognition uses the portable polynomial exp in prefill attention
 (token-identical to the platform exp on all calibration pages) and in fast
@@ -78,8 +78,8 @@ always uses the polynomial exp.
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
-| Static-shift softmax of those tiles (`prefill64/static_shift.rs`, opt-in; 16- and 8-bit bodies) | prefill | 8-lane tiles | 16-lane tiles (AVX-512F), bitwise | - | - |
-| BF16 prefill attention (`prefill64/bf16.rs`, fast mode; near-exact with `--tune prefill-bf16-w16=attention`) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
+| Static-shift softmax of those tiles (`prefill64/static_shift.rs`; near-exact by default, 8-bit bodies on request) | prefill | 8-lane tiles | 16-lane tiles (AVX-512F), bitwise | - | - |
+| BF16 prefill attention (`prefill64/bf16.rs`, fast mode) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
 | INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies in groups of 64 without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
@@ -101,12 +101,10 @@ mode's static softmax needs AVX512-BF16 and AVX512BW; a CPU with
 AVX512-BF16 but not AVX512BW keeps the online softmax, and every other CPU
 keeps its FP32 prefill attention. `--tune prefill-projections=fp32` and
 `--tune prefill-softmax=online` select the previous kernels on any CPU.
-The FP32 tiles' opt-in static softmax
-(`--tune prefill-softmax-fp32=static`) is x86-only too and needs AVX2 and
-FMA; aarch64, `--backend scalar` and exact mode keep the online softmax
-whatever the knob says. Near-exact's opt-in BF16 attention
-(`--tune prefill-bf16-w16=attention`) runs exactly where fast mode's does:
-`auto` on AVX512-BF16 CPUs.
+Near-exact's static softmax in the FP32 tiles is x86-only too and needs
+AVX2 and FMA; aarch64, `--backend scalar` and exact mode keep the online
+softmax whatever `--tune prefill-softmax-fp32` says, so near-exact's
+prefill rounding differs between x86 and aarch64.
 
 ## Running on Apple Silicon
 

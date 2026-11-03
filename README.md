@@ -55,9 +55,13 @@ The journal page has 6,544 input tokens. These timings are on a Ryzen 9
 7950X, Windows 11, without the draft head. Near-exact is about 1.8× faster
 than exact and fast about 3×. Fast mode's flips and time predate its
 current prefill kernels, which cut its prefill by about 30% on a Ryzen 7
-7700X ([Modes](docs/MODES.md#int16-projections-and-static-softmax)). Fast
-mode failed its held-out budgets on handwriting and degraded scans; use
-near-exact for those pages.
+7700X ([Modes](docs/MODES.md#int16-projections-and-static-softmax)), and
+near-exact's predate the static softmax of its prefill attention, which
+cuts its prefill by about 10% there with the same single flip in that
+host's teacher-forced check
+([Modes](docs/MODES.md#static-softmax-in-the-fp32-tiles)).
+Fast mode failed its held-out budgets on handwriting and degraded scans;
+use near-exact for those pages.
 
 Exact mode matched FP32's tokens on every page measured. Its default
 kernels can change the last bits of logits; `RunnerConfig::reference()` is

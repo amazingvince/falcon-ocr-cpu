@@ -28,10 +28,11 @@ has 0 flips, near-exact 1 (KL 7.1e-8) and fast mode 67 (KL 3.0e-4). Compare
 these arms with each other, not with the 24,262-step results. KL is over
 each step's 32 most likely FP32 tokens (`falcon-ocr-eval agree
 --reference-topk`); every arm uses `tools/agree_queue.sh`'s flags (`--exp
-fast --backend avx2`). Those 8-bit arms ran before fast mode's INT16
-prefill projections became the default, so they used FP32 projection
-panels. [DEVELOPMENT.md](DEVELOPMENT.md#token-agreement) gives the commands
-for either reference and the flag that reproduces those arms.
+fast --backend avx2`). Those arms ran before fast mode's INT16 prefill
+projections and near-exact's static softmax became defaults, so the 8-bit
+arms used FP32 projection panels and the 16-bit arms the online softmax.
+[DEVELOPMENT.md](DEVELOPMENT.md#token-agreement) gives the commands for
+either reference and the flags that reproduce those arms.
 
 Character error rate (CER) counts character insertions, deletions and
 substitutions relative to the reference text's length. Micro CER pools the
@@ -49,7 +50,7 @@ recorded verdict; new qualification needs fresh pages.
 | Body weights | FP32 | 16-bit codes, FP32 absmax scale per 64 inputs | 8-bit GPTQ act-order codes, FP32 scale per 64 inputs (`w8-gptq.safetensors`) |
 | KV cache after sealing | FP32 split records | 16-bit codes, BF16 scale per 32 values | 8-bit codes, BF16 scale per 32 values |
 | Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | INT16 activations against the 8-bit codes on x86 CPUs with AVX2, FP32 panel GEMM elsewhere |
-| Prefill attention | FP32 | FP32 | BF16 products with the static softmax on AVX512-BF16 CPUs, FP32 elsewhere |
+| Prefill attention | FP32 | FP32, with the static softmax on x86 CPUs with AVX2 | BF16 products with the static softmax on AVX512-BF16 CPUs, FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
 | Against FP32, 24,262 steps | **0 flips** | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
@@ -62,6 +63,11 @@ kernels, the INT16 projections and the static softmax
 they move its flips on that host's 22,726-step anchor from 67 to 66 and
 take the journal page's transformer prefill from 5.3 to 3.7 s
 ([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
+Near-exact's flip and journal-page time predate the static softmax of its
+FP32 prefill tiles ([below](#static-softmax-in-the-fp32-tiles)), which on
+the 7700X flips the same single step of that anchor as the online softmax
+and takes the journal page's transformer prefill from 7.9 to 7.2 s
+([PERFORMANCE.md](PERFORMANCE.md#near-exact-prefill-attention)).
 
 Every mode maps its packed file when present. Without one, exact reads the
 FP32 checkpoint; near-exact and fast quantize it at load, and fast needs its
@@ -195,14 +201,12 @@ of that size. Decode time per token did not measurably change
 
 Two kernels change fast mode's prefill rounding; both have been its
 defaults since 2026-11-03 ([the decision](#the-decision)). Neither touches
-decode. Exact mode never uses either; near-exact never uses the INT16
-projections and takes this static softmax only with the BF16 attention of
-`--tune prefill-bf16-w16=attention`
-([below](#bf16-attention-in-near-exact-mode-experimental)). `doctor` and
-every result's plan name the kernels (`panel-i16-vnni`, `panel-i16-avx2`,
-`bf16-static`); `--tune prefill-projections=fp32` and `--tune
-prefill-softmax=online` (both binaries) restore the previous ones
-(`panel-avx2`, `bf16`).
+decode, and exact and near-exact modes use neither; near-exact's FP32
+tiles have a static softmax of their own
+([below](#static-softmax-in-the-fp32-tiles)). `doctor` and every result's
+plan name the kernels (`panel-i16-vnni`, `panel-i16-avx2`, `bf16-static`);
+`--tune prefill-projections=fp32` and `--tune prefill-softmax=online`
+(both binaries) restore the previous ones (`panel-avx2`, `bf16`).
 
 The prefill projections of an 8-bit body run with INT16 activations. Each
 row is quantized per 64-input group to INT16 with one FP32 step, the
@@ -360,21 +364,27 @@ counting rule of the [repetition stop](#loops-and-the-repetition-stop), which
 at 64 cycles ends none of the gate's 312 outputs (both arms) when they are
 replayed through it (`artifacts/repetition-probe-2026-11-03/`).
 
-## Static softmax in the FP32 tiles (experimental)
+## Static softmax in the FP32 tiles
 
-`--tune prefill-softmax-fp32=static` (both binaries; default `online`)
-gives the FP32 prefill tiles the static softmax of fast mode's BF16
-attention ([above](#int16-projections-and-static-softmax)), on the same
-bound: every score lies in [-8, 8], so `exp(score)` needs no running
-maximum. It applies to 16- and 8-bit bodies on x86 CPUs with AVX2 and FMA:
-near-exact's prefill attention, and fast mode's where that runs in FP32
-(`--backend avx2`, CPUs without AVX512-BF16, `--tune prefill-bf16=off`).
-Exact mode, aarch64 and `--backend scalar` keep the online softmax. The
-plan names the kernel `avx512-wide-static`, or `avx2-static` under
-`--backend avx2` and on CPUs without AVX-512F; the two agree bit for bit.
-It is a knob of its own because `prefill-softmax` defaults to `static` for
-fast mode's BF16 attention and would otherwise move those FP32-attention
-fast runs too. The kernel is in
+Near-exact's FP32 prefill tiles have taken the static softmax of fast
+mode's BF16 attention ([above](#int16-projections-and-static-softmax)) by
+default since 2026-11-03, when [near-exact's held-out
+gate](#near-exacts-held-out-gate) passed it. It rests on the same bound:
+every score lies in [-8, 8], so `exp(score)` needs no running maximum. It
+runs for 16-bit bodies on x86 CPUs with AVX2 and FMA; the plan names it
+`avx512-wide-static` under the `auto` backend on CPUs with AVX-512F, and
+`avx2-static` under `--backend avx2` and on CPUs without AVX-512F; the two
+agree bit for bit. Exact mode's FP32 body, aarch64 and `--backend scalar`
+keep the online softmax. The eval binary's 16-bit profiles (`--profile
+w16-body*`) take the static tiles by default too.
+
+`--tune prefill-softmax-fp32=online|static` (both binaries) sets the FP32
+tiles' softmax for 16- and 8-bit bodies alike. `online` restores
+near-exact's previous kernels (`avx512-wide`, `avx2`). `static` gives the
+static tiles to fast mode's attention where that runs in FP32
+(`--backend avx2`, CPUs without AVX512-BF16, `--tune prefill-bf16=off`),
+which keeps the online softmax by default because the gate ran near-exact
+only. The kernel is in
 [ARCHITECTURE.md](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa).
 It is not bitwise the online softmax: it always evaluates the polynomial
 exp of `--exp fast` (the automatic configuration's), and on the score
@@ -382,17 +392,14 @@ itself, where the online softmax takes the rounded `score - max`.
 
 Agreement is on the 7700X anchor ([The metric](#the-metric)): 22,726
 steps, `falcon-ocr-eval --exp fast --backend avx2 --threads 16 --profile
-w16-body-kv-q16`, `agree --max-steps 512` and `--reference-topk`; the
-online row is the near-exact result quoted there. The BF16 row is
-[BF16 attention in near-exact mode](#bf16-attention-in-near-exact-mode-experimental),
-`--tune prefill-bf16-w16=attention` with `--backend auto` in place of
-`--backend avx2`, since `--backend avx2` keeps the FP32 tiles.
+w16-body-kv-q16`, `agree --max-steps 512` and `--reference-topk`, run while
+the static softmax was opt-in; the online row is the near-exact result
+quoted there.
 
 | Near-exact prefill attention | Flips | KL against FP32 |
 |---|---:|---:|
-| FP32 tiles, online softmax (the default) | 1 | 7.15e-8 |
-| FP32 tiles, static softmax | 1 | 7.24e-8 |
-| BF16, static softmax | 13 | 9.07e-6 |
+| FP32 tiles, online softmax (the previous default) | 1 | 7.15e-8 |
+| FP32 tiles, static softmax (the default) | 1 | 7.24e-8 |
 
 Both FP32 softmaxes flip the same step (step 329 of page
 `40408ccf4389cd81`, to the same token) and no other. KL rises 1.3%; per
@@ -403,56 +410,111 @@ median 1.00, and lower on 29 of the 52 pages. On the `auto` backend
 `--backend avx2`, as the bitwise equal tile widths require. Tokens held:
 on the journal page the static softmax gives near-exact's 1,140 tokens
 ending at EOS on either tile width, and the smoke page gives the receipt's
-17 tokens with the knob in near-exact (`avx512-wide-static`,
-`avx2-static`), fast mode (`bf16-static`, and `avx2-static` under
-`--backend avx2`) and exact mode, whose plan stays `avx512-wide`. Its speed
-is in [PERFORMANCE.md](PERFORMANCE.md#near-exact-prefill-attention). It
-changes near-exact's rounding, so it stays opt-in until
-[near-exact's held-out gate](#near-exacts-held-out-gate) decides.
+17 tokens with `--tune prefill-softmax-fp32=static` in near-exact
+(`avx512-wide-static`, `avx2-static`), fast mode (`bf16-static`, and
+`avx2-static` under `--backend avx2`) and exact mode, whose plan stays
+`avx512-wide`.
 
-## BF16 attention in near-exact mode (experimental)
+Free-running, with the published packed files, otherwise default settings
+and `--max-new-tokens 4096`, the static softmax gives the online softmax's
+tokens on all 104 pages of fast mode's [free-running
+validation](#free-running-validation): the 4 test images with a deep-fried
+copy of 3 of them, the 52 anchor pages and the 45 deep-fried pages
+(`artifacts/near-exact-static-2026-11-03/`). On the 207 fresh pages of
+[near-exact's held-out gate](#near-exacts-held-out-gate) it is
+token-identical to the online softmax on every page. It takes 9.5% off
+the journal page's transformer prefill on the 7700X
+([PERFORMANCE.md](PERFORMANCE.md#near-exact-prefill-attention)).
 
-`--tune prefill-bf16-w16=attention` (both binaries; default `off`) gives
-near-exact's 16-bit body fast mode's BF16 prefill attention
-([above](#int16-projections-and-static-softmax)) with the softmax that
-`--tune prefill-softmax` selects: plan label `bf16-static` by default,
-`bf16` with `online`. It runs exactly where fast mode's does: the `auto`
-backend on CPUs with AVX512-BF16 (the static softmax also needs
-AVX512BW), with `--tune prefill-bf16` on. `--backend avx2`, other CPUs and
-`--tune prefill-bf16=off` keep the FP32 tiles, and exact mode's FP32 body
-never takes it. Only the attention changes: the projections stay
-`panel-avx2`, and the BF16 key and value copies are scratch beside the
-FP32 compact cache that the Q16 cache is sealed from. Under `--escalate`,
-a fast run with the knob rereads its loops with BF16 attention too. On the
-smoke page near-exact with the knob (`bf16-static`) gives the receipt's 17
-tokens ending at EOS.
+## BF16 attention in near-exact mode (rejected)
 
-Teacher-forced on the 7700X anchor
-([table above](#static-softmax-in-the-fp32-tiles-experimental)), it has
-13 flips on 11 of the 52 pages, none of them the step that both FP32
-softmaxes flip, and 127 times the online softmax's KL: per page 29 to
-1,312 times, median 230, and higher on every page. That puts near-exact
-with the knob between its documented fidelity and fast mode's, whose
-default kernels have 66 flips and KL 2.99e-4 on the same anchor
-([above](#teacher-forced-agreement)): a fifth of fast mode's flips and a
-33rd of its KL. It takes 38.5% off near-exact's transformer prefill on the
-journal page ([PERFORMANCE.md](PERFORMANCE.md#near-exact-prefill-attention)).
-It stays opt-in, and [near-exact's held-out gate](#near-exacts-held-out-gate)
-tests it as evidence, not as a default.
+`--tune prefill-bf16-w16=attention` gave near-exact's 16-bit body fast
+mode's BF16 prefill attention ([above](#int16-projections-and-static-softmax))
+with its static softmax (plan label `bf16-static`), where fast mode has it:
+the `auto` backend on CPUs with AVX512-BF16. Only the attention changed;
+the projections stayed `panel-avx2`, and the Q16 cache was still sealed
+from the FP32 compact cache. It failed [near-exact's held-out
+gate](#near-exacts-held-out-gate) and was removed on 2026-11-03; both
+binaries now reject `prefill-bf16-w16` as an unknown `--tune` key.
+
+Teacher-forced on the 7700X anchor, as for the
+[static softmax](#static-softmax-in-the-fp32-tiles) but with `--backend
+auto` in place of `--backend avx2` (which keeps the FP32 tiles), it had 13
+flips on 11 of the 52 pages, none of them the step that both FP32
+softmaxes flip, and KL 9.07e-6, 127 times the online softmax's: per page
+29 to 1,312 times, median 230, and higher on every page. That is a fifth
+of the flips and a 33rd of the KL of fast mode, whose default kernels have
+66 flips and KL 2.99e-4 on the same anchor
+([above](#teacher-forced-agreement)).
+
+Free-running on the same 104 pages as the static softmax, 79 kept the
+online softmax's tokens (6 of the 7 images, 39 of the 52 anchor pages, 34
+of the 45 deep-fried pages). 24 of the other 25 diverge; the 25th,
+`3ae00f1496cda3ff`, ends early only because the BF16 arm's binary had the
+counting rule of the [repetition stop](#loops-and-the-repetition-stop) and
+the online arm's did not (`artifacts/w16-bf16-attn-2026-11-03/free/`). It
+took 38.5% off near-exact's transformer prefill on the journal page, 2.3 s
+more than the static softmax
+([PERFORMANCE.md](PERFORMANCE.md#near-exact-prefill-attention)), and on
+the gate's fresh pages it raised the gated micro CER by 0.503 pt overall
+and by 5.230 pt on slides.
 
 ## Near-exact's held-out gate
 
-`near-exact-softmax-gate-v1` gates both experimental knobs above, each
-against near-exact's defaults with `--max-new-tokens 4096`, on 207
-OmniDocBench pages that no earlier corpus, gate, review or receipt names,
-one per document family; no English page is left, so 191 of them are
-simplified Chinese. Its budget,
+`near-exact-softmax-gate-v1` gated the FP32 tiles' static softmax and BF16
+attention, each against near-exact's defaults of the time (the FP32 tiles
+with the online softmax) with `--max-new-tokens 4096`, on 207 OmniDocBench
+pages that no earlier corpus, gate, review or receipt names, one per
+document family; no English page is left, so 191 of them are simplified
+Chinese. Its budget,
 [reference/near-exact-softmax-gate-v1-budget.json](../reference/near-exact-softmax-gate-v1-budget.json),
 was registered before any arm had output on its pages, with the criteria
-of [fast mode's gate](#held-out-gate) and one verdict per knob. The FP32
-tiles' static softmax becomes near-exact's default if it passes. A pass
-for BF16 attention is evidence only: its agreement changes near-exact's
-documented fidelity, so adopting it is a separate decision.
+of [fast mode's gate](#held-out-gate) and one verdict per candidate: the
+static softmax would become near-exact's default on a pass, and a pass for
+BF16 attention would be evidence only, since its agreement changes
+near-exact's documented fidelity.
+
+The static softmax passed and BF16 attention failed
+([reference/near-exact-softmax-gate-v1-results.json](../reference/near-exact-softmax-gate-v1-results.json)).
+Micro CER on the pages where the reference ends at EOS, and each
+candidate's change:
+
+| Pages | Count | Online softmax (reference) | Static softmax | BF16 attention |
+|---|---:|---:|---:|---:|
+| All | 196 | 33.350% | 0 | +0.503 pt |
+| Exam | 13 | 43.478% | 0 | +0.004 pt |
+| Formulas | 27 | 46.950% | 0 | -0.395 pt |
+| Multi-column | 33 | 28.378% | 0 | -0.160 pt |
+| Ordinary (under 10 pages, not gated) | 9 | 30.346% | 0 | -0.020 pt |
+| Other | 37 | 27.544% | 0 | +1.174 pt |
+| Slides | 37 | 26.752% | 0 | +5.230 pt |
+| Tables | 40 | 24.145% | 0 | +0.905 pt |
+
+The static softmax is token-identical to the reference on all 207 pages,
+so every stop is the reference's. BF16 attention fails three criteria:
++0.503 pt overall against the limit of +0.25, slides and other above the
+per-category limit of +1.0 pt, and the repetition stop's exact rule ends
+two pages where the reference ends at EOS (`de20643911b0421c`, slides;
+`13d47ce2dd0104f2`, other). 151 of its 207 pages are token-identical (145
+of the 196 EOS pages), with 3,012 token edits in the EOS pages' 119,548
+tokens; on one more page, `a150143299bfe79d`, it reaches EOS where the
+reference's repetition stop fires. The verdicts stand as registered: the
+static softmax became near-exact's default, and the BF16 attention knob
+was removed ([above](#bf16-attention-in-near-exact-mode-rejected)).
+
+The gate spent its 207 pages and their document families. By its budget's
+page record, 60 eligible families stay fresh, 54 of them tables and 6
+other, and none is English, so a later gate on OmniDocBench has only
+those, and an English gate needs pages from another source.
+
+The gate's binary has the counting rule of the [repetition
+stop](#loops-and-the-repetition-stop) at 32 cycles. Replayed through the
+current 64-cycle rule, its 621 outputs change one stop: page
+`8e6267854fcec66c`, which the reference and the static softmax ended by
+the counting rule after 431 tokens (53 cycles), would continue. The
+reference does not end that page at EOS, so it lies outside the gated
+scope, and neither verdict depends on the threshold
+(`artifacts/near-exact-softmax-gate-v1/probe-64-cycles.txt`).
 
 ## Fast mode's held-out result
 
@@ -511,14 +573,15 @@ Source: `reference/english-gate-v1-masked-results.json`.
 ## Fast against near-exact
 
 Near-exact (the default) produced exactly FP32's tokens on all 118 English
-gate pages (110,516 tokens, figure-masked, default settings), so on printed
-English fast mode's cost is its difference from FP32: 93 of the 118 pages
-token-identical; half of the other 25 differ by at most 6 characters (a
-fifth only in whitespace, quotes or markdown); 112 pages within 0.5 pt of
-the near-exact CER against the ground truth, 3 worse and 3 better (2 each by
-more than 2 pt, tiny-print pages where one early token changes the rest);
--0.11 pt overall; no loops. For about 1.7× the speed that is no measurable
-loss on printed English.
+gate pages (110,516 tokens, figure-masked, the default settings of the
+time, with the online softmax), so on printed English fast mode's cost is
+its difference from FP32: 93 of the 118 pages token-identical; half of the
+other 25 differ by at most 6 characters (a fifth only in whitespace,
+quotes or markdown); 112 pages within 0.5 pt of the near-exact CER against
+the ground truth, 3 worse and 3 better (2 each by more than 2 pt,
+tiny-print pages where one early token changes the rest); -0.11 pt
+overall; no loops. For about 1.7× the speed that is no measurable loss on
+printed English.
 
 The cost shows on hard pages: on the held-out set's handwriting and
 degraded scans (all Chinese, which the model reads poorly even in FP32),

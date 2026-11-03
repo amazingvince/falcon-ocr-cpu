@@ -18,20 +18,20 @@ work, followed by research proposals.
   machine can remake them.
 - **The 55-page anchor.** The Ryzen 7 7700X agreement numbers in
   [MODES.md](MODES.md#the-metric) (exception columns, rotated caches, fast
-  mode's prefill kernels, the FP32 tiles' static softmax, near-exact's BF16
-  attention) are on that host's 52-page anchor, so they compare arms with
-  each other. Scored against upstream's
-  `artifacts/phase4/checks/calibration-reference.json`
+  mode's prefill kernels, near-exact's static softmax) are on that host's
+  52-page anchor, so they compare arms with each other. Scored against
+  upstream's `artifacts/phase4/checks/calibration-reference.json`
   ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
-  give 24,262-step numbers comparable with the modes table.
+  give 24,262-step numbers comparable with the modes table, whose
+  near-exact row predates the static softmax.
 - **Default qualification.** Held-out gates decide defaults that change
   tokens: margin cropping for books, `--max-dimension 1280`, a rotated
-  cache and exception columns. For near-exact, the registered
-  [near-exact-softmax-gate-v1](MODES.md#near-exacts-held-out-gate) gates
-  the FP32 tiles' static softmax (`--tune prefill-softmax-fp32=static`),
-  which becomes the default if it passes, and, as evidence only, BF16
-  prefill attention (`--tune prefill-bf16-w16=attention`). The gate method
-  is in [MODES.md](MODES.md#the-metric).
+  cache and exception columns. The gate method is in
+  [MODES.md](MODES.md#the-metric). Fresh pages are nearly spent: after
+  [near-exact's gate](MODES.md#near-exacts-held-out-gate), 60
+  OmniDocBench document families stay fresh (tables 54, other 6), none of
+  them English, so a gate on any other category or on English pages needs
+  pages from another source.
 - **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
   timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were
   measured on one Linux desktop; no aarch64 machine has run the model with
