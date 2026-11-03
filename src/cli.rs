@@ -82,10 +82,12 @@ pub struct RunnerArgs {
     /// default) or `exact` (the platform expf, which traces use).
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
-    /// Experiment knobs as `key=value`, repeatable: `prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`, `draft-backoff=N`,
-    /// `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path` and
-    /// `decode-exp=exact|fast` (docs/DEVELOPMENT.md).
+    /// Experiment knobs as `key=value`, repeatable:
+    /// `prefill-bf16=off|attention|all`, `prefill-i16=true|false`,
+    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`,
+    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,
+    /// `draft-gate=token|path` and `decode-exp=exact|fast`
+    /// (docs/DEVELOPMENT.md).
     #[arg(long = "tune", value_name = "KEY=VALUE", hide = true, global = true)]
     pub tune: Vec<String>,
 }

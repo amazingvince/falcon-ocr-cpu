@@ -300,6 +300,8 @@ pub(crate) struct Scratch {
     pub dense: Vec<f32>,
     #[cfg(target_arch = "x86_64")]
     pub bf16: crate::kernels::panel_bf16::Panels,
+    #[cfg(target_arch = "x86_64")]
+    pub i16: crate::kernels::panel_i16::Panels,
 }
 impl QuantLinear {
     /// Import the exact custom W8G64 encoding, not GGML Q8_0/Q8_K.
@@ -614,10 +616,11 @@ impl QuantLinear {
 
     /// Prefill product through `kernels::panel_gemm` with a folded row scale
     /// (RMS norm) and a fused epilogue (store, gate or residual add). The
-    /// caller checks `panel_gemm` first. With `bf16_projections`, 8-bit
-    /// matrices use the BF16 panels where the CPU has AVX512-BF16, except a
-    /// matrix with exception columns: BF16 panels hold only the codes, so it
-    /// keeps the FP32 panels (its FP32 weights at its exception columns).
+    /// caller checks `panel_gemm` first. With `kernel` set to the BF16 or
+    /// INT16 panels (`kernels::prefill_plan`), 8-bit matrices with group size
+    /// 64 use them, except a matrix with exception columns: those panels hold
+    /// only the codes, so it keeps the FP32 panels (its FP32 weights at its
+    /// exception columns).
     pub(crate) fn prefill(
         &self,
         input: &[f32],
@@ -625,18 +628,46 @@ impl QuantLinear {
         row_scale: Option<&[f32]>,
         epilogue: crate::kernels::panel_gemm::Epilogue<'_>,
         scratch: &mut Scratch,
-        bf16_projections: bool,
+        kernel: crate::kernels::PrefillProjection,
     ) {
         use crate::kernels::panel_gemm;
         assert_eq!(input.len(), rows * self.in_dim, "prefill input shape");
         #[cfg(target_arch = "x86_64")]
         {
-            use crate::kernels::panel_bf16;
+            use crate::kernels::{PrefillProjection, panel_bf16, panel_i16};
+            let isa = match kernel {
+                PrefillProjection::PanelI16Vnni => Some(panel_i16::Isa::Vnni),
+                PrefillProjection::PanelI16Avx2 => Some(panel_i16::Isa::Avx2),
+                _ => None,
+            };
+            if let Codes::I8(codes) = &self.codes
+                && let Some(isa) = isa
+                && self.group_size == 64
+                && self.out_dim.is_multiple_of(panel_i16::NR)
+                && self.in_dim.is_multiple_of(64)
+                && self.exceptions.is_none()
+                && isa.available()
+            {
+                // Exact INT32 group sums of INT16 activations and 8-bit
+                // codes; only the activations round (see `panel_i16`).
+                panel_i16::pack::<{ panel_i16::NR }>(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.i16);
+                panel_i16::gemm::<{ panel_i16::NR }>(
+                    isa,
+                    input,
+                    rows,
+                    self.in_dim,
+                    &scratch.i16,
+                    self.out_dim,
+                    row_scale,
+                    epilogue,
+                );
+                return;
+            }
             if let Codes::I8(codes) = &self.codes
                 && self.group_size == 64
                 && self.out_dim.is_multiple_of(panel_bf16::NR)
                 && self.exceptions.is_none()
-                && bf16_projections
+                && kernel == PrefillProjection::PanelBf16
                 && panel_bf16::available()
             {
                 // 8-bit codes are exact in BF16: `vdpbf16ps` doubles FMA
@@ -655,7 +686,7 @@ impl QuantLinear {
             }
         }
         #[cfg(not(target_arch = "x86_64"))]
-        let _ = bf16_projections;
+        let _ = kernel;
         panel_gemm::pack_panels(
             self.out_dim,
             self.in_dim,

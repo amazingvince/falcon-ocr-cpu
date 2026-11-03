@@ -614,20 +614,52 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
 
 #[test]
 fn exception_columns_keep_fp32_projection_panels() {
-    use crate::config::PrefillBf16;
+    use crate::config::{PrefillBf16, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
             for setting in [PrefillBf16::Off, PrefillBf16::Attention, PrefillBf16::All] {
-                let (plain, exceptions) = (
-                    prefill_plan(bits, false, simd, setting),
-                    prefill_plan(bits, true, simd, setting),
-                );
-                assert_eq!(exceptions.attention, plain.attention, "{simd:?} {bits:?} {setting:?}");
-                let expected = match plain.projection {
-                    PrefillProjection::PanelBf16 => PrefillProjection::PanelAvx2,
-                    other => other,
-                };
-                assert_eq!(exceptions.projection, expected, "{simd:?} {bits:?} {setting:?}");
+                for prefill_i16 in [false, true] {
+                    let tuning = Tuning {
+                        prefill_bf16: setting,
+                        prefill_i16,
+                        ..Tuning::default()
+                    };
+                    let case = format!("{simd:?} {bits:?} {setting:?} i16 {prefill_i16}");
+                    let (plain, exceptions) = (
+                        prefill_plan(bits, false, simd, &tuning),
+                        prefill_plan(bits, true, simd, &tuning),
+                    );
+                    assert_eq!(exceptions.attention, plain.attention, "{case}");
+                    let expected = match plain.projection {
+                        PrefillProjection::PanelBf16
+                        | PrefillProjection::PanelI16Vnni
+                        | PrefillProjection::PanelI16Avx2 => PrefillProjection::PanelAvx2,
+                        other => other,
+                    };
+                    assert_eq!(exceptions.projection, expected, "{case}");
+                    // INT16 projections only for 8-bit bodies that ask for
+                    // them; attention never depends on the knob.
+                    let i16 = matches!(
+                        plain.projection,
+                        PrefillProjection::PanelI16Vnni | PrefillProjection::PanelI16Avx2
+                    );
+                    assert!(!i16 || (prefill_i16 && bits == Some(8)), "{case}");
+                    let without = Tuning {
+                        prefill_i16: false,
+                        ..tuning
+                    };
+                    assert_eq!(prefill_plan(bits, false, simd, &without).attention, plain.attention);
+                    #[cfg(target_arch = "x86_64")]
+                    if prefill_i16 && bits == Some(8) && panel_gemm::available(simd) {
+                        let vnni = simd == Simd::Auto && panel_i16::Isa::Vnni.available();
+                        let expected = if vnni {
+                            PrefillProjection::PanelI16Vnni
+                        } else {
+                            PrefillProjection::PanelI16Avx2
+                        };
+                        assert_eq!(plain.projection, expected, "{case}");
+                    }
+                }
             }
         }
     }

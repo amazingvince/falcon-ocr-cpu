@@ -1,5 +1,5 @@
 //! The row-block / panel-split scheduler and the tile epilogue shared by the
-//! FP32 and BF16 panel GEMMs. Scheduling never changes arithmetic:
+//! FP32, BF16 and INT16 panel GEMMs. Scheduling never changes arithmetic:
 //! every output is one fixed sequence over ascending `k` inside the
 //! micro-kernel, and row packing is per row, so results are independent of
 //! the thread count and the split.

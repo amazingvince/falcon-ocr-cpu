@@ -23,6 +23,8 @@ pub(crate) use exp as vexp;
 pub(crate) use panels::panel as panel_gemm;
 #[cfg(target_arch = "x86_64")]
 pub(crate) use panels::panel_bf16;
+#[cfg(target_arch = "x86_64")]
+pub(crate) use panels::panel_i16;
 
 /// Prefill attention stage split (`Tuning::prefill_profile`); a no-op unless
 /// `enabled`.
@@ -60,6 +62,11 @@ pub enum PrefillProjection {
     PanelAvx2,
     /// Quantized codes into BF16 panels, AVX512-BF16 dot products.
     PanelBf16,
+    /// 8-bit codes into INT16 panels, INT16 activations, AVX512-VNNI
+    /// (`panel_i16`).
+    PanelI16Vnni,
+    /// The INT16 panels on AVX2, bitwise the same as `PanelI16Vnni`.
+    PanelI16Avx2,
 }
 
 /// Prefill attention kernel.
@@ -89,6 +96,8 @@ impl std::fmt::Display for PrefillProjection {
             Self::GemmF32 => "gemm-f32",
             Self::PanelAvx2 => "panel-avx2",
             Self::PanelBf16 => "panel-bf16",
+            Self::PanelI16Vnni => "panel-i16-vnni",
+            Self::PanelI16Avx2 => "panel-i16-avx2",
         })
     }
 }
@@ -107,26 +116,32 @@ impl std::fmt::Display for PrefillAttention {
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
 /// for FP32), with or without W8 `exceptions` columns, on this CPU with the
-/// `simd` backend: the single predicate set behind `Model::forward_layers`
-/// and `auto::Resolved`. Only the `auto` backend takes the AVX-512 paths
-/// (wide FP32 tiles, BF16 for 8-bit bodies); `avx2` is 8-lane FP32
+/// `simd` backend and the `tuning` knobs `prefill_bf16` and `prefill_i16`:
+/// the single predicate set behind `Model::forward_layers` and
+/// `auto::Resolved`. Only the `auto` backend takes the AVX-512 paths (wide
+/// FP32 tiles, BF16 and VNNI for 8-bit bodies); `avx2` is 8-lane
 /// throughout. Traces, linear-input captures and prefills of at most 8 rows
 /// take the FP32 path regardless.
 pub fn prefill_plan(
     body_bits: Option<u32>,
     exceptions: bool,
     simd: Simd,
-    prefill_bf16: crate::config::PrefillBf16,
+    tuning: &crate::config::Tuning,
 ) -> PrefillPlan {
     use crate::config::PrefillBf16;
+    let prefill_bf16 = tuning.prefill_bf16;
     let panel = body_bits.is_some() && panel_gemm::available(simd);
     // 8-bit bodies (fast mode) also run prefill attention, and with
     // `prefill_bf16 = All` the projections, in BF16 where the CPU has
-    // AVX512-BF16 (`attention_prefill_bf16`). BF16 panels hold codes only,
-    // so a body with exception columns keeps FP32 projection panels.
+    // AVX512-BF16 (`attention_prefill_bf16`). BF16 and INT16 panels hold
+    // codes only, so a body with exception columns keeps FP32 projection
+    // panels.
     let eight_bit = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
+    let i16 = panel && body_bits == Some(8) && !exceptions && tuning.prefill_i16;
     let projection = if !panel {
         PrefillProjection::GemmF32
+    } else if i16 && let Some(isa) = i16_projection(simd) {
+        isa
     } else if eight_bit && !exceptions && prefill_bf16 == PrefillBf16::All {
         PrefillProjection::PanelBf16
     } else {
@@ -145,6 +160,28 @@ pub fn prefill_plan(
         }
     };
     PrefillPlan { projection, attention }
+}
+
+/// The INT16 projection kernel for backend `simd` on this CPU: VNNI for
+/// `auto` where AVX512-VNNI exists, else AVX2; `None` without AVX2 (and off
+/// x86).
+fn i16_projection(simd: Simd) -> Option<PrefillProjection> {
+    #[cfg(target_arch = "x86_64")]
+    {
+        use panel_i16::Isa;
+        if simd == Simd::Auto && Isa::Vnni.available() {
+            Some(PrefillProjection::PanelI16Vnni)
+        } else if simd.resolved() == Simd::Avx2 && Isa::Avx2.available() {
+            Some(PrefillProjection::PanelI16Avx2)
+        } else {
+            None
+        }
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        let _ = simd;
+        None
+    }
 }
 
 /// Vector implementation used for small-batch GEMV and attention. GEMM has its own dispatch.

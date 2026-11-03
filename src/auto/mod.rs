@@ -663,12 +663,7 @@ impl Resolved {
             overlay_sha256: facts.overlay_sha256.clone(),
             tokenizer_dir: tokenizer_dir.to_path_buf(),
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
-            prefill: crate::kernels::prefill_plan(
-                facts.body_bits,
-                facts.exception_bytes > 0,
-                simd,
-                config.tuning.prefill_bf16,
-            ),
+            prefill: crate::kernels::prefill_plan(facts.body_bits, facts.exception_bytes > 0, simd, &config.tuning),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,

@@ -6,13 +6,13 @@
 //! thread count, while the partitions (row blocks, panel splits, records)
 //! change with it. This runs the product's stages of one layer, at a page's
 //! row count (at least `PARALLEL_ROWS`, so the row-parallel and fused passes
-//! run), for W8 with FP32 and BF16 panels and for W16, and compares every
-//! output bit for bit: the QKV projection with the RMS norm folded into row
-//! scales, the rotary factors, the fused QKV pass with its BF16 attention
-//! copies, prefill attention (FP32 and BF16), the output projection and FFN
-//! (residual adds and the gate in the epilogues), sealing in every split
-//! format (the rotated research ones too), and the unfused split with its
-//! residual add.
+//! run), for W8 with FP32, BF16 and INT16 panels and for W16, and compares
+//! every output bit for bit: the QKV projection with the RMS norm folded
+//! into row scales, the rotary factors, the fused QKV pass with its BF16
+//! attention copies, prefill attention (FP32 and BF16), the output
+//! projection and FFN (residual adds and the gate in the epilogues), sealing
+//! in every split format (the rotated research ones too), and the unfused
+//! split with its residual add.
 //! `kernels::tests::prefill_kernels_are_bitwise_independent_of_the_pool_size`
 //! covers the FP32 projections, attention, norms and first-token heads.
 use std::sync::Arc;
@@ -26,7 +26,7 @@ use super::{
 };
 use crate::{
     config::{CacheLayout, ExpMode, ModelConfig, Tuning},
-    kernels::{self, Bf16Kv, Geometry, PrefillOptions, Simd},
+    kernels::{self, Bf16Kv, Geometry, PrefillOptions, PrefillProjection as Projection, Simd},
     quant::{Kv, linear::QuantLinear},
 };
 
@@ -105,8 +105,14 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         exp: ExpMode::Fast,
         profile: false,
     };
-    // BF16 panels and attention copies where the CPU has AVX512-BF16.
+    // BF16 panels and attention copies where the CPU has AVX512-BF16, and
+    // the INT16 panels where the plan has them.
     let bf16 = kernels::prefill_bf16_rows_available();
+    let i16 = Tuning {
+        prefill_i16: true,
+        ..Tuning::default()
+    };
+    let i16 = kernels::prefill_plan(Some(8), false, Simd::Auto, &i16).projection;
     let bodies = [(8, layer(&c, 8)), (16, layer(&c, 16))];
     let session = || {
         Session::new(
@@ -127,16 +133,23 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         pool.install(|| {
             let mut out = Vec::new();
             for (bits_per_code, layer) in &bodies {
-                for panels_bf16 in [false, true] {
-                    if panels_bf16 && (*bits_per_code != 8 || !bf16) {
+                let code_only = [
+                    bf16.then_some(Projection::PanelBf16),
+                    (i16 != Projection::PanelAvx2).then_some(i16),
+                ];
+                for kernel in std::iter::once(Projection::PanelAvx2).chain(code_only.into_iter().flatten()) {
+                    if kernel != Projection::PanelAvx2 && *bits_per_code != 8 {
                         continue;
                     }
-                    let body = format!("W{bits_per_code}{}", if panels_bf16 { " BF16 panels" } else { "" });
+                    let body = match kernel {
+                        Projection::PanelAvx2 => format!("W{bits_per_code}"),
+                        _ => format!("W{bits_per_code} {kernel}"),
+                    };
                     let mut push = |stage: &str, value: Vec<u32>| out.push((format!("{body}: {stage}"), value));
                     let mut work = Workspace::default();
                     work.resize(rows, &c);
                     let mut h = hidden.clone();
-                    panel_qkv(&c, layer, &h, rows, &mut work, panels_bf16);
+                    panel_qkv(&c, layer, &h, rows, &mut work, kernel);
                     push("QKV projection", bits(&work.qkv));
                     rotary_factors(&c, &t, &hw, &golden, &temporal, &mut work.rope);
                     push(
@@ -200,7 +213,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                         &mut h,
                         rows,
                         &mut work,
-                        panels_bf16,
+                        kernel,
                         &mut PhaseClock::new(rows, false),
                     );
                     push("gated FFN", bits(&work.gated));
@@ -243,11 +256,17 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         })
     };
     let single = run(1);
-    // The BF16 stages ran where the CPU has them: their outputs are not
-    // the FP32 ones.
+    // The BF16 and INT16 stages ran where the CPU has them: their outputs
+    // are not the FP32 ones.
     let output = |stage: &str| &single.iter().find(|(name, _)| name == stage).expect(stage).1;
+    if i16 != Projection::PanelAvx2 {
+        assert_ne!(
+            output("W8: QKV projection"),
+            output(&format!("W8 {i16}: QKV projection"))
+        );
+    }
     if bf16 {
-        assert_ne!(output("W8: QKV projection"), output("W8 BF16 panels: QKV projection"));
+        assert_ne!(output("W8: QKV projection"), output("W8 panel-bf16: QKV projection"));
         assert_ne!(output("W8: attention"), output("W8: BF16 attention"));
     }
     for threads in [2, 3, 7] {

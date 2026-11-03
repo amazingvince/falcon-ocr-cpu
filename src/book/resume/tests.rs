@@ -434,6 +434,8 @@ fn a_resume_with_other_runner_choices_warns() {
         (plan(true, "fast", "bf16", "panel-avx2"), "BF16 attention"),
         (plan(true, "fast", "neon", "panel-avx2"), "neon attention"),
         (plan(true, "fast", "avx2", "panel-bf16"), "BF16 projections"),
+        (plan(true, "fast", "avx2", "panel-i16-vnni"), "INT16 projections"),
+        (plan(true, "fast", "avx2", "panel-i16-avx2"), "INT16 projections"),
         (pinned, "--tune decode-exp=fast"),
     ] {
         let warning = run(other).unwrap();
@@ -466,7 +468,7 @@ fn a_resume_with_other_runner_choices_warns() {
         )
     };
     for attention in ["avx2", "avx512-wide", "bf16"] {
-        for projection in ["panel-avx2", "panel-bf16"] {
+        for projection in ["panel-avx2", "panel-bf16", "panel-i16-vnni", "panel-i16-avx2"] {
             assert_eq!(
                 resume_warning(&existing, &resumed(plan(true, "fast", attention, projection))),
                 None

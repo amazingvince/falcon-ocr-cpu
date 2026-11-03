@@ -12,7 +12,7 @@ use memmap2::Mmap;
 use crate::{
     config::{ModelConfig, WeightLayout},
     head_screen::Screened,
-    kernels::{self, Bf16Kv},
+    kernels::{self, Bf16Kv, PrefillProjection as Projection},
     packed_kernels::PhasePackedLinear,
     trace::Trace,
 };
@@ -589,10 +589,9 @@ impl Model {
         // operations as the separate passes.
         // `kernels::prefill_plan` is the one place that decides which prefill
         // kernels a body and CPU get (`auto::Resolved` reports the same plan).
-        let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, tuning.prefill_bf16);
+        let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, &tuning);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
         let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;
-        let bf16_projections = panel && plan.projection == kernels::PrefillProjection::PanelBf16;
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             let step = LayerStep {
@@ -602,7 +601,7 @@ impl Model {
                 capture,
             };
             if panel {
-                panel_qkv(c, layer, h, rows, work, bf16_projections);
+                panel_qkv(c, layer, h, rows, work, plan.projection);
             } else {
                 self.project_qkv(layer, h, rows, work, &step, trace)?;
             }
@@ -672,7 +671,7 @@ impl Model {
                 trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
             if panel {
-                panel_out_ffn(c, layer, h, rows, work, bf16_projections, &mut clock);
+                panel_out_ffn(c, layer, h, rows, work, plan.projection, &mut clock);
             } else {
                 self.attention_out_ffn(layer, h, rows, work, &step, trace, &mut clock)?;
             }
@@ -954,7 +953,7 @@ fn quantized(w: &Weight) -> &crate::quant::linear::QuantLinear {
 /// Panel-GEMM QKV projection of a quantized body: the RMS norm folds into
 /// the row scales, with the same per-element operations as the separate
 /// passes.
-fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut cache::Workspace, bf16: bool) {
+fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut cache::Workspace, kernel: Projection) {
     row_scales(h, c.dim, &mut work.row_scale);
     quantized(&layer.qkv).prefill(
         h,
@@ -962,7 +961,7 @@ fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut 
         Some(&work.row_scale),
         kernels::panel_gemm::Epilogue::Store(&mut work.qkv),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
 }
 
@@ -974,7 +973,7 @@ fn panel_out_ffn(
     h: &mut [f32],
     rows: usize,
     work: &mut cache::Workspace,
-    bf16: bool,
+    kernel: Projection,
     clock: &mut PhaseClock,
 ) {
     quantized(&layer.wo).prefill(
@@ -983,7 +982,7 @@ fn panel_out_ffn(
         None,
         kernels::panel_gemm::Epilogue::Add(h),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
     clock.mark(5);
     row_scales(h, c.dim, &mut work.row_scale);
@@ -993,7 +992,7 @@ fn panel_out_ffn(
         Some(&work.row_scale),
         kernels::panel_gemm::Epilogue::Glu(&mut work.gated),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
     clock.mark(6);
     quantized(&layer.w2).prefill(
@@ -1002,7 +1001,7 @@ fn panel_out_ffn(
         None,
         kernels::panel_gemm::Epilogue::Add(h),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
     clock.mark(7);
 }

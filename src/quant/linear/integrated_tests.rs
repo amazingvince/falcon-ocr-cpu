@@ -293,24 +293,37 @@ fn exception_large_m_and_prefill_use_the_exact_weights() {
             let mut panel = vec![f32::NAN; rows * n];
             q.linear(&x, rows, &mut panel, &mut Scratch::default(), Simd::Auto)
                 .unwrap();
-            let (mut fp32, mut bf16) = (vec![f32::NAN; rows * n], vec![f32::NAN; rows * n]);
+            use crate::kernels::PrefillProjection;
+            let mut fp32 = vec![f32::NAN; rows * n];
             q.prefill(
                 &x,
                 rows,
                 None,
                 Epilogue::Store(&mut fp32),
                 &mut Scratch::default(),
-                false,
+                PrefillProjection::PanelAvx2,
             );
-            q.prefill(
-                &x,
-                rows,
-                None,
-                Epilogue::Store(&mut bf16),
-                &mut Scratch::default(),
-                true,
-            );
-            assert!(bf16.iter().zip(&fp32).all(|(a, b)| a.to_bits() == b.to_bits()));
+            // Requests for the code-only BF16 and INT16 panels keep the FP32
+            // panels for a matrix with exception columns.
+            for kernel in [
+                PrefillProjection::PanelBf16,
+                PrefillProjection::PanelI16Vnni,
+                PrefillProjection::PanelI16Avx2,
+            ] {
+                let mut other = vec![f32::NAN; rows * n];
+                q.prefill(
+                    &x,
+                    rows,
+                    None,
+                    Epilogue::Store(&mut other),
+                    &mut Scratch::default(),
+                    kernel,
+                );
+                assert!(
+                    other.iter().zip(&fp32).all(|(a, b)| a.to_bits() == b.to_bits()),
+                    "{kernel}"
+                );
+            }
             for (r, c) in (0..rows).flat_map(|r| (0..n).map(move |c| (r, c))) {
                 let products: Vec<f64> = (0..k).map(|j| x[r * k + j] as f64 * exact[c * k + j] as f64).collect();
                 let sum: f64 = products.iter().sum();

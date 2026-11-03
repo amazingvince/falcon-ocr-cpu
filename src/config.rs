@@ -97,12 +97,17 @@ pub enum DraftKv {
 
 /// Experiment and diagnostic knobs. The defaults are the accepted
 /// configuration; every field is scheduling or instrumentation only, except
-/// `prefill_bf16`, which changes fast-mode prefill rounding.
+/// `prefill_bf16` and `prefill_i16`, which change fast-mode prefill rounding.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
     /// BF16 prefill stages of 8-bit models on AVX512-BF16 CPUs.
     pub prefill_bf16: PrefillBf16,
+    /// Prefill projections of 8-bit models with INT16 activations (one step
+    /// per row and 64 inputs) on x86 CPUs with AVX2: AVX512-VNNI where the
+    /// `auto` backend has it, bitwise the same AVX2 kernel otherwise. Takes
+    /// precedence over `prefill_bf16 = All` for the projections.
+    pub prefill_i16: bool,
     /// Position chunks per KV group in split-cache decode attention (1..=4).
     /// `None` keeps the mode default: one exact scan for FP32 caches, four
     /// chunks (merged partial softmaxes, rounding-level) for quantized ones.
@@ -132,7 +137,7 @@ pub struct Tuning {
 }
 impl Tuning {
     /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
+    /// `prefill-i16=true|false`, `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
     /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`,
     /// `decode-exp=exact|fast`).
     pub fn set(&mut self, pair: &str) -> Result<()> {
@@ -155,6 +160,7 @@ impl Tuning {
                     _ => bail!("tuning knob prefill-bf16: expected off, attention or all, got `{value}`"),
                 }
             }
+            "prefill-i16" => self.prefill_i16 = flag(value)?,
             "split-chunks" => {
                 let chunks: usize = value
                     .parse()
@@ -199,8 +205,8 @@ impl Tuning {
                 }
             }
             _ => bail!(
-                "unknown tuning knob `{key}` (prefill-bf16, split-chunks, phases, prefill-profile, draft-backoff, \
-                 draft-window, draft-kv, draft-gate, decode-exp)"
+                "unknown tuning knob `{key}` (prefill-bf16, prefill-i16, split-chunks, phases, prefill-profile, \
+                 draft-backoff, draft-window, draft-kv, draft-gate, decode-exp)"
             ),
         }
         Ok(())
@@ -721,6 +727,7 @@ mod tests {
     fn tuning_knobs_parse_and_reject_unknown_keys() {
         let tuning = Tuning::from_pairs([
             "prefill-bf16=all",
+            "prefill-i16=on",
             "split-chunks=3",
             "phases=1",
             "draft-window=256",
@@ -733,6 +740,7 @@ mod tests {
         assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
         assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::All);
+        assert!(tuning.prefill_i16);
         assert_eq!(tuning.split_chunks, Some(3));
         assert!(tuning.phases && !tuning.prefill_profile);
         assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
