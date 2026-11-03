@@ -65,13 +65,19 @@ the platform-dependent math; the token-parity gates are separate checks.
   domain, the split cache against the compact kernel over its decoded values
   at one position chunk (rotated caches with the rotation as the only pre-
   and post-transform).
-  A fast path without such a test does not ship. The prefill stages are also
-  compared bitwise across pool sizes (`model::pool_tests`, `kernels::tests`),
-  which the page pipeline's second pool relies on. The AVX-512 oracles (the
-  16-lane prefill tiles, the BF16 attention and its static softmax, the
-  INT16 VNNI panels, the verification rows under `auto`) return early, or
-  drop their AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted
-  CI runners included; the ignored
+  A fast path without such a test does not ship. The FP32 tiles' static
+  softmax keeps no reference order, so its 8- and 16-lane tiles are
+  compared with a scalar oracle of their own
+  (`kernels::attention::prefill64::static_shift::tests`), and
+  `kernels::tests::fp32_static_softmax_is_opt_in_and_never_exact` checks
+  that only its knob plans it and never for an FP32 body. The prefill
+  stages are also compared bitwise across pool sizes (`model::pool_tests`,
+  `kernels::tests`), which the page pipeline's second pool relies on. The
+  AVX-512 oracles (the 16-lane prefill tiles with either softmax, the BF16
+  attention and its static softmax, the INT16 VNNI panels, the
+  verification rows under `auto`) return early, or drop their AVX-512 arm,
+  on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted CI runners included;
+  the ignored
   `kernels::tests::host_runs_every_avx512_kernel` fails on such a CPU
   ([the `weights` job](#the-weights-ci-job) runs it).
   The ignored tokenizer-decode and RoPE checks additionally need
@@ -393,8 +399,12 @@ activations in fast mode's prefill projections, default `i16`; see
 [MODES.md](MODES.md#int16-projections-and-static-softmax)),
 `prefill-softmax=online|static` (the online softmax or the static one
 without running maximum in fast mode's BF16 prefill attention, default
-`static`; same section), `split-chunks=1..4` (position chunks of the split
-cache scan), `decode-exp=exact|fast` (the exp of decode attention over
+`static`; same section), `prefill-softmax-fp32=online|static` (the same
+choice in the FP32 prefill tiles of 16- and 8-bit bodies on x86, default
+`online`; see
+[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental)),
+`split-chunks=1..4` (position chunks of the split cache scan),
+`decode-exp=exact|fast` (the exp of decode attention over
 split caches; pin it when comparing caches, see
 [MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase
 split of forwards on stderr), `prefill-profile=1` (prefill attention stage

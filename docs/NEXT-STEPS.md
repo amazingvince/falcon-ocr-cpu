@@ -23,9 +23,11 @@ work, followed by research proposals.
   ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
   give 24,262-step numbers comparable with the modes table.
 - **Default qualification.** Held-out gates decide defaults that change
-  tokens: margin cropping for books, `--max-dimension 1280`, a rotated cache
-  and exception columns. The gate method is in
-  [MODES.md](MODES.md#the-metric).
+  tokens: margin cropping for books, `--max-dimension 1280`, a rotated
+  cache, exception columns and, for near-exact, the FP32 tiles' static
+  softmax (`--tune prefill-softmax-fp32=static`,
+  [MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental)).
+  The gate method is in [MODES.md](MODES.md#the-metric).
 - **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
   timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were
   measured on one Linux desktop; no aarch64 machine has run the model with

@@ -349,6 +349,52 @@ the counting rule of the
 [repetition stop](#loops-and-the-repetition-stop), which ends none of the
 gate's 312 outputs (both arms) when they are replayed through it.
 
+## Static softmax in the FP32 tiles (experimental)
+
+`--tune prefill-softmax-fp32=static` (both binaries; default `online`)
+gives the FP32 prefill tiles the static softmax of fast mode's BF16
+attention ([above](#int16-projections-and-static-softmax)), on the same
+bound: every score lies in [-8, 8], so `exp(score)` needs no running
+maximum. It applies to 16- and 8-bit bodies on x86 CPUs with AVX2 and FMA:
+near-exact's prefill attention, and fast mode's where that runs in FP32
+(`--backend avx2`, CPUs without AVX512-BF16, `--tune prefill-bf16=off`).
+Exact mode, aarch64 and `--backend scalar` keep the online softmax. The
+plan names the kernel `avx512-wide-static`, or `avx2-static` under
+`--backend avx2` and on CPUs without AVX-512F; the two agree bit for bit.
+It is a knob of its own because `prefill-softmax` defaults to `static` for
+fast mode's BF16 attention and would otherwise move those FP32-attention
+fast runs too. The kernel is in
+[ARCHITECTURE.md](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa).
+It is not bitwise the online softmax: it always evaluates the polynomial
+exp of `--exp fast` (the automatic configuration's), and on the score
+itself, where the online softmax takes the rounded `score - max`.
+
+Agreement is on the 7700X anchor ([The metric](#the-metric)): 22,726
+steps, `falcon-ocr-eval --exp fast --backend avx2 --threads 16 --profile
+w16-body-kv-q16`, `agree --max-steps 512` and `--reference-topk`; the
+online row is the near-exact result quoted there.
+
+| Near-exact, FP32 softmax | Flips | KL against FP32 |
+|---|---:|---:|
+| Online (the default) | 1 | 7.15e-8 |
+| Static | 1 | 7.24e-8 |
+
+Both flip the same step (step 329 of page `40408ccf4389cd81`, to the same
+token) and no other. KL rises 1.3%; per page the static softmax's KL is
+0.90 to 1.53 times the online one's, median 1.00, and lower on 29 of the
+52 pages. On the `auto` backend (`avx512-wide`, `avx512-wide-static`),
+pages `705b5079f112131e` and `40408ccf4389cd81` give each softmax the same
+per-page flips and KL as `--backend avx2`, as the bitwise equal tile widths
+require. Tokens held: on the journal page the static softmax gives
+near-exact's 1,140 tokens ending at EOS on either tile width, and the
+smoke page gives the receipt's 17 tokens with the knob in near-exact
+(`avx512-wide-static`, `avx2-static`), fast mode (`bf16-static`, and
+`avx2-static` under `--backend avx2`) and exact mode, whose plan stays
+`avx512-wide`. Its speed is in
+[PERFORMANCE.md](PERFORMANCE.md#static-softmax-in-the-fp32-tiles). It
+changes near-exact's rounding, so it stays opt-in until a held-out gate in
+near-exact mode decides ([NEXT-STEPS.md](NEXT-STEPS.md#still-open)).
+
 ## Fast mode's held-out result
 
 Fast mode is not qualified for handwritten or degraded pages; use

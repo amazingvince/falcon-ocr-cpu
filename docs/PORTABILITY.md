@@ -76,6 +76,7 @@ always uses the polynomial exp.
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
+| Static-shift softmax of those tiles (`prefill64/static_shift.rs`, opt-in; 16- and 8-bit bodies) | prefill | 8-lane tiles | 16-lane tiles (AVX-512F), bitwise | - | - |
 | BF16 prefill attention (`prefill64/bf16.rs`, fast mode) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
 | INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
@@ -98,6 +99,10 @@ mode's static softmax needs AVX512-BF16 and AVX512BW; a CPU with
 AVX512-BF16 but not AVX512BW keeps the online softmax, and every other CPU
 keeps its FP32 prefill attention. `--tune prefill-projections=fp32` and
 `--tune prefill-softmax=online` select the previous kernels on any CPU.
+The FP32 tiles' opt-in static softmax
+(`--tune prefill-softmax-fp32=static`) is x86-only too and needs AVX2 and
+FMA; aarch64, `--backend scalar` and exact mode keep the online softmax
+whatever the knob says.
 
 ## Running on Apple Silicon
 

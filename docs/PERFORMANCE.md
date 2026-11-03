@@ -210,7 +210,9 @@ Host: Ryzen 7 7700X (8 cores, 16 threads, DDR5, AVX-512 with BF16), Linux.
 The published packed files with the draft head beside them and the default
 configuration; fresh processes one after another on a quiet host except
 the tuner-limit and reserve comparisons identified below. Raw scripts and
-records live under `artifacts/verify/pr/` on that host only.
+records live under `artifacts/` on that host only: `verify/pr/`, and
+`fp32-static-2026-11-03/` and `queue-2026-11-03/` for the FP32 tiles'
+static softmax.
 
 ### Book runs
 
@@ -393,6 +395,30 @@ The static softmax removes most of the softmax stage. In the online kernel
 the stage took 44.4e9 thread cycles, 25% of attention; fused into the QK
 epilogue, the exp adds 12.0e9, and `--tune prefill-profile=1` reports the
 softmax inside the qk share and 0% for the softmax itself.
+
+### Static softmax in the FP32 tiles
+
+`--tune prefill-softmax-fp32=static` stays opt-in pending a held-out gate
+in near-exact mode;
+[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles-experimental) has its
+fidelity and token checks. Journal page, `--mode near-exact --speculate 0
+--decode-threads 8 --max-new-tokens 8 --tune phases=1`, three interleaved
+rounds of fresh processes with no other work on the host. Transformer
+prefill is the median [range] in milliseconds; attention is its phase
+split:
+
+| FP32 softmax | Plan | Transformer prefill | Attention |
+|---|---|---:|---:|
+| Online (the default) | `avx512-wide` | 7,903 [7,899-7,910] | 5,231 |
+| Static | `avx512-wide-static` | 7,116 [7,109-7,134] | 4,448 |
+
+The static softmax takes 0.78 s (15%) off attention, 10% of transformer
+prefill, and leaves the other phases alone. Teacher-forced against FP32 it
+has the online softmax's 1 flip and 1.3% more KL. Under
+`--tune prefill-profile=1`, on a busy host and so an indication only, the
+softmax stage (in the static tiles: masking, exp and denominators) takes
+24.9% and 24.5% of FP32 attention's thread cycles in two online runs and
+7.3% with the static softmax.
 
 ### Verification rows
 
