@@ -1,16 +1,23 @@
 # KV precision by layer and kind
 
-A mixed Q8/Q16 cache qualifies as a default candidate on this ten-page
-pack, while the setting stays opt-in. The chosen set saves 20.275482 percent
-of near-exact prefix-cache bytes (77.062144 MB on the journal page) and
-reduces CPU decode time by 9.282 percent without speculation and 5.850
-percent with the draft head. Micro CER is 21.96551084739477 percent for
-both candidate and baseline, with no new non-EOS endings. Nine of ten
-pages have identical tokens; one changes tokens with the same CER.
+Near-exact's Q16 cache can spend fewer bytes on the layers that need them
+least. A prototype store that mixed Q8 keys with Q16 values inside a layer
+was measured first and rejected: it saved 20.28 percent of near-exact's KV
+bytes with mean KL 9.89e-7 and one flip, about 175 more non-test lines than
+whole layers for 0.45 points of bytes and 0.5 points of decode.
 
-The qualified setting includes both `--tune decode-exp=exact` and the
-chosen `kv-layers` recipe below. These results use a Ryzen 7 7700X on Linux;
-there is no held-out qualification or default change in this experiment.
+Whole layers landed as the opt-in `--tune kv-layers=0,2,3,5,6,7,8,9,10`. That
+set saves 19.83 percent of KV bytes (75.4 MB at the journal page's 6,544
+positions), with mean KL 9.45e-7 against 7.89e-9 and one flip against none
+over 4,674 steps. Micro CER stays 21.966 percent with no new non-EOS stops;
+nine of ten pages have identical tokens, and the other has the same CER. On
+a Ryzen 7 7700X on Linux, journal-page decode falls 8.0 percent without
+speculation and 4.6 percent with the draft head, and the page total 3.1 and
+1.5 percent. The ten pages both chose and scored the set, and there is no
+held-out qualification or default change in this experiment.
+[MODES.md](../../docs/MODES.md#whole-layer-q8-in-the-q16-cache-experimental)
+and [PERFORMANCE.md](../../docs/PERFORMANCE.md#kv-caches-and-exception-columns)
+carry the current summary.
 
 This experiment measures each key and value cache's sensitivity before
 changing the CPU runner. It uses the checkpoint's own FP32 PyTorch model,
@@ -77,6 +84,11 @@ The summary compares GPU and CPU reference tokens and applies the curve
 exit rule. The CPU calibration and any later CPU runner measurements are
 separate from that simulated result.
 
+`rank` still emits sets per layer and kind, with knob strings such as
+`7k,10v` in the rejected prototype's syntax. The landed `--tune kv-layers`
+takes whole layers, so a whole-layer set comes from summing each layer's key
+and value mean KL in the sensitivity table below.
+
 ## Decision rules
 
 The simulated all-q8 mean KL must agree with the CPU FP32-weight q8-cache
@@ -89,7 +101,8 @@ at most 1e-6, flips at most the same-binary baseline plus one, and at least
 5 percent faster median decode without speculation. The first admitted set
 passing the ten-page text check is the candidate; later sets are not checked.
 Text passes with at most 0.25 percentage points extra micro CER and no
-new non-EOS ending. No token-changing setting becomes a default here.
+new non-EOS ending. No token-changing setting becomes a default here. The
+same CPU rule then decided the whole-layer set.
 
 ## GPU sensitivity and CPU calibration
 
@@ -166,6 +179,8 @@ and the existing FP32 reference and top-k files.
 
 ### Curve
 
+The `Knob` column uses the rejected prototype's per-layer, per-kind syntax.
+
 | Target | Entries | Knob | MB saved, journal | KV bytes saved % | Sim flips | Sim mean KL | Exit rule |
 |---|---|---|---|---|---|---|---|
 | 10 | 9 | 7k,10v,7v,0k,2v,5k,10k,6k,3v | 38.531072 | 10.137741 | 1 | 3.786689928615287e-07 | passes fidelity |
@@ -190,23 +205,77 @@ and the existing FP32 reference and top-k files.
 | 92fe997f26aa2304 | 6544 | 512 | 511 | 0 | -3.11033976e-09 | PASS | 512 | 512 | length |
 | aa8e1119117b1822 | 6448 | 512 | 511 | 0 | -2.81111773e-10 | PASS | 512 | 512 | length |
 
-## CPU mixed-cache results
+## Whole-layer results
+
+Each layer already owns one split prefix and dispatches once per decode
+task, so whole layers need no new store or kernel. `--tune kv-layers` takes
+layer numbers and seals those layers' keys, values and tail at Q8 in an
+otherwise Q16 cache. The cache's mode still picks the exp, so the listed
+layers keep Q16's platform exp and need no `decode-exp` pin.
+
+The set `0,2,3,5,6,7,8,9,10` is the nine layers with the lowest sum of key
+and value mean KL in the sensitivity table above. The plan reports
+`kv q16 (q8 layers 0,2,3,5,6,7,8,9,10)` and 46,560 cache bytes per position
+instead of 58,080, 1,280 fewer per layer. The rule was fixed before the run:
+mean KL at most 1e-6, flips at most the baseline plus one, decode without
+speculation at least 5 percent below the baseline, and the ten-page text
+check. The set passes, with the mean KL 5 percent under its cap.
+
+Agreement uses `w16-body-kv-q16`, `--exp fast --threads 16` and 512 steps per
+page against the CPU FP32 anchor, 4,674 steps in all. The flip is on page
+`aa8e1119117b1822`. Fast mode's mean KL on these pages is 7.27e-5, 77 times
+the set's.
+
+| Arm | KV bytes saved % | Flips | Mean KL | Mean KL / base |
+|---|---:|---:|---:|---:|
+| base | 0 | 0 | 7.89e-9 | 1 |
+| layers 0,2,3,5,6,7,8,9,10 | 19.83 | 1 | 9.45e-7 | 120 |
+
+Timing uses the packed near-exact route, the journal page's 6,544 input
+tokens, a 300-token cap, eight decode threads, three interleaved rounds and
+fresh processes on the Ryzen 7 7700X; medians. Peak RSS falls from 1,095 to
+1,019 MB (-7 percent), since sealing per layer lets the smaller cache reach
+the peak.
+
+| Speculation | Decode ms/token, base → set | Against base % | Page total ms, base → set | Against base % |
+|---|---:|---:|---:|---:|
+| `--speculate 0` | 13.87 → 12.76 | -8.0 | 11,492 → 11,141 | -3.1 |
+| Draft head | 7.62 → 7.26 | -4.6 | 9,642 → 9,494 | -1.5 |
+
+On a binary from before the per-layer seal, with `--tune decode-exp=exact`
+pinned, the same set gave -9.2 and -5.4 percent decode with RSS unchanged.
+Its tokens on the ten pages are identical to the unpinned run's on all ten.
+
+Free-running with the product defaults and a 4,096-token cap, micro CER is
+21.966 percent with and without the knob, with no new non-EOS stops. Nine of
+ten pages are token-identical to near-exact; `aa8e1119117b1822` differs with
+equal CER. A default would regenerate near-exact's fixtures and supersede its
+held-out results. Raw results are in `artifacts/integration-2026-11-06/kv/`
+and `kv-whole/`.
+
+## Rejected prototype: mixed Q8/Q16 store
+
+These results belong to the prototype that stored Q8 keys beside Q16 values
+inside a layer, preserved at tag `checkpoint/kv-mixed-store-2026-11-06`. Its
+`Lk,Lv` knob syntax does not exist in the current code, where `kv-layers`
+takes layer numbers only. The runs predate the per-layer seal, so peak RSS
+barely moves.
 
 All four agreement arms use `w16-body-kv-q16`, `--exp fast --threads 16`
 and `--tune decode-exp=exact`, over 4,674 steps. The chosen set gives one
-flip and mean KL 9.888471963753022e-7, below the fixed 1e-6 limit. The
-larger set fails fidelity. The chosen and smaller sets pass speed and
-fidelity, so the chosen set is checked first and passes; the smaller set
-receives no free-running check.
+flip and mean KL 9.89e-7, below the fixed 1e-6 limit. The larger set fails
+fidelity. The chosen and smaller sets pass speed and fidelity, so the chosen
+set is checked first and passes; the smaller set receives no free-running
+check.
 
-The qualified recipe is:
+The prototype's recipe, valid only at that tag:
 
 ```text
 --tune decode-exp=exact
 --tune kv-layers=7k,10v,7v,0k,2v,5k,10k,6k,3v,8k,6v,20v,2k,9v,9k,0v,1v,4v,5v
 ```
 
-The plan labels `kv q16 (q8 keys=0x7e5, values=0x1006ff)` and reports
+Its plan labels `kv q16 (q8 keys=0x7e5, values=0x1006ff)` and reports
 46,304 cache bytes per position instead of 58,080. The masks appear in
 serialized plans and resumed-book configuration matching. Unset masks
 use the existing cache path. The unset journal fixture gate and real-page
@@ -216,10 +285,15 @@ Timing uses the packed near-exact route, 6,544 journal input tokens, a
 300-token cap, eight decode threads, three interleaved rounds and fresh
 processes. The required host snapshot has no unrelated process above
 2.1 percent CPU. Each arm's speculation-off and default-head token IDs
-match. The median total with drafting is 9,523.320357 ms for the chosen
-set versus 9,638.316751 ms for baseline; the decode gain does not describe
-the whole page's gain. The free-running text check uses the normal
-product defaults, the ten selected pages and a 4,096-token cap.
+match. The median total with drafting is 9,523 ms for the chosen set versus
+9,638 ms for baseline; the decode gain does not describe the whole page's
+gain. The free-running text check uses the normal product defaults, the ten
+selected pages and a 4,096-token cap.
+
+A later sweep interleaved the chosen set with whole layers on one binary. It
+gave decode -9.7 percent without speculation and -6.1 percent with the draft
+head, against whole layers' -9.2 and -5.4 percent: about 175 more non-test
+lines for 0.45 points of bytes and 0.5 points of decode.
 
 ### Agreement, ten pages
 
