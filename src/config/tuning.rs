@@ -62,8 +62,9 @@ pub enum DraftKv {
 /// configuration; every field is scheduling or instrumentation only, except
 /// `prefill_bf16`, `prefill_projections` and `prefill_softmax`, which change
 /// fast-mode prefill rounding, `prefill_softmax_fp32`, which changes it for
-/// 16- and 8-bit bodies, and `split_chunks` and `decode_fast_exp`, which
-/// change the rounding of split-cache decode attention.
+/// 16- and 8-bit bodies, `split_chunks` and `decode_fast_exp`, which change
+/// the rounding of split-cache decode attention, and `kv_q8_layers`, which
+/// lowers the precision of chosen layers' caches.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
@@ -83,6 +84,9 @@ pub struct Tuning {
     /// `None` keeps the mode default: one exact scan for FP32 caches, four
     /// chunks (merged partial softmaxes, rounding-level) for quantized ones.
     pub split_chunks: Option<usize>,
+    /// Bit L seals layer L's cache at Q8 in an otherwise Q16 cache, for its
+    /// keys and values and for its tail. The cache's exp stays Q16's.
+    pub kv_q8_layers: u32,
     /// Print a wall-clock phase split of every forward pass to stderr.
     pub phases: bool,
     /// Accumulate cycle counters of the prefill attention stages (stderr).
@@ -118,6 +122,7 @@ impl Default for Tuning {
             prefill_softmax: PrefillSoftmax::Static,
             prefill_softmax_fp32: None,
             split_chunks: None,
+            kv_q8_layers: 0,
             phases: false,
             prefill_profile: false,
             draft_backoff: 0,
@@ -134,7 +139,7 @@ impl Tuning {
     /// `prefill-softmax-fp32=online|static`, `split-chunks=1..4`,
     /// `phases=true|false`, `prefill-profile=true|false`, `draft-backoff=N`,
     /// `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`,
-    /// `decode-exp=exact|fast`).
+    /// `decode-exp=exact|fast`, `kv-layers=0,3`).
     pub fn set(&mut self, pair: &str) -> Result<()> {
         let (key, value) = pair
             .split_once('=')
@@ -180,6 +185,16 @@ impl Tuning {
                 );
                 self.split_chunks = Some(chunks);
             }
+            "kv-layers" => {
+                self.kv_q8_layers = 0;
+                for layer in value.split(',') {
+                    let layer: u32 = layer
+                        .parse()
+                        .with_context(|| format!("tuning knob kv-layers: `{layer}`"))?;
+                    ensure!(layer < 32, "tuning knob kv-layers: layer {layer} is not below 32");
+                    self.kv_q8_layers |= 1 << layer;
+                }
+            }
             "phases" => self.phases = flag(value)?,
             "prefill-profile" => self.prefill_profile = flag(value)?,
             "draft-backoff" => {
@@ -216,10 +231,25 @@ impl Tuning {
             _ => bail!(
                 "unknown tuning knob `{key}` (prefill-bf16, prefill-projections, prefill-softmax, \
                  prefill-softmax-fp32, split-chunks, phases, prefill-profile, draft-backoff, draft-window, draft-kv, \
-                 draft-gate, decode-exp)"
+                 draft-gate, decode-exp, kv-layers)"
             ),
         }
         Ok(())
+    }
+    /// Rejects `kv_q8_layers` unless the cache is Q16 and the model has the
+    /// layers: a compact cache never seals, so the knob would do nothing.
+    pub(crate) fn check_kv_layers(&self, kv: crate::quant::Kv, layers: usize) -> Result<()> {
+        ensure!(
+            self.kv_q8_layers == 0
+                || kv == crate::quant::Kv::Q16 && self.kv_q8_layers.checked_shr(layers as u32).unwrap_or(0) == 0,
+            "kv-layers needs a Q16 cache and layers below {layers}"
+        );
+        Ok(())
+    }
+    /// The layers of a `kv_q8_layers` mask, as `kv-layers` takes them.
+    pub(crate) fn kv_layer_list(mask: u32) -> String {
+        let layers: Vec<String> = (0..32).filter(|l| mask >> l & 1 != 0).map(|l| l.to_string()).collect();
+        layers.join(",")
     }
     /// The default knobs with every `key=value` pair of `pairs` applied.
     pub fn from_pairs<I, S>(pairs: I) -> Result<Self>
@@ -253,9 +283,18 @@ mod tests {
             "draft-kv=f32",
             "draft-gate=path",
             "decode-exp=fast",
+            "kv-layers=0,3,31",
         ])
         .unwrap();
         assert_eq!(tuning.decode_fast_exp, Some(true));
+        assert_eq!(tuning.kv_q8_layers, 1 | 1 << 3 | 1 << 31);
+        assert_eq!(Tuning::kv_layer_list(tuning.kv_q8_layers), "0,3,31");
+        use crate::quant::Kv;
+        assert!(tuning.check_kv_layers(Kv::Q16, 32).is_ok());
+        assert!(tuning.check_kv_layers(Kv::Q16, 22).is_err());
+        assert!(tuning.check_kv_layers(Kv::Q8, 32).is_err());
+        assert!(tuning.check_kv_layers(Kv::Compact, 32).is_err());
+        assert!(Tuning::default().check_kv_layers(Kv::Compact, 22).is_ok());
         assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
         assert!(tuning.draft_path_gate);
         assert_eq!(tuning.prefill_bf16, PrefillBf16::Off);
@@ -296,6 +335,10 @@ mod tests {
             "phases=maybe",
             "draft-kv=f16",
             "draft-window=-1",
+            "kv-layers=",
+            "kv-layers=32",
+            "kv-layers=-1",
+            "kv-layers=0k",
             "unknown=1",
             "phases",
         ] {

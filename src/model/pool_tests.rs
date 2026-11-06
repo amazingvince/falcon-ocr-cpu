@@ -313,3 +313,46 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         }
     }
 }
+
+/// `kv-layers` seals the chosen layers exactly as a Q8 cache does and the rest
+/// as a Q16 cache does, with Q16's exp on all of them.
+#[test]
+fn kv_layers_seal_the_chosen_layers_at_q8() {
+    let mut c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+    c.n_layers = 2;
+    let rows = 16;
+    let mut keys = values(rows * c.query_dim(), 1);
+    // A GQA pair shares the temporal half of its key.
+    for row in 0..rows {
+        for group in 0..c.n_kv_heads {
+            let start = (row * c.n_heads + 2 * group) * 64;
+            keys.copy_within(start..start + 32, start + 64);
+        }
+    }
+    let kv = values(rows * c.kv_dim(), 2);
+    let seal = |mask: u32, layer: usize, mode: Kv| {
+        let compact = || LayerCache::Compact {
+            prefix_k: keys.clone(),
+            generated_k: Vec::new(),
+            v: kv.clone(),
+            prefix_len: rows,
+        };
+        let mut layers = vec![compact(), compact()];
+        let tuning = Tuning {
+            kv_q8_layers: mask,
+            ..Tuning::default()
+        };
+        super::cache::seal_layer(&mut layers, layer, rows, rows + 8, &c, mode, ExpMode::Fast, &tuning).unwrap();
+        let LayerCache::Split(split) = &layers[layer] else {
+            unreachable!("sealed");
+        };
+        (split.record_bits(), split.fast_exp())
+    };
+    let (q8, _) = seal(0, 1, Kv::Q8);
+    let (q16, _) = seal(0, 0, Kv::Q16);
+    assert_ne!(q8, q16);
+    assert_eq!(seal(0b10, 1, Kv::Q16), (q8, false));
+    assert_eq!(seal(0b10, 0, Kv::Q16), (q16, false));
+    // A whole Q8 cache under `ExpMode::Fast` takes the polynomial exp.
+    assert!(seal(0, 0, Kv::Q8).1);
+}

@@ -261,6 +261,9 @@ impl Runner {
     /// configurations, incompatible profiles and failed resource setup.
     pub fn new(model: Arc<Model>, model_dir: impl AsRef<Path>, config: RunnerConfig) -> Result<Self> {
         config.validate()?;
+        config
+            .tuning
+            .check_kv_layers(model.profile().kv, model.config.n_layers)?;
         if model.profile() != crate::quant::Profile::REFERENCE {
             ensure!(
                 config.cache_layout == CacheLayout::Compact,

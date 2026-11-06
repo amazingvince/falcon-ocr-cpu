@@ -732,7 +732,7 @@ fn main() -> Result<()> {
             }
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":profile,
                 "model_file":args.model_file,"reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
-                "exp_mode":format!("{:?}", config.exp),
+                "exp_mode":format!("{:?}", config.exp),"tuning":config.tuning,
                 "binary_sha256":digest(&std::env::current_exe()?)?,"threads":config.threads,"backend":config.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
                 "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,

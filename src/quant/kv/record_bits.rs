@@ -2,6 +2,11 @@
 use super::{Records, SplitPrefix};
 
 impl SplitPrefix {
+    /// Whether decode attention over this cache uses the polynomial exp.
+    pub(crate) fn fast_exp(&self) -> bool {
+        self.fast_exp
+    }
+
     /// The stored prefix records as bits: codes, then scales (tests compare
     /// two seals of one prefix).
     pub(crate) fn record_bits(&self) -> Vec<u32> {

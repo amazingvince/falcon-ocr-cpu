@@ -242,13 +242,26 @@ pub(super) fn seal_layer(
         "seal only a complete prefix, before any text decode"
     );
     let before = 4 * (prefix_k.capacity() + generated_k.capacity() + v.capacity());
-    let packed =
-        crate::quant::kv::SplitPrefix::from_compact(prefix_k, v, *prefix_len, capacity, c, mode, tuning.split_chunks)?
-            .with_fast_exp(crate::quant::kv::default_fast_exp(
-                mode,
-                exp == ExpMode::Fast,
-                tuning.decode_fast_exp,
-            ));
+    // The cache's mode, not this layer's format, picks the exp.
+    let q8 = tuning
+        .kv_q8_layers
+        .checked_shr(i as u32)
+        .is_some_and(|mask| mask & 1 != 0);
+    let format = if q8 { crate::quant::Kv::Q8 } else { mode };
+    let packed = crate::quant::kv::SplitPrefix::from_compact(
+        prefix_k,
+        v,
+        *prefix_len,
+        capacity,
+        c,
+        format,
+        tuning.split_chunks,
+    )?
+    .with_fast_exp(crate::quant::kv::default_fast_exp(
+        mode,
+        exp == ExpMode::Fast,
+        tuning.decode_fast_exp,
+    ));
     let after = packed.bytes();
     let mut keys = std::mem::take(prefix_k);
     let mut values = std::mem::take(v);

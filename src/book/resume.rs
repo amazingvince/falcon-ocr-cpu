@@ -94,6 +94,8 @@ pub struct Kernels {
     /// panels that older records name, `fp32` for every other kernel.
     pub projection: String,
     pub decode_exp: Option<bool>,
+    /// Layers sealed at Q8 in an otherwise Q16 cache (`kv-layers`).
+    pub kv_q8_layers: u64,
     /// Effective chunks of the split-cache scan, including the mode's
     /// default; `None` for a compact cache or an unrecorded cache kind.
     pub split_chunks: Option<u64>,
@@ -142,6 +144,11 @@ impl Kernels {
                 .get("tuning")
                 .and_then(|tuning| tuning.get("decode_fast_exp"))
                 .and_then(Value::as_bool),
+            kv_q8_layers: plan
+                .get("tuning")
+                .and_then(|tuning| tuning.get("kv_q8_layers"))
+                .and_then(Value::as_u64)
+                .unwrap_or(0),
             split_chunks,
             image_decoder: plan.get("image_decoder").and_then(Value::as_str).map(str::to_owned),
         })
@@ -170,6 +177,10 @@ impl Kernels {
         flags.extend(projection_flag(&self.projection));
         if let Some(fast) = self.decode_exp {
             flags.push(format!("--tune decode-exp={}", if fast { "fast" } else { "exact" }));
+        }
+        if self.kv_q8_layers != 0 {
+            let layers = crate::config::Tuning::kv_layer_list(self.kv_q8_layers as u32);
+            flags.push(format!("--tune kv-layers={layers}"));
         }
         if let Some(chunks) = self.split_chunks {
             flags.push(format!("--tune split-chunks={chunks}"));

@@ -708,7 +708,13 @@ impl Resolved {
             },
             kv_cache: kv_cache_label(profile).to_owned(),
             bytes: {
-                let budget = byte_budget(&facts.config, profile, config.head);
+                let mut budget = byte_budget(&facts.config, profile, config.head);
+                if profile.kv == Kv::Q16 {
+                    // A Q8 layer stores 96 fewer key and 64 fewer value bytes
+                    // per position and KV group.
+                    let layers = config.tuning.kv_q8_layers.count_ones() as usize;
+                    budget.kv_per_position -= facts.config.n_kv_heads * (96 + 64) * layers;
+                }
                 ByteBudget {
                     weights_per_token: budget.weights_per_token.saturating_add(facts.exception_bytes),
                     ..budget
@@ -806,10 +812,16 @@ impl std::fmt::Display for Resolved {
                 }
             ),
         };
+        let q8_layers = match self.tuning.kv_q8_layers {
+            0 => String::new(),
+            mask if self.profile.kv == Kv::Q16 => format!(" (q8 layers {})", Tuning::kv_layer_list(mask)),
+            _ => String::new(),
+        };
         write!(
             f,
             "mode {} ({}) | weights {weights} | prefill {} threads, projections {}, attention {} | decode {decode} \
-             threads, {} kernels{}, kv {} | head {:?} | speculation {speculation} | repetition stop {} | exp {:?}",
+             threads, {} kernels{}, kv {}{q8_layers} | head {:?} | speculation {speculation} | repetition stop {} | \
+             exp {:?}",
             self.mode.map_or("research", Mode::label),
             self.profile.label(),
             self.threads.prefill,
