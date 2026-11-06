@@ -314,6 +314,7 @@ impl Runner {
             resolved,
         };
         runner.set_head_mode(head)?;
+        crate::model::report_memory(runner.config.tuning.phases, "load");
         Ok(runner)
     }
     /// Whether generation stops on repetition loops (`RunnerConfig::repetition_stop`).
@@ -534,6 +535,7 @@ impl Runner {
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
+        crate::model::report_memory(self.config.tuning.phases, "preprocess");
         let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
         result.timings.image_decode_ms = decode_ms;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
@@ -637,6 +639,7 @@ impl Runner {
         }
         let mut hidden = Vec::new();
         let image_projection_ms = self.model.embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
+        crate::model::report_memory(self.config.tuning.phases, "embed");
         let screen = self.head == HeadMode::Screened && teacher_tokens.is_empty();
         if screen {
             session.reserve_screened_head(&self.model);
@@ -646,6 +649,7 @@ impl Runner {
             .model
             .forward_next(&mut hidden, &pos_t, &pos_hw, &mut session, trace, "prefill", screen)?;
         let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
+        crate::model::report_memory(self.config.tuning.phases, "forward");
         let score = trace.scores_teacher();
         let next_token = if let Some(&forced) = teacher_tokens.first() {
             if score {
@@ -662,6 +666,7 @@ impl Runner {
         {
             self.seal_session(&mut session, trace)?;
         }
+        crate::model::report_memory(self.config.tuning.phases, "sealed");
         if decoder == Decoder::Row {
             // A row decodes with the joint step's workspace.
             session.release_workspace();
@@ -676,6 +681,7 @@ impl Runner {
             prepared.positions_hw = Vec::new();
             (pos_t, pos_hw) = (Vec::new(), Vec::new());
         }
+        crate::model::report_memory(self.config.tuning.phases, "released");
         let prefill_ms = start.elapsed().as_secs_f64() * 1000.;
         Ok(Prefilled {
             session,
@@ -734,6 +740,7 @@ impl Runner {
             None => self.decode_plain(&mut decode, teacher_tokens, score)?,
         }
         trace.decode_end();
+        crate::model::report_memory(self.config.tuning.phases, "decode");
         drop(team);
         crate::model::report_decode_phases(self.config.tuning.phases);
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;

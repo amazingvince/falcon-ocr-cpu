@@ -3,6 +3,39 @@ use std::time::Instant;
 
 use super::PARALLEL_ROWS;
 
+/// Report Linux resident memory in decimal MB when phase sampling is enabled.
+/// Other platforms do not emit memory samples.
+pub(crate) fn report_memory(enabled: bool, label: &str) {
+    if !enabled {
+        return;
+    }
+    #[cfg(target_os = "linux")]
+    if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
+        let mb = |key: &str| {
+            status
+                .lines()
+                .find_map(|line| {
+                    line.strip_prefix(key)?
+                        .split_whitespace()
+                        .next()?
+                        .parse::<f64>()
+                        .ok()
+                        .map(|kib| kib * 1024.0 / 1_000_000.0)
+                })
+                .unwrap_or(0.0)
+        };
+        crate::note!(
+            "memory {label}: rss={:.3} hwm={:.3} anon={:.3} file={:.3}",
+            mb("VmRSS:"),
+            mb("VmHWM:"),
+            mb("RssAnon:"),
+            mb("RssFile:")
+        );
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = label;
+}
+
 /// Opt-in wall-clock split of forwards on stderr. Prefill-sized forwards
 /// print immediately; decode steps accumulate on the calling thread until
 /// `report_decode_phases`. Disabled, a mark is a branch.

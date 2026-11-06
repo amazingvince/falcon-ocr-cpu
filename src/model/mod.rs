@@ -61,7 +61,7 @@ impl WeightsSource {
         model_dir.to_path_buf()
     }
 }
-pub(crate) use profile::report_decode_phases;
+pub(crate) use profile::{report_decode_phases, report_memory};
 pub(crate) use rope::{image_range, positions};
 
 use fused::fused_prefix_rows;
@@ -655,6 +655,9 @@ impl Model {
             }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
+            }
+            if tuning.phases && rows >= PARALLEL_ROWS && (i + 1) % 5 == 0 {
+                report_memory(true, &format!("layer {}", i + 1));
             }
         }
         session.len += rows;
