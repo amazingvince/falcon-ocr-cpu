@@ -45,7 +45,7 @@ pub(super) struct PhaseClock {
     last: Instant,
     totals: [f64; PHASES],
 }
-const PHASES: usize = 9;
+const PHASES: usize = 10;
 const PHASE_NAMES: [&str; PHASES] = [
     "rope_factors",
     "norm+qkv",
@@ -55,6 +55,7 @@ const PHASE_NAMES: [&str; PHASES] = [
     "wo+residual",
     "norm+w13+gate",
     "w2+residual",
+    "seal",
     "final_norm+head",
 ];
 /// Decode-step phase totals and step counts, by rows per step (1 = plain

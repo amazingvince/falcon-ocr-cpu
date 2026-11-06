@@ -364,6 +364,7 @@ impl Runner {
                 image_end,
                 simd,
                 self.config.cache_layout,
+                self.model.profile().kv != crate::quant::Kv::Compact && options.max_new_tokens > 1,
                 self.config.exp,
                 self.config.tuning,
             )?;
@@ -384,9 +385,6 @@ impl Runner {
                 .forward(&mut hidden, &pos_t, &pos_hw, &mut session, trace, &phase)?;
             let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
             let token = argmax(logits)?;
-            if !stops.contains(&token) && options.max_new_tokens > 1 {
-                self.seal_session(&mut session, trace)?;
-            }
             let prefill_ms = prefill_started.elapsed().as_secs_f64() * 1000.;
             let first_token_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
             let mut generation = Generation::new(options.max_new_tokens, self.repetition_stop);

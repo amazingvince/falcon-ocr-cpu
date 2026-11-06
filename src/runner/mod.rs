@@ -45,8 +45,9 @@ pub struct Timings {
     /// None means the historical/backend result did not measure this stage.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub image_projection_ms: Option<f64>,
-    /// Complete transformer prefill forward, including final vocabulary logits;
-    /// contained in prefill_ms. Excludes embedding, setup and argmax.
+    /// Complete transformer prefill forward, including per-layer cache sealing
+    /// and final vocabulary logits; contained in prefill_ms. Excludes embedding,
+    /// setup and argmax.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transformer_prefill_ms: Option<f64>,
     pub prefill_ms: f64,
@@ -543,17 +544,6 @@ impl Runner {
         Ok(result)
     }
 
-    fn seal_session(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
-        let mode = self.model.profile().kv;
-        if mode != crate::quant::Kv::Compact {
-            let before = session.cache_bytes();
-            let t = Instant::now();
-            session.seal_prefix(&self.model.config, mode, self.config.exp)?;
-            trace.prefix_sealed(before, session.cache_bytes(), t.elapsed().as_secs_f64() * 1000.0);
-        }
-        Ok(())
-    }
-
     fn run_prepared_scoped(
         &self,
         prepared: PreparedImage,
@@ -626,6 +616,7 @@ impl Runner {
             image_end,
             simd,
             self.config.cache_layout,
+            self.model.profile().kv != crate::quant::Kv::Compact && options.max_new_tokens > 1,
             self.config.exp,
             self.config.tuning,
         )?;
@@ -662,10 +653,6 @@ impl Runner {
         } else {
             select(&next, 0, c.vocab_size)?
         };
-        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token)) && options.max_new_tokens > 1
-        {
-            self.seal_session(&mut session, trace)?;
-        }
         crate::model::report_memory(self.config.tuning.phases, "sealed");
         if decoder == Decoder::Row {
             // A row decodes with the joint step's workspace.

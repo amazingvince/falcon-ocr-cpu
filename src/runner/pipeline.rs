@@ -3,7 +3,7 @@
 //! pages (file read, image decode, first resize, routing, patches, prompt)
 //! on a one-thread pool of its own, off the runner's pool, into a queue of
 //! [`PREFETCH`] pages. While page k decodes on the decode team, page k+1's
-//! prefill (embedding, forward pass, first token, sealing) runs on a second
+//! prefill (embedding, forward pass with sealing, first token) runs on a second
 //! pool on another thread; page k+1 decodes once page k's decode and its own
 //! prefill are done.
 //!
@@ -48,8 +48,8 @@
 //! second pool's threads busy until it ends.
 //!
 //! While two pages overlap, both caches are alive: the decoding page's sealed
-//! cache and the next page's prefill (its FP32 prefix cache and forward
-//! workspace), on top of a sequential run's peak.
+//! cache and the next page's prefill (its completed layers' sealed caches,
+//! one FP32 layer and forward workspace), on top of a sequential run's peak.
 use std::{
     ops::ControlFlow,
     path::Path,

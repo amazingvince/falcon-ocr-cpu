@@ -538,6 +538,8 @@ impl Model {
         let simd = session.simd;
         let exp = session.exp;
         let tuning = session.tuning;
+        let seal = session.seal && offset == 0 && session.layers[0].compact_prefix_len() == Some(rows);
+        let (mut before, mut after, mut seal_ms) = (0, 0, 0.0);
         let work = &mut session.workspace;
         work.resize(rows, c);
         if let Some(capture) = session.features.as_mut() {
@@ -642,6 +644,23 @@ impl Model {
                 },
             );
             clock.mark(4);
+            if seal {
+                let started = Instant::now();
+                let bytes = cache::seal_layer(
+                    &mut session.layers,
+                    i,
+                    rows,
+                    session.capacity,
+                    c,
+                    self.profile.kv,
+                    exp,
+                    &tuning,
+                )?;
+                before += bytes.0;
+                after += bytes.1;
+                seal_ms += started.elapsed().as_secs_f64() * 1000.0;
+                clock.mark(8);
+            }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
@@ -659,6 +678,9 @@ impl Model {
             if tuning.phases && rows >= PARALLEL_ROWS && (i + 1) % 5 == 0 {
                 report_memory(true, &format!("layer {}", i + 1));
             }
+        }
+        if seal {
+            trace.prefix_sealed(before, after, seal_ms);
         }
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;

@@ -74,7 +74,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         return;
     }
     let mut c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
-    // Sealing seals every layer of a session; one is enough here.
+    // One layer is enough to compare sealing across pool sizes.
     c.n_layers = 1;
     let rows = PARALLEL_ROWS + 6;
     let (image_start, image_end) = (5, rows - 4);
@@ -119,6 +119,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
             image_end,
             Simd::Auto,
             CacheLayout::Compact,
+            false,
             ExpMode::Fast,
             Tuning::default(),
         )
@@ -244,7 +245,17 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                             prefix_len: rows,
                         };
                         sealed.len = rows;
-                        sealed.seal_prefix(&c, mode, ExpMode::Fast).unwrap();
+                        super::cache::seal_layer(
+                            &mut sealed.layers,
+                            0,
+                            rows,
+                            sealed.capacity,
+                            &c,
+                            mode,
+                            ExpMode::Fast,
+                            &sealed.tuning,
+                        )
+                        .unwrap();
                         let LayerCache::Split(split) = &sealed.layers[0] else {
                             unreachable!("sealed");
                         };
