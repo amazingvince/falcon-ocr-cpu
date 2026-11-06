@@ -452,6 +452,15 @@ pub(super) struct Workspace {
     pub(super) bf16_keys: Vec<u32>,
     pub(super) bf16_values: Vec<u32>,
 }
+
+fn sized(buffer: &mut Vec<f32>, len: usize) {
+    if buffer.is_empty() {
+        *buffer = vec![0.0; len];
+    } else {
+        buffer.resize(len, 0.0);
+    }
+}
+
 impl Workspace {
     fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
         if let Some(head) = model.screened.get() {
@@ -464,14 +473,14 @@ impl Workspace {
     /// Size the layer intermediates for `rows`; head and RoPE buffers are
     /// managed separately.
     pub(super) fn resize(&mut self, rows: usize, c: &ModelConfig) {
-        self.normalized.resize(rows * c.dim, 0.);
-        self.qkv.resize(rows * (c.query_dim() + 2 * c.kv_dim()), 0.);
-        self.q.resize(rows * c.query_dim(), 0.);
-        self.k.resize(rows * c.query_dim(), 0.);
-        self.v.resize(rows * c.query_dim(), 0.);
-        self.attn.resize(rows * c.query_dim(), 0.);
-        self.projected.resize(rows * c.dim, 0.);
-        self.ffn_packed.resize(rows * 2 * c.ffn_dim, 0.);
-        self.gated.resize(rows * c.ffn_dim, 0.);
+        sized(&mut self.normalized, rows * c.dim);
+        sized(&mut self.qkv, rows * (c.query_dim() + 2 * c.kv_dim()));
+        sized(&mut self.q, rows * c.query_dim());
+        sized(&mut self.k, rows * c.query_dim());
+        sized(&mut self.v, rows * c.query_dim());
+        sized(&mut self.attn, rows * c.query_dim());
+        sized(&mut self.projected, rows * c.dim);
+        sized(&mut self.ffn_packed, rows * 2 * c.ffn_dim);
+        sized(&mut self.gated, rows * c.ffn_dim);
     }
 }
