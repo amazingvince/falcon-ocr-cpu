@@ -1,14 +1,5 @@
 //! Scalar quantization of the split cache: BF16 scales, 8- and 16-bit codes.
 use super::rotation::{BLOCK, Block};
-use anyhow::Result;
-
-/// A zero-filled buffer, failing instead of aborting when memory is short.
-pub(super) fn zeroed<T: Clone + Default>(len: usize) -> Result<Vec<T>> {
-    let mut data = Vec::new();
-    data.try_reserve_exact(len)?;
-    data.resize(len, T::default());
-    Ok(data)
-}
 
 /// The 8-bit step of `values`: their absmax over 127, at least the smallest
 /// subnormal unless every value is 0.
