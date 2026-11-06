@@ -1,6 +1,6 @@
 # Performance
 
-Status: current as of 2026-11-03. Host, unless a section says otherwise:
+Status: current as of 2026-11-06. Host, unless a section says otherwise:
 Ryzen 9 7950X (16 cores, 32 threads, DDR5, AVX-512 with BF16), Windows 11.
 Page: the journal benchmark page, 6,544 input tokens. Earlier measurements on
 the tiny 256×128 fixture are archived in
@@ -62,6 +62,7 @@ measurements are on the Ryzen 7 7700X
 | Multi-row quantized dots and shared record decoding for verify steps | 5-row step 30 → 16 ms |
 | INT16 prefill projections and static softmax (fast mode; Ryzen 7 7700X, [below](#int16-projections-and-static-softmax)) | transformer prefill 5.28 → 3.65 s, flips 67 → 66 |
 | Static softmax in the FP32 prefill tiles (near-exact; Ryzen 7 7700X, [below](#near-exact-prefill-attention)) | transformer prefill 7.91 → 7.16 s, flips 1 → 1 |
+| Each layer's KV sealed right after its prefill attention, lazily zeroed forward buffers and split tail, fixed glibc thresholds (Ryzen 7 7700X, 300 tokens, [below](#peak-memory)) | Peak RSS 1,864 → 1,095 MB near-exact, 1,699 → 754 MB fast, 2,216 → 1,918 MB exact; tokens identical |
 
 ## Decode exponential
 
@@ -160,6 +161,14 @@ less: prefill takes about 2.8 s per page, roughly a third of the total.
 | INT8 QK for BF16 prefill attention (`vpdpbusd`, per-(token, head) absmax Q and K) | Logit error RMS 3.8× BF16's and attention output error 2.5×, to save at most about 0.5 s per page (7700X, estimated: by its share of thread cycles QK takes about 1.0 s of the 2.15 s BF16 attention, and `vpdpbusd` does twice `vdpbf16ps`'s multiply-adds); not built |
 | INT8 activations in the 8-bit prefill projections (u8 × s8 `vpdpbusd`) | Simulated exactly: flips 5 → 40 and KL 20× on two anchor pages (7700X); not built (below) |
 | Speculation depths 5-7 (`--speculate 5` to `7`, its maximum) against the default 4 | Journal page with the draft head, `--decode-threads 8`, decode medians of 3 interleaved rounds (7700X): fast 6.39 s at depth 4 and 6.29-6.37 s at 5-7 (9.12 s without speculation), near-exact 9.71 and 9.62-9.69 s (16.16 s); at most 1.6% less decode, with no trend across depths and about the spread between one arm's rounds (0.8-1.4%, 5% in one arm); page totals within 0.7% of depth 4; the same 1,140 tokens in every run |
+| Huge pages on the weights, `MADV_HUGEPAGE` on the file mapping | Decode 2.68% faster in fast mode and 1.67% in near-exact, below the 3% rule; worst page total 1.015, over its 1.01 limit; journal RSS 1.010 and 1.008 (7700X; rule below) |
+| Huge pages on the weights, in an anonymous copy | Decode 2.74% and 1.41% faster, below the 3% rule; worst page total 1.001; journal RSS 1.240 and 1.218, over its 1.05 limit (7700X; rule below) |
+| Heap allocator aligning blocks of 2 MiB and up, with `MADV_HUGEPAGE` | Decode 0.86% and 0.26% faster, below the 3% rule; worst page total 0.980; journal RSS 1.000 and 1.006 (7700X; rule below). Page totals improved 2-5% in all 8 configurations before the per-layer seal, mostly in prefill. Re-screened on the seal with `GLIBC_TUNABLES=glibc.malloc.hugetlb=1` (no code; 77% huge where the allocator reached 95% in a scratch test): minor faults 284k → 44k, but total ratios near-exact 1.017 (journal) and 0.978 (sample page), fast 0.989 and 0.988, and near-exact's sample-page peak RSS +11%. The overlap with sealing took most of the gain |
+| Decode team pinned to one logical CPU per core | Decode 0.27% faster in fast mode and 0.04% slower in near-exact; worst page total 1.007; journal RSS 1.001 and 1.000 (7700X; rule below) |
+| A KV store mixing Q8 keys and Q16 values within a layer (per-layer, per-kind masks; tag `checkpoint/kv-mixed-store-2026-11-06`) | 20.28% of KV bytes, mean KL 9.89e-7, 1 flip, decode -9.7% without speculation and -6.1% with the draft head, against [whole layers](#kv-caches-and-exception-columns)' 19.83% and -9.2% and -5.4% in the same sweep (7700X, before the per-layer seal, `--tune decode-exp=exact`): about 175 more non-test lines for 0.45 points of bytes and 0.5 points of decode ([the study](../research/kv-layer-precision/README.md)) |
+| FFN channel pruning (near-exact, checkpoint route; below 0.1 of each layer's median W2 column L2 norm, weakest channels in multiples of 8: 6,536 channels; tag `checkpoint/ffn-prune-2026-11-06`) | Body 347.9 → 316.9 MB; journal page, `--speculate 0`, medians of 3 (7700X): prefill 7,007 → 6,805 ms, decode 13.48 → 12.99 ms/token; projected 1,140-token cost 22,370 → 21,619 ms (-3.36%; a formula, not a measured page), estimated 2.7-3.3% with the draft head, which was not run on a pruned body; mean KL 1.03 times base, 0 flips, 10 of 10 pages token-identical. It needs a new packed format ([NEXT-STEPS.md](NEXT-STEPS.md#ffn-channel-pruning)) |
+| GPTQ overlay with 16 W2 exception columns and damping 0.03 | Mean KL 0.567 times the published overlay's, but flips 3 against 1 and 5 of 10 pages identical to exact mode against 7 ([MODES.md](MODES.md#exception-counts-and-damping)). Journal page, checkpoint route, `--decode-threads 8 --speculate 0`, medians of 3, 1,140 tokens (7700X): transformer prefill 3,651 → 3,670 ms (+0.5%), decode 7.86 → 7.78 ms/token (-0.9%), peak RSS unchanged |
+| QKV exception columns (4 per QKV matrix beside 8 per W2) | Mean KL 5.25e-5 against 5.28e-5 and flips 2 against 1 for 721,248 more bytes per token, on 10 pages (7700X, [MODES.md](MODES.md#exception-counts-and-damping)) |
 
 The INT8-activation simulation quantized each 64-input activation group to
 8-bit levels (absmax / 127, the same rounding) and ran it through the INT16
@@ -177,6 +186,20 @@ a 64-input group is at most 6 (WO), 10 (QKV) and 13 (W13) times the group's
 median, yet those fail, W13 worst; only W2 has outlier groups (30% of its
 792 above 32×, up to 7,942× in layer 2), so neither a per-group outlier
 fallback nor a Hadamard rotation would rescue INT8.
+
+The huge-page and pinning rows come from one screen on the 7700X. Each arm
+ran against its own baseline in one sweep: three interleaved rounds of 8
+configurations (fast and near-exact, the journal page and the 1418 × 1224
+sample page, with and without speculation), with private packed files
+evicted and warmed per process. An arm had to make decode with `--speculate
+0` at least 3% faster on the journal page in both modes, keep page totals
+at most 1.01 times the baseline, load at most 500 ms longer and RSS at most
+1.05 times the baseline, and show that its huge pages or pins took effect.
+The rows give decode gains and RSS as fast mode, then near-exact.
+`MADV_HUGEPAGE` on a file mapping takes effect only when the pages enter
+the page cache under the advised mapping (`CONFIG_READ_ONLY_THP_FOR_FS`
+off, ext4). The knobs and code are at tag
+`checkpoint/hugepages-2026-11-06`.
 
 Multi-page batching (`--batch-size`) is available: on a scanned book it gives
 2-8% more pages per hour where the page pipeline gives 12-20%
@@ -236,7 +259,13 @@ records live under `artifacts/` on that host only:
   tiles' static softmax, and `queue-2026-11-03/spec/` for the speculation
   depths;
 - `w16-bf16-attn-2026-11-03/` for near-exact's removed BF16 attention, and
-  `profile-2026-11-03/` for the profiled whole pages.
+  `profile-2026-11-03/` for the profiled whole pages;
+- `integration-2026-11-06/` for peak memory (`sweep2/`, the busier `sweep/`
+  and `trim/`), the whole-layer Q8 cache (`kv/`, `kv-whole/`) and the
+  huge-page re-screen (`thp/`), and `peak-memory-2026-11-05/` for the
+  per-change ledger;
+- `hugepages-pinning-2026-11-05/`, `ffn-prune-2026-11-05/` and
+  `gptq-exc-2026-11-05/` for those rejected rows.
 
 ### Book runs
 
@@ -338,6 +367,86 @@ to 8 threads:
 | `--batch-size 4` | 3,899-3,900 MiB |
 | `--batch-size 4 --pipeline` | 3,348-4,275 MiB |
 
+These figures predate sealing per layer; [Peak memory](#peak-memory) has
+the current behaviour.
+
+### Peak memory
+
+A page's memory used to peak at the end of its last prefill layer, with
+every layer's FP32 compact KV beside the forward workspace. Each layer now
+[seals right after its attention](ARCHITECTURE.md#kv-cache-formats), so one
+layer's FP32 buffers exist at a time and the sealed records grow in their
+place. Fresh workspace buffers and the split tail also come from `vec!`,
+whose untouched pages stay out of RSS, the patches go after the embedding,
+and fixed glibc thresholds return large frees to the OS.
+
+The build before these changes against the build with them: three
+interleaved rounds of fresh processes, `--model artifacts/packed
+--decode-threads 8` and default speculation, with the arms' order swapped
+in the second round, on a quiet host (largest unrelated process 2.8% CPU).
+The journal page is capped at 300 tokens (`--max-new-tokens 300`) and the
+1418 × 1224 sample page (`falcon-ocr-comparison.png`) runs at the default
+budget. Peak RSS comes from `/usr/bin/time -v`, and MB is 10^6 bytes.
+Medians, old → new; tokens were identical in every pair. `prefill_ms` is
+the like-for-like prefill column, since `transformer_prefill_ms` now
+includes the seal:
+
+| Mode | Page | Peak RSS, MB | Ratio | `prefill_ms` | Ratio | Decode, ms/token | `total_ms` | Ratio | Minor faults |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| near-exact | journal | 1,864 → 1,095 | 0.587 | 7,319 → 7,240 | 0.989 | 7.77 → 7.87 | 9,697 → 9,712 | 1.002 | 479k → 283k |
+| near-exact | sample | 1,933 → 1,117 | 0.578 | 7,991 → 7,707 | 0.964 | 8.06 → 8.37 | 18,498 → 18,788 | 1.016 | 635k → 292k |
+| fast | journal | 1,699 → 754 | 0.444 | 3,816 → 3,634 | 0.952 | 5.08 → 5.03 | 5,398 → 5,242 | 0.971 | 443k → 233k |
+| fast | sample | 1,760 → 769 | 0.437 | 4,099 → 3,834 | 0.935 | 5.30 → 5.20 | 11,026 → 10,638 | 0.965 | 544k → 240k |
+| exact | journal | 2,216 → 1,918 | 0.866 | 8,268 → 8,219 | 0.994 | 13.73 → 13.88 | 12,500 → 12,526 | 1.002 | 584k → 544k |
+| exact | sample | 2,842 → 1,958 | 0.689 | 9,387 → 8,787 | 0.936 | 14.53 → 14.70 | 28,567 → 27,941 | 0.978 | 815k → 577k |
+
+The timing columns carry scatter. An earlier sweep of the same binaries on
+a busier host gave total ratios of 0.990 and 0.978 in near-exact (journal,
+sample), 0.968 and 0.970 in fast mode and 1.003 and 0.986 in exact, with
+decode ratios of 0.98 to 1.004. Near-exact's decode ratio in the quiet sweep
+varies by round: 1.059, 1.039 and 1.001 on the sample page, 1.003, 1.059
+and 1.013 on the journal page. Fast mode gains about 3%; near-exact and
+exact stay within about 2% either way, which is no measured speedup or
+slowdown.
+
+With `--pipeline`, near-exact, on the first three pages of the [10-page
+set](MODES.md#the-metric), one run each: peak RSS 3,627 → 1,335 MB, wall time
+32.13 → 31.86 s, identical tokens.
+
+Each change's share, cumulative from top to bottom, one run each: the last
+VmHWM that `--tune phases=1` sampled, in MB. The split tail matters at the
+sample page's default budget; the journal page's 300 tokens barely use it.
+
+| Change | Near-exact, journal | Fast, journal | Near-exact, sample | Fast, sample |
+|---|---:|---:|---:|---:|
+| Before | 1,862 | 1,699 | 1,933 | 1,759 |
+| Seal per layer | 1,370 | 1,020 | 1,738 | 1,222 |
+| Free the patches after the embedding | 1,368 | 1,020 | 1,716 | 1,202 |
+| Lazily zeroed workspace | 1,156 | 806 | 1,494 | 980 |
+| Lazily zeroed split tail | 1,155 | 806 | 1,286 | 811 |
+
+glibc raises its mmap threshold after each large free, so a later page's
+prefill buffers came from a heap that kept the freed pages. Both binaries
+now call `cpu::return_large_frees_to_os` first in `main`, which sets
+`M_MMAP_THRESHOLD` and `M_TRIM_THRESHOLD` to 4 MiB
+([GNU/Linux only](PORTABILITY.md#allocator-and-memory-samples)). Against
+the last row above, a sequential run of the same three pages goes from
+2,170 to 1,211 MB in near-exact and from 1,260 to 845 MB in fast mode (last
+sampled VmHWM).
+
+The trim threshold is set too because setting only `M_MMAP_THRESHOLD`
+freezes it at 128 KiB, which returned per-thread pack buffers on every free.
+Medians of 3 interleaved rounds, the mmap threshold alone against both:
+
+| Mode | Pages | Minor faults | System time |
+|---|---|---:|---:|
+| near-exact | journal | 699k → 284k | 1.81 → 1.11 s |
+| near-exact | three pages | 1,922k → 643k | 5.21 → 2.50 s |
+| fast | journal | 340k → 237k | - |
+| fast | three pages | 847k → 510k | - |
+
+Peak RSS moves under 1%, and `total_ms` improves 0.2 to 1.0%.
+
 ### KV caches and exception columns
 
 The journal page's first 300 tokens (`--max-new-tokens 300`): decode
@@ -365,6 +474,24 @@ The exception-column file had no draft head beside it, so its speculative
 runs used n-gram drafts and are left out. Their fidelity is in
 [MODES.md](MODES.md#rotated-kv-cache-experimental) and
 [MODES.md](MODES.md#exception-columns-experimental).
+
+`--tune kv-layers=0,2,3,5,6,7,8,9,10` seals nine whole layers at Q8 in
+near-exact's Q16 cache;
+[MODES.md](MODES.md#whole-layer-q8-in-the-q16-cache-experimental) has its
+fidelity and why it stays opt-in. Journal page, packed near-exact file,
+`--max-new-tokens 300 --decode-threads 8`, medians of 3 interleaved rounds,
+without the knob → with it:
+
+| Speculation | Decode, ms/token | Change | `total_ms` | Change |
+|---|---:|---:|---:|---:|
+| `--speculate 0` | 13.87 → 12.76 | -8.0% | 11,492 → 11,141 | -3.1% |
+| Draft head | 7.62 → 7.26 | -4.6% | 9,642 → 9,494 | -1.5% |
+
+Peak RSS falls from 1,095 to 1,019 MB (-7%), since sealing lets the smaller
+cache reach the peak. On a binary from before the per-layer seal, with
+`--tune decode-exp=exact` pinned, the same set gave decode -9.2% and -5.4%
+with RSS unchanged; its tokens on the 10 pages are identical to the unpinned
+run's on all 10.
 
 ### INT16 projections and static softmax
 

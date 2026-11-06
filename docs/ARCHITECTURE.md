@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of 2026-11-03.
+Status: current as of 2026-11-06.
 
 ## Model contract
 
@@ -49,18 +49,22 @@ image file -> decode, resize, patches, tokens and positions   (preprocess/)
    before the second resize                              (preprocess/crop.rs))
   -> image projection and full bidirectional prefill
      with the mode's weights and kernels                        (model/)
-  -> first token from the pre-sealing logits
-  -> the prefix KV cache is sealed into the mode's storage      (quant/kv.rs)
+     each layer's prefix KV is sealed into the mode's storage
+     right after that layer's attention                         (quant/kv.rs)
+  -> first token from the prefill's logits
   -> decode: one token per step against the sealed prefix plus the
      generated tail, greedy selection, stop on EOS, the repetition stop
      or the budget                                              (runner/)
 ```
 
-Sealing happens only when another forward pass is needed, so KV compression
-is deferred: prefill attention itself runs in FP32 (or BF16 in fast mode on
-AVX512-BF16 CPUs), over the FP32 compact cache. Every image key exists
-before any prefix result is finalized; nothing treats partial image strips
-as causal prompts.
+Sealing depends on the budget, decided before the prefill: a prefill seals
+when the cache is not compact and the budget allows more than one token, so
+a page that ends at its first token has sealed too, and a one-token budget
+never seals. KV compression touches decode only: each layer's prefill
+attention runs in FP32 (or BF16 in fast mode on AVX512-BF16 CPUs) over that
+layer's complete FP32 compact cache before the layer is sealed. Every image
+key exists before any prefix result is finalized; nothing treats partial
+image strips as causal prompts.
 
 ### Resolution routing
 
@@ -178,12 +182,13 @@ counting rule, warns as "repetition stop without counting loops"), `--exp`,
 the prefill attention (BF16 or the FP32 tiles, each with the online or the
 static softmax; NEON; scalar), BF16 or INT16 projections (the AVX2 and
 AVX-512 forms of the FP32 tiles, and of the INT16 panels, count as one), a
-pinned `--tune decode-exp`, the effective `--tune split-chunks` or the
-build's image decoder; a record without `options` counts as one that ran
-with different settings. Automatic chunking matches an explicit mode
-default, and compact caches ignore the split-cache knob. A near-exact
-record written before the static softmax became its default (attention
-`avx512-wide` or `avx2`) therefore warns when resumed with the default.
+pinned `--tune decode-exp`, the `--tune kv-layers` set, the effective
+`--tune split-chunks` or the build's image decoder; a record without
+`options` counts as one that ran with different settings. Automatic
+chunking matches an explicit mode default, and compact caches ignore the
+split-cache knob. A near-exact record written before the static softmax
+became its default (attention `avx512-wide` or `avx2`) therefore warns when
+resumed with the default.
 
 An escalated record compares its near-exact rerun's kernel settings and the
 weights and prefill kernels of the fast attempt it replaced, which
@@ -237,13 +242,13 @@ explain the repetition-only policy and its measured effect.
 | `main.rs`, `bin/falcon-ocr-eval/` | The CLI; the research binary (profiles, bench, agree, trace, Gram capture) with its telemetry |
 | `preprocess/`, `tokenizer.rs` | Pillow-exact image preparation (`SourceImage`: one decode, the first resize at any cap; `resample.rs`: the Pillow resampling port, with 8-bit bilinear and bicubic for the router; `crop.rs`: the opt-in margin crop); the pinned tokenizer and stop ids |
 | `router/` | [Resolution routing](#resolution-routing): image statistics, embedded trees, resolution choice and safety net |
-| `model/` | `Model` (mapped weights, `Weight`, `Layer`), `body.rs` (what the prefill plan and byte budgets read about the body matrices: `body_bits`, `exception_bytes`, `i16_misfit`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks) |
+| `model/` | `Model` (mapped weights, `Weight`, `Layer`), `body.rs` (what the prefill plan and byte budgets read about the body matrices: `body_bits`, `exception_bytes`, `i16_misfit`), `load.rs` (checkpoint and profile loaders, `MemoryReport`), `packed.rs` (kernel-ready files), `cache.rs` (`Session`, `LayerCache`, `seal_layer`, workspaces, `FeatureCapture`: the layer outputs a draft head reads), `fused.rs` (the fused prefill QKV row), `rope.rs` (rotary factors, `split_norm_rope`), `profile.rs` (phase clocks, Linux memory samples) |
 | `quant/` | `Profile { weights, kv }`, `linear.rs` (`QuantLinear`: 8/16-bit codes, FP32 scales, optional FP32 exception columns, panel prefill; `linear/dot.rs` its single- and multi-row decode dots), `kv.rs` (the split KV cache: F32, Q16 and Q8 records, and the research Q8R and Q4R ones; `kv/codec.rs` its scalar codes and scales, `kv/decode.rs` its decode attention kernels, `kv/wide.rs` the AVX-512 kernels of its verification rows), `rotation.rs` (the randomized Hadamard rotation of 32-value blocks behind Q8R and Q4R) |
 | `kernels/` | `Simd` dispatch, `linear*`, `rms_norm*`, GLU, `prefill_plan`; `attention/` (`Geometry`, `CompactKv`, one online-softmax head, the tiled GEMM, fixed-width decode, prefill tiles and their BF16 form, online or static-shift softmax; `prefill64/span.rs`, the one `tile_span` every tile kernel uses for the keys a query tile sees); `panels/` (the shared panel-GEMM scheduler and the FP32 and INT16 micro-kernels); `exp.rs` |
 | `simd.rs` | The 8-lane `Simd` trait with `Portable`, `Avx2`, `Avx2Fast` and `Neon` implementations |
-| `runner/` | `Runner` (prefill, sealing, decode), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `stream.rs` (results in input order as pages finish), `batch/` (continuous batching: the scheduler, the page feed, the rows), `pipeline.rs` (the page pipeline), `escalate.rs` (fast-mode loops reread in near-exact mode), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
+| `runner/` | `Runner` (prefill, decode), `cohort.rs` (fixed-cohort batches: one prefill per page, joint decode steps), `stream.rs` (results in input order as pages finish), `batch/` (continuous batching: the scheduler, the page feed, the rows), `pipeline.rs` (the page pipeline), `escalate.rs` (fast-mode loops reread in near-exact mode), `generate.rs` (`Generation`: the one stop ladder; results), `speculate.rs` (draft verification) |
 | `book/` | Long runs of `falcon-ocr run`: the input list, the input check before the model loads, the per-page JSON record, the output file `--resume` continues (`resume.rs`), the summary |
-| `team.rs`, `tune.rs`, `cpu.rs` | The decode spin team; the automatic team-size tuner and its report; host topology, performance cores, the bandwidth probe |
+| `team.rs`, `tune.rs`, `cpu.rs` | The decode spin team; the automatic team-size tuner and its report; host topology, performance cores, the bandwidth probe, and `return_large_frees_to_os`, which both binaries call first in `main` so that glibc returns large frees to the OS ([measurements](PERFORMANCE.md#peak-memory)) |
 | `head_screen.rs`, `draft.rs`, `repetition.rs` | The exact INT8 vocabulary screen; n-gram drafts, the adaptive draft policy and document history; the repetition stop |
 | `draft_head.rs` | The trained draft head (EAGLE-3 style, `research/draft-head`): INT8 projections on the decode kernels, its own INT8 key/value cache of verified positions, confidence-gated draft chains, an optional low-rank vocabulary head |
 | `trace.rs`, `packed_kernels.rs`, `buf.rs` | Tensor traces and callbacks; the opt-in phase-packed batch-decode weights; mapped or owned buffers |
@@ -320,27 +325,32 @@ that fall back to the FP32 tiles.
 
 `prefill_plan` gives the INT16 projections only to an 8-bit body whose
 every matrix the panels hold (`QuantLinear::fits_i16_panels`: 8-bit codes
-in groups of 64 without exception columns, whole 32-row panels and whole
-input groups), and keeps the FP32 panels otherwise. `Model::i16_misfit`
+in groups of 64, with or without exception columns, whole 32-row panels and
+whole input groups), and keeps the FP32 panels otherwise. `Model::i16_misfit`
 asks that of a loaded body; the plan `doctor` builds from file headers
-(`ModelFacts::from_plan`) finds the same misfits from exception bytes and
-from a W8 overlay whose metadata names groups of 32. `QuantLinear::prefill`
-asserts that every matrix under the INT16 projections fits them.
+(`ModelFacts::from_plan`) finds misfits from 16-bit codes and from a W8
+overlay whose metadata names groups of 32. `QuantLinear::prefill` asserts
+that every matrix under the INT16 projections fits them.
+[MODES.md](MODES.md#exception-columns-experimental) describes how the panels
+take exception columns.
 
 ## KV cache formats
 
 The compact cache (`LayerCache::Compact`) keeps prefix keys per query head
 (their spatial rotations differ), generated keys and every value per KV head,
-all FP32: the reference. After a page's first token (unless the page ends
-there), its prefix is sealed into the profile's split store (`quant/kv.rs`):
-one 160-element record per KV group and position holding the temporal key
-half shared by the pair, each head's spatial half and the value, so one
-decode task per group streams its records contiguously.
+all FP32: the reference. A [sealing prefill](#execution-order) converts each
+layer's prefix into the profile's split store (`quant/kv.rs`) right after
+that layer's attention: one 160-element record per KV group and position
+holding the temporal key half shared by the pair, each head's spatial half
+and the value, so one decode task per group streams its records
+contiguously.
 
 Records are FP32 (`split-f32`, bitwise the compact kernel), 16-bit codes
 with a BF16 absmax scale per 32 values (`q16`), or 8-bit codes (`q8`);
 generated positions go into 128-element tail records in the same format as
-they are appended.
+they are appended. The experiment knob `--tune kv-layers=0,3` gives the
+listed layers of a `q16` cache `q8` records, tail included, under `q16`'s exp
+([MODES.md](MODES.md#whole-layer-q8-in-the-q16-cache-experimental)).
 
 The research formats `q8r` and `q4r` (`falcon-ocr --kv-cache`,
 `falcon-ocr-eval --profile`) rotate each 32-value block before quantizing:
@@ -369,11 +379,17 @@ merging their partial softmaxes changes rounding. See
 The `expanded` layout (every KV head duplicated) remains selectable.
 
 Every non-compact profile seals prefills for single pages, fixed cohorts
-and continuous batching. The compact `reference` profile never seals.
-`falcon-ocr` loads it for traces, which always run in exact mode, so their
-tensors stay comparable with the recorded references, and for exact-mode
-`run` at a batch size above 1. An exact single-page `run` takes `split-f32`;
-near-exact and fast seal in every path.
+and continuous batching. `Session::new` takes a `seal` flag, set when the
+profile's cache is not compact and the budget allows more than one token.
+With it, layer 0 reserves the prefix buffers, the other layers reserve
+nothing and no layer reserves generated keys; `model/cache.rs`'s
+`seal_layer` converts a layer, clears its FP32 buffers and hands them to the
+next layer, so one layer's compact cache exists at a time
+([PERFORMANCE.md](PERFORMANCE.md#peak-memory)). The compact `reference`
+profile never seals. `falcon-ocr` loads it for traces, which always run in
+exact mode, so their tensors stay comparable with the recorded references,
+and for exact-mode `run` at a batch size above 1. An exact single-page `run`
+takes `split-f32`; near-exact and fast seal in every path.
 
 ## Decode machinery
 

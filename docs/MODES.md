@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-11-03. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-11-06. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
 unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
@@ -33,6 +33,13 @@ projections and near-exact's static softmax became defaults, so the 8-bit
 arms used FP32 projection panels and the 16-bit arms the online softmax.
 [DEVELOPMENT.md](DEVELOPMENT.md#token-agreement) gives the commands for
 either reference and the flags that reproduce those arms.
+
+[Exception counts and damping](#exception-counts-and-damping) and the
+[whole-layer Q8 cache](#whole-layer-q8-in-the-q16-cache-experimental) use
+a smaller set on the same host and FP32 reference: 10 mostly English pages
+with ground truth (prose, a slide, formulas, multi-column, tables, tiny text,
+a degraded scan, handwriting), 4,674 steps at up to 512 per page. Those 10
+pages both chose and scored the candidates, so they screen rather than gate.
 
 Character error rate (CER) counts character insertions, deletions and
 substitutions relative to the reference text's length. Micro CER pools the
@@ -140,13 +147,17 @@ the codes, which are zero there. A W2 column costs 3 KB and a column of the
 fused FFN gate/up projection (`W13`) 18 KB, against about 1.7 MB more for a
 whole W2 kept in BF16.
 
-Every product uses the FP32 columns: prefill and other large products have
-them in place (INT16 panels hold codes only, so a body with exception
-columns keeps FP32 projection panels instead of fast mode's INT16 ones, as
-its plan reports), and decode adds one fused multiply-add per exception
-column and output row after the 8-bit kernel, in ascending column order, so
-draft verification stays bitwise the single-row steps. `doctor` and every
-result's plan count the extra bytes.
+Every product uses the FP32 columns. FP32 projection panels and other large
+products have them in place. Fast mode's INT16 panels (`panel-i16-vnni` or
+`panel-i16-avx2`, as for any 8-bit body in groups of 64) zero the exception
+inputs before each group's activation step, so a huge input does not
+coarsen its group, and add their row-scaled FP32 products to the tile after
+the integer groups, in ascending column order, before the output is stored,
+gated or added; `--tune prefill-projections=fp32` restores the FP32 panels.
+Decode adds one fused multiply-add per exception column and output row
+after the 8-bit kernel, in ascending column order, so draft verification
+stays bitwise the single-row steps. `doctor` and every result's plan count
+the extra bytes.
 
 Round-to-nearest quantization computes scales and codes with the exception
 columns zeroed and keeps their original values. GPTQ never quantizes them
@@ -197,6 +208,66 @@ of that size. Decode time per token did not measurably change
 (8.24 against 8.28 ms on the journal page,
 [PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)).
 
+### Exception counts and damping
+
+Exception counts and GPTQ's damping (`tools/w8_variants.py --damp`, a
+fraction of each Gram's mean diagonal) were compared on the [10-page
+set](#the-metric) against the FP32 anchor over 4,674 steps, with overlays
+from the 7700X's Grams, `--tune prefill-projections=fp32` and BF16 attention
+with the static softmax. The KL ratio is against the first row:
+
+| W2 columns | QKV columns | Damping | Mean KL | KL ratio | Flips |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0 | 1e-2 (default) | 6.49e-5 | 1.000 | 1 |
+| 4 | 0 | 1e-2 | 4.83e-5 | 0.745 | 2 |
+| 8 | 0 | 1e-2 | 5.28e-5 | 0.813 | 1 |
+| 16 | 0 | 1e-2 | 4.56e-5 | 0.703 | 1 |
+| 8 | 4 | 1e-2 | 5.25e-5 | 0.808 | 2 |
+| 0 | 0 | 1e-4 | 2.01e-4 | 3.103 | 4 |
+| 0 | 0 | 3e-4 | 1.78e-4 | 2.737 | 3 |
+| 0 | 0 | 1e-3 | 1.14e-4 | 1.750 | 1 |
+| 0 | 0 | 3e-3 | 9.28e-5 | 1.431 | 2 |
+| 0 | 0 | 3e-2 | 5.92e-5 | 0.912 | 1 |
+| 0 | 0 | 1e-1 | 6.82e-5 | 1.051 | 3 |
+| 16 | 0 | 3e-2 | 3.90e-5 | 0.601 | 3 |
+
+The ratio does not fall steadily from 4 to 16 columns, so differences near
+0.1 are within this set's scatter. QKV exception columns add 721,248 bytes
+per token (180,495,392 against 179,774,144) and gain nothing here.
+
+The last row, 16 W2 columns at damping 0.03, then ran on the default INT16
+panels against the published overlay: mean KL 4.117e-5 against 7.268e-5
+(0.567), flips 3 against 1. Per page the KL ratio is 0.19 to 0.79 on 8 pages
+and worse on 2 (3.52 and 1.99).
+
+Free-running on the 10 pages, micro CER falls from 21.984% to 20.693%, all
+of it from page `20cb71d7734f053a` (30.67% to 12.92%); one page worsens by
+0.05 pt and the rest do not change. That page forks from exact mode at token
+116 of 991, where the overlay writes `A $\frac{..}{..}$` and exact writes
+`$$ \mathbf{A} \frac ..$$`, and the choice then persists down the page.
+Exact itself scores 30.67% there, so this is a lucky fork against one
+reference, not closer agreement with FP32. The published overlay is
+token-identical to exact mode on 7 of the 10 pages, this one on 5.
+
+The overlay stays unadopted. Mean KL falls, but flips and exact-identical
+pages do not improve, as on the larger anchor above, where 4 columns gave
+KL -39% and flips 63 against 64. A default would also need a republished
+`falcon-ocr-kernel-v2` file; no published file has exception columns.
+[PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted) has its timing.
+
+It comes from the existing Grams; `tools/make_gptq_overlay.sh` has no damping
+variable, and the file's metadata does not record the damping:
+
+```sh
+python tools/w8_variants.py \
+  --output artifacts/model/w8-gptq-exc16-damp3e-2.safetensors \
+  --gram-dir artifacts/w8/gram --method gptq --group 64 --act-order \
+  --damp 0.03 --exceptions 16 --exceptions-include 'feed_forward\.w2'
+```
+
+`pack` with this overlay writes a v2 file that the packed route loads with
+plan `panel-i16-vnni`; its 300 journal tokens match the checkpoint route's.
+
 ## INT16 projections and static softmax
 
 Two kernels change fast mode's prefill rounding; both have been its
@@ -219,9 +290,10 @@ order. The AVX512-VNNI kernel (`vpdpwssd`, plan label `panel-i16-vnni`; the
 `auto` backend on CPUs with AVX512F and VNNI) and the AVX2 kernel
 (`vpmaddwd`, `panel-i16-avx2`; other x86 CPUs with AVX2, and `--backend
 avx2`) agree bit for bit with each other and with a scalar oracle, because
-the integer part is exact. The panels hold only codes in groups of 64, so a
-body with exception columns, or a W8 overlay in groups of 32, keeps FP32
-panels, and the plan says so
+the integer part is exact. The panels hold 8-bit codes in groups of 64,
+with any [exception columns](#exception-columns-experimental) beside them in
+FP32. A W8 overlay in groups of 32, or a matrix whose shape or code width
+does not fit, keeps FP32 panels, and the plan says so
 ([`prefill_plan`](ARCHITECTURE.md#kernels-one-source-per-operation-instantiated-per-isa));
 aarch64 keeps them too (it has no INT16 kernel yet), and `--backend scalar`
 and x86 CPUs without AVX2 run the projections through the `gemm` crate.
@@ -259,8 +331,8 @@ steps, `falcon-ocr-eval --exp fast --threads 16 --profile w8-body-kv-q8`
 with the published GPTQ overlay, `agree --max-steps 512` and
 `--reference-topk`. The arms ran while both kernels were opt-in knobs, on
 the default backend, so even the first row has BF16 prefill attention; the
-exception-column tables above ran `--backend avx2` and give 67 flips and
-KL 3.04e-4 for the same overlay.
+exception columns' 7700X anchor table above ran `--backend avx2` and gives
+67 flips and KL 3.04e-4 for the same overlay.
 
 | Prefill arm | Flips | KL against FP32 |
 |---|---:|---:|
@@ -881,3 +953,36 @@ through the 8-bit loads, is 15% slower per token than `q8` and multiplies
 fast mode's flips by 5 and its KL by 30
 ([PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns) has the
 timing). The profiles stay for research.
+
+### Whole-layer Q8 in the Q16 cache (experimental)
+
+The hidden `--tune kv-layers=0,3` seals the listed layers at Q8 in an
+otherwise Q16 cache: whole layers only, keys, values and tail. The cache's
+mode still picks the exp, so listed layers keep Q16's platform exp and need
+no `decode-exp` pin. `Runner::new` refuses the knob unless the cache is Q16
+and the layers exist. The plan labels it `kv q16 (q8 layers 0,3)`,
+`bytes.kv_per_position` falls by 1,280 per layer, resume records carry it,
+and `falcon-ocr-eval agree` reports record `tuning`.
+
+The qualified set is `0,2,3,5,6,7,8,9,10`, the nine layers with the lowest
+sum of single-kind KL in the
+[GPU sensitivity table](../research/kv-layer-precision/README.md#near-exact-sensitivity).
+It saves 19.83% of near-exact's KV bytes: `kv_per_position` goes from 58,080
+to 46,560, 75.4 MB at the journal page's 6,544 positions. The rule, fixed
+before the run: mean KL at most 1e-6, flips at most the baseline's plus one,
+`--speculate 0` decode at least 5% below the baseline and the 10-page text
+check. The set passes.
+
+On the [10-page set](#the-metric) against the FP32 anchor, over 4,674 steps,
+mean KL is 9.45e-7 against near-exact's 7.89e-9 (120 times), still 77 times
+below fast mode's 7.27e-5, with 1 flip against 0, on page
+`aa8e1119117b1822`. Free-running micro CER is 21.966% both ways with no new
+non-EOS stops. 9 of the 10 pages are token-identical to near-exact, and
+`aa8e1119117b1822` differs with equal CER.
+[PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns) has the
+timing.
+
+The knob stays opt-in: the same 10 pages chose and scored the set, and its
+mean KL sits 5% under the cap. A default would regenerate near-exact's
+fixtures and supersede its held-out results
+([NEXT-STEPS.md](NEXT-STEPS.md#--tune-kv-layers-as-near-exacts-default)).

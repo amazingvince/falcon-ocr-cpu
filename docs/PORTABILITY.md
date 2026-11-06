@@ -1,6 +1,6 @@
 # Portability
 
-Status: current as of 2026-11-03. Runs and is measured on x86-64 (Windows,
+Status: current as of 2026-11-06. Runs and is measured on x86-64 (Windows,
 Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and
 runs the NEON unit tests on macOS runners); the NEON kernels are bitwise the
 portable ones in those tests, but no aarch64 machine has yet run the model
@@ -81,7 +81,7 @@ always uses the polynomial exp.
 | Static-shift softmax of those tiles (`prefill64/static_shift.rs`; near-exact by default, 8-bit bodies on request) | prefill | 8-lane tiles | 16-lane tiles (AVX-512F), bitwise | - | - |
 | BF16 prefill attention (`prefill64/bf16.rs`, fast mode) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies in groups of 64 without exception columns) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
+| INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies in groups of 64, FP32 exception columns added after the integer groups) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |
 | Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |
@@ -105,6 +105,14 @@ Near-exact's static softmax in the FP32 tiles is x86-only too and needs
 AVX2 and FMA; aarch64, `--backend scalar` and exact mode keep the online
 softmax whatever `--tune prefill-softmax-fp32` says, so near-exact's
 prefill rounding differs between x86 and aarch64.
+
+## Allocator and memory samples
+
+`cpu::return_large_frees_to_os` sets glibc's mmap and trim thresholds on
+GNU/Linux only; other platforms keep their allocator policy
+([PERFORMANCE.md](PERFORMANCE.md#peak-memory) has the effect on Linux). The
+memory samples of `--tune phases=1` read `/proc/self/status`, so they are
+Linux only and print nothing elsewhere.
 
 ## Running on Apple Silicon
 

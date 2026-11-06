@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-11-03.
+Status: current as of 2026-11-06.
 
 ## Toolchain
 
@@ -367,9 +367,12 @@ $B/falcon-ocr-eval --profile reference bench "$PAGE" \
 
 The page needs the restored corpus. Choose a new `OUT` for another run;
 `bench` refuses an existing report. `--tune phases=1` prints the forward
-phase split; `--tune prefill-profile=1` prints prefill-attention stage
-cycles. Use explicit profiles or `--model-file` and runner flags to
-measure the configuration you intend.
+phase split, with a `seal` phase, and on Linux memory samples, `memory
+<label>: rss=<MB> hwm=<MB> anon=<MB> file=<MB>`, at load, preprocess,
+embed, layers 5, 10, 15 and 20, forward, sealed, released and decode;
+`--tune prefill-profile=1` prints prefill-attention stage cycles. Use
+explicit profiles or `--model-file` and runner flags to measure the
+configuration you intend.
 
 Other measurement entry points:
 
@@ -415,15 +418,19 @@ default static for 16-bit bodies and online for 8-bit ones; see
 `split-chunks=1..4` (position chunks of the split cache scan),
 `decode-exp=exact|fast` (the exp of decode attention over
 split caches; pin it when comparing caches, see
-[MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase
-split of forwards on stderr), `prefill-profile=1` (prefill attention stage
+[MODES.md](MODES.md#rotated-kv-cache-experimental)), `kv-layers=0,3` (whole
+layers at Q8 in a Q16 cache; see
+[MODES.md](MODES.md#whole-layer-q8-in-the-q16-cache-experimental)),
+`phases=1` (phase split of forwards on stderr, with a `seal` phase, and on
+Linux memory samples), `prefill-profile=1` (prefill attention stage
 cycles), and the draft head's `draft-backoff=N`, `draft-window=N`,
 `draft-kv=f32|q8` and `draft-gate=token|path`; any other key, such as the
 removed `prefill-bf16-w16`, is an error. Only the four `prefill-bf16`,
-`prefill-projections` and `prefill-softmax*` knobs, `split-chunks` and
-`decode-exp` change rounding, the last two that of split-cache decode
-attention; the others schedule or measure (`Tuning` in
-`src/config/tuning.rs`).
+`prefill-projections` and `prefill-softmax*` knobs, `split-chunks`,
+`decode-exp` and `kv-layers` change rounding, `split-chunks` and
+`decode-exp` that of split-cache decode attention and `kv-layers` the
+precision of the listed layers' caches; the others schedule or measure
+(`Tuning` in `src/config/tuning.rs`).
 `--kv-cache compact|f32-split|q16|q8|q8r|q4r` (`falcon-ocr` run and doctor)
 replaces the KV half of the resolved profile; the plan and every result
 name the profile that runs, a research one unless it is a mode's own.
@@ -439,6 +446,10 @@ These flags are hidden from `--help`; nothing reads environment variables.
   files at once, about 2.6 GB.
 - Keep the mapped checkpoint or packed file unchanged while a `Model` is
   alive.
+- `timings.transformer_prefill_ms` has included the per-layer seal since
+  2026-11-06; earlier reports, and the transformer-prefill figures recorded
+  before then in [PERFORMANCE.md](PERFORMANCE.md), exclude it. Compare
+  `prefill_ms` across that change.
 
 ## Repository layout
 
