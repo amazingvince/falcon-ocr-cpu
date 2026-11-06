@@ -186,6 +186,7 @@ enum Command {
     },
 }
 fn main() -> Result<()> {
+    falcon_ocr::cpu::return_large_frees_to_os();
     let cli = Cli::parse();
     let start = Instant::now();
     let batch_size = cli.runner.batch_size.unwrap_or(1);

@@ -382,6 +382,7 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<()> {
     Ok(())
 }
 fn main() -> Result<()> {
+    falcon_ocr::cpu::return_large_frees_to_os();
     let args = Cli::parse();
     #[cfg_attr(not(any(target_arch = "x86_64", target_arch = "aarch64")), allow(unused_mut))]
     let mut hardware = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,

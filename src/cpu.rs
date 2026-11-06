@@ -6,6 +6,28 @@
 //! physical core. On a Ryzen 9 7950X (16 cores, 32 threads) 32 prefill threads
 //! are 22% faster than 16, while 32 decode threads are 60% slower than 16.
 
+/// Keep glibc allocations of 4 MiB and up separately mapped, so freeing a
+/// page's prefill buffers returns them to the OS instead of leaving them for
+/// the next page to fault over. Fixing one threshold stops glibc adjusting
+/// both, which would leave the trim threshold at 128 KiB and return small
+/// per-thread buffers on every free, so both are set. Other platforms keep
+/// their allocator policy.
+pub fn return_large_frees_to_os() {
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    {
+        const M_TRIM_THRESHOLD: i32 = -1;
+        const M_MMAP_THRESHOLD: i32 = -3;
+        unsafe extern "C" {
+            fn mallopt(param: i32, value: i32) -> i32;
+        }
+        // SAFETY: both are glibc parameters, and 4 MiB is valid for each.
+        unsafe {
+            mallopt(M_TRIM_THRESHOLD, 4 * 1024 * 1024);
+            mallopt(M_MMAP_THRESHOLD, 4 * 1024 * 1024);
+        }
+    }
+}
+
 /// Logical CPUs available to this process (at least 1).
 pub fn logical_cpus() -> usize {
     std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
