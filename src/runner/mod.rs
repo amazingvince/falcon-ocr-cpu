@@ -630,6 +630,9 @@ impl Runner {
         }
         let mut hidden = Vec::new();
         let image_projection_ms = self.model.embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
+        if self.model.profile().memory_hygiene() {
+            prepared.patches = Vec::new();
+        }
         crate::model::report_memory(self.config.tuning.phases, "embed");
         let screen = self.head == HeadMode::Screened && teacher_tokens.is_empty();
         if screen {
@@ -664,7 +667,6 @@ impl Runner {
                 session.prepare_small_decode(c);
                 hidden = Vec::with_capacity(c.dim);
             }
-            prepared.patches = Vec::new();
             prepared.positions_hw = Vec::new();
             (pos_t, pos_hw) = (Vec::new(), Vec::new());
         }
