@@ -179,8 +179,8 @@ impl std::fmt::Display for PrefillAttention {
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
 /// for FP32), with or without matrices the INT16 panels cannot hold
-/// (`i16_misfit`, `Model::i16_misfit`: W8 exception columns or groups of
-/// 32), on this CPU with the `simd` backend and the `tuning` knobs
+/// (`i16_misfit`, `Model::i16_misfit`: 16-bit codes or W8 groups of 32),
+/// on this CPU with the `simd` backend and the `tuning` knobs
 /// `prefill_bf16`, `prefill_projections`, `prefill_softmax` and
 /// `prefill_softmax_fp32`: the single predicate set behind
 /// `Model::forward_layers` and `auto::Resolved`. By default an 8-bit body
@@ -216,9 +216,9 @@ pub fn prefill_plan(
     let static_fp32 = panel && fp32_softmax == PrefillSoftmax::Static;
     // 8-bit bodies (fast mode) run the prefill projections with INT16
     // activations and the attention in BF16 where the CPU has AVX512-BF16
-    // (`attention_prefill_bf16`). INT16 panels hold codes only, in groups
-    // of 64, so a body with exception columns or groups of 32 keeps FP32
-    // projection panels (`QuantLinear::prefill` asserts as much).
+    // (`attention_prefill_bf16`). INT16 panels take codes in groups of 64
+    // and separate FP32 exceptions; groups of 32 keep FP32 projection
+    // panels (`QuantLinear::prefill` asserts as much).
     let bf16_attention = panel && body_bits == Some(8) && simd == Simd::Auto && bf16_available();
     let i16 = panel && body_bits == Some(8) && !i16_misfit && tuning.prefill_projections == PrefillProjections::I16;
     let projection = if !panel {

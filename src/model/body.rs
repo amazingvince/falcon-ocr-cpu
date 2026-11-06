@@ -27,9 +27,9 @@ impl Model {
     pub fn exception_bytes(&self) -> usize {
         self.quantized_body().map(QuantLinear::exception_bytes).sum()
     }
-    /// Whether a quantized body matrix does not fit the code-only INT16
+    /// Whether a quantized body matrix does not fit the INT16
     /// prefill panels (`QuantLinear::fits_i16_panels`): 16-bit codes, a W8
-    /// overlay's groups of 32, or exception columns.
+    /// overlay's groups of 32, or a dimension that does not fill panels.
     pub fn i16_misfit(&self) -> bool {
         self.quantized_body().any(|q| !q.fits_i16_panels())
     }

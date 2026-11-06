@@ -13,6 +13,8 @@
 //! input moves by at most half a step, 1/65534 of its group's absmax,
 //! against BF16's 2^-8 of every value. The default for 8-bit models
 //! (`Tuning::prefill_projections`).
+//! FP32 exception columns are zeroed before activation quantization and add
+//! one FMA per column, in ascending order, after the integer groups.
 use rayon::prelude::*;
 
 use super::{
@@ -62,12 +64,15 @@ impl Isa {
 }
 
 /// Packed weights: codes as INT16 pairs `[panel][k / 2][nr][2]` and scales
-/// `[panel][k / 64][nr]`.
+/// `[panel][k / 64][nr]`, plus FP32 exception weights
+/// `[panel][columns][nr]`.
 #[derive(Default)]
 pub(crate) struct Panels {
     nr: usize,
     codes: Vec<i16>,
     scales: Vec<f32>,
+    columns: Vec<i32>,
+    values: Vec<f32>,
 }
 
 /// Pack `n x k` 8-bit codes with one scale per 64 inputs (`scales` is
@@ -79,6 +84,8 @@ pub(crate) fn pack<const NR: usize>(n: usize, k: usize, codes: &[i8], scales: &[
     let groups = k / GROUP;
     assert_eq!(scales.len(), n * groups);
     out.nr = NR;
+    out.columns.clear();
+    out.values.clear();
     out.codes.resize(n * k, 0);
     out.scales.resize(n * groups, 0.0);
     out.codes
@@ -99,6 +106,25 @@ pub(crate) fn pack<const NR: usize>(n: usize, k: usize, codes: &[i8], scales: &[
                 }
             }
         });
+}
+
+/// Pack FP32 exception weights from `[n][columns]` into
+/// `[panel][columns][NR]`, keeping their ascending input-column order.
+pub(crate) fn pack_exceptions<const NR: usize>(n: usize, columns: &[i32], values: &[f32], out: &mut Panels) {
+    assert!(n.is_multiple_of(NR), "INT16 exception panel shape");
+    assert_eq!(values.len(), n * columns.len());
+    out.columns.extend_from_slice(columns);
+    out.values.resize(values.len(), 0.0);
+    if columns.is_empty() {
+        return;
+    }
+    for (panel, dst) in out.values.chunks_exact_mut(columns.len() * NR).enumerate() {
+        for (column, weights) in dst.chunks_exact_mut(NR).enumerate() {
+            for (row, weight) in weights.iter_mut().enumerate() {
+                *weight = values[(panel * NR + row) * columns.len() + column];
+            }
+        }
+    }
 }
 
 /// `C = A * W^T` for `a` (`m x k`) and 8-bit `panels` on kernel `isa`,
@@ -131,17 +157,18 @@ struct I16Panels<'a, const NR: usize> {
 
 impl<const NR: usize> PanelKernel<NR> for I16Panels<'_, NR> {
     type Packed = i32;
-    /// Code pairs `[k / 2][MR]`, then the steps' bits `[k / 64][MR]`.
+    /// Code pairs `[k / 2][MR]`, then the steps' bits `[k / 64][MR]`
+    /// and the scaled FP32 exceptions' bits `[columns][MR]`.
     fn group_len(&self, k: usize) -> usize {
-        MR * (k / 2 + k / GROUP)
+        MR * (k / 2 + k / GROUP + self.panels.columns.len())
     }
     fn pack_rows(&self, a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<&[f32]>, out: &mut [i32]) {
         if self.isa != Isa::Scalar {
             // SAFETY: `gemm` checked that the kernel is available, and both
             // vector kernels need AVX2.
-            unsafe { pack_rows_avx2(a, rows, padded, k, row_scale, out) }
+            unsafe { pack_rows_avx2(a, rows, padded, k, row_scale, &self.panels.columns, out) }
         } else {
-            pack_rows(a, rows, padded, k, row_scale, out)
+            pack_rows(a, rows, padded, k, row_scale, &self.panels.columns, out)
         }
     }
     unsafe fn tile(&self, k: usize, a: &[i32], panel: usize, tile: &mut [[f32; NR]; MR]) {
@@ -157,7 +184,41 @@ impl<const NR: usize> PanelKernel<NR> for I16Panels<'_, NR> {
             Isa::Avx2 => unsafe { kernel_avx2(k, a.as_ptr(), codes.as_ptr(), scales.as_ptr(), tile) },
             Isa::Scalar => kernel_scalar(k, a, codes, scales, tile),
         }
+        if !self.panels.columns.is_empty() {
+            let count = self.panels.columns.len();
+            let inputs = &a[MR * (k / 2 + groups)..];
+            let values = &self.panels.values[panel * count * NR..(panel + 1) * count * NR];
+            if self.isa == Isa::Scalar {
+                exception_tile(inputs, values, tile);
+            } else {
+                // SAFETY: both vector ISAs require AVX2 and FMA, checked
+                // by `gemm` before reaching this tile.
+                unsafe { exception_tile_fma(inputs, values, tile) };
+            }
+        }
     }
+}
+
+/// Add ascending exception-column FMAs before the tile's epilogue.
+#[inline(always)]
+fn exception_tile<const NR: usize>(a: &[i32], values: &[f32], tile: &mut [[f32; NR]; MR]) {
+    for (inputs, weights) in a.chunks_exact(MR).zip(values.chunks_exact(NR)) {
+        for (r, out) in tile.iter_mut().enumerate() {
+            let x = f32::from_bits(inputs[r] as u32);
+            for (out, &weight) in out.iter_mut().zip(weights) {
+                *out = x.mul_add(weight, *out);
+            }
+        }
+    }
+}
+
+/// [`exception_tile`] compiled with native fused multiply-adds.
+///
+/// # Safety
+/// The CPU must support AVX2 and FMA.
+#[target_feature(enable = "avx2,fma")]
+unsafe fn exception_tile_fma<const NR: usize>(a: &[i32], values: &[f32], tile: &mut [[f32; NR]; MR]) {
+    exception_tile(a, values, tile)
 }
 
 /// Quantize one 64-input group into `q` and return its step `absmax /
@@ -190,16 +251,26 @@ fn quantize_group(x: &[f32], q: &mut [i16; GROUP]) -> f32 {
 
 /// The activation layout of [`I16Panels`]: per group of `MR` rows, INT16
 /// code pairs `[k / 2][MR]` (low half first) and then the steps (times the
-/// row scale) as FP32 bits `[k / 64][MR]`; zero codes and steps past
-/// `rows`. Every operation is exact or one IEEE rounding, so any compiled
-/// form gives the same bits.
+/// row scale) as FP32 bits `[k / 64][MR]`, then scaled exception inputs
+/// `[columns][MR]`; zero codes, steps and exceptions past `rows`. Every
+/// operation is exact or one IEEE rounding, so any compiled form gives
+/// the same bits.
 #[inline(always)]
-fn pack_rows(a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<&[f32]>, out: &mut [i32]) {
-    let group_len = MR * (k / 2 + k / GROUP);
+fn pack_rows(
+    a: &[f32],
+    rows: usize,
+    padded: usize,
+    k: usize,
+    row_scale: Option<&[f32]>,
+    columns: &[i32],
+    out: &mut [i32],
+) {
+    let group_len = MR * (k / 2 + k / GROUP + columns.len());
     let pairs = k / 2;
     let mut q = [0_i16; GROUP];
     for (block, dst) in out[..padded / MR * group_len].chunks_exact_mut(group_len).enumerate() {
-        let (codes, steps) = dst.split_at_mut(MR * pairs);
+        let (codes, rest) = dst.split_at_mut(MR * pairs);
+        let (steps, exceptions) = rest.split_at_mut(MR * k / GROUP);
         for r in 0..MR {
             let row = block * MR + r;
             if row >= rows {
@@ -209,16 +280,33 @@ fn pack_rows(a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<
                 for g in 0..k / GROUP {
                     steps[g * MR + r] = 0;
                 }
+                for c in 0..columns.len() {
+                    exceptions[c * MR + r] = 0;
+                }
                 continue;
             }
             let src = &a[row * k..(row + 1) * k];
             let scale = row_scale.map_or(1.0, |s| s[row]);
+            let mut column = 0;
             for (g, x) in src.chunks_exact(GROUP).enumerate() {
-                let step = quantize_group(x, &mut q);
+                let step = if column < columns.len() && (columns[column] as usize) < (g + 1) * GROUP {
+                    let mut zeroed = [0.0_f32; GROUP];
+                    zeroed.copy_from_slice(x);
+                    while column < columns.len() && (columns[column] as usize) < (g + 1) * GROUP {
+                        zeroed[columns[column] as usize % GROUP] = 0.0;
+                        column += 1;
+                    }
+                    quantize_group(&zeroed, &mut q)
+                } else {
+                    quantize_group(x, &mut q)
+                };
                 steps[g * MR + r] = (step * scale).to_bits() as i32;
                 for (i, pair) in q.chunks_exact(2).enumerate() {
                     codes[(g * PAIRS + i) * MR + r] = (pair[0] as u16 as u32 | (pair[1] as u16 as u32) << 16) as i32;
                 }
+            }
+            for (c, &column) in columns.iter().enumerate() {
+                exceptions[c * MR + r] = (src[column as usize] * scale).to_bits() as i32;
             }
         }
     }
@@ -229,8 +317,16 @@ fn pack_rows(a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<
 /// # Safety
 /// The CPU must support AVX2.
 #[target_feature(enable = "avx2")]
-unsafe fn pack_rows_avx2(a: &[f32], rows: usize, padded: usize, k: usize, row_scale: Option<&[f32]>, out: &mut [i32]) {
-    pack_rows(a, rows, padded, k, row_scale, out)
+unsafe fn pack_rows_avx2(
+    a: &[f32],
+    rows: usize,
+    padded: usize,
+    k: usize,
+    row_scale: Option<&[f32]>,
+    columns: &[i32],
+    out: &mut [i32],
+) {
+    pack_rows(a, rows, padded, k, row_scale, columns, out)
 }
 
 /// The oracle tile: per output, ascending groups of an exact INT32 sum, then

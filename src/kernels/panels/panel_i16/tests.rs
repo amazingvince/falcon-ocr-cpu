@@ -116,6 +116,109 @@ fn vector_kernels_are_bitwise_the_scalar_oracle() {
     }
 }
 
+fn exception_agree<const NR: usize>(m: usize, k: usize, n: usize) {
+    // Two pairs share a group, as they do in real overlays.
+    let columns = [0, 1, (k / 2) as i32, (k / 2 + 1) as i32, (k - 1) as i32];
+    let values: Vec<f32> = (0..n * columns.len()).map(|i| noise(i, 4) * 0.1).collect();
+    let mut a = activations(m, k);
+    let (mut codes, scales) = weights(n, k);
+    for row in codes.chunks_exact_mut(k) {
+        for &column in &columns {
+            row[column as usize] = 0;
+        }
+    }
+    for row in a.chunks_exact_mut(k) {
+        for &column in &columns {
+            row[column as usize] = 100_000.0 * (1.0 + noise(column as usize, 5));
+        }
+    }
+    let mut zeroed = a.clone();
+    for row in zeroed.chunks_exact_mut(k) {
+        for &column in &columns {
+            row[column as usize] = 0.0;
+        }
+    }
+    let row_scale: Vec<f32> = (0..m).map(|r| 0.25 + r as f32 / 9.0).collect();
+    let pool = rayon::ThreadPoolBuilder::new().num_threads(5).build().unwrap();
+    let single = rayon::ThreadPoolBuilder::new().num_threads(1).build().unwrap();
+    let mut plain = Panels::default();
+    pack::<NR>(n, k, &codes, &scales, &mut plain);
+    let mut expected = outputs::<NR>(Isa::Scalar, &zeroed, m, k, &plain, n, &row_scale, &pool);
+    let mut unscaled = vec![0.0_f32; m * n];
+    pool.install(|| {
+        gemm::<NR>(
+            Isa::Scalar,
+            &zeroed,
+            m,
+            k,
+            &plain,
+            n,
+            None,
+            Epilogue::Store(&mut unscaled),
+        );
+    });
+    for r in 0..m {
+        for c in 0..n {
+            let index = r * n + c;
+            for (i, &column) in columns.iter().enumerate() {
+                let x = a[r * k + column as usize];
+                let value = values[c * columns.len() + i];
+                expected[0][index] = (x * row_scale[r]).mul_add(value, expected[0][index]);
+                unscaled[index] = x.mul_add(value, unscaled[index]);
+            }
+            expected[2][index] = (index % 13) as f32 - 6.0 + expected[0][index];
+        }
+        for c in 0..n / 2 {
+            expected[1][r * n / 2 + c] =
+                crate::kernels::squared_relu_glu(unscaled[r * n + 2 * c], unscaled[r * n + 2 * c + 1]);
+        }
+    }
+    let mut panels = Panels::default();
+    pack::<NR>(n, k, &codes, &scales, &mut panels);
+    pack_exceptions::<NR>(n, &columns, &values, &mut panels);
+    let oracle = outputs::<NR>(Isa::Scalar, &a, m, k, &panels, n, &row_scale, &pool);
+    assert_eq!(
+        bits(&oracle),
+        bits(&expected),
+        "exception FMA order NR{NR} m{m} k{k} n{n}"
+    );
+    for isa in isas() {
+        for pool in [&pool, &single] {
+            let got = outputs::<NR>(isa, &a, m, k, &panels, n, &row_scale, pool);
+            assert_eq!(bits(&got), bits(&oracle), "{isa:?} exceptions NR{NR} m{m} k{k} n{n}");
+        }
+    }
+    let mut nonfinite = a.clone();
+    nonfinite[columns[0] as usize] = f32::NAN;
+    nonfinite[k + columns[2] as usize] = f32::INFINITY;
+    for isa in isas() {
+        let got = outputs::<NR>(isa, &nonfinite, m, k, &panels, n, &row_scale, &pool);
+        for output in got {
+            let width = output.len() / m;
+            assert!(
+                output[..2 * width].iter().all(|v| !v.is_finite()),
+                "{isa:?} exception nonfinite"
+            );
+        }
+    }
+    // Scratch reuses the panels for a matrix without exception columns.
+    pack::<NR>(n, k, &codes, &scales, &mut panels);
+    assert!(panels.columns.is_empty() && panels.values.is_empty());
+    let reused = outputs::<NR>(Isa::Scalar, &a, m, k, &panels, n, &row_scale, &pool);
+    let fresh = outputs::<NR>(Isa::Scalar, &a, m, k, &plain, n, &row_scale, &pool);
+    assert_eq!(bits(&reused), bits(&fresh));
+}
+
+/// Exception inputs do not coarsen their groups, then contribute ascending
+/// FP32 FMAs before every epilogue, bitwise on every ISA and pool size.
+#[test]
+fn exception_columns_are_bitwise_the_scalar_oracle() {
+    for (m, k, n) in [(13, 768, 64), (50, 2304, 64), (97, 1024, 32)] {
+        exception_agree::<16>(m, k, n);
+        exception_agree::<32>(m, k, n);
+    }
+}
+
 /// Against exact products of the unquantized activations: the error is at
 /// most the activation rounding, `0.51 * absmax_g * row_scale / 32767` per
 /// unit of `sum_{k in g} |w_k|` (half a step, plus the FP32 rounding of the

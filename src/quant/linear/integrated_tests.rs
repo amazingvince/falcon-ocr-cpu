@@ -249,9 +249,8 @@ fn exception_decode_is_bitwise_the_documented_order() {
     }
 }
 
-/// Large-M products (prefill, and the dense fallback) use the exact
-/// weights in place; the INT16 panels, which hold only codes, do not take
-/// a matrix with exception columns.
+/// Large-M products use the exact exception weights: in place in the FP32
+/// panels and dense fallback, and after the groups in the INT16 panels.
 #[test]
 fn exception_large_m_and_prefill_use_the_exact_weights() {
     use crate::kernels::panel_gemm::Epilogue;
@@ -303,9 +302,20 @@ fn exception_large_m_and_prefill_use_the_exact_weights() {
                 &mut Scratch::default(),
                 PrefillProjection::PanelAvx2,
             );
-            // The code-only INT16 panels cannot hold it, so no plan gives it
-            // them (`prefill_with_int16_panels_rejects_a_matrix_they_cannot_hold`).
-            assert!(!q.fits_i16_panels());
+            assert_eq!(q.fits_i16_panels(), n.is_multiple_of(32) && k.is_multiple_of(64));
+            #[cfg(target_arch = "x86_64")]
+            let i16 = q.fits_i16_panels().then(|| {
+                let mut out = vec![f32::NAN; rows * n];
+                q.prefill(
+                    &x,
+                    rows,
+                    None,
+                    Epilogue::Store(&mut out),
+                    &mut Scratch::default(),
+                    PrefillProjection::PanelI16Avx2,
+                );
+                out
+            });
             for (r, c) in (0..rows).flat_map(|r| (0..n).map(move |c| (r, c))) {
                 let products: Vec<f64> = (0..k).map(|j| x[r * k + j] as f64 * exact[c * k + j] as f64).collect();
                 let sum: f64 = products.iter().sum();
@@ -313,14 +323,33 @@ fn exception_large_m_and_prefill_use_the_exact_weights() {
                 for value in [panel[r * n + c], fp32[r * n + c]] {
                     assert!((value as f64 - sum).abs() <= bound + 1e-6, "n{n} k{k} rows{rows}");
                 }
+                #[cfg(target_arch = "x86_64")]
+                if let Some(i16) = &i16 {
+                    let groups = k / 64;
+                    let mut quant = 0.0_f64;
+                    for g in 0..groups {
+                        let ordinary = (g * 64..(g + 1) * 64).filter(|j| !columns.contains(&(*j as i32)));
+                        let absmax = ordinary.clone().fold(0.0_f64, |v, j| v.max(x[r * k + j].abs() as f64));
+                        let wsum: f64 = ordinary
+                            .map(|j| (q.codes()[c * k + j] as f64 * q.scales()[c * groups + g] as f64).abs())
+                            .sum();
+                        quant += wsum * 0.51 * absmax / 32767.0;
+                    }
+                    let mag = products.iter().map(|p| p.abs()).sum::<f64>();
+                    let bound = quant + 4.0 * (groups + 1) as f64 * 2.0_f64.powi(-24) * mag + 1e-30;
+                    assert!(
+                        (i16[r * n + c] as f64 - sum).abs() <= bound,
+                        "INT16 n{n} k{k} rows{rows}"
+                    );
+                }
             }
         }
     }
 }
 
-/// Only 8-bit codes in groups of 64 without exception columns, in whole
-/// 32-row panels, fit the INT16 panels; asked to run any other matrix they
-/// panic instead of quietly running the FP32 panels under a plan that
+/// Only 8-bit codes in groups of 64, in whole 32-row panels, fit the INT16
+/// panels (with optional exception columns); other matrices panic instead
+/// of quietly running the FP32 panels under a plan that
 /// reports INT16.
 #[test]
 #[cfg(target_arch = "x86_64")]

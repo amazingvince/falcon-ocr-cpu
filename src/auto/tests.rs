@@ -545,9 +545,8 @@ fn plans_count_exception_columns_from_headers() {
     };
     let facts = ModelFacts::from_plan(&checkpoint).unwrap();
     assert_eq!(facts.exception_bytes, exception_bytes);
-    // The INT16 prefill panels hold neither exception columns nor groups
-    // of 32, so such bodies plan the FP32 panels.
-    assert!(facts.i16_misfit);
+    // Exception columns fit the INT16 panels; groups of 32 still do not.
+    assert!(!facts.i16_misfit);
     for (group_size, misfit) in [("32", true), ("64", false)] {
         let grouped = root.join(format!("g{group_size}.safetensors"));
         safetensors::serialize_to_file(

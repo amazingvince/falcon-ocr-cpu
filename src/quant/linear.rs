@@ -648,17 +648,12 @@ impl QuantLinear {
             if let Some(isa) = isa {
                 assert!(
                     self.fits_i16_panels() && isa.available(),
-                    "the plan's {kernel} projections cannot take this {}x{} matrix of {}-bit codes in groups of {}{} \
+                    "the plan's {kernel} projections cannot take this {}x{} matrix of {}-bit codes in groups of {} \
                      on this CPU: `prefill_plan` must plan the FP32 panels for its body",
                     self.out_dim,
                     self.in_dim,
                     self.bits(),
                     self.group_size,
-                    if self.exceptions.is_some() {
-                        " with exception columns"
-                    } else {
-                        ""
-                    },
                 );
                 let Codes::I8(codes) = &self.codes else {
                     unreachable!("fits_i16_panels checked the code width")
@@ -666,6 +661,14 @@ impl QuantLinear {
                 // Exact INT32 group sums of INT16 activations and 8-bit
                 // codes; only the activations round (see `panel_i16`).
                 panel_i16::pack::<{ panel_i16::NR }>(self.out_dim, self.in_dim, codes, &self.scales, &mut scratch.i16);
+                if let Some(exceptions) = &self.exceptions {
+                    panel_i16::pack_exceptions::<{ panel_i16::NR }>(
+                        self.out_dim,
+                        &exceptions.columns,
+                        &exceptions.values,
+                        &mut scratch.i16,
+                    );
+                }
                 panel_i16::gemm::<{ panel_i16::NR }>(
                     isa,
                     input,
@@ -706,14 +709,13 @@ impl QuantLinear {
     pub(crate) fn panel_shaped(&self) -> bool {
         self.out_dim.is_multiple_of(crate::kernels::panel_gemm::NR)
     }
-    /// Whether the code-only INT16 prefill panels (`kernels::panel_i16`)
-    /// hold this matrix: 8-bit codes in groups of 64 without exception
-    /// columns (the panels hold only the codes), an output dimension that
-    /// fills whole 32-row panels and an input dimension of whole groups.
+    /// Whether the INT16 prefill panels (`kernels::panel_i16`) hold this
+    /// matrix: 8-bit codes in groups of 64, with optional FP32 exception
+    /// columns, an output dimension that fills whole 32-row panels and an
+    /// input dimension of whole groups.
     pub(crate) fn fits_i16_panels(&self) -> bool {
         matches!(self.codes, Codes::I8(_))
             && self.group_size == 64
-            && self.exceptions.is_none()
             && self.out_dim.is_multiple_of(I16_PANEL_ROWS)
             && self.in_dim.is_multiple_of(64)
     }

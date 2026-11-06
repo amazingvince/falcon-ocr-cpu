@@ -633,7 +633,7 @@ fn fp32_static_softmax_is_near_exact_default_and_never_exact() {
     use crate::config::{PrefillBf16, PrefillSoftmax, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
-            for exceptions in [false, true] {
+            for misfit in [false, true] {
                 for bf16 in [PrefillBf16::Attention, PrefillBf16::Off] {
                     let plan = |fp32_softmax| {
                         let tuning = Tuning {
@@ -641,12 +641,12 @@ fn fp32_static_softmax_is_near_exact_default_and_never_exact() {
                             prefill_softmax_fp32: fp32_softmax,
                             ..Tuning::default()
                         };
-                        prefill_plan(bits, exceptions, simd, &tuning)
+                        prefill_plan(bits, misfit, simd, &tuning)
                     };
                     let default = plan(None);
                     let online = plan(Some(PrefillSoftmax::Online));
                     let fixed = plan(Some(PrefillSoftmax::Static));
-                    let case = format!("{simd:?} {bits:?} exceptions {exceptions} {bf16:?}");
+                    let case = format!("{simd:?} {bits:?} misfit {misfit} {bf16:?}");
                     assert_eq!(online.attention.fp32_softmax(), PrefillSoftmax::Online, "{case}");
                     assert_eq!(fixed.projection, online.projection, "{case}");
                     let quantized = bits.is_some() && panel_gemm::available(simd);
@@ -674,7 +674,7 @@ fn fp32_static_softmax_is_near_exact_default_and_never_exact() {
 }
 
 #[test]
-fn exception_columns_keep_fp32_projection_panels() {
+fn i16_misfit_keeps_fp32_projection_panels() {
     use crate::config::{PrefillBf16, PrefillProjections, PrefillSoftmax, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
@@ -687,7 +687,7 @@ fn exception_columns_keep_fp32_projection_panels() {
                         ..Tuning::default()
                     };
                     let case = format!("{simd:?} {bits:?} {setting:?} {projections:?}");
-                    let (plain, exceptions) = (
+                    let (plain, misfit) = (
                         prefill_plan(bits, false, simd, &tuning),
                         prefill_plan(bits, true, simd, &tuning),
                     );
@@ -707,14 +707,14 @@ fn exception_columns_keep_fp32_projection_panels() {
                         other => other,
                     };
                     assert_eq!(static_softmax.attention, expected, "{case}");
-                    assert_eq!(exceptions.attention, plain.attention, "{case}");
+                    assert_eq!(misfit.attention, plain.attention, "{case}");
                     let expected = match plain.projection {
                         PrefillProjection::PanelI16Vnni | PrefillProjection::PanelI16Avx2 => {
                             PrefillProjection::PanelAvx2
                         }
                         other => other,
                     };
-                    assert_eq!(exceptions.projection, expected, "{case}");
+                    assert_eq!(misfit.projection, expected, "{case}");
                     // INT16 projections only for 8-bit bodies that ask for
                     // them; attention never depends on the knob.
                     let i16 = matches!(
@@ -750,11 +750,11 @@ fn exception_columns_keep_fp32_projection_panels() {
                 prefill_softmax: PrefillSoftmax::Online,
                 ..Tuning::default()
             };
-            for exceptions in [false, true].into_iter().filter(|_| bits != Some(8)) {
+            for misfit in [false, true].into_iter().filter(|_| bits != Some(8)) {
                 assert_eq!(
-                    prefill_plan(bits, exceptions, simd, &Tuning::default()),
-                    prefill_plan(bits, exceptions, simd, &reference),
-                    "{simd:?} {bits:?} exceptions {exceptions}"
+                    prefill_plan(bits, misfit, simd, &Tuning::default()),
+                    prefill_plan(bits, misfit, simd, &reference),
+                    "{simd:?} {bits:?} misfit {misfit}"
                 );
             }
         }

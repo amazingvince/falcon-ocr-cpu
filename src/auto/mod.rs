@@ -525,7 +525,7 @@ pub struct ModelFacts {
     #[serde(default)]
     pub exception_bytes: usize,
     /// `Model::i16_misfit`: a body matrix the INT16 prefill panels cannot
-    /// hold; for a plan, exception columns or a W8 overlay's groups of 32.
+    /// hold; for a plan, 16-bit codes or a W8 overlay's groups of 32.
     #[serde(default)]
     pub i16_misfit: bool,
 }
@@ -565,7 +565,7 @@ impl ModelFacts {
             overlay_sha256,
             exception_bytes,
             // As `Model::i16_misfit`: 16-bit codes too.
-            i16_misfit: body_bits == Some(16) || exception_bytes > 0 || groups_of_32,
+            i16_misfit: body_bits == Some(16) || groups_of_32,
         })
     }
 }
