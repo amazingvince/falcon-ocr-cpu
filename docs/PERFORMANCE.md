@@ -1,6 +1,6 @@
 # Performance
 
-Status: current as of 2026-11-06. Host, unless a section says otherwise:
+Status: current as of 2026-11-07. Host, unless a section says otherwise:
 Ryzen 9 7950X (16 cores, 32 threads, DDR5, AVX-512 with BF16), Windows 11.
 Page: the journal benchmark page, 6,544 input tokens. Earlier measurements on
 the tiny 256×128 fixture are archived in
@@ -260,10 +260,10 @@ records live under `artifacts/` on that host only:
   depths;
 - `w16-bf16-attn-2026-11-03/` for near-exact's removed BF16 attention, and
   `profile-2026-11-03/` for the profiled whole pages;
-- `integration-2026-11-06/` for peak memory (`sweep2/`, the busier `sweep/`
-  and `trim/`), the whole-layer Q8 cache (`kv/`, `kv-whole/`) and the
-  huge-page re-screen (`thp/`), and `peak-memory-2026-11-05/` for the
-  per-change ledger;
+- `integration-2026-11-06/` for peak memory (`sweep2/`, the busier `sweep/`,
+  `tiebreak/` with its rule and `trim/`), the whole-layer Q8 cache (`kv/`,
+  `kv-whole/`) and the huge-page re-screen (`thp/`), and
+  `peak-memory-2026-11-05/` for the per-change ledger;
 - `hugepages-pinning-2026-11-05/`, `ffn-prune-2026-11-05/` and
   `gptq-exc-2026-11-05/` for those rejected rows.
 
@@ -403,11 +403,26 @@ includes the seal:
 The timing columns carry scatter. An earlier sweep of the same binaries on
 a busier host gave total ratios of 0.990 and 0.978 in near-exact (journal,
 sample), 0.968 and 0.970 in fast mode and 1.003 and 0.986 in exact, with
-decode ratios of 0.98 to 1.004. Near-exact's decode ratio in the quiet sweep
-varies by round: 1.059, 1.039 and 1.001 on the sample page, 1.003, 1.059
-and 1.013 on the journal page. Fast mode gains about 3%; near-exact and
-exact stay within about 2% either way, which is no measured speedup or
-slowdown.
+decode ratios of 0.98 to 1.004. Fast mode gains about 3%, and exact stays
+within about 2% either way.
+
+Near-exact's sample page disagreed most between the sweeps, with decode
+ratios of 1.039 and 0.993, so six more rounds settled near-exact: the same
+binaries, flags and pages, the arms' order swapped each round, and a rule
+fixed before the run. A difference counts as real if the median ratio passes
+1% and at least five of the six rounds fall on that side. New/old, median
+and range:
+
+| Page | Decode, ms/token | `prefill_ms` | `total_ms` |
+|---|---:|---:|---:|
+| journal | 0.992 (0.967-1.016) | 0.991 (0.982-1.134) | 0.995 (0.986-1.105) |
+| sample | 1.000 (0.979-1.012) | 0.954 (0.941-0.998) | 0.984 (0.974-0.993) |
+
+Near-exact's decode did not change. The sample page's prefill and total are
+faster in all six rounds, by 4.6% and 1.6%, and pass the rule; nothing on the
+journal page does, and its 1.134 and 1.105 come from one run. Tokens matched
+in every pair. Absolute times ran up to 19% slower in the first three rounds,
+with no cause in `ps`; the ratios compare runs within a round.
 
 With `--pipeline`, near-exact, on the first three pages of the [10-page
 set](MODES.md#the-metric), one run each: peak RSS 3,627 → 1,335 MB, wall time
