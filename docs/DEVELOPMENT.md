@@ -78,7 +78,7 @@ the platform-dependent math; the token-parity gates are separate checks.
   panels, the verification rows under `auto`) return early, or drop their
   AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted CI runners
   included; the ignored `kernels::tests::host_runs_every_avx512_kernel`
-  fails on such a CPU ([the `weights` job](#the-weights-ci-job) runs it).
+  checks that the local CPU can exercise all of those kernels.
   The ignored tokenizer-decode and RoPE checks additionally need
   `artifacts/reference/tokenizer-cleanup-v1/fixture.json` and
   `artifacts/reference/rope-operators.safetensors`, respectively; neither is
@@ -91,11 +91,9 @@ the platform-dependent math; the token-parity gates are separate checks.
   Python specification on synthetic pages and the decode fixtures.
 - **Ignored integration gates** need `artifacts/` (the pinned checkpoint,
   the GPTQ overlay, the packed files, the GPU smoke reference and the corpus).
-  `python scripts/fetch_fixtures.py` brings the two that are made rather
-  than published for inference — the FP32 GPU smoke record and the original
-  GPTQ overlay — and verifies every digest, so these gates no longer run
-  only on the machine that recorded them. The checkpoint comes from
-  `scripts/fetch_reference.py` and the packed files from the catalogue:
+  `python scripts/fetch_fixtures.py` downloads the FP32 GPU smoke record and
+  the original GPTQ overlay and verifies their digests. Get the checkpoint
+  with `scripts/fetch_reference.py` and the packed files from the catalogue:
 
   ```sh
   cargo test --release --locked --test modes --test gpu_parity --test cache_layout --test weight_layout \
@@ -195,16 +193,13 @@ separately rather than regenerating fixtures to make a check pass.
 ### The `weights` CI job
 
 Nightly and on manual dispatch, a self-hosted runner labelled
-`falcon-weights` (an AVX-512 F/BW/VL/VNNI/BF16 CPU with `artifacts/` and
-upstream's [calibration reference](#token-agreement)) runs these steps; on
-such a machine they run the same way by hand, from the repository root:
+`falcon-weights` with `artifacts/` and upstream's
+[calibration reference](#token-agreement) runs these steps. Run them by hand
+from the repository root on a machine with the same inputs.
 
 ```sh
 cargo build --release --locked --bins
-# The AVX-512 oracles, then a failure if this CPU skipped any of them
-cargo test --release --lib --locked
-cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_runs_every_avx512_kernel
-cargo test --release --locked --test modes --test gpu_parity --test cache_layout --test weight_layout \
+cargo test --release --locked --test modes --test gpu_parity --test cache_layout \
   --test batch_parity --test batch_trace --test decode_allocations --test head_screen -- --ignored
 cargo test --release --locked --test negative_inputs --test margin_crop --test run_cli \
   -- --ignored --test-threads=1
@@ -214,8 +209,13 @@ bash tools/agree_queue.sh artifacts/phase4/agree/ci tools/gptq-calibration-pages
   near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors
 ```
 
-The two library commands need no `artifacts/`: on any such CPU they check
-the AVX-512 kernels without the model files.
+On an AVX-512 F/BW/VL/VNNI/BF16 CPU, run the library tests and confirm the host
+can exercise all the AVX-512 kernels. Both commands work without model files.
+
+```sh
+cargo test --release --lib --locked
+cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_runs_every_avx512_kernel
+```
 
 ## Token agreement
 
