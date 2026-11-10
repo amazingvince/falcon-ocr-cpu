@@ -32,7 +32,7 @@ impl Trace for UniqueNames {
 }
 
 #[test]
-#[ignore = "requires pinned model and strict GPU reference fixture"]
+#[ignore = "requires pinned model and smoke input PNG"]
 fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
     let model = Arc::new(Model::load("artifacts/model").unwrap());
     let original = image::open("artifacts/reference/smoke-fp32/canonical-rgb.png")
@@ -95,7 +95,7 @@ fn singleton_batch_chunks_keep_request_names_and_phase_callbacks() {
 }
 
 #[test]
-#[ignore = "requires pinned model and strict GPU reference fixture"]
+#[ignore = "requires pinned model and smoke input PNG"]
 fn streamed_pages_are_traced_under_their_input_indices() {
     let model = Arc::new(Model::load("artifacts/model").unwrap());
     let original = Path::new("artifacts/reference/smoke-fp32/canonical-rgb.png");
@@ -181,7 +181,7 @@ fn streamed_pages_are_traced_under_their_input_indices() {
 }
 
 #[test]
-#[ignore = "requires pinned model and strict GPU reference fixture"]
+#[ignore = "requires pinned model and smoke input PNG"]
 fn safety_net_reruns_are_traced_apart_from_the_routed_attempt() {
     let model = Arc::new(Model::load("artifacts/model").unwrap());
     let page = image::open("artifacts/reference/smoke-fp32/canonical-rgb.png")

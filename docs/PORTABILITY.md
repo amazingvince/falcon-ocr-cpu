@@ -1,6 +1,6 @@
 # Portability
 
-Status: current as of 2026-10-28. Runs and is measured on x86-64 (Windows,
+Status: current as of 2026-10-29. Runs and is measured on x86-64 (Windows,
 Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and
 runs the NEON unit tests on macOS runners); the NEON kernels are bitwise the
 portable ones in those tests, but no aarch64 machine has yet run the model
@@ -56,11 +56,13 @@ with the same exp choice share the portable oracle's arithmetic; the
 
 Recognition uses the portable polynomial exp in prefill attention
 (token-identical to the platform exp on all calibration pages) and in fast
-mode's decode attention over its 8-bit cache;
-on x86 the other decode attention and traces use a vector exp that matches
-the platform's `f32::exp`, with scalar fallback for uncertain lanes. UCRT,
-glibc and Apple libm can differ, so platform-exact arithmetic is not a
-cross-platform bitwise guarantee. NEON always uses the polynomial exp.
+mode's decode attention over its 8-bit cache; on x86 the other decode
+attention and traces use a vector exp that matches the platform's
+`f32::exp`, with scalar fallback for uncertain lanes. RoPE also uses `powf`
+and `sin_cos`. UCRT, glibc and Apple libm can differ, so platform-exact
+arithmetic is not a cross-platform bitwise guarantee. The
+[trace-hash gates](DEVELOPMENT.md#the-check) use Windows baselines. NEON
+always uses the polynomial exp.
 
 ## Kernel inventory
 

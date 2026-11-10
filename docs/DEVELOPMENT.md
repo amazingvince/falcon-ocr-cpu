@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-10-28.
+Status: current as of 2026-10-29.
 
 ## Toolchain
 
@@ -30,10 +30,10 @@ bash tools/check.sh
 `cargo fmt --all -- --check`,
 `cargo clippy --release --all-targets --locked -- -D warnings`, and
 `cargo test --release --lib --locked`. With `--smoke` it also rebuilds the
-binary and checks the exact-mode CPU smoke trace hash (`e2dad223…`),
-requiring the pinned GPU smoke fixture. Lints: `Cargo.toml` sets `clippy::all`
-and `unsafe_op_in_unsafe_fn` to warn (denied in the check), `clippy.toml`
-allows eight arguments, `rustfmt.toml` sets a 120-column width.
+binary and checks the exact-mode CPU smoke trace hash recorded on Windows
+(`e2dad223…`), requiring the pinned GPU smoke fixture. Lints: `Cargo.toml`
+sets `clippy::all` and `unsafe_op_in_unsafe_fn` to warn (denied in the check),
+`clippy.toml` allows eight arguments, `rustfmt.toml` sets a 120-column width.
 
 The Ubuntu CI job also checks public and crate-visible Rust documentation.
 Install the checker and run the same gate locally:
@@ -48,6 +48,14 @@ rustdoc-checker src --strict --mode docs
 describe behavior, constraints and failures in prose, with `# Safety` for
 unsafe functions.
 
+The smoke hash and the three trace hashes in `tests/modes.rs` are Windows
+baselines. The
+[Linux receipt](../reference/projector-intervention-production.json) records
+a different AVX2 exact trace (`659144c9…`), so `--smoke` and
+`tensor_traces_are_bitwise_pinned` currently fail on Linux even with the
+published fixtures. [PORTABILITY.md](PORTABILITY.md#code-structure) describes
+the platform-dependent math; the token-parity gates are separate checks.
+
 ## Tests
 
 - **Library tests** (`cargo test --release --lib`) are bitwise oracles: every
@@ -60,14 +68,23 @@ unsafe functions.
   A fast path without such a test does not ship. The prefill stages are also
   compared bitwise across pool sizes (`model::pool_tests`, `kernels::tests`),
   which the page pipeline's second pool relies on.
+  The ignored tokenizer-decode and RoPE checks additionally need
+  `artifacts/reference/tokenizer-cleanup-v1/fixture.json` and
+  `artifacts/reference/rope-operators.safetensors`, respectively; neither is
+  included in the fixture download.
 - **Integration tests that need no weights** run in CI
   (`cargo test --release --locked --tests`): negative inputs, preprocessing
   fixtures, tokenizer prompts, and `run`'s flag, input, list and output-file
   checks (`tests/run_cli.rs`). The router's parity tests (library) compare
   its 26 statistics, both tree scores and the route bit for bit with the
   Python specification on synthetic pages and the decode fixtures.
-- **Ignored gates** need `artifacts/` (the pinned checkpoint, the GPTQ
-  overlay, the packed files, the GPU smoke reference and the corpus):
+- **Ignored integration gates** need `artifacts/` (the pinned checkpoint,
+  the GPTQ overlay, the packed files, the GPU smoke reference and the corpus).
+  `python scripts/fetch_fixtures.py` brings the two that are made rather
+  than published for inference — the FP32 GPU smoke record and the original
+  GPTQ overlay — and verifies every digest, so these gates no longer run
+  only on the machine that recorded them. The checkpoint comes from
+  `scripts/fetch_reference.py` and the packed files from the catalogue:
 
   ```sh
   cargo test --release --locked --test modes --test gpu_parity --test cache_layout \
@@ -124,12 +141,14 @@ unsafe functions.
   interrupted output, under
   `--keep-going` records a failing page and runs the rest, and goes on when
   stderr is closed.
-- **Draft head** (needs an exported head file and `artifacts/model`):
+- **Draft head** (needs an exported head, its `<head>.fixture.json` sidecar
+  and `artifacts/model`):
   `FALCON_OCR_DRAFT_HEAD=<head>.safetensors cargo test --release --lib
   draft_head -- --ignored --nocapture` checks the Rust chain against the
   PyTorch fixture written by `export_head.py` (equal tokens up to the first
   near tie) with FP32 and INT8 drafter caches, and prints the draft-step
-  timing probe (warm and cold).
+  timing probe (warm and cold). The published head does not include the
+  parity sidecar, and the fixture download does not supply it.
 - **Token agreement** against the FP32 anchor
   ([below](#token-agreement)) measures flips and KL;
   [mode comparisons](MODES.md#the-metric). The CI `weights` job runs the
@@ -164,7 +183,8 @@ separately rather than regenerating fixtures to make a check pass.
 `artifacts/phase4/checks/calibration-reference.json` when available;
 otherwise build a reference from `reference/corpus-v3-calibration-lock.json`
 with up to 512 tokens per page. For the metric and the two anchor sets, see
-[mode comparisons](MODES.md#the-metric).
+[mode comparisons](MODES.md#the-metric). The fixture download does not
+include the upstream reference.
 
 From the repository root (bash; `falcon-ocr-eval` from `cargo build
 --release --locked`), writing to the git-ignored `artifacts/agree/`; to use

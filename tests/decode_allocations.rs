@@ -59,7 +59,7 @@ impl Trace for Probe {
 }
 
 #[test]
-#[ignore = "requires pinned model and strict GPU reference fixture"]
+#[ignore = "requires pinned model and smoke input PNG"]
 fn warm_fp32_decode_has_no_heap_allocations() {
     let model = Arc::new(Model::load("artifacts/model").unwrap());
     let image = image::open("artifacts/reference/smoke-fp32/canonical-rgb.png")

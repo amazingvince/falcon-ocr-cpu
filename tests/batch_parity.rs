@@ -26,7 +26,7 @@ fn fixture_images() -> [RgbImage; 4] {
 }
 
 #[test]
-#[ignore = "requires pinned model and strict GPU reference fixture"]
+#[ignore = "requires pinned model and smoke input PNG"]
 fn mixed_batches_preserve_tokens_order_stops_and_limits() {
     let model = Arc::new(Model::load("artifacts/model").unwrap());
     let images = fixture_images();
@@ -194,7 +194,7 @@ fn assert_same_pages(label: &str, actual: &[OcrResult], expected: &[OcrResult]) 
 /// runs cover routed pages whose safety net reruns them at the cap, and the
 /// margin crop.
 #[test]
-#[ignore = "requires pinned model and strict GPU reference fixture"]
+#[ignore = "requires pinned model and smoke input PNG"]
 fn continuous_batches_and_the_pipeline_keep_every_pages_tokens() {
     let images = fixture_images();
     let text_page = tiled_text_page(&images[1]);
