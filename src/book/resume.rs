@@ -230,6 +230,9 @@ pub struct Run {
     /// reaches with FP32 prefill projections and the run's
     /// [`Kernels::escalation_attention`], or its attention where it has none.
     pub escalated: bool,
+    /// Whether the current run requests `--escalate`. Records describe an
+    /// actual rerun with `escalated`, not their run's requested policy.
+    pub escalate: bool,
     /// For an escalated record, the attention and projection kinds (as
     /// [`Kernels`] names them) of its fast attempt's prefill
     /// (`escalated_from.prefill`), which the resumed run's must equal: a
@@ -243,6 +246,7 @@ impl Run {
     /// Whether a record that ran as `self` could have come from `run`.
     fn matches(&self, run: &Run) -> bool {
         self.mode == run.mode
+            && (!self.escalated || run.escalate)
             && self.routed == run.routed
             && self
                 .precision
@@ -395,6 +399,7 @@ impl Existing {
             settings,
             kernels: plan.and_then(Kernels::from_plan),
             escalated: attempt.is_some(),
+            escalate: false,
             attempt_prefill: attempt
                 .and_then(|attempt| attempt.get("prefill"))
                 .and_then(prefill_kinds),
@@ -556,13 +561,14 @@ pub fn is_file_or_missing(path: &Path) -> bool {
 
 /// This run as [`Run`] compares it with records: `mode`, `precision`, the
 /// overlay digest of its weights, its generation `options` and its
-/// runner's `kernels`.
+/// runner's `kernels`, and whether it requests `--escalate`.
 pub fn this_run(
     mode: Option<Mode>,
     precision: &str,
     overlay: Option<&str>,
     options: &GenerationOptions,
     kernels: Option<Kernels>,
+    escalate: bool,
 ) -> Run {
     Run {
         mode: mode.map(|mode| mode.label().to_owned()),
@@ -573,6 +579,7 @@ pub fn this_run(
         kernels,
         // A run escalates pages; it never is an escalation itself.
         escalated: false,
+        escalate,
         attempt_prefill: None,
     }
 }
@@ -593,7 +600,7 @@ pub fn escalation_warning(existing: &Existing) -> Option<String> {
 /// A warning when successful records in the output ran otherwise than
 /// `this` run (another mode, precision, overlay, routing, size bounds,
 /// output cap, margin crop, repetition stop, exp, prefill rounding, decode
-/// chunking or image decoder):
+/// chunking, image decoder or escalation):
 /// `--resume` skips their pages, it does not reread them.
 pub fn resume_warning(existing: &Existing, this: &Run) -> Option<String> {
     let others: Vec<String> = existing
@@ -608,14 +615,16 @@ pub fn resume_warning(existing: &Existing, this: &Run) -> Option<String> {
         })
         .collect();
     (!others.is_empty()).then(|| {
-        let rerun = existing
-            .runs
-            .keys()
-            .any(|run| run.escalated && !run.matches(this))
-            .then(|| this.kernels.as_ref()?.escalation_attention.as_ref())
-            .flatten()
-            .map(|attention| format!(" ({attention} attention for escalated pages)"))
-            .unwrap_or_default();
+        let escalated = existing.runs.keys().any(|run| run.escalated && !run.matches(this));
+        let rerun = if escalated && !this.escalate && this.mode.as_deref() == Some("fast") {
+            " (--escalate is off)".to_owned()
+        } else {
+            escalated
+                .then(|| this.kernels.as_ref()?.escalation_attention.as_ref())
+                .flatten()
+                .map(|attention| format!(" ({attention} attention for escalated pages)"))
+                .unwrap_or_default()
+        };
         format!(
             "the output holds records that ran otherwise than this run, {this}{rerun}: {}; \
              --resume skips their pages, it does not reread them",

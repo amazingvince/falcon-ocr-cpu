@@ -227,13 +227,14 @@ fn an_escalated_record_compares_the_weights_of_its_fast_attempt() {
         Some("0123456789abcdef"),
         &fixed,
         None,
+        true,
     );
     assert_eq!(resume_warning(&existing, &same), None);
     // Another overlay, and round-to-nearest in place of GPTQ: the fast
     // attempt would have run otherwise, so the page warns although its
     // record is a near-exact rerun.
     for overlay in [Some("fedcba9876543210"), None] {
-        let other = this_run(Some(Mode::Fast), "w8-body-kv-q8", overlay, &fixed, None);
+        let other = this_run(Some(Mode::Fast), "w8-body-kv-q8", overlay, &fixed, None, true);
         let warning = resume_warning(&existing, &other).unwrap();
         assert!(
             warning.contains("1 escalated from fast (w8-body-kv-q8, overlay 0123456789ab"),
@@ -247,6 +248,46 @@ fn an_escalated_record_compares_the_weights_of_its_fast_attempt() {
         &fixed,
     ));
     assert_eq!(resume_warning(&legacy, &same), None);
+    // Disabling escalation changes what this run would have done to an
+    // escalated page, even when older records omit weights and plans.
+    let disabled = Run {
+        escalate: false,
+        ..same.clone()
+    };
+    for existing in [&existing, &legacy] {
+        let warning = resume_warning(existing, &disabled).expect("disabling escalation must warn");
+        assert!(
+            warning.contains("--escalate is off") && warning.contains("1 escalated from fast"),
+            "{warning}"
+        );
+    }
+    // Policy changes affect only records that were actually escalated.
+    // Successful fast pages still match; failed attempts are covered by
+    // the opposite-direction warning about loops resume cannot reread.
+    let ordinary = [
+        r#"{"path":"eos.png","text":"t","mode":"fast","finish_reason":"eos"}"#,
+        r#"{"path":"loop.png","text":"t","mode":"fast","finish_reason":"repetition"}"#,
+        r#"{"path":"failed.png","text":"t","mode":"fast","finish_reason":"repetition","escalation_error":"no model"}"#,
+        r#"{"path":"error.png","error":"unreadable"}"#,
+    ]
+    .map(|record| line(record, &fixed))
+    .concat();
+    let ordinary = scan_output(&ordinary);
+    assert_eq!(resume_warning(&ordinary, &same), None);
+    assert_eq!(resume_warning(&ordinary, &disabled), None);
+    assert_eq!(ordinary.unescalated, 2);
+    assert!(!ordinary.done.contains("error.png"));
+    assert!(escalation_warning(&ordinary).unwrap().contains("2 fast-mode records"));
+    let mut mixed = ordinary;
+    for (run, count) in legacy.runs {
+        *mixed.runs.entry(run).or_default() += count;
+    }
+    assert_eq!(resume_warning(&mixed, &same), None);
+    let warning = resume_warning(&mixed, &disabled).unwrap();
+    assert!(
+        warning.contains("1 escalated from fast") && !warning.contains(" in fast ("),
+        "{warning}"
+    );
 }
 
 #[test]
@@ -267,9 +308,9 @@ fn a_resume_from_another_mode_warns() {
     .map(|record| line(record, &fixed))
     .concat();
     let existing = scan_output(&text);
-    let fast_rtn = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, None);
+    let fast_rtn = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, None, true);
     assert_eq!(resume_warning(&existing, &fast_rtn), None);
-    let near_exact = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None);
+    let near_exact = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None, false);
     let warning = resume_warning(&existing, &near_exact).unwrap();
     assert!(
         warning.contains(
@@ -278,7 +319,7 @@ fn a_resume_from_another_mode_warns() {
         "{warning}"
     );
     // Same mode, another precision (for example exact mode's labels).
-    assert!(resume_warning(&existing, &this_run(Some(Mode::Fast), "fp32", None, &fixed, None)).is_some());
+    assert!(resume_warning(&existing, &this_run(Some(Mode::Fast), "fp32", None, &fixed, None, true)).is_some());
     // The GPTQ overlay against round-to-nearest, and routing: the
     // legacy escalated record has no plan to compare.
     let gptq = this_run(
@@ -287,13 +328,14 @@ fn a_resume_from_another_mode_warns() {
         Some("0123456789abcdef"),
         &fixed,
         None,
+        true,
     );
     let warning = resume_warning(&existing, &gptq).unwrap();
     assert!(
         warning.contains("fast (w8-body-kv-q8, overlay 0123456789ab): 1 in fast (w8-body-kv-q8, round-to-nearest);"),
         "{warning}"
     );
-    let routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &auto, None);
+    let routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &auto, None, true);
     let warning = resume_warning(&existing, &routed).unwrap();
     assert!(warning.contains(": 1 escalated from fast, 1 in fast ("), "{warning}");
     // Records name their overlay in `plan` and their route in `route`.
@@ -304,7 +346,14 @@ fn a_resume_from_another_mode_warns() {
         ),
         &auto,
     ));
-    let gptq_routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", Some("0123456789abcdef"), &auto, None);
+    let gptq_routed = this_run(
+        Some(Mode::Fast),
+        "w8-body-kv-q8",
+        Some("0123456789abcdef"),
+        &auto,
+        None,
+        true,
+    );
     assert_eq!(resume_warning(&existing, &gptq_routed), None);
     let warning = resume_warning(&existing, &gptq).unwrap();
     assert!(warning.ends_with("1 in fast (w8-body-kv-q8, overlay 0123456789ab, --max-dimension auto); --resume skips their pages, it does not reread them"), "{warning}");
@@ -343,7 +392,7 @@ fn a_resume_with_other_options_warns() {
         .collect();
     let existing = scan_output(&text);
     let run = |options: &GenerationOptions| {
-        let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, options, None);
+        let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, options, None, false);
         resume_warning(&existing, &this)
     };
     let warning = run(&fixed).unwrap();
@@ -386,7 +435,7 @@ fn a_resume_with_other_options_warns() {
     // A record without options matches no run.
     let bare =
         scan_output("{\"path\":\"d.png\",\"text\":\"t\",\"mode\":\"near-exact\",\"precision\":\"w16-body-kv-q16\"}\n");
-    let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None);
+    let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None, false);
     let warning = resume_warning(&bare, &this).unwrap();
     assert!(
         warning.contains(": 1 in near-exact (w16-body-kv-q16, no options);"),
@@ -430,7 +479,7 @@ fn a_resume_compares_the_fp32_softmax() {
         let kernels = Kernels::from_plan(&plan(attention, fp32));
         resume_warning(
             &existing,
-            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels),
+            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels, true),
         )
     };
     let (fixed_static, online) = (Some("static"), Some("online"));
@@ -533,7 +582,7 @@ fn a_resume_tells_a_stop_without_counting_loops_apart() {
         let kernels = Kernels::from_plan(&current);
         resume_warning(
             &scan_output(&line(&record.to_string(), &fixed)),
-            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels),
+            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels, true),
         )
     };
     let found = warning(plan(true, None), plan(true, Some(true))).expect("an older stop must warn");
@@ -578,6 +627,7 @@ fn a_resume_with_other_runner_choices_warns() {
             None,
             &fixed,
             Kernels::from_plan(&plan),
+            true,
         );
         resume_warning(&existing, &this)
     };
@@ -623,6 +673,7 @@ fn a_resume_with_other_runner_choices_warns() {
             None,
             &fixed,
             Kernels::from_plan(&plan(true, "fast", "avx2", current)),
+            true,
         );
         let warning = resume_warning(&existing, &this);
         assert_eq!(warning.is_none(), matches, "{saved} against {current}: {warning:?}");
@@ -648,6 +699,7 @@ fn a_resume_with_other_runner_choices_warns() {
             None,
             &fixed,
             Kernels::from_plan(&plan),
+            true,
         )
     };
     for attention in ["avx2", "avx512-wide", "bf16", "bf16-static"] {
@@ -825,42 +877,74 @@ fn a_resume_with_other_runner_choices_warns() {
     assert_eq!(kernels.image_decoder.as_deref(), Some(resolved.image_decoder.as_str()));
     // A partial overlay makes the fast body mixed and selects GEMM, but
     // the near-exact rerun still has a uniform 16-bit body. Its own output
-    // must match the run that produced it, including mixed Q8 layers.
+    // must match the run that produced it. Fast's Q8 cache does not accept
+    // a mixed-layer mask.
+    let config = crate::RunnerConfig::default();
+    config.validate().unwrap();
+    config
+        .tuning
+        .check_kv_layers(facts.profile.kv, facts.config.n_layers)
+        .unwrap();
     for body_bits in [Some(8), None] {
-        for mask in [0, 0b101] {
-            let config = crate::RunnerConfig {
-                tuning: crate::config::Tuning {
-                    kv_q8_layers: mask,
-                    ..config.tuning
-                },
-                ..config.clone()
-            };
-            let fast = crate::Resolved::new(
-                crate::HostInfo::detect(),
-                &config,
-                &crate::auto::ModelFacts {
-                    body_bits,
-                    ..facts.clone()
-                },
-                Path::new("model"),
+        let fast = crate::Resolved::new(
+            crate::HostInfo::detect(),
+            &config,
+            &crate::auto::ModelFacts {
+                body_bits,
+                ..facts.clone()
+            },
+            Path::new("model"),
+        );
+        let near = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+        let record = serde_json::json!({
+            "path": "mixed.png", "text": "t", "mode": "near-exact",
+            "precision": "w16-body-kv-q16", "plan": near,
+            "escalated_from": {"mode": "fast", "prefill": fast.prefill}
+        });
+        let existing = scan_output(&line(&record.to_string(), &fixed));
+        let current = |plan| this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, Kernels::of(plan), true);
+        assert_eq!(resume_warning(&existing, &current(&fast)), None, "{body_bits:?}");
+    }
+    // Compare masks on valid near-exact/Q16 runs, in both directions.
+    for mask in [0, 0b101] {
+        let mut config = config.clone();
+        config.tuning.kv_q8_layers = mask;
+        config
+            .tuning
+            .check_kv_layers(near_exact.profile.kv, near_exact.config.n_layers)
+            .unwrap();
+        if mask != 0 {
+            assert!(
+                config
+                    .tuning
+                    .check_kv_layers(facts.profile.kv, facts.config.n_layers)
+                    .is_err()
             );
-            let near = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
-            let record = serde_json::json!({
-                "path": "mixed.png", "text": "t", "mode": "near-exact",
-                "precision": "w16-body-kv-q16", "plan": near,
-                "escalated_from": {"mode": "fast", "prefill": fast.prefill}
-            });
-            let existing = scan_output(&line(&record.to_string(), &fixed));
-            let current = |plan| this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, Kernels::of(plan));
-            assert_eq!(
-                resume_warning(&existing, &current(&fast)),
-                None,
-                "{body_bits:?} mask={mask}"
-            );
-            let mut changed = fast.clone();
-            changed.tuning.kv_q8_layers ^= 0b10;
-            let warning = resume_warning(&existing, &current(&changed)).expect("changed Q8 layers must warn");
-            assert!(warning.contains("--tune kv-layers="), "{warning}");
         }
+        let near = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+        let record = serde_json::json!({
+            "path": "mixed-kv.png", "text": "t", "mode": "near-exact",
+            "precision": "w16-body-kv-q16", "plan": near
+        });
+        let existing = scan_output(&line(&record.to_string(), &fixed));
+        let current = |plan| {
+            this_run(
+                Some(Mode::NearExact),
+                "w16-body-kv-q16",
+                None,
+                &fixed,
+                Kernels::of(plan),
+                false,
+            )
+        };
+        assert_eq!(resume_warning(&existing, &current(&near)), None);
+        config.tuning.kv_q8_layers = if mask == 0 { 0b101 } else { 0 };
+        config
+            .tuning
+            .check_kv_layers(near_exact.profile.kv, near_exact.config.n_layers)
+            .unwrap();
+        let changed = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+        let warning = resume_warning(&existing, &current(&changed)).expect("changed Q8 layers must warn");
+        assert!(warning.contains("--tune kv-layers="), "{warning}");
     }
 }

@@ -515,6 +515,7 @@ impl RunJob {
             resolved.overlay_sha256.as_deref(),
             &self.options,
             book::Kernels::of(resolved),
+            self.escalate,
         );
         if let Some(existing) = existing.as_ref().filter(|_| self.resume)
             && let Some(warning) = book::resume_warning(existing, &this)
