@@ -79,9 +79,9 @@ pub struct Tuning {
     /// qualified on held-out pages), online for 8-bit ones (fast mode's FP32
     /// fallback, unqualified). FP32 bodies (exact mode) keep the online
     /// softmax whatever this says, and so do aarch64 and the scalar backend.
-    /// When BF16 attention is planned, this knob has no effect, including
-    /// in calls that fall back to FP32; `prefill_softmax` selects the BF16
-    /// softmax.
+    /// When BF16 attention is planned, `prefill_softmax` selects its
+    /// softmax; this knob does not affect that plan or its FP32 fallback
+    /// calls. It still selects the near-exact `--escalate` rerun's softmax.
     pub prefill_softmax_fp32: Option<PrefillSoftmax>,
     /// Position chunks per KV group in split-cache decode attention (1..=4).
     /// `None` keeps the mode default: one exact scan for FP32 caches, four

@@ -716,20 +716,8 @@ impl Resolved {
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
             wide_rows: config.speculation.is_some() && profile.kv != Kv::Compact && crate::kernels::wide_rows(simd),
             prefill: crate::kernels::prefill_plan(facts.body_bits, facts.i16_misfit, simd, &config.tuning),
-            escalation_prefill: (Mode::of_profile(profile) == Some(Mode::Fast)).then(|| {
-                Self::new(
-                    host,
-                    config,
-                    &ModelFacts {
-                        profile: Profile::W16_BODY_KV_Q16,
-                        body_bits: Some(16),
-                        i16_misfit: true,
-                        ..facts.clone()
-                    },
-                    tokenizer_dir,
-                )
-                .prefill
-            }),
+            escalation_prefill: (Mode::of_profile(profile) == Some(Mode::Fast))
+                .then(|| crate::kernels::prefill_plan(Some(16), true, simd, &config.tuning)),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,

@@ -708,3 +708,76 @@ fn host_info_is_consistent() {
     assert_eq!(host.features.avx2, std::is_x86_feature_detected!("avx2"));
     assert!(serde_json::to_string(host).unwrap().contains("\"logical_cpus\""));
 }
+
+#[test]
+fn escalation_prefill_matches_a_near_exact_runner_across_tuning_choices() {
+    use crate::config::{Backend, PrefillBf16, PrefillProjections, PrefillSoftmax};
+
+    let facts = ModelFacts {
+        source: WeightsSource::Checkpoint {
+            dir: "model".into(),
+            overlay: None,
+            rtn: true,
+        },
+        profile: Profile::W8_BODY_KV_Q8,
+        config: serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap(),
+        body_bits: Some(8),
+        overlay_sha256: None,
+        exception_bytes: 0,
+        i16_misfit: false,
+    };
+    let near = ModelFacts {
+        profile: Profile::W16_BODY_KV_Q16,
+        body_bits: Some(16),
+        i16_misfit: true,
+        ..facts.clone()
+    };
+    let host = HostInfo::detect();
+    for backend in [Backend::Auto, Backend::Avx2, Backend::Scalar, Backend::Neon] {
+        if backend.simd().validate().is_err() {
+            continue;
+        }
+        for bf16 in [PrefillBf16::Off, PrefillBf16::Attention] {
+            for projections in [PrefillProjections::Fp32, PrefillProjections::I16] {
+                for softmax in [PrefillSoftmax::Online, PrefillSoftmax::Static] {
+                    for fp32 in [None, Some(PrefillSoftmax::Online), Some(PrefillSoftmax::Static)] {
+                        let config = RunnerConfig {
+                            backend,
+                            tuning: Tuning {
+                                prefill_bf16: bf16,
+                                prefill_projections: projections,
+                                prefill_softmax: softmax,
+                                prefill_softmax_fp32: fp32,
+                                ..Tuning::default()
+                            },
+                            ..RunnerConfig::default()
+                        };
+                        config.validate().unwrap();
+                        config
+                            .tuning
+                            .check_kv_layers(facts.profile.kv, facts.config.n_layers)
+                            .unwrap();
+                        let rerun = Resolved::new(host, &config, &near, Path::new("model"));
+                        assert_eq!(rerun.escalation_prefill, None);
+                        for body_bits in [Some(8), None] {
+                            let fast = Resolved::new(
+                                host,
+                                &config,
+                                &ModelFacts {
+                                    body_bits,
+                                    ..facts.clone()
+                                },
+                                Path::new("model"),
+                            );
+                            assert_eq!(
+                                fast.escalation_prefill,
+                                Some(rerun.prefill),
+                                "{config:?}, {body_bits:?}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
