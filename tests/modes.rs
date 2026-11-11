@@ -9,7 +9,7 @@ use std::{path::Path, sync::Arc};
 use falcon_ocr::{
     Backend, DecodeThreads, Drafter, FinishReason, GenerationOptions, HeadMode, Mode, Model, Runner, RunnerConfig,
     Speculation,
-    auto::{CpuFeatures, ModelRequest, load_model, resolve_weights, with_default_draft_head},
+    auto::{ModelRequest, load_model, resolve_weights, with_default_draft_head},
     quant::Profile,
     trace::{TensorTrace, Trace},
 };
@@ -51,6 +51,36 @@ fn prefill_kinds(runner: &Runner, prefill: &serde_json::Value) -> (String, Strin
     plan["prefill"] = prefill.clone();
     let kernels = falcon_ocr::book::Kernels::from_plan(&plan).unwrap();
     (kernels.attention, kernels.projection)
+}
+
+/// A kernel mismatch fails the token gate unless skipping it was explicitly
+/// requested. Pass the policy in so its default can be tested without weights
+/// or process-global environment changes.
+fn compare_fixture_kernels(
+    name: &str,
+    planned: &(String, String),
+    recorded: &(String, String),
+    allow_skip: bool,
+) -> bool {
+    if planned == recorded {
+        return true;
+    }
+    assert!(
+        allow_skip,
+        "{name}: fixture kernel mismatch: planned {planned:?}, recorded {recorded:?}; \
+         FALCON_OCR_ALLOW_FIXTURE_KERNEL_SKIP=1 explicitly skips this token comparison"
+    );
+    false
+}
+
+#[test]
+fn fixture_kernel_mismatches_require_an_explicit_skip() {
+    let fp32 = ("fp32".to_owned(), "fp32".to_owned());
+    let bf16 = ("bf16".to_owned(), "fp32".to_owned());
+    assert!(compare_fixture_kernels("same", &fp32, &fp32, false));
+    assert!(compare_fixture_kernels("same", &fp32, &fp32, true));
+    assert!(std::panic::catch_unwind(|| compare_fixture_kernels("different", &fp32, &bf16, false)).is_err());
+    assert!(!compare_fixture_kernels("different", &fp32, &bf16, true));
 }
 
 fn fixture(name: &str) -> Fixture {
@@ -165,7 +195,7 @@ fn exact_mode_under_the_automatic_config_matches_the_gpu_smoke_tokens() {
 #[test]
 #[ignore = "needs artifacts/model with the GPTQ overlay"]
 fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
-    let cpu = CpuFeatures::detect();
+    let allow_skip = std::env::var("FALCON_OCR_ALLOW_FIXTURE_KERNEL_SKIP").as_deref() == Ok("1");
     for name in ["near-exact-journal-300", "fast-journal-300"] {
         let fixture = fixture(name);
         let model = checkpoint_model(fixture.mode);
@@ -176,20 +206,13 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
         let planned = serde_json::to_value(runner.resolved().prefill).unwrap();
         let planned_kinds = prefill_kinds(&runner, &planned);
         let recorded_kinds = prefill_kinds(&runner, &fixture.prefill);
-        let supports_fixture =
-            cpu.avx2 && cpu.fma && (fixture.mode == Mode::NearExact || cpu.avx512f && cpu.avx512bw && cpu.avx512bf16);
-        if !supports_fixture && planned_kinds != recorded_kinds {
+        if !compare_fixture_kernels(name, &planned_kinds, &recorded_kinds, allow_skip) {
             eprintln!(
                 "{name}: skipping token comparison for {planned}; recorded with {}",
                 fixture.prefill
             );
             continue;
         }
-        assert_eq!(
-            planned_kinds, recorded_kinds,
-            "{name}: planned {planned}, recorded with {}",
-            fixture.prefill,
-        );
         let result = runner
             .recognize_file(
                 &fixture.page,
