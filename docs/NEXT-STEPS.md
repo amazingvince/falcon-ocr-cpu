@@ -35,7 +35,9 @@ work, followed by research proposals.
   timings and peak memory
   ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were measured on one
   Linux desktop; no aarch64 machine has run the model with weights
-  ([PORTABILITY.md](PORTABILITY.md)).
+  ([PORTABILITY.md](PORTABILITY.md)). The generic static-softmax NEON tiles
+  are test instantiations, not recognition defaults; enabling them needs
+  native token qualification.
 
 ## Proposals (not implemented)
 

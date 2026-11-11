@@ -56,10 +56,13 @@ with the same exp choice share the portable oracle's arithmetic; the
 static-shift softmaxes (fast mode's, and near-exact's in the FP32 tiles)
 are token-checked numerical deviations.
 
-Recognition uses the portable polynomial exp in prefill attention
-(token-identical to the platform exp on all calibration pages) and in fast
-mode's decode attention over its 8-bit cache; on x86 the other decode
-attention and traces use a vector exp that matches the platform's
+Recognition defaults to the portable polynomial exp in online prefill
+attention (token-identical to the platform exp on all calibration pages)
+and in fast mode's decode attention over its 8-bit cache. FP32 static tiles
+use that polynomial's unchecked core; BF16 static softmax uses its own
+bounded exp approximation
+([MODES.md](MODES.md#int16-projections-and-static-softmax)). On x86 the other
+decode attention and traces use a vector exp that matches the platform's
 `f32::exp`, with scalar fallback for uncertain lanes. RoPE also uses `powf`
 and `sin_cos`. UCRT, glibc and Apple libm can differ, so platform-exact
 arithmetic is not a cross-platform bitwise guarantee. The

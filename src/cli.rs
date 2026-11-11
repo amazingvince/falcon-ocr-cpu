@@ -35,7 +35,7 @@ pub struct RunnerArgs {
     /// Stop a page once it repeats a cycle of at most 128 tokens for at
     /// least max(256, 4 * cycle) tokens, or a cycle of at most 128 tokens (a
     /// number counting as one) in which only numbers change, each by a fixed
-    /// step, 64 times over at least 256 tokens
+    /// step, 128 times over at least 256 tokens
     /// (finish_reason "repetition"); output up to that step is unchanged
     /// [default: on for recognition, off for falcon-ocr-eval].
     /// `--stop-repetition=false` lets loops run to --max-new-tokens.
@@ -74,15 +74,19 @@ pub struct RunnerArgs {
     pub draft_head: Option<std::path::PathBuf>,
     /// Draft source: `ngram` (matches in earlier output), `head` (the
     /// --draft-head model) or `both` (n-gram matches first) [default: head
-    /// with --draft-head, otherwise ngram]. Outputs are unchanged.
+    /// with --draft-head, otherwise ngram]. Recognition also uses a published
+    /// head found beside the weights when neither --drafter nor --draft-head
+    /// is set. Explicit `head` or `both` requires --draft-head. Outputs are
+    /// unchanged.
     #[arg(long, value_enum, global = true)]
     pub drafter: Option<Drafter>,
     /// The draft head drafts while its top token's probability is at least
     /// this [default: 0.35, the best of 0.25-0.6 on calibration pages].
     #[arg(long, global = true)]
     pub draft_confidence: Option<f32>,
-    /// Prefill exp: `fast` (token-identical on calibration; the recognition
-    /// default) or `exact` (the platform expf, which traces use).
+    /// Online prefill exp on x86: `fast` (polynomial, the recognition
+    /// default) or `exact` (platform expf, which traces use). Static softmax
+    /// and NEON keep their polynomial exp with either setting.
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
     /// Experiment knobs as `key=value`, repeatable:

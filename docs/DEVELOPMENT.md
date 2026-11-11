@@ -65,17 +65,22 @@ the platform-dependent math; the token-parity gates are separate checks.
   domain, the split cache against the compact kernel over its decoded values
   at one position chunk (rotated caches with the rotation as the only pre-
   and post-transform). A fast path without such a test does not ship. The
-  FP32 tiles' static softmax keeps no reference order, so its 8- and 16-lane
-  tiles are compared with a scalar oracle of their own
+  FP32 tiles' static softmax keeps no reference order, so its Portable and
+  NEON instantiations and both x86 tile widths are compared with a scalar
+  oracle of their own
   (`kernels::attention::prefill64::static_shift::tests`), and
   `kernels::tests::fp32_static_softmax_is_near_exact_default_and_never_exact`
   checks that the default plans it for 16-bit bodies only, that the knob
   sets it for 16- and 8-bit bodies, and that an FP32 body never takes it.
   The prefill stages are also compared bitwise across pool sizes
   (`model::pool_tests`, `kernels::tests`), which the page pipeline's second
-  pool relies on. The AVX-512 oracles (the 16-lane prefill tiles with
-  either softmax, the BF16 attention and its static softmax, the INT16 VNNI
-  panels, the verification rows under `auto`) return early, or drop their
+  pool relies on. A synthetic multilayer forward compares prefix-buffer
+  hand-off with independent layer buffers through sealing and the next
+  decode step, including a mixed Q8/Q16 cache; a partial first prefix must
+  fail before cache mutation. INT16 panel oracles also cover tiny and
+  subnormal activation groups. The AVX-512 oracles (the 16-lane prefill tiles
+  with either softmax, the BF16 attention and its static softmax, the INT16
+  VNNI panels, the verification rows under `auto`) return early, or drop their
   AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted CI runners
   included; the ignored `kernels::tests::host_runs_every_avx512_kernel`
   checks that the local CPU can exercise all of those kernels.
@@ -403,9 +408,9 @@ failures even if the run is faster.
 
 ## Adding an instruction set
 
-Implement `simd::Simd` for it (every method, including `sum_tree` and the
-pair operations), add the `#[target_feature]` entry wrappers next to the
-existing ones (`kernels/attention/decode64.rs`, `panels/panel.rs`,
+Implement `simd::Simd` for it (every method, including `sum_tree`, the pair
+operations and `exp_unchecked`), add the `#[target_feature]` entry wrappers
+next to the existing ones (`kernels/attention/decode64.rs`, `panels/panel.rs`,
 `model/fused.rs`, `quant/linear/dot.rs`), extend `kernels::Simd` and `Backend`,
 and run the library tests on that machine: they compare the new
 instantiation with `Portable` bit for bit. Then run `tools/m4_check.sh`-style
@@ -413,16 +418,19 @@ checks with weights: smoke trace, token agreement, a speed report.
 
 ## Knobs for experiments
 
-`--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
-takes `prefill-bf16=off|attention` (BF16 prefill attention in fast mode,
-default `attention`), `prefill-projections=fp32|i16` (FP32 or INT16
+`--exp exact|fast` selects the online prefill exp; the static tiles' fixed
+polynomials and NEON's polynomial exp do not change with it.
+`--tune key=value` (repeatable) takes `prefill-bf16=off|attention` (BF16
+prefill attention in fast mode, default `attention`),
+`prefill-projections=fp32|i16` (FP32 or INT16
 activations in fast mode's prefill projections, default `i16`; see
 [MODES.md](MODES.md#int16-projections-and-static-softmax)),
 `prefill-softmax=online|static` (the online softmax or the static one
 without running maximum in fast mode's BF16 prefill attention, default
 `static`; same section), `prefill-softmax-fp32=online|static` (the same
 choice in the FP32 prefill tiles of 16- and 8-bit bodies on x86; by
-default static for 16-bit bodies and online for 8-bit ones; see
+default static for 16-bit bodies and online for 8-bit ones; ignored by BF16
+plans, including their FP32 fallback calls; see
 [MODES.md](MODES.md#static-softmax-in-the-fp32-tiles)),
 `split-chunks=1..4` (position chunks of the split cache scan),
 `decode-exp=exact|fast` (the exp of decode attention over
@@ -443,7 +451,9 @@ precision of the listed layers' caches; the others schedule or measure
 `--kv-cache compact|f32-split|q16|q8|q8r|q4r` (`falcon-ocr` run and doctor)
 replaces the KV half of the resolved profile; the plan and every result
 name the profile that runs, a research one unless it is a mode's own.
-These flags are hidden from `--help`; nothing reads environment variables.
+These flags are hidden from `--help` and configured through CLI arguments.
+Environment-variable controls are confined to the tests and probes described
+above.
 
 ## Gotchas
 

@@ -29,10 +29,12 @@
 //! row (PV). Key blocks stay at 8 rows: key rows are 4 KB apart, so more rows
 //! per block would exceed the 8 ways of an L1 set.
 //!
-//! `ExpMode::Fast` (`RunnerConfig::exp`) switches x86 to the portable fast
-//! exp (`simd::Avx2Fast`): no scalar fix-ups, bitwise equal to the NEON and
-//! portable instantiations, but no longer equal to the platform `expf`.
-//! `PrefillOptions::fp32_softmax` swaps in `static_shift`'s tiles on x86.
+//! For online softmax, `ExpMode::Fast` (`RunnerConfig::exp`) switches x86
+//! to the portable fast exp (`simd::Avx2Fast`): no scalar fix-ups, bitwise
+//! equal to the NEON and portable instantiations, but no longer equal to
+//! the platform `expf`.
+//! `PrefillOptions::fp32_softmax` swaps in `static_shift`'s tiles on x86;
+//! their unchecked polynomial ignores `ExpMode`.
 use super::{CompactKv, Geometry, PrefillOptions};
 #[cfg(target_arch = "x86_64")]
 use crate::config::{ExpMode, PrefillSoftmax};

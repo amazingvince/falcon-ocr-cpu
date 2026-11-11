@@ -231,8 +231,9 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
     }
 }
 
-/// HILLCLIMB T12: a kernel-ready file holds exactly what the checkpoint
-/// loader computes, and the published files are those bytes.
+/// HILLCLIMB T12: a kernel-ready file holds what the checkpoint loader
+/// computes. The gate compares selected metadata fields and generated tokens
+/// with the published files, not metadata key order or whole-file bytes.
 #[test]
 #[ignore = "needs artifacts/model, the GPTQ overlay, artifacts/packed and temporary disk for all modes"]
 fn packed_files_round_trip_the_checkpoint_loader_and_match_the_published_ones() {

@@ -9,10 +9,10 @@
 //! group order. The integer part is exact, so the AVX512-VNNI (`vpdpwssd`),
 //! AVX2 (`vpmaddwd`) and scalar kernels agree bit for bit.
 //!
-//! Only the activation rounding separates this from the FP32 panels: an
-//! input moves by at most half a step, 1/65534 of its group's absmax,
-//! against BF16's 2^-8 of every value. The default for 8-bit models
-//! (`Tuning::prefill_projections`).
+//! Only activation rounding separates this from the FP32 panels. With a
+//! normal FP32 step, the maximum error is about half a step, 1/65534 of the
+//! group's absmax, against BF16's 2^-8 of every value. INT16 activations are
+//! the default for 8-bit models (`Tuning::prefill_projections`).
 //! FP32 exception columns are zeroed before activation quantization and add
 //! one FMA per column, in ascending order, after the integer groups.
 use rayon::prelude::*;

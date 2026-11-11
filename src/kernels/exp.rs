@@ -222,8 +222,9 @@ unsafe fn exp_shifted_block(values: &mut [f32], shift: f32) {
 /// subnormal results, so no flush-to-zero dependence), above [`EXP_MAX`]
 /// (88.376) return infinity, NaN returns NaN. The true exp stays finite up to
 /// 88.72, but the `2^n` bit construction below overflows once `n` rounds to
-/// 128, which happens from 88.3763 on; the ceiling stops short of that. Every
-/// caller is a softmax with non-positive arguments. Every ISA's `exp_fast`
+/// 128, which happens from 88.3763 on; the ceiling stops short of that.
+/// Online softmax uses non-positive arguments; FP32 static tiles use
+/// [`exp_poly_unchecked`] with bounded scores. Every ISA's `exp_fast`
 /// performs exactly these IEEE operations, so the results are bit-identical
 /// across machines.
 #[inline(always)]

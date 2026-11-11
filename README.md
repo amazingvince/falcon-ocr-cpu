@@ -83,13 +83,15 @@ drafting and the screened head do not change tokens.
 
 The repetition stop ends cycles of at most 128 tokens after at least
 `max(256, 4 × cycle)` repeated tokens, and counting loops, whose cycles
-differ only in numbers that each move by a fixed step, after 64 cycles
+differ only in numbers that each move by a fixed step, after 128 cycles
 spanning at least 256 tokens
 ([loops](docs/MODES.md#loops-and-the-repetition-stop)). Without
 `--max-new-tokens`, the 8,192-token cap is lowered when the input leaves
 less of the 16,384-token context (`budget_clamped` in the result). Both can
 end a page early without changing preceding tokens;
-`--stop-repetition=false` lets loops run.
+`--stop-repetition=false` lets loops run. Long templated forms can match the
+counting rule too. When repetition ends a page, `run` warns on stderr with
+the input name and disabling flag, including with `--text`.
 
 `doctor` prints the plan without reading tensors; `--load` times model
 loading and `--probe` measures memory bandwidth and the decode floor.
@@ -116,7 +118,7 @@ probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
 | `--draft-head F` | Select a trained draft head ([research/draft-head](research/draft-head/README.md)) |
-| `--drafter ngram\|head\|both` | Draft source: default `head` when its file is present, otherwise `ngram` |
+| `--drafter ngram\|head\|both` | Draft source: default `head` when its file is present, otherwise `ngram`. Explicit `head` or `both` requires `--draft-head F` |
 | `--draft-confidence P` | Minimum draft-head confidence (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
@@ -152,6 +154,7 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
   done; each record names its input `path` and its `page` index.
 - `--resume` skips the pages that already have a successful record, and
   `--keep-going` records a page that fails and goes on to the rest.
+  Use a new output file to reread completed pages with changed settings.
 - Inputs and the output file are checked before the model loads, so a
   wrong path fails before inference starts.
 - `--pipeline` prefills the next page while the current one decodes; on a
@@ -234,7 +237,9 @@ Experimental overlays with FP32 exception columns are described in
 - `cargo test --release --locked --test modes --test gpu_parity -- --ignored`
   with `artifacts/`: exact mode reproduces the GPU smoke tokens under the
   automatic configuration. The journal token checks require the recorded
-  prefill kernels. Packed files round-trip, and trace hashes use Windows pins.
+  prefill kernels; a mismatch fails unless skipping is explicitly enabled
+  ([fixture policy](tests/fixtures/modes/README.md)). Packed files round-trip,
+  and trace hashes use Windows pins.
 - `falcon-ocr-eval agree` measures teacher-forced flips and KL
   ([mode comparisons](docs/MODES.md#the-metric)).
 

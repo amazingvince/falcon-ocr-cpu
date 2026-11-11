@@ -57,7 +57,7 @@ recorded verdict; new qualification needs fresh pages.
 | Body weights | FP32 | 16-bit codes, FP32 absmax scale per 64 inputs | 8-bit GPTQ act-order codes, FP32 scale per 64 inputs (`w8-gptq.safetensors`) |
 | KV cache after sealing | FP32 split records | 16-bit codes, BF16 scale per 32 values | 8-bit codes, BF16 scale per 32 values |
 | Prefill projections | `gemm` crate, FP32 | FP32 panel GEMM | INT16 activations against the 8-bit codes on x86 CPUs with AVX2, FP32 panel GEMM elsewhere |
-| Prefill attention | FP32 | FP32, with the static softmax on x86 CPUs with AVX2 | BF16 products with the static softmax on AVX512-BF16 CPUs, FP32 elsewhere |
+| Prefill attention | FP32 | FP32, with the static softmax on x86 CPUs with AVX2 and FMA | BF16 products on AVX512-BF16 CPUs, static softmax when AVX512BW is also present; FP32 elsewhere |
 | Bytes per token (weights + head) | 876 MB | 401 MB | 233 MB |
 | KV bytes per position | 113 KB | 58 KB | 30 KB |
 | Against FP32, 24,262 steps | **0 flips** | KL 9e-8, **1 flip** | KL 2.7e-4, **63 flips** |
@@ -80,10 +80,13 @@ Every mode maps its packed file when present. Without one, exact reads the
 FP32 checkpoint; near-exact and fast quantize it at load, and fast needs its
 GPTQ overlay. See [Packed model files](#packed-model-files).
 
-Every mode uses the exact screened head and the portable polynomial exp in
-prefill attention, which changes rounding but no token against the platform
-exp on all 67 calibration pages (93,249 tokens); traces use the platform exp.
-Fast mode also uses it in decode attention over its 8-bit cache, as the NEON
+Every mode uses the exact screened head. Online prefill attention defaults
+to the portable polynomial exp, which changes rounding but no token against
+the platform exp on all 67 calibration pages (93,249 tokens); x86 traces use
+the platform exp. The FP32 static tiles use the same polynomial without its
+range checks; BF16 static softmax uses its own bounded exp approximation
+([below](#int16-projections-and-static-softmax)). Fast mode also uses the
+portable polynomial in decode attention over its 8-bit cache, as the NEON
 kernels always do (`--tune decode-exp=exact|fast` overrides): teacher-forced
 on the 55 anchor pages up to 8,192 steps (78,282 steps) it has 94 flips
 against 92 with the platform exp, the English gate below is unchanged, and
@@ -317,11 +320,12 @@ error 7.5e-5, scaled by `vscalefps`) runs in the QK epilogue. The
 denominator sums the BF16-rounded probabilities that PV multiplies, so the
 weights PV applies sum to one.
 
-Each adds little error. An INT16 activation moves by at most half a step,
-1/65,534 of its group's absmax, where BF16 rounds each value by up to 2^-8
-of itself (8 significant bits); the weights keep their GPTQ codes, so the
-activation rounding is the only new error. The static softmax adds the
-polynomial's 7.5e-5, below the up to 2^-8 that BF16 rounding gives every
+Each adds little error. With a normal FP32 step, INT16 rounding moves an
+activation by at most about half a step, 1/65,534 of its group's absmax.
+BF16 rounds each value by up to 2^-8 of itself (8 significant bits). The
+weights keep their GPTQ codes, so activation rounding is the only new
+projection error. The static softmax adds the polynomial's 7.5e-5, below
+the up to 2^-8 that BF16 rounding gives every
 probability before PV, and the rounded denominator cancels the common part
 of that rounding. The binding limit on scores is the denominator: summed
 over a page-long row of 16,384 keys, it overflows FP32 once scores pass
@@ -595,12 +599,12 @@ other, and none is English, so a later gate on OmniDocBench has only
 those, and an English gate needs pages from another source.
 
 The gate's binary has the counting rule of the [repetition
-stop](#loops-and-the-repetition-stop) at 32 cycles. Replayed through the
-current 64-cycle rule, its 621 outputs change one stop: page
+stop](#loops-and-the-repetition-stop) at 32 cycles. A historical replay
+through the 64-cycle rule changed one stop among its 621 outputs: page
 `8e6267854fcec66c`, which the reference and the static softmax ended by
 the counting rule after 431 tokens (53 cycles), would continue. The
 reference does not end that page at EOS, so it lies outside the gated
-scope, and neither verdict depends on the threshold
+scope, and neither verdict changes under that replay
 (`artifacts/near-exact-softmax-gate-v1/probe-64-cycles.txt`).
 
 ## Fast mode's held-out result
@@ -849,9 +853,9 @@ longer forms, including 100-item answer sheets and 104-week planners; the
 same 2,698-output replay at 128 ends three outputs of the 212-cycle
 deep-fried page at 2,495 tokens, in row 171, and none that ends at EOS or
 is ground truth. The 65- and 119-cycle runs may reach another stop or the
-token cap. A stopped page prints a note to stderr naming the page and
-`--stop-repetition=false`, including with `--text`. Use that option when
-the page intentionally matches a rule.
+token cap. When a page ends by repetition, the CLI prints a note to stderr
+naming the page and `--stop-repetition=false`, including with `--text`.
+Use that option when the page intentionally matches a rule.
 
 `run --escalate` rereads fast-mode pages that either rule ends with the
 near-exact model, and under `--max-dimension auto` the router's

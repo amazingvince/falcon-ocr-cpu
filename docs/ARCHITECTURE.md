@@ -66,6 +66,11 @@ layer's complete FP32 compact cache before the layer is sealed. Every image
 key exists before any prefix result is finalized; nothing treats partial
 image strips as causal prompts.
 
+The first forward of a sealing session must cover its whole prefix; a
+partial first forward fails before its workspace or caches change. Each
+seal passes its emptied FP32 key/value buffers to the next layer, which
+reuses their capacity.
+
 ### Resolution routing
 
 `--max-dimension auto` (`router/`, about 12 ms per page) chooses a first
@@ -189,6 +194,11 @@ chunking matches an explicit mode default, and compact caches ignore the
 split-cache knob. A near-exact record written before the static softmax
 became its default (attention `avx512-wide` or `avx2`) therefore warns when
 resumed with the default.
+
+A plan records whether the counting stop is enabled, not its threshold.
+Records from an earlier counting threshold can therefore match without a
+warning. To reread their pages with the current rule, use a new output file
+without `--resume`.
 
 An escalated record compares its near-exact rerun's kernel settings and the
 weights and prefill kernels of the fast attempt it replaced, which
@@ -326,9 +336,11 @@ every matrix the panels hold (`QuantLinear::fits_i16_panels`: 8-bit codes
 in groups of 64, with or without exception columns, whole 32-row panels and
 whole input groups), and keeps the FP32 panels otherwise. `Model::i16_misfit`
 asks that of a loaded body; the plan `doctor` builds from file headers
-(`ModelFacts::from_plan`) finds misfits from 16-bit codes and from a W8
-overlay whose metadata names groups of 32. `QuantLinear::prefill` asserts
-that every matrix under the INT16 projections fits them.
+(`ModelFacts::from_plan`) uses the same code-width, group-size and dimension
+predicate with the configuration and overlay metadata. A partial overlay
+that leaves FP32 body matrices does not claim a uniform quantized body.
+`QuantLinear::prefill` asserts that every matrix under the INT16 projections
+fits them.
 [MODES.md](MODES.md#exception-columns-experimental) describes how the panels
 take exception columns.
 

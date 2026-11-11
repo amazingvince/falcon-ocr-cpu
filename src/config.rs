@@ -61,14 +61,15 @@ pub enum HeadMode {
     /// few rows that can still win. Selects the same token as `Full`.
     Screened,
 }
-/// Vector exp in the prefill attention tiles on x86.
+/// Vector exp in the online prefill attention tiles on x86.
 ///
-/// `Exact` reproduces the platform `expf` bit for bit (`kernels::exp`), so
-/// hidden states match the recorded references on this host. `Fast` is the
-/// portable polynomial that NEON and the portable path use: at most a few ulp
-/// from `Exact` in rare lanes, about 1 s faster per full page, and
-/// token-identical to `Exact` on all 67 calibration pages (93,249 tokens).
-/// NEON always uses the fast exp.
+/// `Exact` reproduces the platform `expf` bit for bit (`kernels::exp`).
+/// `Fast` is the portable polynomial that NEON and the portable path use:
+/// at most a few ulp from `Exact` in rare lanes, about 1 s faster per full
+/// page, and token-identical to `Exact` on all 67 calibration pages
+/// (93,249 tokens).
+/// NEON always uses the fast exp. Static softmax keeps its fixed polynomial
+/// with either setting.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpMode {
@@ -421,7 +422,7 @@ pub struct RunnerConfig {
     pub draft_confidence: f32,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at least
     /// `max(256, 4 * cycle)` tokens, or counts in one (only numbers change,
-    /// each by a fixed step) 64 times over at least 256 tokens
+    /// each by a fixed step) 128 times over at least 256 tokens
     /// (`FinishReason::Repetition`). Never applied to teacher-forced runs.
     pub repetition_stop: bool,
     /// The decode spin team.
