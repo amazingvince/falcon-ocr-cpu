@@ -48,6 +48,10 @@ already present. The script needs PyTorch with CUDA, transformers,
 safetensors, Pillow and NumPy. Each output is retained by page and policy;
 repeating a command runs only missing policies.
 
+Use the same ten pages in every `run` command; their IDs are listed under
+[FP32 sanity and CPU reference tokens](#fp32-sanity-and-cpu-reference-tokens).
+`rank` requires every near-exact single-pair policy on all ten pages.
+
 ```sh
 CUBLAS_WORKSPACE_CONFIG=:4096:8 HF_HUB_OFFLINE=1 \
 TORCHINDUCTOR_COMPILE_THREADS=2 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 \

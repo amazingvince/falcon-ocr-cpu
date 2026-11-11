@@ -25,14 +25,14 @@ array) and `summary.json` and `summary.md` (the tables below).
 
 The run needs CUDA, the FP32 checkpoint directory with its Python sources
 (`artifacts/model`, from `scripts/fetch_reference.py`), and PyTorch with
-`transformers`, `einops`, `triton`, `requests`, Pillow and `safetensors`.
+`transformers`, `einops`, `triton`, `requests`, Pillow, NumPy and `safetensors`.
 Run from the repository root and write into a new directory:
 
 ```sh
 CUBLAS_WORKSPACE_CONFIG=:4096:8 HF_HUB_OFFLINE=1 python3 \
   research/decode-attention-sparsity/decode_attention_sparsity.py run \
   --model artifacts/model --output artifacts/decode-attention-sparsity/run \
-  artifacts/corpus/v3/3f294b5e60a0c2d4/canonical-rgb.png
+  artifacts/corpus/v3/3207aa8d68652b99/canonical-rgb.png
 python3 research/decode-attention-sparsity/decode_attention_sparsity.py \
   summarize artifacts/decode-attention-sparsity/run \
   --cpu-reference artifacts/verify/pr/agree/reference.json \
@@ -40,9 +40,11 @@ python3 research/decode-attention-sparsity/decode_attention_sparsity.py \
 ```
 
 `--cpu-reference` (optional) names a `falcon-ocr-eval` FP32 report whose
-tokens the GPU reference is compared with. A page takes about 2.2 minutes on
-an RTX 5090: a 10 s reference, a 42 s statistics pass and twelve
-teacher-forced policy passes of 4 to 12 s each.
+tokens are compared with the GPU reference for pages present in both runs.
+The example page is in the recorded CPU anchor; the journal page is not.
+In the recorded study, a page took about 2.2 minutes on an RTX 5090: a
+10 s reference, a 42 s statistics pass and twelve teacher-forced policy
+passes of 4 to 12 s each.
 
 ## Method
 
