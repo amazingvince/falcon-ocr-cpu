@@ -87,10 +87,11 @@ always uses the polynomial exp.
 | Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |
 | Thread defaults (`cpu.rs`) | both | logical CPUs for prefill, tuned team for decode | same | `hw.physicalcpu`, `hw.perflevel0.physicalcpu` | Linux sysfs (`cpu_core`, `cpu_capacity`) |
 
-`--backend avx2` keeps every kernel at 8 lanes: no wide tiles, FP32 prefill
-attention instead of BF16, and fast mode's INT16 projections on their AVX2
-kernel (`panel-i16-avx2`); `--backend scalar` replaces the vector kernels
-and the projections' GEMM for numerical debugging.
+`--backend avx2` selects 8-lane attention and verification kernels, FP32
+prefill attention, and fast mode's AVX2 INT16 projections (`panel-i16-avx2`).
+The `gemm` crate selects its own kernels for FP32 projection matrices.
+`--backend scalar` replaces the vector kernels and the projections' GEMM
+for numerical debugging.
 
 Fast mode's INT16 panels are x86-only. `auto` runs the VNNI kernel on CPUs
 with AVX512F and AVX512-VNNI and the AVX2 kernel on other CPUs with AVX2;

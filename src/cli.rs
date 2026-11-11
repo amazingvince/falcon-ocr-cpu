@@ -19,9 +19,8 @@ pub struct RunnerArgs {
     pub threads: Option<usize>,
     /// Kernels: `auto` takes the fastest this CPU runs (AVX2 decode, AVX-512
     /// prefill tiles, BF16 prefill attention and VNNI INT16 projections where
-    /// present, NEON on aarch64); `avx2` is 8-lane everywhere (FP32 attention,
-    /// fast mode's INT16 projections on their AVX2 kernel); `scalar`
-    /// [default: auto].
+    /// present, NEON on aarch64). `avx2` selects 8-lane FP32 attention and
+    /// AVX2 panels. `scalar` is for debugging [default: auto].
     #[arg(long, value_enum, global = true)]
     pub backend: Option<Backend>,
     /// Requests decoded jointly, 1..=8 [default: 1].

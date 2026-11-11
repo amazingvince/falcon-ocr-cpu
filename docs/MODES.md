@@ -791,8 +791,9 @@ number or another token, with the one a period of at most 128 symbols
 earlier. Other tokens must be equal, each number must differ from its
 counterpart a period earlier by the same step in every cycle, and at least
 one step must be nonzero, which leaves exact loops to the exact rule. The
-rule fires once such a window holds 64 whole cycles and spans at least 256
-tokens (`MIN_COUNT_REPEATS`, `MIN_WINDOW` in `src/repetition.rs`).
+window restarts at a step change. The rule fires once a window holds 64
+whole cycles and spans at least 256 tokens (`MIN_COUNT_REPEATS`,
+`MIN_WINDOW` in `src/repetition.rs`).
 
 The threshold comes from recorded text, replayed through the stop without a
 model (`repetition::probe::recorded_outputs_probe`; the inputs, builders and

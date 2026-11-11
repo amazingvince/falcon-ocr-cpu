@@ -51,17 +51,13 @@ books and PDFs, see [Books and PDFs](#books-and-pdfs).
 FP32 means 32-bit floating point. A flip is a different greedy token choice
 when each mode receives the same reference-token prefix.
 
-The journal page has 6,544 input tokens. These timings are on a Ryzen 9
-7950X, Windows 11, without the draft head. Near-exact is about 1.8× faster
-than exact and fast about 3×. Fast mode's flips and time predate its
-current prefill kernels, which cut its prefill by about 30% on a Ryzen 7
-7700X ([Modes](docs/MODES.md#int16-projections-and-static-softmax)), and
-near-exact's predate the static softmax of its prefill attention, which
-cuts its prefill by about 10% there with the same single flip in that
-host's teacher-forced check
-([Modes](docs/MODES.md#static-softmax-in-the-fp32-tiles)).
-Fast mode failed its held-out budgets on handwriting and degraded scans;
-use near-exact for those pages.
+The journal page has 6,544 input tokens. The timings use a Ryzen 9 7950X
+on Windows 11 without the draft head. The near-exact and fast rows use the
+previous prefill kernels. On a Ryzen 7 7700X the current kernels cut
+transformer prefill by about [30% in fast](docs/MODES.md#int16-projections-and-static-softmax)
+and [10% in near-exact](docs/MODES.md#static-softmax-in-the-fp32-tiles).
+Near-exact is recommended for handwriting and degraded scans, where fast
+mode failed its held-out budgets.
 
 Exact mode matched FP32's tokens on every page measured. Its default
 kernels can change the last bits of logits; `RunnerConfig::reference()` is
@@ -115,7 +111,7 @@ probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 | `--model DIR` | Checkpoint and/or packed files (default `artifacts/model`) |
 | `--model-file F` | A packed file; it decides the mode. `--verify-model-file` checks every tensor digest first |
 | `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay, `--allow-rtn` lets fast mode quantize without one |
-| `--backend auto\|avx2\|scalar\|neon` | `avx2` keeps every kernel at 8 lanes (FP32 attention, fast mode's INT16 projections on AVX2); `scalar` is for debugging |
+| `--backend auto\|avx2\|scalar\|neon` | `avx2` selects 8-lane FP32 attention and AVX2 panels. `scalar` is for debugging. |
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
@@ -237,12 +233,13 @@ Experimental overlays with FP32 exception columns are described in
   library's bitwise kernel oracles; `--smoke` adds the exact-mode trace hash.
 - `cargo test --release --locked --test modes --test gpu_parity -- --ignored`
   with `artifacts/`: exact mode reproduces the GPU smoke tokens under the
-  automatic configuration; near-exact and fast reproduce the recorded
-  journal tokens; packed files round-trip; the trace hashes are pinned.
+  automatic configuration. The journal token checks require the recorded
+  prefill kernels. Packed files round-trip, and trace hashes use Windows pins.
 - `falcon-ocr-eval agree` measures teacher-forced flips and KL
   ([mode comparisons](docs/MODES.md#the-metric)).
 
-Tests and fixture regeneration: [Development](docs/DEVELOPMENT.md).
+See [Development](docs/DEVELOPMENT.md#the-check) for fixture prerequisites
+and platform-specific trace baselines.
 
 ## Performance notes
 

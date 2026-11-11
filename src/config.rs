@@ -26,9 +26,8 @@ pub enum Backend {
     #[serde(alias = "avx512")]
     Auto,
     Scalar,
-    /// 8-lane kernels everywhere, whatever else the CPU has: FP32 attention
-    /// and FP32 panels, except the INT16 projections of 8-bit bodies, which
-    /// take their AVX2 kernel (bitwise the VNNI one).
+    /// 8-lane FP32 attention and verification kernels, with AVX2 panels.
+    /// The `gemm` crate dispatches independently for FP32 projection matrices.
     Avx2,
     /// aarch64 Advanced SIMD; `auto` selects it on aarch64.
     Neon,

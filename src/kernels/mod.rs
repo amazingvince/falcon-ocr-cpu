@@ -37,8 +37,8 @@ pub(crate) fn bf16_available() -> bool {
 }
 
 /// Whether the FP32 prefill attention runs the 16-lane AVX-512 tiles: the
-/// `auto` backend on an AVX-512F CPU (bitwise identical to the 8-lane tiles;
-/// an explicit `avx2` backend keeps 8 lanes everywhere).
+/// `auto` backend on an AVX-512F CPU. The wide tiles match the 8-lane tiles
+/// used by the `avx2` backend bit for bit.
 pub(crate) fn wide_attention(simd: Simd) -> bool {
     cfg!(target_arch = "x86_64") && simd == Simd::Auto && avx512_available()
 }
@@ -193,7 +193,8 @@ impl std::fmt::Display for PrefillAttention {
 /// online one; those of an 8-bit body (where it has no BF16 attention) only
 /// when it asks for the static one, and those of an FP32 body never. Only
 /// the `auto` backend takes the AVX-512 paths (wide FP32 tiles, and BF16
-/// attention and VNNI for 8-bit bodies); `avx2` is 8-lane throughout.
+/// attention and VNNI for 8-bit bodies). `avx2` selects the narrower attention
+/// tiles and AVX2 panels. FP32 GEMM dispatches inside the `gemm` crate.
 /// Traces, linear-input captures and prefills of at most 8 rows take the
 /// FP32 path with the online softmax regardless.
 pub fn prefill_plan(
