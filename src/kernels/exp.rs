@@ -237,6 +237,13 @@ pub(crate) fn exp_poly(x: f32) -> f32 {
     if x > EXP_MAX {
         return f32::INFINITY;
     }
+    exp_poly_unchecked(x)
+}
+
+/// Polynomial core of [`exp_poly`] for finite arguments in [-87, 87].
+/// NaN propagates; inputs outside that range have unspecified values.
+#[inline(always)]
+pub(crate) fn exp_poly_unchecked(x: f32) -> f32 {
     let n = (x * EXP_LOG2E).round_ties_even();
     let r = n.mul_add(-EXP_LN2_HI, x);
     let r = n.mul_add(-EXP_LN2_LO, r);

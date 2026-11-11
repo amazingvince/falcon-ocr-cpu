@@ -3,19 +3,38 @@
 //! and the kernel against an f64 reference; plus a timing probe.
 use super::*;
 use crate::config::{ExpMode, PrefillSoftmax};
+#[cfg(target_arch = "x86_64")]
+use crate::kernels::attention::prefill64::compact_prefill;
+#[cfg(target_arch = "x86_64")]
+use crate::kernels::attention::prefill64::test_data::{normalized, values};
 use crate::kernels::attention::prefill64::{
-    compact_prefill,
-    test_data::{normalized, operands, reference_errors, values},
+    HEAD_DIM, TileFn, compact_prefill_with,
+    test_data::{operands, reference_errors},
+    tile_span,
 };
 use crate::kernels::{Geometry, PrefillOptions};
 use crate::simd::exp_poly;
 
 fn available() -> bool {
-    std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
+    #[cfg(target_arch = "x86_64")]
+    {
+        std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        true
+    }
 }
 
 fn wide_available() -> bool {
-    available() && std::is_x86_feature_detected!("avx512f")
+    #[cfg(target_arch = "x86_64")]
+    {
+        available() && std::is_x86_feature_detected!("avx512f")
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        false
+    }
 }
 
 /// The static tiles with the given exp (which they ignore).
@@ -45,20 +64,44 @@ const CASES: [(usize, usize, usize, usize, usize); 10] = [
 ];
 
 fn run(case: (usize, usize, usize, usize, usize), wide: bool, options: PrefillOptions) -> Vec<f32> {
+    #[cfg(target_arch = "x86_64")]
+    let tile: TileFn = if wide { tile_head_wide } else { tile_head_narrow };
+    #[cfg(target_arch = "aarch64")]
+    let tile: TileFn = {
+        let _ = wide;
+        tile_head_neon
+    };
+    if options.fp32_softmax == PrefillSoftmax::Static {
+        run_tile(case, tile)
+    } else {
+        #[cfg(target_arch = "x86_64")]
+        let online: TileFn = match (options.exp == ExpMode::Fast, wide) {
+            (true, true) => super::super::tile_head_fast_wide,
+            (true, false) => super::super::tile_head_fast,
+            (false, true) => super::super::tile_head_native_wide,
+            (false, false) => super::super::tile_head_native,
+        };
+        #[cfg(target_arch = "aarch64")]
+        let online: TileFn = super::super::tile_head_native;
+        run_tile(case, online)
+    }
+}
+
+fn run_tile(case: (usize, usize, usize, usize, usize), tile: TileFn) -> Vec<f32> {
     let (queries, total, offset, image_start, image_end) = case;
     let (q, k, v, sinks) = operands(queries, total);
     let mut out = vec![f32::NAN; q.len()];
-    // SAFETY: the callers check the features; shapes are consistent.
+    // SAFETY: native callers check features; shapes are consistent.
     unsafe {
-        compact_prefill(
+        compact_prefill_with(
+            tile,
             &q,
             &CompactKv::prefill(&k, &v, total, 16, 8, HEAD_DIM),
             queries,
             Geometry::new(offset, image_start, image_end),
             &sinks,
             &mut out,
-            wide,
-            options,
+            false,
         );
     }
     out
@@ -66,6 +109,7 @@ fn run(case: (usize, usize, usize, usize, usize), wide: bool, options: PrefillOp
 
 /// Bit for bit `exp_poly` over every 1021st FP32 value in [-87, 87], on 8
 /// and 16 lanes.
+#[cfg(target_arch = "x86_64")]
 #[test]
 fn unchecked_exps_match_exp_poly() {
     if !available() {
@@ -77,7 +121,7 @@ fn unchecked_exps_match_exp_poly() {
         // SAFETY: AVX2/FMA checked by the caller; both arrays hold 16 lanes.
         unsafe {
             for half in 0..2 {
-                let lanes = exp8(_mm256_loadu_ps(x.as_ptr().add(8 * half)));
+                let lanes = crate::simd::Avx2::exp_unchecked(_mm256_loadu_ps(x.as_ptr().add(8 * half)));
                 _mm256_storeu_ps(out.as_mut_ptr().add(8 * half), lanes);
             }
         }
@@ -174,12 +218,18 @@ fn oracle(case: (usize, usize, usize, usize, usize)) -> Vec<f32> {
 /// every case, under either `ExpMode`.
 #[test]
 fn static_tiles_match_the_scalar_oracle_bitwise() {
-    if !available() {
-        return;
-    }
     let pool = rayon::ThreadPoolBuilder::new().num_threads(4).build().unwrap();
     for case in CASES {
         let expected = oracle(case);
+        let portable = pool.install(|| run_tile(case, tile_head_portable));
+        assert_eq!(
+            portable.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            expected.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            "portable {case:?}"
+        );
+        if !available() {
+            continue;
+        }
         for wide in [false, true] {
             if wide && !wide_available() {
                 continue;
@@ -216,18 +266,22 @@ fn nan_keys_propagate_in_masked_tiles() {
             continue;
         }
         let mut out = vec![0.0_f32; q.len()];
+        #[cfg(target_arch = "x86_64")]
+        let tile: TileFn = if wide { tile_head_wide } else { tile_head_narrow };
+        #[cfg(target_arch = "aarch64")]
+        let tile: TileFn = tile_head_neon;
         // SAFETY: features checked above (AVX-512F before `wide`); shapes
         // consistent.
         unsafe {
-            compact_prefill(
+            compact_prefill_with(
+                tile,
                 &q,
                 &CompactKv::prefill(&k, &v, total, 16, 8, HEAD_DIM),
                 queries,
                 Geometry::new(offset, image_start, image_end),
                 &sinks,
                 &mut out,
-                wide,
-                options(ExpMode::Fast),
+                false,
             );
         }
         for row in 0..queries {
@@ -271,6 +325,7 @@ fn matches_f64_reference() {
 /// Wall time of one layer's prefill attention at a full page's shape (6,544
 /// rows, 6,534 image tokens, 16 heads): online (fast exp) against static
 /// softmax, interleaved, 8- and 16-lane tiles, on the caller's threads.
+#[cfg(target_arch = "x86_64")]
 #[test]
 #[ignore = "timing probe; run in release with --nocapture"]
 fn static_softmax_timing_probe() {
