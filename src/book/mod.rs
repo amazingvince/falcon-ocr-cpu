@@ -133,6 +133,13 @@ impl<W: Write> Sink<W> {
     /// a file, `stdout` only shows the text, so a failure there (a closed
     /// pipe) is a warning, and later pages are written to the file alone.
     pub fn page(&mut self, path: &Path, page: usize, result: &OcrResult) -> Result<()> {
+        if result.finish_reason == crate::FinishReason::Repetition {
+            crate::note!(
+                "warning: page {page} ({}): the repetition stop ended the page after {} tokens; use --stop-repetition=false to read through repeated or templated content",
+                path.display(),
+                result.output_tokens
+            );
+        }
         let line = record_line(path, page, Ok(result), self.options.as_ref())?;
         let Some(file) = &mut self.file else {
             let shown = if self.text { &result.text } else { &line };

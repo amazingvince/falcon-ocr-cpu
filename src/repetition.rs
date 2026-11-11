@@ -22,11 +22,11 @@
 //! OmniDocBench ground-truth pages, the longest counting window in outputs
 //! that end at EOS and in ground truth was 20 cycles (one page's scoring
 //! table counting down from 20 bonus points) and the next longest 9.
-//! Templated pages can count further: a 41-row conversion table, a 40-item
-//! answer sheet or a 52-week planner (the tests' cases) holds 40 to 52
-//! cycles, which a threshold of 32 would cut. The counting loops on record,
-//! on three pages, reach 65 to 212 cycles where they run long enough; at 64
-//! the rule ends those and no output that ends at EOS or ground-truth page.
+//! Templated pages can count further: a 100-item answer sheet or a 104-week
+//! planner (the tests' cases) would be cut by a threshold of 64. The floor
+//! of 128 leaves those intact and still ends the recorded 212-cycle loop.
+//! Shorter counting loops can reach the token cap. The rule cannot tell a
+//! sufficiently long form from a loop; `--stop-repetition=false` disables it.
 
 use crate::tokenizer::DIGIT_ZERO;
 
@@ -37,11 +37,9 @@ pub(crate) const MAX_PERIOD: usize = 128;
 pub(crate) const MIN_WINDOW: usize = 256;
 /// Minimum number of whole cycles in the window.
 pub(crate) const MIN_REPEATS: usize = 4;
-/// Minimum number of whole cycles in a counting window: templated pages
-/// (a 41-row conversion table, a 40-item answer sheet, a 52-week planner)
-/// count legitimately for 40 to 52 cycles, the loops on record for 65 and
-/// more.
-pub(crate) const MIN_COUNT_REPEATS: usize = 64;
+/// Minimum whole cycles in a counting window: leave 100-item answer sheets
+/// and 104-week planners intact while ending the recorded 212-cycle loop.
+pub(crate) const MIN_COUNT_REPEATS: usize = 128;
 
 /// Stands for a number in the symbol history; no token has this ID.
 const NUMBER: u32 = u32::MAX;

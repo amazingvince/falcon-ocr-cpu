@@ -372,6 +372,29 @@ fn the_output_file_is_left_alone_until_the_model_loads() {
 }
 
 #[test]
+#[ignore = "requires artifacts/packed and the looping corpus page"]
+fn text_output_warns_when_the_repetition_stop_ends_a_page() {
+    let case = Case::new();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let page = root.join("artifacts/corpus/v3/95928a9b09ccac9e/canonical-rgb.png");
+    let result = case.run_with(
+        &root.join("artifacts/packed"),
+        &[],
+        &[arg(&page), "--max-new-tokens", "4096", "--text"],
+    );
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(result.status.success(), "{stderr}");
+    assert!(
+        stderr.contains(&format!("warning: page 0 ({})", page.display())),
+        "{stderr}"
+    );
+    assert!(stderr.contains("the repetition stop ended the page"), "{stderr}");
+    assert!(stderr.contains("--stop-repetition=false"), "{stderr}");
+    assert!(!result.stdout.is_empty());
+    assert!(!result.stdout.starts_with(b"{\"path\""), "--text keeps stdout as text");
+}
+
+#[test]
 #[ignore = "requires the published near-exact file in artifacts/packed"]
 fn a_resumed_run_repairs_the_output_and_runs_only_the_missing_pages() {
     let case = Case::new();

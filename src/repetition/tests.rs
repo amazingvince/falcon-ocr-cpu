@@ -109,10 +109,11 @@ fn rows_len(numbers: &[u64], row: &[u32]) -> usize {
 fn counting_loop_stops_after_the_minimum_rows() {
     // Rows 44, 45, ...: each a number and 16 tokens, a cycle of 17 symbols
     // (18 tokens, 19 from row 100). The window starts at row 44 and holds
-    // MIN_COUNT_REPEATS whole rows at the blank line that closes row 107.
-    let tokens = numbered(10, 44..400, &ROW);
+    // MIN_COUNT_REPEATS whole rows at the blank line that closes row 171.
+    // Rows 44 to 255 are the recorded 212-cycle deep-fried page's loop.
+    let tokens = numbered(10, 44..=255, &ROW);
     let rows: Vec<u64> = (44..44 + MIN_COUNT_REPEATS as u64).collect();
-    assert_eq!(rows.last(), Some(&107));
+    assert_eq!(rows.last(), Some(&171));
     let expected = 10 + rows_len(&rows, &ROW);
     assert!(expected - 10 >= MIN_WINDOW);
     assert_eq!(fires_after(&tokens), Some(expected));
@@ -152,12 +153,12 @@ fn counting_loops_may_step_by_any_constant_and_change_width() {
 fn a_number_off_the_step_restarts_the_count() {
     // Rows 44 to 49, then 49 again: the repeated number breaks the step, so
     // the window starts again with the text after the first 49 (row 5).
-    // It holds MIN_COUNT_REPEATS whole cycles once the number of row 69
-    // (112) is complete, at the token after its three digits.
+    // It holds MIN_COUNT_REPEATS whole cycles once the number of row 133
+    // (176) is complete, at the token after its three digits.
     let numbers: Vec<u64> = (44..50).chain(49..400).collect();
     let tokens = numbered(10, numbers.iter().copied(), &ROW);
     let last = 5 + MIN_COUNT_REPEATS;
-    assert_eq!((last, numbers[last]), (69, 112));
+    assert_eq!((last, numbers[last]), (133, 176));
     let expected = 10 + rows_len(&numbers[..last], &ROW) + digits(numbers[last]).len() + 1;
     assert_eq!(fires_after(&tokens), Some(expected));
 }
@@ -205,10 +206,11 @@ fn tables_with_row_numbers_and_varying_cells_never_stop() {
     };
     assert_eq!(fires_after(&table(&|n| digits(n * n * 7 % 1000 + 3))), None);
     assert_eq!(fires_after(&table(&|n| vec![word(n)])), None);
-    // Rows identical apart from the row number are a counting loop: a blank
-    // numbered form ends with its row MIN_COUNT_REPEATS, which takes the
-    // window past MIN_WINDOW tokens.
+    // A 100-row blank numbered form is legitimate templated content. The
+    // detector cannot distinguish a longer form from a counting loop.
     let blank = table(&|_| Vec::new());
+    let form: usize = (1..=100_u64).map(|n| 10 + digits(n).len()).sum();
+    assert_eq!(fires_after(&blank[..form]), None);
     let kept: usize = (1..=MIN_COUNT_REPEATS as u64).map(|n| 10 + digits(n).len()).sum();
     assert!(kept >= MIN_WINDOW);
     assert_eq!(fires_after(&blank), Some(kept));
@@ -229,10 +231,10 @@ fn answer_sheet(items: u64) -> Vec<u32> {
 
 #[test]
 fn templated_rows_with_fixed_steps_are_not_loops() {
-    // A Celsius to Fahrenheit table, 0 to 200 °C in steps of 5 (41 rows,
+    // A Celsius to Fahrenheit table, 0 to 500 °C in steps of 5 (101 rows,
     // one tag per line, as the model writes tables): both cells count, by 5
-    // and by 9. At 32 cycles the stop cut it after row 32 (token 482).
-    let conversion: Vec<u32> = (0..=40)
+    // and by 9. At 64 cycles the stop cut it despite its legitimate rows.
+    let conversion: Vec<u32> = (0..=100)
         .flat_map(|k: u64| {
             let mut row = vec![TR[0], NEWLINE, TD[0]];
             row.extend(digits(5 * k));
@@ -244,11 +246,11 @@ fn templated_rows_with_fixed_steps_are_not_loops() {
         .collect();
     assert!(conversion.len() >= MIN_WINDOW);
     assert_eq!(fires_after(&conversion), None);
-    // A 40-item answer sheet; 32 cycles cut it after item 32 (token 375).
-    assert_eq!(fires_after(&answer_sheet(40)), None);
-    // A 52-week planner, `Week n ____`; 32 cycles cut it at token 256.
+    // A 100-item answer sheet was cut by the old 64-cycle floor.
+    assert_eq!(fires_after(&answer_sheet(100)), None);
+    // A 104-week planner, `Week n ____`, also exceeds that floor.
     let (week, blank) = (4010, 4011);
-    let planner: Vec<u32> = (1..=52)
+    let planner: Vec<u32> = (1..=104)
         .flat_map(|n| {
             let mut line = vec![week, SPACE];
             line.extend(digits(n));
@@ -261,11 +263,11 @@ fn templated_rows_with_fixed_steps_are_not_loops() {
 }
 
 #[test]
-fn a_counting_window_stops_at_64_cycles_not_63() {
-    // The recorded counting loops reach 65 cycles and more. Both windows
-    // span well over MIN_WINDOW tokens, so only the cycle count decides.
-    assert_eq!(MIN_COUNT_REPEATS, 64);
-    let (short, full) = (answer_sheet(63), answer_sheet(64));
+fn a_counting_window_stops_at_128_cycles_not_127() {
+    // Both windows span well over MIN_WINDOW tokens, so only the cycle
+    // count decides. Even long templates remain subject to this heuristic.
+    assert_eq!(MIN_COUNT_REPEATS, 128);
+    let (short, full) = (answer_sheet(127), answer_sheet(128));
     assert!(short.len() >= 2 * MIN_WINDOW);
     assert_eq!(fires_after(&short), None);
     assert_eq!(fires_after(&full), Some(full.len()));
