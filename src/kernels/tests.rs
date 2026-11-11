@@ -2,8 +2,8 @@
 
 use super::*;
 
-// A fixed, deterministic generator keeps tests independent of rand versions.
-fn values(n: usize, seed: u32) -> Vec<f32> {
+/// Fixed, deterministic test inputs in [-1, 1).
+pub(crate) fn values(n: usize, seed: u32) -> Vec<f32> {
     let mut state = seed;
     (0..n)
         .map(|_| {

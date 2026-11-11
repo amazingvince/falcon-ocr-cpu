@@ -26,20 +26,9 @@ use super::{
 };
 use crate::{
     config::{CacheLayout, ExpMode, ModelConfig, PrefillSoftmax, Tuning},
-    kernels::{self, Bf16Kv, Geometry, PrefillOptions, PrefillProjection as Projection, Simd},
+    kernels::{self, Bf16Kv, Geometry, PrefillOptions, PrefillProjection as Projection, Simd, test_values as values},
     quant::{Kv, linear::QuantLinear},
 };
-
-/// A fixed generator in [-1, 1), as in `kernels::tests`.
-fn values(n: usize, seed: u32) -> Vec<f32> {
-    let mut state = seed;
-    (0..n)
-        .map(|_| {
-            state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-            ((state >> 8) as f64 / 16_777_216.0 * 2.0 - 1.0) as f32
-        })
-        .collect()
-}
 
 fn bits(x: &[f32]) -> Vec<u32> {
     x.iter().map(|v| v.to_bits()).collect()

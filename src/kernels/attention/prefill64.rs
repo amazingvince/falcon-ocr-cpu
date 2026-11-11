@@ -47,6 +47,8 @@ mod span;
 #[cfg(target_arch = "x86_64")]
 /// The FP32 tiles with the static-shift softmax.
 mod static_shift;
+#[cfg(all(test, target_arch = "x86_64"))]
+mod test_data;
 use span::tile_span;
 
 /// Maximum query rows in a prefill tile.

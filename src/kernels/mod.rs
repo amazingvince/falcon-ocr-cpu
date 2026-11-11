@@ -13,6 +13,8 @@ pub(crate) mod exp;
 mod panels;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) use tests::values as test_values;
 
 pub(crate) use attention::{
     Bf16Kv, attention_prefill_bf16, attention_with, prefill_bf16_rows_available, store_prefill_bf16_row,

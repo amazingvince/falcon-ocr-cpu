@@ -5,36 +5,13 @@ use super::*;
 use crate::config::PrefillSoftmax;
 use crate::kernels::attention::prefill64::bf16::{compact_prefill, pair_rows, qk_lanes, to_bf16};
 use crate::kernels::attention::prefill64::mask_lanes;
+use crate::kernels::attention::prefill64::test_data::{normalized, operands, reference_errors, values};
 use crate::kernels::{Bf16Kv, CompactKv, Geometry, PrefillOptions};
 
 /// The BF16 attention and its AVX512BW row layouts; asserted by
 /// `kernels::tests::host_runs_every_avx512_kernel`.
 fn available() -> bool {
     crate::kernels::bf16_available() && crate::kernels::prefill_bf16_rows_available()
-}
-
-/// A fixed generator in [-range, range).
-fn values(n: usize, seed: u32, range: f32) -> Vec<f32> {
-    let mut state = seed;
-    (0..n)
-        .map(|_| {
-            state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-            ((state >> 8) as f64 / 16_777_216.0 * 2.0 - 1.0) as f32 * range
-        })
-        .collect()
-}
-
-/// Random 64-wide heads scaled to norm 8, as the model's per-head RMS norms
-/// leave queries and keys.
-fn normalized(n: usize, seed: u32) -> Vec<f32> {
-    let mut x = values(n, seed, 1.0);
-    for head in x.chunks_exact_mut(HEAD_DIM) {
-        let norm = head.iter().map(|v| v * v).sum::<f32>().sqrt();
-        for v in head {
-            *v *= 8.0 / norm;
-        }
-    }
-    x
 }
 
 /// [`exp2_lanes`] on one value: the same IEEE operations in the same order.
@@ -83,12 +60,9 @@ fn exp2_lanes_match_the_scalar_oracle() {
 /// Random prefill operands (q, k, v, sinks, key copies, value pairs) for 16
 /// query and 8 KV heads, with normalized queries and keys.
 #[allow(clippy::type_complexity)]
-fn operands(query_len: usize) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<u32>, Vec<u32>) {
+fn packed_operands(query_len: usize) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<u32>, Vec<u32>) {
     let (heads, kv_heads) = (16, 8);
-    let q = normalized(query_len * heads * HEAD_DIM, 17 + query_len as u32);
-    let k = normalized(query_len * heads * HEAD_DIM, 19 + query_len as u32);
-    let v = values(query_len * kv_heads * HEAD_DIM, 23 + query_len as u32, 3.0);
-    let sinks = values(heads, 29, 2.0);
+    let (q, k, v, sinks) = operands(query_len, query_len);
     let pairs = query_len.div_ceil(2);
     let mut keys = vec![0_u32; heads * query_len * PAIRS];
     let mut value_pairs = vec![0_u32; kv_heads * pairs * HEAD_DIM];
@@ -212,7 +186,7 @@ fn fused_epilogue_matches_separate_passes() {
     }
     let (heads, kv_heads) = (16, 8);
     for (query_len, image_start, image_end) in CASES {
-        let (q, k, v, sinks, keys, value_pairs) = operands(query_len);
+        let (q, k, v, sinks, keys, value_pairs) = packed_operands(query_len);
         let shape = Shape {
             query_width: heads * HEAD_DIM,
             kv_width: kv_heads * HEAD_DIM,
@@ -249,10 +223,6 @@ fn fused_epilogue_matches_separate_passes() {
     }
 }
 
-fn round(x: f32) -> f64 {
-    half::bf16::from_f32(x).to_f64()
-}
-
 /// The whole kernel (through `compact_prefill`) against an f64 reference on
 /// the same BF16 operands with the exact exp. Each weight `bf16(p) / sum`
 /// differs from `p / P` by its probability's relative error less their
@@ -267,12 +237,14 @@ fn matches_f64_reference() {
     }
     let pool = rayon::ThreadPoolBuilder::new().num_threads(4).build().unwrap();
     let (heads, kv_heads) = (16, 8);
-    let bf16_exact = |x: Vec<f32>| -> Vec<f32> { x.iter().map(|&x| round(x) as f32).collect() };
+    let bf16_exact = |x: Vec<f32>| -> Vec<f32> { x.into_iter().map(|x| half::bf16::from_f32(x).to_f32()).collect() };
     for (query_len, image_start, image_end) in CASES {
-        let (q, k, v, sinks, _, _) = operands(query_len);
+        let (q, k, v, sinks) = operands(query_len, query_len);
         // BF16-exact, so the online kernel's FP32 short tiles see the same
         // operands.
         let (q, k, v) = (bf16_exact(q), bf16_exact(k), bf16_exact(v));
+        let cache = CompactKv::prefill(&k, &v, query_len, heads, kv_heads, HEAD_DIM);
+        let geometry = Geometry::new(0, image_start, image_end);
         let run = |softmax| {
             let mut out = vec![f32::NAN; q.len()];
             let (mut scratch_keys, mut scratch_values) = (Vec::new(), Vec::new());
@@ -285,9 +257,9 @@ fn matches_f64_reference() {
             pool.install(|| unsafe {
                 compact_prefill(
                     &q,
-                    &CompactKv::prefill(&k, &v, query_len, heads, kv_heads, HEAD_DIM),
+                    &cache,
                     query_len,
-                    Geometry::new(0, image_start, image_end),
+                    geometry,
                     &sinks,
                     &mut out,
                     Bf16Kv::Convert(&mut scratch_keys, &mut scratch_values),
@@ -297,38 +269,7 @@ fn matches_f64_reference() {
             out
         };
         let (out, online) = (run(PrefillSoftmax::Static), run(PrefillSoftmax::Online));
-        let (mut worst, mut worst_online) = (0.0_f64, 0.0_f64);
-        for head in 0..heads {
-            let kv_head = head / (heads / kv_heads);
-            for row in 0..query_len {
-                let geometry = Geometry::new(0, image_start, image_end);
-                let logits: Vec<(usize, f64)> = (0..query_len)
-                    .filter(|&key| !geometry.masked(row, key))
-                    .map(|key| {
-                        let dot: f64 = (0..HEAD_DIM)
-                            .map(|d| {
-                                round(q[(row * heads + head) * HEAD_DIM + d])
-                                    * round(k[(key * heads + head) * HEAD_DIM + d])
-                            })
-                            .sum();
-                        (key, dot / 8.0)
-                    })
-                    .collect();
-                assert!(logits.iter().all(|l| l.1.abs() <= 8.1));
-                let denominator: f64 = logits.iter().map(|l| l.1.exp()).sum();
-                let sink = 1.0 / (1.0 + (sinks[head] as f64 - denominator.ln()).exp());
-                for d in 0..HEAD_DIM {
-                    let sum: f64 = logits
-                        .iter()
-                        .map(|&(key, logit)| logit.exp() * round(v[(key * kv_heads + kv_head) * HEAD_DIM + d]))
-                        .sum();
-                    let expected = sum / denominator * sink;
-                    let at = (row * heads + head) * HEAD_DIM + d;
-                    worst = worst.max((out[at] as f64 - expected).abs());
-                    worst_online = worst_online.max((online[at] as f64 - expected).abs());
-                }
-            }
-        }
+        let (worst, worst_online) = reference_errors(&q, &cache, geometry, &sinks, &out, &online, 8.1);
         assert!(
             worst <= 3.0 * 2.0 * (2f64.powi(-8) + 7.5e-5) + 1e-4,
             "query_len {query_len}: worst {worst}"

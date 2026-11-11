@@ -3,7 +3,10 @@
 //! and the kernel against an f64 reference; plus a timing probe.
 use super::*;
 use crate::config::{ExpMode, PrefillSoftmax};
-use crate::kernels::attention::prefill64::compact_prefill;
+use crate::kernels::attention::prefill64::{
+    compact_prefill,
+    test_data::{normalized, operands, reference_errors, values},
+};
 use crate::kernels::{Geometry, PrefillOptions};
 use crate::simd::exp_poly;
 
@@ -22,42 +25,6 @@ fn options(exp: ExpMode) -> PrefillOptions {
         fp32_softmax: PrefillSoftmax::Static,
         ..PrefillOptions::EXACT
     }
-}
-
-/// A fixed generator in [-range, range).
-fn values(n: usize, seed: u32, range: f32) -> Vec<f32> {
-    let mut state = seed;
-    (0..n)
-        .map(|_| {
-            state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-            ((state >> 8) as f64 / 16_777_216.0 * 2.0 - 1.0) as f32 * range
-        })
-        .collect()
-}
-
-/// Random 64-wide heads scaled to norm 8, as the model's per-head RMS norms
-/// leave queries and keys.
-fn normalized(n: usize, seed: u32) -> Vec<f32> {
-    let mut x = values(n, seed, 1.0);
-    for head in x.chunks_exact_mut(HEAD_DIM) {
-        let norm = head.iter().map(|v| v * v).sum::<f32>().sqrt();
-        for v in head {
-            *v *= 8.0 / norm;
-        }
-    }
-    x
-}
-
-/// Prefill operands (q, k, v, sinks) for `queries` queries over `total`
-/// cached rows, 16 query and 8 KV heads, normalized queries and keys.
-fn operands(queries: usize, total: usize) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
-    let seed = 17 + total as u32;
-    (
-        normalized(queries * 16 * HEAD_DIM, seed),
-        normalized(total * 16 * HEAD_DIM, seed + 2),
-        values(total * 8 * HEAD_DIM, seed + 6, 3.0),
-        values(16, 29, 2.0),
-    )
 }
 
 /// (queries, total, query offset, image start, image end): partial query
@@ -295,37 +262,7 @@ fn matches_f64_reference() {
             ..PrefillOptions::EXACT
         };
         let online = pool.install(|| run(case, false, fast));
-        let (mut worst, mut worst_online) = (0.0_f64, 0.0_f64);
-        for head in 0..16 {
-            for row in 0..queries {
-                let absolute = offset + row;
-                let logits: Vec<(usize, f64)> = (0..geometry.visible_end(absolute))
-                    .filter(|&key| !geometry.masked(absolute, key))
-                    .map(|key| {
-                        let query = &q[(row * 16 + head) * HEAD_DIM..][..HEAD_DIM];
-                        let dot: f64 = query
-                            .iter()
-                            .zip(cache.key(key, head))
-                            .map(|(&a, &b)| a as f64 * b as f64)
-                            .sum();
-                        (key, dot / 8.0)
-                    })
-                    .collect();
-                assert!(logits.iter().all(|l| l.1.abs() <= 8.0 + 1e-4));
-                let denominator: f64 = logits.iter().map(|l| l.1.exp()).sum();
-                let sink = 1.0 / (1.0 + (sinks[head] as f64 - denominator.ln()).exp());
-                for d in 0..HEAD_DIM {
-                    let sum: f64 = logits
-                        .iter()
-                        .map(|&(key, logit)| logit.exp() * cache.value(key, head / 2)[d] as f64)
-                        .sum();
-                    let expected = sum / denominator * sink;
-                    let at = (row * 16 + head) * HEAD_DIM + d;
-                    worst = worst.max((got[at] as f64 - expected).abs());
-                    worst_online = worst_online.max((online[at] as f64 - expected).abs());
-                }
-            }
-        }
+        let (worst, worst_online) = reference_errors(&q, &cache, geometry, &sinks, &got, &online, 8.0 + 1e-4);
         assert!(worst <= 1e-5, "{case:?}: worst {worst}");
         eprintln!("{case:?}: worst {worst:.2e} (online softmax {worst_online:.2e})");
     }
