@@ -538,10 +538,14 @@ impl ModelFacts {
     /// header cannot be read counts no exception columns and groups of 64:
     /// loading it fails, and `doctor` reports why.
     pub fn from_plan(plan: &WeightsPlan) -> Result<Self> {
-        let (config, overlay_sha256, exception_bytes, groups_of_32, mixed_body) = match &plan.source {
+        Self::from_plan_with_overlay_error(plan).map(|(facts, _)| facts)
+    }
+
+    fn from_plan_with_overlay_error(plan: &WeightsPlan) -> Result<(Self, Option<anyhow::Error>)> {
+        let (config, overlay_sha256, overlay_facts) = match &plan.source {
             WeightsSource::Packed { path } => {
                 let (config, overlay_sha256, exception_bytes) = crate::model::packed_facts(path)?;
-                (config, overlay_sha256, exception_bytes, false, false)
+                (config, overlay_sha256, Ok(Some((exception_bytes, false, false))))
             }
             WeightsSource::Checkpoint { dir, overlay, .. } => {
                 let path = dir.join("config.json");
@@ -550,13 +554,17 @@ impl ModelFacts {
                 config.validate()?;
                 let facts = overlay
                     .as_deref()
-                    .and_then(|overlay| crate::model::overlay_facts(overlay, config.n_layers).ok());
-                let (exception_bytes, groups_of_32, mixed_body) = facts.unwrap_or((0, false, false));
-                (config, None, exception_bytes, groups_of_32, mixed_body)
+                    .map(|path| crate::model::overlay_facts(path, config.n_layers))
+                    .transpose();
+                (config, None, facts)
             }
         };
+        let ((exception_bytes, groups_of_32, mixed_body), overlay_error) = match overlay_facts {
+            Ok(facts) => (facts.unwrap_or_default(), None),
+            Err(error) => ((0, false, false), Some(error)),
+        };
         let body_bits = (plan.profile.quantizes_body() && !mixed_body).then(|| plan.profile.weight_bits());
-        Ok(Self {
+        let facts = Self {
             source: plan.source.clone(),
             profile: plan.profile,
             config,
@@ -565,7 +573,8 @@ impl ModelFacts {
             exception_bytes,
             // As `Model::i16_misfit`: 16-bit codes too.
             i16_misfit: body_bits == Some(16) || groups_of_32,
-        })
+        };
+        Ok((facts, overlay_error))
     }
 }
 
