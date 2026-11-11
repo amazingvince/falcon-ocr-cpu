@@ -79,15 +79,8 @@ pub struct Kernels {
     pub exp: String,
     /// `fp32`, `fp32-static`, `bf16`, `bf16-static`, `neon` or `scalar`.
     pub attention: String,
-    /// The `attention` that a near-exact rerun of the plan's pages
-    /// (`--escalate`, with the run's tuning) takes where it differs from
-    /// the plan's own. The rerun's 16-bit body runs the FP32 tiles wherever
-    /// the plan's panels run, with the run's `prefill-softmax-fp32`, else
-    /// the static softmax (16-bit bodies' default; plans written before the
-    /// knob ran the online one): `fp32-static` or `fp32` for a BF16 plan,
-    /// and for a plan on the online FP32 tiles by default (fast mode's FP32
-    /// fallback). `None` where the rerun keeps `attention`: near-exact
-    /// plans, FP32 bodies, NEON and scalar.
+    /// The attention of a near-exact rerun (`--escalate`), from the
+    /// resolver's `escalation_prefill`, where it differs from this plan's.
     pub escalation_attention: Option<String>,
     /// The prefill projections' rounding: `i16` for the INT16 panels (their
     /// VNNI and AVX2 kernels agree bitwise), `bf16` for the removed BF16
@@ -111,17 +104,11 @@ impl Kernels {
         let (attention, projection) = prefill_kinds(prefill)?;
         let tuning = plan.get("tuning");
         let knob = |key: &str| tuning.and_then(|tuning| tuning.get(key));
-        // `prefill_plan`'s FP32 softmax for a 16-bit body: the knob's, or
-        // static where it is null (the default); a plan without the field
-        // predates the knob and ran online.
-        let rerun = match knob("prefill_softmax_fp32") {
-            Some(Value::Null) => "fp32-static",
-            Some(knob) if knob.as_str() == Some("static") => "fp32-static",
-            _ => "fp32",
-        };
-        let panels = prefill.get("projection").and_then(Value::as_str) != Some("gemm-f32");
-        let tiles = matches!(attention.as_str(), "fp32" | "fp32-static" | "bf16" | "bf16-static");
-        let escalation_attention = (panels && tiles && attention != rerun).then(|| rerun.to_owned());
+        let escalation_attention = plan
+            .get("escalation_prefill")
+            .and_then(prefill_kinds)
+            .map(|(attention, _)| attention)
+            .filter(|rerun| *rerun != attention);
         let chunks = knob("split_chunks").and_then(Value::as_u64);
         let split_chunks = match plan.get("kv_cache").and_then(Value::as_str) {
             Some("f32-split") => Some(chunks.unwrap_or(1)),
@@ -163,9 +150,6 @@ impl Kernels {
             flags.push(format!("--exp {}", self.exp));
         }
         flags.extend(attention_flag(&self.attention));
-        if let Some(rerun) = &self.escalation_attention {
-            flags.push(format!("{rerun} attention for escalated pages"));
-        }
         flags.extend(projection_flag(&self.projection));
         if let Some(fast) = self.decode_exp {
             flags.push(format!("--tune decode-exp={}", if fast { "fast" } else { "exact" }));
@@ -624,8 +608,16 @@ pub fn resume_warning(existing: &Existing, this: &Run) -> Option<String> {
         })
         .collect();
     (!others.is_empty()).then(|| {
+        let rerun = existing
+            .runs
+            .keys()
+            .any(|run| run.escalated && !run.matches(this))
+            .then(|| this.kernels.as_ref()?.escalation_attention.as_ref())
+            .flatten()
+            .map(|attention| format!(" ({attention} attention for escalated pages)"))
+            .unwrap_or_default();
         format!(
-            "the output holds records that ran otherwise than this run, {this}: {}; \
+            "the output holds records that ran otherwise than this run, {this}{rerun}: {}; \
              --resume skips their pages, it does not reread them",
             others.join(", ")
         )

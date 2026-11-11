@@ -408,6 +408,10 @@ fn a_resume_compares_the_fp32_softmax() {
         serde_json::json!({
             "repetition_stop": true, "repetition_counting": true, "exp": "fast",
             "prefill": {"projection": "panel-avx2", "attention": attention},
+            "escalation_prefill": {
+                "projection": "panel-avx2",
+                "attention": if fp32 == Some("online") { "avx2" } else { "avx2-static" }
+            },
             "tuning": {"decode_fast_exp": null, "prefill_softmax_fp32": fp32}
         })
     };
@@ -488,27 +492,15 @@ fn a_resume_compares_the_fp32_softmax() {
     escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
     let found = warning(&escalated, "avx512-wide", None).unwrap();
     assert!(found.contains("fp32-static attention for escalated pages"), "{found}");
-    // Plans whose reruns keep their attention: near-exact's own (either
-    // softmax), exact mode's FP32 body, NEON and plans from before the knob
-    // (`fp32` of `None`: no field).
-    let rerun = |attention: &str, projection: &str, fp32: Option<Option<&str>>| {
-        let mut plan = plan(attention, None);
-        plan["prefill"]["projection"] = projection.into();
-        let tuning = plan["tuning"].as_object_mut().unwrap();
-        tuning.remove("prefill_softmax_fp32");
-        if let Some(fp32) = fp32 {
-            tuning.insert("prefill_softmax_fp32".to_owned(), serde_json::json!(fp32));
-        }
-        Kernels::from_plan(&plan).unwrap().escalation_attention
-    };
-    assert_eq!(rerun("avx512-wide-static", "panel-avx2", Some(None)), None);
-    assert_eq!(rerun("avx512-wide", "panel-avx2", Some(online)), None);
-    assert_eq!(rerun("avx512-wide", "gemm-f32", Some(None)), None);
-    assert_eq!(rerun("neon", "panel-avx2", Some(None)), None);
-    assert_eq!(rerun("avx512-wide", "panel-i16-vnni", None), None);
-    assert_eq!(rerun("bf16-static", "panel-i16-vnni", None).as_deref(), Some("fp32"));
+    // Older records do not predict reruns. A current plan carries the
+    // resolver's answer even when its fast body uses GEMM projections.
+    let mut older = plan("bf16-static", online);
+    older.as_object_mut().unwrap().remove("escalation_prefill");
+    assert_eq!(Kernels::from_plan(&older).unwrap().escalation_attention, None);
+    let mut mixed = plan("avx2", None);
+    mixed["prefill"]["projection"] = "gemm-f32".into();
     assert_eq!(
-        rerun("avx512-wide", "panel-i16-vnni", Some(None)).as_deref(),
+        Kernels::from_plan(&mixed).unwrap().escalation_attention.as_deref(),
         Some("fp32-static")
     );
 }
@@ -563,6 +555,10 @@ fn a_resume_with_other_runner_choices_warns() {
         serde_json::json!({
             "repetition_stop": repetition_stop, "repetition_counting": repetition_stop, "exp": exp,
             "prefill": {"projection": projection, "attention": attention},
+            "escalation_prefill": {
+                "projection": "panel-avx2",
+                "attention": if matches!(attention, "neon" | "scalar") { attention } else { "avx2" }
+            },
             "tuning": {"decode_fast_exp": null}
         })
     };
@@ -591,10 +587,7 @@ fn a_resume_with_other_runner_choices_warns() {
     for (other, flag) in [
         (plan(false, "fast", "avx2", "panel-avx2"), "--stop-repetition=false"),
         (plan(true, "exact", "avx2", "panel-avx2"), "--exp exact"),
-        (
-            plan(true, "fast", "bf16", "panel-avx2"),
-            "BF16 attention, fp32 attention for escalated pages",
-        ),
+        (plan(true, "fast", "bf16", "panel-avx2"), "BF16 attention"),
         (plan(true, "fast", "neon", "panel-avx2"), "neon attention"),
         (plan(true, "fast", "avx2", "panel-bf16"), "BF16 projections"),
         (plan(true, "fast", "avx2", "panel-i16-vnni"), "INT16 projections"),
@@ -830,4 +823,44 @@ fn a_resume_with_other_runner_choices_warns() {
     assert_eq!(kernels.projection, if i16 { "i16" } else { "fp32" });
     assert_eq!(kernels.split_chunks, Some(4));
     assert_eq!(kernels.image_decoder.as_deref(), Some(resolved.image_decoder.as_str()));
+    // A partial overlay makes the fast body mixed and selects GEMM, but
+    // the near-exact rerun still has a uniform 16-bit body. Its own output
+    // must match the run that produced it, including mixed Q8 layers.
+    for body_bits in [Some(8), None] {
+        for mask in [0, 0b101] {
+            let config = crate::RunnerConfig {
+                tuning: crate::config::Tuning {
+                    kv_q8_layers: mask,
+                    ..config.tuning
+                },
+                ..config.clone()
+            };
+            let fast = crate::Resolved::new(
+                crate::HostInfo::detect(),
+                &config,
+                &crate::auto::ModelFacts {
+                    body_bits,
+                    ..facts.clone()
+                },
+                Path::new("model"),
+            );
+            let near = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+            let record = serde_json::json!({
+                "path": "mixed.png", "text": "t", "mode": "near-exact",
+                "precision": "w16-body-kv-q16", "plan": near,
+                "escalated_from": {"mode": "fast", "prefill": fast.prefill}
+            });
+            let existing = scan_output(&line(&record.to_string(), &fixed));
+            let current = |plan| this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, Kernels::of(plan));
+            assert_eq!(
+                resume_warning(&existing, &current(&fast)),
+                None,
+                "{body_bits:?} mask={mask}"
+            );
+            let mut changed = fast.clone();
+            changed.tuning.kv_q8_layers ^= 0b10;
+            let warning = resume_warning(&existing, &current(&changed)).expect("changed Q8 layers must warn");
+            assert!(warning.contains("--tune kv-layers="), "{warning}");
+        }
+    }
 }

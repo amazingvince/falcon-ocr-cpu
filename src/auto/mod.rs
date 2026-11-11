@@ -525,7 +525,7 @@ pub struct ModelFacts {
     #[serde(default)]
     pub exception_bytes: usize,
     /// `Model::i16_misfit`: a body matrix the INT16 prefill panels cannot
-    /// hold; for a plan, 16-bit codes or a W8 overlay's groups of 32.
+    /// hold: its code width, group size or dimensions do not fill panels.
     #[serde(default)]
     pub i16_misfit: bool,
 }
@@ -564,6 +564,17 @@ impl ModelFacts {
             Err(error) => ((0, false, false), Some(error)),
         };
         let body_bits = (plan.profile.quantizes_body() && !mixed_body).then(|| plan.profile.weight_bits());
+        let group_size = if groups_of_32 { 32 } else { 64 };
+        let dimensions = [
+            (config.query_dim() + 2 * config.kv_dim(), config.dim),
+            (config.dim, config.query_dim()),
+            (2 * config.ffn_dim, config.dim),
+            (config.dim, config.ffn_dim),
+        ];
+        let i16_misfit = plan.profile.quantizes_body()
+            && dimensions.iter().any(|&(out, inputs)| {
+                !crate::quant::linear::fits_i16_panels(plan.profile.weight_bits(), group_size, out, inputs)
+            });
         let facts = Self {
             source: plan.source.clone(),
             profile: plan.profile,
@@ -571,8 +582,7 @@ impl ModelFacts {
             body_bits,
             overlay_sha256,
             exception_bytes,
-            // As `Model::i16_misfit`: 16-bit codes too.
-            i16_misfit: body_bits == Some(16) || groups_of_32,
+            i16_misfit,
         };
         Ok((facts, overlay_error))
     }
@@ -645,6 +655,10 @@ pub struct Resolved {
     #[serde(default)]
     pub wide_rows: bool,
     pub prefill: PrefillPlan,
+    /// Prefill of a fast run's near-exact escalation, resolved with a
+    /// uniform 16-bit body and this run's configuration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub escalation_prefill: Option<PrefillPlan>,
     pub exp: ExpMode,
     pub head: HeadMode,
     pub speculation: Option<Speculation>,
@@ -702,6 +716,20 @@ impl Resolved {
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
             wide_rows: config.speculation.is_some() && profile.kv != Kv::Compact && crate::kernels::wide_rows(simd),
             prefill: crate::kernels::prefill_plan(facts.body_bits, facts.i16_misfit, simd, &config.tuning),
+            escalation_prefill: (Mode::of_profile(profile) == Some(Mode::Fast)).then(|| {
+                Self::new(
+                    host,
+                    config,
+                    &ModelFacts {
+                        profile: Profile::W16_BODY_KV_Q16,
+                        body_bits: Some(16),
+                        i16_misfit: true,
+                        ..facts.clone()
+                    },
+                    tokenizer_dir,
+                )
+                .prefill
+            }),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,

@@ -25,6 +25,11 @@ const I16_PANEL_ROWS: usize = 32;
 #[cfg(target_arch = "x86_64")]
 const _: () = assert!(crate::kernels::panel_i16::NR == I16_PANEL_ROWS);
 
+/// Whether a matrix's code width, groups and dimensions fill INT16 panels.
+pub(crate) fn fits_i16_panels(bits: u32, group_size: usize, out_dim: usize, in_dim: usize) -> bool {
+    bits == 8 && group_size == 64 && out_dim.is_multiple_of(I16_PANEL_ROWS) && in_dim.is_multiple_of(64)
+}
+
 /// Row-major weight codes of one matrix (owned, or mapped from a
 /// kernel-ready model file).
 #[derive(Debug)]
@@ -714,10 +719,7 @@ impl QuantLinear {
     /// columns, an output dimension that fills whole 32-row panels and an
     /// input dimension of whole groups.
     pub(crate) fn fits_i16_panels(&self) -> bool {
-        matches!(self.codes, Codes::I8(_))
-            && self.group_size == 64
-            && self.out_dim.is_multiple_of(I16_PANEL_ROWS)
-            && self.in_dim.is_multiple_of(64)
+        fits_i16_panels(self.bits(), self.group_size, self.out_dim, self.in_dim)
     }
 
     /// The dot kernel for this matrix's code type, group size and backend.
