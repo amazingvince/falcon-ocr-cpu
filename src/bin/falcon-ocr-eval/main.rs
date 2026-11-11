@@ -382,6 +382,7 @@ fn write_new(path: &Path, value: &serde_json::Value) -> Result<()> {
     Ok(())
 }
 fn main() -> Result<()> {
+    falcon_ocr::cpu::return_large_frees_to_os();
     let args = Cli::parse();
     #[cfg_attr(not(any(target_arch = "x86_64", target_arch = "aarch64")), allow(unused_mut))]
     let mut hardware = serde_json::json!({"os":std::env::consts::OS,"arch":std::env::consts::ARCH,
@@ -731,7 +732,7 @@ fn main() -> Result<()> {
             }
             let report_value = serde_json::json!({"schema":"falcon-ocr-attempt3-agree-v1","profile":profile,
                 "model_file":args.model_file,"reference":reference,"w8_artifact":args.w8_artifact,"max_steps":max_steps,
-                "exp_mode":format!("{:?}", config.exp),
+                "exp_mode":format!("{:?}", config.exp),"tuning":config.tuning,
                 "binary_sha256":digest(&std::env::current_exe()?)?,"threads":config.threads,"backend":config.backend,
                 "steps":total_steps,"flips":total_flips,"flips_per_1000":per_thousand,
                 "kl_mean":kl_mean,"reference_topk":reference_topk,"keep_fp32":args.keep_fp32,

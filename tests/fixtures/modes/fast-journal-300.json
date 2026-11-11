@@ -9,8 +9,8 @@
  "input_tokens": 6544,
  "finish_reason": "length",
  "prefill": {
-  "projection": "panel-avx2",
-  "attention": "bf16"
+  "projection": "panel-i16-vnni",
+  "attention": "bf16-static"
  },
  "token_ids": [
   20751,

@@ -1,0 +1,328 @@
+{
+ "schema": "falcon-ocr-near-exact-softmax-gate-v1-results",
+ "budget": "reference/near-exact-softmax-gate-v1-budget.json",
+ "registered": "budget committed in deff0bd at 2026-11-03T06:06:29-05:00 (pages and locks in 48d2c82 at 05:39:54), before the first start of any arm (06:23:59)",
+ "lock": "reference/near-exact-softmax-gate-v1-masked-lock.json",
+ "host": "AMD Ryzen 7 7700X (8 cores, 16 threads; AVX2, AVX-512 with BF16 and VNNI), Linux",
+ "binary": {
+  "path": "artifacts/near-exact-softmax-gate-v1/bin/falcon-ocr-533469a",
+  "sha256": "08ebf18cbd9e50b6035d9b5daa0ece8e1ef76545b93296df6e974dc9c8d68e26",
+  "source": "built from fce8b5c, whose src/, Cargo.toml, Cargo.lock, build.rs and examples/ equal feat/int8-rot 533469a (git diff empty): both knobs exist and are off by default, and the repetition stop includes the counting rule (c859bd2)",
+  "note": "run.sh refuses to start unless the binary's sha256 equals the budget's; the source commit fce8b5c is kept by the local tag checkpoint/near-exact-gate-binary-source-fce8b5c. The binary's repetition stop has the counting rule at 32 cycles; the branch later raised it to 64 (c7c64f9). Replaying all 621 outputs through the 64-cycle stop (probe-64-cycles.txt in the run directory) changes one stop: page 8e6267854fcec66c, which the reference and candidate A ended at 431 tokens by the counting rule (53 cycles), would continue. It is not a reference-EOS page, so it lies outside the gated scope; candidate B's two repetition stops on reference-EOS pages (de20643911b0421c, 13d47ce2dd0104f2) are exact-rule stops. Neither verdict depends on the threshold"
+ },
+ "runs": {
+  "directory": "artifacts/near-exact-softmax-gate-v1/ on the host: run.sh, launch.sh, run.log, pages.txt (the lock's 207 canonical paths in order), online.jsonl, static.jsonl and bf16.jsonl (raw `falcon-ocr run` lines), their .err files, *-report.json (research/corpus-qualification/scripts/bench_report_from_run.py), summary-static.json/.txt and summary-bf16.json/.txt (research/phase4-hillclimb/attempt3/check_heldout.py)",
+  "reference": {
+   "command_flags": "--mode near-exact",
+   "started": "2026-11-03T06:23:59-05:00",
+   "finished": "2026-11-03T07:12:49-05:00",
+   "plan": "mode near-exact (w16-body-kv-q16) | weights packed artifacts/packed/falcon-ocr-v1.5-int16-g64.safetensors | prefill 16 threads, projections panel-avx2, attention avx512-wide | decode auto {6,8,12} threads, avx2 kernels (avx512 verification rows), kv q16 | head Screened | speculation 4 drafts (min match 2), draft head artifacts/packed/falcon-ocr-v1.5-draft-head.safetensors | repetition stop on",
+   "finish_reasons": {
+    "repetition": 11,
+    "eos": 196
+   }
+  },
+  "candidate_a": {
+   "command_flags": "--mode near-exact --tune prefill-softmax-fp32=static",
+   "started": "2026-11-03T07:12:49-05:00",
+   "finished": "2026-11-03T08:02:01-05:00",
+   "plan": "mode near-exact (w16-body-kv-q16) | weights packed artifacts/packed/falcon-ocr-v1.5-int16-g64.safetensors | prefill 16 threads, projections panel-avx2, attention avx512-wide-static | decode auto {6,8,12} threads, avx2 kernels (avx512 verification rows), kv q16 | head Screened | speculation 4 drafts (min match 2), draft head artifacts/packed/falcon-ocr-v1.5-draft-head.safetensors | repetition stop on",
+   "finish_reasons": {
+    "repetition": 11,
+    "eos": 196
+   }
+  },
+  "candidate_b": {
+   "command_flags": "--mode near-exact --tune prefill-bf16-w16=attention",
+   "started": "2026-11-03T08:02:01-05:00",
+   "finished": "2026-11-03T08:43:27-05:00",
+   "plan": "mode near-exact (w16-body-kv-q16) | weights packed artifacts/packed/falcon-ocr-v1.5-int16-g64.safetensors | prefill 16 threads, projections panel-avx2, attention bf16-static | decode auto {6,8,12} threads, avx2 kernels (avx512 verification rows), kv q16 | head Screened | speculation 4 drafts (min match 2), draft head artifacts/packed/falcon-ocr-v1.5-draft-head.safetensors | repetition stop on",
+   "finish_reasons": {
+    "repetition": 12,
+    "eos": 195
+   }
+  },
+  "timing_note": "each arm's start time in run.log is when its turn came; an arm waited on the host CPU lock while a build ran, so wall times are not comparable",
+  "sha256": {
+   "online.jsonl": "dea1aba1e463e7040b46ca8e2e753225836a8b42dd0d062b43ae000351662f60",
+   "static.jsonl": "5aaa74ca9959b45440243462f5c9d48a7c0d5a7af4464f5ca1eb3cc8475c8ebb",
+   "bf16.jsonl": "2cc81bb9e0dd59a3ad36e21c828c81fb90c24d5cae199a685747795bedd26bdb",
+   "online-report.json": "de98e7c70593cf8ee38aadee1dc0213ad84fa4d910d1bd13efe4a8ce61f02a8c",
+   "static-report.json": "284ec59c0cee2fac97375251b060e64fe14c39d184bd45d93b370068b106da92",
+   "bf16-report.json": "10c1b3e2cfe2e869ea406df7be38e4d4765d03db8e307f3f0c12d39c91109515",
+   "summary-static.json": "04f02a28dcaccbbc79380335b883f10fc6e09ca1006145d855493b21977bfe1c",
+   "summary-bf16.json": "cd42761182e29755394beb1bc92215bd59dc319d9a18fa79c38c6c74e5e40df9"
+  }
+ },
+ "verdicts": {
+  "candidate_a": "PASS (pre-registered): the FP32 static-shift softmax is token-identical to the online softmax on all 207 pages (196/196 reference-EOS pages, 0 token edits); overall and every category +0.000 pt; no repetition stop on a reference-EOS page. It becomes near-exact mode's default (16-bit bodies)",
+  "candidate_b": "FAIL (pre-registered): BF16 prefill attention for the 16-bit body raises overall micro CER on reference-EOS pages by +0.503 pt (limit +0.25), slides +5.230 pt and other +1.174 pt (limit +1.0 each), and stops 2 reference-EOS pages by repetition (de20643911b0421c, 13d47ce2dd0104f2). It does not become a default"
+ },
+ "note_on_keys": "check_heldout.py labels the reference `fp32`; here it is near-exact's defaults with the online softmax (the budget's criteria_note)",
+ "criteria": {
+  "candidate_a": {
+   "overall_micro_cer_increase_max_points": {
+    "limit": 0.25,
+    "value": 0.0,
+    "pass": true
+   },
+   "per_category_micro_cer_increase_max_points": {
+    "limit": 1.0,
+    "values": {
+     "exam": 0.0,
+     "formulas": 0.0,
+     "multi_column": 0.0,
+     "other": 0.0,
+     "slides": 0.0,
+     "tables": 0.0
+    },
+    "pass": true
+   },
+   "repetition_stop_fires_on_fp32_eos_pages": {
+    "limit": 0,
+    "value": 0,
+    "pages": [],
+    "pass": true
+   },
+   "min_category_fp32_eos_pages_gated": {
+    "limit": 10,
+    "values": {
+     "exam": 13,
+     "formulas": 27,
+     "multi_column": 33,
+     "ordinary": 9,
+     "other": 37,
+     "slides": 37,
+     "tables": 40
+    },
+    "reported_not_gated": [
+     "ordinary"
+    ]
+   }
+  },
+  "candidate_b": {
+   "overall_micro_cer_increase_max_points": {
+    "limit": 0.25,
+    "value": 0.503,
+    "pass": false
+   },
+   "per_category_micro_cer_increase_max_points": {
+    "limit": 1.0,
+    "values": {
+     "exam": 0.004,
+     "formulas": -0.395,
+     "multi_column": -0.16,
+     "other": 1.174,
+     "slides": 5.23,
+     "tables": 0.905
+    },
+    "pass": false
+   },
+   "repetition_stop_fires_on_fp32_eos_pages": {
+    "limit": 0,
+    "value": 2,
+    "pages": [
+     "de20643911b0421c",
+     "13d47ce2dd0104f2"
+    ],
+    "pass": false
+   },
+   "min_category_fp32_eos_pages_gated": {
+    "limit": 10,
+    "values": {
+     "exam": 13,
+     "formulas": 27,
+     "multi_column": 33,
+     "ordinary": 9,
+     "other": 37,
+     "slides": 37,
+     "tables": 40
+    },
+    "reported_not_gated": [
+     "ordinary"
+    ]
+   }
+  }
+ },
+ "reported_not_gated": {
+  "candidate_a": {
+   "identical_pages": 207,
+   "identical_eos_pages": 196,
+   "eos_token_edits": 0,
+   "eos_reference_tokens": 119548,
+   "stop_changes": [],
+   "all_pages_micro_cer": {
+    "fp32": 0.4502651392831042,
+    "candidate": 0.4502651392831042
+   },
+   "tokens": {
+    "fp32": 126300,
+    "candidate": 126300
+   }
+  },
+  "candidate_b": {
+   "identical_pages": 151,
+   "identical_eos_pages": 145,
+   "eos_token_edits": 3012,
+   "eos_reference_tokens": 119548,
+   "stop_changes": [
+    {
+     "page": "a150143299bfe79d",
+     "category": "multi_column",
+     "reference_stop": "repetition",
+     "candidate_stop": "eos",
+     "reference_tokens": 381,
+     "candidate_tokens": 575,
+     "cer_reference": 0.9749687108886108,
+     "cer_candidate": 0.12640801001251564
+    },
+    {
+     "page": "de20643911b0421c",
+     "category": "slides",
+     "reference_stop": "eos",
+     "candidate_stop": "repetition",
+     "reference_tokens": 1085,
+     "candidate_tokens": 736,
+     "cer_reference": 0.648868778280543,
+     "cer_candidate": 1.0515837104072399
+    },
+    {
+     "page": "13d47ce2dd0104f2",
+     "category": "other",
+     "reference_stop": "eos",
+     "candidate_stop": "repetition",
+     "reference_tokens": 168,
+     "candidate_tokens": 323,
+     "cer_reference": 0.6893203883495146,
+     "cer_candidate": 2.0436893203883497
+    }
+   ],
+   "all_pages_micro_cer": {
+    "fp32": 0.4502651392831042,
+    "candidate": 0.4520794738004997
+   },
+   "tokens": {
+    "fp32": 126300,
+    "candidate": 125198
+   }
+  }
+ },
+ "gated": {
+  "candidate_a": {
+   "pages": 207,
+   "fp32_eos_pages": 196,
+   "gates": {
+    "overall": true,
+    "per_category": true,
+    "repetition_stop_on_eos": true
+   },
+   "pass": true,
+   "eos_micro_cer": {
+    "fp32": 0.33349746131080016,
+    "candidate": 0.33349746131080016
+   },
+   "eos_categories": {
+    "exam": {
+     "pages": 13,
+     "fp32": 0.43478098649354524,
+     "candidate": 0.43478098649354524,
+     "gated": true
+    },
+    "formulas": {
+     "pages": 27,
+     "fp32": 0.46950083921550595,
+     "candidate": 0.46950083921550595,
+     "gated": true
+    },
+    "multi_column": {
+     "pages": 33,
+     "fp32": 0.28378132615574875,
+     "candidate": 0.28378132615574875,
+     "gated": true
+    },
+    "ordinary": {
+     "pages": 9,
+     "fp32": 0.303459437588509,
+     "candidate": 0.303459437588509,
+     "gated": false
+    },
+    "other": {
+     "pages": 37,
+     "fp32": 0.2754381084840056,
+     "candidate": 0.2754381084840056,
+     "gated": true
+    },
+    "slides": {
+     "pages": 37,
+     "fp32": 0.2675191815856777,
+     "candidate": 0.2675191815856777,
+     "gated": true
+    },
+    "tables": {
+     "pages": 40,
+     "fp32": 0.2414541598316515,
+     "candidate": 0.2414541598316515,
+     "gated": true
+    }
+   }
+  },
+  "candidate_b": {
+   "pages": 207,
+   "fp32_eos_pages": 196,
+   "gates": {
+    "overall": false,
+    "per_category": false,
+    "repetition_stop_on_eos": false
+   },
+   "pass": false,
+   "eos_micro_cer": {
+    "fp32": 0.33349746131080016,
+    "candidate": 0.3385271896525252
+   },
+   "eos_categories": {
+    "exam": {
+     "pages": 13,
+     "fp32": 0.43478098649354524,
+     "candidate": 0.4348182971420043,
+     "gated": true
+    },
+    "formulas": {
+     "pages": 27,
+     "fp32": 0.46950083921550595,
+     "candidate": 0.46554617984503255,
+     "gated": true
+    },
+    "multi_column": {
+     "pages": 33,
+     "fp32": 0.28378132615574875,
+     "candidate": 0.28218091877932566,
+     "gated": true
+    },
+    "ordinary": {
+     "pages": 9,
+     "fp32": 0.303459437588509,
+     "candidate": 0.30325713129678333,
+     "gated": false
+    },
+    "other": {
+     "pages": 37,
+     "fp32": 0.2754381084840056,
+     "candidate": 0.2871766342141864,
+     "gated": true
+    },
+    "slides": {
+     "pages": 37,
+     "fp32": 0.2675191815856777,
+     "candidate": 0.3198209718670077,
+     "gated": true
+    },
+    "tables": {
+     "pages": 40,
+     "fp32": 0.2414541598316515,
+     "candidate": 0.2505012344451625,
+     "gated": true
+    }
+   }
+  }
+ }
+}

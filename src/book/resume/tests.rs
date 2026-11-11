@@ -227,13 +227,14 @@ fn an_escalated_record_compares_the_weights_of_its_fast_attempt() {
         Some("0123456789abcdef"),
         &fixed,
         None,
+        true,
     );
     assert_eq!(resume_warning(&existing, &same), None);
     // Another overlay, and round-to-nearest in place of GPTQ: the fast
     // attempt would have run otherwise, so the page warns although its
     // record is a near-exact rerun.
     for overlay in [Some("fedcba9876543210"), None] {
-        let other = this_run(Some(Mode::Fast), "w8-body-kv-q8", overlay, &fixed, None);
+        let other = this_run(Some(Mode::Fast), "w8-body-kv-q8", overlay, &fixed, None, true);
         let warning = resume_warning(&existing, &other).unwrap();
         assert!(
             warning.contains("1 escalated from fast (w8-body-kv-q8, overlay 0123456789ab"),
@@ -247,6 +248,46 @@ fn an_escalated_record_compares_the_weights_of_its_fast_attempt() {
         &fixed,
     ));
     assert_eq!(resume_warning(&legacy, &same), None);
+    // Disabling escalation changes what this run would have done to an
+    // escalated page, even when older records omit weights and plans.
+    let disabled = Run {
+        escalate: false,
+        ..same.clone()
+    };
+    for existing in [&existing, &legacy] {
+        let warning = resume_warning(existing, &disabled).expect("disabling escalation must warn");
+        assert!(
+            warning.contains("--escalate is off") && warning.contains("1 escalated from fast"),
+            "{warning}"
+        );
+    }
+    // Policy changes affect only records that were actually escalated.
+    // Successful fast pages still match; failed attempts are covered by
+    // the opposite-direction warning about loops resume cannot reread.
+    let ordinary = [
+        r#"{"path":"eos.png","text":"t","mode":"fast","finish_reason":"eos"}"#,
+        r#"{"path":"loop.png","text":"t","mode":"fast","finish_reason":"repetition"}"#,
+        r#"{"path":"failed.png","text":"t","mode":"fast","finish_reason":"repetition","escalation_error":"no model"}"#,
+        r#"{"path":"error.png","error":"unreadable"}"#,
+    ]
+    .map(|record| line(record, &fixed))
+    .concat();
+    let ordinary = scan_output(&ordinary);
+    assert_eq!(resume_warning(&ordinary, &same), None);
+    assert_eq!(resume_warning(&ordinary, &disabled), None);
+    assert_eq!(ordinary.unescalated, 2);
+    assert!(!ordinary.done.contains("error.png"));
+    assert!(escalation_warning(&ordinary).unwrap().contains("2 fast-mode records"));
+    let mut mixed = ordinary;
+    for (run, count) in legacy.runs {
+        *mixed.runs.entry(run).or_default() += count;
+    }
+    assert_eq!(resume_warning(&mixed, &same), None);
+    let warning = resume_warning(&mixed, &disabled).unwrap();
+    assert!(
+        warning.contains("1 escalated from fast") && !warning.contains(" in fast ("),
+        "{warning}"
+    );
 }
 
 #[test]
@@ -267,9 +308,9 @@ fn a_resume_from_another_mode_warns() {
     .map(|record| line(record, &fixed))
     .concat();
     let existing = scan_output(&text);
-    let fast_rtn = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, None);
+    let fast_rtn = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, None, true);
     assert_eq!(resume_warning(&existing, &fast_rtn), None);
-    let near_exact = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None);
+    let near_exact = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None, false);
     let warning = resume_warning(&existing, &near_exact).unwrap();
     assert!(
         warning.contains(
@@ -278,7 +319,7 @@ fn a_resume_from_another_mode_warns() {
         "{warning}"
     );
     // Same mode, another precision (for example exact mode's labels).
-    assert!(resume_warning(&existing, &this_run(Some(Mode::Fast), "fp32", None, &fixed, None)).is_some());
+    assert!(resume_warning(&existing, &this_run(Some(Mode::Fast), "fp32", None, &fixed, None, true)).is_some());
     // The GPTQ overlay against round-to-nearest, and routing: the
     // legacy escalated record has no plan to compare.
     let gptq = this_run(
@@ -287,13 +328,14 @@ fn a_resume_from_another_mode_warns() {
         Some("0123456789abcdef"),
         &fixed,
         None,
+        true,
     );
     let warning = resume_warning(&existing, &gptq).unwrap();
     assert!(
         warning.contains("fast (w8-body-kv-q8, overlay 0123456789ab): 1 in fast (w8-body-kv-q8, round-to-nearest);"),
         "{warning}"
     );
-    let routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &auto, None);
+    let routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &auto, None, true);
     let warning = resume_warning(&existing, &routed).unwrap();
     assert!(warning.contains(": 1 escalated from fast, 1 in fast ("), "{warning}");
     // Records name their overlay in `plan` and their route in `route`.
@@ -304,7 +346,14 @@ fn a_resume_from_another_mode_warns() {
         ),
         &auto,
     ));
-    let gptq_routed = this_run(Some(Mode::Fast), "w8-body-kv-q8", Some("0123456789abcdef"), &auto, None);
+    let gptq_routed = this_run(
+        Some(Mode::Fast),
+        "w8-body-kv-q8",
+        Some("0123456789abcdef"),
+        &auto,
+        None,
+        true,
+    );
     assert_eq!(resume_warning(&existing, &gptq_routed), None);
     let warning = resume_warning(&existing, &gptq).unwrap();
     assert!(warning.ends_with("1 in fast (w8-body-kv-q8, overlay 0123456789ab, --max-dimension auto); --resume skips their pages, it does not reread them"), "{warning}");
@@ -343,7 +392,7 @@ fn a_resume_with_other_options_warns() {
         .collect();
     let existing = scan_output(&text);
     let run = |options: &GenerationOptions| {
-        let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, options, None);
+        let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, options, None, false);
         resume_warning(&existing, &this)
     };
     let warning = run(&fixed).unwrap();
@@ -386,7 +435,7 @@ fn a_resume_with_other_options_warns() {
     // A record without options matches no run.
     let bare =
         scan_output("{\"path\":\"d.png\",\"text\":\"t\",\"mode\":\"near-exact\",\"precision\":\"w16-body-kv-q16\"}\n");
-    let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None);
+    let this = this_run(Some(Mode::NearExact), "w16-body-kv-q16", None, &fixed, None, false);
     let warning = resume_warning(&bare, &this).unwrap();
     assert!(
         warning.contains(": 1 in near-exact (w16-body-kv-q16, no options);"),
@@ -394,15 +443,171 @@ fn a_resume_with_other_options_warns() {
     );
 }
 
+/// The FP32 tiles' softmax is a runner choice: records with the static
+/// softmax (either tile width) match only runs with it. A fast run's own
+/// BF16 records ignore `prefill-softmax-fp32`, but its escalated ones reran
+/// on the FP32 tiles with a 16-bit body's softmax (static unless the knob
+/// says online, also where the fast run's own FP32 tiles are online) and
+/// match only runs that would rerun them alike.
+#[test]
+fn a_resume_compares_the_fp32_softmax() {
+    // `fp32` is the plan's `prefill_softmax_fp32`: `None` serializes as the
+    // default's null.
+    let plan = |attention: &str, fp32: Option<&str>| {
+        serde_json::json!({
+            "repetition_stop": true, "repetition_counting": true, "exp": "fast",
+            "prefill": {"projection": "panel-avx2", "attention": attention},
+            "escalation_prefill": {
+                "projection": "panel-avx2",
+                "attention": if fp32 == Some("online") { "avx2" } else { "avx2-static" }
+            },
+            "tuning": {"decode_fast_exp": null, "prefill_softmax_fp32": fp32}
+        })
+    };
+    let record = |attention: &str, fp32: Option<&str>| {
+        serde_json::json!({
+            "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8",
+            "plan": plan(attention, fp32)
+        })
+    };
+    let fixed = GenerationOptions {
+        fit_budget: true,
+        ..GenerationOptions::default()
+    };
+    let warning = |record: &Value, attention: &str, fp32: Option<&str>| {
+        let existing = scan_output(&line(&record.to_string(), &fixed));
+        let kernels = Kernels::from_plan(&plan(attention, fp32));
+        resume_warning(
+            &existing,
+            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels, true),
+        )
+    };
+    let (fixed_static, online) = (Some("static"), Some("online"));
+    for (saved, current, matches) in [
+        (
+            ("avx2-static", fixed_static),
+            ("avx512-wide-static", fixed_static),
+            true,
+        ),
+        (
+            ("avx512-wide-static", fixed_static),
+            ("avx2-static", fixed_static),
+            true,
+        ),
+        (("avx2-static", fixed_static), ("avx2", online), false),
+        (("avx512-wide", online), ("avx512-wide-static", fixed_static), false),
+        (("bf16-static", online), ("bf16-static", fixed_static), true),
+        (("bf16", fixed_static), ("bf16", online), true),
+        // Fast mode's FP32 fallback stays online by default.
+        (("avx512-wide", online), ("avx2", None), true),
+        (("bf16-static", None), ("bf16-static", online), true),
+    ] {
+        let found = warning(&record(saved.0, saved.1), current.0, current.1);
+        assert_eq!(found.is_none(), matches, "{saved:?} against {current:?}: {found:?}");
+    }
+    let found = warning(&record("avx2", online), "avx2-static", fixed_static).unwrap();
+    assert!(found.contains("fp32-static attention"), "{found}");
+    // (record's rerun, its knob, the rerun's static softmax).
+    for (rerun, knob, rerun_static) in [
+        ("avx512-wide-static", fixed_static, true),
+        ("avx2", online, false),
+        ("avx512-wide-static", None, true),
+    ] {
+        let mut escalated = record(rerun, knob);
+        escalated["mode"] = "near-exact".into();
+        escalated["precision"] = "w16-body-kv-q16".into();
+        escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
+        // (fast run's attention, its knob, its rerun's static softmax).
+        for (attention, fp32, reruns_static) in [
+            ("bf16-static", fixed_static, true),
+            ("bf16", fixed_static, true),
+            ("avx2-static", fixed_static, true),
+            ("bf16-static", online, false),
+            ("avx512-wide", online, false),
+            ("bf16-static", None, true),
+            ("avx512-wide", None, true),
+        ] {
+            let found = warning(&escalated, attention, fp32);
+            assert_eq!(
+                found.is_none(),
+                reruns_static == rerun_static,
+                "rerun {rerun} against {attention} {fp32:?}: {found:?}"
+            );
+        }
+    }
+    let mut escalated = record("avx2", online);
+    escalated["mode"] = "near-exact".into();
+    escalated["precision"] = "w16-body-kv-q16".into();
+    escalated["escalated_from"] = serde_json::json!({"mode": "fast"});
+    let found = warning(&escalated, "avx512-wide", None).unwrap();
+    assert!(found.contains("fp32-static attention for escalated pages"), "{found}");
+    // Older records do not predict reruns. A current plan carries the
+    // resolver's answer even when its fast body uses GEMM projections.
+    let mut older = plan("bf16-static", online);
+    older.as_object_mut().unwrap().remove("escalation_prefill");
+    assert_eq!(Kernels::from_plan(&older).unwrap().escalation_attention, None);
+    let mut mixed = plan("avx2", None);
+    mixed["prefill"]["projection"] = "gemm-f32".into();
+    assert_eq!(
+        Kernels::from_plan(&mixed).unwrap().escalation_attention.as_deref(),
+        Some("fp32-static")
+    );
+}
+
+/// Plans record whether the repetition stop ends counting loops. A record
+/// whose plan predates the field ran a stop without this build's counting
+/// rule, so it warns when resumed with the stop on; with the stop off on
+/// both sides, neither ran it.
+#[test]
+fn a_resume_tells_a_stop_without_counting_loops_apart() {
+    let fixed = GenerationOptions {
+        fit_budget: true,
+        ..GenerationOptions::default()
+    };
+    let plan = |stop: bool, counting: Option<bool>| {
+        let mut plan = serde_json::json!({
+            "repetition_stop": stop, "exp": "fast",
+            "prefill": {"projection": "panel-avx2", "attention": "avx2"},
+            "tuning": {"decode_fast_exp": null}
+        });
+        if let Some(counting) = counting {
+            plan["repetition_counting"] = counting.into();
+        }
+        plan
+    };
+    let warning = |saved: Value, current: Value| {
+        let record = serde_json::json!({
+            "path": "a.png", "text": "t", "mode": "fast", "precision": "w8-body-kv-q8", "plan": saved
+        });
+        let kernels = Kernels::from_plan(&current);
+        resume_warning(
+            &scan_output(&line(&record.to_string(), &fixed)),
+            &this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, kernels, true),
+        )
+    };
+    let found = warning(plan(true, None), plan(true, Some(true))).expect("an older stop must warn");
+    let shown = "1 in fast (w8-body-kv-q8, round-to-nearest, repetition stop without counting loops);";
+    assert!(found.contains(shown), "{found}");
+    assert_eq!(warning(plan(true, Some(true)), plan(true, Some(true))), None);
+    assert_eq!(warning(plan(false, None), plan(false, Some(false))), None);
+    assert!(warning(plan(true, Some(true)), plan(false, Some(false))).is_some());
+}
+
 /// Records' plans hold the runner's token-changing choices: a resume
 /// with another repetition stop, exp or prefill rounding warns, and the
 /// AVX2 and AVX-512 FP32 tiles, which agree bitwise, count as one.
 #[test]
 fn a_resume_with_other_runner_choices_warns() {
+    // Plans without `prefill_softmax_fp32` predate the knob: their FP32
+    // tiles and their near-exact reruns ran the online softmax.
     let plan = |repetition_stop: bool, exp: &str, attention: &str, projection: &str| {
         serde_json::json!({
-            "repetition_stop": repetition_stop, "exp": exp,
+            "repetition_stop": repetition_stop, "repetition_counting": repetition_stop, "exp": exp,
             "prefill": {"projection": projection, "attention": attention},
+            "escalation_prefill": {
+                "projection": "panel-avx2",
+                "attention": if matches!(attention, "neon" | "scalar") { attention } else { "avx2" }
+            },
             "tuning": {"decode_fast_exp": null}
         })
     };
@@ -422,6 +627,7 @@ fn a_resume_with_other_runner_choices_warns() {
             None,
             &fixed,
             Kernels::from_plan(&plan),
+            true,
         );
         resume_warning(&existing, &this)
     };
@@ -434,6 +640,8 @@ fn a_resume_with_other_runner_choices_warns() {
         (plan(true, "fast", "bf16", "panel-avx2"), "BF16 attention"),
         (plan(true, "fast", "neon", "panel-avx2"), "neon attention"),
         (plan(true, "fast", "avx2", "panel-bf16"), "BF16 projections"),
+        (plan(true, "fast", "avx2", "panel-i16-vnni"), "INT16 projections"),
+        (plan(true, "fast", "avx2", "panel-i16-avx2"), "INT16 projections"),
         (pinned, "--tune decode-exp=fast"),
     ] {
         let warning = run(other).unwrap();
@@ -444,9 +652,37 @@ fn a_resume_with_other_runner_choices_warns() {
             "{warning}"
         );
     }
+    // Projections compare by kind: the INT16 VNNI and AVX2 kernels agree
+    // bitwise, and a record written with the removed BF16 panels matches
+    // no current run.
+    for (saved, current, matches) in [
+        ("panel-i16-vnni", "panel-i16-avx2", true),
+        ("panel-i16-avx2", "panel-i16-vnni", true),
+        ("panel-bf16", "panel-avx2", false),
+        ("panel-bf16", "panel-i16-vnni", false),
+        ("panel-bf16", "panel-i16-avx2", false),
+        ("panel-avx2", "panel-i16-vnni", false),
+        ("panel-i16-avx2", "panel-avx2", false),
+    ] {
+        let mut kind = record.clone();
+        kind["plan"] = plan(true, "fast", "avx2", saved);
+        let existing = scan_output(&line(&kind.to_string(), &fixed));
+        let this = this_run(
+            Some(Mode::Fast),
+            "w8-body-kv-q8",
+            None,
+            &fixed,
+            Kernels::from_plan(&plan(true, "fast", "avx2", current)),
+            true,
+        );
+        let warning = resume_warning(&existing, &this);
+        assert_eq!(warning.is_none(), matches, "{saved} against {current}: {warning:?}");
+    }
     // Escalation keeps the near-exact plan. Its FP32 prefill is
-    // expected even when fast mode uses BF16, but exp, the stop and
-    // pinned decode exp still have to agree with the resumed run.
+    // expected even when fast mode uses BF16 attention or INT16
+    // projections, but exp, the stop and pinned decode exp still have to
+    // agree with the resumed run. A record that does not name its fast
+    // attempt's prefill matches a run with any.
     let mut escalated = record.clone();
     escalated["mode"] = "near-exact".into();
     escalated["precision"] = "w16-body-kv-q16".into();
@@ -463,14 +699,36 @@ fn a_resume_with_other_runner_choices_warns() {
             None,
             &fixed,
             Kernels::from_plan(&plan),
+            true,
         )
     };
-    for attention in ["avx2", "avx512-wide", "bf16"] {
-        for projection in ["panel-avx2", "panel-bf16"] {
+    for attention in ["avx2", "avx512-wide", "bf16", "bf16-static"] {
+        for projection in ["panel-avx2", "panel-bf16", "panel-i16-vnni", "panel-i16-avx2"] {
             assert_eq!(
                 resume_warning(&existing, &resumed(plan(true, "fast", attention, projection))),
                 None
             );
+        }
+    }
+    // One that names them matches only runs whose prefill kinds are its
+    // fast attempt's (the INT16 kernels agree bitwise): a fast run with
+    // other kernels would have reached the page otherwise.
+    let mut named = escalated.clone();
+    named["escalated_from"]["prefill"] =
+        serde_json::json!({"projection": "panel-i16-vnni", "attention": "bf16-static"});
+    let existing_named = scan_output(&line(&named.to_string(), &fixed));
+    for (attention, projection, matches) in [
+        ("bf16-static", "panel-i16-vnni", true),
+        ("bf16-static", "panel-i16-avx2", true),
+        ("bf16", "panel-i16-vnni", false),
+        ("bf16-static", "panel-avx2", false),
+        ("avx512-wide", "panel-avx2", false),
+    ] {
+        let warning = resume_warning(&existing_named, &resumed(plan(true, "fast", attention, projection)));
+        assert_eq!(warning.is_none(), matches, "{attention} {projection}: {warning:?}");
+        if let Some(warning) = warning {
+            let shown = "1 escalated from fast (fast attempt: bf16-static attention and INT16 projections);";
+            assert!(warning.contains(shown), "{warning}");
         }
     }
     let mut pinned = plan(true, "fast", "bf16", "panel-avx2");
@@ -566,6 +824,7 @@ fn a_resume_with_other_runner_choices_warns() {
         body_bits: Some(8),
         overlay_sha256: None,
         exception_bytes: 0,
+        i16_misfit: false,
     };
     let config = crate::RunnerConfig {
         repetition_stop: false,
@@ -574,8 +833,118 @@ fn a_resume_with_other_runner_choices_warns() {
     };
     let resolved = crate::Resolved::new(crate::HostInfo::detect(), &config, &facts, Path::new("model"));
     let kernels = Kernels::of(&resolved).unwrap();
-    assert_eq!((kernels.repetition_stop, kernels.exp.as_str()), (false, "exact"));
-    assert!(["fp32", "bf16", "neon", "scalar"].contains(&kernels.attention.as_str()));
+    assert_eq!(
+        (
+            kernels.repetition_stop,
+            kernels.repetition_counting,
+            kernels.exp.as_str()
+        ),
+        (false, false, "exact")
+    );
+    // This build's stop always ends counting loops too.
+    let stopping = crate::Resolved::new(
+        crate::HostInfo::detect(),
+        &crate::RunnerConfig::default(),
+        &facts,
+        Path::new("model"),
+    );
+    assert!(Kernels::of(&stopping).unwrap().repetition_counting);
+    assert!(["fp32", "bf16", "bf16-static", "neon", "scalar"].contains(&kernels.attention.as_str()));
+    // Its near-exact reruns take the 16-bit body's default plan, which is
+    // what a near-exact runner on this host plans.
+    let near_exact = crate::auto::ModelFacts {
+        profile: crate::quant::Profile::W16_BODY_KV_Q16,
+        body_bits: Some(16),
+        ..facts.clone()
+    };
+    let rerun = Kernels::of(&crate::Resolved::new(
+        crate::HostInfo::detect(),
+        &config,
+        &near_exact,
+        Path::new("model"),
+    ))
+    .unwrap();
+    assert_eq!(rerun.escalation_attention, None);
+    let expected = kernels.escalation_attention.as_ref().unwrap_or(&kernels.attention);
+    assert_eq!(&rerun.attention, expected);
+    // Fast mode's INT16 projections where this host runs them.
+    let i16 = matches!(
+        resolved.prefill.projection,
+        crate::kernels::PrefillProjection::PanelI16Vnni | crate::kernels::PrefillProjection::PanelI16Avx2
+    );
+    assert_eq!(kernels.projection, if i16 { "i16" } else { "fp32" });
     assert_eq!(kernels.split_chunks, Some(4));
     assert_eq!(kernels.image_decoder.as_deref(), Some(resolved.image_decoder.as_str()));
+    // A partial overlay makes the fast body mixed and selects GEMM, but
+    // the near-exact rerun still has a uniform 16-bit body. Its own output
+    // must match the run that produced it. Fast's Q8 cache does not accept
+    // a mixed-layer mask.
+    let config = crate::RunnerConfig::default();
+    config.validate().unwrap();
+    config
+        .tuning
+        .check_kv_layers(facts.profile.kv, facts.config.n_layers)
+        .unwrap();
+    for body_bits in [Some(8), None] {
+        let fast = crate::Resolved::new(
+            crate::HostInfo::detect(),
+            &config,
+            &crate::auto::ModelFacts {
+                body_bits,
+                ..facts.clone()
+            },
+            Path::new("model"),
+        );
+        let near = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+        let record = serde_json::json!({
+            "path": "mixed.png", "text": "t", "mode": "near-exact",
+            "precision": "w16-body-kv-q16", "plan": near,
+            "escalated_from": {"mode": "fast", "prefill": fast.prefill}
+        });
+        let existing = scan_output(&line(&record.to_string(), &fixed));
+        let current = |plan| this_run(Some(Mode::Fast), "w8-body-kv-q8", None, &fixed, Kernels::of(plan), true);
+        assert_eq!(resume_warning(&existing, &current(&fast)), None, "{body_bits:?}");
+    }
+    // Compare masks on valid near-exact/Q16 runs, in both directions.
+    for mask in [0, 0b101] {
+        let mut config = config.clone();
+        config.tuning.kv_q8_layers = mask;
+        config
+            .tuning
+            .check_kv_layers(near_exact.profile.kv, near_exact.config.n_layers)
+            .unwrap();
+        if mask != 0 {
+            assert!(
+                config
+                    .tuning
+                    .check_kv_layers(facts.profile.kv, facts.config.n_layers)
+                    .is_err()
+            );
+        }
+        let near = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+        let record = serde_json::json!({
+            "path": "mixed-kv.png", "text": "t", "mode": "near-exact",
+            "precision": "w16-body-kv-q16", "plan": near
+        });
+        let existing = scan_output(&line(&record.to_string(), &fixed));
+        let current = |plan| {
+            this_run(
+                Some(Mode::NearExact),
+                "w16-body-kv-q16",
+                None,
+                &fixed,
+                Kernels::of(plan),
+                false,
+            )
+        };
+        assert_eq!(resume_warning(&existing, &current(&near)), None);
+        config.tuning.kv_q8_layers = if mask == 0 { 0b101 } else { 0 };
+        config
+            .tuning
+            .check_kv_layers(near_exact.profile.kv, near_exact.config.n_layers)
+            .unwrap();
+        let changed = crate::Resolved::new(crate::HostInfo::detect(), &config, &near_exact, Path::new("model"));
+        let warning = resume_warning(&existing, &current(&changed)).expect("changed Q8 layers must warn");
+        assert!(warning.contains("--tune kv-layers="), "{warning}");
+    }
 }

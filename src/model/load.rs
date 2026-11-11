@@ -483,11 +483,25 @@ fn overlay_exceptions(tensors: &SafeTensors<'_>, name: &str, output: usize) -> R
     Ok(Some((columns, values)))
 }
 
-/// Bytes of the exception columns a W8 overlay's header lists (read
-/// without the tensors), for byte budgets.
-pub(crate) fn overlay_exception_bytes(path: &Path) -> Result<usize> {
+/// Read the exception-column bytes, whether an overlay uses groups of 32,
+/// and whether a partial overlay leaves any body matrices in FP32.
+pub(crate) fn overlay_facts(path: &Path, layers: usize) -> Result<(usize, bool, bool)> {
     let header = super::packed::safetensors_header(path).with_context(|| format!("read {}", path.display()))?;
-    Ok(super::packed::tensor_bytes_with_suffix(&header, &W8_SUFFIXES[2..]))
+    let metadata = |key| {
+        header
+            .get("__metadata__")
+            .and_then(|meta| meta.get(key))
+            .and_then(serde_json::Value::as_str)
+    };
+    let mixed_body = metadata("partial") == Some("true")
+        && body_matrix_names(layers)
+            .iter()
+            .any(|name| !header.contains_key(&format!("{name}{}", W8_SUFFIXES[0])));
+    Ok((
+        super::packed::tensor_bytes_with_suffix(&header, &W8_SUFFIXES[2..]),
+        metadata("group_size") == Some("32"),
+        mixed_body,
+    ))
 }
 
 /// FP32 bits rounded to the nearest BF16 value (ties to even), as FP32 bits.

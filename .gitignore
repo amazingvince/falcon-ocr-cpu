@@ -6,3 +6,11 @@ __pycache__/
 *.pyc
 *.partial
 /.tmp/
+
+# Expanded inputs from reference/prefill-gate-data-v1.zip
+/reference/fast-defaults-gate-v1-manifest.json
+/reference/fast-defaults-gate-v1-evaluation-lock.json
+/reference/fast-defaults-gate-v1-masked-lock.json
+/reference/near-exact-softmax-gate-v1-manifest.json
+/reference/near-exact-softmax-gate-v1-evaluation-lock.json
+/reference/near-exact-softmax-gate-v1-masked-lock.json

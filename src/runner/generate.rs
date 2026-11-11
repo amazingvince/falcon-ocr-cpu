@@ -164,3 +164,36 @@ impl Runner {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tokenizer::DIGIT_ZERO;
+
+    /// A page that falls into a counting loop ends with reason `Repetition`
+    /// and keeps exactly the tokens a page without the stop records first.
+    #[test]
+    fn the_repetition_stop_only_truncates() {
+        let mut tokens: Vec<u32> = (1000..1040).collect();
+        for n in 44..400 {
+            tokens.extend(n.to_string().bytes().map(|b| DIGIT_ZERO + u32::from(b - b'0')));
+            tokens.extend([731, 4083, 864]);
+        }
+        let generate = |stop_loops| {
+            let mut generation = Generation::new(tokens.len(), stop_loops);
+            for &token in &tokens {
+                if generation.push(token, &[11]) {
+                    break;
+                }
+            }
+            generation
+        };
+        let (stopped, free) = (generate(true), generate(false));
+        assert_eq!(
+            (stopped.reason, free.reason),
+            (FinishReason::Repetition, FinishReason::Length)
+        );
+        assert!(stopped.len() < free.len());
+        assert_eq!(stopped.tokens, free.tokens[..stopped.len()]);
+    }
+}

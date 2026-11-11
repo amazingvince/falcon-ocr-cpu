@@ -43,6 +43,8 @@ pub(crate) struct Session {
     pub len: usize,
     pub next_position: usize,
     pub(super) capacity: usize,
+    /// The prefill seals each compact layer after its attention.
+    pub(super) seal: bool,
     pub(super) image_start: usize,
     pub(super) image_end: usize,
     pub(super) simd: kernels::Simd,
@@ -211,6 +213,68 @@ fn append_unique_heads(output: &mut Vec<f32>, expanded: &[f32], c: &ModelConfig)
         output.extend_from_slice(&group[..c.head_dim]);
     }
 }
+/// Seal one complete layer prefix and pass its FP32 buffers to the next
+/// compact layer. Returns the layer's allocated bytes before and after.
+pub(super) fn seal_layer(
+    layers: &mut [LayerCache],
+    i: usize,
+    filled: usize,
+    capacity: usize,
+    c: &ModelConfig,
+    mode: crate::quant::Kv,
+    exp: ExpMode,
+    tuning: &Tuning,
+) -> Result<(usize, usize)> {
+    if mode == crate::quant::Kv::Compact {
+        return Ok((0, 0));
+    }
+    let LayerCache::Compact {
+        prefix_k,
+        generated_k,
+        v,
+        prefix_len,
+    } = &mut layers[i]
+    else {
+        bail!("prefix sealing requires an unsealed compact cache");
+    };
+    ensure!(
+        filled == *prefix_len,
+        "seal only a complete prefix, before any text decode"
+    );
+    let before = 4 * (prefix_k.capacity() + generated_k.capacity() + v.capacity());
+    // The cache's mode, not this layer's format, picks the exp.
+    let q8 = tuning
+        .kv_q8_layers
+        .checked_shr(i as u32)
+        .is_some_and(|mask| mask & 1 != 0);
+    let format = if q8 { crate::quant::Kv::Q8 } else { mode };
+    let packed = crate::quant::kv::SplitPrefix::from_compact(
+        prefix_k,
+        v,
+        *prefix_len,
+        capacity,
+        c,
+        format,
+        tuning.split_chunks,
+    )?
+    .with_fast_exp(crate::quant::kv::default_fast_exp(
+        mode,
+        exp == ExpMode::Fast,
+        tuning.decode_fast_exp,
+    ));
+    let after = packed.bytes();
+    let mut keys = std::mem::take(prefix_k);
+    let mut values = std::mem::take(v);
+    keys.clear();
+    values.clear();
+    layers[i] = LayerCache::Split(packed);
+    if let Some(LayerCache::Compact { prefix_k, v, .. }) = layers.get_mut(i + 1) {
+        *prefix_k = keys;
+        *v = values;
+    }
+    Ok((before, after))
+}
+
 impl Session {
     /// Drop the newest positions so that `len` remain (rejected draft
     /// tokens). Needs a split cache.
@@ -264,51 +328,6 @@ impl Session {
         self.capacity = 0;
         bytes
     }
-    /// Convert a complete compact prefix to the requested split KV format.
-    /// Compact mode is a no-op; other modes require an unsealed compact cache
-    /// with no generated rows and can fail during conversion.
-    pub(crate) fn seal_prefix(
-        &mut self,
-        c: &ModelConfig,
-        mode: crate::quant::Kv,
-        exp: crate::config::ExpMode,
-    ) -> Result<()> {
-        if mode == crate::quant::Kv::Compact {
-            return Ok(());
-        }
-        for layer in &mut self.layers {
-            if let LayerCache::Compact {
-                prefix_k,
-                v,
-                prefix_len,
-                ..
-            } = layer
-            {
-                ensure!(
-                    self.len == *prefix_len,
-                    "seal only a complete prefix, before any text decode"
-                );
-                let packed = crate::quant::kv::SplitPrefix::from_compact(
-                    prefix_k,
-                    v,
-                    *prefix_len,
-                    self.capacity,
-                    c,
-                    mode,
-                    self.tuning.split_chunks,
-                )?
-                .with_fast_exp(crate::quant::kv::default_fast_exp(
-                    mode,
-                    exp == crate::config::ExpMode::Fast,
-                    self.tuning.decode_fast_exp,
-                ));
-                *layer = LayerCache::Split(packed);
-            } else {
-                bail!("prefix sealing requires an unsealed compact cache");
-            }
-        }
-        Ok(())
-    }
     /// Replace prefill scratch with one-row buffers, retaining head scratch.
     pub(crate) fn prepare_small_decode(&mut self, c: &ModelConfig) {
         let head = std::mem::take(&mut self.workspace.head);
@@ -337,7 +356,10 @@ impl Session {
 
     /// Allocate a cache per layer for a prompt and subsequent generated rows.
     /// Rejects an invalid image interval or prefix, capacity beyond the model
-    /// context, and allocation or size-overflow failures.
+    /// context, and allocation or size-overflow failures. `seal` means the
+    /// prefill seals each compact layer after its attention (`seal_layer`):
+    /// the first layer's prefix buffers then pass from layer to layer, and
+    /// nothing else is reserved.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         c: &ModelConfig,
@@ -347,6 +369,7 @@ impl Session {
         image_end: usize,
         simd: kernels::Simd,
         cache_layout: CacheLayout,
+        seal: bool,
         exp: ExpMode,
         tuning: Tuning,
     ) -> Result<Self> {
@@ -362,18 +385,22 @@ impl Session {
             Ok(values)
         };
         let mut layers = Vec::new();
-        for _ in 0..c.n_layers {
+        for i in 0..c.n_layers {
             layers.push(match cache_layout {
                 CacheLayout::Expanded => LayerCache::Expanded {
                     k: reserve(capacity, c.query_dim())?,
                     v: reserve(capacity, c.query_dim())?,
                 },
-                CacheLayout::Compact => LayerCache::Compact {
-                    prefix_k: reserve(prefix_len, c.query_dim())?,
-                    generated_k: reserve(capacity - prefix_len, c.kv_dim())?,
-                    v: reserve(capacity, c.kv_dim())?,
-                    prefix_len,
-                },
+                CacheLayout::Compact => {
+                    let prefix_rows = if seal && i != 0 { 0 } else { prefix_len };
+                    let generated_rows = if seal { 0 } else { capacity - prefix_len };
+                    LayerCache::Compact {
+                        prefix_k: reserve(prefix_rows, c.query_dim())?,
+                        generated_k: reserve(generated_rows, c.kv_dim())?,
+                        v: reserve(prefix_rows + generated_rows, c.kv_dim())?,
+                        prefix_len,
+                    }
+                }
             });
         }
         Ok(Self {
@@ -382,6 +409,7 @@ impl Session {
             len: 0,
             next_position: 0,
             capacity,
+            seal,
             image_start,
             image_end,
             simd,
@@ -432,6 +460,15 @@ pub(super) struct Workspace {
     pub(super) bf16_keys: Vec<u32>,
     pub(super) bf16_values: Vec<u32>,
 }
+
+fn sized(buffer: &mut Vec<f32>, len: usize) {
+    if buffer.is_empty() {
+        *buffer = vec![0.0; len];
+    } else {
+        buffer.resize(len, 0.0);
+    }
+}
+
 impl Workspace {
     fn reserve_screened_head(&mut self, model: &Model, rows: usize) {
         if let Some(head) = model.screened.get() {
@@ -444,14 +481,14 @@ impl Workspace {
     /// Size the layer intermediates for `rows`; head and RoPE buffers are
     /// managed separately.
     pub(super) fn resize(&mut self, rows: usize, c: &ModelConfig) {
-        self.normalized.resize(rows * c.dim, 0.);
-        self.qkv.resize(rows * (c.query_dim() + 2 * c.kv_dim()), 0.);
-        self.q.resize(rows * c.query_dim(), 0.);
-        self.k.resize(rows * c.query_dim(), 0.);
-        self.v.resize(rows * c.query_dim(), 0.);
-        self.attn.resize(rows * c.query_dim(), 0.);
-        self.projected.resize(rows * c.dim, 0.);
-        self.ffn_packed.resize(rows * 2 * c.ffn_dim, 0.);
-        self.gated.resize(rows * c.ffn_dim, 0.);
+        sized(&mut self.normalized, rows * c.dim);
+        sized(&mut self.qkv, rows * (c.query_dim() + 2 * c.kv_dim()));
+        sized(&mut self.q, rows * c.query_dim());
+        sized(&mut self.k, rows * c.query_dim());
+        sized(&mut self.v, rows * c.query_dim());
+        sized(&mut self.attn, rows * c.query_dim());
+        sized(&mut self.projected, rows * c.dim);
+        sized(&mut self.ffn_packed, rows * 2 * c.ffn_dim);
+        sized(&mut self.gated, rows * c.ffn_dim);
     }
 }

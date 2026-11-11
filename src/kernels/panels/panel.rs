@@ -13,8 +13,8 @@
 //! Every output is one FMA chain over ascending `k` starting from zero:
 //! deterministic and independent of the thread count, but not the summation
 //! order of the `gemm` crate, so results differ from it at rounding level.
-//! The row-block scheduler is `driver::tiled_gemm`, shared with the BF16
-//! kernel.
+//! The row-block scheduler is `driver::tiled_gemm`, shared with the INT16
+//! kernels.
 use rayon::prelude::*;
 
 use super::driver::{self, MR, PanelKernel};

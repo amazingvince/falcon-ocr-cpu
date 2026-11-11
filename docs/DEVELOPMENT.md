@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-10-29.
+Status: current as of 2026-11-11.
 
 ## Toolchain
 
@@ -64,10 +64,26 @@ the platform-dependent math; the token-parity gates are separate checks.
   dequantized products, fast exp against the platform exp over the softmax
   domain, the split cache against the compact kernel over its decoded values
   at one position chunk (rotated caches with the rotation as the only pre-
-  and post-transform).
-  A fast path without such a test does not ship. The prefill stages are also
-  compared bitwise across pool sizes (`model::pool_tests`, `kernels::tests`),
-  which the page pipeline's second pool relies on.
+  and post-transform). A fast path without such a test does not ship. The
+  FP32 tiles' static softmax keeps no reference order, so its Portable and
+  NEON instantiations and both x86 tile widths are compared with a scalar
+  oracle of their own
+  (`kernels::attention::prefill64::static_shift::tests`), and
+  `kernels::tests::fp32_static_softmax_is_near_exact_default_and_never_exact`
+  checks that the default plans it for 16-bit bodies only, that the knob
+  sets it for 16- and 8-bit bodies, and that an FP32 body never takes it.
+  The prefill stages are also compared bitwise across pool sizes
+  (`model::pool_tests`, `kernels::tests`), which the page pipeline's second
+  pool relies on. A synthetic multilayer forward compares prefix-buffer
+  hand-off with independent layer buffers through sealing and the next
+  decode step, including a mixed Q8/Q16 cache; a partial first prefix must
+  fail before cache mutation. INT16 panel oracles also cover tiny and
+  subnormal activation groups. The AVX-512 oracles (the 16-lane prefill tiles
+  with either softmax, the BF16 attention and its static softmax, the INT16
+  VNNI panels, the verification rows under `auto`) return early, or drop their
+  AVX-512 arm, on a CPU without AVX-512 F/BW/VL/VNNI/BF16, hosted CI runners
+  included; the ignored `kernels::tests::host_runs_every_avx512_kernel`
+  checks that the local CPU can exercise all of those kernels.
   The ignored tokenizer-decode and RoPE checks additionally need
   `artifacts/reference/tokenizer-cleanup-v1/fixture.json` and
   `artifacts/reference/rope-operators.safetensors`, respectively; neither is
@@ -80,23 +96,25 @@ the platform-dependent math; the token-parity gates are separate checks.
   Python specification on synthetic pages and the decode fixtures.
 - **Ignored integration gates** need `artifacts/` (the pinned checkpoint,
   the GPTQ overlay, the packed files, the GPU smoke reference and the corpus).
-  `python scripts/fetch_fixtures.py` brings the two that are made rather
-  than published for inference — the FP32 GPU smoke record and the original
-  GPTQ overlay — and verifies every digest, so these gates no longer run
-  only on the machine that recorded them. The checkpoint comes from
-  `scripts/fetch_reference.py` and the packed files from the catalogue:
+  `python scripts/fetch_fixtures.py` downloads the FP32 GPU smoke record and
+  the original GPTQ overlay and verifies their digests. Get the checkpoint
+  with `scripts/fetch_reference.py` and the packed files from the catalogue:
 
   ```sh
-  cargo test --release --locked --test modes --test gpu_parity --test cache_layout \
+  cargo test --release --locked --test modes --test gpu_parity --test cache_layout --test weight_layout \
     --test batch_parity --test batch_trace --test decode_allocations --test head_screen -- --ignored
   ```
 
   `tests/modes.rs` is the mode gate: exact mode under the automatic
   configuration reproduces the GPU smoke tokens; near-exact and fast reproduce
-  `tests/fixtures/modes/*.json`; packing round-trips the checkpoint loader
-  and matches the published files; speculation, the decode team, drafts, the
-  head and the explicit AVX2 backend preserve the gate's fixture tokens;
-  the repetition stop yields a prefix; the three trace hashes are pinned.
+  `tests/fixtures/modes/*.json` on hosts with the fixtures' prefill kernels.
+  A kernel mismatch fails and reports both plans. Set
+  `FALCON_OCR_ALLOW_FIXTURE_KERNEL_SKIP=1` to explicitly permit skipping
+  that comparison ([mode fixtures](../tests/fixtures/modes/README.md)).
+  Packing round-trips the checkpoint loader and matches the published files.
+  Speculation, the decode team, drafts, the head and the explicit AVX2 backend
+  preserve the gate's fixture tokens. The repetition stop yields a prefix,
+  and the three trace hashes are pinned.
 
   The speculative-drafter regression uses only the three packed modes,
   tokenizer/configuration and published draft head in `artifacts/packed`,
@@ -130,6 +148,11 @@ the platform-dependent math; the token-parity gates are separate checks.
   for a prefill or a page that runs alone, `batch.{i}` for a cohort's joint
   decode), singleton cohorts and pages dropped from a cohort included.
 
+  `tests/weight_layout.rs` checks that phase-packed weights give the
+  unpacked layout's tokens and tensors bit for bit: the teacher-forced GPU
+  smoke trace, a mixed cohort under both cache layouts, and full 2-, 4- and
+  8-row batches.
+
   `cargo test --release --locked --test negative_inputs --test margin_crop
   --test run_cli -- --ignored --test-threads=1` checks the entry points.
   With `artifacts/model`: every public entry point rejects invalid requests
@@ -151,10 +174,7 @@ the platform-dependent math; the token-parity gates are separate checks.
   parity sidecar, and the fixture download does not supply it.
 - **Token agreement** against the FP32 anchor
   ([below](#token-agreement)) measures flips and KL;
-  [mode comparisons](MODES.md#the-metric). The CI `weights` job runs the
-  gates and an agreement queue on the 12 GPTQ capture pages at 8192
-  steps, on a self-hosted runner
-  labelled `falcon-weights`.
+  [mode comparisons](MODES.md#the-metric).
 - **Python**: `python -m unittest discover -s <folder> -p "test_*.py"` for
   `research/corpus-qualification/tests` and
   `research/quantization-feasibility/tests` (CI runs these two; they need
@@ -176,7 +196,42 @@ pins its recording GPU and environment; a cross-check on another setup is
 not a replacement receipt. Run available gates and report missing inputs
 separately rather than regenerating fixtures to make a check pass.
 
+### The `weights` CI job
+
+Nightly and on manual dispatch, a self-hosted runner labelled
+`falcon-weights` with `artifacts/` and upstream's
+[calibration reference](#token-agreement) runs these steps. Run them by hand
+from the repository root on a machine with the same inputs.
+
+```sh
+cargo build --release --locked --bins
+cargo test --release --locked --test modes --test gpu_parity --test cache_layout \
+  --test batch_parity --test batch_trace --test decode_allocations --test head_screen -- --ignored
+cargo test --release --locked --test negative_inputs --test margin_crop --test run_cli \
+  -- --ignored --test-threads=1
+# The 12 GPTQ capture pages at 8192 steps (off Windows, prefix
+# AGREE_BIN=target/release/falcon-ocr-eval)
+bash tools/agree_queue.sh artifacts/phase4/agree/ci tools/gptq-calibration-pages.txt 8192 \
+  near-exact=w16-body-kv-q16 fast=w8-body-kv-q8=artifacts/model/w8-gptq.safetensors
+```
+
+On an AVX-512 F/BW/VL/VNNI/BF16 CPU, run the library tests and confirm the host
+can exercise all the AVX-512 kernels. Both commands work without model files.
+
+```sh
+cargo test --release --lib --locked
+cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_runs_every_avx512_kernel
+```
+
 ## Token agreement
+
+For the prefill default evaluations, [verify the archive and extract its page
+manifests and
+locks](../research/corpus-qualification/README.md#archived-prefill-gate-inputs)
+before using their research scripts. The recorded budgets and results are
+readable in `reference/`; the [provenance
+note](../reference/prefill-gate-provenance-v3.md) maps their original source
+commits to the integrated history.
 
 `falcon-ocr-eval agree` takes an FP32 reference from a
 `falcon-ocr-eval --profile reference bench` report. Use upstream's
@@ -228,6 +283,19 @@ upstream's file unless `AGREE_REFERENCE` names another report, so leave that
 variable out only when `REF` is upstream's; `AGREE_BIN` defaults to the
 Windows `.exe` path. The FP32 top-K run has 0 flips by construction; an
 arm's `kl_mean` is KL(FP32 ‖ arm) over the top 32 tokens per step.
+
+8-bit arms take fast mode's default INT16 prefill projections, under
+`--backend avx2` on their AVX2 kernel. The 7700X exception-column and
+rotated-cache arms in MODES.md, and upstream's 24,262-step fast-mode
+result, ran before that default, on FP32 projection panels; add
+`AGREE_EXTRA="--tune prefill-projections=fp32"` to reproduce them.
+16-bit arms take near-exact's default static softmax in the FP32 tiles
+(`avx2-static` under `--backend avx2`). The 7700X near-exact and 16-bit
+rotated-cache arms in MODES.md, and upstream's 24,262-step near-exact
+result, ran before that default, with the online softmax; add
+`AGREE_EXTRA="--tune prefill-softmax-fp32=online"` to reproduce them. That
+setting leaves 8-bit arms under `--backend avx2` unchanged, since their
+FP32 tiles default to the online softmax.
 
 ## Rebuilding packed files and experimental overlays
 
@@ -313,9 +381,12 @@ $B/falcon-ocr-eval --profile reference bench "$PAGE" \
 
 The page needs the restored corpus. Choose a new `OUT` for another run;
 `bench` refuses an existing report. `--tune phases=1` prints the forward
-phase split; `--tune prefill-profile=1` prints prefill-attention stage
-cycles. Use explicit profiles or `--model-file` and runner flags to
-measure the configuration you intend.
+phase split, with a `seal` phase, and on Linux memory samples, `memory
+<label>: rss=<MB> hwm=<MB> anon=<MB> file=<MB>`, at load, preprocess,
+embed, layers 5, 10, 15 and 20, forward, sealed, released and decode;
+`--tune prefill-profile=1` prints prefill-attention stage cycles. Use
+explicit profiles or `--model-file` and runner flags to measure the
+configuration you intend.
 
 Other measurement entry points:
 
@@ -324,6 +395,7 @@ Other measurement entry points:
 | `python research/phase4-hillclimb/attempt3/ab.py --help` | Interleaved fresh-process A/B of two binaries on the same pages |
 | `python research/draft-head/cpu_ab.py --help` | Interleaved drafter settings, page totals and token identity against no speculation; an arm's first flag `@<exe>` selects its binary |
 | `cargo test --release --locked --lib panels::panel::tests::prefill_throughput_probe -- --ignored --nocapture` | Panel GEMM versus the `gemm` crate at prefill shapes; the recorded 7950X result was 1.7-1.8 TFLOP/s |
+| `PROBE_OUTPUTS=a.jsonl:b.jsonl cargo test --release --locked --lib repetition::probe::recorded_outputs_probe -- --ignored --nocapture` | Replays the `token_ids` of every JSON line in the listed files (a path list; `run` output works as it is) through the repetition stop without loading model weights: where the exact and the counting rule would end each output, its most counting cycles, the text around each counting cut, and the time both rules take per token |
 | `cargo run --release --locked --example ocr_bench -- --help` | Warm canonical-RGB recognition, with input and model hashes in its reports; provide images, CPU/environment labels and an output path |
 
 For margin cropping, run a few dozen of your own book pages in the same
@@ -336,9 +408,9 @@ failures even if the run is faster.
 
 ## Adding an instruction set
 
-Implement `simd::Simd` for it (every method, including `sum_tree` and the
-pair operations), add the `#[target_feature]` entry wrappers next to the
-existing ones (`kernels/attention/decode64.rs`, `panels/panel.rs`,
+Implement `simd::Simd` for it (every method, including `sum_tree`, the pair
+operations and `exp_unchecked`), add the `#[target_feature]` entry wrappers
+next to the existing ones (`kernels/attention/decode64.rs`, `panels/panel.rs`,
 `model/fused.rs`, `quant/linear/dot.rs`), extend `kernels::Simd` and `Backend`,
 and run the library tests on that machine: they compare the new
 instantiation with `Portable` bit for bit. Then run `tools/m4_check.sh`-style
@@ -346,18 +418,63 @@ checks with weights: smoke trace, token agreement, a speed report.
 
 ## Knobs for experiments
 
-`--exp exact|fast` selects the prefill exp; `--tune key=value` (repeatable)
-takes `prefill-bf16=off|attention|all`, `split-chunks=1..4` (position chunks
-of the split cache scan), `decode-exp=exact|fast` (the exp of decode
-attention over split caches; pin it when comparing caches, see
-[MODES.md](MODES.md#rotated-kv-cache-experimental)), `phases=1` (phase split
-of forwards on stderr), `prefill-profile=1` (prefill attention stage cycles),
-and the draft head's `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`
-and `draft-gate=token|path`. `--kv-cache compact|f32-split|q16|q8|q8r|q4r`
-(`falcon-ocr` run and doctor) replaces the KV half of the resolved profile;
-the plan and every result name the profile that runs, a research one unless
-it is a mode's own. These flags are hidden from `--help`; nothing reads
-environment variables.
+`--exp exact|fast` selects the online prefill exp; the static tiles' fixed
+polynomials and NEON's polynomial exp do not change with it.
+`--tune key=value` (repeatable) takes `prefill-bf16=off|attention` (BF16
+prefill attention in fast mode, default `attention`),
+`prefill-projections=fp32|i16` (FP32 or INT16
+activations in fast mode's prefill projections, default `i16`; see
+[MODES.md](MODES.md#int16-projections-and-static-softmax)),
+`prefill-softmax=online|static` (the online softmax or the static one
+without running maximum in fast mode's BF16 prefill attention, default
+`static`; same section), `prefill-softmax-fp32=online|static` (the same
+choice in the FP32 prefill tiles of 16- and 8-bit bodies on x86; by
+default static for 16-bit bodies and online for 8-bit ones; it does not
+affect a BF16 plan or that plan's FP32 fallback calls, but it selects the
+near-exact rerun's softmax under `--escalate`; see
+[MODES.md](MODES.md#static-softmax-in-the-fp32-tiles)),
+`split-chunks=1..4` (position chunks of the split cache scan),
+`decode-exp=exact|fast` (the exp of decode attention over split caches;
+overrides the cache-mode and `--exp` default; pin it when comparing caches, see
+[MODES.md](MODES.md#rotated-kv-cache-experimental)), `kv-layers=0,3` (whole
+layers at Q8 in a Q16 cache; see
+[MODES.md](MODES.md#whole-layer-q8-in-the-q16-cache-experimental)),
+`phases=1` (phase split of forwards on stderr, with a `seal` phase, and on
+Linux memory samples), `prefill-profile=1` (prefill attention stage
+cycles), and the draft head's `draft-backoff=N`, `draft-window=N`,
+`draft-kv=f32|q8` and `draft-gate=token|path`; any other key, such as
+`prefill-bf16-w16`, is an error. Only the four `prefill-bf16`,
+`prefill-projections` and `prefill-softmax*` knobs, `split-chunks`,
+`decode-exp` and `kv-layers` change rounding, `split-chunks` and
+`decode-exp` that of split-cache decode attention and `kv-layers` the
+precision of the listed layers' caches; the others schedule or measure
+(`Tuning` in `src/config/tuning.rs`).
+`--kv-cache compact|f32-split|q16|q8|q8r|q4r` (`falcon-ocr` run and doctor)
+replaces the KV half of the resolved profile; the plan and every result
+name the profile that runs, a research one unless it is a mode's own.
+These flags are hidden from `--help` and configured through CLI arguments.
+Environment-variable controls belong to tests and probes, including the
+[workspace and KV diagnostics](#diagnostic-environment-controls).
+
+## Diagnostic environment controls
+
+The workspace diagnostic (`tests/prefill_workspace.rs`) needs the pinned
+checkpoint and GPU smoke input. Choose a fresh trace path for each run;
+the test writes a SafeTensors trace and a JSON sidecar with the same base
+name.
+
+| Variable | Used by | Meaning |
+|---|---|---|
+| `FALCON_OCR_MODEL` | Tokenizer test and repetition output probe | Model directory for the tokenizer; default `artifacts/model` |
+| `FOCR_WORKSPACE_TRACE` | `mixed_batch_workspace_trace` | Required output trace path |
+| `FOCR_WORKSPACE_CACHE_LAYOUT` | `mixed_batch_workspace_trace` | `expanded` (default) or `compact` |
+| `FOCR_WORKSPACE_BASELINE` | `mixed_batch_workspace_trace` | Optional completed trace to compare by tensor name, dtype, shape and bytes |
+| `PROBE_MODE` | `quant::kv::probe::verify_rows_probe` | Cache format: `q8` (default), `q16`, `f32`, `q8r` or `q4r` |
+| `PROBE_THREADS` | `quant::kv::probe::verify_rows_probe` | Thread count (default 12) |
+
+The KV verification-row timing probe builds synthetic caches and needs no
+model files. `falcon-ocr-eval` also reads `PROCESSOR_IDENTIFIER` as optional
+host metadata in reports; it does not configure inference.
 
 ## Gotchas
 
@@ -369,6 +486,10 @@ environment variables.
   files at once, about 2.6 GB.
 - Keep the mapped checkpoint or packed file unchanged while a `Model` is
   alive.
+- `timings.transformer_prefill_ms` has included the per-layer seal since
+  2026-11-06; earlier reports, and the transformer-prefill figures recorded
+  before then in [PERFORMANCE.md](PERFORMANCE.md), exclude it. Compare
+  `prefill_ms` across that change.
 
 ## Repository layout
 

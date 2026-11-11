@@ -6,13 +6,13 @@
 //! thread count, while the partitions (row blocks, panel splits, records)
 //! change with it. This runs the product's stages of one layer, at a page's
 //! row count (at least `PARALLEL_ROWS`, so the row-parallel and fused passes
-//! run), for W8 with FP32 and BF16 panels and for W16, and compares every
-//! output bit for bit: the QKV projection with the RMS norm folded into row
-//! scales, the rotary factors, the fused QKV pass with its BF16 attention
-//! copies, prefill attention (FP32 and BF16), the output projection and FFN
-//! (residual adds and the gate in the epilogues), sealing in every split
-//! format (the rotated research ones too), and the unfused split with its
-//! residual add.
+//! run), for W8 with FP32 and INT16 panels and for W16, and compares
+//! every output bit for bit: the QKV projection with the RMS norm folded
+//! into row scales, the rotary factors, the fused QKV pass with its BF16
+//! attention copies, prefill attention (FP32 with either softmax, and
+//! BF16), the output projection and FFN (residual adds and the gate in the
+//! epilogues), sealing in every split format (the rotated research ones
+//! too), and the unfused split with its residual add.
 //! `kernels::tests::prefill_kernels_are_bitwise_independent_of_the_pool_size`
 //! covers the FP32 projections, attention, norms and first-token heads.
 use std::sync::Arc;
@@ -25,21 +25,10 @@ use super::{
     rotary_factors, split_norm_rope,
 };
 use crate::{
-    config::{CacheLayout, ExpMode, ModelConfig, Tuning},
-    kernels::{self, Bf16Kv, Geometry, PrefillOptions, Simd},
+    config::{CacheLayout, ExpMode, ModelConfig, PrefillSoftmax, Tuning},
+    kernels::{self, Bf16Kv, Geometry, PrefillOptions, PrefillProjection as Projection, Simd, test_values as values},
     quant::{Kv, linear::QuantLinear},
 };
-
-/// A fixed generator in [-1, 1), as in `kernels::tests`.
-fn values(n: usize, seed: u32) -> Vec<f32> {
-    let mut state = seed;
-    (0..n)
-        .map(|_| {
-            state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-            ((state >> 8) as f64 / 16_777_216.0 * 2.0 - 1.0) as f32
-        })
-        .collect()
-}
 
 fn bits(x: &[f32]) -> Vec<u32> {
     x.iter().map(|v| v.to_bits()).collect()
@@ -74,7 +63,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         return;
     }
     let mut c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
-    // Sealing seals every layer of a session; one is enough here.
+    // One layer is enough to compare sealing across pool sizes.
     c.n_layers = 1;
     let rows = PARALLEL_ROWS + 6;
     let (image_start, image_end) = (5, rows - 4);
@@ -103,10 +92,12 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
     let geometry = Geometry::new(0, image_start, image_end);
     let fast = PrefillOptions {
         exp: ExpMode::Fast,
-        profile: false,
+        ..PrefillOptions::EXACT
     };
-    // BF16 panels and attention copies where the CPU has AVX512-BF16.
+    // BF16 attention copies where the CPU has AVX512-BF16, and the INT16
+    // panels where the plan has them.
     let bf16 = kernels::prefill_bf16_rows_available();
+    let i16 = kernels::prefill_plan(Some(8), false, Simd::Auto, &Tuning::default()).projection;
     let bodies = [(8, layer(&c, 8)), (16, layer(&c, 16))];
     let session = || {
         Session::new(
@@ -117,6 +108,7 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
             image_end,
             Simd::Auto,
             CacheLayout::Compact,
+            false,
             ExpMode::Fast,
             Tuning::default(),
         )
@@ -127,16 +119,20 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         pool.install(|| {
             let mut out = Vec::new();
             for (bits_per_code, layer) in &bodies {
-                for panels_bf16 in [false, true] {
-                    if panels_bf16 && (*bits_per_code != 8 || !bf16) {
+                let code_only = (i16 != Projection::PanelAvx2).then_some(i16);
+                for kernel in std::iter::once(Projection::PanelAvx2).chain(code_only) {
+                    if kernel != Projection::PanelAvx2 && *bits_per_code != 8 {
                         continue;
                     }
-                    let body = format!("W{bits_per_code}{}", if panels_bf16 { " BF16 panels" } else { "" });
+                    let body = match kernel {
+                        Projection::PanelAvx2 => format!("W{bits_per_code}"),
+                        _ => format!("W{bits_per_code} {kernel}"),
+                    };
                     let mut push = |stage: &str, value: Vec<u32>| out.push((format!("{body}: {stage}"), value));
                     let mut work = Workspace::default();
                     work.resize(rows, &c);
                     let mut h = hidden.clone();
-                    panel_qkv(&c, layer, &h, rows, &mut work, panels_bf16);
+                    panel_qkv(&c, layer, &h, rows, &mut work, kernel);
                     push("QKV projection", bits(&work.qkv));
                     rotary_factors(&c, &t, &hw, &golden, &temporal, &mut work.rope);
                     push(
@@ -165,21 +161,27 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                     if bf16 {
                         push("BF16 key copies", work.bf16_keys.clone());
                         push("BF16 value copies", work.bf16_values.clone());
-                        let mut attention = vec![f32::NAN; rows * qdim];
-                        let converted = Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values));
-                        cache.layers[0].attention(
-                            &work.q,
-                            rows,
-                            rows,
-                            &c,
-                            geometry,
-                            &sinks,
-                            &mut attention,
-                            Simd::Auto,
-                            converted,
-                            fast,
-                        );
-                        push("BF16 attention", bits(&attention));
+                        for softmax in [PrefillSoftmax::Online, PrefillSoftmax::Static] {
+                            let mut attention = vec![f32::NAN; rows * qdim];
+                            let converted = Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values));
+                            cache.layers[0].attention(
+                                &work.q,
+                                rows,
+                                rows,
+                                &c,
+                                geometry,
+                                &sinks,
+                                &mut attention,
+                                Simd::Auto,
+                                converted,
+                                PrefillOptions { softmax, ..fast },
+                            );
+                            let stage = match softmax {
+                                PrefillSoftmax::Online => "BF16 attention",
+                                PrefillSoftmax::Static => "BF16 attention, static softmax",
+                            };
+                            push(stage, bits(&attention));
+                        }
                     }
                     cache.layers[0].attention(
                         &work.q,
@@ -194,13 +196,31 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                         PrefillOptions::EXACT,
                     );
                     push("attention", bits(&work.attn));
+                    let mut attention = vec![f32::NAN; rows * qdim];
+                    let fp32_static = PrefillOptions {
+                        fp32_softmax: PrefillSoftmax::Static,
+                        ..PrefillOptions::EXACT
+                    };
+                    cache.layers[0].attention(
+                        &work.q,
+                        rows,
+                        rows,
+                        &c,
+                        geometry,
+                        &sinks,
+                        &mut attention,
+                        Simd::Auto,
+                        None,
+                        fp32_static,
+                    );
+                    push("attention, static softmax", bits(&attention));
                     panel_out_ffn(
                         &c,
                         layer,
                         &mut h,
                         rows,
                         &mut work,
-                        panels_bf16,
+                        kernel,
                         &mut PhaseClock::new(rows, false),
                     );
                     push("gated FFN", bits(&work.gated));
@@ -214,7 +234,17 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
                             prefix_len: rows,
                         };
                         sealed.len = rows;
-                        sealed.seal_prefix(&c, mode, ExpMode::Fast).unwrap();
+                        super::cache::seal_layer(
+                            &mut sealed.layers,
+                            0,
+                            rows,
+                            sealed.capacity,
+                            &c,
+                            mode,
+                            ExpMode::Fast,
+                            &sealed.tuning,
+                        )
+                        .unwrap();
                         let LayerCache::Split(split) = &sealed.layers[0] else {
                             unreachable!("sealed");
                         };
@@ -243,12 +273,26 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         })
     };
     let single = run(1);
-    // The BF16 stages ran where the CPU has them: their outputs are not
-    // the FP32 ones.
+    // The BF16 and INT16 stages ran where the CPU has them: their outputs
+    // are not the FP32 ones.
     let output = |stage: &str| &single.iter().find(|(name, _)| name == stage).expect(stage).1;
+    if i16 != Projection::PanelAvx2 {
+        assert_ne!(
+            output("W8: QKV projection"),
+            output(&format!("W8 {i16}: QKV projection"))
+        );
+    }
+    // Near-exact's default: the static tiles wherever the CPU has them.
+    let planned = kernels::prefill_plan(Some(16), false, Simd::Auto, &Tuning::default()).attention;
+    if planned.fp32_softmax() == PrefillSoftmax::Static {
+        assert_ne!(output("W16: attention"), output("W16: attention, static softmax"));
+    }
     if bf16 {
-        assert_ne!(output("W8: QKV projection"), output("W8 BF16 panels: QKV projection"));
         assert_ne!(output("W8: attention"), output("W8: BF16 attention"));
+        assert_ne!(
+            output("W8: BF16 attention"),
+            output("W8: BF16 attention, static softmax")
+        );
     }
     for threads in [2, 3, 7] {
         let other = run(threads);
@@ -256,5 +300,216 @@ fn layer_prefill_is_bitwise_independent_of_the_pool_size() {
         for ((stage, one), (_, many)) in single.iter().zip(&other) {
             assert!(one == many, "{stage}: {threads} threads differ from one");
         }
+    }
+}
+
+/// `kv-layers` seals the chosen layers exactly as a Q8 cache does and the rest
+/// as a Q16 cache does, with Q16's exp on all of them.
+#[test]
+fn kv_layers_seal_the_chosen_layers_at_q8() {
+    let mut c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+    c.n_layers = 2;
+    let rows = 16;
+    let mut keys = values(rows * c.query_dim(), 1);
+    // A GQA pair shares the temporal half of its key.
+    for row in 0..rows {
+        for group in 0..c.n_kv_heads {
+            let start = (row * c.n_heads + 2 * group) * 64;
+            keys.copy_within(start..start + 32, start + 64);
+        }
+    }
+    let kv = values(rows * c.kv_dim(), 2);
+    let seal = |mask: u32, layer: usize, mode: Kv| {
+        let compact = || LayerCache::Compact {
+            prefix_k: keys.clone(),
+            generated_k: Vec::new(),
+            v: kv.clone(),
+            prefix_len: rows,
+        };
+        let mut layers = vec![compact(), compact()];
+        let tuning = Tuning {
+            kv_q8_layers: mask,
+            ..Tuning::default()
+        };
+        super::cache::seal_layer(&mut layers, layer, rows, rows + 8, &c, mode, ExpMode::Fast, &tuning).unwrap();
+        let LayerCache::Split(split) = &layers[layer] else {
+            unreachable!("sealed");
+        };
+        (split.record_bits(), split.fast_exp())
+    };
+    let (q8, _) = seal(0, 1, Kv::Q8);
+    let (q16, _) = seal(0, 0, Kv::Q16);
+    assert_ne!(q8, q16);
+    assert_eq!(seal(0b10, 1, Kv::Q16), (q8, false));
+    assert_eq!(seal(0b10, 0, Kv::Q16), (q16, false));
+    // A whole Q8 cache under `ExpMode::Fast` takes the polynomial exp.
+    assert!(seal(0, 0, Kv::Q8).1);
+}
+
+/// Run actual transformer layers with buffer hand-off, against independently
+/// allocated compact prefixes sealed only after the complete forward.
+#[test]
+fn sealing_passes_the_prefix_buffers_through_every_layer() {
+    use super::{Model, Store, WeightsSource};
+    use crate::{quant::Profile, trace::NoTrace};
+
+    let mut c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+    c.dim = 64;
+    c.ffn_dim = 64;
+    c.n_heads = 2;
+    c.n_kv_heads = 1;
+    c.n_layers = 3;
+    c.max_seq_len = 128;
+    let rows = PARALLEL_ROWS + 6;
+    let positions: Vec<_> = (0..rows).collect();
+    let spatial = vec![[f32::NAN; 2]; rows];
+    let mut stored = Vec::<u32>::new();
+    let mut store = |data: Vec<f32>| {
+        let start = 4 * stored.len();
+        stored.extend(data.iter().map(|x| x.to_bits()));
+        Weight {
+            range: start..4 * stored.len(),
+            quantized: None,
+        }
+    };
+    let golden = store(values(c.n_heads * c.head_dim / 2, 3));
+    let layers: Vec<_> = (0..c.n_layers)
+        .map(|i| Layer {
+            sinks: store(values(c.n_heads, 7 + i as u32)),
+            ..layer(&c, 8)
+        })
+        .collect();
+    let mut model = Model {
+        config: c.clone(),
+        map: Store::Owned(stored),
+        embedding: weight(None),
+        projector: weight(None),
+        norm: weight(None),
+        output: weight(None),
+        golden,
+        temporal: temporal_factors(&c),
+        layers,
+        packed: Default::default(),
+        screened: Default::default(),
+        profile: Profile::W8_BODY_KV_Q8,
+        quantize_ms: 0.0,
+        overlay_sha256: None,
+        source: WeightsSource::Checkpoint {
+            dir: "unused".into(),
+            overlay: None,
+            rtn: true,
+        },
+        weights_sha256: String::new(),
+    };
+    for (mode, mask) in [(Kv::F32Split, 0), (Kv::Q16, 0), (Kv::Q16, 0b010), (Kv::Q8, 0)] {
+        model.profile.kv = mode;
+        let tuning = Tuning {
+            kv_q8_layers: mask,
+            ..Tuning::default()
+        };
+        let session = |seal| {
+            Session::new(
+                &c,
+                rows + 8,
+                rows,
+                1,
+                rows - 2,
+                Simd::Auto,
+                CacheLayout::Compact,
+                seal,
+                ExpMode::Fast,
+                tuning,
+            )
+            .unwrap()
+        };
+        let (mut handed, mut independent) = (session(true), session(false));
+        // A partial first forward must fail before changing any layer.
+        let mut partial = values((rows - 1) * c.dim, 5);
+        let error = model
+            .forward_layers(
+                &mut partial,
+                &positions[..rows - 1],
+                &spatial[..rows - 1],
+                &mut handed,
+                &mut NoTrace,
+                "partial",
+            )
+            .unwrap_err();
+        assert!(error.to_string().contains("whole prefix first"));
+        assert_eq!(handed.len, 0);
+        for (i, cache) in handed.layers.iter().enumerate() {
+            let LayerCache::Compact { prefix_k, v, .. } = cache else {
+                panic!("not compact")
+            };
+            assert!(prefix_k.is_empty() && v.is_empty());
+            if i > 0 {
+                assert_eq!((prefix_k.capacity(), v.capacity()), (0, 0));
+            }
+        }
+        let mut h = values(rows * c.dim, 5);
+        let mut expected = h.clone();
+        model
+            .forward_layers(&mut h, &positions, &spatial, &mut handed, &mut NoTrace, "prefill")
+            .unwrap();
+        model
+            .forward_layers(
+                &mut expected,
+                &positions,
+                &spatial,
+                &mut independent,
+                &mut NoTrace,
+                "prefill",
+            )
+            .unwrap();
+        assert_eq!(bits(&h), bits(&expected), "{mode:?} mask={mask}: hidden");
+        // Reverse order retains each independent layer's own filled buffers.
+        for i in (0..c.n_layers).rev() {
+            super::cache::seal_layer(
+                &mut independent.layers,
+                i,
+                rows,
+                rows + 8,
+                &c,
+                mode,
+                ExpMode::Fast,
+                &tuning,
+            )
+            .unwrap();
+        }
+        for (actual, expected) in handed.layers.iter().zip(&independent.layers) {
+            let (LayerCache::Split(actual), LayerCache::Split(expected)) = (actual, expected) else {
+                panic!("every layer must seal");
+            };
+            assert_eq!(
+                actual.record_bits(),
+                expected.record_bits(),
+                "{mode:?} mask={mask}: records"
+            );
+        }
+        // Decode must consume the same sealed prefixes after the buffers
+        // have been reused by all three layers.
+        let mut decode = values(c.dim, 29);
+        let mut expected = decode.clone();
+        model
+            .forward_layers(
+                &mut decode,
+                &[rows],
+                &[[f32::NAN; 2]],
+                &mut handed,
+                &mut NoTrace,
+                "decode",
+            )
+            .unwrap();
+        model
+            .forward_layers(
+                &mut expected,
+                &[rows],
+                &[[f32::NAN; 2]],
+                &mut independent,
+                &mut NoTrace,
+                "decode",
+            )
+            .unwrap();
+        assert_eq!(bits(&decode), bits(&expected), "{mode:?} mask={mask}: decode");
     }
 }

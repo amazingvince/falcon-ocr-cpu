@@ -51,10 +51,14 @@ books and PDFs, see [Books and PDFs](#books-and-pdfs).
 FP32 means 32-bit floating point. A flip is a different greedy token choice
 when each mode receives the same reference-token prefix.
 
-The journal page has 6,544 input tokens. These timings are on a Ryzen 9
-7950X, Windows 11, without the draft head. Near-exact is about 1.8× faster
-than exact and fast about 3×. Fast mode failed its held-out budgets on
-handwriting and degraded scans; use near-exact for those pages.
+The journal page has 6,544 input tokens. The table records a Ryzen 9 7950X
+on Windows 11 without the draft head. Its near-exact and fast measurements
+use FP32 projection panels and online softmax. On a Ryzen 7 7700X,
+transformer prefill is faster with fast mode's
+[INT16 projections and static softmax](docs/MODES.md#int16-projections-and-static-softmax)
+and near-exact's [FP32 static softmax](docs/MODES.md#static-softmax-in-the-fp32-tiles).
+Near-exact is recommended for handwriting and degraded scans, where fast
+mode failed its held-out budgets.
 
 Exact mode matched FP32's tokens on every page measured. Its default
 kernels can change the last bits of logits; `RunnerConfig::reference()` is
@@ -79,10 +83,16 @@ next to the model files; without it the runner uses n-gram drafts. Threads,
 drafting and the screened head do not change tokens.
 
 The repetition stop ends cycles of at most 128 tokens after at least
-`max(256, 4 × cycle)` repeated tokens. Without `--max-new-tokens`, the
-8,192-token cap is lowered when the input leaves less of the 16,384-token
-context (`budget_clamped` in the result). Both can end a page early without
-changing preceding tokens; `--stop-repetition=false` lets loops run.
+`max(256, 4 × cycle)` repeated tokens, and counting loops, whose cycles
+differ only in numbers that each move by a fixed step, after 128 cycles
+spanning at least 256 tokens
+([loops](docs/MODES.md#loops-and-the-repetition-stop)). Without
+`--max-new-tokens`, the 8,192-token cap is lowered when the input leaves
+less of the 16,384-token context (`budget_clamped` in the result). Both can
+end a page early without changing preceding tokens;
+`--stop-repetition=false` lets loops run. Long templated forms can match the
+counting rule too. When repetition ends a page, `run` warns on stderr with
+the input name and disabling flag, including with `--text`.
 
 `doctor` prints the plan without reading tensors; `--load` times model
 loading and `--probe` measures memory bandwidth and the decode floor.
@@ -104,12 +114,12 @@ probe: 512 MB x5 on 16 threads: 51.3 GB/s median; decode floor 7.83 ms/token
 | `--model DIR` | Checkpoint and/or packed files (default `artifacts/model`) |
 | `--model-file F` | A packed file; it decides the mode. `--verify-model-file` checks every tensor digest first |
 | `--mode exact\|near-exact\|fast` | Default near-exact; `--w8-artifact F` picks the fast-mode overlay, `--allow-rtn` lets fast mode quantize without one |
-| `--backend auto\|avx2\|scalar\|neon` | `avx2` forces 8-lane FP32 kernels; `scalar` is for debugging |
+| `--backend auto\|avx2\|scalar\|neon` | `avx2` selects 8-lane FP32 attention and AVX2 panels. `scalar` is for debugging. |
 | `--threads N` | Prefill pool (default: all logical CPUs) |
 | `--decode-threads auto\|pool\|N` | Decode team (default auto) |
 | `--speculate N` | Drafts per step, 0 = off (default 4); `--speculate-min-match M` (default 2); `--document-drafts=false` stops cross-page drafts |
 | `--draft-head F` | Select a trained draft head ([research/draft-head](research/draft-head/README.md)) |
-| `--drafter ngram\|head\|both` | Draft source: default `head` when its file is present, otherwise `ngram` |
+| `--drafter ngram\|head\|both` | Draft source: default `head` when its file is present, otherwise `ngram`. Explicit `head` or `both` requires `--draft-head F` |
 | `--draft-confidence P` | Minimum draft-head confidence (default 0.35) |
 | `--stop-repetition=false` | Let loops run to the cap |
 | `--head screened\|full` | Both select the same token |
@@ -145,6 +155,7 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
   done; each record names its input `path` and its `page` index.
 - `--resume` skips the pages that already have a successful record, and
   `--keep-going` records a page that fails and goes on to the rest.
+  Use a new output file to reread completed pages with changed settings.
 - Inputs and the output file are checked before the model loads, so a
   wrong path fails before inference starts.
 - `--pipeline` prefills the next page while the current one decodes; on a
@@ -152,7 +163,8 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
   ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)). `--batch-size N`
   decodes several pages together. Neither changes the tokens.
 - In fast mode, `--escalate` rereads a page that got stuck in a loop with
-  the near-exact model.
+  the near-exact model. Resuming without it over escalated records warns;
+  those completed pages stay skipped.
 
 Record format and resume matching:
 [long runs](docs/ARCHITECTURE.md#long-runs).
@@ -226,12 +238,15 @@ Experimental overlays with FP32 exception columns are described in
   library's bitwise kernel oracles; `--smoke` adds the exact-mode trace hash.
 - `cargo test --release --locked --test modes --test gpu_parity -- --ignored`
   with `artifacts/`: exact mode reproduces the GPU smoke tokens under the
-  automatic configuration; near-exact and fast reproduce the recorded
-  journal tokens; packed files round-trip; the trace hashes are pinned.
+  automatic configuration. The journal token checks require the recorded
+  prefill kernels; a mismatch fails unless skipping is explicitly enabled
+  ([fixture policy](tests/fixtures/modes/README.md)). Packed files round-trip,
+  and trace hashes use Windows pins.
 - `falcon-ocr-eval agree` measures teacher-forced flips and KL
   ([mode comparisons](docs/MODES.md#the-metric)).
 
-Tests and fixture regeneration: [Development](docs/DEVELOPMENT.md).
+See [Development](docs/DEVELOPMENT.md#the-check) for fixture prerequisites
+and platform-specific trace baselines.
 
 ## Performance notes
 
@@ -248,7 +263,7 @@ accepted and rejected changes.
 |---|---|---|---|
 | Builds and tests in CI | yes | yes (plus an aarch64 cross check) | macOS arm64: library tests |
 | Runs the model | measured | measured (under WSL, and natively on a Ryzen 7 7700X) | not yet run |
-| Kernels | AVX2, AVX-512 tiles, AVX512-BF16 (fast) | same | NEON (fast mode's BF16 kernels are x86-only) |
+| Kernels | AVX2, AVX-512 tiles, AVX512-BF16 and INT16 projections (fast) | same | NEON (fast mode's BF16 and INT16 kernels are x86-only) |
 
 ## Repository layout
 

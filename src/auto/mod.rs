@@ -22,12 +22,16 @@ pub enum Mode {
     /// FP32 weights and caches: matches the FP32 reference's measured tokens.
     Exact,
     /// 16-bit body weights and 16-bit KV cache (absmax scale per 64 weights
-    /// or 32 cache values): about 1.8x faster than exact, 1 changed token in
-    /// 24,262 teacher-forced steps (KL 9e-8).
+    /// or 32 cache values), and the static softmax in the FP32 prefill tiles
+    /// on x86: about 1.8x faster than exact, 1 changed token in 24,262
+    /// teacher-forced steps (KL 9e-8, with the online softmax; the static
+    /// one flips the same single step on the 7700X anchor).
     NearExact,
-    /// 8-bit GPTQ body weights and an 8-bit KV cache, BF16 prefill attention
-    /// on AVX512-BF16 CPUs: about 3x faster than exact, 63 changed tokens in
-    /// 24,262; failed its held-out budget on handwriting loops and degraded
+    /// 8-bit GPTQ body weights and an 8-bit KV cache, INT16-activation
+    /// prefill projections on x86 CPUs with AVX2 and BF16 prefill attention
+    /// with a static softmax on AVX512-BF16 CPUs: about 3x faster than exact,
+    /// 63 changed tokens in 24,262 (with FP32 projections and the online
+    /// softmax); failed its held-out budget on handwriting loops and degraded
     /// scans.
     Fast,
 }
@@ -513,43 +517,74 @@ pub struct ModelFacts {
     pub source: WeightsSource,
     pub profile: Profile,
     pub config: ModelConfig,
-    /// `Model::body_bits`: the profile's width for a plan.
+    /// `Model::body_bits`: the profile's width for a plan with a uniform body.
     pub body_bits: Option<u32>,
     pub overlay_sha256: Option<String>,
     /// `Model::exception_bytes`: the body's exception columns, read per
     /// token on top of the codes (zero without any).
     #[serde(default)]
     pub exception_bytes: usize,
+    /// `Model::i16_misfit`: a body matrix the INT16 prefill panels cannot
+    /// hold: its code width, group size or dimensions do not fill panels.
+    #[serde(default)]
+    pub i16_misfit: bool,
 }
 
 impl ModelFacts {
     /// From a plan without reading tensors: the checkpoint's `config.json`
     /// or the packed file's header (which also names its overlay digest),
-    /// and the exception columns the packed file or overlay header lists.
-    /// An overlay whose header cannot be read counts none: loading it fails,
-    /// and `doctor` reports why.
+    /// and the exception columns the packed file or overlay header lists
+    /// and the overlay's group size and body coverage. An overlay whose
+    /// header cannot be read counts no exception columns and groups of 64:
+    /// loading it fails, and `doctor` reports why.
     pub fn from_plan(plan: &WeightsPlan) -> Result<Self> {
-        let (config, overlay_sha256, exception_bytes) = match &plan.source {
-            WeightsSource::Packed { path } => crate::model::packed_facts(path)?,
+        Self::from_plan_with_overlay_error(plan).map(|(facts, _)| facts)
+    }
+
+    fn from_plan_with_overlay_error(plan: &WeightsPlan) -> Result<(Self, Option<anyhow::Error>)> {
+        let (config, overlay_sha256, overlay_facts) = match &plan.source {
+            WeightsSource::Packed { path } => {
+                let (config, overlay_sha256, exception_bytes) = crate::model::packed_facts(path)?;
+                (config, overlay_sha256, Ok(Some((exception_bytes, false, false))))
+            }
             WeightsSource::Checkpoint { dir, overlay, .. } => {
                 let path = dir.join("config.json");
                 let bytes = std::fs::read(&path).with_context(|| format!("read {}", path.display()))?;
                 let config: ModelConfig = serde_json::from_slice(&bytes)?;
                 config.validate()?;
-                let exception_bytes = overlay
+                let facts = overlay
                     .as_deref()
-                    .and_then(|overlay| crate::model::overlay_exception_bytes(overlay).ok());
-                (config, None, exception_bytes.unwrap_or(0))
+                    .map(|path| crate::model::overlay_facts(path, config.n_layers))
+                    .transpose();
+                (config, None, facts)
             }
         };
-        Ok(Self {
+        let ((exception_bytes, groups_of_32, mixed_body), overlay_error) = match overlay_facts {
+            Ok(facts) => (facts.unwrap_or_default(), None),
+            Err(error) => ((0, false, false), Some(error)),
+        };
+        let body_bits = (plan.profile.quantizes_body() && !mixed_body).then(|| plan.profile.weight_bits());
+        let group_size = if groups_of_32 { 32 } else { 64 };
+        let dimensions = [
+            (config.query_dim() + 2 * config.kv_dim(), config.dim),
+            (config.dim, config.query_dim()),
+            (2 * config.ffn_dim, config.dim),
+            (config.dim, config.ffn_dim),
+        ];
+        let i16_misfit = plan.profile.quantizes_body()
+            && dimensions.iter().any(|&(out, inputs)| {
+                !crate::quant::linear::fits_i16_panels(plan.profile.weight_bits(), group_size, out, inputs)
+            });
+        let facts = Self {
             source: plan.source.clone(),
             profile: plan.profile,
             config,
-            body_bits: plan.profile.quantizes_body().then(|| plan.profile.weight_bits()),
+            body_bits,
             overlay_sha256,
             exception_bytes,
-        })
+            i16_misfit,
+        };
+        Ok((facts, overlay_error))
     }
 }
 
@@ -563,6 +598,7 @@ impl Model {
             body_bits: self.body_bits(),
             overlay_sha256: self.overlay_sha256().map(str::to_owned),
             exception_bytes: self.exception_bytes(),
+            i16_misfit: self.i16_misfit(),
         }
     }
 }
@@ -613,7 +649,16 @@ pub struct Resolved {
     pub tokenizer_dir: PathBuf,
     /// Instruction set of the decode GEMV and attention kernels.
     pub decode_isa: String,
+    /// Whether speculation's verification rows over a split cache run the
+    /// AVX-512 kernels (`kernels::wide_rows`), bitwise those of
+    /// `decode_isa`'s.
+    #[serde(default)]
+    pub wide_rows: bool,
     pub prefill: PrefillPlan,
+    /// Prefill of a fast run's near-exact escalation, resolved with a
+    /// uniform 16-bit body and this run's configuration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub escalation_prefill: Option<PrefillPlan>,
     pub exp: ExpMode,
     pub head: HeadMode,
     pub speculation: Option<Speculation>,
@@ -624,6 +669,12 @@ pub struct Resolved {
     pub draft_head: Option<PathBuf>,
     pub document_drafts: bool,
     pub repetition_stop: bool,
+    /// The repetition stop also ends counting loops (`repetition`'s
+    /// counting rule): whenever the stop is on. Plans written before the
+    /// field existed read as false, so a `--resume` with the stop on warns
+    /// about their records.
+    #[serde(default)]
+    pub repetition_counting: bool,
     pub threads: ThreadPlan,
     /// KV cache record format after the prefix is sealed.
     pub kv_cache: String,
@@ -663,12 +714,10 @@ impl Resolved {
             overlay_sha256: facts.overlay_sha256.clone(),
             tokenizer_dir: tokenizer_dir.to_path_buf(),
             decode_isa: format!("{:?}", simd.resolved()).to_lowercase(),
-            prefill: crate::kernels::prefill_plan(
-                facts.body_bits,
-                facts.exception_bytes > 0,
-                simd,
-                config.tuning.prefill_bf16,
-            ),
+            wide_rows: config.speculation.is_some() && profile.kv != Kv::Compact && crate::kernels::wide_rows(simd),
+            prefill: crate::kernels::prefill_plan(facts.body_bits, facts.i16_misfit, simd, &config.tuning),
+            escalation_prefill: (Mode::of_profile(profile) == Some(Mode::Fast))
+                .then(|| crate::kernels::prefill_plan(Some(16), true, simd, &config.tuning)),
             exp: config.exp,
             head: config.head,
             speculation: config.speculation,
@@ -676,13 +725,20 @@ impl Resolved {
             draft_head: config.draft_head.clone().filter(|_| config.drafter != Drafter::Ngram),
             document_drafts: config.document_drafts,
             repetition_stop: config.repetition_stop,
+            repetition_counting: config.repetition_stop,
             threads: ThreadPlan {
                 prefill: threads,
                 decode,
             },
             kv_cache: kv_cache_label(profile).to_owned(),
             bytes: {
-                let budget = byte_budget(&facts.config, profile, config.head);
+                let mut budget = byte_budget(&facts.config, profile, config.head);
+                if profile.kv == Kv::Q16 {
+                    // A Q8 layer stores 96 fewer key and 64 fewer value bytes
+                    // per position and KV group.
+                    let layers = config.tuning.kv_q8_layers.count_ones() as usize;
+                    budget.kv_per_position -= facts.config.n_kv_heads * (96 + 64) * layers;
+                }
                 ByteBudget {
                     weights_per_token: budget.weights_per_token.saturating_add(facts.exception_bytes),
                     ..budget
@@ -780,16 +836,27 @@ impl std::fmt::Display for Resolved {
                 }
             ),
         };
+        let q8_layers = match self.tuning.kv_q8_layers {
+            0 => String::new(),
+            mask if self.profile.kv == Kv::Q16 => format!(" (q8 layers {})", Tuning::kv_layer_list(mask)),
+            _ => String::new(),
+        };
         write!(
             f,
             "mode {} ({}) | weights {weights} | prefill {} threads, projections {}, attention {} | decode {decode} \
-             threads, {} kernels, kv {} | head {:?} | speculation {speculation} | repetition stop {} | exp {:?}",
+             threads, {} kernels{}, kv {}{q8_layers} | head {:?} | speculation {speculation} | repetition stop {} | \
+             exp {:?}",
             self.mode.map_or("research", Mode::label),
             self.profile.label(),
             self.threads.prefill,
             self.prefill.projection,
             self.prefill.attention,
             self.decode_isa,
+            if self.wide_rows {
+                " (avx512 verification rows)"
+            } else {
+                ""
+            },
             self.kv_cache,
             self.head,
             if self.repetition_stop { "on" } else { "off" },

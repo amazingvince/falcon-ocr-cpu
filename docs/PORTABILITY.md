@@ -1,6 +1,6 @@
 # Portability
 
-Status: current as of 2026-10-29. Runs and is measured on x86-64 (Windows,
+Status: current as of 2026-11-10. Runs and is measured on x86-64 (Windows,
 Linux under WSL, native Linux). aarch64 compiles (CI cross-checks Linux and
 runs the NEON unit tests on macOS runners); the NEON kernels are bitwise the
 portable ones in those tests, but no aarch64 machine has yet run the model
@@ -52,12 +52,17 @@ The x86 entry wrappers carry `#[target_feature(enable = "avx2,fma")]`;
 NEON needs none. Runtime detection (`kernels::Simd::resolved`,
 `prefill_plan`) lets one baseline-target binary serve every CPU. Kernels
 with the same exp choice share the portable oracle's arithmetic; the
-`gemm` projections and BF16 kernels are token-checked numerical deviations.
+`gemm` projections, the BF16 kernels, fast mode's INT16 panels and the
+static-shift softmaxes (fast mode's, and near-exact's in the FP32 tiles)
+are token-checked numerical deviations.
 
-Recognition uses the portable polynomial exp in prefill attention
-(token-identical to the platform exp on all calibration pages) and in fast
-mode's decode attention over its 8-bit cache; on x86 the other decode
-attention and traces use a vector exp that matches the platform's
+Recognition defaults to the portable polynomial exp in online prefill
+attention (token-identical to the platform exp on all calibration pages)
+and in fast mode's decode attention over its 8-bit cache. FP32 static tiles
+use that polynomial's unchecked core; BF16 static softmax uses its own
+bounded exp approximation
+([MODES.md](MODES.md#int16-projections-and-static-softmax)). On x86 the other
+decode attention and traces use a vector exp that matches the platform's
 `f32::exp`, with scalar fallback for uncertain lanes. RoPE also uses `powf`
 and `sin_cos`. UCRT, glibc and Apple libm can differ, so platform-exact
 arithmetic is not a cross-platform bitwise guarantee. The
@@ -72,21 +77,46 @@ always uses the polynomial exp.
 | 8/16-bit GEMV and fused GLU, 1-8 rows (`quant/linear.rs`, `quant/linear/dot.rs`) | decode | generic | same as AVX2 | generic | scalar |
 | W8 exception columns after the GEMV (`quant/linear.rs`, research overlays) | decode | one fused multiply-add per column (FMA instruction) | same as AVX2 | `mul_add` | same as AVX2 |
 | Decode attention, compact and expanded (`attention/decode64.rs`, `online.rs`) | decode | generic head | same as AVX2 | generic head | function-pointer head |
-| Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | same as AVX2 | generic | generic loop |
+| Split F32/Q16/Q8 cache scan and verify rows (`quant/kv/decode.rs`) | decode | generic | scan same as AVX2; verify rows on 512-bit row kernels (`quant/kv/wide.rs`, AVX-512F and VL), bitwise | generic | generic loop |
 | Rotated Q8R/Q4R caches (research): Hadamard rotation of queries and outputs (`quant/rotation.rs`), Q4 codes unpacked to the 8-bit loads | decode | scalar rotation, generic scan | same as AVX2 | scalar rotation, generic scan | generic loop |
 | INT8 head screen (`head_screen.rs`) | decode | generic | same as AVX2 | generic | full head |
 | Prefill attention tiles (`attention/prefill64.rs`) | prefill | generic | 16-lane `wide` tiles, bitwise | generic | tiled GEMM (`gemm` crate) |
-| BF16 prefill attention (`prefill64/bf16.rs`, fast mode) | prefill | - | AVX512-BF16 | - | - |
+| Static-shift softmax of those tiles (`prefill64/static_shift.rs`; near-exact by default, 8-bit bodies on request) | prefill | generic 8-lane tiles | 16-lane tiles (AVX-512F), bitwise | oracle only | oracle only |
+| BF16 prefill attention (`prefill64/bf16.rs`, fast mode) with the static-shift softmax (`prefill64/bf16/static_shift.rs`) | prefill | - | AVX512-BF16; the static softmax also AVX512BW, otherwise the online one | - | - |
 | Panel GEMM for quantized projections (`panels/panel.rs`) | prefill | generic | same as AVX2 | generic | `gemm` crate |
-| BF16 panel GEMM (`panels/panel_bf16.rs`, opt-in; not for bodies with exception columns) | prefill | - | AVX512-BF16 | - | - |
+| INT16-activation panel GEMM (`panels/panel_i16.rs`, fast mode; 8-bit bodies in groups of 64, FP32 exception columns added after the integer groups) | prefill | `vpmaddwd` | AVX512-VNNI `vpdpwssd` | - | test oracle only |
 | FP32 projections of exact mode | prefill | `gemm` crate | `gemm` crate | `gemm` crate (NEON) | `gemm` crate |
 | Fused prefill QKV row (`model/fused.rs`) | prefill | generic | same as AVX2 | generic | portable row |
 | Vector exp | both | fast in recognition's prefill attention and fast mode's 8-bit decode attention; platform-exact in traces and other decode attention | same | fast | fast |
 | Thread defaults (`cpu.rs`) | both | logical CPUs for prefill, tuned team for decode | same | `hw.physicalcpu`, `hw.perflevel0.physicalcpu` | Linux sysfs (`cpu_core`, `cpu_capacity`) |
 
-`--backend avx2` forces 8-lane FP32 kernels everywhere (no wide tiles, no
-BF16); `--backend scalar` replaces the vector kernels and the projections'
-GEMM for numerical debugging.
+`--backend avx2` selects 8-lane attention and verification kernels, FP32
+prefill attention, and fast mode's AVX2 INT16 projections (`panel-i16-avx2`).
+The `gemm` crate selects its own kernels for FP32 projection matrices.
+`--backend scalar` replaces the vector kernels and the projections' GEMM
+for numerical debugging.
+
+Fast mode's INT16 panels are x86-only. `auto` runs the VNNI kernel on CPUs
+with AVX512F and AVX512-VNNI and the AVX2 kernel on other CPUs with AVX2; the
+two agree bitwise. Unlike the BF16 kernels, they do not need AVX512-BF16.
+aarch64 keeps the FP32 panels, and `--backend scalar` and CPUs without AVX2
+run the projections through the `gemm` crate. Fast mode's static softmax
+needs AVX512-BF16 and AVX512BW; a CPU with AVX512-BF16 but not AVX512BW keeps
+the online softmax, and every other CPU keeps its FP32 prefill attention.
+`--tune prefill-projections=fp32` and `--tune prefill-softmax=online` select
+the previous kernels on any CPU. The generic FP32 static-softmax
+implementation has Portable and NEON oracles, but recognition enables it only
+on x86 with AVX2 and FMA; aarch64, `--backend scalar` and exact mode keep the
+online softmax whatever `--tune prefill-softmax-fp32` says, so near-exact's
+prefill rounding differs between x86 and aarch64.
+
+## Allocator and memory samples
+
+`cpu::return_large_frees_to_os` sets glibc's mmap and trim thresholds on
+GNU/Linux only; other platforms keep their allocator policy
+([PERFORMANCE.md](PERFORMANCE.md#peak-memory) has the effect on Linux). The
+memory samples of `--tune phases=1` read `/proc/self/status`, so they are
+Linux only and print nothing elsewhere.
 
 ## Running on Apple Silicon
 
@@ -96,8 +126,8 @@ calibration pages against the stored FP32 outputs, and a speed report against
 the machine's measured bandwidth. `--backend auto` selects NEON; the panel
 GEMM, prefill tiles, decode attention, cache scans and the fused row all have
 NEON instantiations. Prefill projections of exact mode use the `gemm` crate's
-own NEON kernels. Fast mode's BF16 kernels are AVX-512-only: on ARM, fast
-mode runs its FP32 prefill.
+own NEON kernels. Fast mode's BF16 kernels are AVX-512-only and its INT16
+projections x86-only: on ARM, fast mode runs its FP32 prefill.
 
 ## Follow-ups
 

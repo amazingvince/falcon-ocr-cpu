@@ -12,10 +12,7 @@ use super::{
     DEFAULT_OVERLAY, DRAFT_HEAD_FILE, HostInfo, Mode, ModelFacts, ModelRequest, Resolved, load_model, model_files_dir,
     resolve_weights,
 };
-use crate::{
-    config::{HeadMode, RunnerConfig},
-    model::WeightsSource,
-};
+use crate::config::{HeadMode, RunnerConfig};
 
 /// One file `doctor` looked for.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,25 +107,15 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
         tokenizer: FileStatus::of(dir.join("tokenizer.json")),
         draft_head: FileStatus::of(model_files_dir(request).join(DRAFT_HEAD_FILE)),
     };
-    let (mut plan, mut error, mut load_report) = (None, None, None);
-    match resolve_weights(request) {
-        Err(e) => error = Some(format!("{e:#}")),
+    let (mut plan, mut load_report) = (None, None);
+    let error = match resolve_weights(request) {
+        Err(e) => Some(format!("{e:#}")),
         Ok(weights) => {
             let tokenizer_dir = weights.source.tokenizer_dir(dir);
             files.tokenizer = FileStatus::of(tokenizer_dir.join("tokenizer.json"));
-            if let WeightsSource::Checkpoint {
-                overlay: Some(path), ..
-            } = &weights.source
-                && let Err(e) = crate::model::overlay_exception_bytes(path)
-            {
-                error = Some(format!("W8 overlay header: {e:#}"));
-            }
-            plan = Some(Resolved::new(
-                &host,
-                config,
-                &ModelFacts::from_plan(&weights)?,
-                &tokenizer_dir,
-            ));
+            let (facts, overlay_error) = ModelFacts::from_plan_with_overlay_error(&weights)?;
+            config.tuning.check_kv_layers(facts.profile.kv, facts.config.n_layers)?;
+            plan = Some(Resolved::new(&host, config, &facts, &tokenizer_dir));
             if load {
                 let started = Instant::now();
                 let model = load_model(&weights, false)?;
@@ -141,8 +128,9 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
                 });
                 plan = Some(Resolved::new(&host, config, &model.facts(), &tokenizer_dir));
             }
+            overlay_error.map(|e| format!("W8 overlay header: {e:#}"))
         }
-    }
+    };
     let probe = probe.then(|| {
         let bytes = 512 << 20;
         let threads = host.physical_cores;

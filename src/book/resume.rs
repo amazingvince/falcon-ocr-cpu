@@ -66,17 +66,29 @@ impl Settings {
 }
 
 /// The runner's choices in a record's `plan` that change tokens: the
-/// repetition stop, the prefill exp, the prefill attention (BF16, NEON's
-/// polynomial exp, scalar, or the FP32 tiles, whose AVX2 and AVX-512 forms
-/// agree bitwise), BF16 projections, decode chunking, a pinned decode exp
-/// and the image decoder.
+/// repetition stop and whether it ends counting loops, the prefill exp, the
+/// prefill attention (BF16 or the FP32 tiles, each with the online or the
+/// static softmax, the FP32 tiles' AVX2 and AVX-512 forms agreeing bitwise;
+/// NEON's polynomial exp; scalar), the projection kind, decode chunking, a
+/// pinned decode exp and the image decoder.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kernels {
     pub repetition_stop: bool,
+    /// `plan.repetition_counting`; false for a plan written before it.
+    pub repetition_counting: bool,
     pub exp: String,
+    /// `fp32`, `fp32-static`, `bf16`, `bf16-static`, `neon` or `scalar`.
     pub attention: String,
-    pub bf16_projections: bool,
+    /// The attention of a near-exact rerun (`--escalate`), from the
+    /// resolver's `escalation_prefill`, where it differs from this plan's.
+    pub escalation_attention: Option<String>,
+    /// The prefill projections' rounding: `i16` for the INT16 panels (their
+    /// VNNI and AVX2 kernels agree bitwise), `bf16` for the removed BF16
+    /// panels that older records name, `fp32` for every other kernel.
+    pub projection: String,
     pub decode_exp: Option<bool>,
+    /// Layers sealed at Q8 in an otherwise Q16 cache (`kv-layers`).
+    pub kv_q8_layers: u64,
     /// Effective chunks of the split-cache scan, including the mode's
     /// default; `None` for a compact cache or an unrecorded cache kind.
     pub split_chunks: Option<u64>,
@@ -89,14 +101,15 @@ impl Kernels {
     /// not hold them.
     pub fn from_plan(plan: &Value) -> Option<Self> {
         let prefill = plan.get("prefill")?;
-        let attention = match prefill.get("attention")?.as_str()? {
-            "avx2" | "avx512-wide" => "fp32",
-            other => other,
-        };
-        let chunks = plan
-            .get("tuning")
-            .and_then(|tuning| tuning.get("split_chunks"))
-            .and_then(Value::as_u64);
+        let (attention, projection) = prefill_kinds(prefill)?;
+        let tuning = plan.get("tuning");
+        let knob = |key: &str| tuning.and_then(|tuning| tuning.get(key));
+        let escalation_attention = plan
+            .get("escalation_prefill")
+            .and_then(prefill_kinds)
+            .map(|(attention, _)| attention)
+            .filter(|rerun| *rerun != attention);
+        let chunks = knob("split_chunks").and_then(Value::as_u64);
         let split_chunks = match plan.get("kv_cache").and_then(Value::as_str) {
             Some("f32-split") => Some(chunks.unwrap_or(1)),
             Some("q16" | "q8" | "q8r" | "q4r") => Some(chunks.unwrap_or(4)),
@@ -105,13 +118,16 @@ impl Kernels {
         };
         Some(Self {
             repetition_stop: plan.get("repetition_stop")?.as_bool()?,
+            repetition_counting: plan
+                .get("repetition_counting")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
             exp: plan.get("exp")?.as_str()?.to_owned(),
-            attention: attention.to_owned(),
-            bf16_projections: prefill.get("projection")?.as_str()? == "panel-bf16",
-            decode_exp: plan
-                .get("tuning")
-                .and_then(|tuning| tuning.get("decode_fast_exp"))
-                .and_then(Value::as_bool),
+            attention,
+            escalation_attention,
+            projection,
+            decode_exp: knob("decode_fast_exp").and_then(Value::as_bool),
+            kv_q8_layers: knob("kv_q8_layers").and_then(Value::as_u64).unwrap_or(0),
             split_chunks,
             image_decoder: plan.get("image_decoder").and_then(Value::as_str).map(str::to_owned),
         })
@@ -127,20 +143,20 @@ impl Kernels {
         let mut flags = Vec::new();
         if !self.repetition_stop {
             flags.push("--stop-repetition=false".to_owned());
+        } else if !self.repetition_counting {
+            flags.push("repetition stop without counting loops".to_owned());
         }
         if self.exp != "fast" {
             flags.push(format!("--exp {}", self.exp));
         }
-        match self.attention.as_str() {
-            "fp32" => {}
-            "bf16" => flags.push("BF16 attention".to_owned()),
-            other => flags.push(format!("{other} attention")),
-        }
-        if self.bf16_projections {
-            flags.push("BF16 projections".to_owned());
-        }
+        flags.extend(attention_flag(&self.attention));
+        flags.extend(projection_flag(&self.projection));
         if let Some(fast) = self.decode_exp {
             flags.push(format!("--tune decode-exp={}", if fast { "fast" } else { "exact" }));
+        }
+        if self.kv_q8_layers != 0 {
+            let layers = crate::config::Tuning::kv_layer_list(self.kv_q8_layers as u32);
+            flags.push(format!("--tune kv-layers={layers}"));
         }
         if let Some(chunks) = self.split_chunks {
             flags.push(format!("--tune split-chunks={chunks}"));
@@ -149,6 +165,41 @@ impl Kernels {
             flags.push(format!("image decoder: {decoder}"));
         }
         flags
+    }
+}
+
+/// The attention and projection kinds of a plan's `prefill` (a
+/// `kernels::PrefillPlan`), as [`Kernels::attention`] and
+/// [`Kernels::projection`] name them.
+fn prefill_kinds(prefill: &Value) -> Option<(String, String)> {
+    let attention = match prefill.get("attention")?.as_str()? {
+        "avx2" | "avx512-wide" => "fp32",
+        "avx2-static" | "avx512-wide-static" => "fp32-static",
+        other => other,
+    };
+    let projection = match prefill.get("projection")?.as_str()? {
+        "panel-bf16" => "bf16",
+        "panel-i16-vnni" | "panel-i16-avx2" => "i16",
+        _ => "fp32",
+    };
+    Some((attention.to_owned(), projection.to_owned()))
+}
+
+/// How a resume warning names an attention kind; none for the FP32 tiles.
+fn attention_flag(attention: &str) -> Option<String> {
+    match attention {
+        "fp32" => None,
+        "bf16" => Some("BF16 attention".to_owned()),
+        other => Some(format!("{other} attention")),
+    }
+}
+
+/// How a resume warning names a projection kind; none for FP32.
+fn projection_flag(projection: &str) -> Option<String> {
+    match projection {
+        "bf16" => Some("BF16 projections".to_owned()),
+        "i16" => Some("INT16 projections".to_owned()),
+        _ => None,
     }
 }
 
@@ -176,14 +227,26 @@ pub struct Run {
     pub kernels: Option<Kernels>,
     /// The record is an escalated one (it has an `escalated_from`): its
     /// `kernels` are a near-exact rerun's, which a fast run's 16-bit body
-    /// reaches without BF16 prefill.
+    /// reaches with FP32 prefill projections and the run's
+    /// [`Kernels::escalation_attention`], or its attention where it has none.
     pub escalated: bool,
+    /// Whether the current run requests `--escalate`. Records describe an
+    /// actual rerun with `escalated`, not their run's requested policy.
+    pub escalate: bool,
+    /// For an escalated record, the attention and projection kinds (as
+    /// [`Kernels`] names them) of its fast attempt's prefill
+    /// (`escalated_from.prefill`), which the resumed run's must equal: a
+    /// fast run with other prefill kernels would have reached the page
+    /// otherwise. `None` for a record written before they were recorded,
+    /// which matches any run's.
+    pub attempt_prefill: Option<(String, String)>,
 }
 
 impl Run {
     /// Whether a record that ran as `self` could have come from `run`.
     fn matches(&self, run: &Run) -> bool {
         self.mode == run.mode
+            && (!self.escalated || run.escalate)
             && self.routed == run.routed
             && self
                 .precision
@@ -191,17 +254,31 @@ impl Run {
                 .is_none_or(|precision| Some(precision) == run.precision.as_ref() && self.overlay == run.overlay)
             && self.settings.is_some()
             && self.settings == run.settings
+            && self.attempt_prefill.as_ref().is_none_or(|(attention, projection)| {
+                run.kernels
+                    .as_ref()
+                    .is_some_and(|kernels| (&kernels.attention, &kernels.projection) == (attention, projection))
+            })
             && self.kernels.as_ref().is_none_or(|kernels| {
                 let mut expected = run.kernels.clone();
-                if self.escalated
-                    && let Some(expected) = &mut expected
-                {
-                    // Escalation shares the run's configuration, but its
-                    // 16-bit body cannot use fast mode's BF16 prefill.
-                    if expected.attention == "bf16" {
-                        expected.attention = "fp32".to_owned();
+                if let Some(expected) = &mut expected {
+                    // The escalation attention changes only the pages a run
+                    // escalates, and a record's own value describes reruns
+                    // it did not make, so the field itself is never
+                    // compared.
+                    let rerun =
+                        std::mem::replace(&mut expected.escalation_attention, kernels.escalation_attention.clone());
+                    if self.escalated {
+                        // Escalation shares the run's configuration, but its
+                        // 16-bit body cannot use fast mode's BF16 attention
+                        // (online or static softmax) or INT16 projections:
+                        // it runs the FP32 tiles with a 16-bit body's FP32
+                        // softmax.
+                        if let Some(rerun) = rerun {
+                            expected.attention = rerun;
+                        }
+                        expected.projection = "fp32".to_owned();
                     }
-                    expected.bf16_projections = false;
                 }
                 Some(kernels) == expected.as_ref()
             })
@@ -236,6 +313,17 @@ impl std::fmt::Display for Run {
             }
         }
         details.extend(self.kernels.iter().flat_map(Kernels::flags));
+        if let Some((attention, projection)) = &self.attempt_prefill {
+            let kernels: Vec<String> = attention_flag(attention)
+                .into_iter()
+                .chain(projection_flag(projection))
+                .collect();
+            details.push(if kernels.is_empty() {
+                "fast attempt: FP32 prefill".to_owned()
+            } else {
+                format!("fast attempt: {}", kernels.join(" and "))
+            });
+        }
         if self.escalated {
             write!(f, "escalated from ")?;
         }
@@ -282,41 +370,39 @@ impl Existing {
             return true;
         }
         self.done.insert(path.to_owned());
+        let plan = record.get("plan");
+        let attempt = record.get("escalated_from");
+        // An escalated record belongs to its fast attempt. Missing weights
+        // in an old attempt stay missing, so they match any run's weights.
+        let original = |key: &str| attempt.map_or_else(|| record.get(key), |attempt| attempt.get(key));
+        let mode = original("mode").and_then(Value::as_str);
         let text = |value: Option<&Value>| value.and_then(Value::as_str).map(str::to_owned);
-        if record.get("escalated_from").is_none()
-            && text(record.get("mode")).as_deref() == Some("fast")
-            && text(record.get("finish_reason")).as_deref() == Some("repetition")
+        if attempt.is_none()
+            && mode == Some("fast")
+            && record.get("finish_reason").and_then(Value::as_str) == Some("repetition")
         {
             self.unescalated += 1;
         }
-        let routed = record.get("route").is_some_and(|route| !route.is_null());
         let settings = record
             .get("options")
             .and_then(|options| GenerationOptions::deserialize(options).ok())
             .map(|options| Settings::from(&options));
-        let run = match record.get("escalated_from") {
-            Some(attempt) => Run {
-                mode: text(attempt.get("mode")),
-                // The fast attempt's weights, not the near-exact rerun's: a
-                // resumed fast run with other weights would have reached
-                // this page differently. A record written before they were
-                // recorded leaves them `None`, and matches any weights.
-                precision: text(attempt.get("precision")),
-                overlay: text(attempt.get("overlay_sha256")),
-                routed,
-                settings,
-                kernels: record.get("plan").and_then(Kernels::from_plan),
-                escalated: true,
-            },
-            None => Run {
-                mode: text(record.get("mode")),
-                precision: text(record.get("precision")),
-                overlay: text(record.get("plan").and_then(|plan| plan.get("overlay_sha256"))),
-                routed,
-                settings,
-                kernels: record.get("plan").and_then(Kernels::from_plan),
-                escalated: false,
-            },
+        let overlay = attempt.map_or_else(
+            || plan.and_then(|plan| plan.get("overlay_sha256")),
+            |attempt| attempt.get("overlay_sha256"),
+        );
+        let run = Run {
+            mode: mode.map(str::to_owned),
+            precision: text(original("precision")),
+            overlay: text(overlay),
+            routed: record.get("route").is_some_and(|route| !route.is_null()),
+            settings,
+            kernels: plan.and_then(Kernels::from_plan),
+            escalated: attempt.is_some(),
+            escalate: false,
+            attempt_prefill: attempt
+                .and_then(|attempt| attempt.get("prefill"))
+                .and_then(prefill_kinds),
         };
         *self.runs.entry(run).or_default() += 1;
         true
@@ -475,13 +561,14 @@ pub fn is_file_or_missing(path: &Path) -> bool {
 
 /// This run as [`Run`] compares it with records: `mode`, `precision`, the
 /// overlay digest of its weights, its generation `options` and its
-/// runner's `kernels`.
+/// runner's `kernels`, and whether it requests `--escalate`.
 pub fn this_run(
     mode: Option<Mode>,
     precision: &str,
     overlay: Option<&str>,
     options: &GenerationOptions,
     kernels: Option<Kernels>,
+    escalate: bool,
 ) -> Run {
     Run {
         mode: mode.map(|mode| mode.label().to_owned()),
@@ -492,6 +579,8 @@ pub fn this_run(
         kernels,
         // A run escalates pages; it never is an escalation itself.
         escalated: false,
+        escalate,
+        attempt_prefill: None,
     }
 }
 
@@ -511,7 +600,7 @@ pub fn escalation_warning(existing: &Existing) -> Option<String> {
 /// A warning when successful records in the output ran otherwise than
 /// `this` run (another mode, precision, overlay, routing, size bounds,
 /// output cap, margin crop, repetition stop, exp, prefill rounding, decode
-/// chunking or image decoder):
+/// chunking, image decoder or escalation):
 /// `--resume` skips their pages, it does not reread them.
 pub fn resume_warning(existing: &Existing, this: &Run) -> Option<String> {
     let others: Vec<String> = existing
@@ -526,8 +615,18 @@ pub fn resume_warning(existing: &Existing, this: &Run) -> Option<String> {
         })
         .collect();
     (!others.is_empty()).then(|| {
+        let escalated = existing.runs.keys().any(|run| run.escalated && !run.matches(this));
+        let rerun = if escalated && !this.escalate && this.mode.as_deref() == Some("fast") {
+            " (--escalate is off)".to_owned()
+        } else {
+            escalated
+                .then(|| this.kernels.as_ref()?.escalation_attention.as_ref())
+                .flatten()
+                .map(|attention| format!(" ({attention} attention for escalated pages)"))
+                .unwrap_or_default()
+        };
         format!(
-            "the output holds records that ran otherwise than this run, {this}: {}; \
+            "the output holds records that ran otherwise than this run, {this}{rerun}: {}; \
              --resume skips their pages, it does not reread them",
             others.join(", ")
         )

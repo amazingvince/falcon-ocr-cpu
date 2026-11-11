@@ -1,7 +1,8 @@
 //! The row-block / panel-split scheduler and the tile epilogue shared by the
-//! FP32 and BF16 panel GEMMs. Scheduling never changes arithmetic: every
-//! output is one FMA chain over ascending `k` inside the micro-kernel, so
-//! results are independent of the thread count and the split.
+//! FP32 and INT16 panel GEMMs. Scheduling never changes arithmetic:
+//! every output is one fixed sequence over ascending `k` inside the
+//! micro-kernel, and row packing is per row, so results are independent of
+//! the thread count and the split.
 use rayon::prelude::*;
 
 use super::panel::Epilogue;
@@ -13,10 +14,16 @@ pub(super) const MR: usize = 6;
 /// `A` into its operand layout and computes `MR x NR` tiles against its
 /// weight panels.
 pub(super) trait PanelKernel<const NR: usize>: Sync {
-    /// Element type of a packed row block (`padded x k` elements).
+    /// Element type of a packed row block.
     type Packed: Copy + Default + Send;
+    /// Packed elements per group of `MR` rows (`MR x k` unless the layout
+    /// carries more, such as per-group scales).
+    fn group_len(&self, k: usize) -> usize {
+        MR * k
+    }
     /// Pack `rows` rows of `a` (`rows x k`, row `r` times `row_scale[r]`) as
-    /// `padded` rows (zero rows past `rows`) into `out`.
+    /// `padded` rows (zero rows past `rows`) into `out`, one
+    /// [`group_len`](Self::group_len) span per `MR` rows.
     fn pack_rows(
         &self,
         a: &[f32],
@@ -26,8 +33,8 @@ pub(super) trait PanelKernel<const NR: usize>: Sync {
         row_scale: Option<&[f32]>,
         out: &mut [Self::Packed],
     );
-    /// One `MR x NR` tile of packed row group `a` (`MR x k`) against weight
-    /// panel `panel`.
+    /// One `MR x NR` tile of packed row group `a` (one `group_len` span)
+    /// against weight panel `panel`.
     ///
     /// # Safety
     /// The kernel's instruction set is available (the caller checked its
@@ -98,8 +105,9 @@ pub(super) fn tiled_gemm<const NR: usize, P: PanelKernel<NR>>(
             unsafe { shared.slice(row * out_width + panel * NR, NR) }.copy_from_slice(values);
         }
     };
+    let group_len = kernel.group_len(k);
     (0..row_blocks * splits).into_par_iter().for_each_init(
-        || vec![P::Packed::default(); block_rows.next_multiple_of(MR) * k],
+        || vec![P::Packed::default(); block_rows.div_ceil(MR) * group_len],
         |packed, unit| {
             let (block, split) = (unit / splits, unit % splits);
             let row0 = block * block_rows;
@@ -119,8 +127,8 @@ pub(super) fn tiled_gemm<const NR: usize, P: PanelKernel<NR>>(
             for panel in first..last {
                 for g in 0..padded / MR {
                     // SAFETY: the caller checked the kernel's `available`;
-                    // the packed group holds `MR x k` values.
-                    unsafe { kernel.tile(k, &packed[g * MR * k..(g + 1) * MR * k], panel, &mut tile) };
+                    // the packed group is one `group_len` span.
+                    unsafe { kernel.tile(k, &packed[g * group_len..(g + 1) * group_len], panel, &mut tile) };
                     let valid = MR.min(rows - g * MR);
                     for (r, values) in tile[..valid].iter().enumerate() {
                         store(row0 + g * MR + r, panel, values);

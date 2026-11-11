@@ -1,6 +1,10 @@
 //! Model identity, supported dimensions and inference configuration validation.
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
+
+mod tuning;
+
+pub use tuning::{DraftKv, PrefillBf16, PrefillProjections, PrefillSoftmax, Tuning};
 
 /// Pinned revision of the upstream Falcon-OCR checkpoint.
 pub const MODEL_REVISION: &str = "fe757d59ecd79d4d68760162306a70a015761ad9";
@@ -14,14 +18,16 @@ pub const CONFIG_SHA256: &str = "ba4aec622ec2954e22c76d7ced80817c34d91e26970884e
 #[serde(rename_all = "snake_case")]
 pub enum Backend {
     /// The fastest kernels this CPU runs: AVX2/FMA decode, 16-lane AVX-512F
-    /// prefill tiles and BF16 prefill attention (8-bit bodies) where present,
-    /// NEON on aarch64. Records written with the retired `avx512` backend
-    /// read as `auto`, which is what it computed.
+    /// prefill tiles, and for 8-bit bodies BF16 prefill attention and
+    /// AVX512-VNNI INT16 projections where present, NEON on aarch64. Records
+    /// written with the retired `avx512` backend read as `auto`, which is
+    /// what it computed.
     #[default]
     #[serde(alias = "avx512")]
     Auto,
     Scalar,
-    /// 8-lane FP32 kernels everywhere, whatever else the CPU has.
+    /// 8-lane FP32 attention and verification kernels, with AVX2 panels.
+    /// The `gemm` crate dispatches independently for FP32 projection matrices.
     Avx2,
     /// aarch64 Advanced SIMD; `auto` selects it on aarch64.
     Neon,
@@ -55,168 +61,21 @@ pub enum HeadMode {
     /// few rows that can still win. Selects the same token as `Full`.
     Screened,
 }
-/// Vector exp in the prefill attention tiles on x86.
+/// Vector exp in the online prefill attention tiles on x86.
 ///
-/// `Exact` reproduces the platform `expf` bit for bit (`kernels::exp`), so
-/// hidden states match the recorded references on this host. `Fast` is the
-/// portable polynomial that NEON and the portable path use: at most a few ulp
-/// from `Exact` in rare lanes, about 1 s faster per full page, and
-/// token-identical to `Exact` on all 67 calibration pages (93,249 tokens).
-/// NEON always uses the fast exp.
+/// `Exact` reproduces the platform `expf` bit for bit (`kernels::exp`).
+/// `Fast` is the portable polynomial that NEON and the portable path use:
+/// at most a few ulp from `Exact` in rare lanes, about 1 s faster per full
+/// page, and token-identical to `Exact` on all 67 calibration pages
+/// (93,249 tokens).
+/// NEON always uses the fast exp. Static softmax keeps its fixed polynomial
+/// with either setting.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum ExpMode {
     #[default]
     Exact,
     Fast,
-}
-
-/// Which prefill stages of an 8-bit model use BF16 products on an
-/// AVX512-BF16 CPU. Attention alone is fidelity-neutral against the FP32
-/// anchor; the projections add about 17% KL, so they are opt-in.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum)]
-#[serde(rename_all = "snake_case")]
-pub enum PrefillBf16 {
-    Off,
-    #[default]
-    Attention,
-    All,
-}
-
-/// Storage of the draft head's keys and values (`Tuning::draft_kv`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DraftKv {
-    F32,
-    /// Int8 with one scale per 64 values: a quarter of the bytes per draft
-    /// step, acceptance within 0.5 point of FP32, and faster page totals
-    /// (calibration and held-out A/Bs, research/draft-head).
-    #[default]
-    Q8,
-}
-
-/// Experiment and diagnostic knobs. The defaults are the accepted
-/// configuration; every field is scheduling or instrumentation only, except
-/// `prefill_bf16`, which changes fast-mode prefill rounding.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Tuning {
-    /// BF16 prefill stages of 8-bit models on AVX512-BF16 CPUs.
-    pub prefill_bf16: PrefillBf16,
-    /// Position chunks per KV group in split-cache decode attention (1..=4).
-    /// `None` keeps the mode default: one exact scan for FP32 caches, four
-    /// chunks (merged partial softmaxes, rounding-level) for quantized ones.
-    pub split_chunks: Option<usize>,
-    /// Print a wall-clock phase split of every forward pass to stderr.
-    pub phases: bool,
-    /// Accumulate cycle counters of the prefill attention stages (stderr).
-    pub prefill_profile: bool,
-    /// After consecutive draft-head attempts that drafted nothing, skip up
-    /// to this many tokens before trying again (1, 2, 4, ... tokens); 0 tries
-    /// at every token.
-    pub draft_backoff: usize,
-    /// The draft head attends to at most this many newest verified
-    /// positions (0: all).
-    pub draft_window: usize,
-    /// Storage of the draft head's keys and values.
-    pub draft_kv: DraftKv,
-    /// The draft head stops when the product of its chain's probabilities
-    /// (rather than one token's) falls below `RunnerConfig::draft_confidence`.
-    pub draft_path_gate: bool,
-    /// Decode attention over sealed (split) caches uses the portable
-    /// polynomial exp on x86, as the NEON kernels do, instead of the
-    /// platform-exact exp: faster softmax, different rounding. `None` keeps
-    /// the default: polynomial for 8-bit caches (and the rotated research
-    /// caches) under `ExpMode::Fast` (fast mode), exact otherwise.
-    pub decode_fast_exp: Option<bool>,
-}
-impl Tuning {
-    /// Set one knob from a `key=value` pair (`prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=true|false`, `prefill-profile=true|false`,
-    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path`,
-    /// `decode-exp=exact|fast`).
-    pub fn set(&mut self, pair: &str) -> Result<()> {
-        let (key, value) = pair
-            .split_once('=')
-            .with_context(|| format!("tuning knob `{pair}` is not key=value"))?;
-        let flag = |value: &str| -> Result<bool> {
-            match value {
-                "1" | "true" | "on" => Ok(true),
-                "0" | "false" | "off" => Ok(false),
-                _ => bail!("tuning knob {key}: expected true or false, got `{value}`"),
-            }
-        };
-        match key {
-            "prefill-bf16" => {
-                self.prefill_bf16 = match value {
-                    "off" | "0" => PrefillBf16::Off,
-                    "attention" | "attn" => PrefillBf16::Attention,
-                    "all" | "1" => PrefillBf16::All,
-                    _ => bail!("tuning knob prefill-bf16: expected off, attention or all, got `{value}`"),
-                }
-            }
-            "split-chunks" => {
-                let chunks: usize = value
-                    .parse()
-                    .with_context(|| format!("tuning knob split-chunks: `{value}`"))?;
-                ensure!(
-                    (1..=4).contains(&chunks),
-                    "tuning knob split-chunks: expected 1..=4, got {chunks}"
-                );
-                self.split_chunks = Some(chunks);
-            }
-            "phases" => self.phases = flag(value)?,
-            "prefill-profile" => self.prefill_profile = flag(value)?,
-            "draft-backoff" => {
-                self.draft_backoff = value
-                    .parse()
-                    .with_context(|| format!("tuning knob draft-backoff: `{value}`"))?;
-            }
-            "draft-window" => {
-                self.draft_window = value
-                    .parse()
-                    .with_context(|| format!("tuning knob draft-window: `{value}`"))?;
-            }
-            "draft-kv" => {
-                self.draft_kv = match value {
-                    "f32" => DraftKv::F32,
-                    "q8" | "int8" => DraftKv::Q8,
-                    _ => bail!("tuning knob draft-kv: expected f32 or q8, got `{value}`"),
-                }
-            }
-            "draft-gate" => {
-                self.draft_path_gate = match value {
-                    "token" => false,
-                    "path" => true,
-                    _ => bail!("tuning knob draft-gate: expected token or path, got `{value}`"),
-                }
-            }
-            "decode-exp" => {
-                self.decode_fast_exp = match value {
-                    "exact" => Some(false),
-                    "fast" => Some(true),
-                    _ => bail!("tuning knob decode-exp: expected exact or fast, got `{value}`"),
-                }
-            }
-            _ => bail!(
-                "unknown tuning knob `{key}` (prefill-bf16, split-chunks, phases, prefill-profile, draft-backoff, \
-                 draft-window, draft-kv, draft-gate, decode-exp)"
-            ),
-        }
-        Ok(())
-    }
-    /// The default knobs with every `key=value` pair of `pairs` applied.
-    pub fn from_pairs<I, S>(pairs: I) -> Result<Self>
-    where
-        I: IntoIterator<Item = S>,
-        S: AsRef<str>,
-    {
-        let mut tuning = Self::default();
-        for pair in pairs {
-            tuning.set(pair.as_ref())?;
-        }
-        Ok(tuning)
-    }
 }
 
 impl Backend {
@@ -562,8 +421,9 @@ pub struct RunnerConfig {
     /// least this.
     pub draft_confidence: f32,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at least
-    /// `max(256, 4 * cycle)` tokens (`FinishReason::Repetition`). Never
-    /// applied to teacher-forced runs.
+    /// `max(256, 4 * cycle)` tokens, or counts in one (only numbers change,
+    /// each by a fixed step) 128 times over at least 256 tokens
+    /// (`FinishReason::Repetition`). Never applied to teacher-forced runs.
     pub repetition_stop: bool,
     /// The decode spin team.
     pub decode_threads: DecodeThreads,
@@ -716,40 +576,6 @@ mod tests {
         assert_eq!(fit.budget(16383, 16384).unwrap(), 1);
         assert!(fit.budget(16384, 16384).is_err());
         assert!(fit.budget(usize::MAX, 16384).is_err());
-    }
-    #[test]
-    fn tuning_knobs_parse_and_reject_unknown_keys() {
-        let tuning = Tuning::from_pairs([
-            "prefill-bf16=all",
-            "split-chunks=3",
-            "phases=1",
-            "draft-window=256",
-            "draft-kv=f32",
-            "draft-gate=path",
-            "decode-exp=fast",
-        ])
-        .unwrap();
-        assert_eq!(tuning.decode_fast_exp, Some(true));
-        assert_eq!((tuning.draft_window, tuning.draft_kv), (256, DraftKv::F32));
-        assert!(tuning.draft_path_gate);
-        assert_eq!(tuning.prefill_bf16, PrefillBf16::All);
-        assert_eq!(tuning.split_chunks, Some(3));
-        assert!(tuning.phases && !tuning.prefill_profile);
-        assert_eq!(Tuning::from_pairs(Vec::<&str>::new()).unwrap(), Tuning::default());
-        for bad in [
-            "split-chunks=5",
-            "split-chunks=x",
-            "phases=maybe",
-            "draft-kv=f16",
-            "draft-window=-1",
-            "unknown=1",
-            "phases",
-        ] {
-            assert!(Tuning::from_pairs([bad]).is_err(), "{bad}");
-        }
-        let config: RunnerConfig = serde_json::from_str(r#"{"threads":2,"batch_size":1}"#).unwrap();
-        assert_eq!(config.exp, ExpMode::Fast);
-        assert_eq!(config.tuning, Tuning::default());
     }
     #[test]
     fn default_is_automatic_and_reference_is_bit_exact() {

@@ -2,6 +2,23 @@
 
 Building and qualifying the evaluation corpus, the 200-page quality gate and its Python tests.
 
+## Archived prefill gate inputs
+
+The fast-defaults and near-exact-softmax page manifests and image locks are
+stored in [prefill-gate-data-v1.zip](../../reference/prefill-gate-data-v1.zip).
+Extract them from the repository root before selecting gate pages, auditing
+spent pages, restoring their images, or scoring saved runs against those locks.
+
+```sh
+python -m zipfile -e reference/prefill-gate-data-v1.zip reference
+(cd reference && sha256sum -c prefill-gate-data-v1.sha256)
+```
+
+The extracted JSON files are ignored by Git and can be removed after use.
+The smaller evaluation budgets and results are readable in `reference/`.
+[Source provenance](../../reference/prefill-gate-provenance-v3.md) maps
+the receipts' original commit identities to the integrated history.
+
 | File | What it did or produced | Status |
 |---|---|---|
 | [docs/CORPUS_SUBSET_COMPARISON.md](docs/CORPUS_SUBSET_COMPARISON.md) | Explicit corpus subset comparisons | history |
@@ -41,8 +58,11 @@ Building and qualifying the evaluation corpus, the 200-page quality gate and its
 | [scripts/select_corpus.py](scripts/select_corpus.py) | Build a frozen research evaluation split from pinned OmniDocBench annotations | superseded by scripts/select_corpus_v3.py |
 | [scripts/select_corpus_v3.py](scripts/select_corpus_v3.py) | Freeze a visually reviewed v3 while preserving every v1/v2 artifact | history |
 | [scripts/select_english_gate.py](scripts/select_english_gate.py) | Select the fresh English fast-mode gate set (118 OmniDocBench pages outside v1/v2/v3 and every v3 family; `reference/english-gate-v1-*`) | active |
+| [scripts/select_fast_defaults_gate.py](scripts/select_fast_defaults_gate.py) | Select the fast-defaults gate set (156 English OmniDocBench pages of the router development pool, one per document family, none from a family with a corpus v1/v2/v3 or English gate page; `reference/fast-defaults-gate-v1-*`) | active |
+| [scripts/select_near_exact_softmax_gate.py](scripts/select_near_exact_softmax_gate.py) | Select the near-exact softmax gate set (207 OmniDocBench pages, in any language, that no earlier corpus, gate, review or receipt names, one per document family and at most 40 per category; `reference/near-exact-softmax-gate-v1-*`) | active |
 | [scripts/mask_excluded.py](scripts/mask_excluded.py) | Figure-masked pages: paint white every figure and OmniDocBench `*_mask` region without ground-truth text (never a block with ground-truth text), so no system is scored on content the reference leaves out; writes the masked copies and a lock (`reference/english-gate-v1-masked-lock.json`) | active |
 | [scripts/merge_reports.py](scripts/merge_reports.py) | Merge a run of some pages (for example the masked ones) into a full `bench` report, page by page, for `check_heldout.py` | active |
+| [scripts/bench_report_from_run.py](scripts/bench_report_from_run.py) | Turn `falcon-ocr run` JSON lines into the `bench` report shape that `check_heldout.py` reads, after checking that the run holds exactly the pages of a lock (with their PNG hashes) or a page list, in order | active |
 | [scripts/restore_corpus.py](scripts/restore_corpus.py) | Rebuild the pages of frozen OmniDocBench locks from a local copy of the dataset, checking every recorded hash (source, RGB, PNG, annotation, ground truth); never rewrites a lock. Run under the lock's `pillow_version` for byte-identical PNGs (12.3.0 for v2/v3, 10.4.0 for the English gate and router set) | active |
 | [scripts/setup_evaluation.sh](scripts/setup_evaluation.sh) | Keep evaluator Python and packages isolated from the GPU reference runtime | history |
 | [scripts/snapshot_cpu_corpus.py](scripts/snapshot_cpu_corpus.py) | Copy an exact completed manifest prefix without changing saved inference bytes | history |

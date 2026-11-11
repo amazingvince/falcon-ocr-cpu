@@ -39,7 +39,48 @@ struct Fixture {
     max_dimension: u32,
     min_dimension: u32,
     max_new_tokens: usize,
+    /// The prefill kernels of the recording host (`Resolved::prefill`).
+    prefill: serde_json::Value,
     token_ids: Vec<u32>,
+}
+
+/// The attention and projection kinds of a plan's `prefill` as `--resume`
+/// compares them (`book::Kernels`): kernels of one kind agree bitwise.
+fn prefill_kinds(runner: &Runner, prefill: &serde_json::Value) -> (String, String) {
+    let mut plan = serde_json::to_value(runner.resolved()).unwrap();
+    plan["prefill"] = prefill.clone();
+    let kernels = falcon_ocr::book::Kernels::from_plan(&plan).unwrap();
+    (kernels.attention, kernels.projection)
+}
+
+/// A kernel mismatch fails the token gate unless skipping it was explicitly
+/// requested. Pass the policy in so its default can be tested without weights
+/// or process-global environment changes.
+fn compare_fixture_kernels(
+    name: &str,
+    planned: &(String, String),
+    recorded: &(String, String),
+    allow_skip: bool,
+) -> bool {
+    if planned == recorded {
+        return true;
+    }
+    assert!(
+        allow_skip,
+        "{name}: fixture kernel mismatch: planned {planned:?}, recorded {recorded:?}; \
+         FALCON_OCR_ALLOW_FIXTURE_KERNEL_SKIP=1 explicitly skips this token comparison"
+    );
+    false
+}
+
+#[test]
+fn fixture_kernel_mismatches_require_an_explicit_skip() {
+    let fp32 = ("fp32".to_owned(), "fp32".to_owned());
+    let bf16 = ("bf16".to_owned(), "fp32".to_owned());
+    assert!(compare_fixture_kernels("same", &fp32, &fp32, false));
+    assert!(compare_fixture_kernels("same", &fp32, &fp32, true));
+    assert!(std::panic::catch_unwind(|| compare_fixture_kernels("different", &fp32, &bf16, false)).is_err());
+    assert!(!compare_fixture_kernels("different", &fp32, &bf16, true));
 }
 
 fn fixture(name: &str) -> Fixture {
@@ -154,6 +195,7 @@ fn exact_mode_under_the_automatic_config_matches_the_gpu_smoke_tokens() {
 #[test]
 #[ignore = "needs artifacts/model with the GPTQ overlay"]
 fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
+    let allow_skip = std::env::var("FALCON_OCR_ALLOW_FIXTURE_KERNEL_SKIP").as_deref() == Ok("1");
     for name in ["near-exact-journal-300", "fast-journal-300"] {
         let fixture = fixture(name);
         let model = checkpoint_model(fixture.mode);
@@ -161,6 +203,16 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
         assert_eq!(model.overlay_sha256(), fixture.overlay_sha256.as_deref(), "{name}");
         let runner = runner(model, MODEL_DIR, RunnerConfig::default());
         assert_eq!(runner.resolved().mode, Some(fixture.mode));
+        let planned = serde_json::to_value(runner.resolved().prefill).unwrap();
+        let planned_kinds = prefill_kinds(&runner, &planned);
+        let recorded_kinds = prefill_kinds(&runner, &fixture.prefill);
+        if !compare_fixture_kernels(name, &planned_kinds, &recorded_kinds, allow_skip) {
+            eprintln!(
+                "{name}: skipping token comparison for {planned}; recorded with {}",
+                fixture.prefill
+            );
+            continue;
+        }
         let result = runner
             .recognize_file(
                 &fixture.page,
@@ -179,8 +231,9 @@ fn near_exact_and_fast_reproduce_the_recorded_journal_tokens() {
     }
 }
 
-/// HILLCLIMB T12: a kernel-ready file holds exactly what the checkpoint
-/// loader computes, and the published files are those bytes.
+/// HILLCLIMB T12: a kernel-ready file holds what the checkpoint loader
+/// computes. The gate compares selected metadata fields and generated tokens
+/// with the published files, not metadata key order or whole-file bytes.
 #[test]
 #[ignore = "needs artifacts/model, the GPTQ overlay, artifacts/packed and temporary disk for all modes"]
 fn packed_files_round_trip_the_checkpoint_loader_and_match_the_published_ones() {
