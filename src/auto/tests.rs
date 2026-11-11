@@ -713,25 +713,18 @@ fn host_info_is_consistent() {
 fn escalation_prefill_matches_a_near_exact_runner_across_tuning_choices() {
     use crate::config::{Backend, PrefillBf16, PrefillProjections, PrefillSoftmax};
 
-    let facts = ModelFacts {
-        source: WeightsSource::Checkpoint {
-            dir: "model".into(),
-            overlay: None,
-            rtn: true,
-        },
-        profile: Profile::W8_BODY_KV_Q8,
-        config: serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap(),
-        body_bits: Some(8),
-        overlay_sha256: None,
-        exception_bytes: 0,
-        i16_misfit: false,
-    };
-    let near = ModelFacts {
-        profile: Profile::W16_BODY_KV_Q16,
-        body_bits: Some(16),
-        i16_misfit: true,
-        ..facts.clone()
-    };
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path();
+    let [facts, near] = [(Mode::Fast, "w8-body-kv-q8"), (Mode::NearExact, "w16-body-kv-q16")].map(|(mode, profile)| {
+        fabricate_packed(&root.join(mode.packed_file_name().unwrap()), profile);
+        let plan = resolve_weights(&ModelRequest {
+            model_dir: root,
+            mode: Some(mode),
+            ..ModelRequest::default()
+        })
+        .unwrap();
+        ModelFacts::from_plan(&plan).unwrap()
+    });
     let host = HostInfo::detect();
     for backend in [Backend::Auto, Backend::Avx2, Backend::Scalar, Backend::Neon] {
         if backend.simd().validate().is_err() {
@@ -757,7 +750,7 @@ fn escalation_prefill_matches_a_near_exact_runner_across_tuning_choices() {
                             .tuning
                             .check_kv_layers(facts.profile.kv, facts.config.n_layers)
                             .unwrap();
-                        let rerun = Resolved::new(host, &config, &near, Path::new("model"));
+                        let rerun = Resolved::new(host, &config, &near, root);
                         assert_eq!(rerun.escalation_prefill, None);
                         for body_bits in [Some(8), None] {
                             let fast = Resolved::new(
@@ -767,7 +760,7 @@ fn escalation_prefill_matches_a_near_exact_runner_across_tuning_choices() {
                                     body_bits,
                                     ..facts.clone()
                                 },
-                                Path::new("model"),
+                                root,
                             );
                             assert_eq!(
                                 fast.escalation_prefill,
