@@ -377,13 +377,27 @@ fn quantizer_rounds_to_nearest_even_within_the_step() {
     assert_eq!(q[..4], [32767, 2, 4, -2]);
     // Tiny groups retain codes and a nonzero step when the reciprocal
     // overflows. Kernel scale products can still underflow independently.
-    for absmax in [1e-35, 1e-38, f32::from_bits(8192), f32::from_bits(1)] {
+    for absmax in [
+        1e-35,
+        1e-38,
+        f32::from_bits(8192),
+        f32::from_bits(32767),
+        f32::from_bits(32768),
+        f32::from_bits(1),
+    ] {
         let x: Vec<f32> = (0..GROUP)
             .map(|i| absmax * (2.0 * i as f32 / (GROUP - 1) as f32 - 1.0))
             .collect();
         assert!(!(QMAX / absmax).is_finite());
         let step = quantize_group(&x, &mut q);
         assert!(step > 0.0 && step.is_finite());
+        // The smallest covering step, including the minimum subnormal's
+        // full-scale boundary; f64 keeps these products exact.
+        assert!(step as f64 * 32767.0 >= absmax as f64, "{absmax:e}, step {step:e}");
+        assert!(
+            step.next_down() as f64 * 32767.0 < absmax as f64,
+            "{absmax:e}, step {step:e} is too large"
+        );
         assert!(q.iter().any(|&c| c != 0));
         for (&c, &v) in q.iter().zip(&x) {
             assert_eq!(
