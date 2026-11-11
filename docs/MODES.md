@@ -375,7 +375,7 @@ kernels ("new") in fresh processes on a Ryzen 7 7700X with the published
 packed files and otherwise default settings, and near-exact, the FP32
 stand-in ([Fast against near-exact](#fast-against-near-exact)), on the
 deep-fried pages. The locally supplied test images and their deep-fried
-copies are no longer bundled because their redistribution provenance was not
+copies are not bundled because their redistribution provenance was not
 recorded ([stress-page provenance](../tests/fixtures/stress/README.md));
 per-page results and image hashes remain in
 [reference/fast-defaults-free-running-v1.json](../reference/fast-defaults-free-running-v1.json).
@@ -527,7 +527,7 @@ the `auto` backend on CPUs with AVX512-BF16. Only the attention changed;
 the projections stayed `panel-avx2`, and the Q16 cache was still sealed
 from the FP32 compact cache. It failed [near-exact's held-out
 gate](#near-exacts-held-out-gate) and was removed on 2026-11-03; both
-binaries now reject `prefill-bf16-w16` as an unknown `--tune` key.
+binaries reject `prefill-bf16-w16` as an unknown `--tune` key.
 
 Teacher-forced on the 7700X anchor, as for the
 [static softmax](#static-softmax-in-the-fp32-tiles) but with `--backend

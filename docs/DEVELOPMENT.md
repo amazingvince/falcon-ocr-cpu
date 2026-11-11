@@ -230,7 +230,7 @@ manifests and
 locks](../research/corpus-qualification/README.md#archived-prefill-gate-inputs)
 before using their research scripts. The recorded budgets and results are
 readable in `reference/`; the [provenance
-note](../reference/prefill-gate-provenance-v2.md) maps their original source
+note](../reference/prefill-gate-provenance-v3.md) maps their original source
 commits to the integrated history.
 
 `falcon-ocr-eval agree` takes an FP32 reference from a
@@ -395,7 +395,7 @@ Other measurement entry points:
 | `python research/phase4-hillclimb/attempt3/ab.py --help` | Interleaved fresh-process A/B of two binaries on the same pages |
 | `python research/draft-head/cpu_ab.py --help` | Interleaved drafter settings, page totals and token identity against no speculation; an arm's first flag `@<exe>` selects its binary |
 | `cargo test --release --locked --lib panels::panel::tests::prefill_throughput_probe -- --ignored --nocapture` | Panel GEMM versus the `gemm` crate at prefill shapes; the recorded 7950X result was 1.7-1.8 TFLOP/s |
-| `PROBE_OUTPUTS=a.jsonl:b.jsonl cargo test --release --locked --lib repetition::probe::recorded_outputs_probe -- --ignored --nocapture` | Replays the `token_ids` of every JSON line in the listed files (a path list; `run` output works as it is) through the repetition stop, without a model: where the exact and the counting rule would end each output, its most counting cycles, the text around each counting cut (tokenizer from `FALCON_OCR_MODEL`, default `artifacts/model`), and the time both rules take per token |
+| `PROBE_OUTPUTS=a.jsonl:b.jsonl cargo test --release --locked --lib repetition::probe::recorded_outputs_probe -- --ignored --nocapture` | Replays the `token_ids` of every JSON line in the listed files (a path list; `run` output works as it is) through the repetition stop without loading model weights: where the exact and the counting rule would end each output, its most counting cycles, the text around each counting cut, and the time both rules take per token |
 | `cargo run --release --locked --example ocr_bench -- --help` | Warm canonical-RGB recognition, with input and model hashes in its reports; provide images, CPU/environment labels and an output path |
 
 For margin cropping, run a few dozen of your own book pages in the same
@@ -442,8 +442,8 @@ layers at Q8 in a Q16 cache; see
 `phases=1` (phase split of forwards on stderr, with a `seal` phase, and on
 Linux memory samples), `prefill-profile=1` (prefill attention stage
 cycles), and the draft head's `draft-backoff=N`, `draft-window=N`,
-`draft-kv=f32|q8` and `draft-gate=token|path`; any other key, such as the
-removed `prefill-bf16-w16`, is an error. Only the four `prefill-bf16`,
+`draft-kv=f32|q8` and `draft-gate=token|path`; any other key, such as
+`prefill-bf16-w16`, is an error. Only the four `prefill-bf16`,
 `prefill-projections` and `prefill-softmax*` knobs, `split-chunks`,
 `decode-exp` and `kv-layers` change rounding, `split-chunks` and
 `decode-exp` that of split-cache decode attention and `kv-layers` the
@@ -465,6 +465,7 @@ name.
 
 | Variable | Used by | Meaning |
 |---|---|---|
+| `FALCON_OCR_MODEL` | Tokenizer test and repetition output probe | Model directory for the tokenizer; default `artifacts/model` |
 | `FOCR_WORKSPACE_TRACE` | `mixed_batch_workspace_trace` | Required output trace path |
 | `FOCR_WORKSPACE_CACHE_LAYOUT` | `mixed_batch_workspace_trace` | `expanded` (default) or `compact` |
 | `FOCR_WORKSPACE_BASELINE` | `mixed_batch_workspace_trace` | Optional completed trace to compare by tensor name, dtype, shape and bytes |

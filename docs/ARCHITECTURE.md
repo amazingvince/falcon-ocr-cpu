@@ -213,10 +213,10 @@ attention, `prefill-softmax-fp32` therefore tells apart only escalated
 records. The fast attempt's prefill must match the run's own attention and
 projections, by the kinds above, since they decide which pages escalate.
 An escalated record written before the weights or the attempt's prefill
-kernels were recorded matches any weights or any prefill kernels. With
-`--escalate`, a warning counts fast-mode records that the repetition stop
-ended without a near-exact rerun, since their pages are skipped. A run
-without `--escalate` warns when the output contains escalated records:
+kernels were recorded matches any weights or any prefill kernels. On resume
+with `--escalate`, a warning counts fast-mode records that the repetition stop
+ended without a near-exact rerun, since their pages are skipped. A resumed
+run without `--escalate` warns when the output contains escalated records:
 completed pages stay skipped, while later looping pages keep their fast
 result unless escalation is enabled.
 

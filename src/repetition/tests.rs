@@ -233,7 +233,7 @@ fn answer_sheet(items: u64) -> Vec<u32> {
 fn templated_rows_with_fixed_steps_are_not_loops() {
     // A Celsius to Fahrenheit table, 0 to 500 °C in steps of 5 (101 rows,
     // one tag per line, as the model writes tables): both cells count, by 5
-    // and by 9. At 64 cycles the stop cut it despite its legitimate rows.
+    // and by 9. The stop leaves the legitimate rows intact.
     let conversion: Vec<u32> = (0..=100)
         .flat_map(|k: u64| {
             let mut row = vec![TR[0], NEWLINE, TD[0]];
@@ -246,9 +246,9 @@ fn templated_rows_with_fixed_steps_are_not_loops() {
         .collect();
     assert!(conversion.len() >= MIN_WINDOW);
     assert_eq!(fires_after(&conversion), None);
-    // A 100-item answer sheet was cut by the old 64-cycle floor.
+    // A 100-item answer sheet also keeps all its rows.
     assert_eq!(fires_after(&answer_sheet(100)), None);
-    // A 104-week planner, `Week n ____`, also exceeds that floor.
+    // A 104-week planner, `Week n ____`, keeps all its rows too.
     let (week, blank) = (4010, 4011);
     let planner: Vec<u32> = (1..=104)
         .flat_map(|n| {
