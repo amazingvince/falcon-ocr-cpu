@@ -226,6 +226,9 @@ unsafe fn exception_tile_fma<const NR: usize>(a: &[i32], values: &[f32], tile: &
 /// nonzero group, NaN for a group with a non-finite input (the NaN reaches
 /// every output of the row, as in the FP32 panels).
 /// Tiny nonzero groups round the step up to avoid clipping their maximum.
+/// This preserves the quantized group, not every resulting product: the
+/// kernel multiplies the activation and weight scales in FP32 first, which
+/// can lose subnormal precision or underflow before applying the integer sum.
 #[inline(always)]
 fn quantize_group(x: &[f32], q: &mut [i16; GROUP]) -> f32 {
     // Non-negative floats order like their bit patterns, and NaN and
@@ -242,9 +245,8 @@ fn quantize_group(x: &[f32], q: &mut [i16; GROUP]) -> f32 {
             *q = [0; GROUP];
             return 0.0;
         }
-        // Tiny groups can still contribute representable products. Use
-        // a wider division only when the FP32 reciprocal overflows, and
-        // keep the step representable even for subnormal inputs.
+        // Keep the group representable when the FP32 reciprocal overflows.
+        // Its later product with a weight scale can still underflow.
         let mut step = (absmax / QMAX).max(f32::from_bits(1));
         // Round a subnormal step up if its rounding would clip the max.
         if step as f64 * (QMAX as f64) < absmax as f64 {

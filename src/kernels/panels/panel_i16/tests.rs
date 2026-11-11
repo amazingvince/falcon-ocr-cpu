@@ -300,9 +300,9 @@ fn error_against_exact_and_fp32_panels_is_within_the_quantization_bound() {
     }
 }
 
-/// A non-finite input turns its row's outputs into NaN, an all-zero row
-/// gives exact zeros, and an all-tiny row retains its products, on every
-/// kernel.
+/// Non-finite rows give NaN and zero rows give zeros on every kernel.
+/// Tiny groups agree bitwise with the scalar oracle even when their scale
+/// products lose subnormal precision or underflow.
 #[test]
 fn non_finite_rows_are_nan_and_zero_rows_are_zero() {
     let (m, k, n) = (8, 128, 32);
@@ -310,10 +310,14 @@ fn non_finite_rows_are_nan_and_zero_rows_are_zero() {
     a[5] = f32::NAN;
     a[k + 70] = f32::INFINITY;
     a[3 * k..4 * k].fill(0.0);
-    a[4 * k..5 * k].fill(1e-35);
+    for (row, magnitude) in [1e-35, 1e-37, 1e-38, f32::from_bits(1)].into_iter().enumerate() {
+        a[(row + 4) * k..(row + 5) * k].fill(magnitude);
+    }
     let (codes, scales) = weights(n, k);
     let mut panels = Panels::default();
     pack::<NR>(n, k, &codes, &scales, &mut panels);
+    let mut oracle = vec![0.0_f32; m * n];
+    gemm::<NR>(Isa::Scalar, &a, m, k, &panels, n, None, Epilogue::Store(&mut oracle));
     for isa in isas() {
         let mut out = vec![0.0_f32; m * n];
         gemm::<NR>(isa, &a, m, k, &panels, n, None, Epilogue::Store(&mut out));
@@ -321,14 +325,32 @@ fn non_finite_rows_are_nan_and_zero_rows_are_zero() {
             match r {
                 0 | 1 => assert!(row.iter().all(|v| v.is_nan()), "{isa:?} row {r}"),
                 3 => assert!(row.iter().all(|v| v.to_bits() == 0), "{isa:?} row {r}"),
-                4 => assert!(
-                    row.iter().all(|v| v.is_finite()) && row.iter().any(|&v| v != 0.0),
-                    "{isa:?} tiny row"
-                ),
+                4..=7 => {
+                    assert!(row.iter().all(|v| v.is_finite()), "{isa:?} tiny row {r}");
+                    if r == 4 {
+                        assert!(row.iter().any(|&v| v != 0.0), "{isa:?} tiny row retains this magnitude");
+                    } else if r == 7 {
+                        assert!(row.iter().all(|&v| v == 0.0), "{isa:?} scale product underflows");
+                    }
+                    assert_eq!(
+                        row.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                        oracle[r * n..(r + 1) * n]
+                            .iter()
+                            .map(|v| v.to_bits())
+                            .collect::<Vec<_>>(),
+                        "{isa:?} tiny row {r}"
+                    );
+                }
                 _ => assert!(row.iter().all(|v| v.is_finite()), "{isa:?} row {r}"),
             }
         }
     }
+    // Folded RMS row scales, both panel widths, every epilogue and pool size
+    // must preserve the scalar arithmetic, including underflow.
+    let tiny = &a[4 * k..];
+    let row_scale = [1.0, 2.0, 1024.0, 1e6];
+    agree::<16>(tiny, 4, k, &codes, &scales, n, &row_scale);
+    agree::<32>(tiny, 4, k, &codes, &scales, n, &row_scale);
 }
 
 /// The quantizer's codes and step against an f64 rounding of `x / step`.
@@ -353,8 +375,8 @@ fn quantizer_rounds_to_nearest_even_within_the_step() {
     (x[1], x[2], x[3]) = (2.5, 3.5, -2.5);
     assert_eq!(quantize_group(&x, &mut q), 1.0);
     assert_eq!(q[..4], [32767, 2, 4, -2]);
-    // The reciprocal overflows for tiny groups, but their values and
-    // products need not underflow. Include a step below FP32's range.
+    // Tiny groups retain codes and a nonzero step when the reciprocal
+    // overflows. Kernel scale products can still underflow independently.
     for absmax in [1e-35, 1e-38, f32::from_bits(8192), f32::from_bits(1)] {
         let x: Vec<f32> = (0..GROUP)
             .map(|i| absmax * (2.0 * i as f32 / (GROUP - 1) as f32 - 1.0))
