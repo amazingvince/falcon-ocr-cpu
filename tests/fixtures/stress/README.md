@@ -1,53 +1,51 @@
-# Stress pages
+# Stress-page provenance
 
-Inputs for free-running before/after comparisons of numeric changes,
-including out-of-distribution input: screenshots, a scanned page, a photo
-and deep-fried copies of them. No test reads them, and they hold no
-expected output: a comparison runs both arms on them and reads the pages
-whose tokens differ against the images.
+The historical free-running comparison used four locally supplied images:
+a wiki screenshot (`liber_primus_wiki_screen.png`), a scanned book page
+(`scanned-book-page_ballooning.png`), a desktop mail screenshot
+(`smoke_screenshot.png`) and a grocery advertisement
+(`kroger-bench-09_fried.jpg`), plus deep-fried versions. Their original
+sources and redistribution licences were not recorded. They are no longer
+bundled in this repository, and no automated test depends on them.
+
+The immutable
+[free-running receipt](../../../reference/fast-defaults-free-running-v1.json)
+retains each image's SHA-256, historical path, per-page results and the
+comparison procedure. Its path names describe the inputs at run time;
+they are not download locations. The `classic` and `classic-2026-11-02`
+variants are separate unseeded draws, not byte-identical copies. Both sets
+were removed with the original images.
+
+[Mode fidelity](../../../docs/MODES.md#free-running-validation) summarizes
+that comparison. Repeating it requires independently obtaining the exact
+inputs matching the receipt's hashes; the measurements remain historical
+evidence, not a runnable fixture suite.
+
+## Historical image preparation
+
+The original input dimensions and contents were:
 
 | File | Size | Content |
 |---|---|---|
-| `liber_primus_wiki_screen.png` | 1184 × 912 | Screenshot of a wiki page: runes, hexadecimal lines, a code block |
+| `liber_primus_wiki_screen.png` | 1184 × 912 | Wiki screenshot: runes, hexadecimal lines, a code block |
 | `scanned-book-page_ballooning.png` | 812 × 1299 | Scanned book page with margin labels |
-| `smoke_screenshot.png` | 2572 × 1874 | Screenshot of a desktop mail client |
-| `kroger-bench-09_fried.jpg` | 800 × 465 | Photo of a grocery advertisement, already deep-fried |
+| `smoke_screenshot.png` | 2572 × 1874 | Desktop mail client screenshot |
+| `kroger-bench-09_fried.jpg` | 800 × 465 | Grocery advertisement photo, already deep-fried |
 
-`fried/` holds deep-fried versions of the first three, made with a local
-deep-fryer script, a port of deepfriedmemes.com's filter chain that is not
-in this repository. It ran as-is through its command line with
-`--max-dimension 0` (no resize, so each file keeps its source's size) and
-these options per level:
+The first three images were degraded by a local port of
+deepfriedmemes.com's filter chain. That tool is not in this repository.
+Every invocation used `--max-dimension 0`, preserving the input dimensions:
 
-| Folder | Options | Effect |
+| Historical folder | Options | Effect |
 |---|---|---|
-| `mild/` | `--contrast 60 --sharpen 40 --noise 8 --jpeg-quality 0.3 --jpeg-iterations-after 6` | Brightness 15, contrast 60, sharpen 40, noise 8, then 6 JPEG re-encodes at quality 30-32 |
-| `classic/` | none (the tool's defaults) | Brightness 15, contrast 155, sharpen 83, noise 18, then 28 JPEG re-encodes at quality 17-19 |
-| `enhanced/` | `--mode enhanced` | Sigmoid contrast and boosted saturation in HSV space, the same brightness, sharpening and noise, then the same re-encodes |
-| `classic-2026-11-02/` | none | An earlier classic draw of the same three images |
+| `fried/mild/` | `--contrast 60 --sharpen 40 --noise 8 --jpeg-quality 0.3 --jpeg-iterations-after 6` | Brightness 15, contrast 60, sharpen 40, noise 8, then 6 JPEG re-encodes at quality 30-32 |
+| `fried/classic/` | Tool defaults | Brightness 15, contrast 155, sharpen 83, noise 18, then 28 JPEG re-encodes at quality 17-19 |
+| `fried/enhanced/` | `--mode enhanced` | Sigmoid contrast and boosted HSV saturation, the same brightness, sharpening and noise, then the same re-encodes |
+| `fried/classic-2026-11-02/` | Tool defaults | An earlier classic draw of the same three images |
 
-The tool's noise and the per-pass jitter of its JPEG quality are unseeded,
-so these files are the record: rerunning the tool gives other images, as
-`classic/` and `classic-2026-11-02/` show.
-
-Run a comparison with one fresh process per arm, the same pages and the
-same flags, changing only the binary or the knob under test:
-
-```sh
-target/release/falcon-ocr --model artifacts/packed --mode fast run \
-  tests/fixtures/stress/*.png tests/fixtures/stress/*.jpg \
-  tests/fixtures/stress/fried/*/*.jpg --max-new-tokens 4096 > before.jsonl
-```
-
-Then run the changed build into `after.jsonl` and compare the two files
-line by line (one line per page, in input order): `token_ids`, the first
-differing token, `finish_reason`, and the text of every page that differs,
-read against its image. `--max-new-tokens 4096` bounds a loop that the
-repetition stop does not catch. Two readings that differ only where the
-image itself is illegible say nothing about the change.
-
-The comparison that preceded fast mode's current prefill defaults ran on
-these pages; [MODES.md](../../../docs/MODES.md#free-running-validation)
-summarizes it and
-[reference/fast-defaults-free-running-v1.json](../../../reference/fast-defaults-free-running-v1.json)
-holds its per-page results.
+Noise and JPEG-quality jitter were unseeded, so those options describe the
+preparation without reproducing the recorded bytes. Comparisons used one
+fresh process per arm, the same page order and flags, and a 4,096-token cap
+where specified. Changed token sequences and finish reasons were read
+against the image; differences confined to illegible regions did not
+establish an improvement.
