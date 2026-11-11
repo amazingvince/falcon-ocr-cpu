@@ -222,10 +222,10 @@ unsafe fn exception_tile_fma<const NR: usize>(a: &[i32], values: &[f32], tile: &
 }
 
 /// Quantize one 64-input group into `q` and return its step `absmax /
-/// 32767`: 0 for an all-zero group (and one whose absmax is so small that
-/// `32767 / absmax` overflows; its products are below FP32 resolution), NaN
-/// for a group with a non-finite input (the NaN reaches every output of the
-/// row, as in the FP32 panels).
+/// 32767`: 0 for an all-zero group, at least the smallest subnormal for a
+/// nonzero group, NaN for a group with a non-finite input (the NaN reaches
+/// every output of the row, as in the FP32 panels).
+/// Tiny nonzero groups round the step up to avoid clipping their maximum.
 #[inline(always)]
 fn quantize_group(x: &[f32], q: &mut [i16; GROUP]) -> f32 {
     // Non-negative floats order like their bit patterns, and NaN and
@@ -238,8 +238,22 @@ fn quantize_group(x: &[f32], q: &mut [i16; GROUP]) -> f32 {
     let absmax = f32::from_bits(top);
     let inv = QMAX / absmax;
     if !inv.is_finite() {
-        *q = [0; GROUP];
-        return 0.0;
+        if absmax == 0.0 {
+            *q = [0; GROUP];
+            return 0.0;
+        }
+        // Tiny groups can still contribute representable products. Use
+        // a wider division only when the FP32 reciprocal overflows, and
+        // keep the step representable even for subnormal inputs.
+        let mut step = (absmax / QMAX).max(f32::from_bits(1));
+        // Round a subnormal step up if its rounding would clip the max.
+        if step as f64 * (QMAX as f64) < absmax as f64 {
+            step = f32::from_bits(step.to_bits() + 1);
+        }
+        for (q, &v) in q.iter_mut().zip(x) {
+            *q = (v as f64 / step as f64).round_ties_even().clamp(-32767.0, 32767.0) as i16;
+        }
+        return step;
     }
     for (q, &v) in q.iter_mut().zip(x) {
         // |v * inv| <= 32767 * (1 + 2^-23); the clamp only guards rounding.

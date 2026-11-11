@@ -300,8 +300,9 @@ fn error_against_exact_and_fp32_panels_is_within_the_quantization_bound() {
     }
 }
 
-/// A non-finite input turns its row's outputs into NaN, and an all-zero row
-/// gives exact zeros, on every kernel.
+/// A non-finite input turns its row's outputs into NaN, an all-zero row
+/// gives exact zeros, and an all-tiny row retains its products, on every
+/// kernel.
 #[test]
 fn non_finite_rows_are_nan_and_zero_rows_are_zero() {
     let (m, k, n) = (8, 128, 32);
@@ -309,6 +310,7 @@ fn non_finite_rows_are_nan_and_zero_rows_are_zero() {
     a[5] = f32::NAN;
     a[k + 70] = f32::INFINITY;
     a[3 * k..4 * k].fill(0.0);
+    a[4 * k..5 * k].fill(1e-35);
     let (codes, scales) = weights(n, k);
     let mut panels = Panels::default();
     pack::<NR>(n, k, &codes, &scales, &mut panels);
@@ -319,6 +321,10 @@ fn non_finite_rows_are_nan_and_zero_rows_are_zero() {
             match r {
                 0 | 1 => assert!(row.iter().all(|v| v.is_nan()), "{isa:?} row {r}"),
                 3 => assert!(row.iter().all(|v| v.to_bits() == 0), "{isa:?} row {r}"),
+                4 => assert!(
+                    row.iter().all(|v| v.is_finite()) && row.iter().any(|&v| v != 0.0),
+                    "{isa:?} tiny row"
+                ),
                 _ => assert!(row.iter().all(|v| v.is_finite()), "{isa:?} row {r}"),
             }
         }
@@ -347,6 +353,24 @@ fn quantizer_rounds_to_nearest_even_within_the_step() {
     (x[1], x[2], x[3]) = (2.5, 3.5, -2.5);
     assert_eq!(quantize_group(&x, &mut q), 1.0);
     assert_eq!(q[..4], [32767, 2, 4, -2]);
+    // The reciprocal overflows for tiny groups, but their values and
+    // products need not underflow. Include a step below FP32's range.
+    for absmax in [1e-35, 1e-38, f32::from_bits(8192), f32::from_bits(1)] {
+        let x: Vec<f32> = (0..GROUP)
+            .map(|i| absmax * (2.0 * i as f32 / (GROUP - 1) as f32 - 1.0))
+            .collect();
+        assert!(!(QMAX / absmax).is_finite());
+        let step = quantize_group(&x, &mut q);
+        assert!(step > 0.0 && step.is_finite());
+        assert!(q.iter().any(|&c| c != 0));
+        for (&c, &v) in q.iter().zip(&x) {
+            assert_eq!(
+                c as f64,
+                (v as f64 / step as f64).round_ties_even().clamp(-32767.0, 32767.0)
+            );
+            assert!((c as f64 * step as f64 - v as f64).abs() <= 0.51 * step as f64);
+        }
+    }
 }
 
 /// Median seconds of `reps` runs of `f` (after one warm-up) and the clock
