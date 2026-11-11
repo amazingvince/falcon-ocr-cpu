@@ -140,37 +140,6 @@ impl<const W: usize> RecordStore for F32Rec<'_, W> {
         unsafe { S::load(self.0.as_ptr().add(record * W + offset)) }
     }
 }
-impl<const W: usize> RecordStore for Q8Rec<'_, W> {
-    #[inline(always)]
-    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
-        debug_assert!((record + 1) * W <= self.codes.len());
-        // fl(code * scale), exactly the scalar dequantization.
-        unsafe {
-            S::mul(
-                S::load_i8(self.codes.as_ptr().add(record * W + offset)),
-                S::splat(bf16_f32(*self.scales.get_unchecked((record * W + offset) / 32))),
-            )
-        }
-    }
-    #[inline(always)]
-    unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
-        let at = record * W + offset;
-        debug_assert!(at.is_multiple_of(32) && (record + 1) * W <= self.codes.len());
-        // SAFETY: the block and its scale lie in the store (the contract).
-        unsafe {
-            let scale = S::splat(bf16_f32(*self.scales.get_unchecked(at / 32)));
-            let codes = self.codes.as_ptr().add(at);
-            // No closures: std's array helpers may stay out of line, and the
-            // vector code inside them with them.
-            [
-                S::mul(S::load_i8(codes), scale),
-                S::mul(S::load_i8(codes.add(8)), scale),
-                S::mul(S::load_i8(codes.add(16)), scale),
-                S::mul(S::load_i8(codes.add(24)), scale),
-            ]
-        }
-    }
-}
 
 /// 16-bit records of `W` elements.
 pub(super) struct Q16Rec<'a, const W: usize> {
@@ -178,35 +147,47 @@ pub(super) struct Q16Rec<'a, const W: usize> {
     /// One BF16 scale per 32 elements.
     pub(super) scales: &'a [u16],
 }
-impl<const W: usize> RecordStore for Q16Rec<'_, W> {
-    #[inline(always)]
-    unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
-        debug_assert!((record + 1) * W <= self.codes.len());
-        // fl(code * scale), exactly the scalar dequantization.
-        unsafe {
-            S::mul(
-                S::load_i16(self.codes.as_ptr().add(record * W + offset)),
-                S::splat(bf16_f32(*self.scales.get_unchecked((record * W + offset) / 32))),
-            )
+
+// Q8 and Q16 share a scale per 32 codes and differ only in the SIMD load.
+macro_rules! scaled_records {
+    ($record:ident, $load:ident) => {
+        impl<const W: usize> RecordStore for $record<'_, W> {
+            #[inline(always)]
+            unsafe fn load8<S: Isa>(&self, record: usize, offset: usize) -> S::V {
+                let at = record * W + offset;
+                debug_assert!((record + 1) * W <= self.codes.len());
+                // SAFETY: the record and offset cover the codes and their scale.
+                unsafe {
+                    S::mul(
+                        S::$load(self.codes.as_ptr().add(at)),
+                        S::splat(bf16_f32(*self.scales.get_unchecked(at / 32))),
+                    )
+                }
+            }
+
+            #[inline(always)]
+            unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
+                let at = record * W + offset;
+                debug_assert!(at.is_multiple_of(32) && (record + 1) * W <= self.codes.len());
+                // SAFETY: the block and its scale lie in the store (the contract).
+                unsafe {
+                    let scale = S::splat(bf16_f32(*self.scales.get_unchecked(at / 32)));
+                    let codes = self.codes.as_ptr().add(at);
+                    // Keep vector operations in line with the caller's ISA.
+                    [
+                        S::mul(S::$load(codes), scale),
+                        S::mul(S::$load(codes.add(8)), scale),
+                        S::mul(S::$load(codes.add(16)), scale),
+                        S::mul(S::$load(codes.add(24)), scale),
+                    ]
+                }
+            }
         }
-    }
-    #[inline(always)]
-    unsafe fn load32<S: Isa>(&self, record: usize, offset: usize) -> [S::V; 4] {
-        let at = record * W + offset;
-        debug_assert!(at.is_multiple_of(32) && (record + 1) * W <= self.codes.len());
-        // SAFETY: the block and its scale lie in the store (the contract).
-        unsafe {
-            let scale = S::splat(bf16_f32(*self.scales.get_unchecked(at / 32)));
-            let codes = self.codes.as_ptr().add(at);
-            [
-                S::mul(S::load_i16(codes), scale),
-                S::mul(S::load_i16(codes.add(8)), scale),
-                S::mul(S::load_i16(codes.add(16)), scale),
-                S::mul(S::load_i16(codes.add(24)), scale),
-            ]
-        }
-    }
+    };
 }
+
+scaled_records!(Q8Rec, load_i8);
+scaled_records!(Q16Rec, load_i16);
 
 /// 4-bit records of `W` elements.
 pub(super) struct Q4Rec<'a, const W: usize> {
