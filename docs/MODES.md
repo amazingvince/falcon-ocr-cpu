@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-11-06. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-11-10. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
 unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
@@ -298,6 +298,10 @@ does not fit, keeps FP32 panels, and the plan says so
 aarch64 keeps them too (it has no INT16 kernel yet), and `--backend scalar`
 and x86 CPUs without AVX2 run the projections through the `gemm` crate.
 
+An all-zero activation group has step zero. If `32,767 / absmax`
+overflows FP32, quantization uses FP64 division and rounds the step up to
+a positive representable FP32 value, preserving tiny nonzero groups.
+
 The static softmax replaces the online softmax of fast mode's BF16 prefill
 attention (plan label `bf16-static`). It needs AVX512-BF16 and AVX512BW: a
 CPU with AVX512-BF16 but not AVX512BW keeps the online softmax (`bf16`),
@@ -359,13 +363,14 @@ were removed ([PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted)).
 
 ### Free-running validation
 
-Before the switch, one binary ran the previous defaults ("old") and the
-two kernels ("new") in fresh processes on a Ryzen 7 7700X with the
-published packed files and otherwise default settings, and near-exact, the
-FP32 stand-in ([Fast against near-exact](#fast-against-near-exact)), on the
-deep-fried pages. The test images and their deep-fried copies are in
-[tests/fixtures/stress](../tests/fixtures/stress/README.md); per-page
-results are in
+Before the switch, one binary ran the previous defaults ("old") and the two
+kernels ("new") in fresh processes on a Ryzen 7 7700X with the published
+packed files and otherwise default settings, and near-exact, the FP32
+stand-in ([Fast against near-exact](#fast-against-near-exact)), on the
+deep-fried pages. The locally supplied test images and their deep-fried
+copies are no longer bundled because their redistribution provenance was not
+recorded ([stress-page provenance](../tests/fixtures/stress/README.md));
+per-page results and image hashes remain in
 [reference/fast-defaults-free-running-v1.json](../reference/fast-defaults-free-running-v1.json).
 
 | Pages | Old and new token-identical | Other results |
@@ -797,13 +802,14 @@ number or another token, with the one a period of at most 128 symbols
 earlier. Other tokens must be equal, each number must differ from its
 counterpart a period earlier by the same step in every cycle, and at least
 one step must be nonzero, which leaves exact loops to the exact rule. The
-window restarts at a step change. The rule fires once a window holds 64
+window restarts at a step change. The rule fires once a window holds 128
 whole cycles and spans at least 256 tokens (`MIN_COUNT_REPEATS`,
 `MIN_WINDOW` in `src/repetition.rs`).
 
-The threshold comes from recorded text, replayed through the stop without a
-model (`repetition::probe::recorded_outputs_probe`; the inputs, builders and
-both probe outputs are in `artifacts/repetition-probe-2026-11-03/`): 1,047
+The earlier 64-cycle threshold was measured on recorded text, replayed
+through the stop without a model
+(`repetition::probe::recorded_outputs_probe`; the inputs, builders and both
+probe outputs are in `artifacts/repetition-probe-2026-11-03/`): 1,047
 recorded outputs (560 distinct token sequences) of calibration, anchor, book,
 stress, probe and gate runs under `artifacts/`, and the 1,651 OmniDocBench
 ground-truth pages, tokenized with tables in the model's style; 2,698 outputs
@@ -811,35 +817,41 @@ and 2,879,678 tokens in all. In outputs that end at EOS and in ground truth,
 the longest counting window is 20 cycles, a scoring table counting down from
 20 bonus points (v3 page `aa8e1119117b1822`, in its output and its ground
 truth); the next longest is 9, and a threshold of 16 would cut the scoring
-table. Templated pages count for longer: a Celsius-to-Fahrenheit table of 41
-rows, a 40-item answer sheet and a 52-week planner hold 40 to 52 cycles,
-which a threshold of 32 would cut
-(`templated_rows_with_fixed_steps_are_not_loops` in
+table. Templated pages count for longer: a Celsius-to-Fahrenheit table of 101
+rows, a 100-item answer sheet and a 104-week planner stay below the current
+floor (`templated_rows_with_fixed_steps_are_not_loops` in
 `src/repetition/tests.rs`). The three counting loops on record reach 65, 119
-and 212 cycles. At 64 the rule ends 7 of the 2,698 outputs, on the same three
-pages as at 32, and none that ends at EOS or is ground truth:
+and 212 cycles. At 64 the rule ended 7 of the 2,698 outputs, on the same
+three pages as at 32, and none that ends at EOS or is ground truth:
 
-| Page | Output | Tokens before | Counting rule (at 32) |
+| Page | Output | Tokens before | Counting rule at 64 (at 32) |
 |---|---|---:|---:|
 | Mild deep-fried `ad43a4d35e59199e` | Fast mode's current kernels and near-exact with either FP32 softmax (identical): rows 44 to 255 | 4,096 (cap) | 1,279 (695) |
 | Anchor `3b0add7f7d14d45c` | Fast mode's current kernels: a list `(1)` to `(100)` of one date, `1980年12月24日 星期五` | 2,247 (exact rule) | 1,368 (728) |
 | `3ae00f1496cda3ff` | The FP32 CPU reference and near-exact with either FP32 softmax: the years 1981, 1982, … | 512 (budget), 4,096 (cap) | 434 (308) |
 
 The deep-fried page is a degraded Traditional Chinese page ([free-running
-validation](#free-running-validation)); its counting loop now ends in row
-107. Fast mode's previous prefill kernels fell into an exact two-line loop
-there instead, which the exact rule ended at 314 tokens. The anchor's date
-list now ends after item 64, and the year run after 2044. The PyTorch GPU
-cross-check of `3ae00f1496cda3ff`, whose 384-token budget ends its year run
-after 55 cycles, no longer fires. In each output the loop continues past the
-cut, and fast mode's outputs of `3ae00f1496cda3ff` end at EOS without the
-year run. Both rules together cost about 0.3 µs per token (one probe run on a
-7700X), against about 9 ms per decode step.
+validation](#free-running-validation)); at the old 64-cycle threshold its
+counting loop ended in row 107. Fast mode's previous prefill kernels fell
+into an exact two-line loop there instead, which the exact rule ended at 314
+tokens. The anchor's date list ended after item 64, and the year run after
+2044 at that threshold. The PyTorch GPU cross-check of `3ae00f1496cda3ff`,
+whose 384-token budget ends its year run after 55 cycles, no longer fires. In
+each output the loop continues past the cut, and fast mode's outputs of
+`3ae00f1496cda3ff` end at EOS without the year run. Both rules together cost
+about 0.3 µs per token (one probe run on a 7700X), against about 9 ms per
+decode step.
 
 Legitimate content that matches a rule is cut: a 256-token page of identical
-lines, or 64 or more rows identical apart from counting numbers (a long blank
-numbered form, a number chart). Pass `--stop-repetition=false` for such
-pages.
+lines, or 128 or more rows identical apart from counting numbers (a long
+blank numbered form, a number chart). The floor is now 128 to preserve
+longer forms, including 100-item answer sheets and 104-week planners; the
+same 2,698-output replay at 128 ends three outputs of the 212-cycle
+deep-fried page at 2,495 tokens, in row 171, and none that ends at EOS or
+is ground truth. The 65- and 119-cycle runs may reach another stop or the
+token cap. A stopped page prints a note to stderr naming the page and
+`--stop-repetition=false`, including with `--text`. Use that option when
+the page intentionally matches a rule.
 
 `run --escalate` rereads fast-mode pages that either rule ends with the
 near-exact model, and under `--max-dimension auto` the router's

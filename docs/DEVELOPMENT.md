@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-11-06.
+Status: current as of 2026-11-10.
 
 ## Toolchain
 
@@ -103,8 +103,9 @@ the platform-dependent math; the token-parity gates are separate checks.
   `tests/modes.rs` is the mode gate: exact mode under the automatic
   configuration reproduces the GPU smoke tokens; near-exact and fast reproduce
   `tests/fixtures/modes/*.json` on hosts with the fixtures' prefill kernels.
-  The test reports both plans when hardware requires a different kernel and
-  skips that token comparison ([mode fixtures](../tests/fixtures/modes/README.md)).
+  A kernel mismatch fails and reports both plans. Set
+  `FALCON_OCR_ALLOW_FIXTURE_KERNEL_SKIP=1` to explicitly permit skipping
+  that comparison ([mode fixtures](../tests/fixtures/modes/README.md)).
   Packing round-trips the checkpoint loader and matches the published files.
   Speculation, the decode team, drafts, the head and the explicit AVX2 backend
   preserve the gate's fixture tokens. The repetition stop yields a prefix,
@@ -219,10 +220,13 @@ cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_ru
 
 ## Token agreement
 
-For the prefill default evaluations, [extract the archived page manifests
-and locks](../research/corpus-qualification/README.md#archived-prefill-gate-inputs)
+For the prefill default evaluations, [verify the archive and extract its page
+manifests and
+locks](../research/corpus-qualification/README.md#archived-prefill-gate-inputs)
 before using their research scripts. The recorded budgets and results are
-readable in `reference/`.
+readable in `reference/`; the [provenance
+note](../reference/prefill-gate-provenance-v1.md) maps their original source
+commits to the integrated history.
 
 `falcon-ocr-eval agree` takes an FP32 reference from a
 `falcon-ocr-eval --profile reference bench` report. Use upstream's

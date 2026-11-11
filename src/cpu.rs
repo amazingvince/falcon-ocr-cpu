@@ -21,6 +21,8 @@ pub fn return_large_frees_to_os() {
             fn mallopt(param: i32, value: i32) -> i32;
         }
         // SAFETY: both are glibc parameters, and 4 MiB is valid for each.
+        // This is a best-effort allocator policy hint: failure leaves
+        // glibc's allocation semantics intact, so ignore its status.
         unsafe {
             mallopt(M_TRIM_THRESHOLD, 4 * 1024 * 1024);
             mallopt(M_MMAP_THRESHOLD, 4 * 1024 * 1024);

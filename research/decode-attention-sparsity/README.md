@@ -148,9 +148,8 @@ magnitude, and log-probabilities within 1.6e-4 of the reference. For all
 12 anchor pages the GPU reference tokens equal the CPU exact-mode tokens of
 `artifacts/verify/pr/agree/reference.json` over their full length.
 
-The run used the `misc` conda environment (torch 2.13.0+cu130,
-transformers 5.19.0, Pillow 11.3.0). The checkpoint's code is loaded through
-transformers' remote-code loader.
+The run used torch 2.13.0+cu130, transformers 5.19.0 and Pillow 11.3.0. The
+checkpoint's code is loaded through transformers' remote-code loader.
 
 **Oracle versus Q8.** Means are over 13 pages, all steps, 22 layers and 8
 groups (skip) or 16 heads (error); errors are relative.

@@ -1,6 +1,6 @@
 # Next steps
 
-Status: current as of 2026-11-06. Unresolved qualification and hardware
+Status: current as of 2026-11-10. Unresolved qualification and hardware
 work, followed by research proposals.
 
 ## Still open
@@ -29,7 +29,8 @@ work, followed by research proposals.
   [near-exact's gate](MODES.md#near-exacts-held-out-gate), 60
   OmniDocBench document families stay fresh (tables 54, other 6), none of
   them English, so a gate on any other category or on English pages needs
-  pages from another source.
+  pages from another source. The spent page manifests and locks are
+  [archived with checksums and source mappings](../reference/prefill-gate-provenance-v1.md).
 - **Windows and aarch64.** The book runs, the page pipeline, the KV-cache
   timings and peak memory
   ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were measured on one
