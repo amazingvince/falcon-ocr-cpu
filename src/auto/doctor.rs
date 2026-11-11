@@ -116,19 +116,16 @@ pub fn doctor(request: &ModelRequest<'_>, config: &RunnerConfig, load: bool, pro
         Ok(weights) => {
             let tokenizer_dir = weights.source.tokenizer_dir(dir);
             files.tokenizer = FileStatus::of(tokenizer_dir.join("tokenizer.json"));
+            let facts = ModelFacts::from_plan(&weights)?;
+            config.tuning.check_kv_layers(facts.profile.kv, facts.config.n_layers)?;
             if let WeightsSource::Checkpoint {
                 overlay: Some(path), ..
             } = &weights.source
-                && let Err(e) = crate::model::overlay_facts(path)
+                && let Err(e) = crate::model::overlay_facts(path, facts.config.n_layers)
             {
                 error = Some(format!("W8 overlay header: {e:#}"));
             }
-            plan = Some(Resolved::new(
-                &host,
-                config,
-                &ModelFacts::from_plan(&weights)?,
-                &tokenizer_dir,
-            ));
+            plan = Some(Resolved::new(&host, config, &facts, &tokenizer_dir));
             if load {
                 let started = Instant::now();
                 let model = load_model(&weights, false)?;

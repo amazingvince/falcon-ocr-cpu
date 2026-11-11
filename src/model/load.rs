@@ -483,19 +483,24 @@ fn overlay_exceptions(tensors: &SafeTensors<'_>, name: &str, output: usize) -> R
     Ok(Some((columns, values)))
 }
 
-/// Bytes of the exception columns a W8 overlay's header lists, for byte
-/// budgets, and whether its metadata names groups of 32, which the INT16
-/// prefill panels cannot hold: read without the tensors.
-pub(crate) fn overlay_facts(path: &Path) -> Result<(usize, bool)> {
+/// Read the exception-column bytes, whether an overlay uses groups of 32,
+/// and whether a partial overlay leaves any body matrices in FP32.
+pub(crate) fn overlay_facts(path: &Path, layers: usize) -> Result<(usize, bool, bool)> {
     let header = super::packed::safetensors_header(path).with_context(|| format!("read {}", path.display()))?;
-    let groups_of_32 = header
-        .get("__metadata__")
-        .and_then(|meta| meta.get("group_size"))
-        .and_then(serde_json::Value::as_str)
-        == Some("32");
+    let metadata = |key| {
+        header
+            .get("__metadata__")
+            .and_then(|meta| meta.get(key))
+            .and_then(serde_json::Value::as_str)
+    };
+    let mixed_body = metadata("partial") == Some("true")
+        && body_matrix_names(layers)
+            .iter()
+            .any(|name| !header.contains_key(&format!("{name}{}", W8_SUFFIXES[0])));
     Ok((
         super::packed::tensor_bytes_with_suffix(&header, &W8_SUFFIXES[2..]),
-        groups_of_32,
+        metadata("group_size") == Some("32"),
+        mixed_body,
     ))
 }
 

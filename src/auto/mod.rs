@@ -517,7 +517,7 @@ pub struct ModelFacts {
     pub source: WeightsSource,
     pub profile: Profile,
     pub config: ModelConfig,
-    /// `Model::body_bits`: the profile's width for a plan.
+    /// `Model::body_bits`: the profile's width for a plan with a uniform body.
     pub body_bits: Option<u32>,
     pub overlay_sha256: Option<String>,
     /// `Model::exception_bytes`: the body's exception columns, read per
@@ -534,15 +534,14 @@ impl ModelFacts {
     /// From a plan without reading tensors: the checkpoint's `config.json`
     /// or the packed file's header (which also names its overlay digest),
     /// and the exception columns the packed file or overlay header lists
-    /// and the overlay's group size (packed files and quantization at load
-    /// use groups of 64). An overlay whose header cannot be read counts no
-    /// exception columns and groups of 64: loading it fails, and `doctor`
-    /// reports why.
+    /// and the overlay's group size and body coverage. An overlay whose
+    /// header cannot be read counts no exception columns and groups of 64:
+    /// loading it fails, and `doctor` reports why.
     pub fn from_plan(plan: &WeightsPlan) -> Result<Self> {
-        let (config, overlay_sha256, exception_bytes, groups_of_32) = match &plan.source {
+        let (config, overlay_sha256, exception_bytes, groups_of_32, mixed_body) = match &plan.source {
             WeightsSource::Packed { path } => {
                 let (config, overlay_sha256, exception_bytes) = crate::model::packed_facts(path)?;
-                (config, overlay_sha256, exception_bytes, false)
+                (config, overlay_sha256, exception_bytes, false, false)
             }
             WeightsSource::Checkpoint { dir, overlay, .. } => {
                 let path = dir.join("config.json");
@@ -551,12 +550,12 @@ impl ModelFacts {
                 config.validate()?;
                 let facts = overlay
                     .as_deref()
-                    .and_then(|overlay| crate::model::overlay_facts(overlay).ok());
-                let (exception_bytes, groups_of_32) = facts.unwrap_or((0, false));
-                (config, None, exception_bytes, groups_of_32)
+                    .and_then(|overlay| crate::model::overlay_facts(overlay, config.n_layers).ok());
+                let (exception_bytes, groups_of_32, mixed_body) = facts.unwrap_or((0, false, false));
+                (config, None, exception_bytes, groups_of_32, mixed_body)
             }
         };
-        let body_bits = plan.profile.quantizes_body().then(|| plan.profile.weight_bits());
+        let body_bits = (plan.profile.quantizes_body() && !mixed_body).then(|| plan.profile.weight_bits());
         Ok(Self {
             source: plan.source.clone(),
             profile: plan.profile,

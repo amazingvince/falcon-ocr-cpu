@@ -186,14 +186,15 @@ impl Tuning {
                 self.split_chunks = Some(chunks);
             }
             "kv-layers" => {
-                self.kv_q8_layers = 0;
+                let mut layers = 0;
                 for layer in value.split(',') {
                     let layer: u32 = layer
                         .parse()
                         .with_context(|| format!("tuning knob kv-layers: `{layer}`"))?;
                     ensure!(layer < 32, "tuning knob kv-layers: layer {layer} is not below 32");
-                    self.kv_q8_layers |= 1 << layer;
+                    layers |= 1 << layer;
                 }
+                self.kv_q8_layers = layers;
             }
             "phases" => self.phases = flag(value)?,
             "prefill-profile" => self.prefill_profile = flag(value)?,
@@ -272,7 +273,7 @@ mod tests {
 
     #[test]
     fn tuning_knobs_parse_and_reject_unknown_keys() {
-        let tuning = Tuning::from_pairs([
+        let mut tuning = Tuning::from_pairs([
             "prefill-bf16=off",
             "prefill-projections=fp32",
             "prefill-softmax=online",
@@ -288,6 +289,7 @@ mod tests {
         .unwrap();
         assert_eq!(tuning.decode_fast_exp, Some(true));
         assert_eq!(tuning.kv_q8_layers, 1 | 1 << 3 | 1 << 31);
+        assert!(tuning.set("kv-layers=1,32").is_err());
         assert_eq!(Tuning::kv_layer_list(tuning.kv_q8_layers), "0,3,31");
         use crate::quant::Kv;
         assert!(tuning.check_kv_layers(Kv::Q16, 32).is_ok());

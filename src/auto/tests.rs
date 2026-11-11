@@ -547,14 +547,20 @@ fn plans_count_exception_columns_from_headers() {
     assert_eq!(facts.exception_bytes, exception_bytes);
     // Exception columns fit the INT16 panels; groups of 32 still do not.
     assert!(!facts.i16_misfit);
-    for (group_size, misfit) in [("32", true), ("64", false)] {
+    for (group_size, partial, misfit) in [("32", "false", true), ("64", "false", false), ("64", "true", false)] {
         let grouped = root.join(format!("g{group_size}.safetensors"));
         safetensors::serialize_to_file(
             [(
                 "layers.0.attention.wo.weight.__w8_scales",
                 TensorView::new(Dtype::F32, vec![1], &[0u8; 4]).unwrap(),
             )],
-            Some([("group_size".to_owned(), group_size.to_owned())].into()),
+            Some(
+                [
+                    ("group_size".to_owned(), group_size.to_owned()),
+                    ("partial".to_owned(), partial.to_owned()),
+                ]
+                .into(),
+            ),
             &grouped,
         )
         .unwrap();
@@ -568,6 +574,7 @@ fn plans_count_exception_columns_from_headers() {
         };
         let facts = ModelFacts::from_plan(&plan).unwrap();
         assert_eq!((facts.exception_bytes, facts.i16_misfit), (0, misfit), "{group_size}");
+        assert_eq!(facts.body_bits, (partial == "false").then_some(8));
         let projection = Resolved::new(HostInfo::detect(), &RunnerConfig::default(), &facts, root)
             .prefill
             .projection;
@@ -576,6 +583,9 @@ fn plans_count_exception_columns_from_headers() {
             crate::kernels::PrefillProjection::PanelI16Vnni | crate::kernels::PrefillProjection::PanelI16Avx2
         );
         assert!(!(misfit && i16), "{group_size}: {projection}");
+        if partial == "true" {
+            assert_eq!(projection, crate::kernels::PrefillProjection::GemmF32);
+        }
     }
     let packed = root.join("packed.safetensors");
     write(
