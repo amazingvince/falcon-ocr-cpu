@@ -48,7 +48,7 @@ mod decode;
 #[cfg(target_arch = "x86_64")]
 mod wide;
 
-use codec::{bf16_f32, bf16_up, each_block, nibble, q4_block, q8_code, q8_scale, q16_code, q16_scale};
+use codec::{bf16_f32, bf16_up, each_block, nibble, q4_block, q8_code, q8_scale, q16_code, q16_scale, zeroed_tail};
 use decode::{F32Rec, PairKernel, Partial, Q4Rec, Q8Rec, Q16Rec, RowsKernel, Span, pair_entry};
 
 /// Elements per (group, position) record and their offsets.
@@ -387,21 +387,20 @@ impl SplitPrefix {
         let tail_elements = (groups * tail_capacity)
             .checked_mul(TAIL_RECORD)
             .ok_or_else(|| anyhow::anyhow!("tail capacity overflow"))?;
-        // These `vec!`s stay out of RSS until written, so an unused budget
-        // costs no pages.
+        // Allocate zeroed storage without writing unused budget pages.
         let tail = match &records {
-            Records::F32(_) => Records::F32(vec![0.0; tail_elements]),
+            Records::F32(_) => Records::F32(zeroed_tail(tail_elements)?),
             Records::Q8 { .. } => Records::Q8 {
-                codes: vec![0; tail_elements],
-                scales: vec![0; tail_elements / 32],
+                codes: zeroed_tail(tail_elements)?,
+                scales: zeroed_tail(tail_elements / 32)?,
             },
             Records::Q16 { .. } => Records::Q16 {
-                codes: vec![0; tail_elements],
-                scales: vec![0; tail_elements / 32],
+                codes: zeroed_tail(tail_elements)?,
+                scales: zeroed_tail(tail_elements / 32)?,
             },
             Records::Q4 { .. } => Records::Q4 {
-                codes: vec![0; tail_elements / 2],
-                scales: vec![0; tail_elements / 32],
+                codes: zeroed_tail(tail_elements / 2)?,
+                scales: zeroed_tail(tail_elements / 32)?,
             },
         };
         Ok(Self {

@@ -3,6 +3,11 @@
 use super::{decode::RecordStore, *};
 
 #[test]
+fn tail_allocation_reports_size_overflow() {
+    assert!(zeroed_tail::<u16>(usize::MAX).is_err());
+}
+
+#[test]
 fn fast_decode_exp_defaults_to_8_bit_caches_under_fast_exps() {
     assert!(default_fast_exp(Kv::Q8, true, None));
     assert!(

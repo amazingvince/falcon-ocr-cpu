@@ -1,6 +1,11 @@
 //! Scalar quantization of the split cache: BF16 scales, 8- and 16-bit codes.
 use super::rotation::{BLOCK, Block};
 
+/// Allocate zeroed KV tail storage, returning an error if allocation fails.
+pub(super) fn zeroed_tail<T: bytemuck::Zeroable>(len: usize) -> anyhow::Result<Vec<T>> {
+    bytemuck::allocation::try_zeroed_vec(len).map_err(|()| anyhow::anyhow!("cannot allocate split KV tail"))
+}
+
 /// The 8-bit step of `values`: their absmax over 127, at least the smallest
 /// subnormal unless every value is 0.
 pub(super) fn q8_scale(values: &[f32]) -> f32 {
