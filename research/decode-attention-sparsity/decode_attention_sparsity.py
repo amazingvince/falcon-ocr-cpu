@@ -1065,10 +1065,12 @@ def print_tables(r: dict) -> None:
     for p in r["pages"]:
         cpu = p.get("cpu_exact_reference", {}).get("common_prefix", "-")
         pol = p["policies"]
+        q8_flips = pol["q8"]["flips"] if "q8" in pol else "-"
+        oracle_flips = pol["oracle:1e-4"]["flips"] if "oracle:1e-4" in pol else "-"
         print(
             f"| {p['page_id']} | {p['input_tokens']} | {p['image_blocks']} | {p['decode_steps']} | {cpu} "
             f"| {p['oracle_skip'][2]:.3f} | {p['oracle_skip'][4]:.3f} | {p['bound_skip_1e-3']['sketch4']:.4f} "
-            f"| {pol['q8']['flips']} | {pol['oracle:1e-4']['flips']} |"
+            f"| {q8_flips} | {oracle_flips} |"
         )
     print("\nLocality:", json.dumps(r["locality"]))
 
