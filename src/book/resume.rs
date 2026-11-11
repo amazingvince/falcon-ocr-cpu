@@ -109,10 +109,12 @@ impl Kernels {
     pub fn from_plan(plan: &Value) -> Option<Self> {
         let prefill = plan.get("prefill")?;
         let (attention, projection) = prefill_kinds(prefill)?;
+        let tuning = plan.get("tuning");
+        let knob = |key: &str| tuning.and_then(|tuning| tuning.get(key));
         // `prefill_plan`'s FP32 softmax for a 16-bit body: the knob's, or
         // static where it is null (the default); a plan without the field
         // predates the knob and ran online.
-        let rerun = match plan.get("tuning").and_then(|tuning| tuning.get("prefill_softmax_fp32")) {
+        let rerun = match knob("prefill_softmax_fp32") {
             Some(Value::Null) => "fp32-static",
             Some(knob) if knob.as_str() == Some("static") => "fp32-static",
             _ => "fp32",
@@ -120,10 +122,7 @@ impl Kernels {
         let panels = prefill.get("projection").and_then(Value::as_str) != Some("gemm-f32");
         let tiles = matches!(attention.as_str(), "fp32" | "fp32-static" | "bf16" | "bf16-static");
         let escalation_attention = (panels && tiles && attention != rerun).then(|| rerun.to_owned());
-        let chunks = plan
-            .get("tuning")
-            .and_then(|tuning| tuning.get("split_chunks"))
-            .and_then(Value::as_u64);
+        let chunks = knob("split_chunks").and_then(Value::as_u64);
         let split_chunks = match plan.get("kv_cache").and_then(Value::as_str) {
             Some("f32-split") => Some(chunks.unwrap_or(1)),
             Some("q16" | "q8" | "q8r" | "q4r") => Some(chunks.unwrap_or(4)),
@@ -140,15 +139,8 @@ impl Kernels {
             attention,
             escalation_attention,
             projection,
-            decode_exp: plan
-                .get("tuning")
-                .and_then(|tuning| tuning.get("decode_fast_exp"))
-                .and_then(Value::as_bool),
-            kv_q8_layers: plan
-                .get("tuning")
-                .and_then(|tuning| tuning.get("kv_q8_layers"))
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
+            decode_exp: knob("decode_fast_exp").and_then(Value::as_bool),
+            kv_q8_layers: knob("kv_q8_layers").and_then(Value::as_u64).unwrap_or(0),
             split_chunks,
             image_decoder: plan.get("image_decoder").and_then(Value::as_str).map(str::to_owned),
         })
@@ -390,44 +382,38 @@ impl Existing {
             return true;
         }
         self.done.insert(path.to_owned());
+        let plan = record.get("plan");
+        let attempt = record.get("escalated_from");
+        // An escalated record belongs to its fast attempt. Missing weights
+        // in an old attempt stay missing, so they match any run's weights.
+        let original = |key: &str| attempt.map_or_else(|| record.get(key), |attempt| attempt.get(key));
+        let mode = original("mode").and_then(Value::as_str);
         let text = |value: Option<&Value>| value.and_then(Value::as_str).map(str::to_owned);
-        if record.get("escalated_from").is_none()
-            && text(record.get("mode")).as_deref() == Some("fast")
-            && text(record.get("finish_reason")).as_deref() == Some("repetition")
+        if attempt.is_none()
+            && mode == Some("fast")
+            && record.get("finish_reason").and_then(Value::as_str) == Some("repetition")
         {
             self.unescalated += 1;
         }
-        let routed = record.get("route").is_some_and(|route| !route.is_null());
         let settings = record
             .get("options")
             .and_then(|options| GenerationOptions::deserialize(options).ok())
             .map(|options| Settings::from(&options));
-        let run = match record.get("escalated_from") {
-            Some(attempt) => Run {
-                mode: text(attempt.get("mode")),
-                // The fast attempt's weights, not the near-exact rerun's: a
-                // resumed fast run with other weights would have reached
-                // this page differently. A record written before they were
-                // recorded leaves them `None`, and matches any weights.
-                precision: text(attempt.get("precision")),
-                overlay: text(attempt.get("overlay_sha256")),
-                routed,
-                settings,
-                kernels: record.get("plan").and_then(Kernels::from_plan),
-                escalated: true,
-                // Likewise the fast attempt's prefill kernels.
-                attempt_prefill: attempt.get("prefill").and_then(prefill_kinds),
-            },
-            None => Run {
-                mode: text(record.get("mode")),
-                precision: text(record.get("precision")),
-                overlay: text(record.get("plan").and_then(|plan| plan.get("overlay_sha256"))),
-                routed,
-                settings,
-                kernels: record.get("plan").and_then(Kernels::from_plan),
-                escalated: false,
-                attempt_prefill: None,
-            },
+        let overlay = attempt.map_or_else(
+            || plan.and_then(|plan| plan.get("overlay_sha256")),
+            |attempt| attempt.get("overlay_sha256"),
+        );
+        let run = Run {
+            mode: mode.map(str::to_owned),
+            precision: text(original("precision")),
+            overlay: text(overlay),
+            routed: record.get("route").is_some_and(|route| !route.is_null()),
+            settings,
+            kernels: plan.and_then(Kernels::from_plan),
+            escalated: attempt.is_some(),
+            attempt_prefill: attempt
+                .and_then(|attempt| attempt.get("prefill"))
+                .and_then(prefill_kinds),
         };
         *self.runs.entry(run).or_default() += 1;
         true
