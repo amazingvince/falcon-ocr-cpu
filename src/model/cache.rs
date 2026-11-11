@@ -391,21 +391,16 @@ impl Session {
                     k: reserve(capacity, c.query_dim())?,
                     v: reserve(capacity, c.query_dim())?,
                 },
-                CacheLayout::Compact if seal => {
-                    let rows = if i == 0 { prefix_len } else { 0 };
+                CacheLayout::Compact => {
+                    let prefix_rows = if seal && i != 0 { 0 } else { prefix_len };
+                    let generated_rows = if seal { 0 } else { capacity - prefix_len };
                     LayerCache::Compact {
-                        prefix_k: reserve(rows, c.query_dim())?,
-                        generated_k: Vec::new(),
-                        v: reserve(rows, c.kv_dim())?,
+                        prefix_k: reserve(prefix_rows, c.query_dim())?,
+                        generated_k: reserve(generated_rows, c.kv_dim())?,
+                        v: reserve(prefix_rows + generated_rows, c.kv_dim())?,
                         prefix_len,
                     }
                 }
-                CacheLayout::Compact => LayerCache::Compact {
-                    prefix_k: reserve(prefix_len, c.query_dim())?,
-                    generated_k: reserve(capacity - prefix_len, c.kv_dim())?,
-                    v: reserve(capacity, c.kv_dim())?,
-                    prefix_len,
-                },
             });
         }
         Ok(Self {

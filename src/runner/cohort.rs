@@ -348,23 +348,19 @@ impl Runner {
                 c.max_seq_len
             );
         }
-        let options = &GenerationOptions {
-            max_new_tokens: budget,
-            ..options.clone()
-        };
         for (mut input, request) in inputs.into_iter().zip(requests) {
             let prefill_started = Instant::now();
             let (image_start, image_end) = image_range(&input.tokens, c)?;
             let (pos_t, pos_hw) = positions(&input.tokens, &input.prepared.positions_hw, c)?;
             let mut session = Session::new(
                 c,
-                input.tokens.len() + options.max_new_tokens,
+                input.tokens.len() + budget,
                 input.tokens.len(),
                 image_start,
                 image_end,
                 simd,
                 self.config.cache_layout,
-                self.model.profile().kv != crate::quant::Kv::Compact && options.max_new_tokens > 1,
+                self.model.profile().kv != crate::quant::Kv::Compact && budget > 1,
                 self.config.exp,
                 self.config.tuning,
             )?;
@@ -390,7 +386,7 @@ impl Runner {
             let token = argmax(logits)?;
             let prefill_ms = prefill_started.elapsed().as_secs_f64() * 1000.;
             let first_token_ms = chunk_started.elapsed().as_secs_f64() * 1000.;
-            let mut generation = Generation::new(options.max_new_tokens, self.repetition_stop);
+            let mut generation = Generation::new(budget, self.repetition_stop);
             let finished = generation.push(token, &stops);
             states.push(BatchState {
                 width: input.prepared.width,

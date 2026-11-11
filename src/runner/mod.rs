@@ -604,22 +604,18 @@ impl Runner {
                 c.max_seq_len
             );
         }
-        let options = &GenerationOptions {
-            max_new_tokens: budget,
-            ..options.clone()
-        };
         let (image_start, image_end) = image_range(&tokens, c)?;
         let (mut pos_t, mut pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
         let simd = self.config.backend.simd();
         let mut session = Session::new(
             c,
-            tokens.len() + options.max_new_tokens,
+            tokens.len() + budget,
             tokens.len(),
             image_start,
             image_end,
             simd,
             self.config.cache_layout,
-            self.model.profile().kv != crate::quant::Kv::Compact && options.max_new_tokens > 1,
+            self.model.profile().kv != crate::quant::Kv::Compact && budget > 1,
             self.config.exp,
             self.config.tuning,
         )?;
@@ -679,7 +675,7 @@ impl Runner {
             session,
             hidden,
             next_token,
-            max_new_tokens: options.max_new_tokens,
+            max_new_tokens: budget,
             budget_clamped,
             screen,
             simd,
