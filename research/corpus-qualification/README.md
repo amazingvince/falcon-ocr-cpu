@@ -16,7 +16,7 @@ python -m zipfile -e reference/prefill-gate-data-v1.zip reference
 
 The extracted JSON files are ignored by Git and can be removed after use.
 The smaller evaluation budgets and results are readable in `reference/`.
-[Source provenance](../../reference/prefill-gate-provenance-v1.md) maps
+[Source provenance](../../reference/prefill-gate-provenance-v2.md) maps
 the receipts' original commit identities to the integrated history.
 
 | File | What it did or produced | Status |

@@ -1,6 +1,6 @@
 # Development
 
-Status: current as of 2026-11-10.
+Status: current as of 2026-11-11.
 
 ## Toolchain
 
@@ -230,7 +230,7 @@ manifests and
 locks](../research/corpus-qualification/README.md#archived-prefill-gate-inputs)
 before using their research scripts. The recorded budgets and results are
 readable in `reference/`; the [provenance
-note](../reference/prefill-gate-provenance-v1.md) maps their original source
+note](../reference/prefill-gate-provenance-v2.md) maps their original source
 commits to the integrated history.
 
 `falcon-ocr-eval agree` takes an FP32 reference from a
@@ -429,12 +429,13 @@ activations in fast mode's prefill projections, default `i16`; see
 without running maximum in fast mode's BF16 prefill attention, default
 `static`; same section), `prefill-softmax-fp32=online|static` (the same
 choice in the FP32 prefill tiles of 16- and 8-bit bodies on x86; by
-default static for 16-bit bodies and online for 8-bit ones; ignored by BF16
-plans, including their FP32 fallback calls; see
+default static for 16-bit bodies and online for 8-bit ones; it does not
+affect a BF16 plan or that plan's FP32 fallback calls, but it selects the
+near-exact rerun's softmax under `--escalate`; see
 [MODES.md](MODES.md#static-softmax-in-the-fp32-tiles)),
 `split-chunks=1..4` (position chunks of the split cache scan),
-`decode-exp=exact|fast` (the exp of decode attention over
-split caches; pin it when comparing caches, see
+`decode-exp=exact|fast` (the exp of decode attention over split caches;
+overrides the cache-mode and `--exp` default; pin it when comparing caches, see
 [MODES.md](MODES.md#rotated-kv-cache-experimental)), `kv-layers=0,3` (whole
 layers at Q8 in a Q16 cache; see
 [MODES.md](MODES.md#whole-layer-q8-in-the-q16-cache-experimental)),
@@ -452,8 +453,27 @@ precision of the listed layers' caches; the others schedule or measure
 replaces the KV half of the resolved profile; the plan and every result
 name the profile that runs, a research one unless it is a mode's own.
 These flags are hidden from `--help` and configured through CLI arguments.
-Environment-variable controls are confined to the tests and probes described
-above.
+Environment-variable controls belong to tests and probes, including the
+[workspace and KV diagnostics](#diagnostic-environment-controls).
+
+## Diagnostic environment controls
+
+The workspace diagnostic (`tests/prefill_workspace.rs`) needs the pinned
+checkpoint and GPU smoke input. Choose a fresh trace path for each run;
+the test writes a SafeTensors trace and a JSON sidecar with the same base
+name.
+
+| Variable | Used by | Meaning |
+|---|---|---|
+| `FOCR_WORKSPACE_TRACE` | `mixed_batch_workspace_trace` | Required output trace path |
+| `FOCR_WORKSPACE_CACHE_LAYOUT` | `mixed_batch_workspace_trace` | `expanded` (default) or `compact` |
+| `FOCR_WORKSPACE_BASELINE` | `mixed_batch_workspace_trace` | Optional completed trace to compare by tensor name, dtype, shape and bytes |
+| `PROBE_MODE` | `quant::kv::probe::verify_rows_probe` | Cache format: `q8` (default), `q16`, `f32`, `q8r` or `q4r` |
+| `PROBE_THREADS` | `quant::kv::probe::verify_rows_probe` | Thread count (default 12) |
+
+The KV verification-row timing probe builds synthetic caches and needs no
+model files. `falcon-ocr-eval` also reads `PROCESSOR_IDENTIFIER` as optional
+host metadata in reports; it does not configure inference.
 
 ## Gotchas
 

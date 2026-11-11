@@ -5,7 +5,7 @@ a wiki screenshot (`liber_primus_wiki_screen.png`), a scanned book page
 (`scanned-book-page_ballooning.png`), a desktop mail screenshot
 (`smoke_screenshot.png`) and a grocery advertisement
 (`kroger-bench-09_fried.jpg`), plus deep-fried versions. Their original
-sources and redistribution licences were not recorded. They are no longer
+sources and redistribution licences were not recorded. They are not
 bundled in this repository, and no automated test depends on them.
 
 The immutable
@@ -13,8 +13,8 @@ The immutable
 retains each image's SHA-256, historical path, per-page results and the
 comparison procedure. Its path names describe the inputs at run time;
 they are not download locations. The `classic` and `classic-2026-11-02`
-variants are separate unseeded draws, not byte-identical copies. Both sets
-were removed with the original images.
+variants are separate unseeded draws, not byte-identical copies. Neither set
+is bundled.
 
 [Mode fidelity](../../../docs/MODES.md#free-running-validation) summarizes
 that comparison. Repeating it requires independently obtaining the exact

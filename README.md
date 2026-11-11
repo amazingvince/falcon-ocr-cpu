@@ -51,11 +51,12 @@ books and PDFs, see [Books and PDFs](#books-and-pdfs).
 FP32 means 32-bit floating point. A flip is a different greedy token choice
 when each mode receives the same reference-token prefix.
 
-The journal page has 6,544 input tokens. The timings use a Ryzen 9 7950X
-on Windows 11 without the draft head. The near-exact and fast rows use the
-previous prefill kernels. On a Ryzen 7 7700X the current kernels cut
-transformer prefill by about [30% in fast](docs/MODES.md#int16-projections-and-static-softmax)
-and [10% in near-exact](docs/MODES.md#static-softmax-in-the-fp32-tiles).
+The journal page has 6,544 input tokens. The table records a Ryzen 9 7950X
+on Windows 11 without the draft head. Its near-exact and fast measurements
+use FP32 projection panels and online softmax. On a Ryzen 7 7700X,
+transformer prefill is faster with fast mode's
+[INT16 projections and static softmax](docs/MODES.md#int16-projections-and-static-softmax)
+and near-exact's [FP32 static softmax](docs/MODES.md#static-softmax-in-the-fp32-tiles).
 Near-exact is recommended for handwriting and degraded scans, where fast
 mode failed its held-out budgets.
 
@@ -162,7 +163,8 @@ target/release/falcon-ocr --model models/falcon-ocr-cpu run --list book-pages/pa
   ([docs/PERFORMANCE.md](docs/PERFORMANCE.md#book-runs)). `--batch-size N`
   decodes several pages together. Neither changes the tokens.
 - In fast mode, `--escalate` rereads a page that got stuck in a loop with
-  the near-exact model.
+  the near-exact model. Resuming without it over escalated records warns;
+  those completed pages stay skipped.
 
 Record format and resume matching:
 [long runs](docs/ARCHITECTURE.md#long-runs).

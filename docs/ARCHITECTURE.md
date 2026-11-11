@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current as of 2026-11-10.
+Status: current as of 2026-11-11.
 
 ## Model contract
 
@@ -182,8 +182,8 @@ A record that ran with different settings is kept and skipped with a
 warning naming the difference: the mode or precision, the GPTQ overlay or
 round-to-nearest weights, `--max-dimension`, `--min-dimension`,
 `--max-new-tokens` or crop padding, `--stop-repetition` (with the stop on,
-a record whose plan lacks `repetition_counting`, written before the
-counting rule, warns as "repetition stop without counting loops"), `--exp`,
+a record whose plan lacks `repetition_counting` warns as "repetition stop
+without counting loops"), `--exp`,
 the prefill attention (BF16 or the FP32 tiles, each with the online or the
 static softmax; NEON; scalar), BF16 or INT16 projections (the AVX2 and
 AVX-512 forms of the FP32 tiles, and of the INT16 panels, count as one), a
@@ -191,14 +191,14 @@ pinned `--tune decode-exp`, the `--tune kv-layers` set, the effective
 `--tune split-chunks` or the build's image decoder; a record without
 `options` counts as one that ran with different settings. Automatic
 chunking matches an explicit mode default, and compact caches ignore the
-split-cache knob. A near-exact record written before the static softmax
-became its default (attention `avx512-wide` or `avx2`) therefore warns when
-resumed with the default.
+split-cache knob. A near-exact record naming online attention
+(`avx512-wide` or `avx2`) therefore warns when resumed with the static
+softmax default.
 
-A plan records whether the counting stop is enabled, not its threshold.
-Records from an earlier counting threshold can therefore match without a
-warning. To reread their pages with the current rule, use a new output file
-without `--resume`.
+The counting threshold is not recorded or compared by `--resume`: completed
+pages stay skipped regardless of the threshold used for them. To reread
+those pages with a different threshold, use a new output file without
+`--resume`.
 
 An escalated record compares its near-exact rerun's kernel settings and the
 weights and prefill kernels of the fast attempt it replaced, which
@@ -206,16 +206,19 @@ weights and prefill kernels of the fast attempt it replaced, which
 against the uniform 16-bit near-exact body. `Resolved::escalation_prefill`
 records that predicted prefill plan for fast runs using the same planner,
 host and configuration as the actual rerun, even when the fast body has a
-partial overlay. Resume reads its attention kind rather than deriving a
-second softmax default. An escalation-specific attention label appears in
-warnings only for mismatching escalated records. For a run with BF16
+partial overlay. Resume reads the attention kind from this field. An
+escalation-specific attention label appears in warnings only for
+mismatching escalated records. For a run with BF16
 attention, `prefill-softmax-fp32` therefore tells apart only escalated
 records. The fast attempt's prefill must match the run's own attention and
 projections, by the kinds above, since they decide which pages escalate.
 An escalated record written before the weights or the attempt's prefill
 kernels were recorded matches any weights or any prefill kernels. With
 `--escalate`, a warning counts fast-mode records that the repetition stop
-ended without a near-exact rerun, since their pages are skipped.
+ended without a near-exact rerun, since their pages are skipped. A run
+without `--escalate` warns when the output contains escalated records:
+completed pages stay skipped, while later looping pages keep their fast
+result unless escalation is enabled.
 
 **Escalation.** `--escalate` (`runner/escalate.rs`) loads the near-exact
 model when a fast-mode page first ends on the repetition stop and keeps it
@@ -289,8 +292,8 @@ softmax](MODES.md#static-softmax-in-the-fp32-tiles).
 
 The FP32 tiles' static softmax shares the generic `tile_head` loop with the
 online form, selected by a const softmax mode. Portable, AVX2 and NEON
-instantiate the same arithmetic; the AVX-512 form uses wider QK and PV
-operations. Its deployed plan labels are `avx2-static` and
+instantiate the same arithmetic; the AVX-512 form uses wider QK, PV and
+softmax operations. Its deployed plan labels are `avx2-static` and
 `avx512-wide-static`. It rests on the bound that fast mode's uses: the
 per-head RMS norms keep every score `q · k / 8` within [-8, 8], so
 `exp(score)` needs no shift. The running maximum, the block-maximum pass, the
@@ -300,11 +303,13 @@ masked lanes (scores of -inf; a NaN score stays NaN, as in the online tiles
 and the scalar oracle) and adds the probability to its query's denominator in
 key order. QK and PV are the online tiles' lane kernels (8 lanes, or 16 under
 `auto` with AVX-512F) for every tile shape, including the short tiles that
-the online tiles send through `gemm`. The exp uses `Simd::exp_unchecked`,
-`simd::exp_poly`'s operation sequence without its range checks (the checked
-form had [no measured speedup](PERFORMANCE.md#rejected-or-unadopted)), so
-every lane is bitwise `exp_poly` for |score| <= 87, whatever `ExpMode` says;
-its argument is the score itself, where the online tiles round `score - max`
+the online tiles send through `gemm`. The 8-lane exp uses
+`Simd::exp_unchecked`, `simd::exp_poly`'s operation sequence without its
+range checks. The 16-lane specialization keeps that polynomial and uses
+`vscalefps` for its power-of-two scale. Both forms are bitwise `exp_poly`
+for |score| <= 87, whatever `ExpMode` says (the checked form had
+[no measured speedup](PERFORMANCE.md#rejected-or-unadopted)). The argument
+is the score itself, where the online tiles round `score - max`
 first, so the two softmaxes are not bitwise equal. Scores must stay below
 about 80 in magnitude, beyond which a page-long row's denominator overflows;
 the norms leave a factor of ten. The 8- and 16-lane forms agree bit for bit

@@ -1,6 +1,6 @@
 # Modes
 
-Status: current as of 2026-11-10. Measurements: Ryzen 9 7950X (16 cores,
+Status: current as of 2026-11-11. Measurements: Ryzen 9 7950X (16 cores,
 32 threads, DDR5), Windows 11, the journal benchmark page (6,544 input tokens),
 unless a section names the Ryzen 7 7700X (8 cores, 16 threads), Linux.
 
@@ -303,7 +303,10 @@ and x86 CPUs without AVX2 run the projections through the `gemm` crate.
 
 An all-zero activation group has step zero. If `32,767 / absmax`
 overflows FP32, quantization uses FP64 division and rounds the step up to
-a positive representable FP32 value, preserving tiny nonzero groups.
+a positive representable FP32 value, retaining tiny nonzero activation
+codes. The kernel multiplies the activation and weight scales in FP32
+before applying the integer sum, so tiny scales can lose precision or
+underflow and the resulting products are not guaranteed to stay nonzero.
 
 The static softmax replaces the online softmax of fast mode's BF16 prefill
 attention (plan label `bf16-static`). It needs AVX512-BF16 and AVX512BW: a
@@ -443,10 +446,11 @@ Micro CER on the pages where the reference ends at EOS:
 The other 5 pages, all tables, reach the 4,096-token cap in both arms; no
 page changes its stop reason, and the repetition stop fires on none. 148 of
 the 156 pages are token-identical (144 of the 151 EOS pages), with 289 token
-edits in the EOS pages' 182,447 tokens. The gate's binary predates the
-counting rule of the [repetition stop](#loops-and-the-repetition-stop), which
-at 64 cycles ends none of the gate's 312 outputs (both arms) when they are
-replayed through it (`artifacts/repetition-probe-2026-11-03/`).
+edits in the EOS pages' 182,447 tokens. The receipt records a binary without
+the counting rule. Replaying the gate's 312 recorded outputs through the
+128-cycle [counting stop](#loops-and-the-repetition-stop) produces no
+counting cut (`artifacts/fast-defaults-gate-v1/probe-128-cycles.txt`); this
+checks saved tokens, not a fresh held-out run.
 
 ## Static softmax in the FP32 tiles
 
@@ -598,14 +602,15 @@ page record, 60 eligible families stay fresh, 54 of them tables and 6
 other, and none is English, so a later gate on OmniDocBench has only
 those, and an English gate needs pages from another source.
 
-The gate's binary has the counting rule of the [repetition
-stop](#loops-and-the-repetition-stop) at 32 cycles. A historical replay
-through the 64-cycle rule changed one stop among its 621 outputs: page
-`8e6267854fcec66c`, which the reference and the static softmax ended by
-the counting rule after 431 tokens (53 cycles), would continue. The
-reference does not end that page at EOS, so it lies outside the gated
-scope, and neither verdict changes under that replay
-(`artifacts/near-exact-softmax-gate-v1/probe-64-cycles.txt`).
+The receipt records a 32-cycle counting threshold. Replaying its 621 saved
+outputs through the 128-cycle rule produces no counting cut
+(`artifacts/near-exact-softmax-gate-v1/probe-128-cycles.txt`). In particular,
+the reference and static outputs of `8e6267854fcec66c` contain only the 53
+cycles captured before their recorded stop, at 431 tokens. A replay cannot
+recover tokens beyond that stop or determine a fresh run's CER. The page
+is outside the reference-EOS scope; the registered verdicts and their stop
+policy remain the recorded evidence. The 64-cycle diagnostic is retained
+in `artifacts/near-exact-softmax-gate-v1/probe-64-cycles.txt`.
 
 ## Fast mode's held-out result
 
@@ -810,52 +815,45 @@ window restarts at a step change. The rule fires once a window holds 128
 whole cycles and spans at least 256 tokens (`MIN_COUNT_REPEATS`,
 `MIN_WINDOW` in `src/repetition.rs`).
 
-The earlier 64-cycle threshold was measured on recorded text, replayed
-through the stop without a model
-(`repetition::probe::recorded_outputs_probe`; the inputs, builders and both
-probe outputs are in `artifacts/repetition-probe-2026-11-03/`): 1,047
-recorded outputs (560 distinct token sequences) of calibration, anchor, book,
-stress, probe and gate runs under `artifacts/`, and the 1,651 OmniDocBench
-ground-truth pages, tokenized with tables in the model's style; 2,698 outputs
-and 2,879,678 tokens in all. In outputs that end at EOS and in ground truth,
-the longest counting window is 20 cycles, a scoring table counting down from
-20 bonus points (v3 page `aa8e1119117b1822`, in its output and its ground
-truth); the next longest is 9, and a threshold of 16 would cut the scoring
-table. Templated pages count for longer: a Celsius-to-Fahrenheit table of 101
-rows, a 100-item answer sheet and a 104-week planner stay below the current
-floor (`templated_rows_with_fixed_steps_are_not_loops` in
-`src/repetition/tests.rs`). The three counting loops on record reach 65, 119
-and 212 cycles. At 64 the rule ended 7 of the 2,698 outputs, on the same
-three pages as at 32, and none that ends at EOS or is ground truth:
+The rule is checked by replaying recorded text through the stop without a
+model (`repetition::probe::recorded_outputs_probe`): 1,047 outputs (560
+distinct token sequences) from calibration, anchor, book, stress, probe and
+gate runs, and the 1,651 OmniDocBench ground-truth pages, tokenized with
+tables in the model's style; 2,698 outputs and 2,879,678 tokens in all.
+The inputs, builders and `probe-128-cycles.txt` are in
+`artifacts/repetition-probe-2026-11-03/`; that directory retains the
+32- and 64-cycle diagnostics and their input-set descriptions too.
 
-| Page | Output | Tokens before | Counting rule at 64 (at 32) |
+In outputs that end at EOS and in ground truth, the longest counting
+window is 20 cycles, a scoring table counting down from 20 bonus points
+(v3 page `aa8e1119117b1822`, in its output and its ground truth); the next
+longest is 9. Templated pages can count further: a 101-row conversion
+table, a 100-item answer sheet and a 104-week planner stay below the
+128-cycle floor (`templated_rows_with_fixed_steps_are_not_loops` in
+`src/repetition/tests.rs`). Recorded loops include:
+
+| Page | Recorded output | Tokens before | Counting cut at 128 |
 |---|---|---:|---:|
-| Mild deep-fried `ad43a4d35e59199e` | Fast mode's current kernels and near-exact with either FP32 softmax (identical): rows 44 to 255 | 4,096 (cap) | 1,279 (695) |
-| Anchor `3b0add7f7d14d45c` | Fast mode's current kernels: a list `(1)` to `(100)` of one date, `1980年12月24日 星期五` | 2,247 (exact rule) | 1,368 (728) |
-| `3ae00f1496cda3ff` | The FP32 CPU reference and near-exact with either FP32 softmax: the years 1981, 1982, … | 512 (budget), 4,096 (cap) | 434 (308) |
+| Mild deep-fried `ad43a4d35e59199e` | Fast with INT16/static kernels and near-exact with either FP32 softmax, token-identical: rows 44 to 255 (212 cycles) | 4,096 (cap) | 2,495 (row 171) |
+| Anchor `3b0add7f7d14d45c` | Fast-mode date list `(1)` to `(100)` (65 cycles) | 2,247 (exact rule) | — |
+| `3ae00f1496cda3ff` | FP32 CPU reference and near-exact with either FP32 softmax: years 1981, 1982, … (77 or 119 cycles) | 512 (budget), 4,096 (cap) | — |
 
-The deep-fried page is a degraded Traditional Chinese page ([free-running
-validation](#free-running-validation)); at the old 64-cycle threshold its
-counting loop ended in row 107. Fast mode's previous prefill kernels fell
-into an exact two-line loop there instead, which the exact rule ended at 314
-tokens. The anchor's date list ended after item 64, and the year run after
-2044 at that threshold. The PyTorch GPU cross-check of `3ae00f1496cda3ff`,
-whose 384-token budget ends its year run after 55 cycles, no longer fires. In
-each output the loop continues past the cut, and fast mode's outputs of
-`3ae00f1496cda3ff` end at EOS without the year run. Both rules together cost
-about 0.3 µs per token (one probe run on a 7700X), against about 9 ms per
-decode step.
+The counting rule cuts three replay records of the deep-fried page (two
+near-exact online runs and one static run). The fast output is token-identical
+in the [free-running receipt](../reference/fast-defaults-free-running-v1.json)
+and has the same cut. The counting rule fires on no EOS output or
+ground-truth page. A dash means the rule does not fire within the
+recorded tokens: the exact rule, EOS or a token limit can still end a
+page. Saved outputs truncated by another stop cannot reveal what a fresh
+run would generate beyond that point. Both rules together cost about
+0.3 µs per token in a 7700X replay, against about 9 ms per decode step.
 
-Legitimate content that matches a rule is cut: a 256-token page of identical
-lines, or 128 or more rows identical apart from counting numbers (a long
-blank numbered form, a number chart). The floor is now 128 to preserve
-longer forms, including 100-item answer sheets and 104-week planners; the
-same 2,698-output replay at 128 ends three outputs of the 212-cycle
-deep-fried page at 2,495 tokens, in row 171, and none that ends at EOS or
-is ground truth. The 65- and 119-cycle runs may reach another stop or the
-token cap. When a page ends by repetition, the CLI prints a note to stderr
-naming the page and `--stop-repetition=false`, including with `--text`.
-Use that option when the page intentionally matches a rule.
+Legitimate content that matches a rule is cut: a 256-token page of
+identical lines, or at least 128 counting cycles in a sufficiently long
+blank numbered form or number chart. When a page ends by repetition, the
+CLI prints a note to stderr naming the page and
+`--stop-repetition=false`, including with `--text`. Use that option when
+the page intentionally matches a rule.
 
 `run --escalate` rereads fast-mode pages that either rule ends with the
 near-exact model, and under `--max-dimension auto` the router's
@@ -875,10 +873,11 @@ loops are almost always FP32's own.
 This follows the loop-rerun proposal (remedy 1) in
 `research/phase4-hillclimb/attempt3/RESULTS-V3.md` §7, using near-exact
 instead of exact. Its effect on those spent held-out pages is unmeasured.
-On the 64 v3 calibration pages (published files, Ryzen 7 7700X), the stop
-ends 9 fast-mode pages and `--escalate` rereads all 9 with the tokens of
-plain near-exact runs. Two end at EOS (516 and 1,858 tokens, where fast
-looped at 335 and 2,139); the other 7 also loop in near-exact mode.
+In a recorded run on the 64 v3 calibration pages (published files, Ryzen
+7 7700X), the stop ended 9 fast-mode pages and `--escalate` reread all 9
+with the tokens of plain near-exact runs. Two ended at EOS (516 and 1,858
+tokens, where fast looped at 335 and 2,139); the other 7 also looped in
+near-exact mode.
 
 ## Packed model files
 

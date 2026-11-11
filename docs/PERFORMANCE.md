@@ -1,6 +1,6 @@
 # Performance
 
-Status: current as of 2026-11-10. Host, unless a section says otherwise:
+Status: current as of 2026-11-11. Host, unless a section says otherwise:
 Ryzen 9 7950X (16 cores, 32 threads, DDR5, AVX-512 with BF16), Windows 11.
 Page: the journal benchmark page, 6,544 input tokens. Earlier measurements on
 the tiny 256×128 fixture are archived in
@@ -372,24 +372,23 @@ the current behaviour.
 
 ### Peak memory
 
-A page's memory used to peak at the end of its last prefill layer, with
-every layer's FP32 compact KV beside the forward workspace. Each layer now
-[seals right after its attention](ARCHITECTURE.md#kv-cache-formats), so one
-layer's FP32 buffers exist at a time and the sealed records grow in their
-place. Fresh workspace buffers and the split tail use zeroed allocations
+Each layer [seals right after its attention](ARCHITECTURE.md#kv-cache-formats),
+so one layer's FP32 buffers exist at a time and the sealed records grow in
+their place. Fresh workspace buffers and the split tail use zeroed allocations
 whose untouched pages stay out of RSS. The patches are released after the
 embedding, and fixed glibc thresholds return large frees to the OS.
 
-The build before these changes against the build with them: three
+The comparison uses a baseline retaining every layer's FP32 compact KV
+beside the forward workspace and a build with per-layer sealing: three
 interleaved rounds of fresh processes, `--model artifacts/packed
 --decode-threads 8` and default speculation, with the arms' order swapped
 in the second round, on a quiet host (largest unrelated process 2.8% CPU).
 The journal page is capped at 300 tokens (`--max-new-tokens 300`) and the
 1418 × 1224 sample page (`falcon-ocr-comparison.png`) runs at the default
 budget. Peak RSS comes from `/usr/bin/time -v`, and MB is 10^6 bytes.
-Medians, old → new; tokens were identical in every pair. `prefill_ms` is
-the like-for-like prefill column, since `transformer_prefill_ms` now
-includes the seal:
+Medians, baseline → per-layer sealing; tokens were identical in every pair.
+`prefill_ms` is the like-for-like prefill column: `transformer_prefill_ms`
+includes sealing in the per-layer build and excludes it in the baseline:
 
 | Mode | Page | Peak RSS, MB | Ratio | `prefill_ms` | Ratio | Decode, ms/token | `total_ms` | Ratio | Minor faults |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -520,7 +519,8 @@ default is `--tune prefill-projections=fp32 --tune prefill-softmax=online`,
 and each single-kernel arm sets one of the two. Transformer prefill is the
 median [range] in milliseconds; the attention and projection columns are
 its phase split. This is a separate three-round run from the five-round
-BF16-projection comparison above (INT16 4,066 ms there, 4,103 ms here):
+BF16-projection comparison above (INT16 4,066 ms there, 4,103 ms here;
+FP32 5,247 ms there, 5,284 ms here):
 
 | Arm | Transformer prefill | Attention | Projections | Against previous default |
 |---|---:|---:|---:|---:|
