@@ -139,8 +139,49 @@ def gate_category(row: dict) -> str | None:
     return category(row) or ("other" if char_count(row) >= 100 else None)
 
 
-def rank(cat: str, name: str) -> str:
-    return hashlib.sha256(f"{SEED}\0{cat}\0omnidocbench:{name}".encode()).hexdigest()
+def choose_family_pages(
+    eligible: list[tuple[dict, str]], family: dict[str, str], seed: str
+) -> list[tuple[str, dict]]:
+    """Choose one page per family by category priority and seeded rank."""
+    best: dict[str, tuple[tuple[int, str], str, dict]] = {}
+    for row, cat in eligible:
+        name = row["page_info"]["image_path"]
+        rank = hashlib.sha256(f"{seed}\0{cat}\0omnidocbench:{name}".encode()).hexdigest()
+        key = (CATEGORIES.index(cat), rank)
+        fam = family[name]
+        if fam not in best or key < best[fam][0]:
+            best[fam] = (key, cat, row)
+    return [(cat, row) for _, cat, row in sorted(best.values(), key=lambda x: x[0])]
+
+
+def page_record(row: dict, cat: str, family: str, lfs: dict, images: Path, gate: str) -> dict:
+    """Build a manifest page from its annotation and pinned Hub tree entry."""
+    info = row["page_info"]
+    name = info["image_path"]
+    return {
+        "id": f"omnidocbench:{name}", "split": "evaluation", "category": cat, "smoke": False,
+        "image_path": f"images/{name}",
+        "image_url": f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/images/{urllib.parse.quote(name)}",
+        "source_family": family, "width": info["width"],
+        "height": info["height"], "attributes": info["page_attribute"],
+        "ground_truth": {"annotation_file": "OmniDocBench.json", "image_path": name,
+                         "page_sha256": stable_hash(row)},
+        "annotation_text_characters": char_count(row),
+        "median_line_height_ratio": tiny_height(row),
+        "visual_review": f"none: {gate}, category from the corpus rules only",
+        # prepare_corpus.py copies this local download and checks it against the Hub's LFS hash.
+        "reviewed_source_path": (images / name).as_posix(),
+        "reviewed_source_sha256": lfs["lfs_sha256"],
+        "source_bytes": lfs["lfs_size"],
+    }
+
+
+def print_image_list(pages: list[dict]) -> None:
+    """Print the selected image paths and report their total download size."""
+    for page in pages:
+        print(page["image_path"])
+    total = sum(p["source_bytes"] for p in pages)
+    print(f"{len(pages)} images, {total} bytes ({total / 1e6:.1f} MB)", file=sys.stderr)
 
 
 def pools(rows: list[dict], categorize) -> dict[str, list[dict]]:
@@ -211,42 +252,17 @@ def main() -> None:
     outside = [r for r in pool if family[r["page_info"]["image_path"]] not in excluded_families]
     by_category = pools(outside, gate_category)
     eligible = [(row, cat) for cat, ps in by_category.items() for row in ps]
-    best: dict[str, tuple[tuple[int, str], str, dict]] = {}
-    for row, cat in eligible:
-        name = row["page_info"]["image_path"]
-        key = (CATEGORIES.index(cat), rank(cat, name))
-        fam = family[name]
-        if fam not in best or key < best[fam][0]:
-            best[fam] = (key, cat, row)
-    chosen = sorted(best.values(), key=lambda x: x[0])
+    chosen = choose_family_pages(eligible, family, SEED)
 
     pages = []
-    for _, cat, row in chosen:
+    for cat, row in chosen:
         name = row["page_info"]["image_path"]
         lfs = tree[f"images/{name}"]
         if lfs["lfs_sha256"] != dev[name]["reviewed_source_sha256"]:
             sys.exit(f"{name}: tree listing and router-dev-v1 disagree on the image hash")
-        pages.append({
-            "id": f"omnidocbench:{name}", "split": "evaluation", "category": cat, "smoke": False,
-            "image_path": f"images/{name}",
-            "image_url": f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/images/{urllib.parse.quote(name)}",
-            "source_family": family[name], "width": row["page_info"]["width"],
-            "height": row["page_info"]["height"], "attributes": row["page_info"]["page_attribute"],
-            "ground_truth": {"annotation_file": "OmniDocBench.json", "image_path": name,
-                             "page_sha256": stable_hash(row)},
-            "annotation_text_characters": char_count(row),
-            "median_line_height_ratio": tiny_height(row),
-            "visual_review": "none: fast-defaults gate v1, category from the corpus rules only",
-            # prepare_corpus.py copies this local download and checks it against the Hub's LFS hash.
-            "reviewed_source_path": (a.images / name).as_posix(),
-            "reviewed_source_sha256": lfs["lfs_sha256"],
-            "source_bytes": lfs["lfs_size"],
-        })
+        pages.append(page_record(row, cat, family[name], lfs, a.images, "fast-defaults gate v1"))
     if a.print_images:
-        for page in pages:
-            print(page["image_path"])
-        total = sum(p["source_bytes"] for p in pages)
-        print(f"{len(pages)} images, {total} bytes ({total / 1e6:.1f} MB)", file=sys.stderr)
+        print_image_list(pages)
         return
 
     counts = {cat: sum(p["category"] == cat for p in pages) for cat in CATEGORIES}
@@ -277,7 +293,7 @@ def main() -> None:
             "after_family_exclusion": len(outside),
             "dropped_no_category_under_100_characters": len(outside) - len(eligible),
             "eligible": len(eligible),
-            "families": len(best),
+            "families": len(chosen),
         },
         "pool_sizes": pool_sizes,
         "exclusion_sources": {path.as_posix(): file_sha256(path) for path in [*spent_manifests, V3_REVIEW, ROUTER_DEV]},

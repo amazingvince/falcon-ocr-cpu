@@ -70,12 +70,13 @@ from collections import Counter
 from collections.abc import Iterator
 from pathlib import Path
 
-from prepare_corpus import stable_hash
 from prepare_corpus_smoke import ground_truth
-from select_corpus import ANNOTATION_SHA256, DATASET, REVISION, char_count, tiny_height
+from select_corpus import ANNOTATION_SHA256, DATASET, REVISION
 from select_english_gate import gate_family
-from select_fast_defaults_gate import (CATEGORIES, CORPORA, ENGLISH_GATE, ROUTER_DEV, V3_REVIEW, document_families,
-                                       file_sha256, gate_category, pages_of, pools)
+from select_fast_defaults_gate import (
+    CATEGORIES, CORPORA, ENGLISH_GATE, ROUTER_DEV, V3_REVIEW, choose_family_pages, document_families,
+    file_sha256, gate_category, page_record, pages_of, pools, print_image_list,
+)
 
 SEED = "falcon-cpu-near-exact-softmax-gate-v1"
 PREFIX = "near-exact-softmax-gate-v1"
@@ -130,10 +131,6 @@ def furniture(row: dict) -> set[str]:
             if len(text) >= MIN_FURNITURE:
                 out.add(f"furniture:{text}")
     return out
-
-
-def rank(cat: str, name: str) -> str:
-    return hashlib.sha256(f"{SEED}\0{cat}\0omnidocbench:{name}".encode()).hexdigest()
 
 
 def audit_reference(spent: set[str], by_stem: dict[str, str]) -> None:
@@ -204,53 +201,25 @@ def main() -> None:
     by_plain_rule = sum(plain[r["page_info"]["image_path"]] in plain_excluded for r in with_truth)
     by_category = pools(outside, gate_category)
     eligible = [(row, cat) for cat, ps in by_category.items() for row in ps]
-    best: dict[str, tuple[tuple[int, str], str, dict]] = {}
-    for row, cat in eligible:
-        name = row["page_info"]["image_path"]
-        key = (CATEGORIES.index(cat), rank(cat, name))
-        fam = family[name]
-        if fam not in best or key < best[fam][0]:
-            best[fam] = (key, cat, row)
-    winners = sorted(best.values(), key=lambda x: x[0])
+    winners = choose_family_pages(eligible, family, SEED)
     taken: Counter[str] = Counter()
-    chosen = []
-    for key, cat, row in winners:
+    pages = []
+    for cat, row in winners:
         if taken[cat] < QUOTA:
             taken[cat] += 1
-            chosen.append((key, cat, row))
+            name = row["page_info"]["image_path"]
+            lfs = tree[f"images/{name}"]
+            pages.append(page_record(row, cat, family[name], lfs, a.images, "near-exact softmax gate v1"))
 
-    pages = []
-    for _, cat, row in chosen:
-        name = row["page_info"]["image_path"]
-        lfs = tree[f"images/{name}"]
-        pages.append({
-            "id": f"omnidocbench:{name}", "split": "evaluation", "category": cat, "smoke": False,
-            "image_path": f"images/{name}",
-            "image_url": f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/images/{urllib.parse.quote(name)}",
-            "source_family": family[name], "width": row["page_info"]["width"],
-            "height": row["page_info"]["height"], "attributes": row["page_info"]["page_attribute"],
-            "ground_truth": {"annotation_file": "OmniDocBench.json", "image_path": name,
-                             "page_sha256": stable_hash(row)},
-            "annotation_text_characters": char_count(row),
-            "median_line_height_ratio": tiny_height(row),
-            "visual_review": "none: near-exact softmax gate v1, category from the corpus rules only",
-            # prepare_corpus.py copies this local download and checks it against the Hub's LFS hash.
-            "reviewed_source_path": (a.images / name).as_posix(),
-            "reviewed_source_sha256": lfs["lfs_sha256"],
-            "source_bytes": lfs["lfs_size"],
-        })
     if a.print_images:
-        for page in pages:
-            print(page["image_path"])
-        total = sum(p["source_bytes"] for p in pages)
-        print(f"{len(pages)} images, {total} bytes ({total / 1e6:.1f} MB)", file=sys.stderr)
+        print_image_list(pages)
         return
 
     counts = {cat: taken[cat] for cat in CATEGORIES}
     languages = Counter(p["attributes"].get("language") for p in pages)
     by_language = {cat: dict(sorted(Counter(p["attributes"].get("language") for p in pages
                                             if p["category"] == cat).items())) for cat in CATEGORIES if taken[cat]}
-    family_winners = {cat: sum(c == cat for _, c, _ in winners) for cat in CATEGORIES}
+    family_winners = {cat: sum(c == cat for c, _ in winners) for cat in CATEGORIES}
     spent_gate_families = {gate_family(n) for n in spent}
     manifest = {
         "schema_version": 3, "status": PREFIX, "dataset": DATASET, "revision": REVISION,
@@ -289,9 +258,9 @@ def main() -> None:
                 r["page_info"]["page_attribute"].get("language") for r in outside).items())),
             "dropped_no_category_under_100_characters": len(outside) - len(eligible),
             "eligible": len(eligible),
-            "families": len(best),
+            "families": len(winners),
             "family_winners_by_category": family_winners,
-            "left_after_quota": len(best) - len(pages),
+            "left_after_quota": len(winners) - len(pages),
         },
         "pool_sizes": {cat: len(by_category.get(cat, [])) for cat in CATEGORIES},
         "exclusion_sources": {path.as_posix(): file_sha256(path) for path in SPENT_SOURCES},
