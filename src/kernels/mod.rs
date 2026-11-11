@@ -181,7 +181,8 @@ impl std::fmt::Display for PrefillAttention {
 
 /// The prefill kernels for a body of `body_bits` (`Model::body_bits`: `None`
 /// for FP32), with or without matrices the INT16 panels cannot hold
-/// (`i16_misfit`, `Model::i16_misfit`: 16-bit codes or W8 groups of 32),
+/// (`i16_misfit`, `Model::i16_misfit`: codes other than W8 in groups of 64,
+/// outputs not divisible by 32, or inputs not divisible by the group size),
 /// on this CPU with the `simd` backend and the `tuning` knobs
 /// `prefill_bf16`, `prefill_projections`, `prefill_softmax` and
 /// `prefill_softmax_fp32`: the single predicate set behind

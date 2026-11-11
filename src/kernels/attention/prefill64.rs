@@ -1,7 +1,8 @@
 //! Compact-cache prefill attention for `head_dim == 64`, generic over
 //! `crate::simd::Simd` (AVX2/FMA on x86, NEON on aarch64). The AVX2
-//! instantiation is bitwise equal to `tiled::attention_gemm`; NEON and the
-//! portable path use the portable fast exp and are bitwise equal to each other.
+//! online instantiation with the platform exp is bitwise equal to
+//! `tiled::attention_gemm`; NEON and the portable path use the portable
+//! fast exp and are bitwise equal to each other.
 //!
 //! The reference runs two single-threaded `gemm` calls per (32-query tile,
 //! head, 128-key tile) with a scalar mask/softmax between them. For the shapes
@@ -17,10 +18,11 @@
 //! * schedules KV group by KV group, so one group's keys and values (about
 //!   5 MB at a full page) stay in cache while every query tile reads them.
 //!
-//! Key tiles outside gemm's main path (the last, short tiles) run the
-//! reference's own gemm calls and scalar softmax, so all tiles stay bitwise
-//! equal. Tests compare the kernels with gemm for every tile shape and the
-//! whole function with `tiled::attention_gemm`.
+//! With online softmax, key tiles outside gemm's main path (the last,
+//! short tiles) run its gemm calls and scalar softmax, keeping the AVX2
+//! platform-exp results bitwise equal to `tiled::attention_gemm`. Static
+//! softmax uses lane kernels for every tile shape and has its own bitwise
+//! scalar oracle.
 //!
 //! With AVX-512F (and backend `auto`), the QK and PV products use
 //! 16-lane `wide` kernels: every element keeps the same FMA chain and epilogue,
@@ -136,8 +138,10 @@ struct Shape {
 }
 
 /// Prefill of `cache` (`head_dim == 64`): a pure prefix, or one with generated
-/// keys past the prefix (read from their own rows); `wide` selects the 16-lane
-/// tiles, a static `options.fp32_softmax` the static-shift ones (pure prefixes).
+/// keys past the prefix (read from their own rows). On x86, `wide` selects
+/// the 16-lane tiles, and static `options.fp32_softmax` selects the
+/// static-shift tiles (pure prefixes only). NEON uses the online softmax
+/// with the portable fast exp regardless of these options.
 ///
 /// # Safety
 /// AVX2/FMA (NEON on aarch64) must be available and the shapes must satisfy

@@ -65,25 +65,35 @@ const CASES: [(usize, usize, usize, usize, usize); 10] = [
 
 fn run(case: (usize, usize, usize, usize, usize), wide: bool, options: PrefillOptions) -> Vec<f32> {
     #[cfg(target_arch = "x86_64")]
-    let tile: TileFn = if wide { tile_head_wide } else { tile_head_narrow };
+    {
+        let (queries, total, offset, image_start, image_end) = case;
+        let (q, k, v, sinks) = operands(queries, total);
+        let mut out = vec![f32::NAN; q.len()];
+        // SAFETY: callers check AVX2/FMA and AVX-512F before selecting wide;
+        // normalized heads bound the scores, and these are pure prefixes.
+        unsafe {
+            compact_prefill(
+                &q,
+                &CompactKv::prefill(&k, &v, total, 16, 8, HEAD_DIM),
+                queries,
+                Geometry::new(offset, image_start, image_end),
+                &sinks,
+                &mut out,
+                wide,
+                options,
+            );
+        }
+        out
+    }
     #[cfg(target_arch = "aarch64")]
-    let tile: TileFn = {
+    {
         let _ = wide;
-        tile_head_neon
-    };
-    if options.fp32_softmax == PrefillSoftmax::Static {
-        run_tile(case, tile)
-    } else {
-        #[cfg(target_arch = "x86_64")]
-        let online: TileFn = match (options.exp == ExpMode::Fast, wide) {
-            (true, true) => super::super::tile_head_fast_wide,
-            (true, false) => super::super::tile_head_fast,
-            (false, true) => super::super::tile_head_native_wide,
-            (false, false) => super::super::tile_head_native,
+        let tile: TileFn = if options.fp32_softmax == PrefillSoftmax::Static {
+            tile_head_neon
+        } else {
+            super::super::tile_head_native
         };
-        #[cfg(target_arch = "aarch64")]
-        let online: TileFn = super::super::tile_head_native;
-        run_tile(case, online)
+        run_tile(case, tile)
     }
 }
 
@@ -248,6 +258,57 @@ fn static_tiles_match_the_scalar_oracle_bitwise() {
     }
 }
 
+/// Options for the pure-prefix tiles do not affect generated-key caches
+/// or calls too short for those tiles. These go through the safe dispatcher.
+#[test]
+fn static_options_leave_fallbacks_unchanged() {
+    use crate::kernels::{Simd, attention_with};
+    for queries in [1, 2, 3, 4, 5] {
+        for generated in [false, true] {
+            if !generated && queries >= 4 {
+                continue; // Pure prefixes of this length use the static tiles.
+            }
+            let prefix = if generated { 37 } else { queries };
+            let total = if generated { prefix + queries } else { prefix };
+            let (q, k, v, sinks) = operands(queries, total);
+            let generated_k = &k[prefix * 16 * HEAD_DIM..][..(total - prefix) * 8 * HEAD_DIM];
+            let cache = CompactKv {
+                prefix_k: &k[..prefix * 16 * HEAD_DIM],
+                generated_k,
+                v: &v,
+                prefix_len: prefix,
+                total_len: total,
+                n_heads: 16,
+                n_kv_heads: 8,
+                head_dim: HEAD_DIM,
+            };
+            let geometry = Geometry::new(if generated { prefix } else { 0 }, 0, prefix);
+            for simd in [Simd::Auto, Simd::Scalar] {
+                let mut expected = vec![f32::NAN; q.len()];
+                attention_with(
+                    &q,
+                    &cache,
+                    queries,
+                    geometry,
+                    &sinks,
+                    &mut expected,
+                    simd,
+                    PrefillOptions::EXACT,
+                );
+                for exp in [ExpMode::Exact, ExpMode::Fast] {
+                    let mut got = vec![f32::NAN; q.len()];
+                    attention_with(&q, &cache, queries, geometry, &sinks, &mut got, simd, options(exp));
+                    assert_eq!(
+                        got.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+                        expected.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+                        "queries={queries} generated={generated} {simd:?} {exp:?}"
+                    );
+                }
+            }
+        }
+    }
+}
+
 /// A NaN score stays NaN in the masked tiles (those not all image), as in
 /// the all-image tiles, the online kernels and the scalar oracle: the -inf
 /// mask's compare is unordered, so it zeroes only the masked lanes.
@@ -266,13 +327,23 @@ fn nan_keys_propagate_in_masked_tiles() {
             continue;
         }
         let mut out = vec![0.0_f32; q.len()];
-        #[cfg(target_arch = "x86_64")]
-        let tile: TileFn = if wide { tile_head_wide } else { tile_head_narrow };
         #[cfg(target_arch = "aarch64")]
         let tile: TileFn = tile_head_neon;
         // SAFETY: features checked above (AVX-512F before `wide`); shapes
         // consistent.
         unsafe {
+            #[cfg(target_arch = "x86_64")]
+            compact_prefill(
+                &q,
+                &CompactKv::prefill(&k, &v, total, 16, 8, HEAD_DIM),
+                queries,
+                Geometry::new(offset, image_start, image_end),
+                &sinks,
+                &mut out,
+                wide,
+                options(ExpMode::Exact),
+            );
+            #[cfg(target_arch = "aarch64")]
             compact_prefill_with(
                 tile,
                 &q,

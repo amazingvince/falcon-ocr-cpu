@@ -14,10 +14,11 @@
 //! * QK and PV are the parent's lane kernels (8 lanes, or 16 with
 //!   AVX-512F), for every tile shape: no reference order is kept, so the
 //!   short tiles skip gemm too;
-//! * `p = exp(score)` is the operation sequence of `crate::simd::exp_poly`
-//!   (the online kernels' fast exp) without its range checks, which never
-//!   fire within the bound, so every lane is `exp_poly(score)` bit for bit;
-//!   `ExpMode` does not apply;
+//! * `p = exp(score)` follows `crate::simd::exp_poly` without its range
+//!   checks. Eight-lane tiles use `Simd::exp_unchecked`; the AVX-512 tiles
+//!   use `exp16`, scaling by `vscalefps` instead of constructing exponent
+//!   bits. Both are bitwise `exp_poly(score)` within the bound; `ExpMode`
+//!   does not apply;
 //! * masked lanes are +0, and each denominator sums, in key order, the
 //!   probabilities PV multiplies.
 //!
@@ -160,7 +161,8 @@ pub(super) unsafe fn exp_lanes<S: Isa>(
 }
 
 #[cfg(target_arch = "x86_64")]
-/// Static probabilities and denominators on sixteen lanes (AVX-512F).
+/// Static probabilities and denominators on sixteen lanes (AVX-512F),
+/// with the same key order and bounded-score results as [`exp_lanes`].
 ///
 /// # Safety
 /// AVX-512F/FMA must be available; queries and keys must fit the tiles.
@@ -171,6 +173,9 @@ pub(super) unsafe fn exp_lanes16<const MASKED: bool>(
     st: &mut [f32; KEY_TILE * QUERY_TILE],
     denominators: &mut [f32; QUERY_TILE],
 ) {
+    // SAFETY: callers enable AVX-512F/FMA and bound the tile dimensions.
+    // Every sixteen-lane load/store fits the fixed-size tile arrays;
+    // masked -inf lanes are discarded after exp16, and NaNs propagate.
     unsafe {
         let hidden = _mm512_set1_ps(f32::NEG_INFINITY);
         for lane0 in (0..queries).step_by(16) {
@@ -191,10 +196,16 @@ pub(super) unsafe fn exp_lanes16<const MASKED: bool>(
 }
 
 #[cfg(target_arch = "x86_64")]
-/// The polynomial core on sixteen lanes, `2^n` by `vscalefps`: exact, as the bit
-/// construction is, while the result is a normal number (|x| <= 87).
+/// The polynomial core on sixteen lanes, using `vscalefps` for `2^n`.
+/// For finite inputs in [-87, 87] the normal power-of-two scaling is exact,
+/// so the results equal `Simd::exp_unchecked` bit for bit. NaNs propagate;
+/// other inputs have unspecified values, discarded for masked -inf lanes.
+///
+/// # Safety
+/// AVX-512F must be available.
 #[inline(always)]
 unsafe fn exp16(x: __m512) -> __m512 {
+    // SAFETY: the caller enables AVX-512F, including these FMA operations.
     unsafe {
         let n = _mm512_roundscale_ps::<{ _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC }>(_mm512_mul_ps(
             x,
