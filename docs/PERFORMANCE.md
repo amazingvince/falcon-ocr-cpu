@@ -376,9 +376,9 @@ A page's memory used to peak at the end of its last prefill layer, with
 every layer's FP32 compact KV beside the forward workspace. Each layer now
 [seals right after its attention](ARCHITECTURE.md#kv-cache-formats), so one
 layer's FP32 buffers exist at a time and the sealed records grow in their
-place. Fresh workspace buffers and the split tail also come from `vec!`,
-whose untouched pages stay out of RSS, the patches go after the embedding,
-and fixed glibc thresholds return large frees to the OS.
+place. Fresh workspace buffers and the split tail use zeroed allocations
+whose untouched pages stay out of RSS. The patches are released after the
+embedding, and fixed glibc thresholds return large frees to the OS.
 
 The build before these changes against the build with them: three
 interleaved rounds of fresh processes, `--model artifacts/packed

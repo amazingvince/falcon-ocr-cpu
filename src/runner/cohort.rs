@@ -352,7 +352,7 @@ impl Runner {
             max_new_tokens: budget,
             ..options.clone()
         };
-        for (input, request) in inputs.into_iter().zip(requests) {
+        for (mut input, request) in inputs.into_iter().zip(requests) {
             let prefill_started = Instant::now();
             let (image_start, image_end) = image_range(&input.tokens, c)?;
             let (pos_t, pos_hw) = positions(&input.tokens, &input.prepared.positions_hw, c)?;
@@ -374,6 +374,9 @@ impl Runner {
             let image_projection_ms =
                 self.model
                     .embed(&input.tokens, Some(&input.prepared.patches), simd, &mut hidden)?;
+            if self.model.profile().memory_hygiene() {
+                input.prepared.patches = Vec::new();
+            }
             let phase = if trace.enabled() {
                 format!("request.{request}.prefill")
             } else {

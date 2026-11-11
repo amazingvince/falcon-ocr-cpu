@@ -656,7 +656,7 @@ impl Model {
                     exp,
                     &tuning,
                 )?;
-                before += bytes.0;
+                before = before.max(after + bytes.0);
                 after += bytes.1;
                 seal_ms += started.elapsed().as_secs_f64() * 1000.0;
                 clock.mark(8);
