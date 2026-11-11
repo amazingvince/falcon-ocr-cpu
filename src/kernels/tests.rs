@@ -768,7 +768,7 @@ fn i16_misfit_keeps_fp32_projection_panels() {
 /// INT16 and static-softmax arms of the pool-size tests follow. Compiled on
 /// every target, so that a run filtered to it cannot pass by matching none.
 #[test]
-#[ignore = "needs an AVX-512 F/BW/VL/VNNI/BF16 host; the self-hosted weights CI job runs it"]
+#[ignore = "needs an AVX-512 F/BW/VL/VNNI/BF16 host"]
 fn host_runs_every_avx512_kernel() {
     #[cfg(not(target_arch = "x86_64"))]
     panic!("the AVX-512 kernels exist only on x86-64");

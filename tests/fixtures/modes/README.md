@@ -21,6 +21,8 @@ reproduces every fixture from the checkpoint loader. The tokens hold only
 for those prefill kernels, so the gate first compares this host's planned
 prefill with the fixture's, by the kinds `--resume` compares (the AVX2 and
 AVX-512 FP32 tiles count as one, and so do the VNNI and AVX2 INT16
-panels), and fails with both plans named when they differ, as on a CPU
-without AVX512-BF16 or on aarch64. Regenerate a fixture only when a mode's
-numerics change on purpose, and say so in the commit.
+panels). A mismatch fails the gate on hardware that supports the recorded
+kernels. When the host lacks those kernels, the gate reports both plans and
+skips that mode's token comparison. It still verifies the model profile and
+overlay digest. Regenerate a fixture only when a mode's numerics change on
+purpose, and say so in the commit.

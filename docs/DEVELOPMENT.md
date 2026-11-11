@@ -102,13 +102,13 @@ the platform-dependent math; the token-parity gates are separate checks.
 
   `tests/modes.rs` is the mode gate: exact mode under the automatic
   configuration reproduces the GPU smoke tokens; near-exact and fast reproduce
-  `tests/fixtures/modes/*.json` on a host that plans the fixtures' prefill
-  kernels, and on any other host the gate fails up front, naming both plans
-  ([mode fixtures](../tests/fixtures/modes/README.md)); packing round-trips
-  the checkpoint loader and matches the published files; speculation, the
-  decode team, drafts, the head and the explicit AVX2 backend preserve the
-  gate's fixture tokens; the repetition stop yields a prefix; the three trace
-  hashes are pinned.
+  `tests/fixtures/modes/*.json` on hosts with the fixtures' prefill kernels.
+  The test reports both plans when hardware requires a different kernel and
+  skips that token comparison ([mode fixtures](../tests/fixtures/modes/README.md)).
+  Packing round-trips the checkpoint loader and matches the published files.
+  Speculation, the decode team, drafts, the head and the explicit AVX2 backend
+  preserve the gate's fixture tokens. The repetition stop yields a prefix,
+  and the three trace hashes are pinned.
 
   The speculative-drafter regression uses only the three packed modes,
   tokenizer/configuration and published draft head in `artifacts/packed`,
