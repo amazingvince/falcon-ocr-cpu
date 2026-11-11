@@ -2,6 +2,20 @@
 
 Building and qualifying the evaluation corpus, the 200-page quality gate and its Python tests.
 
+## Archived prefill gate inputs
+
+The fast-defaults and near-exact-softmax page manifests and image locks are
+stored in [prefill-gate-data-v1.zip](../../reference/prefill-gate-data-v1.zip).
+Extract them from the repository root before selecting gate pages, auditing
+spent pages, restoring their images, or scoring saved runs against those locks.
+
+```sh
+python -m zipfile -e reference/prefill-gate-data-v1.zip reference
+```
+
+The extracted JSON files are ignored by Git and can be removed after use.
+The smaller evaluation budgets and results are readable in `reference/`.
+
 | File | What it did or produced | Status |
 |---|---|---|
 | [docs/CORPUS_SUBSET_COMPARISON.md](docs/CORPUS_SUBSET_COMPARISON.md) | Explicit corpus subset comparisons | history |

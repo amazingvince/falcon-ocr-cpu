@@ -403,6 +403,9 @@ near-exact](#fast-against-near-exact) ran its earlier prefill kernels.
 
 ### Held-out gate
 
+The page manifests and image locks are available in the
+[gate input archive](../research/corpus-qualification/README.md#archived-prefill-gate-inputs).
+
 `fast-defaults-gate-v1` compares the new kernels with the previous
 defaults on fresh pages. Its budget,
 [reference/fast-defaults-gate-v1-budget.json](../reference/fast-defaults-gate-v1-budget.json),
@@ -536,6 +539,9 @@ the gate's fresh pages it raised the gated micro CER by 0.503 pt overall
 and by 5.230 pt on slides.
 
 ## Near-exact's held-out gate
+
+The page manifests and image locks are available in the
+[gate input archive](../research/corpus-qualification/README.md#archived-prefill-gate-inputs).
 
 `near-exact-softmax-gate-v1` gated the FP32 tiles' static softmax and BF16
 attention, each against near-exact's defaults of the time (the FP32 tiles

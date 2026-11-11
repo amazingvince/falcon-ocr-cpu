@@ -219,6 +219,11 @@ cargo test --release --lib --locked -- --ignored --exact kernels::tests::host_ru
 
 ## Token agreement
 
+For the prefill default evaluations, [extract the archived page manifests
+and locks](../research/corpus-qualification/README.md#archived-prefill-gate-inputs)
+before using their research scripts. The recorded budgets and results are
+readable in `reference/`.
+
 `falcon-ocr-eval agree` takes an FP32 reference from a
 `falcon-ocr-eval --profile reference bench` report. Use upstream's
 `artifacts/phase4/checks/calibration-reference.json` when available;
