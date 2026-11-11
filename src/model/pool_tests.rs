@@ -345,3 +345,171 @@ fn kv_layers_seal_the_chosen_layers_at_q8() {
     // A whole Q8 cache under `ExpMode::Fast` takes the polynomial exp.
     assert!(seal(0, 0, Kv::Q8).1);
 }
+
+/// Run actual transformer layers with buffer hand-off, against independently
+/// allocated compact prefixes sealed only after the complete forward.
+#[test]
+fn sealing_passes_the_prefix_buffers_through_every_layer() {
+    use super::{Model, Store, WeightsSource};
+    use crate::{quant::Profile, trace::NoTrace};
+
+    let mut c: ModelConfig = serde_json::from_str(include_str!("../../tests/fixtures/model-config.json")).unwrap();
+    c.dim = 64;
+    c.ffn_dim = 64;
+    c.n_heads = 2;
+    c.n_kv_heads = 1;
+    c.n_layers = 3;
+    c.max_seq_len = 128;
+    let rows = PARALLEL_ROWS + 6;
+    let positions: Vec<_> = (0..rows).collect();
+    let spatial = vec![[f32::NAN; 2]; rows];
+    let mut stored = Vec::<u32>::new();
+    let mut store = |data: Vec<f32>| {
+        let start = 4 * stored.len();
+        stored.extend(data.iter().map(|x| x.to_bits()));
+        Weight {
+            range: start..4 * stored.len(),
+            quantized: None,
+        }
+    };
+    let golden = store(values(c.n_heads * c.head_dim / 2, 3));
+    let layers: Vec<_> = (0..c.n_layers)
+        .map(|i| Layer {
+            sinks: store(values(c.n_heads, 7 + i as u32)),
+            ..layer(&c, 8)
+        })
+        .collect();
+    let mut model = Model {
+        config: c.clone(),
+        map: Store::Owned(stored),
+        embedding: weight(None),
+        projector: weight(None),
+        norm: weight(None),
+        output: weight(None),
+        golden,
+        temporal: temporal_factors(&c),
+        layers,
+        packed: Default::default(),
+        screened: Default::default(),
+        profile: Profile::W8_BODY_KV_Q8,
+        quantize_ms: 0.0,
+        overlay_sha256: None,
+        source: WeightsSource::Checkpoint {
+            dir: "unused".into(),
+            overlay: None,
+            rtn: true,
+        },
+        weights_sha256: String::new(),
+    };
+    for (mode, mask) in [(Kv::F32Split, 0), (Kv::Q16, 0), (Kv::Q16, 0b010), (Kv::Q8, 0)] {
+        model.profile.kv = mode;
+        let tuning = Tuning {
+            kv_q8_layers: mask,
+            ..Tuning::default()
+        };
+        let session = |seal| {
+            Session::new(
+                &c,
+                rows + 8,
+                rows,
+                1,
+                rows - 2,
+                Simd::Auto,
+                CacheLayout::Compact,
+                seal,
+                ExpMode::Fast,
+                tuning,
+            )
+            .unwrap()
+        };
+        let (mut handed, mut independent) = (session(true), session(false));
+        // A partial first forward must fail before changing any layer.
+        let mut partial = values((rows - 1) * c.dim, 5);
+        let error = model
+            .forward_layers(
+                &mut partial,
+                &positions[..rows - 1],
+                &spatial[..rows - 1],
+                &mut handed,
+                &mut NoTrace,
+                "partial",
+            )
+            .unwrap_err();
+        assert!(error.to_string().contains("whole prefix first"));
+        assert_eq!(handed.len, 0);
+        for (i, cache) in handed.layers.iter().enumerate() {
+            let LayerCache::Compact { prefix_k, v, .. } = cache else {
+                panic!("not compact")
+            };
+            assert!(prefix_k.is_empty() && v.is_empty());
+            if i > 0 {
+                assert_eq!((prefix_k.capacity(), v.capacity()), (0, 0));
+            }
+        }
+        let mut h = values(rows * c.dim, 5);
+        let mut expected = h.clone();
+        model
+            .forward_layers(&mut h, &positions, &spatial, &mut handed, &mut NoTrace, "prefill")
+            .unwrap();
+        model
+            .forward_layers(
+                &mut expected,
+                &positions,
+                &spatial,
+                &mut independent,
+                &mut NoTrace,
+                "prefill",
+            )
+            .unwrap();
+        assert_eq!(bits(&h), bits(&expected), "{mode:?} mask={mask}: hidden");
+        // Reverse order retains each independent layer's own filled buffers.
+        for i in (0..c.n_layers).rev() {
+            super::cache::seal_layer(
+                &mut independent.layers,
+                i,
+                rows,
+                rows + 8,
+                &c,
+                mode,
+                ExpMode::Fast,
+                &tuning,
+            )
+            .unwrap();
+        }
+        for (actual, expected) in handed.layers.iter().zip(&independent.layers) {
+            let (LayerCache::Split(actual), LayerCache::Split(expected)) = (actual, expected) else {
+                panic!("every layer must seal");
+            };
+            assert_eq!(
+                actual.record_bits(),
+                expected.record_bits(),
+                "{mode:?} mask={mask}: records"
+            );
+        }
+        // Decode must consume the same sealed prefixes after the buffers
+        // have been reused by all three layers.
+        let mut decode = values(c.dim, 29);
+        let mut expected = decode.clone();
+        model
+            .forward_layers(
+                &mut decode,
+                &[rows],
+                &[[f32::NAN; 2]],
+                &mut handed,
+                &mut NoTrace,
+                "decode",
+            )
+            .unwrap();
+        model
+            .forward_layers(
+                &mut expected,
+                &[rows],
+                &[[f32::NAN; 2]],
+                &mut independent,
+                &mut NoTrace,
+                "decode",
+            )
+            .unwrap();
+        assert_eq!(bits(&decode), bits(&expected), "{mode:?} mask={mask}: decode");
+    }
+}

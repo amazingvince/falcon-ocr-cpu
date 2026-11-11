@@ -519,8 +519,7 @@ impl Model {
         trace: &mut dyn Trace,
         phase: &str,
     ) -> Result<()> {
-        let c = &self.config;
-        let rows = positions.len();
+        let (c, rows) = (&self.config, positions.len());
         ensure!(
             rows > 0 && h.len() == rows * c.dim && positions_hw.len() == rows,
             "invalid forward dimensions"
@@ -534,11 +533,12 @@ impl Model {
             "RoPE position exceeds context"
         );
         let qdim = c.query_dim();
-        let offset = session.len;
-        let simd = session.simd;
-        let exp = session.exp;
-        let tuning = session.tuning;
-        let seal = session.seal && offset == 0 && session.layers[0].compact_prefix_len() == Some(rows);
+        let (offset, simd, exp, tuning) = (session.len, session.simd, session.exp, session.tuning);
+        let seal = session.seal && offset == 0;
+        ensure!(
+            !seal || session.layers[0].compact_prefix_len() == Some(rows),
+            "a sealing session must forward its whole prefix first"
+        );
         let (mut before, mut after, mut seal_ms) = (0, 0, 0.0);
         let work = &mut session.workspace;
         work.resize(rows, c);
