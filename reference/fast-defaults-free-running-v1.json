@@ -1,0 +1,242 @@
+{
+  "schema": "falcon-ocr-fast-defaults-free-running-v1",
+  "date": "2026-11-03",
+  "purpose": "Free-running comparison of fast mode's previous prefill defaults (FP32 panel projections; BF16 attention with the online softmax) and its new ones (INT16-activation projections; BF16 attention with the static-shift softmax) on out-of-distribution and hard pages, run before the user made the new kernels the defaults. Teacher-forced agreement and speed are in docs/MODES.md and docs/PERFORMANCE.md; the held-out gate is reference/fast-defaults-gate-v1-*.",
+  "decision": "user, 2026-11-03: make both kernels fast mode's defaults (commit 70dcefe) and delete the BF16 projection panels (commit 5ee86b9)",
+  "host": "AMD Ryzen 7 7700X (8 cores, 16 threads; AVX2, AVX-512 with BF16 and VNNI), Linux",
+  "binary": {
+    "path": "artifacts/validation-2026-11-03/bin/falcon-ocr-a837527",
+    "sha256": "9b84d2a2c1b401fdc52d7088d50bfb4f212338755516b1d12e48e3bb1a455b00",
+    "source": "branch feat/int8-rot at a837527, where both kernels exist behind knobs that are off by default"
+  },
+  "model": "artifacts/packed, the published files: falcon-ocr-v1.5-int8-gptq-g64.safetensors (GPTQ overlay 60808bbf...), falcon-ocr-v1.5-int16-g64.safetensors and falcon-ocr-v1.5-draft-head.safetensors",
+  "arms": {
+    "old": {
+      "command": "falcon-ocr --model artifacts/packed --mode fast run <pages>",
+      "prefill": {
+        "attention": "bf16",
+        "projection": "panel-avx2"
+      }
+    },
+    "new": {
+      "command": "falcon-ocr --model artifacts/packed --mode fast --tune prefill-i16=true --tune prefill-softmax=static run <pages>",
+      "prefill": {
+        "attention": "bf16-static",
+        "projection": "panel-i16-vnni"
+      }
+    },
+    "near_exact": {
+      "command": "falcon-ocr --model artifacts/packed --mode near-exact run <pages>",
+      "prefill": {
+        "attention": "avx512-wide",
+        "projection": "panel-avx2"
+      },
+      "sets": "fried only"
+    }
+  },
+  "after_the_flip": "From 70dcefe on, plain --mode fast runs the new arm's kernels and --tune prefill-projections=fp32 --tune prefill-softmax=online the old arm's; the prefill-i16 knob no longer exists. Checked on the journal page (the same 1,140 tokens each) and by tests/modes.rs.",
+  "procedure": "One fresh process per arm and page set, pages in the order listed below, every other setting the automatic default (max dimension 1536, the draft head, the repetition stop), each process under a shared hold on the host CPU lock. No timing is read from these runs. The page files ran from local copies with the SHA-256 listed; the user's images and their fried versions are tracked under tests/fixtures/stress/, the corpus pages and their fried versions are not.",
+  "fields": {
+    "tokens": "output tokens",
+    "finish": "finish_reason: eos, repetition (the repetition stop) or length",
+    "cer_percent": "raw-text Levenshtein distance to the page's ground-truth.txt over the ground truth's length, as research/phase4-hillclimb/attempt3/check_heldout.py; distance to one reference, not a quality verdict",
+    "identical": "old and new give the same token_ids",
+    "first_diff": "index of the first output token where old and new differ (the shorter length when one is a prefix of the other); null when identical",
+    "text_similarity": "difflib.SequenceMatcher ratio of old's and new's text, autojunk off"
+  },
+  "sets": {
+    "test_images": {
+      "max_new_tokens": "default (8192, fitted to the context)",
+      "pages": "the user's four test images and an earlier classic-level deep-frying of the first three",
+      "summary": {
+        "pages": 7,
+        "identical": 5,
+        "note": "All four originals are token-identical. The two pages that differ are deep-fried JPEGs; each difference was judged against the image by eye (below)."
+      },
+      "judged_by_eye": [
+        {
+          "image": "tests/fixtures/stress/fried/classic-2026-11-02/liber_primus_wiki_screen.jpg",
+          "finding": "The fourth hexadecimal line reads 464fdaf1672d7bef5e891c6e227/. Old reads it exactly; new drops one f (464fda1672...) and writes the ./ that ends the last rune line as '. /'. On the clean PNG both arms read 464fdf1672..., also wrong.",
+          "better": "old"
+        },
+        {
+          "image": "tests/fixtures/stress/fried/classic-2026-11-02/scanned-book-page_ballooning.jpg",
+          "finding": "The margin label reads \"String for Rip Cord Support\". New reads it right; old reads \"Sting for\".",
+          "better": "new"
+        }
+      ],
+      "per_page": [
+        {"image": "tests/fixtures/stress/fried/classic-2026-11-02/liber_primus_wiki_screen.jpg", "sha256": "09299ec255dafa3b44e53e1a4da4071aa3ff52379d2529761e870e91ef0814b6", "old": {"tokens": 497, "finish": "eos"}, "new": {"tokens": 498, "finish": "eos"}, "identical": false, "first_diff": 166},
+        {"image": "tests/fixtures/stress/fried/classic-2026-11-02/scanned-book-page_ballooning.jpg", "sha256": "176f234dfdfd7de447a9aa56d70e99349fc7284fb9c375004a0aef324a2e4455", "old": {"tokens": 470, "finish": "eos"}, "new": {"tokens": 469, "finish": "eos"}, "identical": false, "first_diff": 353},
+        {"image": "tests/fixtures/stress/fried/classic-2026-11-02/smoke_screenshot.jpg", "sha256": "cdc1d4534d1aeb9627d0e0bbc536cc558d9902d81ab865677c98ea51ad35e098", "old": {"tokens": 246, "finish": "eos"}, "new": {"tokens": 246, "finish": "eos"}, "identical": true, "first_diff": null},
+        {"image": "tests/fixtures/stress/kroger-bench-09_fried.jpg", "sha256": "923a7894ec01a43dd1aa168daf37ca4d2311bd70b6a8f8a78a9b58730f62d5eb", "old": {"tokens": 124, "finish": "eos"}, "new": {"tokens": 124, "finish": "eos"}, "identical": true, "first_diff": null},
+        {"image": "tests/fixtures/stress/liber_primus_wiki_screen.png", "sha256": "33cc8eff3a0a391a2346a72e8e379aba734a64711977eecabcbc9c4d21f002a1", "old": {"tokens": 552, "finish": "eos"}, "new": {"tokens": 552, "finish": "eos"}, "identical": true, "first_diff": null},
+        {"image": "tests/fixtures/stress/scanned-book-page_ballooning.png", "sha256": "87972e2264dbf72fe1612f677ec89a3da1f5880bc8f174cda6ccc9cd85483058", "old": {"tokens": 474, "finish": "eos"}, "new": {"tokens": 474, "finish": "eos"}, "identical": true, "first_diff": null},
+        {"image": "tests/fixtures/stress/smoke_screenshot.png", "sha256": "0abd75951faf8342255cb4da1a35aaf7fdc80a10e9e7b9019da575c1ef9e343e", "old": {"tokens": 272, "finish": "eos"}, "new": {"tokens": 272, "finish": "eos"}, "identical": true, "first_diff": null}
+      ]
+    },
+    "anchor": {
+      "max_new_tokens": "default (8192, fitted to the context)",
+      "pages": "the 52 pages of reference/corpus-v3-calibration-lock.json outside the GPTQ capture set (tools/gptq-calibration-pages.txt), in lock order: the 7700X agreement anchor of docs/MODES.md; 29 Simplified Chinese, 2 Traditional Chinese, 21 English",
+      "summary": {
+        "pages": 52,
+        "identical": 28,
+        "micro_cer_percent": {
+          "old": 40.67,
+          "new": 40.31
+        },
+        "finish": {
+          "old": {
+            "eos": 44,
+            "repetition": 8
+          },
+          "new": {
+            "eos": 44,
+            "repetition": 8
+          }
+        },
+        "repetition_stop_pages_same_in_both": true,
+        "differing_pages_cer": {
+          "lower_for_new": 10,
+          "higher_for_new": 11,
+          "equal": 3
+        },
+        "note": "3b0add7f7d14d45c (tiny text) loops in both arms and the repetition stop ends both, old's at 288 tokens and new's at 2,247; both are above 97% CER."
+      },
+      "per_page": [
+        {"id": "4a756837631f4f69", "category": "degraded", "old": {"tokens": 517, "finish": "eos", "cer_percent": 355.987}, "new": {"tokens": 517, "finish": "eos", "cer_percent": 355.987}, "identical": true, "first_diff": null},
+        {"id": "705b5079f112131e", "category": "degraded", "old": {"tokens": 924, "finish": "repetition", "cer_percent": 106.18}, "new": {"tokens": 771, "finish": "repetition", "cer_percent": 89.326}, "identical": false, "first_diff": 78},
+        {"id": "696f39cdc7378704", "category": "degraded", "old": {"tokens": 476, "finish": "eos", "cer_percent": 4.612}, "new": {"tokens": 476, "finish": "eos", "cer_percent": 4.612}, "identical": true, "first_diff": null},
+        {"id": "ad43a4d35e59199e", "category": "degraded", "old": {"tokens": 291, "finish": "repetition", "cer_percent": 92.235}, "new": {"tokens": 291, "finish": "repetition", "cer_percent": 92.424}, "identical": false, "first_diff": 53},
+        {"id": "f9fec0393d34b466", "category": "degraded", "old": {"tokens": 594, "finish": "repetition", "cer_percent": 120.567}, "new": {"tokens": 594, "finish": "repetition", "cer_percent": 120.567}, "identical": true, "first_diff": null},
+        {"id": "21b5e36088be74ba", "category": "degraded", "old": {"tokens": 141, "finish": "eos", "cer_percent": 155.319}, "new": {"tokens": 140, "finish": "eos", "cer_percent": 156.028}, "identical": false, "first_diff": 0},
+        {"id": "1ed990700c383891", "category": "handwriting", "old": {"tokens": 368, "finish": "eos", "cer_percent": 50.497}, "new": {"tokens": 380, "finish": "eos", "cer_percent": 51.159}, "identical": false, "first_diff": 17},
+        {"id": "1044f76c94729af0", "category": "handwriting", "old": {"tokens": 443, "finish": "eos", "cer_percent": 71.473}, "new": {"tokens": 443, "finish": "eos", "cer_percent": 71.628}, "identical": false, "first_diff": 298},
+        {"id": "ac1d006e1c29eae3", "category": "handwriting", "old": {"tokens": 539, "finish": "eos", "cer_percent": 67.571}, "new": {"tokens": 486, "finish": "eos", "cer_percent": 67.448}, "identical": false, "first_diff": 5},
+        {"id": "92fe997f26aa2304", "category": "handwriting", "old": {"tokens": 281, "finish": "repetition", "cer_percent": 75.108}, "new": {"tokens": 281, "finish": "repetition", "cer_percent": 75.108}, "identical": true, "first_diff": null},
+        {"id": "e14bc18564088788", "category": "handwriting", "old": {"tokens": 293, "finish": "eos", "cer_percent": 66.387}, "new": {"tokens": 287, "finish": "eos", "cer_percent": 63.866}, "identical": false, "first_diff": 22},
+        {"id": "c0ace447d0b998cb", "category": "handwriting", "old": {"tokens": 402, "finish": "eos", "cer_percent": 79.898}, "new": {"tokens": 404, "finish": "eos", "cer_percent": 80.28}, "identical": false, "first_diff": 396},
+        {"id": "462cde58b45ebc03", "category": "formulas", "old": {"tokens": 525, "finish": "eos", "cer_percent": 37.437}, "new": {"tokens": 525, "finish": "eos", "cer_percent": 37.437}, "identical": true, "first_diff": null},
+        {"id": "0dfe20ce673bd8ec", "category": "formulas", "old": {"tokens": 630, "finish": "eos", "cer_percent": 70.195}, "new": {"tokens": 630, "finish": "eos", "cer_percent": 70.195}, "identical": true, "first_diff": null},
+        {"id": "754444afd4659b07", "category": "formulas", "old": {"tokens": 2880, "finish": "eos", "cer_percent": 24.411}, "new": {"tokens": 2880, "finish": "eos", "cer_percent": 24.411}, "identical": true, "first_diff": null},
+        {"id": "de18cafdedc7ad87", "category": "formulas", "old": {"tokens": 1230, "finish": "eos", "cer_percent": 110.906}, "new": {"tokens": 1230, "finish": "eos", "cer_percent": 110.906}, "identical": true, "first_diff": null},
+        {"id": "3207aa8d68652b99", "category": "formulas", "old": {"tokens": 847, "finish": "eos", "cer_percent": 14.112}, "new": {"tokens": 847, "finish": "eos", "cer_percent": 14.061}, "identical": false, "first_diff": 141},
+        {"id": "71c2593bbfd6adda", "category": "formulas", "old": {"tokens": 2091, "finish": "eos", "cer_percent": 23.145}, "new": {"tokens": 2091, "finish": "eos", "cer_percent": 23.145}, "identical": true, "first_diff": null},
+        {"id": "1306da2487430257", "category": "tables", "old": {"tokens": 293, "finish": "repetition", "cer_percent": 99.264}, "new": {"tokens": 293, "finish": "repetition", "cer_percent": 99.264}, "identical": true, "first_diff": null},
+        {"id": "40408ccf4389cd81", "category": "tables", "old": {"tokens": 1440, "finish": "eos", "cer_percent": 21.218}, "new": {"tokens": 1441, "finish": "eos", "cer_percent": 23.477}, "identical": false, "first_diff": 326},
+        {"id": "63fb8f6a1ef3ce0d", "category": "tables", "old": {"tokens": 619, "finish": "eos", "cer_percent": 18.44}, "new": {"tokens": 619, "finish": "eos", "cer_percent": 18.44}, "identical": true, "first_diff": null},
+        {"id": "3549bba42cf61ba8", "category": "tables", "old": {"tokens": 1383, "finish": "repetition", "cer_percent": 76.422}, "new": {"tokens": 1383, "finish": "repetition", "cer_percent": 76.422}, "identical": true, "first_diff": null},
+        {"id": "aa8e1119117b1822", "category": "tables", "old": {"tokens": 1058, "finish": "eos", "cer_percent": 6.74}, "new": {"tokens": 1058, "finish": "eos", "cer_percent": 6.74}, "identical": true, "first_diff": null},
+        {"id": "3182b44738f8d5fd", "category": "tables", "old": {"tokens": 607, "finish": "eos", "cer_percent": 13.975}, "new": {"tokens": 607, "finish": "eos", "cer_percent": 13.975}, "identical": true, "first_diff": null},
+        {"id": "472e26824b942740", "category": "tiny_text", "old": {"tokens": 289, "finish": "eos", "cer_percent": 4.581}, "new": {"tokens": 289, "finish": "eos", "cer_percent": 4.581}, "identical": true, "first_diff": null},
+        {"id": "c724817b3c478a58", "category": "tiny_text", "old": {"tokens": 1443, "finish": "eos", "cer_percent": 8.671}, "new": {"tokens": 1443, "finish": "eos", "cer_percent": 8.632}, "identical": false, "first_diff": 67},
+        {"id": "3b0add7f7d14d45c", "category": "tiny_text", "old": {"tokens": 288, "finish": "repetition", "cer_percent": 99.483}, "new": {"tokens": 2247, "finish": "repetition", "cer_percent": 97.993}, "identical": false, "first_diff": 32},
+        {"id": "a934ca13c398e26d", "category": "tiny_text", "old": {"tokens": 1046, "finish": "eos", "cer_percent": 4.32}, "new": {"tokens": 1046, "finish": "eos", "cer_percent": 4.32}, "identical": true, "first_diff": null},
+        {"id": "02a1f828bad3aae2", "category": "tiny_text", "old": {"tokens": 1815, "finish": "eos", "cer_percent": 5.542}, "new": {"tokens": 1815, "finish": "eos", "cer_percent": 5.542}, "identical": true, "first_diff": null},
+        {"id": "8e0aa09f9c52d390", "category": "tiny_text", "old": {"tokens": 1340, "finish": "eos", "cer_percent": 4.988}, "new": {"tokens": 1340, "finish": "eos", "cer_percent": 4.988}, "identical": true, "first_diff": null},
+        {"id": "df13ca79dd59b21e", "category": "multi_column", "old": {"tokens": 2139, "finish": "repetition", "cer_percent": 91.011}, "new": {"tokens": 2139, "finish": "repetition", "cer_percent": 91.011}, "identical": true, "first_diff": null},
+        {"id": "fe18c5b96a340913", "category": "multi_column", "old": {"tokens": 1704, "finish": "eos", "cer_percent": 26.149}, "new": {"tokens": 1705, "finish": "eos", "cer_percent": 26.023}, "identical": false, "first_diff": 79},
+        {"id": "23db9a18e76fb633", "category": "multi_column", "old": {"tokens": 625, "finish": "eos", "cer_percent": 37.923}, "new": {"tokens": 625, "finish": "eos", "cer_percent": 38.04}, "identical": false, "first_diff": 188},
+        {"id": "bbe225713f455b06", "category": "multi_column", "old": {"tokens": 971, "finish": "eos", "cer_percent": 9.776}, "new": {"tokens": 972, "finish": "eos", "cer_percent": 9.851}, "identical": false, "first_diff": 505},
+        {"id": "20cb71d7734f053a", "category": "multi_column", "old": {"tokens": 991, "finish": "eos", "cer_percent": 30.671}, "new": {"tokens": 991, "finish": "eos", "cer_percent": 30.671}, "identical": true, "first_diff": null},
+        {"id": "2de54070ea2f598d", "category": "multi_column", "old": {"tokens": 7251, "finish": "eos", "cer_percent": 21.568}, "new": {"tokens": 7251, "finish": "eos", "cer_percent": 21.568}, "identical": true, "first_diff": null},
+        {"id": "f19e1efde5ef9f33", "category": "ordinary", "old": {"tokens": 112, "finish": "eos", "cer_percent": 7.434}, "new": {"tokens": 112, "finish": "eos", "cer_percent": 7.434}, "identical": true, "first_diff": null},
+        {"id": "12a6e2ec8eab7303", "category": "ordinary", "old": {"tokens": 326, "finish": "eos", "cer_percent": 7.398}, "new": {"tokens": 326, "finish": "eos", "cer_percent": 7.908}, "identical": false, "first_diff": 19},
+        {"id": "0ff704d06f1fbc82", "category": "ordinary", "old": {"tokens": 381, "finish": "eos", "cer_percent": 4.348}, "new": {"tokens": 380, "finish": "eos", "cer_percent": 4.348}, "identical": false, "first_diff": 360},
+        {"id": "ebf39ae1461e6306", "category": "ordinary", "old": {"tokens": 190, "finish": "eos", "cer_percent": 6.468}, "new": {"tokens": 190, "finish": "eos", "cer_percent": 6.468}, "identical": true, "first_diff": null},
+        {"id": "d4cfdb30756abda0", "category": "ordinary", "old": {"tokens": 469, "finish": "eos", "cer_percent": 15.714}, "new": {"tokens": 469, "finish": "eos", "cer_percent": 15.714}, "identical": false, "first_diff": 261},
+        {"id": "513b20fd0a2ca90e", "category": "ordinary", "old": {"tokens": 726, "finish": "eos", "cer_percent": 6.398}, "new": {"tokens": 726, "finish": "eos", "cer_percent": 6.398}, "identical": true, "first_diff": null},
+        {"id": "02f674395a59e2b2", "category": "ordinary", "old": {"tokens": 742, "finish": "eos", "cer_percent": 13.378}, "new": {"tokens": 741, "finish": "eos", "cer_percent": 13.489}, "identical": false, "first_diff": 506},
+        {"id": "51e413553a6c8b50", "category": "ordinary", "old": {"tokens": 74, "finish": "eos", "cer_percent": 15.278}, "new": {"tokens": 64, "finish": "eos", "cer_percent": 6.944}, "identical": false, "first_diff": 3},
+        {"id": "204617788e13cc1f", "category": "ordinary", "old": {"tokens": 409, "finish": "eos", "cer_percent": 18.912}, "new": {"tokens": 409, "finish": "eos", "cer_percent": 18.912}, "identical": true, "first_diff": null},
+        {"id": "539f9422d3c1a563", "category": "ordinary", "old": {"tokens": 205, "finish": "eos", "cer_percent": 1.771}, "new": {"tokens": 205, "finish": "eos", "cer_percent": 1.771}, "identical": true, "first_diff": null},
+        {"id": "c945c0cb03399b81", "category": "ordinary", "old": {"tokens": 416, "finish": "eos", "cer_percent": 3.875}, "new": {"tokens": 418, "finish": "eos", "cer_percent": 3.875}, "identical": false, "first_diff": 324},
+        {"id": "cbf1a93cde585c91", "category": "ordinary", "old": {"tokens": 290, "finish": "eos", "cer_percent": 9.814}, "new": {"tokens": 290, "finish": "eos", "cer_percent": 5.836}, "identical": false, "first_diff": 103},
+        {"id": "1b8957ba2e1bc280", "category": "ordinary", "old": {"tokens": 1224, "finish": "eos", "cer_percent": 7.012}, "new": {"tokens": 1224, "finish": "eos", "cer_percent": 7.471}, "identical": false, "first_diff": 160},
+        {"id": "355f51c4a08c3807", "category": "ordinary", "old": {"tokens": 1777, "finish": "eos", "cer_percent": 6.921}, "new": {"tokens": 1777, "finish": "eos", "cer_percent": 6.921}, "identical": true, "first_diff": null},
+        {"id": "8f5045696c189e0b", "category": "ordinary", "old": {"tokens": 134, "finish": "eos", "cer_percent": 3.31}, "new": {"tokens": 134, "finish": "eos", "cer_percent": 3.31}, "identical": true, "first_diff": null},
+        {"id": "3ae00f1496cda3ff", "category": "ordinary", "old": {"tokens": 1242, "finish": "eos", "cer_percent": 13.145}, "new": {"tokens": 1240, "finish": "eos", "cer_percent": 13.004}, "identical": false, "first_diff": 907}
+      ]
+    },
+    "fried": {
+      "max_new_tokens": 4096,
+      "pages": "three deep-frying levels (tests/fixtures/stress/README.md: mild, classic, enhanced) of the user's three clean test images and of the first 12 anchor pages (6 degraded, 6 handwriting), in that order per level; the near-exact arm ran the same pages",
+      "summary": {
+        "pages": 45,
+        "identical": 25,
+        "user_images_identical": "7 of 9; the other two have text similarity 0.9933 and 0.9987",
+        "old_is_near_exact": 16,
+        "new_is_near_exact": 16,
+        "finish": {
+          "old": {
+            "eos": 37,
+            "repetition": 8
+          },
+          "new": {
+            "eos": 37,
+            "repetition": 7,
+            "length": 1
+          },
+          "near_exact": {
+            "eos": 38,
+            "repetition": 6,
+            "length": 1
+          }
+        },
+        "micro_cer_percent_36_corpus_pages": {
+          "old": 65.09,
+          "new": 77.65,
+          "near_exact": 76.62
+        },
+        "note": "Mild-fried ad43a4d35e59199e (a degraded Traditional Chinese page) dominates the CER difference. Old falls into an exact two-line loop that the repetition stop ends at 314 tokens. New writes rows that differ only in an incrementing number (44, 45, ... 255), which never repeat exactly, so the stop never fires and the page runs to the 4,096-token cap. Near-exact writes the same counting loop to the cap (text similarity to new 1.000), so it is the model's own behaviour on that page, not an effect of the new kernels; neither output recovers the page. The aggregate CER is therefore not a quality comparison."
+      },
+      "per_page": [
+        {"level": "mild", "image": "tests/fixtures/stress/fried/mild/liber_primus_wiki_screen.jpg", "sha256": "595129ab6f5ff6455ca26aef879389af159cdadba99123d5f5b7ede29107ae99", "old": {"tokens": 497, "finish": "eos"}, "new": {"tokens": 497, "finish": "eos"}, "near_exact": {"tokens": 495, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false, "text_similarity": 1.0},
+        {"level": "mild", "image": "tests/fixtures/stress/fried/mild/scanned-book-page_ballooning.jpg", "sha256": "394faace7877a2a65a7a1f36a257fb09b81f221b2c1f63610d498021bc90343e", "old": {"tokens": 469, "finish": "eos"}, "new": {"tokens": 469, "finish": "eos"}, "near_exact": {"tokens": 469, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true, "text_similarity": 1.0},
+        {"level": "mild", "image": "tests/fixtures/stress/fried/mild/smoke_screenshot.jpg", "sha256": "913c19dd9e20acdff50706043be3308b201c8ddf1696c9fd643a42075b721d84", "old": {"tokens": 266, "finish": "eos"}, "new": {"tokens": 266, "finish": "eos"}, "near_exact": {"tokens": 289, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false, "text_similarity": 1.0},
+        {"level": "mild", "source": "4a756837631f4f69", "category": "degraded", "sha256": "9970b9faead28ef08de52919640b1244681e26ecb4b36661417f3ebf110b39f7", "old": {"tokens": 183, "finish": "eos", "cer_percent": 28.803}, "new": {"tokens": 183, "finish": "eos", "cer_percent": 28.803}, "near_exact": {"tokens": 183, "finish": "eos", "cer_percent": 28.803}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "mild", "source": "705b5079f112131e", "category": "degraded", "sha256": "135745fac4284928fa1f0bc334f68eb443d30a739ba4c9f34cc6ac745f29886c", "old": {"tokens": 566, "finish": "repetition", "cer_percent": 86.236}, "new": {"tokens": 403, "finish": "repetition", "cer_percent": 91.994}, "near_exact": {"tokens": 514, "finish": "repetition", "cer_percent": 75.0}, "identical": false, "first_diff": 61, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "696f39cdc7378704", "category": "degraded", "sha256": "4ab94937f642cf0111c64b3ef9685b7d0921ab431d7b66759d3f3be2fb0b20be", "old": {"tokens": 445, "finish": "eos", "cer_percent": 4.359}, "new": {"tokens": 445, "finish": "eos", "cer_percent": 4.359}, "near_exact": {"tokens": 444, "finish": "eos", "cer_percent": 4.207}, "identical": false, "first_diff": 440, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "ad43a4d35e59199e", "category": "degraded", "sha256": "a7be7207660980fb61a9667bb797e6cd47f3226beffa7e10e1e2330e10a3f425", "old": {"tokens": 314, "finish": "repetition", "cer_percent": 82.576}, "new": {"tokens": 4096, "finish": "length", "cer_percent": 712.879}, "near_exact": {"tokens": 4096, "finish": "length", "cer_percent": 712.879}, "identical": false, "first_diff": 25, "old_is_near_exact": false, "new_is_near_exact": true},
+        {"level": "mild", "source": "f9fec0393d34b466", "category": "degraded", "sha256": "57189b4d0f8e47a5d218165d03fdbc9afefab9c69fc2a4f04f6b55cea3856016", "old": {"tokens": 262, "finish": "eos", "cer_percent": 45.567}, "new": {"tokens": 264, "finish": "eos", "cer_percent": 45.922}, "near_exact": {"tokens": 267, "finish": "eos", "cer_percent": 44.681}, "identical": false, "first_diff": 160, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "21b5e36088be74ba", "category": "degraded", "sha256": "3123962e241f14c357d30cf8e9cc82f0308f369461ef87ef35707f8569b2563f", "old": {"tokens": 141, "finish": "eos", "cer_percent": 157.447}, "new": {"tokens": 141, "finish": "eos", "cer_percent": 157.447}, "near_exact": {"tokens": 141, "finish": "eos", "cer_percent": 157.447}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "mild", "source": "1ed990700c383891", "category": "handwriting", "sha256": "64dd1ce5ba7be94e0e2d4c21052e55778c872e7d5760543d10bd57101c30858f", "old": {"tokens": 506, "finish": "eos", "cer_percent": 85.099}, "new": {"tokens": 359, "finish": "eos", "cer_percent": 50.993}, "near_exact": {"tokens": 352, "finish": "eos", "cer_percent": 50.0}, "identical": false, "first_diff": 6, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "1044f76c94729af0", "category": "handwriting", "sha256": "86591de160b55a6238dcb89caf67d4409ac8155fed1280b8093f73e0f177760d", "old": {"tokens": 461, "finish": "eos", "cer_percent": 73.178}, "new": {"tokens": 466, "finish": "eos", "cer_percent": 75.814}, "near_exact": {"tokens": 457, "finish": "eos", "cer_percent": 66.667}, "identical": false, "first_diff": 303, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "ac1d006e1c29eae3", "category": "handwriting", "sha256": "75477a381f9dca21e60ed5fc8c9a61da9bb838fcafe3259ed534974b5644dcb4", "old": {"tokens": 534, "finish": "eos", "cer_percent": 71.023}, "new": {"tokens": 534, "finish": "eos", "cer_percent": 71.023}, "near_exact": {"tokens": 534, "finish": "eos", "cer_percent": 71.023}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "mild", "source": "92fe997f26aa2304", "category": "handwriting", "sha256": "c4e89a1a4010b07e817580a2ce16b87d64fc9de441ed0b1d14a7a7e1f53ffcee", "old": {"tokens": 1005, "finish": "eos", "cer_percent": 91.962}, "new": {"tokens": 1005, "finish": "eos", "cer_percent": 91.962}, "near_exact": {"tokens": 1009, "finish": "eos", "cer_percent": 91.703}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "e14bc18564088788", "category": "handwriting", "sha256": "1518243862a1f7b256352efe10a2619af26876afb13ab33f24ee92e17e40ee72", "old": {"tokens": 254, "finish": "eos", "cer_percent": 59.104}, "new": {"tokens": 253, "finish": "eos", "cer_percent": 58.824}, "near_exact": {"tokens": 301, "finish": "eos", "cer_percent": 78.151}, "identical": false, "first_diff": 171, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "mild", "source": "c0ace447d0b998cb", "category": "handwriting", "sha256": "1218ebf2843b93c5612c62767090c59050726fc0bc1e7f6906356c315e613255", "old": {"tokens": 405, "finish": "eos", "cer_percent": 79.389}, "new": {"tokens": 405, "finish": "eos", "cer_percent": 79.389}, "near_exact": {"tokens": 406, "finish": "eos", "cer_percent": 80.153}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "image": "tests/fixtures/stress/fried/classic/liber_primus_wiki_screen.jpg", "sha256": "a8f31eff93f9ad18a3a9b09d4aca28ffc74322c9040b018a9279dfaf1dfd48cf", "old": {"tokens": 495, "finish": "eos"}, "new": {"tokens": 495, "finish": "eos"}, "near_exact": {"tokens": 495, "finish": "eos"}, "identical": false, "first_diff": 63, "old_is_near_exact": false, "new_is_near_exact": false, "text_similarity": 0.9933},
+        {"level": "classic", "image": "tests/fixtures/stress/fried/classic/scanned-book-page_ballooning.jpg", "sha256": "61ec74108d63eb0fd8897f1c12471036383e304d4f1aa972478f253d75b99a19", "old": {"tokens": 475, "finish": "eos"}, "new": {"tokens": 475, "finish": "eos"}, "near_exact": {"tokens": 475, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true, "text_similarity": 1.0},
+        {"level": "classic", "image": "tests/fixtures/stress/fried/classic/smoke_screenshot.jpg", "sha256": "b99f913246abf52807bec762cd5a336827052e443535b773f30d01e399c6521d", "old": {"tokens": 268, "finish": "eos"}, "new": {"tokens": 268, "finish": "eos"}, "near_exact": {"tokens": 268, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true, "text_similarity": 1.0},
+        {"level": "classic", "source": "4a756837631f4f69", "category": "degraded", "sha256": "427915898afb56226fb539cf0250f497bbc9e47c9af5c2f305fd0fb8f1ad79a6", "old": {"tokens": 346, "finish": "eos", "cer_percent": 206.796}, "new": {"tokens": 346, "finish": "eos", "cer_percent": 206.796}, "near_exact": {"tokens": 346, "finish": "eos", "cer_percent": 206.796}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "classic", "source": "705b5079f112131e", "category": "degraded", "sha256": "2c5967cf6a9cc4a4ef3f1c9035650b09f98561391cdf5d7b6e272d647c70b9e2", "old": {"tokens": 311, "finish": "repetition", "cer_percent": 97.753}, "new": {"tokens": 311, "finish": "repetition", "cer_percent": 97.753}, "near_exact": {"tokens": 596, "finish": "repetition", "cer_percent": 88.062}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "source": "696f39cdc7378704", "category": "degraded", "sha256": "c5c188d09b2b2b9571e0d5ca5933d80b32ad3dbc15c43033dad61c336e34a22d", "old": {"tokens": 471, "finish": "eos", "cer_percent": 4.562}, "new": {"tokens": 471, "finish": "eos", "cer_percent": 4.562}, "near_exact": {"tokens": 471, "finish": "eos", "cer_percent": 4.562}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "classic", "source": "ad43a4d35e59199e", "category": "degraded", "sha256": "2fcfb9c923ef575cf378e7a20478c598ff5d60269b2c9ec9b1f2968da23e6457", "old": {"tokens": 294, "finish": "repetition", "cer_percent": 82.955}, "new": {"tokens": 294, "finish": "repetition", "cer_percent": 82.955}, "near_exact": {"tokens": 294, "finish": "repetition", "cer_percent": 82.955}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "classic", "source": "f9fec0393d34b466", "category": "degraded", "sha256": "99e69640b6648768352e07f5537cb701dd87cfd940928b78aea0fcb210fcbc98", "old": {"tokens": 221, "finish": "eos", "cer_percent": 51.95}, "new": {"tokens": 242, "finish": "eos", "cer_percent": 52.128}, "near_exact": {"tokens": 216, "finish": "eos", "cer_percent": 51.773}, "identical": false, "first_diff": 55, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "source": "21b5e36088be74ba", "category": "degraded", "sha256": "ea7c101030005ae427fa91726882272a7f38346dce55f8d09b6437927b725432", "old": {"tokens": 143, "finish": "eos", "cer_percent": 182.27}, "new": {"tokens": 143, "finish": "eos", "cer_percent": 182.27}, "near_exact": {"tokens": 143, "finish": "eos", "cer_percent": 182.27}, "identical": false, "first_diff": 32, "old_is_near_exact": true, "new_is_near_exact": false},
+        {"level": "classic", "source": "1ed990700c383891", "category": "handwriting", "sha256": "dc9f6110a6930bd8ae2a191ab6988faeb842dbe3c2d2fc2b66751ecc91f0f6f0", "old": {"tokens": 373, "finish": "eos", "cer_percent": 52.815}, "new": {"tokens": 456, "finish": "eos", "cer_percent": 58.775}, "near_exact": {"tokens": 379, "finish": "eos", "cer_percent": 50.497}, "identical": false, "first_diff": 23, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "source": "1044f76c94729af0", "category": "handwriting", "sha256": "c4bd9b371c53f70f7336e90326df309756d05e385842827d70f47ac28ef0cc8c", "old": {"tokens": 464, "finish": "eos", "cer_percent": 68.217}, "new": {"tokens": 464, "finish": "eos", "cer_percent": 68.217}, "near_exact": {"tokens": 464, "finish": "eos", "cer_percent": 68.372}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "source": "ac1d006e1c29eae3", "category": "handwriting", "sha256": "e9bcc9da804d9aaee9b7e635464d5e1a917f1d5554018631eb8f65c1e8bf1660", "old": {"tokens": 518, "finish": "eos", "cer_percent": 71.887}, "new": {"tokens": 508, "finish": "eos", "cer_percent": 71.64}, "near_exact": {"tokens": 518, "finish": "eos", "cer_percent": 71.887}, "identical": false, "first_diff": 298, "old_is_near_exact": true, "new_is_near_exact": false},
+        {"level": "classic", "source": "92fe997f26aa2304", "category": "handwriting", "sha256": "f2292b778f64cca600843badf66bf1c1e15e8066cf8e41c0af39a9f1746fc1e2", "old": {"tokens": 1055, "finish": "eos", "cer_percent": 100.778}, "new": {"tokens": 1055, "finish": "eos", "cer_percent": 100.778}, "near_exact": {"tokens": 1050, "finish": "eos", "cer_percent": 101.469}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "source": "e14bc18564088788", "category": "handwriting", "sha256": "29719258f19ab06220905f7de682e29e285f4bcf01b268283dcf49385c795cf0", "old": {"tokens": 291, "finish": "eos", "cer_percent": 65.266}, "new": {"tokens": 291, "finish": "eos", "cer_percent": 65.266}, "near_exact": {"tokens": 247, "finish": "eos", "cer_percent": 58.263}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "classic", "source": "c0ace447d0b998cb", "category": "handwriting", "sha256": "2f3b005fc07bfbfd517a0d16758ae0f56d7c6e687ab5a872cd91d7079587cd1c", "old": {"tokens": 359, "finish": "eos", "cer_percent": 77.863}, "new": {"tokens": 361, "finish": "eos", "cer_percent": 78.117}, "near_exact": {"tokens": 352, "finish": "eos", "cer_percent": 77.226}, "identical": false, "first_diff": 355, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "image": "tests/fixtures/stress/fried/enhanced/liber_primus_wiki_screen.jpg", "sha256": "fa38e5840483747f4a78660396f4f6832de4ee9f5726172bf0ee84f874c7743a", "old": {"tokens": 494, "finish": "eos"}, "new": {"tokens": 494, "finish": "eos"}, "near_exact": {"tokens": 494, "finish": "eos"}, "identical": false, "first_diff": 250, "old_is_near_exact": false, "new_is_near_exact": true, "text_similarity": 0.9987},
+        {"level": "enhanced", "image": "tests/fixtures/stress/fried/enhanced/scanned-book-page_ballooning.jpg", "sha256": "c628980bdd4c4aeaba3354f4291501043bc395b71c3c603bc8a232cab19832a4", "old": {"tokens": 468, "finish": "eos"}, "new": {"tokens": 468, "finish": "eos"}, "near_exact": {"tokens": 468, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true, "text_similarity": 1.0},
+        {"level": "enhanced", "image": "tests/fixtures/stress/fried/enhanced/smoke_screenshot.jpg", "sha256": "9bb7f96853b9b86e36a50ca182606e9f5666936858e0b285a4dbabe9a1d5c06b", "old": {"tokens": 279, "finish": "eos"}, "new": {"tokens": 279, "finish": "eos"}, "near_exact": {"tokens": 279, "finish": "eos"}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true, "text_similarity": 1.0},
+        {"level": "enhanced", "source": "4a756837631f4f69", "category": "degraded", "sha256": "2a301af7302797b5dc149a0c430cb0ece8a19756705858a97f94eb4d20f3fd2f", "old": {"tokens": 274, "finish": "eos", "cer_percent": 179.935}, "new": {"tokens": 274, "finish": "eos", "cer_percent": 179.935}, "near_exact": {"tokens": 274, "finish": "eos", "cer_percent": 179.935}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "enhanced", "source": "705b5079f112131e", "category": "degraded", "sha256": "a32610a8f7b09b9d8a4745e661f0bd78c6f78b74136ec0923e15f76baf84f3ed", "old": {"tokens": 480, "finish": "repetition", "cer_percent": 81.32}, "new": {"tokens": 748, "finish": "repetition", "cer_percent": 90.309}, "near_exact": {"tokens": 752, "finish": "repetition", "cer_percent": 95.506}, "identical": false, "first_diff": 7, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "696f39cdc7378704", "category": "degraded", "sha256": "438655250b0586d85059b5d53b3188a6ce7961d1174e182f58a95e6c26eca09c", "old": {"tokens": 438, "finish": "eos", "cer_percent": 25.291}, "new": {"tokens": 438, "finish": "eos", "cer_percent": 25.291}, "near_exact": {"tokens": 439, "finish": "eos", "cer_percent": 25.342}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "ad43a4d35e59199e", "category": "degraded", "sha256": "1cd67e8732a18347a5ea32534e2d622c328167b660e41ed2b193ed0642f68b75", "old": {"tokens": 292, "finish": "repetition", "cer_percent": 81.818}, "new": {"tokens": 292, "finish": "repetition", "cer_percent": 81.818}, "near_exact": {"tokens": 292, "finish": "repetition", "cer_percent": 81.818}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "enhanced", "source": "f9fec0393d34b466", "category": "degraded", "sha256": "7aca54d17b504794672eb4d8098bff13731c449ff95635fd715adf821639e804", "old": {"tokens": 291, "finish": "eos", "cer_percent": 45.567}, "new": {"tokens": 284, "finish": "eos", "cer_percent": 43.972}, "near_exact": {"tokens": 263, "finish": "eos", "cer_percent": 47.695}, "identical": false, "first_diff": 174, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "21b5e36088be74ba", "category": "degraded", "sha256": "ab814264ae31cdb2d6d14c8b730191fbf376e3b520057638e96c4956a2bc0aa0", "old": {"tokens": 136, "finish": "eos", "cer_percent": 138.298}, "new": {"tokens": 136, "finish": "eos", "cer_percent": 138.298}, "near_exact": {"tokens": 136, "finish": "eos", "cer_percent": 137.589}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "1ed990700c383891", "category": "handwriting", "sha256": "912f7f252e1e872598c575e6cc7f999c86d4867a6065de6e8bf9b104113e8692", "old": {"tokens": 273, "finish": "repetition", "cer_percent": 99.669}, "new": {"tokens": 273, "finish": "repetition", "cer_percent": 99.669}, "near_exact": {"tokens": 273, "finish": "repetition", "cer_percent": 99.669}, "identical": true, "first_diff": null, "old_is_near_exact": true, "new_is_near_exact": true},
+        {"level": "enhanced", "source": "1044f76c94729af0", "category": "handwriting", "sha256": "dcaedbbb4013aa649e8040dbc1fe9253e484c18ad326f62f60b0a1ad23c7b6de", "old": {"tokens": 514, "finish": "eos", "cer_percent": 78.605}, "new": {"tokens": 481, "finish": "eos", "cer_percent": 70.233}, "near_exact": {"tokens": 489, "finish": "eos", "cer_percent": 73.023}, "identical": false, "first_diff": 184, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "ac1d006e1c29eae3", "category": "handwriting", "sha256": "9a780e7fe8492328ccf9e5c7ae4c3f393807c02d0d90574ea822e1d9fe923a4b", "old": {"tokens": 294, "finish": "repetition", "cer_percent": 78.668}, "new": {"tokens": 294, "finish": "repetition", "cer_percent": 78.668}, "near_exact": {"tokens": 529, "finish": "eos", "cer_percent": 68.927}, "identical": true, "first_diff": null, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "92fe997f26aa2304", "category": "handwriting", "sha256": "b9c4de2c87a653441f3912f1bb168c9014fb4ac7d46debb018e31d4f0878fa41", "old": {"tokens": 551, "finish": "eos", "cer_percent": 58.168}, "new": {"tokens": 551, "finish": "eos", "cer_percent": 58.168}, "near_exact": {"tokens": 570, "finish": "eos", "cer_percent": 58.427}, "identical": false, "first_diff": 324, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "e14bc18564088788", "category": "handwriting", "sha256": "6d1874dceae2ace17338e4ae530073635a99851bfc2005a91ba55e6c730238c9", "old": {"tokens": 227, "finish": "eos", "cer_percent": 58.263}, "new": {"tokens": 262, "finish": "eos", "cer_percent": 65.546}, "near_exact": {"tokens": 264, "finish": "eos", "cer_percent": 66.106}, "identical": false, "first_diff": 127, "old_is_near_exact": false, "new_is_near_exact": false},
+        {"level": "enhanced", "source": "c0ace447d0b998cb", "category": "handwriting", "sha256": "1a4ed51327506c20504afc30f246feb2b34aa81deac7f26c54979b500104977a", "old": {"tokens": 478, "finish": "eos", "cer_percent": 87.913}, "new": {"tokens": 487, "finish": "eos", "cer_percent": 86.641}, "near_exact": {"tokens": 488, "finish": "eos", "cer_percent": 86.641}, "identical": false, "first_diff": 186, "old_is_near_exact": false, "new_is_near_exact": false}
+      ]
+    }
+  }
+}

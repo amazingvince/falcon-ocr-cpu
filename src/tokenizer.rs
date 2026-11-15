@@ -11,6 +11,9 @@ const IMAGE_TOKEN: &str = "<|image|>";
 const IMAGE_PREFIX: [u32; 5] = [244, 245, 246, 247, 248];
 const IMAGE_ID: u32 = 227;
 const IMAGE_END: u32 = 230;
+/// ID of the digit `0`; `1` to `9` follow it. The pre-tokenizer isolates
+/// every digit, so a number is always a run of these single-digit tokens.
+pub(crate) const DIGIT_ZERO: u32 = 539;
 
 /// Pinned tokenizer and prompt tokens for full-page plain OCR.
 pub struct OcrTokenizer {
@@ -51,6 +54,12 @@ impl OcrTokenizer {
             ensure!(
                 tokenizer.token_to_id(token) == Some(expected),
                 "unsupported tokenizer: expected {token} to have ID {expected}"
+            );
+        }
+        for (digit, expected) in ('0'..='9').zip(DIGIT_ZERO..) {
+            ensure!(
+                tokenizer.token_to_id(&digit.to_string()) == Some(expected),
+                "unsupported tokenizer: expected digit {digit} to have ID {expected}"
             );
         }
         ensure!(
@@ -180,6 +189,27 @@ mod tests {
             "Hello , OCR !\n<td>A</td>"
         );
         assert!(tokenizer.prompt(0).is_err());
+        // Each digit of a date and a grouped number encodes as a token of
+        // its own, `DIGIT_ZERO + d`, and none of the other tokens holds a
+        // digit: the repetition stop's counting rule reads numbers from
+        // these runs.
+        let text = "2023-01-01 1,000";
+        let ids = tokenizer.tokenizer.encode(text, false).unwrap().get_ids().to_vec();
+        let digits: Vec<u32> = text
+            .chars()
+            .filter_map(|c| c.to_digit(10))
+            .map(|d| DIGIT_ZERO + d)
+            .collect();
+        let found: Vec<u32> = ids
+            .iter()
+            .copied()
+            .filter(|id| id.wrapping_sub(DIGIT_ZERO) < 10)
+            .collect();
+        assert_eq!(found, digits);
+        for id in ids.iter().filter(|id| id.wrapping_sub(DIGIT_ZERO) >= 10) {
+            let token = tokenizer.tokenizer.id_to_token(*id).unwrap();
+            assert!(!token.contains(|c: char| c.is_ascii_digit()), "{id} {token:?}");
+        }
     }
 
     #[test]

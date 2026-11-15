@@ -222,10 +222,12 @@ unsafe fn exp_shifted_block(values: &mut [f32], shift: f32) {
 /// subnormal results, so no flush-to-zero dependence), above [`EXP_MAX`]
 /// (88.376) return infinity, NaN returns NaN. The true exp stays finite up to
 /// 88.72, but the `2^n` bit construction below overflows once `n` rounds to
-/// 128, which happens from 88.3763 on; the ceiling stops short of that. Every
-/// caller is a softmax with non-positive arguments. Every ISA's `exp_fast`
-/// performs exactly these IEEE operations, so the results are bit-identical
-/// across machines.
+/// 128, which happens from 88.3763 on; the ceiling stops short of that.
+/// Online softmax uses non-positive arguments. FP32 static tiles use this
+/// polynomial on bounded scores: [`exp_poly_unchecked`] on eight lanes, or
+/// the bitwise-equal AVX-512 specialization with `vscalefps` scaling on
+/// sixteen. Every ISA's `exp_fast` performs these IEEE operations, so its
+/// results are bit-identical across machines.
 #[inline(always)]
 pub(crate) fn exp_poly(x: f32) -> f32 {
     if x.is_nan() {
@@ -237,6 +239,13 @@ pub(crate) fn exp_poly(x: f32) -> f32 {
     if x > EXP_MAX {
         return f32::INFINITY;
     }
+    exp_poly_unchecked(x)
+}
+
+/// Polynomial core of [`exp_poly`] for finite arguments in [-87, 87].
+/// NaN propagates; inputs outside that range have unspecified values.
+#[inline(always)]
+pub(crate) fn exp_poly_unchecked(x: f32) -> f32 {
     let n = (x * EXP_LOG2E).round_ties_even();
     let r = n.mul_add(-EXP_LN2_HI, x);
     let r = n.mul_add(-EXP_LN2_LO, r);

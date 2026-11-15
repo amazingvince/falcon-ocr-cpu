@@ -2,8 +2,8 @@
 
 use super::*;
 
-// A fixed, deterministic generator keeps tests independent of rand versions.
-fn values(n: usize, seed: u32) -> Vec<f32> {
+/// Fixed, deterministic test inputs in [-1, 1).
+pub(crate) fn values(n: usize, seed: u32) -> Vec<f32> {
     let mut state = seed;
     (0..n)
         .map(|_| {
@@ -383,7 +383,16 @@ fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
     let geometry = Geometry::new(0, 3, 65);
     let fast = PrefillOptions {
         exp: crate::config::ExpMode::Fast,
-        profile: false,
+        ..PrefillOptions::EXACT
+    };
+    // Operands in [-1, 1] keep every score within the static bound of 8.
+    let fast_static = PrefillOptions {
+        softmax: crate::config::PrefillSoftmax::Static,
+        ..fast
+    };
+    let fp32_static = PrefillOptions {
+        fp32_softmax: crate::config::PrefillSoftmax::Static,
+        ..PrefillOptions::EXACT
     };
     let vocab = 4096;
     let head = values(vocab * dim, 31);
@@ -424,16 +433,18 @@ fn prefill_kernels_are_bitwise_independent_of_the_pool_size() {
                 );
                 outputs.push(panel);
             }
-            for options in [PrefillOptions::EXACT, fast] {
+            for options in [PrefillOptions::EXACT, fast, fp32_static] {
                 let mut attention = vec![f32::NAN; q.len()];
                 attention_with(&q, &kv, queries, geometry, &sinks, &mut attention, Simd::Auto, options);
                 outputs.push(attention);
             }
-            let mut bf16 = vec![f32::NAN; q.len()];
-            let (mut bf16_keys, mut bf16_values) = (Vec::new(), Vec::new());
-            let converted = Bf16Kv::Convert(&mut bf16_keys, &mut bf16_values);
-            if attention_prefill_bf16(&q, &kv, queries, geometry, &sinks, &mut bf16, converted, fast) {
-                outputs.push(bf16);
+            for options in [fast, fast_static] {
+                let mut bf16 = vec![f32::NAN; q.len()];
+                let (mut bf16_keys, mut bf16_values) = (Vec::new(), Vec::new());
+                let converted = Bf16Kv::Convert(&mut bf16_keys, &mut bf16_values);
+                if attention_prefill_bf16(&q, &kv, queries, geometry, &sinks, &mut bf16, converted, options) {
+                    outputs.push(bf16);
+                }
             }
             let mut normalized = vec![f32::NAN; input.len()];
             rms_norm(&input, &mut normalized, dim, 1e-5, None);
@@ -612,23 +623,178 @@ fn compact_cache_rejects_spatial_keys_in_generated_region() {
     );
 }
 
+/// The FP32 tiles of 16-bit bodies (near-exact mode) take the static-shift
+/// softmax by default and those of 8-bit bodies (fast mode's FP32 fallback)
+/// the online one; `prefill-softmax-fp32` sets it for both and changes
+/// nothing else. Exact mode's FP32 body keeps the online softmax whatever
+/// the knob says.
 #[test]
-fn exception_columns_keep_fp32_projection_panels() {
-    use crate::config::PrefillBf16;
+fn fp32_static_softmax_is_near_exact_default_and_never_exact() {
+    use crate::config::{PrefillBf16, PrefillSoftmax, Tuning};
     for simd in implementations() {
         for bits in [None, Some(8), Some(16)] {
-            for setting in [PrefillBf16::Off, PrefillBf16::Attention, PrefillBf16::All] {
-                let (plain, exceptions) = (
-                    prefill_plan(bits, false, simd, setting),
-                    prefill_plan(bits, true, simd, setting),
-                );
-                assert_eq!(exceptions.attention, plain.attention, "{simd:?} {bits:?} {setting:?}");
-                let expected = match plain.projection {
-                    PrefillProjection::PanelBf16 => PrefillProjection::PanelAvx2,
-                    other => other,
-                };
-                assert_eq!(exceptions.projection, expected, "{simd:?} {bits:?} {setting:?}");
+            for misfit in [false, true] {
+                for bf16 in [PrefillBf16::Attention, PrefillBf16::Off] {
+                    let plan = |fp32_softmax| {
+                        let tuning = Tuning {
+                            prefill_bf16: bf16,
+                            prefill_softmax_fp32: fp32_softmax,
+                            ..Tuning::default()
+                        };
+                        prefill_plan(bits, misfit, simd, &tuning)
+                    };
+                    let default = plan(None);
+                    let online = plan(Some(PrefillSoftmax::Online));
+                    let fixed = plan(Some(PrefillSoftmax::Static));
+                    let case = format!("{simd:?} {bits:?} misfit {misfit} {bf16:?}");
+                    assert_eq!(online.attention.fp32_softmax(), PrefillSoftmax::Online, "{case}");
+                    assert_eq!(fixed.projection, online.projection, "{case}");
+                    let quantized = bits.is_some() && panel_gemm::available(simd);
+                    let expected = match online.attention {
+                        PrefillAttention::Avx2 if quantized => PrefillAttention::Avx2Static,
+                        PrefillAttention::Avx512Wide if quantized => PrefillAttention::Avx512WideStatic,
+                        other => other,
+                    };
+                    assert_eq!(fixed.attention, expected, "{case}");
+                    let expected = if bits == Some(16) { fixed } else { online };
+                    assert_eq!(default, expected, "{case}");
+                    // Traces, captures and short prefills keep the online
+                    // softmax.
+                    for planned in [default, online, fixed] {
+                        assert_eq!(planned.softmaxes(false), (None, PrefillSoftmax::Online), "{case}");
+                    }
+                    if bits.is_none() {
+                        assert_eq!(fixed, online, "{case}");
+                        assert_eq!(fixed.softmaxes(true).1, PrefillSoftmax::Online, "{case}");
+                    }
+                }
             }
         }
+    }
+}
+
+#[test]
+fn i16_misfit_keeps_fp32_projection_panels() {
+    use crate::config::{PrefillBf16, PrefillProjections, PrefillSoftmax, Tuning};
+    for simd in implementations() {
+        for bits in [None, Some(8), Some(16)] {
+            for setting in [PrefillBf16::Off, PrefillBf16::Attention] {
+                for projections in [PrefillProjections::Fp32, PrefillProjections::I16] {
+                    let tuning = Tuning {
+                        prefill_bf16: setting,
+                        prefill_projections: projections,
+                        prefill_softmax: PrefillSoftmax::Online,
+                        ..Tuning::default()
+                    };
+                    let case = format!("{simd:?} {bits:?} {setting:?} {projections:?}");
+                    let (plain, misfit) = (
+                        prefill_plan(bits, false, simd, &tuning),
+                        prefill_plan(bits, true, simd, &tuning),
+                    );
+                    // The static softmax only replaces the BF16 attention's softmax.
+                    let static_softmax = prefill_plan(
+                        bits,
+                        false,
+                        simd,
+                        &Tuning {
+                            prefill_softmax: PrefillSoftmax::Static,
+                            ..tuning
+                        },
+                    );
+                    assert_eq!(static_softmax.projection, plain.projection, "{case}");
+                    let expected = match plain.attention {
+                        PrefillAttention::Bf16 if prefill_bf16_rows_available() => PrefillAttention::Bf16Static,
+                        other => other,
+                    };
+                    assert_eq!(static_softmax.attention, expected, "{case}");
+                    assert_eq!(misfit.attention, plain.attention, "{case}");
+                    let expected = match plain.projection {
+                        PrefillProjection::PanelI16Vnni | PrefillProjection::PanelI16Avx2 => {
+                            PrefillProjection::PanelAvx2
+                        }
+                        other => other,
+                    };
+                    assert_eq!(misfit.projection, expected, "{case}");
+                    // INT16 projections only for 8-bit bodies that ask for
+                    // them; attention never depends on the knob.
+                    let i16 = matches!(
+                        plain.projection,
+                        PrefillProjection::PanelI16Vnni | PrefillProjection::PanelI16Avx2
+                    );
+                    assert!(
+                        !i16 || (projections == PrefillProjections::I16 && bits == Some(8)),
+                        "{case}"
+                    );
+                    let fp32 = Tuning {
+                        prefill_projections: PrefillProjections::Fp32,
+                        ..tuning
+                    };
+                    assert_eq!(prefill_plan(bits, false, simd, &fp32).attention, plain.attention);
+                    #[cfg(target_arch = "x86_64")]
+                    if projections == PrefillProjections::I16 && bits == Some(8) && panel_gemm::available(simd) {
+                        let vnni = simd == Simd::Auto && panel_i16::Isa::Vnni.available();
+                        let expected = if vnni {
+                            PrefillProjection::PanelI16Vnni
+                        } else {
+                            PrefillProjection::PanelI16Avx2
+                        };
+                        assert_eq!(plain.projection, expected, "{case}");
+                    }
+                }
+            }
+            // The defaults (INT16 projections, static softmax) change only
+            // 8-bit bodies: FP32 and 16-bit ones plan as with the FP32
+            // projections and the online softmax.
+            let reference = Tuning {
+                prefill_projections: PrefillProjections::Fp32,
+                prefill_softmax: PrefillSoftmax::Online,
+                ..Tuning::default()
+            };
+            for misfit in [false, true].into_iter().filter(|_| bits != Some(8)) {
+                assert_eq!(
+                    prefill_plan(bits, misfit, simd, &Tuning::default()),
+                    prefill_plan(bits, misfit, simd, &reference),
+                    "{simd:?} {bits:?} misfit {misfit}"
+                );
+            }
+        }
+    }
+}
+
+/// Fails where any AVX-512 oracle would be skipped. Those tests return
+/// early, or drop their AVX-512 arm, on CPUs without the features, and
+/// hosted CI runners have none. Each guard is a conjunction of the
+/// predicates below (a new guard adds its own), and the plan is the one the
+/// INT16 and static-softmax arms of the pool-size tests follow. Compiled on
+/// every target, so that a run filtered to it cannot pass by matching none.
+#[test]
+#[ignore = "needs an AVX-512 F/BW/VL/VNNI/BF16 host"]
+fn host_runs_every_avx512_kernel() {
+    #[cfg(not(target_arch = "x86_64"))]
+    panic!("the AVX-512 kernels exist only on x86-64");
+    #[cfg(target_arch = "x86_64")]
+    {
+        let guards = [
+            // `attention::prefill64`: the 16-lane FP32 tiles.
+            ("avx2_available", avx2_available()),
+            ("avx512_available", avx512_available()),
+            // `prefill64::bf16` and its `static_shift`.
+            ("bf16_available", bf16_available()),
+            ("prefill_bf16_rows_available", prefill_bf16_rows_available()),
+            // `panels::panel_i16` (`isas`).
+            ("panel_i16::Isa::Vnni", panel_i16::Isa::Vnni.available()),
+            // The `auto` arms here and of `quant::kv`'s verification rows.
+            ("wide_attention(auto)", wide_attention(Simd::Auto)),
+            ("wide_rows(auto)", wide_rows(Simd::Auto)),
+        ];
+        let skipped: Vec<_> = guards.iter().filter(|(_, runs)| !runs).map(|(name, _)| *name).collect();
+        assert!(skipped.is_empty(), "false on this host: {skipped:?}");
+        assert_eq!(
+            prefill_plan(Some(8), false, Simd::Auto, &crate::config::Tuning::default()),
+            PrefillPlan {
+                projection: PrefillProjection::PanelI16Vnni,
+                attention: PrefillAttention::Bf16Static,
+            }
+        );
     }
 }

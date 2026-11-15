@@ -1,0 +1,39 @@
+{
+  "schema": "falcon-ocr-fast-defaults-gate-v1",
+  "registered_at": "2026-11-03T01:05:00-05:00",
+  "approved_by": "user, 2026-11-03: decided to make both knobs (INT16 prefill projections and the static-shift prefill softmax) fast mode's defaults and asked for documented validation; criteria reused unchanged from reference/router-english-gate-v1-budget.json, with the old fast defaults as the reference so that the two knobs are gated in isolation; fixed before any output of either arm on these pages existed",
+  "pages": "reference/fast-defaults-gate-v1-masked-lock.json: the 156 pages of reference/fast-defaults-gate-v1-evaluation-lock.json (research/corpus-qualification/scripts/select_fast_defaults_gate.py: one page per document family, no family of corpus v1/v2/v3 or the English gate v1; formulas 42, tables 41, multi_column 30, other 43), figure regions without ground truth painted white on 66 of them (mask_excluded.py). The pool is the router development set (reference/router-dev-v1-*), which tuned only the image-size router and was never used for fast-mode numerics; this gate spends it. Prior exposure: router development ran an older fast mode on all 389 pool pages and reported its aggregate CER (research/resolution-router/README.md), and 17 of the 156 pages appeared in corpus v3's contact-sheet review (reference/corpus-v3-candidate-review.json); neither knob existed then, and no page was chosen or excluded by either arm's output",
+  "host": "AMD Ryzen 7 7700X (8 cores, 16 threads; AVX2, AVX-512 with BF16 and VNNI), Linux",
+  "binary": {
+    "path": "artifacts/validation-2026-11-03/bin/falcon-ocr-a837527",
+    "sha256": "9b84d2a2c1b401fdc52d7088d50bfb4f212338755516b1d12e48e3bb1a455b00",
+    "source": "branch feat/int8-rot at a837527, where both knobs exist and are off by default"
+  },
+  "reference": {
+    "name": "fast-old-defaults",
+    "command": "falcon-ocr --model artifacts/packed --mode fast run <156 canonical paths> --max-new-tokens 4096",
+    "note": "the old fast defaults, which are a837527's defaults: prefill projections panel-avx2, prefill attention bf16 with the online softmax"
+  },
+  "candidate": {
+    "name": "fast-new-defaults",
+    "command": "falcon-ocr --model artifacts/packed --mode fast --tune prefill-i16=true --tune prefill-softmax=static run <156 canonical paths> --max-new-tokens 4096",
+    "note": "the reference plus the two knobs that become fast mode's defaults; on this host the plan reads prefill projection panel-i16-vnni, attention bf16-static"
+  },
+  "procedure": "one fresh process per arm over the masked lock's canonical paths in lock order, each under a shared hold on the host CPU lock; each arm's JSON lines converted by research/corpus-qualification/scripts/bench_report_from_run.py --lock reference/fast-defaults-gate-v1-masked-lock.json, which requires every lock page once, in order, with the lock's pixels",
+  "scope": "pages where the reference (old fast defaults) ends at EOS",
+  "cer": "raw-text Levenshtein distance to ground-truth.txt divided by ground-truth length, micro-averaged over characters, same treatment for both runs (research/phase4-hillclimb/attempt3/check_heldout.py --reference-report)",
+  "criteria": {
+    "overall_micro_cer_increase_max_points": 0.25,
+    "per_category_micro_cer_increase_max_points": 1.0,
+    "repetition_stop_fires_on_fp32_eos_pages": 0,
+    "min_category_fp32_eos_pages_gated": 10
+  },
+  "criteria_note": "check_heldout.py names the reference `fp32`; here it is the old fast defaults, not FP32, so `repetition_stop_fires_on_fp32_eos_pages` counts the candidate's repetition stops on pages where the old fast defaults end at EOS",
+  "reported_not_gated": [
+    "categories with fewer than 10 reference-EOS pages (none expected: every category has at least 30 pages)",
+    "pages token-identical to the reference",
+    "token edits",
+    "stop-reason changes",
+    "time: not comparable, the host is shared with other work"
+  ]
+}

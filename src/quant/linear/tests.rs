@@ -36,6 +36,21 @@ fn odd_rows_partial_groups_and_error_bound() {
 }
 
 #[test]
+fn i16_panels_require_whole_groups_and_output_panels() {
+    for (bits, group, out, inputs, fits) in [
+        (8, 64, 32, 64, true),
+        (16, 64, 32, 64, false),
+        (8, 32, 32, 64, false),
+        (8, 64, 31, 64, false),
+        (8, 64, 32, 65, false),
+    ] {
+        let q = QuantLinear::quantize_bits(&vec![0.0; out * inputs], out, inputs, group, bits).unwrap();
+        assert_eq!(q.fits_i16_panels(), fits, "{bits}-bit {out}x{inputs} g{group}");
+        assert_eq!(fits_i16_panels(bits, group, out, inputs), fits);
+    }
+}
+
+#[test]
 fn real_reduction_widths_batches_and_f64_bound() {
     for k in [768usize, 1024, 2304] {
         for g in [64, 128] {

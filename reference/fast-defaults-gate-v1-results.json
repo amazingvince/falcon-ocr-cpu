@@ -1,0 +1,160 @@
+{
+ "schema": "falcon-ocr-fast-defaults-gate-v1-results",
+ "budget": "reference/fast-defaults-gate-v1-budget.json",
+ "registered": "budget committed in 72ba98e at 2026-11-03T00:58:45-05:00, before the first start of either arm (01:05:33)",
+ "lock": "reference/fast-defaults-gate-v1-masked-lock.json",
+ "host": "AMD Ryzen 7 7700X (8 cores, 16 threads; AVX2, AVX-512 with BF16 and VNNI), Linux",
+ "binary": {
+  "path": "artifacts/validation-2026-11-03/bin/falcon-ocr-a837527",
+  "sha256": "9b84d2a2c1b401fdc52d7088d50bfb4f212338755516b1d12e48e3bb1a455b00",
+  "source": "branch feat/int8-rot at a837527; run.sh refuses to start unless the binary's sha256 equals the budget's",
+  "note": "a837527 predates the counting rule of the repetition stop (c859bd2), so both arms ran the exact rule only"
+ },
+ "runs": {
+  "directory": "artifacts/fast-defaults-gate-v1/ on the host: run.sh, run.log, pages.txt (the lock's 156 canonical paths in order), old.jsonl and new.jsonl (raw `falcon-ocr run` lines), old.err and new.err, old-report.json and new-report.json (research/corpus-qualification/scripts/bench_report_from_run.py), summary.json and summary.txt (research/phase4-hillclimb/attempt3/check_heldout.py), killed-0202/ (the stopped first start of the reference arm)",
+  "reference": {
+   "arm": "old",
+   "started": "2026-11-03T02:02:16-05:00",
+   "finished": "2026-11-03T03:54:06-05:00",
+   "plan": "prefill 16 threads, projections panel-avx2, attention bf16; decode auto team (chose 6 threads), kv q8; head Screened; speculation 4 drafts with the published draft head; repetition stop on",
+   "finish_reasons": {
+    "eos": 151,
+    "length": 5
+   }
+  },
+  "candidate": {
+   "arm": "new",
+   "started": "2026-11-03T03:54:06-05:00",
+   "finished": "2026-11-03T04:23:06-05:00",
+   "plan": "prefill 16 threads, projections panel-i16-vnni, attention bf16-static; decode auto team (chose 12 threads), kv q8; head Screened; speculation 4 drafts with the published draft head; repetition stop on",
+   "finish_reasons": {
+    "eos": 151,
+    "length": 5
+   }
+  },
+  "sha256": {
+   "old.jsonl": "1b98439304186d02d345901490009a762898758b2bd5ff6a6273776a75936e5c",
+   "new.jsonl": "db3868f59c7a00178a3ca8cf6f74be62f69b627f6c55de77c98265cd19c54811",
+   "old-report.json": "23f3a7f556c81eefb450d95e17ef8f0d27d795e67f1fa6b0cb64e80e49da08ac",
+   "new-report.json": "338faf8818328cb878601bab657b253e553774f5cd0ddcf3fe740e258ea38b3b",
+   "summary.json": "f06eef33d62c0427ec3f437b08614f86ab83c8646685ac5fe731391a65c19e28"
+  }
+ },
+ "restart": "The reference arm first started at 2026-11-03T01:05:33-05:00 and was stopped after 48 of its 156 pages (last output 01:53:14), because host contention would have carried it past the 2-hour limit of a background task. The budget's procedure requires one fresh process per arm, so the arm was rerun from page 1 in a new process at 02:02:16; the gated reference is that complete run. The partial output is kept in killed-0202/old.jsonl.partial.",
+ "cross_process_identity": "The 48 pages of the stopped first start are token-identical to the same 48 pages of the gated reference arm (same paths in lock order, equal token_ids, finish_reason and text; 75,781 tokens), so two processes of the same binary and flags produced the same tokens",
+ "verdict": "PASS (pre-registered): overall micro CER on reference-EOS pages -0.025 pt (limit +0.25); formulas -0.012, multi_column 0.000, other 0.000, tables -0.066 pt (limit +1.0 each); no repetition stop on a reference-EOS page",
+ "note_on_keys": "check_heldout.py labels the reference `fp32`; here it is the old fast defaults (the budget's criteria_note)",
+ "criteria": {
+  "overall_micro_cer_increase_max_points": {
+   "limit": 0.25,
+   "value": -0.025,
+   "pass": true
+  },
+  "per_category_micro_cer_increase_max_points": {
+   "limit": 1.0,
+   "values": {
+    "formulas": -0.012,
+    "multi_column": 0.0,
+    "other": 0.0,
+    "tables": -0.066
+   },
+   "pass": true
+  },
+  "repetition_stop_fires_on_fp32_eos_pages": {
+   "limit": 0,
+   "value": 0,
+   "pass": true
+  },
+  "min_category_fp32_eos_pages_gated": {
+   "limit": 10,
+   "values": {
+    "formulas": 42,
+    "multi_column": 30,
+    "other": 43,
+    "tables": 36
+   },
+   "note": "every category is gated; the 5 pages where the reference does not end at EOS are all tables pages (41 in the lock)"
+  }
+ },
+ "gated": {
+  "pages": 156,
+  "fp32_eos_pages": 151,
+  "gates": {
+   "overall": true,
+   "per_category": true,
+   "repetition_stop_on_eos": true
+  },
+  "pass": true,
+  "eos_micro_cer": {
+   "fp32": 0.2165402873981456,
+   "candidate": 0.21629142518862624
+  },
+  "eos_categories": {
+   "formulas": {
+    "pages": 42,
+    "fp32": 0.33501401814244225,
+    "candidate": 0.33489090471580385,
+    "gated": true
+   },
+   "multi_column": {
+    "pages": 30,
+    "fp32": 0.12322609406345196,
+    "candidate": 0.12322609406345196,
+    "gated": true
+   },
+   "other": {
+    "pages": 43,
+    "fp32": 0.1444003359035041,
+    "candidate": 0.1444003359035041,
+    "gated": true
+   },
+   "tables": {
+    "pages": 36,
+    "fp32": 0.1835770107161637,
+    "candidate": 0.18291216130455543,
+    "gated": true
+   }
+  },
+  "repetition_stop_on_fp32_eos_pages": []
+ },
+ "reported_not_gated": {
+  "categories_below_10_reference_eos_pages": [],
+  "identical_pages": 148,
+  "identical_eos_pages": 144,
+  "eos_token_edits": 289,
+  "eos_reference_tokens": 182447,
+  "stop_changes": [],
+  "reference_length_pages": [
+   "fa57d79b5d702969",
+   "afa9cb8e230d8375",
+   "d6a715e91b7840c9",
+   "860881c335d42f01",
+   "a395a28995330ea0"
+  ],
+  "all_pages_micro_cer": {
+   "fp32": 0.22217556374671016,
+   "candidate": 0.22230862680650385
+  },
+  "tokens": {
+   "fp32": 202927,
+   "candidate": 202792
+  },
+  "differing_pages": [
+   {"page": "e20264cf760b260e", "category": "formulas", "stop": "eos", "first_divergence": 152, "token_edits": 72, "tokens": [1898, 1858], "cer": [0.39841837695349275, 0.39427603087930707]},
+   {"page": "7953e077c8ce98fe", "category": "tables", "stop": "eos", "first_divergence": 296, "token_edits": 45, "tokens": [1399, 1424], "cer": [0.1894002789400279, 0.19972105997210599]},
+   {"page": "fa57d79b5d702969", "category": "tables", "stop": "length", "first_divergence": 1258, "token_edits": 169, "tokens": [4096, 4096], "cer": [0.21018324929282992, 0.2358873447300455]},
+   {"page": "2c27e77d7b094c70", "category": "tables", "stop": "eos", "first_divergence": 25, "token_edits": 1, "tokens": [1296, 1295], "cer": [0.4238375200427579, 0.4238375200427579]},
+   {"page": "ecef28acebef3df7", "category": "tables", "stop": "eos", "first_divergence": 1611, "token_edits": 22, "tokens": [2085, 2085], "cer": [0.3290062179557107, 0.32933347878258973]},
+   {"page": "5b9f2fcbf37b6c84", "category": "tables", "stop": "eos", "first_divergence": 125, "token_edits": 143, "tokens": [2908, 2788], "cer": [0.06587143803843605, 0.045990722332670646]},
+   {"page": "9b2d91380c394630", "category": "multi_column", "stop": "eos", "first_divergence": 517, "token_edits": 4, "tokens": [1031, 1031], "cer": [0.08444816053511706, 0.08444816053511706]},
+   {"page": "2a54df083b43f03e", "category": "multi_column", "stop": "eos", "first_divergence": 1274, "token_edits": 2, "tokens": [1468, 1469], "cer": [1.6366322008862628, 1.6366322008862628]}
+  ],
+  "differing_pages_note": "[reference, candidate] pairs; both arms stop for the same reason on every page. CER is distance to one ground-truth text, not a quality verdict",
+  "time": {
+   "reference_wall_s": 6708.345081376,
+   "candidate_wall_s": 1739.242730631,
+   "note": "not comparable: the reference arm ran while other jobs oversubscribed the host (its decode-team tuner measured a median 1,268 ms per step at 6 threads, the candidate arm's 8.4 to 8.9 ms)"
+  }
+ },
+ "consequence": "INT16 prefill projections and the static-shift prefill softmax, fast mode's defaults since 70dcefe, pass the held-out gate against the previous fast defaults. The 156 pages are spent for fast-mode numerics."
+}

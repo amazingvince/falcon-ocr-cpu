@@ -45,8 +45,9 @@ pub struct Timings {
     /// None means the historical/backend result did not measure this stage.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub image_projection_ms: Option<f64>,
-    /// Complete transformer prefill forward, including final vocabulary logits;
-    /// contained in prefill_ms. Excludes embedding, setup and argmax.
+    /// Complete transformer prefill forward, including per-layer cache sealing
+    /// and final vocabulary logits; contained in prefill_ms. Excludes embedding,
+    /// setup and argmax.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transformer_prefill_ms: Option<f64>,
     pub prefill_ms: f64,
@@ -260,6 +261,9 @@ impl Runner {
     /// configurations, incompatible profiles and failed resource setup.
     pub fn new(model: Arc<Model>, model_dir: impl AsRef<Path>, config: RunnerConfig) -> Result<Self> {
         config.validate()?;
+        config
+            .tuning
+            .check_kv_layers(model.profile().kv, model.config.n_layers)?;
         if model.profile() != crate::quant::Profile::REFERENCE {
             ensure!(
                 config.cache_layout == CacheLayout::Compact,
@@ -314,6 +318,7 @@ impl Runner {
             resolved,
         };
         runner.set_head_mode(head)?;
+        crate::model::report_memory(runner.config.tuning.phases, "load");
         Ok(runner)
     }
     /// Whether generation stops on repetition loops (`RunnerConfig::repetition_stop`).
@@ -534,22 +539,12 @@ impl Runner {
         validate_prepared_bounds(&prepared, options)?;
         let tokens = self.tokenizer.prompt(prepared.positions_hw.len())?;
         let prep_ms = start.elapsed().as_secs_f64() * 1000. - decode_ms;
+        crate::model::report_memory(self.config.tuning.phases, "preprocess");
         let mut result = self.run_prepared_scoped(prepared, tokens, options, prep_ms, trace, &[])?;
         result.timings.image_decode_ms = decode_ms;
         result.timings.total_ms = start.elapsed().as_secs_f64() * 1000.;
         result.timings.time_to_first_token_ms += decode_ms;
         Ok(result)
-    }
-
-    fn seal_session(&self, session: &mut Session, trace: &mut dyn Trace) -> Result<()> {
-        let mode = self.model.profile().kv;
-        if mode != crate::quant::Kv::Compact {
-            let before = session.cache_bytes();
-            let t = Instant::now();
-            session.seal_prefix(&self.model.config, mode, self.config.exp)?;
-            trace.prefix_sealed(before, session.cache_bytes(), t.elapsed().as_secs_f64() * 1000.0);
-        }
-        Ok(())
     }
 
     fn run_prepared_scoped(
@@ -609,21 +604,18 @@ impl Runner {
                 c.max_seq_len
             );
         }
-        let options = &GenerationOptions {
-            max_new_tokens: budget,
-            ..options.clone()
-        };
         let (image_start, image_end) = image_range(&tokens, c)?;
         let (mut pos_t, mut pos_hw) = positions(&tokens, &prepared.positions_hw, c)?;
         let simd = self.config.backend.simd();
         let mut session = Session::new(
             c,
-            tokens.len() + options.max_new_tokens,
+            tokens.len() + budget,
             tokens.len(),
             image_start,
             image_end,
             simd,
             self.config.cache_layout,
+            self.model.profile().kv != crate::quant::Kv::Compact && budget > 1,
             self.config.exp,
             self.config.tuning,
         )?;
@@ -637,6 +629,10 @@ impl Runner {
         }
         let mut hidden = Vec::new();
         let image_projection_ms = self.model.embed(&tokens, Some(&prepared.patches), simd, &mut hidden)?;
+        if self.model.profile().memory_hygiene() {
+            prepared.patches = Vec::new();
+        }
+        crate::model::report_memory(self.config.tuning.phases, "embed");
         let screen = self.head == HeadMode::Screened && teacher_tokens.is_empty();
         if screen {
             session.reserve_screened_head(&self.model);
@@ -646,6 +642,7 @@ impl Runner {
             .model
             .forward_next(&mut hidden, &pos_t, &pos_hw, &mut session, trace, "prefill", screen)?;
         let transformer_prefill_ms = transformer_started.elapsed().as_secs_f64() * 1000.0;
+        crate::model::report_memory(self.config.tuning.phases, "forward");
         let score = trace.scores_teacher();
         let next_token = if let Some(&forced) = teacher_tokens.first() {
             if score {
@@ -658,10 +655,7 @@ impl Runner {
         } else {
             select(&next, 0, c.vocab_size)?
         };
-        if (teacher_tokens.len() > 1 || !self.tokenizer.stop_ids().contains(&next_token)) && options.max_new_tokens > 1
-        {
-            self.seal_session(&mut session, trace)?;
-        }
+        crate::model::report_memory(self.config.tuning.phases, "sealed");
         if decoder == Decoder::Row {
             // A row decodes with the joint step's workspace.
             session.release_workspace();
@@ -672,16 +666,16 @@ impl Runner {
                 session.prepare_small_decode(c);
                 hidden = Vec::with_capacity(c.dim);
             }
-            prepared.patches = Vec::new();
             prepared.positions_hw = Vec::new();
             (pos_t, pos_hw) = (Vec::new(), Vec::new());
         }
+        crate::model::report_memory(self.config.tuning.phases, "released");
         let prefill_ms = start.elapsed().as_secs_f64() * 1000.;
         Ok(Prefilled {
             session,
             hidden,
             next_token,
-            max_new_tokens: options.max_new_tokens,
+            max_new_tokens: budget,
             budget_clamped,
             screen,
             simd,
@@ -734,6 +728,7 @@ impl Runner {
             None => self.decode_plain(&mut decode, teacher_tokens, score)?,
         }
         trace.decode_end();
+        crate::model::report_memory(self.config.tuning.phases, "decode");
         drop(team);
         crate::model::report_decode_phases(self.config.tuning.phases);
         let decode_ms = decode_start.elapsed().as_secs_f64() * 1000.;

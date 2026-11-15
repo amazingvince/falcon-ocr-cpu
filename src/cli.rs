@@ -18,8 +18,9 @@ pub struct RunnerArgs {
     #[arg(long, global = true)]
     pub threads: Option<usize>,
     /// Kernels: `auto` takes the fastest this CPU runs (AVX2 decode, AVX-512
-    /// prefill tiles and BF16 prefill attention where present, NEON on
-    /// aarch64); `avx2` is 8-lane FP32 everywhere; `scalar` [default: auto].
+    /// prefill tiles, BF16 prefill attention and VNNI INT16 projections where
+    /// present, NEON on aarch64). `avx2` selects 8-lane FP32 attention and
+    /// AVX2 panels. `scalar` is for debugging [default: auto].
     #[arg(long, value_enum, global = true)]
     pub backend: Option<Backend>,
     /// Requests decoded jointly, 1..=8 [default: 1].
@@ -32,10 +33,12 @@ pub struct RunnerArgs {
     #[arg(long, value_enum, global = true)]
     pub head: Option<HeadMode>,
     /// Stop a page once it repeats a cycle of at most 128 tokens for at
-    /// least max(256, 4 * cycle) tokens (finish_reason "repetition"); output
-    /// up to that step is unchanged [default: on for recognition, off for
-    /// falcon-ocr-eval]. `--stop-repetition=false` lets loops run to
-    /// --max-new-tokens.
+    /// least max(256, 4 * cycle) tokens, or a cycle of at most 128 tokens (a
+    /// number counting as one) in which only numbers change, each by a fixed
+    /// step, 128 times over at least 256 tokens
+    /// (finish_reason "repetition"); output up to that step is unchanged
+    /// [default: on for recognition, off for falcon-ocr-eval].
+    /// `--stop-repetition=false` lets loops run to --max-new-tokens.
     #[arg(long, num_args = 0..=1, require_equals = true, default_missing_value = "true", action = ArgAction::Set, global = true)]
     pub stop_repetition: Option<bool>,
     /// Decode threads: a number, `pool` (as many as --threads) or `auto`
@@ -71,21 +74,28 @@ pub struct RunnerArgs {
     pub draft_head: Option<std::path::PathBuf>,
     /// Draft source: `ngram` (matches in earlier output), `head` (the
     /// --draft-head model) or `both` (n-gram matches first) [default: head
-    /// with --draft-head, otherwise ngram]. Outputs are unchanged.
+    /// with --draft-head, otherwise ngram]. Recognition also uses a published
+    /// head found beside the weights when neither --drafter nor --draft-head
+    /// is set. Explicit `head` or `both` requires --draft-head. Outputs are
+    /// unchanged.
     #[arg(long, value_enum, global = true)]
     pub drafter: Option<Drafter>,
     /// The draft head drafts while its top token's probability is at least
     /// this [default: 0.35, the best of 0.25-0.6 on calibration pages].
     #[arg(long, global = true)]
     pub draft_confidence: Option<f32>,
-    /// Prefill exp: `fast` (token-identical on calibration; the recognition
-    /// default) or `exact` (the platform expf, which traces use).
+    /// Online prefill exp on x86: `fast` (polynomial, the recognition
+    /// default) or `exact` (platform expf, which traces use). Static softmax
+    /// and NEON keep their polynomial exp with either setting.
     #[arg(long, value_enum, hide = true, global = true)]
     pub exp: Option<ExpMode>,
-    /// Experiment knobs as `key=value`, repeatable: `prefill-bf16=off|attention|all`,
-    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`, `draft-backoff=N`,
-    /// `draft-window=N`, `draft-kv=f32|q8`, `draft-gate=token|path` and
-    /// `decode-exp=exact|fast` (docs/DEVELOPMENT.md).
+    /// Experiment knobs as `key=value`, repeatable:
+    /// `prefill-bf16=off|attention`, `prefill-projections=fp32|i16`,
+    /// `prefill-softmax=online|static`, `prefill-softmax-fp32=online|static`,
+    /// `split-chunks=1..4`, `phases=1`, `prefill-profile=1`,
+    /// `draft-backoff=N`, `draft-window=N`, `draft-kv=f32|q8`,
+    /// `draft-gate=token|path`, `decode-exp=exact|fast` and `kv-layers=0,3`
+    /// (docs/DEVELOPMENT.md).
     #[arg(long = "tune", value_name = "KEY=VALUE", hide = true, global = true)]
     pub tune: Vec<String>,
 }

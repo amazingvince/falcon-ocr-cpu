@@ -16,7 +16,9 @@ pub trait Trace: Send {
     fn decode_end(&mut self) {}
     /// Report rows processed, elapsed milliseconds and current KV cache bytes.
     fn decode_step(&mut self, _rows: usize, _ms: f64, _kv_bytes: usize) {}
-    /// Report cache bytes before and after sealing and elapsed milliseconds.
+    /// Report the peak cache bytes just before any layer seals, the total
+    /// after all layers seal, and elapsed milliseconds. These measurements
+    /// exclude allocations transiently held inside a layer's conversion.
     fn prefix_sealed(&mut self, _before: usize, _after: usize, _ms: f64) {}
     /// Report the bytes released when a session's cache is retired.
     fn cache_retired(&mut self, _bytes: usize) {}

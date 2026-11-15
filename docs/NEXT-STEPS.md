@@ -1,6 +1,6 @@
 # Next steps
 
-Status: current as of 2026-10-28. Unresolved qualification and hardware
+Status: current as of 2026-11-11. Unresolved qualification and hardware
 work, followed by research proposals.
 
 ## Still open
@@ -9,26 +9,35 @@ work, followed by research proposals.
   and [GGUF export/loading](https://github.com/amazingvince/falcon-ocr-cpu/issues/16)
   are separate follow-ups to the FP32, INT16 and GPTQ INT8 catalog.
 
-- **Reference-dependent gates.** `tests/weight_layout.rs` and `tools/check.sh
-  --smoke` need the GPU smoke outputs (`metadata.json`, `trace.safetensors`
-  from the frozen reference), as `tests/gpu_parity.rs` and
-  `tests/cache_layout.rs` do, but the self-hosted `weights` CI job, whose
-  machine holds those outputs, runs only the latter two. The reference's
-  preflight pins the RTX 4090 the outputs were recorded on, so no other
-  machine can remake them.
+- **Reference-dependent gates.** The [fixture download](DEVELOPMENT.md#tests)
+  supplies the original GPTQ overlay and GPU smoke record for local checks.
+  `tools/check.sh --smoke` and the bitwise trace test still use
+  [Windows baselines](DEVELOPMENT.md#the-check). The tokenizer-decode,
+  RoPE and draft-head parity checks need separate fixtures.
 - **The 55-page anchor.** The Ryzen 7 7700X agreement numbers in
-  [MODES.md](MODES.md#the-metric) (exception columns, rotated caches) are on
-  that host's 52-page anchor, so they compare arms with each other. Scored
-  against upstream's `artifacts/phase4/checks/calibration-reference.json`
+  [MODES.md](MODES.md#the-metric) (exception columns, rotated caches, fast
+  mode's prefill kernels, near-exact's static softmax) are on that host's
+  52-page anchor, so they compare arms with each other. Scored against
+  upstream's `artifacts/phase4/checks/calibration-reference.json`
   ([DEVELOPMENT.md](DEVELOPMENT.md#token-agreement)), the same arms would
-  give 24,262-step numbers comparable with the modes table.
+  give 24,262-step numbers comparable with the modes table, whose
+  near-exact row predates the static softmax.
 - **Default qualification.** Held-out gates decide defaults that change
-  tokens: margin cropping for books, `--max-dimension 1280`, a rotated cache
-  and exception columns. The gate method is in [MODES.md](MODES.md#the-metric).
-- **Windows and aarch64.** The book runs, the page pipeline and the KV-cache
-  timings ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were
-  measured on one Linux desktop; no aarch64 machine has run the model with
-  weights ([PORTABILITY.md](PORTABILITY.md)).
+  tokens: margin cropping for books, `--max-dimension 1280`, a rotated
+  cache, exception columns and whole layers at Q8. The gate method is in
+  [MODES.md](MODES.md#the-metric). Fresh pages are nearly spent: after
+  [near-exact's gate](MODES.md#near-exacts-held-out-gate), 60
+  OmniDocBench document families stay fresh (tables 54, other 6), none of
+  them English, so a gate on any other category or on English pages needs
+  pages from another source. The spent page manifests and locks are
+  [archived with checksums and source mappings](../reference/prefill-gate-provenance-v3.md).
+- **Windows and aarch64.** The book runs, the page pipeline, the KV-cache
+  timings and peak memory
+  ([PERFORMANCE.md](PERFORMANCE.md#on-a-ryzen-7-7700x)) were measured on one
+  Linux desktop; no aarch64 machine has run the model with weights
+  ([PORTABILITY.md](PORTABILITY.md)). The generic static-softmax NEON tiles
+  are test instantiations, not recognition defaults; enabling them needs
+  native token qualification.
 
 ## Proposals (not implemented)
 
@@ -41,45 +50,51 @@ faster near-exact on `q8r` (18 flips against near-exact's 1). See
 
 ### Exception columns as fast mode's default
 
-Compare agreement at 8 and 16 exception columns and with QKV included,
-then run a fresh held-out English gate before changing the default or
-republishing files. QKV carries 16% of the 8-bit cost and is untested.
-The [exception-column results](MODES.md#exception-columns-experimental)
-give the existing W2 proxy curve, fidelity and format support.
+The comparison at 8 and 16 exception columns and with QKV is
+[done](MODES.md#exception-counts-and-damping): mean KL falls, but flips and
+pages identical to exact mode do not improve, and QKV gains nothing. A
+default therefore needs a reason beyond mean KL, a republished v2 file and a
+fresh held-out English gate.
+
+### `--tune kv-layers` as near-exact's default
+
+[Whole layers at Q8](MODES.md#whole-layer-q8-in-the-q16-cache-experimental)
+would gain about 1.5 to 3% of a page
+([PERFORMANCE.md](PERFORMANCE.md#kv-caches-and-exception-columns)). As a
+default it would regenerate near-exact's fixtures and supersede its
+held-out results.
 
 ### GPTQ damping relative to the median
 
-`tools/w8_variants.py` damps each activation Gram matrix by 1% of its mean
-diagonal. In the layer-10 W2 Gram captured on the 7700X, whose largest
-diagonal entry is 614,663 times the median, this adds 4.9 times the median
-diagonal entry. It weakens error compensation for ordinary columns.
-
-Smaller damping changes GPTQ's result; there is no estimated gain. A first
-comparison would use `tools/w8_proxy.py --damp` on the W2 Grams, then token
-agreement. The proxy is in-sample, so it can reward fitting the 12 capture
-pages more closely without improving other pages.
+`tools/w8_variants.py` damps each activation Gram matrix by a fraction of
+its mean diagonal, 1% by default. In the layer-10 W2 Gram captured on the
+7700X, whose largest diagonal entry is 614,663 times the median, this adds
+4.9 times the median diagonal entry. Smaller fractions do not help: on the
+[10-page set](MODES.md#exception-counts-and-damping) 1e-4 to 3e-3 raise mean
+KL 1.431 to 3.103 times. A damping tied to the median instead of the mean is
+untried, and there is no estimated gain.
 
 Source: `artifacts/w8/gram/layers.10.feed_forward.w2.weight.gram.npy` on
 the 7700X.
 
-### W8A8 rotated INT8 prefill
+### INT16 prefill projections: what remains
 
-Prefill is compute-bound: about 6.1 TFLOP for the journal page, 2.2 in
-projections and 3.9 in attention. INT8 dot products (VNNI) could reduce the
-projections' 1.3 s of fast mode's 2.9 s prefill. On pipelined book pages,
-prefill sets the run's pace. The upper-bound saving is those 1.3 s; BF16
-projections (`--tune prefill-bf16=all`) save 0.6 s but were rejected for
-+17% KL. Source: [PERFORMANCE.md](PERFORMANCE.md).
+The INT16 projections, fast mode's default since 2026-11-03
+([MODES.md](MODES.md#int16-projections-and-static-softmax)), cut the
+journal page's projection time from 2.4 to 1.2 s on the 7700X for +1.2% KL,
+where BF16 projections cost +19%
+([PERFORMANCE.md](PERFORMANCE.md#int16-projections-and-static-softmax)).
+One piece is left: a NEON kernel, since aarch64 keeps the FP32 panels for
+fast mode.
 
-Per-token INT8 activation quantization must handle the layer-10 W2 channel
-with 614,663 times the median energy. A Hadamard rotation spreads it, but
-the other channels share the 8-bit step it sizes. The hypothesis is that
-this is lossier than the rejected BF16 projections. A first comparison
-would simulate W8A8 with rotated activations in
-`research/phase4-hillclimb/attempt3/gpu_harness.py` on the anchor pages and
-continue only if its KL beats BF16 projections.
+INT8 activations, which would double the MAC rate again with `vpdpbusd`,
+were simulated exactly and rejected: on two anchor pages they raise fast
+mode's KL against FP32 up to 20-fold, and on QKV, WO and W13, which have
+no outlier channels, the loss comes from the 8-bit step's resolution, so
+neither a per-group outlier fallback nor a Hadamard rotation would rescue
+them ([PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted)).
 
-### Dead FFN channel pruning
+### FFN channel pruning
 
 In the pinned checkpoint, 6,108 of the 50,688 FFN channels (12.1%; none in
 layer 0, 18-19% in layers 16-18) have a W2 column norm below 1/1000 of
@@ -91,16 +106,32 @@ of a typical one's.
 Source: column and row L2 norms of the pinned checkpoint,
 `artifacts/model/model.safetensors`.
 
-Pruning projects a saving of 12% of the FFN's bytes and FLOPs, 8% of the
-body: about 0.3 ms of fast mode's 8.5 ms/token (12% of its 2.3 ms in W13
-and W2) and 0.55 ms of near-exact's 15 ms/token, or 3-4% of a journal page
-in either mode. It is not bitwise, so token agreement decides.
+The prototype, at tag `checkpoint/ffn-prune-2026-11-06`, runs near-exact on
+the checkpoint route; [PERFORMANCE.md](PERFORMANCE.md#rejected-or-unadopted)
+has its measurements. It kept every token on the [10-page
+set](MODES.md#the-metric), and fast mode with the channels below 0.1 zeroed
+has KL 0.907 times base and flips 1 to 0. Pruning cannot reach the product
+route without a new packed format: `body_shapes` takes one `ffn_dim`,
+`ModelConfig::validate` pins 2304 and scales are shaped `input / 64`, so
+per-layer widths need a new format string and republished files, which is
+the upstream author's call. Two more constraints follow:
 
-A first comparison would zero these channels at load, keeping shapes and
-speed unchanged, and measure flips and KL for near-exact and fast. Only if
-both stay within noise would shapes change. The W8 overlay must then be
-rebuilt; the loader (which requires FFN width 2,304), packed format and
-panel shapes must accept per-layer widths. Exact mode would stay unpruned.
+- **Width.** INT16 panels need `width % 64 == 0`, so each layer removes
+  channels in multiples of 64: 6,080 in all at a threshold of 0.1 and 5,440
+  at 1e-3.
+- **The W8 overlay.** It must be rebuilt, because regrouping changes 44% of
+  the kept W2 scales. Start from a threshold of 1e-3: 209 of the 6,605
+  columns below 0.1 still hold live W8 codes, while all 6,108 below 1e-3 are
+  already zero in the overlay.
+
+Channels below each threshold, as a fraction of the layer's median W2 column
+norm:
+
+| Threshold | 1e-4 | 3e-4 | 1e-3 | 3e-3 | 1e-2 | 3e-2 | 1e-1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Channels | 70 | 2,552 | 6,108 | 6,438 | 6,475 | 6,532 | 6,605 |
+
+Exact mode would stay unpruned.
 
 ### `--max-dimension 1280` per book
 

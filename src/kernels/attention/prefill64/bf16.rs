@@ -9,12 +9,15 @@
 //! anchor like any lossy fast-mode change.
 use super::{
     HEAD_DIM, KEY_TILE, OutputPtr, QUERY_TILE, STAGE_CYCLES, Shape, cycles, mask_lanes, pv_uses_main_path,
-    qk_uses_main_path, reference_key_tile, softmax_lanes,
+    qk_uses_main_path, reference_key_tile, softmax_lanes, tile_span,
 };
-use crate::config::ExpMode;
+use crate::config::{ExpMode, PrefillSoftmax};
 use crate::kernels::{Bf16Kv, CompactKv, Geometry, PrefillOptions};
 use rayon::prelude::*;
 use std::arch::x86_64::*;
+
+/// The static-shift softmax (`PrefillSoftmax::Static`).
+mod static_shift;
 
 /// Time spent converting K/V to BF16 (probe; `Tuning::prefill_profile`).
 pub(in crate::kernels) static CONVERT_NS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -65,11 +68,13 @@ pub(crate) unsafe fn store_row(
 
 /// Pure prefill of `cache` (`head_dim == 64`, `prefix_len == total_len`).
 /// `kv` supplies the BF16 key/value copies or the scratch to convert them
-/// into; `options` select the softmax exp and the stage counters.
+/// into; `options` select the softmax (online, or static where the CPU has
+/// AVX512BW), the online softmax's exp and the stage counters.
 ///
 /// # Safety
 /// AVX2, FMA, AVX-512F and AVX512-BF16 must be available; shapes as in the
-/// parent's `compact_prefill`.
+/// parent's `compact_prefill`. The static softmax needs every score within
+/// the norm bound of `static_shift`.
 pub(in crate::kernels) unsafe fn compact_prefill(
     q: &[f32],
     cache: &CompactKv<'_>,
@@ -81,7 +86,13 @@ pub(in crate::kernels) unsafe fn compact_prefill(
     options: PrefillOptions,
 ) {
     let (k, v, n_heads, n_kv_heads) = (cache.prefix_k, cache.v, cache.n_heads, cache.n_kv_heads);
-    let PrefillOptions { exp, profile } = options;
+    // The short tiles' FP32 path keeps the online softmax.
+    let PrefillOptions {
+        exp,
+        profile,
+        softmax,
+        fp32_softmax: _,
+    } = options;
     let shape = Shape {
         query_width: n_heads * HEAD_DIM,
         kv_width: n_kv_heads * HEAD_DIM,
@@ -134,6 +145,7 @@ pub(in crate::kernels) unsafe fn compact_prefill(
         );
     }
     let fast = exp == ExpMode::Fast;
+    let static_shift = softmax == PrefillSoftmax::Static && std::is_x86_feature_detected!("avx512bw");
     let repeat = n_heads / n_kv_heads;
     let tiles = query_len.div_ceil(QUERY_TILE);
     let out = OutputPtr(output.as_mut_ptr());
@@ -149,10 +161,13 @@ pub(in crate::kernels) unsafe fn compact_prefill(
                 keys: &keys_bf16[head * total * PAIRS..(head + 1) * total * PAIRS],
                 values: &value_pairs[kv_head * pairs * HEAD_DIM..(kv_head + 1) * pairs * HEAD_DIM],
             };
-            // SAFETY: features and shapes checked by the caller; each task
-            // owns rows [tile * 32, tile * 32 + queries) of `head`.
+            // SAFETY: features and shapes checked by the caller (AVX512BW
+            // just above); each task owns rows [tile * 32, tile * 32 +
+            // queries) of `head`.
             unsafe {
-                if fast {
+                if static_shift {
+                    static_shift::tile_head(&operands, &shape, tile, queries, head, sinks, out.get());
+                } else if fast {
                     tile_head_fast(&operands, &shape, tile, queries, head, kv_head, sinks, out.get());
                 } else {
                     tile_head_native(&operands, &shape, tile, queries, head, kv_head, sinks, out.get());
@@ -245,6 +260,21 @@ unsafe fn tile_head_fast(
     unsafe { tile_head::<crate::simd::Avx2Fast, true>(operands, shape, tile, queries, head, kv_head, sinks, output) }
 }
 
+/// The tile's queries of `head` as BF16 pairs, `[d / 2][32 queries]`, zero
+/// past `queries`.
+fn query_pairs(q: &[f32], shape: &Shape, first_query: usize, queries: usize, head: usize) -> [u32; PAIRS * QUERY_TILE] {
+    let mut pairs = [0_u32; PAIRS * QUERY_TILE];
+    for r in 0..queries {
+        let row = &q[(first_query + r) * shape.query_width + head * HEAD_DIM..][..HEAD_DIM];
+        for (p, pair) in row.chunks_exact(2).enumerate() {
+            let even = half::bf16::from_f32(pair[0]).to_bits() as u32;
+            let odd = half::bf16::from_f32(pair[1]).to_bits() as u32;
+            pairs[p * QUERY_TILE + r] = even | odd << 16;
+        }
+    }
+    pairs
+}
+
 /// One (query tile, head) across all visible key tiles: the parent's
 /// `tile_head` with BF16 products on main-path tiles.
 #[inline(always)]
@@ -260,25 +290,8 @@ unsafe fn tile_head<S: crate::simd::Simd, const FUSED: bool>(
     output: *mut f32,
 ) {
     let first_query = tile * QUERY_TILE;
-    let first_absolute = shape.query_offset + first_query;
-    let last_absolute = first_absolute + queries - 1;
-    let intersects_image = first_absolute < shape.image_end && last_absolute >= shape.image_start;
-    let visible_end = if intersects_image {
-        (last_absolute + 1).max(shape.image_end)
-    } else {
-        last_absolute + 1
-    };
-    let all_image = first_absolute >= shape.image_start && last_absolute < shape.image_end;
-    // Query pairs, `[d / 2][32 queries]`, zero past `queries`.
-    let mut query_pairs = [0_u32; PAIRS * QUERY_TILE];
-    for r in 0..queries {
-        let row = &operands.q[(first_query + r) * shape.query_width + head * HEAD_DIM..][..HEAD_DIM];
-        for (p, pair) in row.chunks_exact(2).enumerate() {
-            let even = half::bf16::from_f32(pair[0]).to_bits() as u32;
-            let odd = half::bf16::from_f32(pair[1]).to_bits() as u32;
-            query_pairs[p * QUERY_TILE + r] = even | odd << 16;
-        }
-    }
+    let (first_absolute, visible_end, all_image) = tile_span(shape, first_query, queries);
+    let query_pairs = query_pairs(operands.q, shape, first_query, queries, head);
     let mut maxima = [f32::NEG_INFINITY; QUERY_TILE];
     let mut denominators = [0.0_f32; QUERY_TILE];
     // SAFETY: row offsets stay inside `output` for this task's rows and head.
@@ -650,10 +663,9 @@ unsafe fn pv_rows<const R: usize>(
 mod tests {
     use super::*;
 
+    /// Asserted by `kernels::tests::host_runs_every_avx512_kernel`.
     fn available() -> bool {
-        crate::kernels::panel_bf16::available()
-            && std::is_x86_feature_detected!("avx2")
-            && std::is_x86_feature_detected!("fma")
+        crate::kernels::bf16_available()
     }
 
     fn values(n: usize, seed: u32, range: f32) -> Vec<f32> {
@@ -770,7 +782,7 @@ mod tests {
     /// converts itself, so both paths give bitwise equal outputs.
     #[test]
     fn stored_rows_match_the_kernel_conversion() {
-        if !available() || !std::is_x86_feature_detected!("avx512bw") {
+        if !available() || !crate::kernels::prefill_bf16_rows_available() {
             return;
         }
         for (query_len, image_start, image_end) in [(70, 3, 65), (95, 10, 90), (129, 1, 128)] {

@@ -3,6 +3,11 @@
 use super::{decode::RecordStore, *};
 
 #[test]
+fn tail_allocation_reports_size_overflow() {
+    assert!(zeroed_tail::<u16>(usize::MAX).is_err());
+}
+
+#[test]
 fn fast_decode_exp_defaults_to_8_bit_caches_under_fast_exps() {
     assert!(default_fast_exp(Kv::Q8, true, None));
     assert!(
@@ -139,8 +144,10 @@ fn dequantized_tail(cache: &SplitPrefix) -> (Vec<f32>, Vec<f32>) {
     (k, v)
 }
 
+/// Scalar, the 8-lane native kernels (`avx2`, or `neon`), and `auto`, which
+/// runs verification rows through the AVX-512 kernels where present.
 fn backends() -> Vec<Simd> {
-    [Simd::Scalar, Simd::Auto]
+    [Simd::Scalar, Simd::Avx2, Simd::Neon, Simd::Auto]
         .into_iter()
         .filter(|s| s.validate().is_ok())
         .collect()
@@ -456,6 +463,152 @@ fn q4_codes_pack_two_per_byte_and_decode_like_q8() {
     assert_eq!(unsafe { loads::<crate::simd::Neon>(&store, records) }, scalar);
     // Half a byte per element plus one 16-bit scale per 32 elements.
     assert_eq!(cache.records.bytes(), 3 * c.n_kv_heads * (RECORD / 2 + 2 * RECORD / 32));
+}
+
+/// Every 32-value block of `records` records of `store` through `S`'s
+/// `load32`, as bits (inlined, so the vector instantiations compile with
+/// the caller's instruction set as the production kernels do).
+///
+/// # Safety
+///
+/// The CPU must have `S`'s instruction set, and `store` must hold `records`
+/// records of `width` values.
+#[inline(always)]
+unsafe fn block_loads<S: crate::simd::Simd, R: RecordStore>(store: &R, records: usize, width: usize) -> Vec<u32> {
+    let mut lanes = vec![0.0_f32; records * width];
+    for record in 0..records {
+        for offset in (0..width).step_by(32) {
+            // SAFETY: the block lies inside a stored record, and the caller
+            // runs with `S`'s instruction set enabled.
+            let block = unsafe { store.load32::<S>(record, offset) };
+            for (i, v) in block.into_iter().enumerate() {
+                // SAFETY: as above; the destination holds every record.
+                unsafe { S::store(lanes.as_mut_ptr().add(record * width + offset + 8 * i), v) };
+            }
+        }
+    }
+    lanes.iter().map(|x| x.to_bits()).collect()
+}
+
+#[test]
+fn block_loads_decode_like_scalar_values() {
+    // `load32` (one scale load per block) against the scalar decode of every
+    // element, for every format, prefix and tail, on every instruction set.
+    let c: ModelConfig = serde_json::from_str(include_str!("../../../tests/fixtures/model-config.json")).unwrap();
+    let (p, generated) = (5, 3);
+    let (k, v, _) = fixture(&c, p, 13);
+    let tail: Vec<_> = (0..generated * c.kv_dim())
+        .map(|i| ((i * 13) % 37) as f32 / 53.0 - 0.3)
+        .collect();
+    /// The block loads of one store through every instruction set here.
+    fn all_isas<R: RecordStore>(store: &R, records: usize, width: usize) -> Vec<Vec<u32>> {
+        // SAFETY: `Portable` needs no CPU features.
+        let mut out = vec![unsafe { block_loads::<crate::simd::Portable, R>(store, records, width) }];
+        #[cfg(target_arch = "x86_64")]
+        if std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma") {
+            /// `block_loads` through `Avx2`.
+            ///
+            /// # Safety
+            ///
+            /// The CPU must have AVX2 and FMA, and `store` must hold the
+            /// records.
+            #[target_feature(enable = "avx2,fma")]
+            unsafe fn native<R: RecordStore>(store: &R, records: usize, width: usize) -> Vec<u32> {
+                // SAFETY: the caller enables AVX2 and FMA.
+                unsafe { block_loads::<crate::simd::Avx2, R>(store, records, width) }
+            }
+            // SAFETY: AVX2 and FMA were detected above.
+            out.push(unsafe { native(store, records, width) });
+        }
+        // SAFETY: NEON is baseline on aarch64.
+        #[cfg(target_arch = "aarch64")]
+        out.push(unsafe { block_loads::<crate::simd::Neon, R>(store, records, width) });
+        out
+    }
+    for storage in storages() {
+        let mut cache = SplitPrefix::seal(&k, &v, p, p + generated, &c, storage, None).unwrap();
+        push_rows(&mut cache, &c, &tail, &tail);
+        let groups = c.n_kv_heads;
+        let (records, tails) = (groups * p, groups * cache.tail_capacity);
+        let scalar = |values: &Records, width: usize, count: usize| -> Vec<u32> {
+            (0..count * width)
+                .map(|i| values.value(width, i / width, i % width).to_bits())
+                .collect()
+        };
+        let (prefix, tail_loads) = match (&cache.records, &cache.tail) {
+            (Records::F32(d), Records::F32(t)) => (
+                all_isas(&F32Rec::<RECORD>(d), records, RECORD),
+                all_isas(&F32Rec::<TAIL_RECORD>(t), tails, TAIL_RECORD),
+            ),
+            (Records::Q16 { codes, scales }, Records::Q16 { codes: tc, scales: ts }) => (
+                all_isas(&Q16Rec::<RECORD> { codes, scales }, records, RECORD),
+                all_isas(&Q16Rec::<TAIL_RECORD> { codes: tc, scales: ts }, tails, TAIL_RECORD),
+            ),
+            (Records::Q8 { codes, scales }, Records::Q8 { codes: tc, scales: ts }) => (
+                all_isas(&Q8Rec::<RECORD> { codes, scales }, records, RECORD),
+                all_isas(&Q8Rec::<TAIL_RECORD> { codes: tc, scales: ts }, tails, TAIL_RECORD),
+            ),
+            (Records::Q4 { codes, scales }, Records::Q4 { codes: tc, scales: ts }) => (
+                all_isas(&Q4Rec::<RECORD> { codes, scales }, records, RECORD),
+                all_isas(&Q4Rec::<TAIL_RECORD> { codes: tc, scales: ts }, tails, TAIL_RECORD),
+            ),
+            _ => unreachable!("tail storage matches the prefix"),
+        };
+        let expected = scalar(&cache.records, RECORD, records);
+        let expected_tail = scalar(&cache.tail, TAIL_RECORD, tails);
+        for lanes in prefix {
+            assert_eq!(lanes, expected, "{storage:?} prefix");
+        }
+        for lanes in tail_loads {
+            assert_eq!(lanes, expected_tail, "{storage:?} tail");
+        }
+    }
+}
+
+#[test]
+fn codes_round_like_round_ties_even() {
+    // `round_clamped` against the libm rounding it replaces: every
+    // half-integer tie and its neighbours, values past each limit, tiny
+    // values, infinities and NaN.
+    for limit in [7.0_f64, 127.0, 32767.0] {
+        let reference = |x: f64| x.round_ties_even().clamp(-limit, limit);
+        let mut values = vec![
+            0.0,
+            -0.0,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            1e-300,
+            -1e-300,
+            1e300,
+            -1e300,
+        ];
+        for k in -(limit as i64) - 3..=limit as i64 + 3 {
+            for base in [k as f64, k as f64 + 0.5] {
+                values.extend([base, base.next_up(), base.next_down(), base + 0.25, base - 0.25]);
+            }
+        }
+        // Equal as numbers: a negative value that rounds to zero gives +0
+        // instead of -0, the same integer code.
+        for x in values {
+            assert_eq!(codec::round_clamped(x, limit), reference(x), "{x} limit {limit}");
+        }
+        assert!(codec::round_clamped(f64::NAN, limit).is_nan());
+    }
+    // The codes themselves, including the zero scale and a NaN value.
+    for scale in [0.0_f32, 1e-3, 0.37, f32::from_bits(1)] {
+        for value in [0.0_f32, -0.0, 0.25, -1.5, 3.7, 1e3, -1e3, f32::NAN] {
+            let x = value as f64 / scale as f64;
+            let expect = |limit: f64| {
+                if scale == 0.0 {
+                    0.0
+                } else {
+                    x.round_ties_even().clamp(-limit, limit)
+                }
+            };
+            assert_eq!(q8_code(value, scale), expect(127.0) as i8, "{value} / {scale}");
+            assert_eq!(q16_code(value, scale), expect(32767.0) as i16, "{value} / {scale}");
+        }
+    }
 }
 
 #[test]

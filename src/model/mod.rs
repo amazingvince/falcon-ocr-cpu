@@ -12,11 +12,12 @@ use memmap2::Mmap;
 use crate::{
     config::{ModelConfig, WeightLayout},
     head_screen::Screened,
-    kernels::{self, Bf16Kv},
+    kernels::{self, Bf16Kv, PrefillProjection as Projection},
     packed_kernels::PhasePackedLinear,
     trace::Trace,
 };
 
+mod body;
 mod cache;
 mod fused;
 mod load;
@@ -28,7 +29,7 @@ mod rope;
 
 pub(crate) use cache::{BatchWorkspace, Session};
 pub use load::MemoryReport;
-pub(crate) use load::overlay_exception_bytes;
+pub(crate) use load::overlay_facts;
 pub(crate) use packed::packed_facts;
 pub use packed::{PACKED_FORMAT, PACKED_FORMAT_EXCEPTIONS, PACKED_FORMAT_FP32};
 
@@ -60,7 +61,7 @@ impl WeightsSource {
         model_dir.to_path_buf()
     }
 }
-pub(crate) use profile::report_decode_phases;
+pub(crate) use profile::{report_decode_phases, report_memory};
 pub(crate) use rope::{image_range, positions};
 
 use fused::fused_prefix_rows;
@@ -144,33 +145,6 @@ impl Model {
     /// SHA-256 of the W8 overlay the body was imported from, if any.
     pub fn overlay_sha256(&self) -> Option<&str> {
         self.overlay_sha256.as_deref()
-    }
-    /// Bit width of the quantized body when every body matrix of every layer
-    /// is quantized to one width with panel-shaped output dims (the prefill
-    /// GEMM's precondition); `None` for an FP32 or mixed body.
-    pub fn body_bits(&self) -> Option<u32> {
-        let mut bits = None;
-        for layer in &self.layers {
-            for w in [&layer.qkv, &layer.wo, &layer.w13, &layer.w2] {
-                let q = w.quantized.as_ref().filter(|q| q.panel_shaped())?;
-                match bits {
-                    None => bits = Some(q.bits()),
-                    Some(b) if b == q.bits() => {}
-                    Some(_) => return None,
-                }
-            }
-        }
-        bits
-    }
-    /// Bytes of the body's exception columns (indices and FP32 weights),
-    /// which a decode step reads on top of the codes; zero without any.
-    pub fn exception_bytes(&self) -> usize {
-        self.layers
-            .iter()
-            .flat_map(|layer| [&layer.qkv, &layer.wo, &layer.w13, &layer.w2])
-            .filter_map(|w| w.quantized.as_ref())
-            .map(|q| q.exception_bytes())
-            .sum()
     }
     /// Actual additional shared tensor payload, excluding allocator metadata.
     /// This remains resident if another Runner on this Model enabled packing.
@@ -545,8 +519,7 @@ impl Model {
         trace: &mut dyn Trace,
         phase: &str,
     ) -> Result<()> {
-        let c = &self.config;
-        let rows = positions.len();
+        let (c, rows) = (&self.config, positions.len());
         ensure!(
             rows > 0 && h.len() == rows * c.dim && positions_hw.len() == rows,
             "invalid forward dimensions"
@@ -560,10 +533,13 @@ impl Model {
             "RoPE position exceeds context"
         );
         let qdim = c.query_dim();
-        let offset = session.len;
-        let simd = session.simd;
-        let exp = session.exp;
-        let tuning = session.tuning;
+        let (offset, simd, exp, tuning) = (session.len, session.simd, session.exp, session.tuning);
+        let seal = session.seal && offset == 0;
+        ensure!(
+            !seal || session.layers[0].compact_prefix_len() == Some(rows),
+            "a sealing session must forward its whole prefix first"
+        );
+        let (mut before, mut after, mut seal_ms) = (0, 0, 0.0);
         let work = &mut session.workspace;
         work.resize(rows, c);
         if let Some(capture) = session.features.as_mut() {
@@ -587,12 +563,10 @@ impl Model {
         // Quantized prefill: the RMS norms fold into the GEMM's row packing and
         // the residual adds into its epilogue, with the same per-element
         // operations as the separate passes.
-        // `kernels::prefill_plan` is the one place that decides which prefill
-        // kernels a body and CPU get (`auto::Resolved` reports the same plan).
-        let plan = kernels::prefill_plan(self.body_bits(), self.exception_bytes() > 0, simd, tuning.prefill_bf16);
+        // `kernels::prefill_plan` alone picks the prefill kernels (`auto::Resolved` reports it).
+        let plan = kernels::prefill_plan(self.body_bits(), self.i16_misfit(), simd, &tuning);
         let panel = rows > 8 && !capture && !trace.enabled() && plan.projection != kernels::PrefillProjection::GemmF32;
-        let bf16_attention = panel && plan.attention == kernels::PrefillAttention::Bf16;
-        let bf16_projections = panel && plan.projection == kernels::PrefillProjection::PanelBf16;
+        let (bf16_attention, fp32_softmax) = plan.softmaxes(panel);
         let mut stored_bf16;
         for (i, layer) in self.layers.iter().enumerate() {
             let step = LayerStep {
@@ -602,7 +576,7 @@ impl Model {
                 capture,
             };
             if panel {
-                panel_qkv(c, layer, h, rows, work, bf16_projections);
+                panel_qkv(c, layer, h, rows, work, plan.projection);
             } else {
                 self.project_qkv(layer, h, rows, work, &step, trace)?;
             }
@@ -616,7 +590,7 @@ impl Model {
             // A whole prefix in one call also gets its BF16 attention copies
             // from the same pass.
             stored_bf16 = fused
-                && bf16_attention
+                && bf16_attention.is_some()
                 && offset == 0
                 && session.layers[i].compact_prefix_len() == Some(rows)
                 && kernels::prefill_bf16_rows_available();
@@ -645,7 +619,7 @@ impl Model {
             }
             clock.mark(3);
             let cache = &mut session.layers[i];
-            let bf16_kv = if !bf16_attention {
+            let bf16_kv = if bf16_attention.is_none() {
                 None
             } else if stored_bf16 {
                 Some(Bf16Kv::Converted(&work.bf16_keys, &work.bf16_values))
@@ -665,14 +639,33 @@ impl Model {
                 kernels::PrefillOptions {
                     exp,
                     profile: tuning.prefill_profile,
+                    softmax: bf16_attention.unwrap_or(crate::config::PrefillSoftmax::Online),
+                    fp32_softmax,
                 },
             );
             clock.mark(4);
+            if seal {
+                let started = Instant::now();
+                let bytes = cache::seal_layer(
+                    &mut session.layers,
+                    i,
+                    rows,
+                    session.capacity,
+                    c,
+                    self.profile.kv,
+                    exp,
+                    &tuning,
+                )?;
+                before = before.max(after + bytes.0);
+                after += bytes.1;
+                seal_ms += started.elapsed().as_secs_f64() * 1000.0;
+                clock.mark(8);
+            }
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.attention"), &[rows, qdim], &work.attn)?;
             }
             if panel {
-                panel_out_ffn(c, layer, h, rows, work, bf16_projections, &mut clock);
+                panel_out_ffn(c, layer, h, rows, work, plan.projection, &mut clock);
             } else {
                 self.attention_out_ffn(layer, h, rows, work, &step, trace, &mut clock)?;
             }
@@ -682,6 +675,12 @@ impl Model {
             if trace.enabled() {
                 trace.tensor(&format!("{phase}.layer.{i}.hidden"), &[rows, c.dim], h)?;
             }
+            if tuning.phases && rows >= PARALLEL_ROWS && (i + 1) % 5 == 0 {
+                report_memory(true, &format!("layer {}", i + 1));
+            }
+        }
+        if seal {
+            trace.prefix_sealed(before, after, seal_ms);
         }
         session.len += rows;
         session.next_position = positions[rows - 1] + 1;
@@ -848,7 +847,7 @@ impl Model {
                     None,
                     kernels::PrefillOptions {
                         exp: session.exp,
-                        profile: false,
+                        ..kernels::PrefillOptions::EXACT
                     },
                 );
             }
@@ -954,7 +953,7 @@ fn quantized(w: &Weight) -> &crate::quant::linear::QuantLinear {
 /// Panel-GEMM QKV projection of a quantized body: the RMS norm folds into
 /// the row scales, with the same per-element operations as the separate
 /// passes.
-fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut cache::Workspace, bf16: bool) {
+fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut cache::Workspace, kernel: Projection) {
     row_scales(h, c.dim, &mut work.row_scale);
     quantized(&layer.qkv).prefill(
         h,
@@ -962,7 +961,7 @@ fn panel_qkv(c: &ModelConfig, layer: &Layer, h: &[f32], rows: usize, work: &mut 
         Some(&work.row_scale),
         kernels::panel_gemm::Epilogue::Store(&mut work.qkv),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
 }
 
@@ -974,7 +973,7 @@ fn panel_out_ffn(
     h: &mut [f32],
     rows: usize,
     work: &mut cache::Workspace,
-    bf16: bool,
+    kernel: Projection,
     clock: &mut PhaseClock,
 ) {
     quantized(&layer.wo).prefill(
@@ -983,7 +982,7 @@ fn panel_out_ffn(
         None,
         kernels::panel_gemm::Epilogue::Add(h),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
     clock.mark(5);
     row_scales(h, c.dim, &mut work.row_scale);
@@ -993,7 +992,7 @@ fn panel_out_ffn(
         Some(&work.row_scale),
         kernels::panel_gemm::Epilogue::Glu(&mut work.gated),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
     clock.mark(6);
     quantized(&layer.w2).prefill(
@@ -1002,7 +1001,7 @@ fn panel_out_ffn(
         None,
         kernels::panel_gemm::Epilogue::Add(h),
         &mut work.quant_scratch,
-        bf16,
+        kernel,
     );
     clock.mark(7);
 }

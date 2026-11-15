@@ -10,7 +10,7 @@
  "finish_reason": "length",
  "prefill": {
   "projection": "panel-avx2",
-  "attention": "avx512-wide"
+  "attention": "avx512-wide-static"
  },
  "token_ids": [
   20751,

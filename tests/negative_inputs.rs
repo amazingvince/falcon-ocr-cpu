@@ -249,6 +249,23 @@ fn cli_kv_cache_applies_to_run_and_doctor_only() {
     assert_eq!(report["plan"]["profile"], "w8-body-kv-q8r");
     assert_eq!(report["plan"]["kv_cache"], "q8r");
     assert!(report["plan"]["mode"].is_null());
+
+    for (mode, layers) in [("fast", "0"), ("near-exact", "22")] {
+        let output = cli()
+            .arg("--model")
+            .arg(model)
+            .args([
+                "--mode",
+                mode,
+                "--allow-rtn",
+                "--tune",
+                &format!("kv-layers={layers}"),
+                "doctor",
+            ])
+            .output()
+            .unwrap();
+        assert_cli_error(output, "kv-layers needs a Q16 cache and layers below 22");
+    }
 }
 
 #[test]
